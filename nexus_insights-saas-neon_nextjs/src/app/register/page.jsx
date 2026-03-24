@@ -3,15 +3,18 @@
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
-import { Link } from '@/components/Link';
-import { Text } from '@/components/Text';
-import { Input } from '@/components/Input';
 import { CheckCircle } from 'lucide-react';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
   const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useState({
+    // Account
+    username: '',
+    email: '',
+    password: '',
+    password2: '',
+    
     // Section 1
     legalEntityName: '',
     taxNumber: '',
@@ -37,15 +40,73 @@ export default function RegisterPage() {
     isDueToExportPressure: '',
     isForGroupReporting: ''
   });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    // Here you would send data to backend
+    setError('');
+    if (formData.password !== formData.password2) {
+      setError(language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match');
+      return;
+    }
+    setLoading(true);
+    try {
+      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      // 1. Register user
+      const regRes = await fetch(`${API}/accounts/register/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          password2: formData.password2,
+          first_name: formData.legalEntityName,
+        }),
+      });
+      if (!regRes.ok) {
+        const data = await regRes.json();
+        const msg = Object.values(data).flat().join(', ');
+        setError(msg);
+        setLoading(false);
+        return;
+      }
+      // 2. Login to get token
+      const loginRes = await fetch(`${API}/accounts/login/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: formData.username, password: formData.password }),
+      });
+      if (loginRes.ok) {
+        const tokens = await loginRes.json();
+        localStorage.setItem('access_token', tokens.access);
+        localStorage.setItem('refresh_token', tokens.refresh);
+        // 3. Create company
+        await fetch(`${API}/companies/create/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokens.access}` },
+          body: JSON.stringify({
+            name: formData.legalEntityName,
+            tax_number: formData.taxNumber,
+            country: formData.countryOfHeadquarters,
+            nace_code: formData.naceCode,
+            description: formData.mainActivityDescription,
+            employee_count: formData.numberOfEmployees,
+            facility_count: formData.numberOfFacilities,
+          }),
+        });
+        window.location.href = '/dashboard';
+      }
+    } catch {
+      setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -96,11 +157,44 @@ export default function RegisterPage() {
                   {language === 'tr' ? 'Bölüm 1 – Temel Kurumsal Bilgiler' : 'Section 1 – Basic Corporate Information'}
                 </h2>
 
+                {/* Account Fields */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <h3 className="font-semibold text-green-800 mb-3">{language === 'tr' ? 'Hesap Bilgileri' : 'Account Information'}</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {language === 'tr' ? 'Kullanıcı Adı' : 'Username'} *
+                      </label>
+                      <input type="text" required value={formData.username} onChange={(e) => handleInputChange('username', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {language === 'tr' ? 'E-posta' : 'Email'} *
+                      </label>
+                      <input type="email" required value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {language === 'tr' ? 'Şifre' : 'Password'} *
+                      </label>
+                      <input type="password" required value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} *
+                      </label>
+                      <input type="password" required value={formData.password2} onChange={(e) => handleInputChange('password2', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                    </div>
+                  </div>
+                </div>
+
+                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{error}</div>}
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} *
                   </label>
-                  <Input
+                  <input
                     type="text"
                     required
                     value={formData.legalEntityName}
@@ -113,7 +207,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Vergi Numarası' : 'Tax Number'} *
                   </label>
-                  <Input
+                  <input
                     type="text"
                     required
                     value={formData.taxNumber}
@@ -126,7 +220,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters'} *
                   </label>
-                  <Input
+                  <input
                     type="text"
                     required
                     value={formData.countryOfHeadquarters}
@@ -139,7 +233,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation'}
                   </label>
-                  <Input
+                  <input
                     type="text"
                     value={formData.countriesOfOperation}
                     onChange={(e) => handleInputChange('countriesOfOperation', e.target.value)}
@@ -152,7 +246,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {t.register.naceCode}
                   </label>
-                  <Input
+                  <input
                     type="text"
                     value={formData.naceCode}
                     onChange={(e) => handleInputChange('naceCode', e.target.value)}
@@ -237,7 +331,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Tesis Sayısı' : 'Number of Facilities'}
                   </label>
-                  <Input
+                  <input
                     type="number"
                     min="0"
                     value={formData.numberOfFacilities}
@@ -280,7 +374,7 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Bağlı Şirket Sayısı' : 'Number of Subsidiaries'}
                   </label>
-                  <Input
+                  <input
                     type="number"
                     min="0"
                     value={formData.numberOfSubsidiaries}
@@ -527,10 +621,12 @@ export default function RegisterPage() {
                   </button>
                   <button
                     type="submit"
-                    className="px-8 py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-105 transition-all duration-300"
+                    disabled={loading}
+                    className="px-8 py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-105 transition-all duration-300 disabled:opacity-60 disabled:hover:scale-100"
                   >
-                    {language === 'tr' ? 'Gönder' : 'Submit'}
+                    {loading ? (language === 'tr' ? 'Kaydediliyor...' : 'Registering...') : (language === 'tr' ? 'Gönder' : 'Submit')}
                   </button>
+                  {error && <div className="w-full p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm mt-2">{error}</div>}
                 </div>
               </div>
             )}
