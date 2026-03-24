@@ -407,11 +407,22 @@ export default function Chatbot({ language = 'tr' }) {
                 ))}
               </div>
 
+              {/* Hint text */}
+              {selectedOptions.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2 text-center">
+                  {language === 'tr' ? '↑ Lütfen bir seçenek seçin' : '↑ Please select an option above'}
+                </p>
+              )}
+
               {/* Submit button */}
               <button
                 onClick={handleSubmitAnswer}
                 disabled={!canSubmit}
-                className="w-full mt-3 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-secondary transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className={`w-full mt-3 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+                  canSubmit
+                    ? 'bg-primary text-white hover:bg-secondary cursor-pointer'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
               >
                 <Send className="w-4 h-4" />
                 {language === 'tr' ? 'Gönder' : 'Submit'}
