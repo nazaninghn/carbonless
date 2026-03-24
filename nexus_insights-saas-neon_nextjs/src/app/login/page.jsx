@@ -135,14 +135,14 @@ export default function LoginPage() {
 
             {/* Right Side - Login Form */}
             <div>
-              <div className="bg-white rounded-2xl shadow-xl p-8 lg:p-10 relative overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 lg:p-10 relative overflow-hidden">
                 {/* Decorative gradient */}
                 <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-full -mr-20 -mt-20"></div>
                 
                 <div className="relative z-10">
                   {/* Header */}
                   <div className="mb-8">
-                    <h2 className="text-3xl font-bold mb-2">{t.login.title}</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold mb-2">{t.login.title}</h2>
                     <p className="text-gray-600">{t.login.subtitle}</p>
                   </div>
 

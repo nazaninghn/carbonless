@@ -3,7 +3,8 @@
 
 @layer base {
   [x-cloak] { display: none !important; }
-  html { scrollbar-gutter: stable; }
+  html { scrollbar-gutter: stable; overflow-x: hidden; }
+  body { overflow-x: hidden; }
 }
 
 @layer utilities {

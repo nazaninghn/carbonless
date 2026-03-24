@@ -225,21 +225,21 @@ export default function DashboardPage() {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-h-screen">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
+        <header className="h-auto min-h-[4rem] bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 py-2 flex-wrap gap-2">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden"><Menu className="w-6 h-6" /></button>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
             <span className="text-sm text-gray-600">{language === 'tr' ? 'Yıl:' : 'Year:'}</span>
-            <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+            <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
               <option value={2026}>2026</option><option value={2025}>2025</option><option value={2024}>2024</option>
             </select>
-            <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
+            <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
               <option value="turkey">{language === 'tr' ? 'Türkiye' : 'Turkey'}</option>
               <option value="global">{language === 'tr' ? 'Global' : 'Global'}</option>
             </select>
           </div>
         </header>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-3 sm:p-6 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -263,7 +263,7 @@ export default function DashboardPage() {
                     {language === 'tr' ? 'Veri Ekle' : 'Add Data'}
                   </button>
                 </div>
-                <div className="text-5xl font-bold text-gray-900 mb-2">{summary?.total_tonne?.toFixed(2) || '0.00'}</div>
+                <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">{summary?.total_tonne?.toFixed(2) || '0.00'}</div>
                 <p className="text-sm text-gray-500">{language === 'tr' ? `${selectedYear} yılı toplam şirket emisyonları` : `Total company emissions for ${selectedYear}`}</p>
               </div>
 
@@ -424,8 +424,8 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto -mx-0">
+                    <table className="w-full text-sm min-w-[640px]">
                       <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                           <th className="text-left px-4 py-3 font-medium text-gray-600">{language === 'tr' ? 'Kaynak' : 'Source'}</th>
@@ -544,7 +544,7 @@ export default function DashboardPage() {
                     <div className="text-5xl font-bold text-gray-900 mb-2">{entries.length}</div>
                     <p className="text-sm text-gray-600">{language === 'tr' ? 'Toplam Kayıt' : 'Total Entries'}</p>
                   </div>
-                  <div className="py-8 border-x border-gray-200">
+                  <div className="py-8 md:border-x border-gray-200">
                     <div className="text-5xl font-bold text-gray-900 mb-2">{summary?.total_tonne?.toFixed(1) || '0'}</div>
                     <p className="text-sm text-gray-600">{language === 'tr' ? 'Toplam tCO2e' : 'Total tCO2e'}</p>
                   </div>

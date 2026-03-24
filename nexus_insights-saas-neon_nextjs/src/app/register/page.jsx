@@ -117,8 +117,8 @@ export default function RegisterPage() {
       <main className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="text-2xl sm:text-4xl font-bold mb-4">
               {t.register.title}
             </h1>
             <p className="text-lg text-gray-600">
@@ -127,8 +127,8 @@ export default function RegisterPage() {
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center mb-12">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center mb-8 sm:mb-12">
+            <div className="flex items-center gap-2 sm:gap-4">
               {[1, 2, 3].map((step) => (
                 <div key={step} className="flex items-center">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
@@ -141,7 +141,7 @@ export default function RegisterPage() {
                     {currentSection > step ? <CheckCircle className="w-5 h-5" /> : step}
                   </div>
                   {step < 3 && (
-                    <div className={`w-16 h-1 ${currentSection > step ? 'bg-green-500' : 'bg-gray-200'}`} />
+                    <div className={`w-8 sm:w-16 h-1 ${currentSection > step ? 'bg-green-500' : 'bg-gray-200'}`} />
                   )}
                 </div>
               ))}
@@ -149,7 +149,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-8">
             {/* Section 1: Basic Corporate Information */}
             {currentSection === 1 && (
               <div className="space-y-6">

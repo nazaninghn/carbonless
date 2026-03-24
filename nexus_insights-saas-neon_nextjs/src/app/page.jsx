@@ -161,7 +161,7 @@ export default function Page() {
                       {/* Dashboard Layout */}
                       <div className="flex bg-gray-100">
                         {/* Sidebar */}
-                        <div className="w-14 bg-white border-r border-gray-200 py-4 flex flex-col items-center gap-4">
+                        <div className="hidden sm:flex w-14 bg-white border-r border-gray-200 py-4 flex-col items-center gap-4">
                           <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center"><Hexagon className="w-4 h-4 text-white" /></div>
                           <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center"><LayoutDashboard className="w-4 h-4 text-primary" /></div>
                           <div className="w-8 h-8 hover:bg-gray-100 rounded-lg flex items-center justify-center"><BarChart3 className="w-4 h-4 text-gray-400" /></div>
@@ -284,7 +284,7 @@ export default function Page() {
                     </div>
                   </div>
                   {/* Floating Stats Card */}
-                  <div data-aos="fade-up" data-aos-delay="200" className="absolute -bottom-6 -left-6 glass-card rounded-xl p-4 shadow-xl">
+                  <div data-aos="fade-up" data-aos-delay="200" className="hidden sm:block absolute -bottom-6 -left-6 glass-card rounded-xl p-4 shadow-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                         <TrendingUp className="w-6 h-6 text-green-600" />
@@ -296,7 +296,7 @@ export default function Page() {
                     </div>
                   </div>
                   {/* Floating AI Card */}
-                  <div data-aos="fade-down" data-aos-delay="400" className="absolute -top-6 -right-6 glass-card rounded-xl p-4 shadow-xl">
+                  <div data-aos="fade-down" data-aos-delay="400" className="hidden sm:block absolute -top-6 -right-6 glass-card rounded-xl p-4 shadow-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center"><Brain className="w-6 h-6 text-primary" /></div>
                       <div>
