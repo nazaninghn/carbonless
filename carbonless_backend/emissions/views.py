@@ -1,0 +1,121 @@
+from rest_framework import viewsets, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.response import Response
+from django.db.models import Sum
+from .models import EmissionFactor, EmissionEntry, ReductionTarget
+from .serializers import (
+    EmissionFactorSerializer, EmissionEntrySerializer, ReductionTargetSerializer
+)
+from .calculator import calculate_emissions, get_available_countries
+
+
+class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
+    """List and retrieve emission factors (public)"""
+    queryset = EmissionFactor.objects.filter(is_active=True)
+    serializer_class = EmissionFactorSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        scope = self.request.query_params.get('scope')
+        category = self.request.query_params.get('category')
+        country = self.request.query_params.get('country')
+        if scope:
+            qs = qs.filter(scope=scope)
+        if category:
+            qs = qs.filter(category=category)
+        if country:
+            qs = qs.filter(country=country)
+        return qs
+
+
+class EmissionEntryViewSet(viewsets.ModelViewSet):
+    """CRUD for emission entries"""
+    serializer_class = EmissionEntrySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = EmissionEntry.objects.filter(user=self.request.user)
+        year = self.request.query_params.get('year')
+        scope = self.request.query_params.get('scope')
+        if year:
+            qs = qs.filter(year=year)
+        if scope:
+            qs = qs.filter(emission_factor__scope=scope)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class ReductionTargetViewSet(viewsets.ModelViewSet):
+    """CRUD for reduction targets"""
+    serializer_class = ReductionTargetSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ReductionTarget.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def emission_summary(request):
+    """Get emission summary for a given year"""
+    year = request.query_params.get('year', 2026)
+    entries = EmissionEntry.objects.filter(user=request.user, year=year)
+
+    total = entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0
+    scope1 = entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+    scope2 = entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+    scope3 = entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+
+    monthly = []
+    for m in range(1, 13):
+        month_total = entries.filter(month=m).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+        monthly.append({'month': m, 'total_kg': float(month_total)})
+
+    categories = entries.values('emission_factor__category').annotate(
+        total_kg=Sum('calculated_co2e_kg')
+    ).order_by('-total_kg')
+
+    return Response({
+        'year': int(year),
+        'total_kg': float(total),
+        'total_tonne': float(total) / 1000,
+        'scope1_kg': float(scope1),
+        'scope2_kg': float(scope2),
+        'scope3_kg': float(scope3),
+        'scope1_tonne': float(scope1) / 1000,
+        'scope2_tonne': float(scope2) / 1000,
+        'scope3_tonne': float(scope3) / 1000,
+        'monthly': monthly,
+        'by_category': [
+            {'category': c['emission_factor__category'], 'total_kg': float(c['total_kg'])}
+            for c in categories
+        ]
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def calculate_view(request):
+    """Quick calculation without saving"""
+    factor_id = request.data.get('factor_id')
+    activity_data = request.data.get('activity_data')
+    if not factor_id or activity_data is None:
+        return Response({'error': 'factor_id and activity_data required'}, status=400)
+    result = calculate_emissions(factor_id, float(activity_data))
+    if 'error' in result:
+        return Response(result, status=404)
+    return Response(result)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def countries_view(request):
+    """List available countries with emission factors"""
+    return Response(get_available_countries())
