@@ -90,7 +90,8 @@ export default function Chatbot({ language = 'tr' }) {
       o => selectedOptions.includes(o.key) && o.has_input
     );
     for (const opt of needsInput) {
-      if (!inputValues[opt.key]?.trim()) return;
+      const val = inputValues[opt.key];
+      if (val === undefined || val === null || String(val).trim() === '') return;
     }
 
     setLoading(true);
@@ -182,7 +183,11 @@ export default function Chatbot({ language = 'tr' }) {
     const needsInput = currentQuestion.options.filter(
       o => selectedOptions.includes(o.key) && o.has_input
     );
-    return needsInput.every(o => inputValues[o.key]?.trim());
+    return needsInput.every(o => {
+      const val = inputValues[o.key];
+      if (val === undefined || val === null || val === '') return false;
+      return String(val).trim().length > 0;
+    });
   })();
 
   return (
