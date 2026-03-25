@@ -57,4 +57,5 @@ export const api = {
   answerQuestion: (data) => request('/questionnaire/answer/', { method: 'POST', body: JSON.stringify(data) }),
   getQuestionnaireSessions: () => request('/questionnaire/sessions/'),
   resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
+  getQuestionnaireProfile: () => request('/questionnaire/profile/'),
 };

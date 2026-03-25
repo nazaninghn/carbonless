@@ -64,7 +64,7 @@ class ReductionTargetViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def emission_summary(request):
-    """Get emission summary for a given year"""
+    """Get emission summary for a given year, enriched with questionnaire profile"""
     year = request.query_params.get('year', 2026)
     entries = EmissionEntry.objects.filter(user=request.user, year=year)
 
@@ -82,6 +82,16 @@ def emission_summary(request):
         total_kg=Sum('calculated_co2e_kg')
     ).order_by('-total_kg')
 
+    # Get questionnaire profile if available
+    from questionnaire.models import QuestionnaireSession
+    from questionnaire.views import extract_profile
+    questionnaire_profile = None
+    session = QuestionnaireSession.objects.filter(
+        user=request.user, is_complete=True
+    ).first()
+    if session:
+        questionnaire_profile = extract_profile(session)
+
     return Response({
         'year': int(year),
         'total_kg': float(total),
@@ -96,7 +106,8 @@ def emission_summary(request):
         'by_category': [
             {'category': c['emission_factor__category'], 'total_kg': float(c['total_kg'])}
             for c in categories
-        ]
+        ],
+        'questionnaire_profile': questionnaire_profile,
     })
 
 

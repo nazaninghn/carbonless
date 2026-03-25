@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, RotateCcw, AlertTriangle, CheckCircle2, ChevronDown } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
-export default function Chatbot({ language = 'tr' }) {
+export default function Chatbot({ language = 'tr', onComplete }) {
   const [open, setOpen] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -149,6 +149,8 @@ export default function Chatbot({ language = 'tr' }) {
               ? '✅ Prsşname tamamlandı! Cevaplarınız kaydedildi. Artık emisyon verilerinizi girmeye başlayabilirsiniz.'
               : '✅ Questionnaire complete! Your answers have been saved. You can now start entering emission data.',
           }]);
+          // Notify parent to refresh data
+          if (onComplete) onComplete();
         } else if (data.question) {
           setTimeout(() => {
             setMessages(prev => [...prev, { type: 'question', data: data.question }]);

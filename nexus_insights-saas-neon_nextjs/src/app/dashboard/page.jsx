@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [factors, setFactors] = useState([]);
   const [targets, setTargets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [questionnaireProfile, setQuestionnaireProfile] = useState(null);
 
   // Add Entry form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -53,7 +54,14 @@ export default function DashboardPage() {
         api.getTargets(),
         api.getProfile(),
       ]);
-      if (summaryRes.ok) setSummary(await summaryRes.json());
+      if (summaryRes.ok) {
+        const data = await summaryRes.json();
+        setSummary(data);
+        // Extract questionnaire profile from summary
+        if (data.questionnaire_profile) {
+          setQuestionnaireProfile(data.questionnaire_profile);
+        }
+      }
       if (entriesRes.ok) {
         const data = await entriesRes.json();
         setEntries(Array.isArray(data) ? data : data.results || []);
@@ -91,6 +99,12 @@ export default function DashboardPage() {
     if (selectedScope) match = match && f.scope === selectedScope;
     if (selectedCategory) match = match && f.category === selectedCategory;
     if (selectedCountry) match = match && f.country === selectedCountry;
+    // Filter by preferred source from questionnaire (S7)
+    if (questionnaireProfile?.preferred_factor_source && questionnaireProfile.preferred_factor_source !== 'mixed' && questionnaireProfile.preferred_factor_source !== 'unsure') {
+      const sourceMap = { national: ['turkey_grid', 'turkey_fleet', 'atom_kablo'], defra: ['defra_2024'], ipcc: ['ipcc_2006', 'ipcc_2019'] };
+      const preferredSources = sourceMap[questionnaireProfile.preferred_factor_source];
+      if (preferredSources) match = match && preferredSources.includes(f.source);
+    }
     return match;
   });
 
@@ -250,6 +264,30 @@ export default function DashboardPage() {
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
+              {/* Questionnaire Status Banner */}
+              {questionnaireProfile && !questionnaireProfile.is_complete && (
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-900">{language === 'tr' ? 'Karbon envanteri prsşnamesini tamamlayın' : 'Complete the carbon inventory questionnaire'}</p>
+                    <p className="text-xs text-amber-700">{language === 'tr' ? 'Sağ alttaki chatbot ile prsşnameyi tamamlayarak raporlama yapılandırmanızı belirleyin.' : 'Use the chatbot (bottom right) to configure your reporting setup.'}</p>
+                  </div>
+                </div>
+              )}
+              {questionnaireProfile?.is_complete && questionnaireProfile?.preferred_factor_source && questionnaireProfile.preferred_factor_source !== 'mixed' && questionnaireProfile.preferred_factor_source !== 'unsure' && (
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Leaf className="w-4 h-4 text-green-600" />
+                  </div>
+                  <p className="text-xs text-green-800">
+                    {language === 'tr' ? `Emisyon faktörleri tercihinize göre filtreleniyor: ` : `Emission factors filtered by your preference: `}
+                    <span className="font-semibold">{{ national: language === 'tr' ? 'Ulusal Kaynaklar' : 'National Sources', defra: 'DEFRA', ipcc: 'IPCC' }[questionnaireProfile.preferred_factor_source]}</span>
+                  </p>
+                </div>
+              )}
+
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Emisyon Profili' : 'Emission Profile'}</h1>
                 <p className="text-gray-600 mt-1">{language === 'tr' ? 'Şirketinizin karbon emisyon verilerine genel bakış' : 'Overview of your company carbon emission data'}</p>
@@ -538,6 +576,8 @@ export default function DashboardPage() {
                 <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Raporlama' : 'Reporting'}</h1>
                 <p className="text-gray-600 mt-1">{language === 'tr' ? 'ISO 14064-1 uyumlu raporlar' : 'ISO 14064-1 compliant reports'}</p>
               </div>
+
+              {/* Summary Stats */}
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                   <div className="py-8">
@@ -554,6 +594,116 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Questionnaire Profile - Inventory Configuration */}
+              {questionnaireProfile?.is_complete && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-primary" />
+                    </div>
+                    {language === 'tr' ? 'Envanter Yapılandırması' : 'Inventory Configuration'}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Reporting Period */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Raporlama Dönemi' : 'Reporting Period'}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {questionnaireProfile.period_type === 'calendar_year' && `${language === 'tr' ? 'Takvim Yılı' : 'Calendar Year'}: ${questionnaireProfile.period_year || ''}`}
+                        {questionnaireProfile.period_type === 'fiscal_year' && (language === 'tr' ? 'Mali Yıl' : 'Fiscal Year')}
+                        {questionnaireProfile.period_type === 'custom' && (language === 'tr' ? 'Özel Dönem' : 'Custom Period')}
+                      </p>
+                    </div>
+                    {/* Base Year */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {questionnaireProfile.has_base_year ? questionnaireProfile.base_year : (language === 'tr' ? 'Belirlenmedi' : 'Not set')}
+                      </p>
+                    </div>
+                    {/* Factor Source */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Emisyon Faktör Kaynağı' : 'Emission Factor Source'}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {{ national: language === 'tr' ? 'Ulusal Kaynaklar' : 'National Sources', defra: 'DEFRA', ipcc: 'IPCC', mixed: language === 'tr' ? 'Karışık' : 'Mixed', unsure: language === 'tr' ? 'Belirsiz' : 'Unsure' }[questionnaireProfile.preferred_factor_source] || questionnaireProfile.preferred_factor_source}
+                      </p>
+                    </div>
+                    {/* Purpose */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Amaç' : 'Purpose'}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {(questionnaireProfile.purposes || []).map(p => (
+                          <span key={p} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
+                            {{ iso_14064_verification: 'ISO 14064-1', internal_reporting: language === 'tr' ? 'İç Raporlama' : 'Internal', group_reporting: language === 'tr' ? 'Grup' : 'Group', financing: language === 'tr' ? 'Finansman' : 'Financing', export_pressure: language === 'tr' ? 'İhracat' : 'Export', other: language === 'tr' ? 'Diğer' : 'Other' }[p] || p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Verification */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? '3. Taraf Doğrulama' : '3rd Party Verification'}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {questionnaireProfile.verification_planned ? `✅ ${language === 'tr' ? 'Planlandı' : 'Planned'}${questionnaireProfile.verification_date ? ` (${questionnaireProfile.verification_date})` : ''}` : questionnaireProfile.verification_within_12m ? `📅 ${language === 'tr' ? '12 ay içinde' : 'Within 12 months'}` : `❌ ${language === 'tr' ? 'Plan yok' : 'No plan'}`}
+                      </p>
+                    </div>
+                    {/* Report Language */}
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Rapor Dili' : 'Report Language'}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {{ tr: language === 'tr' ? 'Türkçe' : 'Turkish', en: language === 'tr' ? 'İngilizce' : 'English', bilingual: language === 'tr' ? 'Çift Dilli' : 'Bilingual' }[questionnaireProfile.report_language] || questionnaireProfile.report_language}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Warnings */}
+                  {questionnaireProfile.warnings?.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <p className="text-xs font-medium text-amber-700">{language === 'tr' ? 'Uyarılar' : 'Warnings'}</p>
+                      {questionnaireProfile.warnings.map((w, i) => (
+                        <div key={i} className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-xs text-amber-800">{language === 'tr' ? w.text_tr : w.text_en}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {!questionnaireProfile?.is_complete && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-4">
+                  <AlertCircle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h3 className="font-semibold text-amber-900 mb-1">{language === 'tr' ? 'Prsşname Tamamlanmadı' : 'Questionnaire Not Complete'}</h3>
+                    <p className="text-sm text-amber-700">{language === 'tr' ? 'Envanter yapılandırması için lütfen sağ alttaki chatbot ile prsşnameyi tamamlayın.' : 'Please complete the questionnaire via the chatbot (bottom right) to configure your inventory.'}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Scope Breakdown for Report */}
+              {entries.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'Kapsam Dağılımı (Rapor Özeti)' : 'Scope Breakdown (Report Summary)'}</h3>
+                  <div className="space-y-4">
+                    {['scope1', 'scope2', 'scope3'].map(scope => {
+                      const scopeTotal = scope === 'scope1' ? summary?.scope1_tonne : scope === 'scope2' ? summary?.scope2_tonne : summary?.scope3_tonne;
+                      const pct = summary?.total_tonne > 0 ? ((scopeTotal || 0) / summary.total_tonne * 100) : 0;
+                      return (
+                        <div key={scope}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-700">{scope === 'scope1' ? 'Scope 1' : scope === 'scope2' ? 'Scope 2' : 'Scope 3'}</span>
+                            <span className="text-sm text-gray-600">{(scopeTotal || 0).toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div className={`h-2.5 rounded-full ${scope === 'scope1' ? 'bg-red-500' : scope === 'scope2' ? 'bg-yellow-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
                 <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{language === 'tr' ? 'PDF Rapor (Yakında)' : 'PDF Report (Coming Soon)'}</h3>
@@ -579,7 +729,7 @@ export default function DashboardPage() {
       {sidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-40 lg:hidden" />}
 
       {/* Questionnaire Chatbot */}
-      <Chatbot language={language} />
+      <Chatbot language={language} onComplete={fetchData} />
     </div>
   );
 }
