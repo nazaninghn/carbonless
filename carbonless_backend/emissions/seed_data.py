@@ -58,6 +58,7 @@ EMISSION_FACTORS = [
     {'slug': 'car-lpg', 'name': 'Car – LPG (Turkey)', 'name_tr': 'Otomobil – LPG (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.163, 'source': 'turkey_fleet', 'reference': 'Turkey LPG vehicles 2025'},
     {'slug': 'car-electric', 'name': 'Car – Electric (Turkey)', 'name_tr': 'Otomobil – Elektrikli (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.045, 'source': 'turkey_fleet', 'reference': 'EVs on Turkey grid 2025'},
     {'slug': 'car-hybrid', 'name': 'Car – Hybrid (Turkey)', 'name_tr': 'Otomobil – Hibrit (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.089, 'source': 'turkey_fleet', 'reference': 'Hybrid vehicles 2025'},
+    {'slug': 'motorin-mobile', 'name': 'Diesel/Motorin – mobile (Turkey)', 'name_tr': 'Motorin – hareketli yanma (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'liters', 'factor_kg_co2e': 2.696, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Sheet 1.2 HAR. YANMA (NKD+density+EF)'},
 
     # ============================================
     # SCOPE 1 - FUGITIVE EMISSIONS
@@ -79,7 +80,7 @@ EMISSION_FACTORS = [
     {'slug': 'renewable', 'name': '100% renewable', 'name_tr': '%100 yenilenebilir', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.0, 'source': 'generic', 'reference': ''},
 
     # SCOPE 2 - ELECTRICITY (Turkey)
-    {'slug': 'turkey-grid', 'name': 'Turkey national grid', 'name_tr': 'Türkiye ulusal şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.452, 'source': 'turkey_grid', 'reference': 'Turkey Energy Strategy 2025 – projected mix'},
+    {'slug': 'turkey-grid', 'name': 'Turkey national grid', 'name_tr': 'Türkiye ulusal şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.4199, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Şıt 2 İTHAL ENERJİ (CO2=0.4183 + CH4=0.0001 + N2O=0.0015)'},
 
     # SCOPE 2 - STEAM, HEAT & COOLING (Global)
     {'slug': 'district-heating', 'name': 'District heating', 'name_tr': 'Bölgesel ısıtma', 'scope': 'scope2', 'category': 'steam_heat', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.233, 'source': 'generic', 'reference': ''},
@@ -96,6 +97,10 @@ EMISSION_FACTORS = [
     # ============================================
     {'slug': 'water-supply', 'name': 'Water supply', 'name_tr': 'Su temini', 'scope': 'scope3', 'category': 'water', 'country': 'global', 'unit': 'm3', 'factor_kg_co2e': 0.15311, 'source': 'defra_2024', 'reference': 'Defra 2024 – Water supply (cubic metres)'},
     {'slug': 'water-treatment', 'name': 'Wastewater treatment', 'name_tr': 'Atık su arıtma', 'scope': 'scope3', 'category': 'water', 'country': 'global', 'unit': 'm3', 'factor_kg_co2e': 0.18574, 'source': 'defra_2024', 'reference': 'Defra 2024 – Water treatment (cubic metres)'},
+
+    # SCOPE 3 - WATER (Turkey / ATOM KABLO ISO 14064-1)
+    {'slug': 'water-supply', 'name': 'Water supply (Turkey)', 'name_tr': 'Su temini (Türkiye)', 'scope': 'scope3', 'category': 'water', 'country': 'turkey', 'unit': 'm3', 'factor_kg_co2e': 0.1766845466, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Sheet 4.3.2 KULL.&ATIK SU'},
+    {'slug': 'water-treatment', 'name': 'Wastewater treatment (Turkey)', 'name_tr': 'Atık su arıtma (Türkiye)', 'scope': 'scope3', 'category': 'water', 'country': 'turkey', 'unit': 'm3', 'factor_kg_co2e': 0.2013182917, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Sheet 4.3.2 KULL.&ATIK SU'},
 
     # ============================================
     # SCOPE 3 - PURCHASED GOODS (Global / Defra 2024)
@@ -147,6 +152,10 @@ EMISSION_FACTORS = [
     {'slug': 'sea-freight', 'name': 'Sea freight', 'name_tr': 'Deniz taşımacılığı', 'scope': 'scope3', 'category': 'upstream_transport', 'country': 'global', 'unit': 'tonne-km', 'factor_kg_co2e': 0.011, 'source': 'generic', 'reference': ''},
     {'slug': 'air-freight', 'name': 'Air freight', 'name_tr': 'Hava taşımacılığı', 'scope': 'scope3', 'category': 'upstream_transport', 'country': 'global', 'unit': 'tonne-km', 'factor_kg_co2e': 0.602, 'source': 'generic', 'reference': ''},
 
+    # SCOPE 3 - UPSTREAM TRANSPORTATION (Turkey / ATOM KABLO)
+    {'slug': 'truck-freight', 'name': 'Truck freight (Turkey)', 'name_tr': 'Kamyon taşımacılığı (Türkiye)', 'scope': 'scope3', 'category': 'upstream_transport', 'country': 'turkey', 'unit': 'tonne-km', 'factor_kg_co2e': 0.823134, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Sheet 3.1 HAMMADDE NAK.'},
+    {'slug': 'sea-freight', 'name': 'Sea freight (Turkey)', 'name_tr': 'Deniz taşımacılığı (Türkiye)', 'scope': 'scope3', 'category': 'upstream_transport', 'country': 'turkey', 'unit': 'tonne-km', 'factor_kg_co2e': 0.01611857, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Sheet 3.1 HAMMADDE NAK.'},
+
     # ============================================
     # SCOPE 3 - BUSINESS TRAVEL (Global)
     # ============================================
@@ -156,6 +165,9 @@ EMISSION_FACTORS = [
     {'slug': 'train-travel', 'name': 'Train', 'name_tr': 'Tren', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.041, 'source': 'generic', 'reference': ''},
     {'slug': 'taxi', 'name': 'Taxi', 'name_tr': 'Taksi', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.171, 'source': 'generic', 'reference': ''},
     {'slug': 'bus-travel', 'name': 'Bus', 'name_tr': 'Otobüs', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.089, 'source': 'generic', 'reference': ''},
+
+    # SCOPE 3 - BUSINESS TRAVEL (Turkey / ATOM KABLO)
+    {'slug': 'road-travel', 'name': 'Road travel (Turkey)', 'name_tr': 'Karayolu seyahati (Türkiye)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.169826449, 'source': 'atom_kablo', 'reference': 'ATOM KABLO ISO 14064-1 2023 – Sheet 3.5 SEYAHAT (CO2+CH4+N2O)'},
 
     # ============================================
     # SCOPE 3 - EMPLOYEE COMMUTING (Global)
