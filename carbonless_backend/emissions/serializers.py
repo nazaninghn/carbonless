@@ -15,6 +15,8 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     category = serializers.CharField(source='emission_factor.category', read_only=True)
     unit = serializers.CharField(source='emission_factor.unit', read_only=True)
     country = serializers.CharField(source='emission_factor.country', read_only=True)
+    factor_year_used = serializers.IntegerField(source='emission_factor.year', read_only=True)
+    source_dataset = serializers.CharField(source='emission_factor.source', read_only=True)
     calculated_co2e_tonne = serializers.DecimalField(
         max_digits=16, decimal_places=4, read_only=True
     )
@@ -26,6 +28,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'emission_factor_name_tr', 'scope', 'category', 'unit',
             'country', 'year', 'month', 'quantity',
             'calculated_co2e_kg', 'calculated_co2e_tonne',
+            'factor_year_used', 'source_dataset',
             'description', 'facility', 'created_at', 'updated_at'
         ]
         read_only_fields = ['calculated_co2e_kg', 'created_at', 'updated_at']

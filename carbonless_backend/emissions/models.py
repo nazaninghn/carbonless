@@ -79,6 +79,8 @@ class EmissionFactor(models.Model):
     country = models.CharField(max_length=10, choices=COUNTRY_CHOICES, default='global')
     unit = models.CharField(max_length=20, choices=UNIT_CHOICES)
     factor_kg_co2e = models.DecimalField(max_digits=14, decimal_places=6, help_text='kg CO2e per unit')
+    year = models.IntegerField(default=2024, help_text='Factor reference year (hidden from user)')
+    is_default = models.BooleanField(default=True, help_text='Default factor for this slug+country+category')
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='defra_2024')
     reference = models.TextField(blank=True, help_text='Source reference text')
     is_active = models.BooleanField(default=True)
@@ -88,7 +90,7 @@ class EmissionFactor(models.Model):
 
     class Meta:
         ordering = ['scope', 'category', 'name']
-        unique_together = ['slug', 'country']
+        unique_together = ['slug', 'country', 'year']
 
 
 class EmissionEntry(models.Model):

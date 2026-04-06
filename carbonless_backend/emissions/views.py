@@ -11,8 +11,8 @@ from .calculator import calculate_emissions, get_available_countries
 
 
 class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
-    """List and retrieve emission factors (public)"""
-    queryset = EmissionFactor.objects.filter(is_active=True)
+    """List and retrieve emission factors — returns only active defaults"""
+    queryset = EmissionFactor.objects.filter(is_active=True, is_default=True)
     serializer_class = EmissionFactorSerializer
     permission_classes = [AllowAny]
 
@@ -21,12 +21,15 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
         scope = self.request.query_params.get('scope')
         category = self.request.query_params.get('category')
         country = self.request.query_params.get('country')
+        source = self.request.query_params.get('source')
         if scope:
             qs = qs.filter(scope=scope)
         if category:
             qs = qs.filter(category=category)
         if country:
             qs = qs.filter(country=country)
+        if source:
+            qs = qs.filter(source=source)
         return qs
 
 
@@ -114,15 +117,40 @@ def emission_summary(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def calculate_view(request):
-    """Quick calculation without saving"""
+    """Quick calculation without saving — supports both factor_id and slug-based lookup"""
     factor_id = request.data.get('factor_id')
+    slug = request.data.get('slug') or request.data.get('source')
     activity_data = request.data.get('activity_data')
-    if not factor_id or activity_data is None:
-        return Response({'error': 'factor_id and activity_data required'}, status=400)
-    result = calculate_emissions(factor_id, float(activity_data))
-    if 'error' in result:
-        return Response(result, status=404)
-    return Response(result)
+    year = request.data.get('year')  # optional
+
+    if activity_data is None:
+        return Response({'error': 'activity_data required'}, status=400)
+
+    activity_data = float(activity_data)
+    if year is not None:
+        year = int(year)
+
+    # Method 1: by factor_id (dashboard form)
+    if factor_id:
+        result = calculate_emissions(int(factor_id), activity_data)
+        if 'error' in result:
+            return Response(result, status=404)
+        return Response(result)
+
+    # Method 2: by slug + country + category (production API)
+    if slug:
+        country = request.data.get('country', 'global')
+        category = request.data.get('category')
+        if not category:
+            return Response({'error': 'category required for slug-based lookup'}, status=400)
+
+        from .calculator import calculate_by_slug
+        result = calculate_by_slug(slug, country, category, activity_data, year)
+        if 'error' in result:
+            return Response(result, status=404)
+        return Response(result)
+
+    return Response({'error': 'factor_id or slug+category required'}, status=400)
 
 
 @api_view(['GET'])

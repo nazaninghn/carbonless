@@ -99,8 +99,9 @@ export default function DashboardPage() {
     if (selectedScope) match = match && f.scope === selectedScope;
     if (selectedCategory) match = match && f.category === selectedCategory;
     if (selectedCountry) match = match && f.country === selectedCountry;
-    // Filter by preferred source from questionnaire (S7)
-    if (questionnaireProfile?.preferred_factor_source && questionnaireProfile.preferred_factor_source !== 'mixed' && questionnaireProfile.preferred_factor_source !== 'unsure') {
+    // Filter by preferred source from questionnaire (S7) — only for global factors
+    // Turkey factors always use national/ATOM KABLO sources regardless of preference
+    if (selectedCountry !== 'turkey' && questionnaireProfile?.preferred_factor_source && questionnaireProfile.preferred_factor_source !== 'mixed' && questionnaireProfile.preferred_factor_source !== 'unsure') {
       const sourceMap = { national: ['turkey_grid', 'turkey_fleet', 'atom_kablo'], defra: ['defra_2024'], ipcc: ['ipcc_2006', 'ipcc_2019'] };
       const preferredSources = sourceMap[questionnaireProfile.preferred_factor_source];
       if (preferredSources) match = match && preferredSources.includes(f.source);
