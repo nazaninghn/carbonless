@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import EmissionFactor, EmissionEntry, ReductionTarget
+from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissionRequest
 
 
 class EmissionFactorSerializer(serializers.ModelSerializer):
@@ -39,3 +39,21 @@ class ReductionTargetSerializer(serializers.ModelSerializer):
         model = ReductionTarget
         fields = '__all__'
         read_only_fields = ['user', 'created_at']
+
+
+class CustomEmissionRequestSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = CustomEmissionRequest
+        fields = [
+            'id', 'username', 'scope', 'category_name', 'source_name',
+            'description', 'unit', 'quantity', 'year', 'month', 'facility',
+            'status', 'admin_notes', 'approved_factor_kg_co2e',
+            'calculated_co2e_kg', 'linked_entry',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'user', 'status', 'admin_notes', 'approved_factor_kg_co2e',
+            'calculated_co2e_kg', 'linked_entry', 'created_at', 'updated_at'
+        ]

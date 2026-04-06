@@ -52,6 +52,10 @@ export const api = {
   getTargets: () => request('/emissions/targets/'),
   createTarget: (data) => request('/emissions/targets/', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Custom Emission Requests
+  getCustomRequests: () => request('/emissions/custom-requests/'),
+  createCustomRequest: (data) => request('/emissions/custom-requests/', { method: 'POST', body: JSON.stringify(data) }),
+
   // Questionnaire
   startQuestionnaire: (lang) => request('/questionnaire/start/', { method: 'POST', body: JSON.stringify({ lang }) }),
   answerQuestion: (data) => request('/questionnaire/answer/', { method: 'POST', body: JSON.stringify(data) }),

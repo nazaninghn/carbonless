@@ -3,9 +3,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.db.models import Sum
-from .models import EmissionFactor, EmissionEntry, ReductionTarget
+from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissionRequest
 from .serializers import (
-    EmissionFactorSerializer, EmissionEntrySerializer, ReductionTargetSerializer
+    EmissionFactorSerializer, EmissionEntrySerializer,
+    ReductionTargetSerializer, CustomEmissionRequestSerializer
 )
 from .calculator import calculate_emissions, get_available_countries
 
@@ -64,6 +65,19 @@ class ReductionTargetViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
+    """User submits custom emission requests when no factor exists.
+    Users can create/list their own. Admin can see all via admin panel."""
+    serializer_class = CustomEmissionRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return CustomEmissionRequest.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def emission_summary(request):
@@ -95,6 +109,25 @@ def emission_summary(request):
     if session:
         questionnaire_profile = extract_profile(session)
 
+    # Custom emission requests (approved)
+    custom_approved = CustomEmissionRequest.objects.filter(
+        user=request.user, year=year, status='approved', calculated_co2e_kg__isnull=False
+    )
+    custom_total = custom_approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+    custom_pending = CustomEmissionRequest.objects.filter(
+        user=request.user, year=year, status='pending'
+    ).count()
+
+    # Add custom approved to scope totals
+    for cr in custom_approved:
+        if cr.scope == 'scope1':
+            scope1 += float(cr.calculated_co2e_kg)
+        elif cr.scope == 'scope2':
+            scope2 += float(cr.calculated_co2e_kg)
+        else:
+            scope3 += float(cr.calculated_co2e_kg)
+    total += float(custom_total)
+
     return Response({
         'year': int(year),
         'total_kg': float(total),
@@ -110,6 +143,10 @@ def emission_summary(request):
             {'category': c['emission_factor__category'], 'total_kg': float(c['total_kg'])}
             for c in categories
         ],
+        'custom_emissions': {
+            'approved_total_kg': float(custom_total),
+            'pending_count': custom_pending,
+        },
         'questionnaire_profile': questionnaire_profile,
     })
 

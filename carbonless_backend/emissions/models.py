@@ -151,3 +151,54 @@ class ReductionTarget(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.target_reduction_percent}%"
+
+
+class CustomEmissionRequest(models.Model):
+    """User-submitted custom emission data when no matching factor exists.
+    Admin reviews and optionally creates a proper EmissionFactor + Entry."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+
+    SCOPE_CHOICES = EmissionFactor.SCOPE_CHOICES
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='custom_emission_requests')
+
+    # What the user wants to report
+    scope = models.CharField(max_length=10, choices=SCOPE_CHOICES)
+    category_name = models.CharField(max_length=255, help_text='User-described category')
+    source_name = models.CharField(max_length=255, help_text='User-described emission source')
+    description = models.TextField(help_text='Detailed description of the emission activity')
+    unit = models.CharField(max_length=50, help_text='Unit of measurement (e.g. liters, kg, kWh)')
+    quantity = models.DecimalField(max_digits=14, decimal_places=4, help_text='Amount consumed')
+    year = models.IntegerField()
+    month = models.IntegerField(choices=[(i, i) for i in range(1, 13)])
+    facility = models.CharField(max_length=255, blank=True)
+
+    # Admin review
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    admin_notes = models.TextField(blank=True, help_text='Admin review notes')
+    approved_factor_kg_co2e = models.DecimalField(
+        max_digits=14, decimal_places=6, null=True, blank=True,
+        help_text='Factor assigned by admin after review'
+    )
+    calculated_co2e_kg = models.DecimalField(
+        max_digits=16, decimal_places=4, null=True, blank=True,
+        help_text='Calculated after admin approval'
+    )
+    linked_entry = models.ForeignKey(
+        EmissionEntry, on_delete=models.SET_NULL, null=True, blank=True,
+        help_text='EmissionEntry created after approval'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.source_name} ({self.get_status_display()})"
+
+    class Meta:
+        ordering = ['-created_at']

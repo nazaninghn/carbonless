@@ -6,6 +6,7 @@ router = DefaultRouter()
 router.register(r'factors', views.EmissionFactorViewSet)
 router.register(r'entries', views.EmissionEntryViewSet, basename='emission-entry')
 router.register(r'targets', views.ReductionTargetViewSet, basename='reduction-target')
+router.register(r'custom-requests', views.CustomEmissionRequestViewSet, basename='custom-emission-request')
 
 urlpatterns = [
     path('', include(router.urls)),

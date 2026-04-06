@@ -20,3 +20,33 @@ class EmissionEntryAdmin(admin.ModelAdmin):
 class ReductionTargetAdmin(admin.ModelAdmin):
     list_display = ['user', 'title', 'base_year', 'target_year', 'target_reduction_percent', 'status']
     list_filter = ['status']
+
+
+from .models import CustomEmissionRequest
+
+
+@admin.register(CustomEmissionRequest)
+class CustomEmissionRequestAdmin(admin.ModelAdmin):
+    list_display = ['user', 'source_name', 'scope', 'category_name', 'quantity', 'unit', 'status', 'created_at']
+    list_filter = ['status', 'scope']
+    search_fields = ['user__username', 'source_name', 'category_name', 'description']
+    readonly_fields = ['user', 'created_at', 'updated_at']
+    fieldsets = (
+        ('User Request', {
+            'fields': ('user', 'scope', 'category_name', 'source_name', 'description',
+                       'unit', 'quantity', 'year', 'month', 'facility')
+        }),
+        ('Admin Review', {
+            'fields': ('status', 'admin_notes', 'approved_factor_kg_co2e',
+                       'calculated_co2e_kg', 'linked_entry')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
+        }),
+    )
+
+    def save_model(self, request, obj, form, change):
+        """Auto-calculate when admin approves with a factor"""
+        if obj.status == 'approved' and obj.approved_factor_kg_co2e and not obj.calculated_co2e_kg:
+            obj.calculated_co2e_kg = obj.quantity * obj.approved_factor_kg_co2e
+        super().save_model(request, obj, form, change)

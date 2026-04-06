@@ -44,15 +44,29 @@ export default function DashboardPage() {
   const [targetBaseEmissions, setTargetBaseEmissions] = useState('');
   const [targetReductionPercent, setTargetReductionPercent] = useState('');
 
+  // Custom Emission Request form
+  const [showCustomForm, setShowCustomForm] = useState(false);
+  const [customScope, setCustomScope] = useState('scope1');
+  const [customCategory, setCustomCategory] = useState('');
+  const [customSource, setCustomSource] = useState('');
+  const [customDescription, setCustomDescription] = useState('');
+  const [customUnit, setCustomUnit] = useState('');
+  const [customQuantity, setCustomQuantity] = useState('');
+  const [customMonth, setCustomMonth] = useState(new Date().getMonth() + 1);
+  const [customFacility, setCustomFacility] = useState('');
+  const [customRequests, setCustomRequests] = useState([]);
+  const [customSubmitting, setCustomSubmitting] = useState(false);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes] = await Promise.all([
+      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes] = await Promise.all([
         api.getSummary(selectedYear),
         api.getEntries(`year=${selectedYear}`),
         api.getFactors(),
         api.getTargets(),
         api.getProfile(),
+        api.getCustomRequests(),
       ]);
       if (summaryRes.ok) {
         const data = await summaryRes.json();
@@ -75,6 +89,10 @@ export default function DashboardPage() {
         setTargets(Array.isArray(data) ? data : data.results || []);
       }
       if (profileRes.ok) setUser(await profileRes.json());
+      if (customRes.ok) {
+        const data = await customRes.json();
+        setCustomRequests(Array.isArray(data) ? data : data.results || []);
+      }
     } catch (err) {
       console.error('Failed to fetch:', err);
     } finally {
@@ -181,6 +199,29 @@ export default function DashboardPage() {
       setTargetTitle(''); setTargetBaseEmissions(''); setTargetReductionPercent('');
       fetchData();
     }
+  };
+
+  const handleCustomRequest = async (e) => {
+    e.preventDefault();
+    setCustomSubmitting(true);
+    const res = await api.createCustomRequest({
+      scope: customScope,
+      category_name: customCategory,
+      source_name: customSource,
+      description: customDescription,
+      unit: customUnit,
+      quantity: customQuantity,
+      year: selectedYear,
+      month: parseInt(customMonth),
+      facility: customFacility,
+    });
+    if (res.ok) {
+      setShowCustomForm(false);
+      setCustomScope('scope1'); setCustomCategory(''); setCustomSource('');
+      setCustomDescription(''); setCustomUnit(''); setCustomQuantity(''); setCustomFacility('');
+      fetchData();
+    }
+    setCustomSubmitting(false);
   };
 
   const months = language === 'tr'
@@ -362,9 +403,14 @@ export default function DashboardPage() {
                   <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Emisyon Yönetimi' : 'Emission Management'}</h1>
                   <p className="text-gray-600 mt-1">{language === 'tr' ? 'Emisyon verilerinizi girin ve yönetin' : 'Enter and manage your emission data'}</p>
                 </div>
-                <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
-                  <Plus className="w-4 h-4" />{language === 'tr' ? 'Yeni Kayıt' : 'New Entry'}
-                </button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
+                    <Plus className="w-4 h-4" />{language === 'tr' ? 'Yeni Kayıt' : 'New Entry'}
+                  </button>
+                  <button onClick={() => setShowCustomForm(true)} className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2">
+                    <Plus className="w-4 h-4" />{language === 'tr' ? 'Özel Talep' : 'Custom Request'}
+                  </button>
+                </div>
               </div>
 
               {/* Add Entry Modal */}
@@ -447,6 +493,87 @@ export default function DashboardPage() {
                         {submitting ? (language === 'tr' ? 'Kaydediliyor...' : 'Saving...') : (language === 'tr' ? 'Kaydet' : 'Save')}
                       </button>
                     </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Request Modal */}
+              {showCustomForm && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <h2 className="text-xl font-bold">{language === 'tr' ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
+                      <button onClick={() => setShowCustomForm(false)}><X className="w-5 h-5" /></button>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{language === 'tr' ? 'Listede olmayan bir emisyon kaynağı mı var? Bilgileri girin, admin inceleyip onaylasın.' : 'Emission source not in the list? Enter details and admin will review.'}</p>
+                    <form onSubmit={handleCustomRequest} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
+                        <select value={customScope} onChange={e => setCustomScope(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                          <option value="scope1">Scope 1 – {language === 'tr' ? 'Doğrudan' : 'Direct'}</option>
+                          <option value="scope2">Scope 2 – {language === 'tr' ? 'Enerji' : 'Energy'}</option>
+                          <option value="scope3">Scope 3 – {language === 'tr' ? 'Dolaylı' : 'Indirect'}</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Kategori Adı' : 'Category Name'} *</label>
+                        <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder={language === 'tr' ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
+                        <input type="text" value={customSource} onChange={e => setCustomSource(e.target.value)} placeholder={language === 'tr' ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'} *</label>
+                        <textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder={language === 'tr' ? 'Detaylı açıklama yazın...' : 'Write detailed description...'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={3} required />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Birim' : 'Unit'} *</label>
+                          <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} placeholder={language === 'tr' ? 'Örn: litre, kg, kWh' : 'e.g. liters, kg, kWh'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} *</label>
+                          <input type="number" step="any" value={customQuantity} onChange={e => setCustomQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
+                          <select value={customMonth} onChange={e => setCustomMonth(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                          <input type="text" value={customFacility} onChange={e => setCustomFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        </div>
+                      </div>
+                      <button type="submit" disabled={customSubmitting} className="w-full py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-60">
+                        {customSubmitting ? '...' : (language === 'tr' ? 'Talep Gönder' : 'Submit Request')}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Requests List */}
+              {customRequests.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'Özel Talepleriniz' : 'Your Custom Requests'}</h3>
+                  <div className="space-y-3">
+                    {customRequests.map(cr => (
+                      <div key={cr.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{cr.source_name}</p>
+                          <p className="text-xs text-gray-500">{cr.category_name} · {cr.quantity} {cr.unit}</p>
+                        </div>
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${cr.status === 'approved' ? 'bg-green-100 text-green-700' : cr.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {cr.status === 'approved' ? (language === 'tr' ? 'Onaylandı' : 'Approved') : cr.status === 'rejected' ? (language === 'tr' ? 'Reddedildi' : 'Rejected') : (language === 'tr' ? 'Beklemede' : 'Pending')}
+                          {cr.status === 'approved' && cr.calculated_co2e_kg && ` · ${(cr.calculated_co2e_kg / 1000).toFixed(4)} tCO2e`}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
