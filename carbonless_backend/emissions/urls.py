@@ -14,4 +14,6 @@ urlpatterns = [
     path('calculate/', views.calculate_view, name='emission-calculate'),
     path('countries/', views.countries_view, name='emission-countries'),
     path('report/', views.generate_report_view, name='emission-report'),
+    path('bulk-import/', views.bulk_import_view, name='emission-bulk-import'),
+    path('comparison/', views.comparison_view, name='emission-comparison'),
 ]

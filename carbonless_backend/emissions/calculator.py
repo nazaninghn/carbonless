@@ -7,6 +7,7 @@ Year is hidden from user by default; system picks best match.
 """
 from typing import Optional, Dict, Any
 from .models import EmissionFactor
+from .unit_converter import convert_unit
 
 
 def get_emission_factor(
@@ -40,7 +41,7 @@ def get_emission_factor(
     return qs.order_by('year').first()
 
 
-def calculate_emissions(factor_id: int, activity_data: float) -> Dict[str, Any]:
+def calculate_emissions(factor_id: int, activity_data: float, input_unit: str = None) -> Dict[str, Any]:
     """Calculate CO2e by factor primary key (used by dashboard entry form)."""
     try:
         factor = EmissionFactor.objects.get(pk=factor_id, is_active=True)
@@ -50,8 +51,14 @@ def calculate_emissions(factor_id: int, activity_data: float) -> Dict[str, Any]:
     if activity_data < 0:
         return {'error': 'Activity data cannot be negative'}
 
-    emissions_kg = float(activity_data) * float(factor.factor_kg_co2e)
-    return {
+    # Unit conversion if needed
+    converted_qty = float(activity_data)
+    unit_converted = False
+    if input_unit and input_unit.lower() != factor.unit.lower():
+        converted_qty, unit_converted = convert_unit(activity_data, input_unit, factor.unit)
+
+    emissions_kg = converted_qty * float(factor.factor_kg_co2e)
+    result = {
         'emissions_kg': round(emissions_kg, 4),
         'emissions_tonne': round(emissions_kg / 1000, 6),
         'factor_kg_co2e': float(factor.factor_kg_co2e),
@@ -65,6 +72,11 @@ def calculate_emissions(factor_id: int, activity_data: float) -> Dict[str, Any]:
         'factor_year_used': factor.year,
         'reference': factor.reference,
     }
+    if unit_converted:
+        result['input_unit'] = input_unit
+        result['converted_quantity'] = round(converted_qty, 4)
+        result['unit_converted'] = True
+    return result
 
 
 def calculate_by_slug(

@@ -211,3 +211,69 @@ def generate_report_view(request):
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="carbonless_report_{year}_{lang}.pdf"'
     return response
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bulk_import_view(request):
+    """Import emission entries from CSV/JSON data.
+    Expects: [{"factor_id": 1, "year": 2026, "month": 1, "quantity": 100, "description": "", "facility": ""}]
+    """
+    data = request.data
+    if not isinstance(data, list):
+        return Response({'error': 'Expected a list of entries'}, status=400)
+
+    created = 0
+    errors = []
+    for i, item in enumerate(data):
+        try:
+            factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
+            entry = EmissionEntry(
+                user=request.user,
+                emission_factor=factor,
+                year=item.get('year', 2026),
+                month=item.get('month', 1),
+                quantity=item['quantity'],
+                description=item.get('description', ''),
+                facility=item.get('facility', ''),
+            )
+            entry.save()
+            created += 1
+        except Exception as e:
+            errors.append(f'Row {i+1}: {str(e)}')
+
+    return Response({
+        'created': created,
+        'errors': errors,
+        'total_rows': len(data),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def comparison_view(request):
+    """Compare emissions between two years."""
+    year1 = int(request.query_params.get('year1', 2025))
+    year2 = int(request.query_params.get('year2', 2026))
+
+    def get_year_data(y):
+        qs = EmissionEntry.objects.filter(user=request.user, year=y)
+        total = qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+        s1 = qs.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+        s2 = qs.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+        s3 = qs.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+        return {'year': y, 'total_kg': float(total), 'total_tonne': float(total)/1000,
+                'scope1_tonne': float(s1)/1000, 'scope2_tonne': float(s2)/1000, 'scope3_tonne': float(s3)/1000}
+
+    d1 = get_year_data(year1)
+    d2 = get_year_data(year2)
+
+    change_pct = 0
+    if d1['total_kg'] > 0:
+        change_pct = ((d2['total_kg'] - d1['total_kg']) / d1['total_kg']) * 100
+
+    return Response({
+        'year1': d1, 'year2': d2,
+        'change_percent': round(change_pct, 2),
+        'change_direction': 'increase' if change_pct > 0 else 'decrease' if change_pct < 0 else 'no_change',
+    })
