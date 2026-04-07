@@ -363,6 +363,56 @@ export default function DashboardPage() {
               </div>
 
               {/* Category Breakdown */}
+              {/* Scope Visual Bars */}
+              {summary && summary.total_tonne > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'KAPSAM DAĞILIMI' : 'SCOPE DISTRIBUTION'}</h3>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Scope 1', val: summary.scope1_tonne, color: 'bg-red-500' },
+                      { label: 'Scope 2', val: summary.scope2_tonne, color: 'bg-yellow-500' },
+                      { label: 'Scope 3', val: summary.scope3_tonne, color: 'bg-blue-500' },
+                    ].map(s => {
+                      const pct = summary.total_tonne > 0 ? (s.val / summary.total_tonne * 100) : 0;
+                      return (
+                        <div key={s.label}>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium text-gray-700">{s.label}</span>
+                            <span className="text-sm text-gray-600">{s.val.toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div className={`h-3 rounded-full ${s.color} transition-all duration-500`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Monthly Trend */}
+              {summary?.monthly && summary.monthly.some(m => m.total_kg > 0) && (
+                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'AYLIK TREND' : 'MONTHLY TREND'}</h3>
+                  <div className="flex items-end gap-1 h-40">
+                    {summary.monthly.map((m, i) => {
+                      const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
+                      const pct = (m.total_kg / maxKg) * 100;
+                      return (
+                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                          <span className="text-xs text-gray-500">{m.total_kg > 0 ? (m.total_kg / 1000).toFixed(2) : ''}</span>
+                          <div className="w-full bg-gray-100 rounded-t flex-1 relative" style={{ minHeight: '4px' }}>
+                            <div className="absolute bottom-0 left-0 right-0 bg-primary/70 rounded-t transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 5 : 0)}%` }}></div>
+                          </div>
+                          <span className="text-xs text-gray-400">{months[i]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Category Breakdown */}
               {summary?.by_category?.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 p-6">
                   <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'KATEGORİ DAĞILIMI' : 'CATEGORY BREAKDOWN'}</h3>
@@ -832,10 +882,34 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{language === 'tr' ? 'PDF Rapor (Yakında)' : 'PDF Report (Coming Soon)'}</h3>
-                <p className="text-gray-600">{language === 'tr' ? 'ISO 14064-1 uyumlu PDF rapor oluşturma özelliği yakında eklenecek.' : 'ISO 14064-1 compliant PDF report generation coming soon.'}</p>
+              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                <FileText className="w-12 h-12 text-primary mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{language === 'tr' ? 'ISO 14064-1 PDF Rapor' : 'ISO 14064-1 PDF Report'}</h3>
+                <p className="text-gray-600 mb-6">{language === 'tr' ? 'Scope dağılımı, kategori detayları, metodoloji ve referanslar dahil profesyonel rapor.' : 'Professional report with scope breakdown, category details, methodology and references.'}</p>
+                <div className="flex justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      const token = localStorage.getItem('access_token');
+                      fetch(api.getReportUrl(selectedYear, 'tr'), { headers: { Authorization: `Bearer ${token}` } })
+                        .then(r => r.blob())
+                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_rapor_${selectedYear}_tr.pdf`; a.click(); });
+                    }}
+                    className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> Türkçe PDF
+                  </button>
+                  <button
+                    onClick={() => {
+                      const token = localStorage.getItem('access_token');
+                      fetch(api.getReportUrl(selectedYear, 'en'), { headers: { Authorization: `Bearer ${token}` } })
+                        .then(r => r.blob())
+                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_report_${selectedYear}_en.pdf`; a.click(); });
+                    }}
+                    className="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> English PDF
+                  </button>
+                </div>
               </div>
             </div>
           )}

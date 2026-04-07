@@ -13,4 +13,5 @@ urlpatterns = [
     path('summary/', views.emission_summary, name='emission-summary'),
     path('calculate/', views.calculate_view, name='emission-calculate'),
     path('countries/', views.countries_view, name='emission-countries'),
+    path('report/', views.generate_report_view, name='emission-report'),
 ]
