@@ -107,6 +107,8 @@ class EmissionEntry(models.Model):
 
     description = models.TextField(blank=True)
     facility = models.CharField(max_length=255, blank=True)
+    proof_document = models.FileField(upload_to='proofs/%Y/%m/', blank=True, null=True,
+                                       help_text='Upload invoice, receipt, or meter reading')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

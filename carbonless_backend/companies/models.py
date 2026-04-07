@@ -39,3 +39,22 @@ class Company(models.Model):
     
     class Meta:
         verbose_name_plural = "Companies"
+
+
+class Facility(models.Model):
+    """Individual facility/site belonging to a company"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='facilities')
+    name = models.CharField(max_length=255)
+    address = models.TextField(blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    facility_type = models.CharField(max_length=100, blank=True, help_text='e.g. Office, Factory, Warehouse')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.company.legal_entity_name})"
+
+    class Meta:
+        verbose_name_plural = "Facilities"
+        ordering = ['name']

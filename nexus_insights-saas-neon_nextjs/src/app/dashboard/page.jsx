@@ -5,7 +5,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { api } from '@/lib/utils/api';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut,
-  Menu, X, BarChart3, Target, Plus, Trash2, AlertCircle
+  Menu, X, BarChart3, Target, Plus, Trash2, AlertCircle, Bell
 } from 'lucide-react';
 import NextLink from 'next/link';
 import Chatbot from '@/components/Chatbot';
@@ -56,17 +56,21 @@ export default function DashboardPage() {
   const [customFacility, setCustomFacility] = useState('');
   const [customRequests, setCustomRequests] = useState([]);
   const [customSubmitting, setCustomSubmitting] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes] = await Promise.all([
+      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes, notifRes] = await Promise.all([
         api.getSummary(selectedYear),
         api.getEntries(`year=${selectedYear}`),
         api.getFactors(),
         api.getTargets(),
         api.getProfile(),
         api.getCustomRequests(),
+        api.getUnreadCount(),
       ]);
       if (summaryRes.ok) {
         const data = await summaryRes.json();
@@ -92,6 +96,10 @@ export default function DashboardPage() {
       if (customRes.ok) {
         const data = await customRes.json();
         setCustomRequests(Array.isArray(data) ? data : data.results || []);
+      }
+      if (notifRes.ok) {
+        const data = await notifRes.json();
+        setUnreadCount(data.unread_count || 0);
       }
     } catch (err) {
       console.error('Failed to fetch:', err);
@@ -292,6 +300,43 @@ export default function DashboardPage() {
               <option value="turkey">{language === 'tr' ? 'Türkiye' : 'Turkey'}</option>
               <option value="global">{language === 'tr' ? 'Global' : 'Global'}</option>
             </select>
+            {/* Notification Bell */}
+            <div className="relative">
+              <button onClick={async () => {
+                setShowNotifications(!showNotifications);
+                if (!showNotifications) {
+                  const res = await api.getNotifications();
+                  if (res.ok) setNotifications(await res.json());
+                }
+              }} className="p-2 hover:bg-gray-100 rounded-lg relative">
+                <Bell className="w-5 h-5 text-gray-600" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{unreadCount}</span>
+                )}
+              </button>
+              {showNotifications && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                  <div className="p-3 border-b border-gray-200 flex items-center justify-between">
+                    <span className="font-semibold text-sm">{language === 'tr' ? 'Bildirimler' : 'Notifications'}</span>
+                    {unreadCount > 0 && (
+                      <button onClick={async () => { await api.markNotificationsRead(); setUnreadCount(0); setNotifications(n => n.map(x => ({...x, is_read: true}))); }} className="text-xs text-primary">
+                        {language === 'tr' ? 'Tümünü okundu işaretle' : 'Mark all read'}
+                      </button>
+                    )}
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-gray-500">{language === 'tr' ? 'Bildirim yok' : 'No notifications'}</div>
+                  ) : (
+                    notifications.map(n => (
+                      <div key={n.id} className={`p-3 border-b border-gray-100 ${!n.is_read ? 'bg-primary/5' : ''}`}>
+                        <p className="text-sm font-medium text-gray-900">{n.title}</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

@@ -1,8 +1,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Company
-from .serializers import CompanySerializer
+from .models import Company, Facility
+from .serializers import CompanySerializer, FacilitySerializer
 
 
 class CompanyCreateView(generics.CreateAPIView):
@@ -20,3 +20,28 @@ class CompanyDetailView(generics.RetrieveUpdateAPIView):
     
     def get_object(self):
         return Company.objects.get(user=self.request.user)
+
+
+class FacilityListCreateView(generics.ListCreateAPIView):
+    serializer_class = FacilitySerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        try:
+            return Facility.objects.filter(company=self.request.user.company)
+        except Company.DoesNotExist:
+            return Facility.objects.none()
+
+    def perform_create(self, serializer):
+        serializer.save(company=self.request.user.company)
+
+
+class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = FacilitySerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        try:
+            return Facility.objects.filter(company=self.request.user.company)
+        except Company.DoesNotExist:
+            return Facility.objects.none()

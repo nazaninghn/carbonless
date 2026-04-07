@@ -40,6 +40,13 @@ export const api = {
     }),
 
   getProfile: () => request('/accounts/profile/'),
+  getNotifications: () => request('/accounts/notifications/'),
+  markNotificationsRead: (ids) => request('/accounts/notifications/read/', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) }),
+  getUnreadCount: () => request('/accounts/notifications/unread-count/'),
+
+  // Facilities
+  getFacilities: () => request('/companies/facilities/'),
+  createFacility: (data) => request('/companies/facilities/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Emissions
   getFactors: (params = '') => request(`/emissions/factors/${params ? '?' + params : ''}`),

@@ -32,3 +32,29 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
         return user
+
+
+from .models import UserProfile
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.CharField(source='user.email', read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'username', 'email', 'role', 'phone', 'department',
+                  'can_edit_entries', 'can_manage_users', 'can_approve_requests',
+                  'can_generate_reports']
+        read_only_fields = ['can_edit_entries', 'can_manage_users',
+                           'can_approve_requests', 'can_generate_reports']
+
+
+from .models import Notification
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'notification_type', 'title', 'message', 'is_read', 'link', 'created_at']
+        read_only_fields = ['notification_type', 'title', 'message', 'link', 'created_at']
