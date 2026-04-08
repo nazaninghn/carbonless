@@ -5,7 +5,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { api } from '@/lib/utils/api';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut,
-  Menu, X, BarChart3, Target, Plus, Trash2, AlertCircle, Bell
+  Menu, X, BarChart3, Target, Plus, Trash2, AlertCircle, Bell, Pencil
 } from 'lucide-react';
 import NextLink from 'next/link';
 import Chatbot from '@/components/Chatbot';
@@ -65,11 +65,16 @@ export default function DashboardPage() {
   const [entrySearch, setEntrySearch] = useState('');
   const [entryFilterScope, setEntryFilterScope] = useState('');
   const [pdfLoading, setPdfLoading] = useState('');
+  const [editingEntry, setEditingEntry] = useState(null);
+  const [editQuantity, setEditQuantity] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editFacility, setEditFacility] = useState('');
+  const [facilityList, setFacilityList] = useState([]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes, notifRes] = await Promise.all([
+      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes, notifRes, facilityRes] = await Promise.all([
         api.getSummary(selectedYear),
         api.getEntries(`year=${selectedYear}`),
         api.getFactors(),
@@ -77,6 +82,7 @@ export default function DashboardPage() {
         api.getProfile(),
         api.getCustomRequests(),
         api.getUnreadCount(),
+        api.getFacilities(),
       ]);
       if (summaryRes.ok) {
         const data = await summaryRes.json();
@@ -106,6 +112,10 @@ export default function DashboardPage() {
       if (notifRes.ok) {
         const data = await notifRes.json();
         setUnreadCount(data.unread_count || 0);
+      }
+      if (facilityRes.ok) {
+        const data = await facilityRes.json();
+        setFacilityList(Array.isArray(data) ? data : data.results || []);
       }
     } catch (err) {
       console.error('Failed to fetch:', err);
@@ -199,6 +209,20 @@ export default function DashboardPage() {
     if (!confirm(language === 'tr' ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?')) return;
     await api.deleteEntry(id);
     fetchData();
+  };
+
+  const handleEditEntry = async (e) => {
+    e.preventDefault();
+    if (!editingEntry) return;
+    const res = await api.updateEntry(editingEntry.id, {
+      quantity: editQuantity,
+      description: editDescription,
+      facility: editFacility,
+    });
+    if (res.ok) {
+      setEditingEntry(null);
+      fetchData();
+    }
   };
 
   const handleAddTarget = async (e) => {
@@ -585,7 +609,7 @@ export default function DashboardPage() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} {selectedFactorObj ? `(${selectedFactorObj.unit})` : ''}</label>
-                          <input type="number" step="any" value={entryQuantity} onChange={e => setEntryQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                          <input type="number" step="any" min="0" value={entryQuantity} onChange={e => setEntryQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
                         </div>
                       </div>
 
@@ -600,7 +624,10 @@ export default function DashboardPage() {
                       )}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                        <input type="text" value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <option value="">{language === 'tr' ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
+                          {facilityList.map(f => <option key={f.id} value={f.name}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
+                        </select>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
@@ -735,11 +762,44 @@ export default function DashboardPage() {
                             <td className="px-4 py-3 text-right">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</td>
                             <td className="px-4 py-3 text-right font-medium">{parseFloat(entry.calculated_co2e_kg).toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                             <td className="px-4 py-3 text-right">{(parseFloat(entry.calculated_co2e_kg) / 1000).toFixed(4)}</td>
-                            <td className="px-4 py-3 text-right"><button onClick={() => handleDeleteEntry(entry.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button></td>
+                            <td className="px-4 py-3 text-right flex gap-1 justify-end">
+                              <button onClick={() => { setEditingEntry(entry); setEditQuantity(entry.quantity); setEditDescription(entry.description || ''); setEditFacility(entry.facility || ''); }} className="text-gray-400 hover:text-primary"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteEntry(entry.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+              {/* Edit Entry Modal */}
+              {editingEntry && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl w-full max-w-md p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-lg font-bold">{language === 'tr' ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
+                      <button onClick={() => setEditingEntry(null)}><X className="w-5 h-5" /></button>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-4">{language === 'tr' && editingEntry.emission_factor_name_tr ? editingEntry.emission_factor_name_tr : editingEntry.emission_factor_name}</p>
+                    <form onSubmit={handleEditEntry} className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} ({editingEntry.unit})</label>
+                        <input type="number" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                        <input type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                        <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} />
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="submit" className="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-secondary">{language === 'tr' ? 'Kaydet' : 'Save'}</button>
+                        <button type="button" onClick={() => setEditingEntry(null)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               )}

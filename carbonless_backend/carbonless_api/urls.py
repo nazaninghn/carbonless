@@ -19,6 +19,11 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+# Admin branding
+admin.site.site_header = 'Carbonless Admin'
+admin.site.site_title = 'Carbonless'
+admin.site.index_title = 'Carbon Inventory Management'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/accounts/', include('accounts.urls')),
