@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.db.models import Sum
 from django.http import HttpResponse
+from datetime import datetime
 from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissionRequest
 from .serializers import (
     EmissionFactorSerializer, EmissionEntrySerializer,
@@ -354,4 +355,22 @@ def api_docs_view(request):
                 'POST /api/companies/facilities/': 'Create facility',
             },
         }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_all_view(request):
+    """Export all user data as JSON (backup)"""
+    entries = EmissionEntry.objects.filter(user=request.user).select_related('emission_factor')
+    targets = ReductionTarget.objects.filter(user=request.user)
+    custom = CustomEmissionRequest.objects.filter(user=request.user)
+
+    from emissions.serializers import EmissionEntrySerializer, ReductionTargetSerializer, CustomEmissionRequestSerializer
+    return Response({
+        'user': request.user.username,
+        'exported_at': str(datetime.now()) if True else '',
+        'entries': EmissionEntrySerializer(entries, many=True).data,
+        'targets': ReductionTargetSerializer(targets, many=True).data,
+        'custom_requests': CustomEmissionRequestSerializer(custom, many=True).data,
     })

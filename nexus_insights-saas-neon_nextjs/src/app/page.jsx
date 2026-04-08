@@ -396,7 +396,7 @@ export default function Page() {
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-xl flex items-center justify-center"><BarChart3 className="w-5 h-5 text-white" /></div>
                           <div>
-                            <h4 className="font-semibold text-gray-900 text-sm"> Performance Metrics </h4>
+                            <h4 className="font-semibold text-gray-900 text-sm"> Carbon Metrics </h4>
                             <p className="text-xs text-gray-500"> Last updated: Just now </p>
                           </div>
                         </div>
@@ -410,8 +410,8 @@ export default function Page() {
                     <div className="bg-white p-6">
                       {/* Main Metric */}
                       <div className="text-center mb-6">
-                        <p className="text-4xl font-bold text-gray-900 mb-1"> 94.7% </p>
-                        <p className="text-sm text-gray-500"> Overall Performance Score </p>
+                        <p className="text-4xl font-bold text-gray-900 mb-1"> -24% </p>
+                        <p className="text-sm text-gray-500"> Carbon Reduction Score </p>
                       </div>
                       {/* Circular Progress Ring */}
                       <div className="flex justify-center mb-6">
@@ -437,7 +437,7 @@ export default function Page() {
                       <div className="space-y-4">
                         <div>
                           <div className="flex justify-between text-sm mb-1">
-                            <Text className="text-gray-600"> Data Accuracy </Text>
+                            <Text className="text-gray-600"> Scope 1 Coverage </Text>
                             <Text className="font-medium text-gray-900"> 98% </Text>
                           </div>
                           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -446,7 +446,7 @@ export default function Page() {
                         </div>
                         <div>
                           <div className="flex justify-between text-sm mb-1">
-                            <Text className="text-gray-600"> Processing Speed </Text>
+                            <Text className="text-gray-600"> Scope 2 Coverage </Text>
                             <Text className="font-medium text-gray-900"> 92% </Text>
                           </div>
                           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -455,7 +455,7 @@ export default function Page() {
                         </div>
                         <div>
                           <div className="flex justify-between text-sm mb-1">
-                            <Text className="text-gray-600"> Prediction Rate </Text>
+                            <Text className="text-gray-600"> Scope 3 Coverage </Text>
                             <Text className="font-medium text-gray-900"> 89% </Text>
                           </div>
                           <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -474,8 +474,7 @@ export default function Page() {
                      {t.features.whyTitle}
                   </h2>
                   <p className="text-lg text-gray-600 mb-8">
-                     Our platform combines the power of artificial intelligence with intuitive design, making complex analytics
-                                    accessible to everyone on your team. 
+                     ISO 14064-1 ve GHG Protocol standartlarına uygun karbon envanteri oluşturmak hiç bu kadar kolay olmamıştı. 
                   </p>
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
@@ -483,9 +482,9 @@ export default function Page() {
                         <Check className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900"> Instant Setup </h4>
+                        <h4 className="font-semibold text-gray-900"> 131+ Emission Factors </h4>
                         <p className="text-gray-600">
-                           Get started in minutes with our guided onboarding process. 
+                           Defra 2024, IPCC, ATOM KABLO and Turkey national data sources. 
                         </p>
                       </div>
                     </div>
@@ -494,10 +493,9 @@ export default function Page() {
                         <Check className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900"> No Code Required </h4>
+                        <h4 className="font-semibold text-gray-900"> Questionnaire Wizard </h4>
                         <p className="text-gray-600">
-                           Build custom dashboards and reports without writing a
-                                                single line of code. 
+                           Configure your inventory in 9 questions with our ISO 14064-1 chatbot. 
                         </p>
                       </div>
                     </div>
@@ -506,8 +504,8 @@ export default function Page() {
                         <Check className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900"> 24/7 Support </h4>
-                        <p className="text-gray-600"> Our team is always available to help you succeed. </p>
+                        <h4 className="font-semibold text-gray-900"> Professional Reports </h4>
+                        <p className="text-gray-600"> PDF and CSV reports in Turkish and English. </p>
                       </div>
                     </div>
                   </div>
@@ -536,14 +534,13 @@ export default function Page() {
                 {/* FAQ Item 1 */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   <button onClick={() => { setActiveAccordion(activeAccordion === 1 ? null : 1) }} className="w-full px-6 py-5 text-left flex items-center justify-between gap-4">
-                    <Text variant="bold" className="font-semibold text-gray-900"> How does the free trial work? </Text>
+                    <Text variant="bold" className="font-semibold text-gray-900"> What is Carbonless? </Text>
                     <ChevronDown className="w-5 h-5 text-gray-500 transition-transform duration-200" />
                   </button>
                   {activeAccordion === 1 && (
                     <div className="px-6 pb-5">
                       <p className="text-gray-600">
-                         Our 14-day free trial gives you full access to all Pro features. No credit card required to start. At
-                                          the end of your trial, you can choose a plan that fits your needs or continue with our free tier. 
+                         Carbonless is an ISO 14064-1 compliant carbon inventory platform. It helps companies measure, report, and reduce their greenhouse gas emissions using verified emission factors from Defra, IPCC, and ATOM KABLO. 
                       </p>
                     </div>
                   )}
@@ -551,14 +548,13 @@ export default function Page() {
                 {/* FAQ Item 2 */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   <button onClick={() => { setActiveAccordion(activeAccordion === 2 ? null : 2) }} className="w-full px-6 py-5 text-left flex items-center justify-between gap-4">
-                    <Text variant="bold" className="font-semibold text-gray-900"> What data sources can I connect? </Text>
+                    <Text variant="bold" className="font-semibold text-gray-900"> Which emission factor sources are used? </Text>
                     <ChevronDown className="w-5 h-5 text-gray-500 transition-transform duration-200" />
                   </button>
                   {activeAccordion === 2 && (
                     <div className="px-6 pb-5">
                       <p className="text-gray-600">
-                         CarbonTrack supports 100+ integrations including databases (PostgreSQL, MySQL, BigQuery), SaaS tools
-                                          (Salesforce, HubSpot, Stripe), and file uploads (CSV, Excel). Our API also allows custom integrations. 
+                         We use 131+ emission factors from Defra/DESNZ 2024, IPCC 2006/2019 with AR6 GWP, ATOM KABLO ISO 14064-1, Turkey national grid, and ICAO aviation factors. 
                       </p>
                     </div>
                   )}
@@ -566,14 +562,13 @@ export default function Page() {
                 {/* FAQ Item 3 */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   <button onClick={() => { setActiveAccordion(activeAccordion === 3 ? null : 3) }} className="w-full px-6 py-5 text-left flex items-center justify-between gap-4">
-                    <Text variant="bold" className="font-semibold text-gray-900"> Is my data secure? </Text>
+                    <Text variant="bold" className="font-semibold text-gray-900"> Is my emission data secure? </Text>
                     <ChevronDown className="w-5 h-5 text-gray-500 transition-transform duration-200" />
                   </button>
                   {activeAccordion === 3 && (
                     <div className="px-6 pb-5">
                       <p className="text-gray-600">
-                         Absolutely. We're SOC 2 Type II certified and use end-to-end encryption for all data. Your data is
-                                          stored in secure, geographically distributed data centers with 99.99% uptime SLA. 
+                         Yes. All data is transmitted over HTTPS. Passwords are hashed. JWT token-based authentication with role-based access control (admin, manager, data entry, auditor). 
                       </p>
                     </div>
                   )}
@@ -581,14 +576,13 @@ export default function Page() {
                 {/* FAQ Item 4 */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   <button onClick={() => { setActiveAccordion(activeAccordion === 4 ? null : 4) }} className="w-full px-6 py-5 text-left flex items-center justify-between gap-4">
-                    <Text variant="bold" className="font-semibold text-gray-900"> Can I cancel my subscription anytime? </Text>
+                    <Text variant="bold" className="font-semibold text-gray-900"> What scopes are supported? </Text>
                     <ChevronDown className="w-5 h-5 text-gray-500 transition-transform duration-200" />
                   </button>
                   {activeAccordion === 4 && (
                     <div className="px-6 pb-5">
                       <p className="text-gray-600">
-                         Yes, you can cancel your subscription at any time. If you cancel, you'll retain access until the end of
-                                          your billing period. We also offer a 30-day money-back guarantee for new customers. 
+                         Scope 1 (direct emissions: stationary combustion, mobile combustion, fugitive), Scope 2 (electricity, steam/heat), and Scope 3 (purchased goods, transport, travel, waste, water, and more). 
                       </p>
                     </div>
                   )}
@@ -596,14 +590,13 @@ export default function Page() {
                 {/* FAQ Item 5 */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   <button onClick={() => { setActiveAccordion(activeAccordion === 5 ? null : 5) }} className="w-full px-6 py-5 text-left flex items-center justify-between gap-4">
-                    <Text variant="bold" className="font-semibold text-gray-900"> Do you offer custom enterprise plans? </Text>
+                    <Text variant="bold" className="font-semibold text-gray-900"> Can I generate ISO 14064-1 reports? </Text>
                     <ChevronDown className="w-5 h-5 text-gray-500 transition-transform duration-200" />
                   </button>
                   {activeAccordion === 5 && (
                     <div className="px-6 pb-5">
                       <p className="text-gray-600">
-                         Yes! Our Enterprise plan is fully customizable with dedicated support, custom integrations, on-premise
-                                          deployment options, and volume discounts. Contact our sales team to discuss your specific needs. 
+                         Yes. Generate professional PDF reports in Turkish and English with scope breakdown, category details, methodology, and emission factor references. CSV export is also available. 
                       </p>
                     </div>
                   )}
@@ -611,14 +604,13 @@ export default function Page() {
                 {/* FAQ Item 6 */}
                 <div className="glass-card rounded-xl overflow-hidden">
                   <button onClick={() => { setActiveAccordion(activeAccordion === 6 ? null : 6) }} className="w-full px-6 py-5 text-left flex items-center justify-between gap-4">
-                    <Text variant="bold" className="font-semibold text-gray-900"> What kind of support do you offer? </Text>
+                    <Text variant="bold" className="font-semibold text-gray-900"> How does the questionnaire work? </Text>
                     <ChevronDown className="w-5 h-5 text-gray-500 transition-transform duration-200" />
                   </button>
                   {activeAccordion === 6 && (
                     <div className="px-6 pb-5">
                       <p className="text-gray-600">
-                         All plans include email support and access to our documentation. Pro plans include priority chat
-                                          support, while Enterprise plans get a dedicated account manager and 24/7 phone support. 
+                         The chatbot wizard asks 9 questions about your reporting period, base year, purpose, emission factor preference, and more. Your answers configure the inventory and filter relevant factors automatically. 
                       </p>
                     </div>
                   )}
@@ -647,7 +639,7 @@ export default function Page() {
                 <Link contentKey="cta_67" className="w-full sm:w-auto px-8 py-4 bg-white/10 backdrop-blur text-white font-semibold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300" href="/contact"> {t.nav.contact} </Link>
               </div>
               <p className="mt-6 text-sm text-white/60">
-                 No credit card required · 14-day free trial · Cancel anytime 
+                 ISO 14064-1 compliant · Free to start · Turkish & English 
               </p>
             </div>
           </section>

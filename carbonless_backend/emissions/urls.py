@@ -18,4 +18,5 @@ urlpatterns = [
     path('comparison/', views.comparison_view, name='emission-comparison'),
     path('export-csv/', views.export_csv_view, name='emission-export-csv'),
     path('docs/', views.api_docs_view, name='api-docs'),
+    path('export-all/', views.export_all_view, name='emission-export-all'),
 ]
