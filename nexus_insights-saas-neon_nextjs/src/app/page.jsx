@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 import NextLink from 'next/link';
 import { Activity } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
@@ -644,93 +645,7 @@ export default function Page() {
             </div>
           </section>
         </main>
-        <footer className="bg-gray-50 border-t border-gray-200">
-          {/* Main Footer */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 lg:gap-12">
-              {/* Brand Column */}
-              <div className="col-span-2 md:col-span-4 lg:col-span-1">
-                <Link className="flex items-center gap-2 mb-4" href="/">
-                  <img 
-                    src="/carbonless.png" 
-                    alt="Carbonless" 
-                    className="h-10 w-auto"
-                  />
-                  <Text variant="bold" className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"> 
-                    {t.brandName} 
-                  </Text>
-                </Link>
-                <p className="text-gray-600 text-sm mb-6">
-                   {t.footer.description} 
-                </p>
-              </div>
-              {/* Quick Links */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-4"> {t.footer.quickLinks} </h4>
-                <ul className="space-y-3">
-                  <li>
-                    <Link className="text-gray-600 hover:text-primary transition-colors duration-200 text-sm" href="/features"> {t.nav.features} </Link>
-                  </li>
-                  <li>
-                    <Link className="text-gray-600 hover:text-primary transition-colors duration-200 text-sm" href="/about"> {t.nav.about} </Link>
-                  </li>
-                  <li>
-                    <Link className="text-gray-600 hover:text-primary transition-colors duration-200 text-sm" href="/contact"> {t.nav.contact} </Link>
-                  </li>
-                </ul>
-              </div>
-              {/* Legal Links */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-4"> {t.footer.legal} </h4>
-                <ul className="space-y-3">
-                  <li>
-                    <Link className="text-gray-600 hover:text-primary transition-colors duration-200 text-sm" href="/privacy"> {t.footer.privacy} </Link>
-                  </li>
-                  <li>
-                    <Link className="text-gray-600 hover:text-primary transition-colors duration-200 text-sm" href="/terms"> {t.footer.terms} </Link>
-                  </li>
-                </ul>
-              </div>
-              {/* Contact Info */}
-              <div className="col-span-2">
-                <h4 className="font-semibold text-gray-900 mb-4"> {t.footer.contact} </h4>
-                <ul className="space-y-3">
-                  <li className="text-gray-600 text-sm">
-                    <span className="font-medium">{t.footer.address}:</span><br />
-                    {t.company.address}
-                  </li>
-                  <li className="text-gray-600 text-sm">
-                    <span className="font-medium">{t.footer.phone}:</span><br />
-                    <a href={`tel:${t.company.phone}`} className="hover:text-primary transition-colors">
-                      {t.company.phone}
-                    </a>
-                  </li>
-                  <li className="text-gray-600 text-sm">
-                    <span className="font-medium">{t.footer.email}:</span><br />
-                    <a href={`mailto:${t.company.email}`} className="hover:text-primary transition-colors">
-                      {t.company.email}
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          {/* Footer Bottom */}
-          <div className="border-t border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <p className="text-gray-500 text-sm text-center md:text-left">
-                   {t.footer.copyright} 
-                </p>
-                <div className="flex items-center gap-6">
-                  <Link className="text-gray-500 hover:text-primary text-sm transition-colors duration-200" href="/privacy"> {t.footer.privacy} </Link>
-                  <Link className="text-gray-500 hover:text-primary text-sm transition-colors duration-200" href="/terms"> {t.footer.terms} </Link>
-                  <Link className="text-gray-500 hover:text-primary text-sm transition-colors duration-200" href="/contact"> {t.footer.contact} </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </>
     </div>
   );
