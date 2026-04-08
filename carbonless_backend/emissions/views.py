@@ -86,10 +86,10 @@ def emission_summary(request):
     year = request.query_params.get('year', 2026)
     entries = EmissionEntry.objects.filter(user=request.user, year=year)
 
-    total = entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0
-    scope1 = entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
-    scope2 = entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
-    scope3 = entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+    total = float(entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0)
+    scope1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+    scope2 = float(entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+    scope3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
 
     monthly = []
     for m in range(1, 13):
@@ -114,7 +114,7 @@ def emission_summary(request):
     custom_approved = CustomEmissionRequest.objects.filter(
         user=request.user, year=year, status='approved', calculated_co2e_kg__isnull=False
     )
-    custom_total = custom_approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
+    custom_total = float(custom_approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     custom_pending = CustomEmissionRequest.objects.filter(
         user=request.user, year=year, status='pending'
     ).count()
@@ -127,7 +127,7 @@ def emission_summary(request):
             scope2 += float(cr.calculated_co2e_kg)
         else:
             scope3 += float(cr.calculated_co2e_kg)
-    total += float(custom_total)
+    total += custom_total
 
     return Response({
         'year': int(year),
@@ -277,3 +277,33 @@ def comparison_view(request):
         'change_percent': round(change_pct, 2),
         'change_direction': 'increase' if change_pct > 0 else 'decrease' if change_pct < 0 else 'no_change',
     })
+
+
+import csv
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_csv_view(request):
+    """Export emission entries as CSV"""
+    year = int(request.query_params.get('year', 2026))
+    entries = EmissionEntry.objects.filter(user=request.user, year=year).select_related('emission_factor')
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="emissions_{year}.csv"'
+    response.write('\ufeff')  # BOM for Excel UTF-8
+
+    writer = csv.writer(response)
+    writer.writerow(['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit',
+                     'Factor (kg CO2e)', 'Emissions (kg CO2e)', 'Emissions (tCO2e)',
+                     'Facility', 'Description', 'Reference'])
+
+    for e in entries:
+        ef = e.emission_factor
+        writer.writerow([
+            ef.name, ef.scope, ef.category, e.month,
+            float(e.quantity), ef.unit, float(ef.factor_kg_co2e),
+            float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
+            e.facility, e.description, ef.reference,
+        ])
+
+    return response

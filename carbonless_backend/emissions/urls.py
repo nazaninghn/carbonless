@@ -16,4 +16,5 @@ urlpatterns = [
     path('report/', views.generate_report_view, name='emission-report'),
     path('bulk-import/', views.bulk_import_view, name='emission-bulk-import'),
     path('comparison/', views.comparison_view, name='emission-comparison'),
+    path('export-csv/', views.export_csv_view, name='emission-export-csv'),
 ]

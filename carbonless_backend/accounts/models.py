@@ -61,3 +61,30 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class ActivityLog(models.Model):
+    """Audit trail for important actions"""
+    ACTION_CHOICES = [
+        ('entry_created', 'Emission Entry Created'),
+        ('entry_deleted', 'Emission Entry Deleted'),
+        ('entry_updated', 'Emission Entry Updated'),
+        ('custom_submitted', 'Custom Request Submitted'),
+        ('custom_approved', 'Custom Request Approved'),
+        ('custom_rejected', 'Custom Request Rejected'),
+        ('report_generated', 'Report Generated'),
+        ('password_changed', 'Password Changed'),
+        ('login', 'Login'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activity_logs')
+    action = models.CharField(max_length=30, choices=ACTION_CHOICES)
+    detail = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.action} at {self.created_at}"
+
+    class Meta:
+        ordering = ['-created_at']

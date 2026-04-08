@@ -11,6 +11,7 @@ import NextLink from 'next/link';
 import Chatbot from '@/components/Chatbot';
 import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
+import PasswordChange from '@/components/PasswordChange';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -956,6 +957,17 @@ export default function DashboardPage() {
                   >
                     <FileText className="w-4 h-4" /> English PDF
                   </button>
+                  <button
+                    onClick={() => {
+                      const token = localStorage.getItem('access_token');
+                      fetch(api.getCsvUrl(selectedYear), { headers: { Authorization: `Bearer ${token}` } })
+                        .then(r => r.blob())
+                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.csv`; a.click(); });
+                    }}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> CSV Export
+                  </button>
                 </div>
               </div>
             </div>
@@ -1011,6 +1023,12 @@ export default function DashboardPage() {
                   {language === 'tr' ? 'Tesis Yönetimi' : 'Facility Management'}
                 </h3>
                 <FacilitySettings language={language} />
+              </div>
+
+              {/* Password Change */}
+              <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'Şifre Değiştir' : 'Change Password'}</h3>
+                <PasswordChange language={language} />
               </div>
 
               {/* Permissions */}

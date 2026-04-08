@@ -81,3 +81,20 @@ def unread_count(request):
     """Get unread notification count"""
     count = Notification.objects.filter(user=request.user, is_read=False).count()
     return Response({'unread_count': count})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Change user password"""
+    old_password = request.data.get('old_password')
+    new_password = request.data.get('new_password')
+    if not old_password or not new_password:
+        return Response({'error': 'old_password and new_password required'}, status=400)
+    if not request.user.check_password(old_password):
+        return Response({'error': 'Current password is incorrect'}, status=400)
+    if len(new_password) < 8:
+        return Response({'error': 'Password must be at least 8 characters'}, status=400)
+    request.user.set_password(new_password)
+    request.user.save()
+    return Response({'status': 'ok', 'message': 'Password changed successfully'})

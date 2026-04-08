@@ -65,6 +65,13 @@ export const api = {
 
   // Report
   getReportUrl: (year, lang) => `${API_BASE}/emissions/report/?year=${year}&lang=${lang}`,
+  getCsvUrl: (year) => `${API_BASE}/emissions/export-csv/?year=${year}`,
+
+  // Account
+  changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),
+
+  // Emission entry update
+  updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
 
   // Questionnaire
   startQuestionnaire: (lang) => request('/questionnaire/start/', { method: 'POST', body: JSON.stringify({ lang }) }),
