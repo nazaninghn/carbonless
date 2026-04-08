@@ -1,33 +1,83 @@
 """
 ISO 14064-1 Carbon Inventory PDF Report Generator
 Generates professional PDF reports with scope breakdown, category details, and methodology.
+Supports Turkish characters (İ, ş, ğ, ü, ö, ç) via DejaVuSans font.
 """
 import io
+import os
 from datetime import datetime
 from decimal import Decimal
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
 )
 from django.db.models import Sum
 from .models import EmissionFactor, EmissionEntry, CustomEmissionRequest
 
+# Register Unicode font for Turkish characters
+_font_registered = False
+def _register_fonts():
+    global _font_registered
+    if _font_registered:
+        return
+    # Try DejaVuSans (commonly available)
+    font_paths = [
+        # Linux
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+        # Windows
+        os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arial.ttf'),
+        os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arialbd.ttf'),
+    ]
+    # Try Arial first (Windows), then DejaVu (Linux/Render)
+    try:
+        arial = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arial.ttf')
+        arialb = os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arialbd.ttf')
+        if os.path.exists(arial):
+            pdfmetrics.registerFont(TTFont('CustomFont', arial))
+            pdfmetrics.registerFont(TTFont('CustomFont-Bold', arialb if os.path.exists(arialb) else arial))
+            _font_registered = True
+            return
+    except Exception:
+        pass
+    try:
+        dejavu = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+        dejavub = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+        if os.path.exists(dejavu):
+            pdfmetrics.registerFont(TTFont('CustomFont', dejavu))
+            pdfmetrics.registerFont(TTFont('CustomFont-Bold', dejavub if os.path.exists(dejavub) else dejavu))
+            _font_registered = True
+            return
+    except Exception:
+        pass
+    # Fallback: use Helvetica (no Turkish support)
+    _font_registered = True
+
 
 def generate_report(user, year, lang='tr'):
     """Generate ISO 14064-1 PDF report for a user/year. Returns bytes."""
+    _register_fonts()
+
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4,
                             leftMargin=20*mm, rightMargin=20*mm,
                             topMargin=25*mm, bottomMargin=20*mm)
 
+    # Determine font name
+    fn = 'CustomFont' if _font_registered else 'Helvetica'
+    fnb = 'CustomFont-Bold' if _font_registered else 'Helvetica-Bold'
+
     styles = getSampleStyleSheet()
-    styles.add(ParagraphStyle(name='Title2', parent=styles['Title'], fontSize=22, spaceAfter=6))
-    styles.add(ParagraphStyle(name='H2', parent=styles['Heading2'], fontSize=14, spaceAfter=4))
-    styles.add(ParagraphStyle(name='H3', parent=styles['Heading3'], fontSize=11, spaceAfter=3))
-    styles.add(ParagraphStyle(name='Small', parent=styles['Normal'], fontSize=8, textColor=colors.grey))
+    styles.add(ParagraphStyle(name='Title2', fontName=fnb, fontSize=22, spaceAfter=6))
+    styles.add(ParagraphStyle(name='H2', fontName=fnb, fontSize=14, spaceAfter=4))
+    styles.add(ParagraphStyle(name='H3', fontName=fnb, fontSize=11, spaceAfter=3))
+    styles.add(ParagraphStyle(name='Body', fontName=fn, fontSize=10, spaceAfter=4))
+    styles.add(ParagraphStyle(name='Small', fontName=fn, fontSize=8, textColor=colors.grey))
 
     elements = []
     tr = lang == 'tr'
@@ -61,15 +111,15 @@ def generate_report(user, year, lang='tr'):
     elements.append(Spacer(1, 5*mm))
     elements.append(Paragraph(
         'Karbon Envanteri Raporu' if tr else 'Carbon Inventory Report',
-        styles['Heading1']
+        styles['H2']
     ))
-    elements.append(Paragraph(f'ISO 14064-1 | {year}', styles['Heading2']))
+    elements.append(Paragraph(f'ISO 14064-1 | {year}', styles['H3']))
     elements.append(Spacer(1, 10*mm))
-    elements.append(Paragraph(company_name, styles['Heading2']))
+    elements.append(Paragraph(company_name, styles['H2']))
     elements.append(Spacer(1, 5*mm))
     elements.append(Paragraph(
         f"{'Oluşturulma Tarihi' if tr else 'Generated'}: {datetime.now().strftime('%d.%m.%Y')}",
-        styles['Normal']
+        styles['Body']
     ))
     elements.append(PageBreak())
 
@@ -80,7 +130,7 @@ def generate_report(user, year, lang='tr'):
     elements.append(Paragraph(
         f"{'Bu rapor' if tr else 'This report covers'} {company_name} "
         f"{'şirketinin' if tr else 'company'} {year} {'yılı sera gazı emisyonlarını ISO 14064-1 standardına uygun olarak özetlemektedir.' if tr else 'greenhouse gas emissions in accordance with ISO 14064-1.'}",
-        styles['Normal']
+        styles['Body']
     ))
     elements.append(Spacer(1, 5*mm))
 
@@ -121,11 +171,12 @@ def generate_report(user, year, lang='tr'):
     t.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#059669')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, -1), fn),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#f0fdf4')),
-        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (0, -1), (-1, -1), fnb),
         ('ROWBACKGROUNDS', (0, 1), (-1, -2), [colors.white, colors.HexColor('#f9fafb')]),
     ]))
     elements.append(t)
@@ -169,6 +220,7 @@ def generate_report(user, year, lang='tr'):
         ct.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#10b981')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, -1), fn),
             ('FONTSIZE', (0, 0), (-1, -1), 8),
             ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
@@ -204,6 +256,7 @@ def generate_report(user, year, lang='tr'):
         dt.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#059669')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, -1), fn),
             ('FONTSIZE', (0, 0), (-1, -1), 7),
             ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
             ('GRID', (0, 0), (-1, -1), 0.3, colors.lightgrey),
@@ -213,7 +266,7 @@ def generate_report(user, year, lang='tr'):
     else:
         elements.append(Paragraph(
             'Bu dönem için kayıt bulunmamaktadır.' if tr else 'No entries for this period.',
-            styles['Normal']
+            styles['Body']
         ))
     elements.append(Spacer(1, 8*mm))
 
@@ -234,6 +287,7 @@ def generate_report(user, year, lang='tr'):
         crt.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f59e0b')),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, -1), fn),
             ('FONTSIZE', (0, 0), (-1, -1), 8),
             ('ALIGN', (2, 0), (-1, -1), 'RIGHT'),
             ('GRID', (0, 0), (-1, -1), 0.3, colors.lightgrey),
@@ -261,7 +315,7 @@ def generate_report(user, year, lang='tr'):
             sources_used.add(f"{e.emission_factor.get_source_display()}: {ref[:80]}")
 
     for label, val in methodology:
-        elements.append(Paragraph(f"<b>{label}:</b> {val}", styles['Normal']))
+        elements.append(Paragraph(f"<b>{label}:</b> {val}", styles['Body']))
     elements.append(Spacer(1, 5*mm))
 
     # Sources
