@@ -36,8 +36,8 @@ export default function Chatbot({ language = 'tr', onComplete }) {
           setMessages([{
             type: 'bot',
             text: language === 'tr'
-              ? '👋 Kaldığınız yerden devam ediyoruz...'
-              : '👋 Resuming where you left off...',
+              ? `👋 Kaldığınız yerden devam ediyoruz... (${Object.keys(data.answers).length}/9 tamamlandı)`
+              : `👋 Resuming where you left off... (${Object.keys(data.answers).length}/9 completed)`,
           }]);
         } else {
           setMessages([{

@@ -3,6 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import User
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
 from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
 from .models import UserProfile
 
@@ -16,6 +18,12 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
         # Auto-create profile with admin role for first user
         UserProfile.objects.create(user=user, role='admin')
+
+
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
+class RateLimitedLoginView(TokenObtainPairView):
+    """Login with rate limiting — max 10 attempts per minute per IP"""
+    pass
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

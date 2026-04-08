@@ -24,6 +24,7 @@ async function request(endpoint, options = {}) {
       } else {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
+        localStorage.setItem('session_expired', 'true');
         window.location.href = '/login';
       }
     }

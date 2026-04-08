@@ -307,3 +307,51 @@ def export_csv_view(request):
         ])
 
     return response
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def api_docs_view(request):
+    """Simple API documentation endpoint"""
+    return Response({
+        'name': 'Carbonless API',
+        'version': '1.0',
+        'description': 'ISO 14064-1 Carbon Inventory Platform API',
+        'endpoints': {
+            'auth': {
+                'POST /api/accounts/register/': 'Register new user',
+                'POST /api/accounts/login/': 'Login (JWT)',
+                'POST /api/accounts/token/refresh/': 'Refresh token',
+                'GET /api/accounts/profile/': 'Get user profile + role',
+                'POST /api/accounts/change-password/': 'Change password',
+                'GET /api/accounts/notifications/': 'List notifications',
+            },
+            'emissions': {
+                'GET /api/emissions/factors/': 'List emission factors (filterable)',
+                'GET /api/emissions/entries/': 'List emission entries',
+                'POST /api/emissions/entries/': 'Create emission entry',
+                'PATCH /api/emissions/entries/{id}/': 'Update entry',
+                'DELETE /api/emissions/entries/{id}/': 'Delete entry',
+                'GET /api/emissions/summary/': 'Emission summary by year',
+                'POST /api/emissions/calculate/': 'Calculate emissions (by ID or slug)',
+                'GET /api/emissions/report/': 'Generate PDF report',
+                'GET /api/emissions/export-csv/': 'Export CSV',
+                'POST /api/emissions/bulk-import/': 'Bulk import entries',
+                'GET /api/emissions/comparison/': 'Year-over-year comparison',
+                'GET /api/emissions/custom-requests/': 'List custom requests',
+                'POST /api/emissions/custom-requests/': 'Submit custom request',
+            },
+            'questionnaire': {
+                'POST /api/questionnaire/start/': 'Start/resume questionnaire',
+                'POST /api/questionnaire/answer/': 'Submit answer',
+                'GET /api/questionnaire/profile/': 'Get questionnaire profile',
+                'POST /api/questionnaire/reset/': 'Reset questionnaire',
+            },
+            'companies': {
+                'POST /api/companies/create/': 'Create company',
+                'GET /api/companies/detail/': 'Get/update company',
+                'GET /api/companies/facilities/': 'List facilities',
+                'POST /api/companies/facilities/': 'Create facility',
+            },
+        }
+    })

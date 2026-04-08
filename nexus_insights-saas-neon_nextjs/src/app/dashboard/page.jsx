@@ -292,7 +292,7 @@ export default function DashboardPage() {
           </div>
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {sidebarItems.map(item => (
-              <button key={item.key} onClick={() => setActiveTab(item.key)}
+              <button key={item.key} onClick={() => setActiveTab(item.key)} aria-label={item.label} aria-current={activeTab === item.key ? 'page' : undefined}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === item.key ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'}`}>
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
@@ -632,6 +632,9 @@ export default function DashboardPage() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
                         <textarea value={entryDescription} onChange={e => setEntryDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} />
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
+                        💡 {language === 'tr' ? 'Belge yüklemek için (fatura, sayaç okuma vb.) kaydettikten sonra admin panelinden yükleyebilirsiniz.' : 'To upload proof documents (invoices, meter readings), use the admin panel after saving.'}
                       </div>
                       {formError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" />{formError}</div>}
                       <button type="submit" disabled={submitting} className="w-full py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-60">

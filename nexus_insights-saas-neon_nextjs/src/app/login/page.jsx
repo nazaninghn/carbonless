@@ -11,8 +11,17 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const [loading, setLoading] = useState(false);
+
+  // Check for session expired
+  useState(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('session_expired')) {
+      setSessionExpired(true);
+      localStorage.removeItem('session_expired');
+    }
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -201,6 +210,13 @@ export default function LoginPage() {
                         {t.login.forgotPassword}
                       </NextLink>
                     </div>
+
+                    {/* Session Expired */}
+                    {sessionExpired && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
+                        {t.language === 'tr' ? 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' : 'Your session has expired. Please log in again.'}
+                      </div>
+                    )}
 
                     {/* Error Message */}
                     {error && (
