@@ -316,11 +316,11 @@ export default function Page() {
               <div data-aos="fade-up" className="text-center max-w-3xl mx-auto mb-16">
                 <Text className="inline-block px-4 py-1.5 bg-secondary/10 text-secondary text-sm font-medium rounded-full mb-4"> Features </Text>
                 <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">
-                   Everything You Need to 
-                  <Text className="gradient-text"> Succeed </Text>
+                   Everything You Need for 
+                  <Text className="gradient-text"> Carbon Management </Text>
                 </h2>
                 <p className="text-lg text-gray-600">
-                   Powerful features designed to help you analyze, predict, and act on your data with confidence. 
+                   ISO 14064-1 compliant tools to measure, report, and reduce your carbon footprint with confidence. 
                 </p>
               </div>
               {/* Features Grid */}
@@ -328,49 +328,49 @@ export default function Page() {
                 {/* Feature 1 */}
                 <div data-aos="fade-up" data-aos-delay="0" className="glass-card rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><Brain className="w-7 h-7 text-primary" /></div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> AI-Powered Analytics </h3>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Scope 1/2/3 Tracking </h3>
                   <p className="text-gray-600">
-                     Advanced machine learning algorithms analyze your data and surface insights you'd never find manually. 
+                     Calculate direct, energy indirect, and other indirect emissions with 131+ verified emission factors. 
                   </p>
                 </div>
                 {/* Feature 2 */}
                 <div data-aos="fade-up" data-aos-delay="100" className="glass-card rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="w-14 h-14 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><Activity className="w-7 h-7 text-secondary" /></div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Real-Time Monitoring </h3>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Real-Time Dashboard </h3>
                   <p className="text-gray-600">
-                     Track your metrics in real-time with live dashboards that update automatically as data flows in. 
+                     Track your emissions in real-time with scope distribution, monthly trends, and category breakdown. 
                   </p>
                 </div>
                 {/* Feature 3 */}
                 <div data-aos="fade-up" data-aos-delay="200" className="glass-card rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="w-14 h-14 bg-gradient-to-br from-accent/20 to-accent/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><LineChart className="w-7 h-7 text-accent" /></div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Predictive Forecasting </h3>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> ISO 14064-1 Reporting </h3>
                   <p className="text-gray-600">
-                     Forecast future trends with AI models trained on your historical data for accurate predictions. 
+                     Generate professional PDF and CSV reports compliant with ISO 14064-1 and GHG Protocol standards. 
                   </p>
                 </div>
                 {/* Feature 4 */}
                 <div data-aos="fade-up" data-aos-delay="300" className="glass-card rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="w-14 h-14 bg-gradient-to-br from-green-500/20 to-green-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><ShieldCheck className="w-7 h-7 text-green-500" /></div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Enterprise Security </h3>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Verified Data Sources </h3>
                   <p className="text-gray-600">
-                     SOC 2 Type II certified with end-to-end encryption. Your data is always protected. 
+                     Defra 2024, IPCC, ATOM KABLO ISO 14064-1, and Turkey national data — all verified and referenced. 
                   </p>
                 </div>
                 {/* Feature 5 */}
                 <div data-aos="fade-up" data-aos-delay="400" className="glass-card rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="w-14 h-14 bg-gradient-to-br from-orange-500/20 to-orange-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><Puzzle className="w-7 h-7 text-orange-500" /></div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> 100+ Integrations </h3>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Questionnaire Wizard </h3>
                   <p className="text-gray-600">
-                     Connect with your favorite tools seamlessly. From Salesforce to Slack, we've got you covered. 
+                     Configure your carbon inventory with our ISO 14064-1 chatbot wizard in just 9 questions. 
                   </p>
                 </div>
                 {/* Feature 6 */}
                 <div data-aos="fade-up" data-aos-delay="500" className="glass-card rounded-2xl p-6 lg:p-8 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group">
                   <div className="w-14 h-14 bg-gradient-to-br from-purple-500/20 to-purple-500/10 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300"><Users className="w-7 h-7 text-purple-500" /></div>
-                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Team Collaboration </h3>
+                  <h3 className="text-xl font-semibold mb-3 text-gray-900"> Reduction Targets </h3>
                   <p className="text-gray-600">
-                     Share dashboards, annotate insights, and collaborate in real-time with your entire team. 
+                     Set carbon reduction goals, track progress year-over-year, and demonstrate your commitment to sustainability. 
                   </p>
                 </div>
               </div>

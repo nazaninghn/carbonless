@@ -62,6 +62,9 @@ export default function DashboardPage() {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [entrySearch, setEntrySearch] = useState('');
+  const [entryFilterScope, setEntryFilterScope] = useState('');
+  const [pdfLoading, setPdfLoading] = useState('');
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -511,6 +514,23 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* Search & Filter */}
+              <div className="flex flex-wrap gap-3">
+                <input
+                  type="text"
+                  value={entrySearch}
+                  onChange={e => setEntrySearch(e.target.value)}
+                  placeholder={language === 'tr' ? 'Kaynak ara...' : 'Search source...'}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1 min-w-[200px]"
+                />
+                <select value={entryFilterScope} onChange={e => setEntryFilterScope(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                  <option value="">{language === 'tr' ? 'Tüm Scopelar' : 'All Scopes'}</option>
+                  <option value="scope1">Scope 1</option>
+                  <option value="scope2">Scope 2</option>
+                  <option value="scope3">Scope 3</option>
+                </select>
+              </div>
+
               {/* Add Entry Modal */}
               {showAddForm && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -702,7 +722,12 @@ export default function DashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {entries.map(entry => (
+                        {entries.filter(entry => {
+                          const name = (language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name) || '';
+                          const matchSearch = !entrySearch || name.toLowerCase().includes(entrySearch.toLowerCase());
+                          const matchScope = !entryFilterScope || entry.scope === entryFilterScope;
+                          return matchSearch && matchScope;
+                        }).map(entry => (
                           <tr key={entry.id} className="hover:bg-gray-50">
                             <td className="px-4 py-3">{language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}</td>
                             <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${entry.scope === 'scope1' ? 'bg-red-100 text-red-700' : entry.scope === 'scope2' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{scopeLabel(entry.scope)}</span></td>
@@ -937,25 +962,31 @@ export default function DashboardPage() {
                 <div className="flex justify-center gap-3">
                   <button
                     onClick={() => {
+                      setPdfLoading('tr');
                       const token = localStorage.getItem('access_token');
                       fetch(api.getReportUrl(selectedYear, 'tr'), { headers: { Authorization: `Bearer ${token}` } })
                         .then(r => r.blob())
-                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_rapor_${selectedYear}_tr.pdf`; a.click(); });
+                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_rapor_${selectedYear}_tr.pdf`; a.click(); })
+                        .finally(() => setPdfLoading(''));
                     }}
-                    className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2"
+                    disabled={pdfLoading === 'tr'}
+                    className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 disabled:opacity-60"
                   >
-                    <FileText className="w-4 h-4" /> Türkçe PDF
+                    <FileText className="w-4 h-4" /> {pdfLoading === 'tr' ? (language === 'tr' ? 'Hazırlanıyor...' : 'Generating...') : 'Türkçe PDF'}
                   </button>
                   <button
                     onClick={() => {
+                      setPdfLoading('en');
                       const token = localStorage.getItem('access_token');
                       fetch(api.getReportUrl(selectedYear, 'en'), { headers: { Authorization: `Bearer ${token}` } })
                         .then(r => r.blob())
-                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_report_${selectedYear}_en.pdf`; a.click(); });
+                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_report_${selectedYear}_en.pdf`; a.click(); })
+                        .finally(() => setPdfLoading(''));
                     }}
-                    className="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2"
+                    disabled={pdfLoading === 'en'}
+                    className="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2 disabled:opacity-60"
                   >
-                    <FileText className="w-4 h-4" /> English PDF
+                    <FileText className="w-4 h-4" /> {pdfLoading === 'en' ? (language === 'tr' ? 'Hazırlanıyor...' : 'Generating...') : 'English PDF'}
                   </button>
                   <button
                     onClick={() => {
