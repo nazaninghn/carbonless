@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
-import { auth } from '@/lib/auth';
 import SimpleHeader from '@/components/SimpleHeader';
 import NextLink from 'next/link';
 import { Mail, Lock, ArrowRight, Leaf, TrendingDown, BarChart3 } from 'lucide-react';
@@ -40,8 +39,7 @@ export default function LoginPage() {
       let data = {};
       try { data = await res.json(); } catch {}
       if (res.ok) {
-        // Backend sets HttpOnly cookies. Also store in localStorage as fallback for API calls.
-        if (data.access) auth.setTokens(data.access, data.refresh);
+        // Backend sets HttpOnly cookies — no token storage needed
         window.location.href = '/dashboard';
       } else {
         setError(t.language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
