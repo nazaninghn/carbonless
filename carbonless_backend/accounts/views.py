@@ -158,7 +158,7 @@ def change_password(request):
 @permission_classes([IsAuthenticated])
 def logout_view(request):
     """Logout — clear HttpOnly cookies"""
-    response = Response({'status': 'ok'})
-    response.delete_cookie('access_token')
-    response.delete_cookie('refresh_token')
+    response = Response({'status': 'ok', 'message': 'Logged out'})
+    response.delete_cookie('access_token', path='/')
+    response.delete_cookie('refresh_token', path='/')
     return response
