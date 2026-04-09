@@ -171,10 +171,14 @@ class CookieTokenRefreshView(TokenRefreshView):
     """Refresh token from HttpOnly cookie, set new access cookie."""
 
     def post(self, request, *args, **kwargs):
-        # Inject refresh token from cookie into request data
         refresh = request.COOKIES.get('refresh_token')
-        if refresh:
-            request.data['refresh'] = refresh
+        if not refresh:
+            return Response({'detail': 'No refresh token'}, status=401)
+
+        # QueryDict is immutable by default
+        request.data._mutable = True
+        request.data['refresh'] = refresh
+        request.data._mutable = False
 
         response = super().post(request, *args, **kwargs)
 

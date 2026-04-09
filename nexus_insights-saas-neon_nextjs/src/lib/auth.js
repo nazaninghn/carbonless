@@ -1,10 +1,20 @@
 /**
- * Centralized auth helper — cookie-based.
- * Tokens are stored in HttpOnly cookies by the backend.
- * This helper provides logout and authenticated fetch utilities.
+ * Centralized auth helper — cookie-based with silent refresh.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+async function tryRefresh() {
+  try {
+    const res = await fetch(`${API_BASE}/accounts/token/refresh/`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
 
 export const auth = {
   async logout() {
@@ -17,12 +27,8 @@ export const auth = {
     window.location.href = '/login';
   },
 
-  sessionExpired() {
-    window.location.href = '/login?reason=session_expired';
-  },
-
   async fetchWithAuth(url, options = {}) {
-    const res = await fetch(url, {
+    let res = await fetch(url, {
       ...options,
       credentials: 'include',
       headers: {
@@ -31,8 +37,24 @@ export const auth = {
       },
     });
 
+    // Silent refresh on 401
     if (res.status === 401) {
-      auth.sessionExpired();
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        res = await fetch(url, {
+          ...options,
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(options.headers || {}),
+          },
+        });
+      }
+    }
+
+    // Still 401 after refresh attempt → session expired
+    if (res.status === 401) {
+      window.location.href = '/login?reason=session_expired';
     }
 
     return res;
