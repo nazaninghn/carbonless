@@ -65,8 +65,6 @@ export function useDashboardData(selectedYear) {
   }, [selectedYear]);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) { window.location.href = '/login'; return; }
     fetchData();
   }, [fetchData]);
 

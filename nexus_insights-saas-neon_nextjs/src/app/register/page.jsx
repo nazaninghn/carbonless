@@ -76,20 +76,19 @@ export default function RegisterPage() {
         setLoading(false);
         return;
       }
-      // 2. Login to get token
+      // 2. Login (sets HttpOnly cookies)
       const loginRes = await fetch(`${API}/accounts/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: formData.username, password: formData.password }),
       });
       if (loginRes.ok) {
-        const tokens = await loginRes.json();
-        localStorage.setItem('access_token', tokens.access);
-        localStorage.setItem('refresh_token', tokens.refresh);
-        // 3. Create company
+        // 3. Create company (using cookie auth)
         await fetch(`${API}/companies/create/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${tokens.access}` },
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             name: formData.legalEntityName,
             tax_number: formData.taxNumber,

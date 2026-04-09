@@ -1,29 +1,25 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 async function request(endpoint, options = {}) {
-  const { auth } = await import('@/lib/auth');
-  const token = auth.getAccessToken();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: 'include',
+  });
 
-  if (res.status === 401 && token) {
-    const refreshToken = auth.getRefreshToken();
-    if (refreshToken) {
-      const refreshRes = await fetch(`${API_BASE}/accounts/token/refresh/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh: refreshToken }),
-      });
-      if (refreshRes.ok) {
-        const data = await refreshRes.json();
-        auth.setTokens(data.access, refreshToken);
-        headers['Authorization'] = `Bearer ${data.access}`;
-        return fetch(`${API_BASE}${endpoint}`, { ...options, headers });
-      } else {
-        auth.sessionExpired();
-      }
+  if (res.status === 401) {
+    // Try cookie-based refresh
+    const refreshRes = await fetch(`${API_BASE}/accounts/token/refresh/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (refreshRes.ok) {
+      return fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'include' });
+    } else {
+      window.location.href = '/login?reason=session_expired';
     }
   }
   return res;
@@ -34,6 +30,7 @@ export const api = {
     fetch(`${API_BASE}/accounts/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ username: email, password }),
     }),
 

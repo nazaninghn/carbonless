@@ -13,9 +13,8 @@ export default function CompanySettings({ language }) {
     const fetchCompany = async () => {
       try {
         const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-        const token = localStorage.getItem('access_token');
         const res = await fetch(`${API}/companies/detail/`, {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
         });
         if (res.ok) {
           const data = await res.json();
@@ -32,10 +31,10 @@ export default function CompanySettings({ language }) {
     setSaving(true);
     try {
       const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      const token = localStorage.getItem('access_token');
       const res = await fetch(`${API}/companies/detail/`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           legal_entity_name: form.legal_entity_name,
           tax_number: form.tax_number,

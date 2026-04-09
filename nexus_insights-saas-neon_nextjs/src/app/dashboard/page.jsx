@@ -125,8 +125,6 @@ export default function DashboardPage() {
   }, [selectedYear]);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (!token) { window.location.href = '/login'; return; }
     fetchData();
   }, [fetchData]);
 
@@ -1040,8 +1038,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => {
                       setPdfLoading('tr');
-                      const token = localStorage.getItem('access_token');
-                      fetch(api.getReportUrl(selectedYear, 'tr'), { headers: { Authorization: `Bearer ${token}` } })
+                      fetch(api.getReportUrl(selectedYear, 'tr'), { credentials: 'include' })
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_rapor_${selectedYear}_tr.pdf`; a.click(); })
                         .finally(() => setPdfLoading(''));
@@ -1054,8 +1051,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => {
                       setPdfLoading('en');
-                      const token = localStorage.getItem('access_token');
-                      fetch(api.getReportUrl(selectedYear, 'en'), { headers: { Authorization: `Bearer ${token}` } })
+                      fetch(api.getReportUrl(selectedYear, 'en'), { credentials: 'include' })
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_report_${selectedYear}_en.pdf`; a.click(); })
                         .finally(() => setPdfLoading(''));
@@ -1067,8 +1063,7 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => {
-                      const token = localStorage.getItem('access_token');
-                      fetch(api.getCsvUrl(selectedYear), { headers: { Authorization: `Bearer ${token}` } })
+                      fetch(api.getCsvUrl(selectedYear), { credentials: 'include' })
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.csv`; a.click(); });
                     }}
