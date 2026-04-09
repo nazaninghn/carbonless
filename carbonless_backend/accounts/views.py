@@ -20,8 +20,28 @@ class RegisterView(generics.CreateAPIView):
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
 class RateLimitedLoginView(TokenObtainPairView):
-    """Login with rate limiting — max 10 attempts per minute per IP"""
-    pass
+    """Login with rate limiting + sets HttpOnly cookies for tokens"""
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            from django.conf import settings
+            access = response.data.get('access')
+            refresh = response.data.get('refresh')
+            is_secure = not settings.DEBUG
+            if access:
+                response.set_cookie(
+                    'access_token', access,
+                    httponly=True, secure=is_secure, samesite='Lax',
+                    max_age=12 * 3600,  # 12 hours
+                )
+            if refresh:
+                response.set_cookie(
+                    'refresh_token', refresh,
+                    httponly=True, secure=is_secure, samesite='Lax',
+                    max_age=7 * 24 * 3600,  # 7 days
+                )
+        return response
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
@@ -46,12 +66,16 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
                 'can_generate_reports': profile.can_generate_reports,
             }
         except UserProfile.DoesNotExist:
-            # Auto-create profile
-            profile = UserProfile.objects.create(user=user, role='admin')
-            data['role'] = 'admin'
+            # Auto-create profile with data_entry role
+            # Admin role is assigned when user creates a company
+            profile = UserProfile.objects.create(user=user, role='data_entry')
+            data['role'] = 'data_entry'
+            data['role_display'] = 'Data Entry'
             data['permissions'] = {
-                'can_edit_entries': True, 'can_manage_users': True,
-                'can_approve_requests': True, 'can_generate_reports': True,
+                'can_edit_entries': profile.can_edit_entries,
+                'can_manage_users': profile.can_manage_users,
+                'can_approve_requests': profile.can_approve_requests,
+                'can_generate_reports': profile.can_generate_reports,
             }
         return Response(data)
 
@@ -104,3 +128,13 @@ def change_password(request):
     request.user.set_password(new_password)
     request.user.save()
     return Response({'status': 'ok', 'message': 'Password changed successfully'})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """Logout — clear HttpOnly cookies"""
+    response = Response({'status': 'ok'})
+    response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
+    return response

@@ -130,10 +130,9 @@ export default function DashboardPage() {
     fetchData();
   }, [fetchData]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    window.location.href = '/login';
+  const handleLogout = async () => {
+    const { auth } = await import('@/lib/auth');
+    auth.logout();
   };
 
   const filteredFactors = factors.filter(f => {
