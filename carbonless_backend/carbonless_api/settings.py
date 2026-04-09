@@ -27,7 +27,11 @@ if not SECRET_KEY:
 
 DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+    if host.strip()
+]
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -137,7 +141,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # ============================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'accounts.authentication.CookieJWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -178,8 +182,8 @@ if FRONTEND_URL:
 if VERCEL_URL:
     CSRF_TRUSTED_ORIGINS.append(f"https://{VERCEL_URL}")
 
-CORS_ALLOWED_ORIGINS = list(set(CORS_ALLOWED_ORIGINS))
-CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS))
+CORS_ALLOWED_ORIGINS = list({o.strip() for o in CORS_ALLOWED_ORIGINS if o.strip()})
+CSRF_TRUSTED_ORIGINS = list({o.strip() for o in CSRF_TRUSTED_ORIGINS if o.strip()})
 
 CORS_ALLOW_CREDENTIALS = True
 

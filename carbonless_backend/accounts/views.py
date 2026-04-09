@@ -28,22 +28,36 @@ class RateLimitedLoginView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         if response.status_code == 200:
-            from django.conf import settings
+            from django.conf import settings as django_settings
             access = response.data.get('access')
             refresh = response.data.get('refresh')
-            is_secure = not settings.DEBUG
+            is_secure = not django_settings.DEBUG
             if access:
                 response.set_cookie(
                     'access_token', access,
                     httponly=True, secure=is_secure, samesite='Lax',
-                    max_age=30 * 60,  # 30 minutes
+                    max_age=30 * 60, path='/',
                 )
             if refresh:
                 response.set_cookie(
                     'refresh_token', refresh,
                     httponly=True, secure=is_secure, samesite='Lax',
-                    max_age=7 * 24 * 3600,  # 7 days
+                    max_age=7 * 24 * 3600, path='/',
                 )
+
+            # Audit log
+            from .models import ActivityLog
+            username = request.data.get('username')
+            user = User.objects.filter(username=username).first()
+            if user:
+                ActivityLog.objects.create(
+                    user=user, action='login', detail='User logged in',
+                    ip_address=request.META.get('REMOTE_ADDR'),
+                    target_type='User', target_id=str(user.id),
+                )
+
+            # Remove tokens from response body — cookie-only
+            response.data = {'status': 'ok', 'message': 'Login successful'}
         return response
 
 
@@ -130,6 +144,13 @@ def change_password(request):
         return Response({'error': 'Password must be at least 8 characters'}, status=400)
     request.user.set_password(new_password)
     request.user.save()
+    from .models import ActivityLog
+    ActivityLog.objects.create(
+        user=request.user, action='password_changed',
+        detail='User changed password',
+        ip_address=request.META.get('REMOTE_ADDR'),
+        target_type='User', target_id=str(request.user.id),
+    )
     return Response({'status': 'ok', 'message': 'Password changed successfully'})
 
 

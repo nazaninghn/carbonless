@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { auth } from '@/lib/auth';
 import SimpleHeader from '@/components/SimpleHeader';
@@ -16,13 +16,15 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
 
-  // Check for session expired
-  useState(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('session_expired')) {
-      setSessionExpired(true);
-      localStorage.removeItem('session_expired');
+  // Check for session expired via query param
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('reason') === 'session_expired') {
+        setSessionExpired(true);
+      }
     }
-  });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,10 +37,11 @@ export default function LoginPage() {
         credentials: 'include',
         body: JSON.stringify({ username: email, password }),
       });
-      const data = await res.json();
+      let data = {};
+      try { data = await res.json(); } catch {}
       if (res.ok) {
-        // Store tokens in auth helper (localStorage) + backend sets HttpOnly cookies
-        auth.setTokens(data.access, data.refresh);
+        // Backend sets HttpOnly cookies. Also store in localStorage as fallback for API calls.
+        if (data.access) auth.setTokens(data.access, data.refresh);
         window.location.href = '/dashboard';
       } else {
         setError(t.language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');

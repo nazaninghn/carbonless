@@ -28,7 +28,9 @@ class AuthTests(TestCase):
             'username': 'loginuser', 'password': 'TestPass123',
         })
         self.assertEqual(res.status_code, 200)
-        self.assertIn('access', res.data)
+        self.assertEqual(res.data['status'], 'ok')
+        # Tokens are in HttpOnly cookies, not in response body
+        self.assertIn('access_token', res.cookies)
 
     def test_profile(self):
         user = User.objects.create_user('profuser', 'prof@test.com', 'TestPass123')

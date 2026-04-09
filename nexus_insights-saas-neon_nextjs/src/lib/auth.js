@@ -37,7 +37,6 @@ export const auth = {
 
   sessionExpired: () => {
     auth.clearTokens();
-    localStorage.setItem('session_expired', 'true');
-    window.location.href = '/login';
+    window.location.href = '/login?reason=session_expired';
   },
 };
