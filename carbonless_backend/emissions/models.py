@@ -110,11 +110,29 @@ class EmissionEntry(models.Model):
     proof_document = models.FileField(upload_to='proofs/%Y/%m/', blank=True, null=True,
                                        help_text='Upload invoice, receipt, or meter reading')
 
+    # Audit: snapshot factor at time of entry creation
+    factor_value_snapshot = models.DecimalField(max_digits=14, decimal_places=6, null=True, blank=True,
+                                                 help_text='Factor value at time of entry creation')
+    factor_source_snapshot = models.CharField(max_length=255, blank=True,
+                                               help_text='Factor source/reference at time of entry')
+
+    # Approval workflow
+    STATUS_CHOICES = [
+        ('submitted', 'Submitted'),
+        ('approved', 'Approved'),
+        ('draft', 'Draft'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         self.calculated_co2e_kg = self.quantity * self.emission_factor.factor_kg_co2e
+        # Snapshot factor on first save
+        if not self.factor_value_snapshot:
+            self.factor_value_snapshot = self.emission_factor.factor_kg_co2e
+            self.factor_source_snapshot = f"{self.emission_factor.source}: {self.emission_factor.reference[:100]}"
         super().save(*args, **kwargs)
 
     @property

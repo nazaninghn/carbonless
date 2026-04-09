@@ -12,6 +12,15 @@ class CompanyCreateView(generics.CreateAPIView):
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        # Company creator gets admin role
+        from accounts.models import UserProfile
+        profile, created = UserProfile.objects.get_or_create(
+            user=self.request.user,
+            defaults={'role': 'admin'}
+        )
+        if not created and profile.role != 'admin':
+            profile.role = 'admin'
+            profile.save()
 
 
 class CompanyDetailView(generics.RetrieveUpdateAPIView):

@@ -15,12 +15,7 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
     def perform_create(self, serializer):
-        user = serializer.save()
-        # Role assignment: first user of their company gets admin, invitees get data_entry
-        # For now, since company is created after registration, default to admin
-        # The company creator flow in register page handles this
-        from .models import UserProfile
-        UserProfile.objects.create(user=user, role='admin')
+        serializer.save()
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')

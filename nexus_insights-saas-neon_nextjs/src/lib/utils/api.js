@@ -1,15 +1,15 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 async function request(endpoint, options = {}) {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const { auth } = await import('@/lib/auth');
+  const token = auth.getAccessToken();
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
 
   if (res.status === 401 && token) {
-    // Try refresh
-    const refreshToken = localStorage.getItem('refresh_token');
+    const refreshToken = auth.getRefreshToken();
     if (refreshToken) {
       const refreshRes = await fetch(`${API_BASE}/accounts/token/refresh/`, {
         method: 'POST',
@@ -18,14 +18,11 @@ async function request(endpoint, options = {}) {
       });
       if (refreshRes.ok) {
         const data = await refreshRes.json();
-        localStorage.setItem('access_token', data.access);
+        auth.setTokens(data.access, refreshToken);
         headers['Authorization'] = `Bearer ${data.access}`;
         return fetch(`${API_BASE}${endpoint}`, { ...options, headers });
       } else {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.setItem('session_expired', 'true');
-        window.location.href = '/login';
+        auth.sessionExpired();
       }
     }
   }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { auth } from '@/lib/auth';
 import SimpleHeader from '@/components/SimpleHeader';
 import NextLink from 'next/link';
 import { Mail, Lock, ArrowRight, Leaf, TrendingDown, BarChart3 } from 'lucide-react';
@@ -35,8 +36,7 @@ export default function LoginPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        localStorage.setItem('access_token', data.access);
-        localStorage.setItem('refresh_token', data.refresh);
+        auth.setTokens(data.access, data.refresh);
         window.location.href = '/dashboard';
       } else {
         setError(t.language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
