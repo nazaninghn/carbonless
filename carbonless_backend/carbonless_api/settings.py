@@ -8,7 +8,11 @@ from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-e3$-7=+^f)%hm(y7xglchd@95lz_y3&&pvmipzp_h%xwpbhl9@')
+SECRET_KEY = os.environ.get('SECRET_KEY')
+if not SECRET_KEY:
+    if os.environ.get('RENDER') or os.environ.get('PRODUCTION'):
+        raise RuntimeError('SECRET_KEY environment variable is required in production!')
+    SECRET_KEY = 'django-insecure-dev-only-e3$-7=+^f)%hm(y7xglchd@95lz'
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
@@ -140,3 +144,13 @@ if RENDER_CORS:
     CORS_ALLOWED_ORIGINS.append(RENDER_CORS)
 
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Security headers (production on Render only)
+if not DEBUG and os.environ.get('RENDER'):
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

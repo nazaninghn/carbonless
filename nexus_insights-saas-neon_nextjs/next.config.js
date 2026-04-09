@@ -2,12 +2,11 @@
 const nextConfig = {
   images: {
     unoptimized: true,
-    dangerouslyAllowSVG: true,
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    dangerouslyAllowSVG: false,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'images.unsplash.com',
       },
     ],
   },

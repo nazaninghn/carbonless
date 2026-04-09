@@ -16,8 +16,11 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        # Auto-create profile with admin role for first user
-        UserProfile.objects.create(user=user, role='admin')
+        # First user of a company gets admin role, rest get data_entry
+        from .models import UserProfile
+        existing_count = User.objects.count()
+        role = 'admin' if existing_count <= 1 else 'data_entry'
+        UserProfile.objects.create(user=user, role=role)
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
