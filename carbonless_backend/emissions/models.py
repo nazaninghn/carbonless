@@ -97,6 +97,7 @@ class EmissionEntry(models.Model):
     """Individual emission data entry by user"""
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='emission_entries')
+    company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True, related_name='emission_entries')
     emission_factor = models.ForeignKey(EmissionFactor, on_delete=models.PROTECT)
 
     year = models.IntegerField()
@@ -157,6 +158,7 @@ class ReductionTarget(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reduction_targets')
+    company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True, related_name='reduction_targets')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
@@ -186,6 +188,7 @@ class CustomEmissionRequest(models.Model):
     SCOPE_CHOICES = EmissionFactor.SCOPE_CHOICES
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='custom_emission_requests')
+    company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True, related_name='custom_emission_requests')
 
     # What the user wants to report
     scope = models.CharField(max_length=10, choices=SCOPE_CHOICES)

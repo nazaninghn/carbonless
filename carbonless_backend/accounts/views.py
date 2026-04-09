@@ -162,3 +162,31 @@ def logout_view(request):
     response.delete_cookie('access_token', path='/')
     response.delete_cookie('refresh_token', path='/')
     return response
+
+
+from rest_framework_simplejwt.views import TokenRefreshView
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Refresh token from HttpOnly cookie, set new access cookie."""
+
+    def post(self, request, *args, **kwargs):
+        # Inject refresh token from cookie into request data
+        refresh = request.COOKIES.get('refresh_token')
+        if refresh:
+            request.data['refresh'] = refresh
+
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            from django.conf import settings as django_settings
+            access = response.data.get('access')
+            is_secure = not django_settings.DEBUG
+            if access:
+                response.set_cookie(
+                    'access_token', access,
+                    httponly=True, secure=is_secure, samesite='Lax',
+                    max_age=30 * 60, path='/',
+                )
+            response.data = {'status': 'ok'}
+        return response
