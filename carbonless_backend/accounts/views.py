@@ -16,11 +16,11 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         user = serializer.save()
-        # First user of a company gets admin role, rest get data_entry
+        # Role assignment: first user of their company gets admin, invitees get data_entry
+        # For now, since company is created after registration, default to admin
+        # The company creator flow in register page handles this
         from .models import UserProfile
-        existing_count = User.objects.count()
-        role = 'admin' if existing_count <= 1 else 'data_entry'
-        UserProfile.objects.create(user=user, role=role)
+        UserProfile.objects.create(user=user, role='admin')
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
