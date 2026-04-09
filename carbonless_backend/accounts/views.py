@@ -15,7 +15,10 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
     def perform_create(self, serializer):
-        serializer.save()
+        user = serializer.save()
+        # Default role: data_entry. Admin role assigned when user creates a company.
+        from .models import UserProfile
+        UserProfile.objects.create(user=user, role='data_entry')
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
@@ -33,7 +36,7 @@ class RateLimitedLoginView(TokenObtainPairView):
                 response.set_cookie(
                     'access_token', access,
                     httponly=True, secure=is_secure, samesite='Lax',
-                    max_age=12 * 3600,  # 12 hours
+                    max_age=30 * 60,  # 30 minutes
                 )
             if refresh:
                 response.set_cookie(

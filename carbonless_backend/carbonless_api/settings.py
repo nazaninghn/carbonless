@@ -20,10 +20,10 @@ IS_DEV = not IS_PRODUCTION
 # ============================================
 SECRET_KEY = os.environ.get('SECRET_KEY')
 if not SECRET_KEY:
-    if IS_DEV:
-        SECRET_KEY = 'dev-only-not-for-shared-env'
+    if os.environ.get('ALLOW_DEV_SECRET') == 'true':
+        SECRET_KEY = 'dev-only-not-for-shared-env-minimum-32-chars-long'
     else:
-        raise RuntimeError('SECRET_KEY is required in production!')
+        raise RuntimeError('SECRET_KEY environment variable is required. Set ALLOW_DEV_SECRET=true for local dev.')
 
 DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
 
@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=12) if IS_PRODUCTION else timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
@@ -175,6 +175,11 @@ if FRONTEND_URL:
 CSRF_TRUSTED_ORIGINS = []
 if FRONTEND_URL:
     CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
+if VERCEL_URL:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{VERCEL_URL}")
+
+CORS_ALLOWED_ORIGINS = list(set(CORS_ALLOWED_ORIGINS))
+CSRF_TRUSTED_ORIGINS = list(set(CSRF_TRUSTED_ORIGINS))
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -188,8 +193,11 @@ if IS_PRODUCTION:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
     CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = False  # JS needs to read CSRF token
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'

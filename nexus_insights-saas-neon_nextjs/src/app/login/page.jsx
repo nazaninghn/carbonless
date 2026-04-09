@@ -32,10 +32,12 @@ export default function LoginPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/accounts/login/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ username: email, password }),
       });
       const data = await res.json();
       if (res.ok) {
+        // Store tokens in auth helper (localStorage) + backend sets HttpOnly cookies
         auth.setTokens(data.access, data.refresh);
         window.location.href = '/dashboard';
       } else {
