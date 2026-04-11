@@ -11,6 +11,7 @@ from .serializers import (
     ReductionTargetSerializer, CustomEmissionRequestSerializer
 )
 from .calculator import calculate_emissions, get_available_countries
+from companies.utils import get_current_company
 
 
 class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
@@ -111,7 +112,8 @@ class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
 def emission_summary(request):
     """Get emission summary for a given year, enriched with questionnaire profile"""
     year = request.query_params.get('year', 2026)
-    entries = EmissionEntry.objects.filter(user=request.user, year=year)
+    company = get_current_company(request.user)
+    entries = EmissionEntry.objects.filter(company=company, year=year) if company else EmissionEntry.objects.none()
 
     total = float(entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0)
     scope1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
@@ -139,12 +141,12 @@ def emission_summary(request):
 
     # Custom emission requests (approved)
     custom_approved = CustomEmissionRequest.objects.filter(
-        user=request.user, year=year, status='approved', calculated_co2e_kg__isnull=False
-    )
+        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False
+    ) if company else CustomEmissionRequest.objects.none()
     custom_total = float(custom_approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     custom_pending = CustomEmissionRequest.objects.filter(
-        user=request.user, year=year, status='pending'
-    ).count()
+        company=company, year=year, status='pending'
+    ).count() if company else 0
 
     # Add custom approved to scope totals
     for cr in custom_approved:
@@ -257,6 +259,7 @@ def bulk_import_view(request):
             factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
             entry = EmissionEntry(
                 user=request.user,
+                company=get_current_company(request.user),
                 emission_factor=factor,
                 year=item.get('year', 2026),
                 month=item.get('month', 1),
@@ -284,7 +287,8 @@ def comparison_view(request):
     year2 = int(request.query_params.get('year2', 2026))
 
     def get_year_data(y):
-        qs = EmissionEntry.objects.filter(user=request.user, year=y)
+        company = get_current_company(request.user)
+        qs = EmissionEntry.objects.filter(company=company, year=y) if company else EmissionEntry.objects.none()
         total = qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s1 = qs.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s2 = qs.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
@@ -313,7 +317,8 @@ import csv
 def export_csv_view(request):
     """Export emission entries as CSV"""
     year = int(request.query_params.get('year', 2026))
-    entries = EmissionEntry.objects.filter(user=request.user, year=year).select_related('emission_factor')
+    company = get_current_company(request.user)
+    entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor') if company else EmissionEntry.objects.none()
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="emissions_{year}.csv"'
@@ -388,9 +393,10 @@ def api_docs_view(request):
 @permission_classes([IsAuthenticated])
 def export_all_view(request):
     """Export all user data as JSON (backup)"""
-    entries = EmissionEntry.objects.filter(user=request.user).select_related('emission_factor')
-    targets = ReductionTarget.objects.filter(user=request.user)
-    custom = CustomEmissionRequest.objects.filter(user=request.user)
+    company = get_current_company(request.user)
+    entries = EmissionEntry.objects.filter(company=company).select_related('emission_factor') if company else EmissionEntry.objects.none()
+    targets = ReductionTarget.objects.filter(company=company) if company else ReductionTarget.objects.none()
+    custom = CustomEmissionRequest.objects.filter(company=company) if company else CustomEmissionRequest.objects.none()
 
     from emissions.serializers import EmissionEntrySerializer, ReductionTargetSerializer, CustomEmissionRequestSerializer
     return Response({

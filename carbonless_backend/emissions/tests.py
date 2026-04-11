@@ -81,6 +81,14 @@ class CalculatorTests(TestCase):
 class APITests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('apiuser', 'api@test.com', 'testpass123')
+        from companies.models import Company, CompanyMembership
+        self.company = Company.objects.create(
+            user=self.user, legal_entity_name='Test Co', tax_number='123',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='Test', number_of_employees='1-10',
+            annual_turnover_range='<1M', number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(company=self.company, user=self.user, role='owner')
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
         self.factor = EmissionFactor.objects.create(
@@ -103,7 +111,7 @@ class APITests(TestCase):
 
     def test_summary(self):
         EmissionEntry.objects.create(
-            user=self.user, emission_factor=self.factor,
+            user=self.user, company=self.company, emission_factor=self.factor,
             year=2026, month=1, quantity=1000,
         )
         res = self.client.get('/api/emissions/summary/?year=2026')

@@ -58,3 +58,27 @@ class Facility(models.Model):
     class Meta:
         verbose_name_plural = "Facilities"
         ordering = ['name']
+
+
+class CompanyMembership(models.Model):
+    """Links users to companies with roles. Replaces Company.user OneToOne."""
+    ROLE_CHOICES = [
+        ('owner', 'Owner'),
+        ('admin', 'Admin'),
+        ('manager', 'Manager'),
+        ('data_entry', 'Data Entry'),
+        ('auditor', 'Auditor'),
+    ]
+
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='memberships')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='company_memberships')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='data_entry')
+    is_active = models.BooleanField(default=True)
+    invited_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='sent_company_invites')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('company', 'user')
+
+    def __str__(self):
+        return f"{self.user.username} @ {self.company} ({self.role})"

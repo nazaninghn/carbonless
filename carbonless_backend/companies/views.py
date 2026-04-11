@@ -1,34 +1,33 @@
-from rest_framework import generics, status
-from rest_framework.response import Response
+from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .models import Company, Facility
+from .models import Company, Facility, CompanyMembership
 from .serializers import CompanySerializer, FacilitySerializer
+from .utils import get_current_company
 
 
 class CompanyCreateView(generics.CreateAPIView):
     queryset = Company.objects.all()
     serializer_class = CompanySerializer
     permission_classes = (IsAuthenticated,)
-    
+
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-        # Company creator gets admin role
-        from accounts.models import UserProfile
-        profile, created = UserProfile.objects.get_or_create(
-            user=self.request.user,
-            defaults={'role': 'admin'}
+        company = serializer.save(user=self.request.user)
+        CompanyMembership.objects.get_or_create(
+            company=company, user=self.request.user,
+            defaults={'role': 'owner', 'is_active': True},
         )
-        if not created and profile.role != 'admin':
-            profile.role = 'admin'
-            profile.save()
 
 
 class CompanyDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = CompanySerializer
     permission_classes = (IsAuthenticated,)
-    
+
     def get_object(self):
-        return Company.objects.get(user=self.request.user)
+        company = get_current_company(self.request.user)
+        if not company:
+            from rest_framework.exceptions import NotFound
+            raise NotFound('No company found')
+        return company
 
 
 class FacilityListCreateView(generics.ListCreateAPIView):
@@ -36,13 +35,12 @@ class FacilityListCreateView(generics.ListCreateAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        try:
-            return Facility.objects.filter(company=self.request.user.company)
-        except Company.DoesNotExist:
-            return Facility.objects.none()
+        company = get_current_company(self.request.user)
+        return Facility.objects.filter(company=company) if company else Facility.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(company=self.request.user.company)
+        company = get_current_company(self.request.user)
+        serializer.save(company=company)
 
 
 class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -50,7 +48,5 @@ class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        try:
-            return Facility.objects.filter(company=self.request.user.company)
-        except Company.DoesNotExist:
-            return Facility.objects.none()
+        company = get_current_company(self.request.user)
+        return Facility.objects.filter(company=company) if company else Facility.objects.none()
