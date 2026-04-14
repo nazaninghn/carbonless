@@ -1,7 +1,23 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
+// Store tokens for header-based auth (dev cross-origin fallback)
+function getStoredToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('_dev_access_token');
+}
+function setStoredToken(token) {
+  if (typeof window !== 'undefined' && token) localStorage.setItem('_dev_access_token', token);
+}
+function clearStoredToken() {
+  if (typeof window !== 'undefined') localStorage.removeItem('_dev_access_token');
+}
+
+export function setAccessToken(token) { setStoredToken(token); }
+
 async function request(endpoint, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const token = getStoredToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -10,15 +26,24 @@ async function request(endpoint, options = {}) {
   });
 
   if (res.status === 401) {
-    // Try cookie-based refresh
+    // Try refresh
     const refreshRes = await fetch(`${API_BASE}/accounts/token/refresh/`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
     });
     if (refreshRes.ok) {
+      // Check if new access token in body (dev mode)
+      try {
+        const refreshData = await refreshRes.json();
+        if (refreshData.access) setStoredToken(refreshData.access);
+      } catch {}
+      const newToken = getStoredToken();
+      if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
       return fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'include' });
     } else {
+      _accessToken = null;
+      clearStoredToken();
       window.location.href = '/login?reason=session_expired';
     }
   }

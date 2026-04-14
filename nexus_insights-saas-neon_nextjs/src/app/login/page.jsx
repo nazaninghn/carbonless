@@ -39,7 +39,11 @@ export default function LoginPage() {
       let data = {};
       try { data = await res.json(); } catch {}
       if (res.ok) {
-        // Backend sets HttpOnly cookies — no token storage needed
+        // In dev, backend returns tokens in body; in prod, only cookies
+        if (data.access) {
+          const { setAccessToken } = await import('@/lib/utils/api');
+          setAccessToken(data.access);
+        }
         window.location.href = '/dashboard';
       } else {
         setError(t.language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');

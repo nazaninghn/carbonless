@@ -57,7 +57,11 @@ class RateLimitedLoginView(TokenObtainPairView):
                 )
 
             # Remove tokens from response body — cookie-only
-            response.data = {'status': 'ok', 'message': 'Login successful'}
+            # In dev (cross-origin localhost), also return tokens for header-based auth
+            if django_settings.DEBUG:
+                pass  # keep access/refresh in body for dev
+            else:
+                response.data = {'status': 'ok', 'message': 'Login successful'}
         return response
 
 
@@ -192,5 +196,8 @@ class CookieTokenRefreshView(TokenRefreshView):
                     httponly=True, secure=is_secure, samesite='Lax',
                     max_age=30 * 60, path='/',
                 )
-            response.data = {'status': 'ok'}
+            if django_settings.DEBUG:
+                response.data = {'status': 'ok', 'access': access}
+            else:
+                response.data = {'status': 'ok'}
         return response

@@ -84,10 +84,26 @@ export default function RegisterPage() {
         body: JSON.stringify({ username: formData.username, password: formData.password }),
       });
       if (loginRes.ok) {
-        // 3. Create company (using cookie auth)
+        // Store token for dev header-based auth
+        try {
+          const loginData = await loginRes.json();
+          if (loginData.access) {
+            const { setAccessToken } = await import('@/lib/utils/api');
+            setAccessToken(loginData.access);
+          }
+        } catch {}
+        // 3. Create company (using cookie + header auth)
+        const { getAccessToken } = await import('@/lib/utils/api');
+        const companyHeaders = { 'Content-Type': 'application/json' };
+        const devToken = typeof getAccessToken === 'function' ? null : null;
+        // Use stored token for dev
+        try {
+          const storedToken = localStorage.getItem('_dev_access_token');
+          if (storedToken) companyHeaders['Authorization'] = `Bearer ${storedToken}`;
+        } catch {}
         await fetch(`${API}/companies/create/`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: companyHeaders,
           credentials: 'include',
           body: JSON.stringify({
             name: formData.legalEntityName,
