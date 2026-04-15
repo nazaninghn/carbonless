@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 
 
 class Company(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company')
+    # DEPRECATED: Use CompanyMembership instead. Kept for backward compatibility only.
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='company', help_text='DEPRECATED - use CompanyMembership')
     
     # Section 1: Basic Corporate Information
     legal_entity_name = models.CharField(max_length=255)

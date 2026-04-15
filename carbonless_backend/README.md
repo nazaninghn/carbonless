@@ -1,47 +1,73 @@
-# Carbonless Backend API
+# Carbonless Backend
 
-Django REST API for Carbonless Carbon Footprint Calculator
+ISO 14064-1 Carbon Inventory Platform — Django REST API
+
+## Architecture
+
+- **Auth**: Cookie-based JWT (HttpOnly) + header fallback for cross-origin dev
+- **Companies**: CompanyMembership model (owner/admin/manager/data_entry/auditor)
+- **Emissions**: Company-scoped entries, targets, custom requests, 131+ factors
+- **Questionnaire**: ISO 14064-1 chatbot flow (9 questions)
+- **Reporting**: PDF (TR/EN) + CSV export
 
 ## Setup
 
-1. Create superuser:
 ```bash
-python manage.py createsuperuser
-```
+cd carbonless_backend
+python -m venv venv
+venv/Scripts/activate  # Windows
+pip install -r requirements.txt
 
-2. Run server:
-```bash
+# Environment
+export ALLOW_DEV_SECRET=true
+export DEBUG=true
+
+python manage.py migrate
+python manage.py seed_factors
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
-## API Endpoints
+## Key Endpoints
 
-### Authentication
-- POST `/api/accounts/register/` - Register new user
-- POST `/api/accounts/login/` - Login (get JWT token)
-- POST `/api/accounts/token/refresh/` - Refresh JWT token
-- GET `/api/accounts/profile/` - Get user profile (authenticated)
+### Auth
+- `POST /api/accounts/register/` — Register (default role: data_entry)
+- `POST /api/accounts/login/` — Login (sets HttpOnly cookies + returns tokens)
+- `POST /api/accounts/token/refresh/` — Cookie-based refresh
+- `POST /api/accounts/logout/` — Clear cookies
+- `GET /api/accounts/profile/` — User profile + role + permissions
+- `POST /api/accounts/change-password/`
 
-### Companies
-- POST `/api/companies/create/` - Create company profile (authenticated)
-- GET `/api/companies/detail/` - Get company details (authenticated)
-- PUT `/api/companies/detail/` - Update company details (authenticated)
+### Companies (membership-based)
+- `POST /api/companies/create/` — Create company (creator = owner)
+- `GET /api/companies/detail/` — Current company
+- `GET /api/companies/facilities/` — List facilities
+- `GET /api/companies/memberships/` — List members (admin only)
+- `PATCH /api/companies/memberships/{id}/` — Update role
 
-## Admin Panel
-Access at: http://localhost:8000/admin/
+### Emissions (company-scoped)
+- `GET /api/emissions/factors/` — List emission factors
+- `GET/POST /api/emissions/entries/` — CRUD entries
+- `GET /api/emissions/summary/?year=2026` — Summary
+- `GET /api/emissions/report/?year=2026&lang=tr` — PDF report
+- `GET /api/emissions/export-csv/?year=2026` — CSV export
+- `POST /api/emissions/calculate/` — Calculate (by ID or slug)
+- `GET /api/emissions/comparison/?year1=2025&year2=2026`
+- `POST /api/emissions/bulk-import/`
+- `GET/POST /api/emissions/custom-requests/`
 
-## Testing with curl
+### Questionnaire
+- `POST /api/questionnaire/start/` — Start/resume
+- `POST /api/questionnaire/answer/` — Submit answer
+- `GET /api/questionnaire/profile/` — Inventory config
 
-### Register:
+## Tests
+
 ```bash
-curl -X POST http://localhost:8000/api/accounts/register/ \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","email":"test@test.com","password":"testpass123","password2":"testpass123"}'
+export ALLOW_DEV_SECRET=true
+python manage.py test emissions accounts questionnaire companies
 ```
 
-### Login:
-```bash
-curl -X POST http://localhost:8000/api/accounts/login/ \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"testpass123"}'
-```
+## Deploy (Render)
+
+Environment variables: `SECRET_KEY`, `DATABASE_URL`, `DEBUG=False`, `FRONTEND_URL`, `ALLOWED_HOSTS`
