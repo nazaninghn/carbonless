@@ -77,6 +77,11 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             profile = user.profile
             data['role'] = profile.role
             data['role_display'] = profile.get_role_display()
+            data['phone'] = profile.phone
+            data['department'] = profile.department
+            data['language_preference'] = profile.language_preference
+            data['notify_approvals'] = profile.notify_approvals
+            data['notify_system'] = profile.notify_system
             data['permissions'] = {
                 'can_edit_entries': profile.can_edit_entries,
                 'can_manage_users': profile.can_manage_users,
@@ -196,3 +201,45 @@ class CookieTokenRefreshView(TokenRefreshView):
             # Always return access token for cross-origin header-based auth
             response.data = {'status': 'ok', 'access': access}
         return response
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    """Update user profile (name, department, phone)"""
+    user = request.user
+    if 'first_name' in request.data:
+        user.first_name = request.data['first_name']
+    if 'last_name' in request.data:
+        user.last_name = request.data['last_name']
+    user.save()
+
+    try:
+        profile = user.profile
+        if 'department' in request.data:
+            profile.department = request.data['department']
+        if 'phone' in request.data:
+            profile.phone = request.data['phone']
+        if 'language_preference' in request.data:
+            profile.language_preference = request.data['language_preference']
+        if 'notify_approvals' in request.data:
+            profile.notify_approvals = request.data['notify_approvals']
+        if 'notify_system' in request.data:
+            profile.notify_system = request.data['notify_system']
+        profile.save()
+    except Exception:
+        pass
+
+    return Response({'status': 'ok'})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_account(request):
+    """Delete user account and all associated data"""
+    user = request.user
+    user.delete()
+    response = Response({'status': 'ok', 'message': 'Account deleted'})
+    response.delete_cookie('access_token', path='/')
+    response.delete_cookie('refresh_token', path='/')
+    return response

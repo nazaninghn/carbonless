@@ -103,6 +103,9 @@ export const api = {
 
   // Account
   changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),
+  updateProfile: (data) => request('/accounts/update-profile/', { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteAccount: () => request('/accounts/delete-account/', { method: 'DELETE' }),
+  exportAll: () => request('/emissions/export-all/'),
 
   // Emission entry update
   updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
