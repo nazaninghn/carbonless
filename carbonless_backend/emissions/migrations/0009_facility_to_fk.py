@@ -3,12 +3,12 @@ from django.db import migrations, models
 
 
 def clean_facility_data(apps, schema_editor):
-    """Set facility to NULL for all entries before converting to FK"""
-    EmissionEntry = apps.get_model('emissions', 'EmissionEntry')
-    CustomEmissionRequest = apps.get_model('emissions', 'CustomEmissionRequest')
-    # Clear text facility values so FK conversion works
-    EmissionEntry.objects.all().update(facility=None)
-    CustomEmissionRequest.objects.all().update(facility=None)
+    """Set facility to empty string then NULL after making nullable"""
+    from django.db import connection
+    with connection.cursor() as cursor:
+        # Direct SQL to bypass Django model validation
+        cursor.execute("UPDATE emissions_emissionentry SET facility = NULL")
+        cursor.execute("UPDATE emissions_customemissionrequest SET facility = NULL")
 
 
 class Migration(migrations.Migration):
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # First remove facility_ref (added in earlier migration)
+        # Step 1: Remove facility_ref FK (added in migration 0007)
         migrations.RemoveField(
             model_name='customemissionrequest',
             name='facility_ref',
@@ -28,17 +28,43 @@ class Migration(migrations.Migration):
             model_name='emissionentry',
             name='facility_ref',
         ),
-        # Clean data before FK conversion
+
+        # Step 2: Make facility CharField nullable first
+        migrations.AlterField(
+            model_name='emissionentry',
+            name='facility',
+            field=models.CharField(max_length=255, blank=True, null=True),
+        ),
+        migrations.AlterField(
+            model_name='customemissionrequest',
+            name='facility',
+            field=models.CharField(max_length=255, blank=True, null=True),
+        ),
+
+        # Step 3: Clean data (set all to NULL)
         migrations.RunPython(clean_facility_data, migrations.RunPython.noop),
-        # Convert facility from CharField to FK
-        migrations.AlterField(
-            model_name='customemissionrequest',
-            name='facility',
-            field=models.ForeignKey(blank=True, help_text='Structured facility reference', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='custom_emission_requests', to='companies.facility'),
-        ),
+
+        # Step 4: Convert to ForeignKey
         migrations.AlterField(
             model_name='emissionentry',
             name='facility',
-            field=models.ForeignKey(blank=True, help_text='Structured facility reference', null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='emission_entries', to='companies.facility'),
+            field=models.ForeignKey(
+                blank=True, null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='emission_entries',
+                to='companies.facility',
+                help_text='Structured facility reference',
+            ),
+        ),
+        migrations.AlterField(
+            model_name='customemissionrequest',
+            name='facility',
+            field=models.ForeignKey(
+                blank=True, null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name='custom_emission_requests',
+                to='companies.facility',
+                help_text='Structured facility reference',
+            ),
         ),
     ]
