@@ -26,7 +26,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     setLoading(true);
     try {
       const res = await api.startQuestionnaire(language);
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
         setSessionId(data.session_id);
         setComplete(false);
@@ -126,7 +126,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
         lang: language,
       });
 
-      if (res.ok) {
+      if (res && res.ok) {
         const data = await res.json();
 
         // Show warnings

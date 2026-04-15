@@ -44,7 +44,8 @@ async function request(endpoint, options = {}) {
     } else {
       _accessToken = null;
       clearStoredToken();
-      window.location.href = '/login?reason=session_expired';
+      if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
+      return new Response(null, { status: 401 });
     }
   }
   return res;
