@@ -38,18 +38,13 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class EmissionEntryViewSet(viewsets.ModelViewSet):
-    """CRUD for emission entries — tenant-aware"""
+    """CRUD for emission entries — fully company-scoped via membership"""
     serializer_class = EmissionEntrySerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = EmissionEntry.objects.filter(user=self.request.user)
-        # Also include company entries if user has a company
-        try:
-            company = self.request.user.company
-            qs = EmissionEntry.objects.filter(company=company)
-        except Exception:
-            pass
+        from emissions.utils import scope_queryset_to_company
+        qs = scope_queryset_to_company(EmissionEntry.objects.all(), self.request.user)
         year = self.request.query_params.get('year')
         scope = self.request.query_params.get('scope')
         if year:
@@ -59,52 +54,33 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        company = None
-        try:
-            company = self.request.user.company
-        except Exception:
-            pass
-        serializer.save(user=self.request.user, company=company)
+        serializer.save(user=self.request.user, company=get_current_company(self.request.user))
 
 
 class ReductionTargetViewSet(viewsets.ModelViewSet):
-    """CRUD for reduction targets — tenant-aware"""
+    """CRUD for reduction targets — fully company-scoped"""
     serializer_class = ReductionTargetSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        try:
-            return ReductionTarget.objects.filter(company=self.request.user.company)
-        except Exception:
-            return ReductionTarget.objects.filter(user=self.request.user)
+        from emissions.utils import scope_queryset_to_company
+        return scope_queryset_to_company(ReductionTarget.objects.all(), self.request.user)
 
     def perform_create(self, serializer):
-        company = None
-        try:
-            company = self.request.user.company
-        except Exception:
-            pass
-        serializer.save(user=self.request.user, company=company)
+        serializer.save(user=self.request.user, company=get_current_company(self.request.user))
 
 
 class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
-    """User submits custom emission requests — tenant-aware"""
+    """User submits custom emission requests — fully company-scoped"""
     serializer_class = CustomEmissionRequestSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        try:
-            return CustomEmissionRequest.objects.filter(company=self.request.user.company)
-        except Exception:
-            return CustomEmissionRequest.objects.filter(user=self.request.user)
+        from emissions.utils import scope_queryset_to_company
+        return scope_queryset_to_company(CustomEmissionRequest.objects.all(), self.request.user)
 
     def perform_create(self, serializer):
-        company = None
-        try:
-            company = self.request.user.company
-        except Exception:
-            pass
-        serializer.save(user=self.request.user, company=company)
+        serializer.save(user=self.request.user, company=get_current_company(self.request.user))
 
 
 @api_view(['GET'])
