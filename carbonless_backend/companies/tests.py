@@ -64,7 +64,8 @@ class FacilityTests(TestCase):
         Facility.objects.create(company=self.company, name='HQ', city='Istanbul')
         res = self.client.get('/api/companies/facilities/')
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.data), 1)
+        data = res.data.get('results', res.data) if isinstance(res.data, dict) else res.data
+        self.assertEqual(len(data), 1)
 
 
 class CompanyIsolationTests(TestCase):
@@ -98,7 +99,8 @@ class CompanyIsolationTests(TestCase):
         client.force_authenticate(user=self.user1)
         res = client.get('/api/companies/facilities/')
         self.assertEqual(res.status_code, 200)
-        names = [f['name'] for f in res.data]
+        data = res.data.get('results', res.data) if isinstance(res.data, dict) else res.data
+        names = [f['name'] for f in data]
         self.assertIn('Facility A', names)
         self.assertNotIn('Facility B', names)
 

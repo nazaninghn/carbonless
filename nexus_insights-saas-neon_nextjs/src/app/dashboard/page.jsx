@@ -949,6 +949,16 @@ export default function DashboardPage() {
                   >
                     <FileText className="w-4 h-4" /> CSV Export
                   </button>
+                  <button
+                    onClick={() => {
+                      fetch(api.getExcelUrl(selectedYear), { credentials: 'include' })
+                        .then(r => r.blob())
+                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.xlsx`; a.click(); });
+                    }}
+                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" /> Excel Export
+                  </button>
                 </div>
               </div>
             </div>

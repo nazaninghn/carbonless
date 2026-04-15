@@ -455,3 +455,29 @@ def pending_entries_view(request):
 
     from .serializers import EmissionEntrySerializer
     return Response(EmissionEntrySerializer(entries, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_excel_view(request):
+    """Export emission entries as Excel (xlsx)"""
+    from openpyxl import Workbook
+    year = int(request.query_params.get('year', 2026))
+    company = get_current_company(request.user)
+    entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor') if company else EmissionEntry.objects.none()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f'Emissions {year}'
+    ws.append(['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit', 'Factor', 'kg CO2e', 'tCO2e', 'Facility', 'Description'])
+
+    for e in entries:
+        ef = e.emission_factor
+        ws.append([ef.name, ef.scope, ef.category, e.month, float(e.quantity), ef.unit,
+                   float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg)/1000,
+                   str(e.facility) if e.facility else '', e.description])
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="emissions_{year}.xlsx"'
+    wb.save(response)
+    return response

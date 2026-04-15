@@ -101,6 +101,13 @@ export const api = {
   // Pending review
   getPendingEntries: () => request('/emissions/pending/'),
 
+  // Invite
+  inviteMember: (data) => request('/companies/invite/', { method: 'POST', body: JSON.stringify(data) }),
+  acceptInvite: (token) => request('/companies/accept-invite/', { method: 'POST', body: JSON.stringify({ token }) }),
+
+  // Excel export
+  getExcelUrl: (year) => `${API_BASE}/emissions/export-excel/?year=${year}`,
+
   // Account
   changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),
   updateProfile: (data) => request('/accounts/update-profile/', { method: 'PATCH', body: JSON.stringify(data) }),

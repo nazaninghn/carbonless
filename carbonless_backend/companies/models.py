@@ -80,3 +80,22 @@ class CompanyMembership(models.Model):
 
     def __str__(self):
         return f"{self.user.username} @ {self.company} ({self.role})"
+
+
+import uuid
+
+class CompanyInvite(models.Model):
+    """Invite a user to join a company"""
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='invites')
+    email = models.EmailField()
+    role = models.CharField(max_length=20, choices=CompanyMembership.ROLE_CHOICES, default='data_entry')
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    invited_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    accepted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('company', 'email')
+
+    def __str__(self):
+        return f"Invite {self.email} to {self.company} as {self.role}"

@@ -3,6 +3,7 @@ from .views import (
     CompanyCreateView, CompanyDetailView,
     FacilityListCreateView, FacilityDetailView,
     CompanyMembershipListView, CompanyMembershipUpdateView,
+    invite_member, accept_invite,
 )
 
 urlpatterns = [
@@ -12,4 +13,6 @@ urlpatterns = [
     path('facilities/<int:pk>/', FacilityDetailView.as_view(), name='facility_detail'),
     path('memberships/', CompanyMembershipListView.as_view(), name='membership_list'),
     path('memberships/<int:pk>/', CompanyMembershipUpdateView.as_view(), name='membership_update'),
+    path('invite/', invite_member, name='company_invite'),
+    path('accept-invite/', accept_invite, name='accept_invite'),
 ]

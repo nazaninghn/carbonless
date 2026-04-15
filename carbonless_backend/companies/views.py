@@ -80,3 +80,45 @@ class CompanyMembershipUpdateView(generics.UpdateAPIView):
         if not company:
             return CompanyMembership.objects.none()
         return CompanyMembership.objects.filter(company=company)
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from .models import CompanyInvite
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def invite_member(request):
+    """Invite a user to current company"""
+    company = get_current_company(request.user)
+    if not company:
+        return Response({'error': 'No company'}, status=403)
+    email = request.data.get('email')
+    role = request.data.get('role', 'data_entry')
+    if not email:
+        return Response({'error': 'email required'}, status=400)
+    invite, created = CompanyInvite.objects.get_or_create(
+        company=company, email=email.strip().lower(),
+        defaults={'role': role, 'invited_by': request.user}
+    )
+    return Response({'token': str(invite.token), 'email': invite.email, 'created': created})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def accept_invite(request):
+    """Accept an invite to join a company"""
+    token = request.data.get('token')
+    try:
+        invite = CompanyInvite.objects.get(token=token, accepted=False)
+    except CompanyInvite.DoesNotExist:
+        return Response({'error': 'Invalid or expired invite'}, status=404)
+    CompanyMembership.objects.get_or_create(
+        company=invite.company, user=request.user,
+        defaults={'role': invite.role, 'invited_by': invite.invited_by}
+    )
+    invite.accepted = True
+    invite.save()
+    return Response({'status': 'ok', 'company': invite.company.legal_entity_name})
