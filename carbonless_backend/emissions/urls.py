@@ -19,4 +19,6 @@ urlpatterns = [
     path('export-csv/', views.export_csv_view, name='emission-export-csv'),
     path('docs/', views.api_docs_view, name='api-docs'),
     path('export-all/', views.export_all_view, name='emission-export-all'),
+    path('entries/<int:pk>/approve/', views.approve_entry_view, name='emission-approve'),
+    path('by-facility/', views.by_facility_view, name='emission-by-facility'),
 ]

@@ -129,6 +129,7 @@ class EmissionEntry(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
     approved_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='approved_entries')
     approved_at = models.DateTimeField(null=True, blank=True)
+    rejected_reason = models.TextField(blank=True, help_text='Reason for rejection')
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

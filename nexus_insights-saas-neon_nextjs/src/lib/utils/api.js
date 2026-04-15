@@ -92,6 +92,12 @@ export const api = {
   getReportUrl: (year, lang) => `${API_BASE}/emissions/report/?year=${year}&lang=${lang}`,
   getCsvUrl: (year) => `${API_BASE}/emissions/export-csv/?year=${year}`,
 
+  // Approval
+  approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
+
+  // Facility analytics
+  getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
+
   // Account
   changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),
 

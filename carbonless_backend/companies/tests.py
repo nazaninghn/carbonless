@@ -65,3 +65,46 @@ class FacilityTests(TestCase):
         res = self.client.get('/api/companies/facilities/')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data), 1)
+
+
+class CompanyIsolationTests(TestCase):
+    """Test that users cannot access other companies' data"""
+
+    def setUp(self):
+        self.user1 = User.objects.create_user('user1', 'u1@test.com', 'pass12345')
+        self.user2 = User.objects.create_user('user2', 'u2@test.com', 'pass12345')
+
+        self.company1 = Company.objects.create(
+            legal_entity_name='Company A', tax_number='111',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='A', number_of_employees='1-10',
+            annual_turnover_range='<1M', number_of_facilities=1,
+        )
+        self.company2 = Company.objects.create(
+            legal_entity_name='Company B', tax_number='222',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='B', number_of_employees='1-10',
+            annual_turnover_range='<1M', number_of_facilities=1,
+        )
+
+        CompanyMembership.objects.create(company=self.company1, user=self.user1, role='owner')
+        CompanyMembership.objects.create(company=self.company2, user=self.user2, role='owner')
+
+        Facility.objects.create(company=self.company1, name='Facility A')
+        Facility.objects.create(company=self.company2, name='Facility B')
+
+    def test_user1_cannot_see_company2_facilities(self):
+        client = APIClient()
+        client.force_authenticate(user=self.user1)
+        res = client.get('/api/companies/facilities/')
+        self.assertEqual(res.status_code, 200)
+        names = [f['name'] for f in res.data]
+        self.assertIn('Facility A', names)
+        self.assertNotIn('Facility B', names)
+
+    def test_user2_cannot_see_company1_detail(self):
+        client = APIClient()
+        client.force_authenticate(user=self.user2)
+        res = client.get('/api/companies/detail/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['legal_entity_name'], 'Company B')

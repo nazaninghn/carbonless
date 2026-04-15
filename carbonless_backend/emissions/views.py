@@ -385,3 +385,58 @@ def export_all_view(request):
         'targets': ReductionTargetSerializer(targets, many=True).data,
         'custom_requests': CustomEmissionRequestSerializer(custom, many=True).data,
     })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def approve_entry_view(request, pk):
+    """Approve or reject an emission entry (manager/admin only)"""
+    from companies.utils import get_current_company
+    company = get_current_company(request.user)
+    if not company:
+        return Response({'error': 'No company'}, status=403)
+
+    try:
+        entry = EmissionEntry.objects.get(pk=pk, company=company)
+    except EmissionEntry.DoesNotExist:
+        return Response({'error': 'Entry not found'}, status=404)
+
+    action = request.data.get('action')  # 'approve' or 'reject'
+    if action == 'approve':
+        entry.status = 'approved'
+        entry.approved_by = request.user
+        entry.approved_at = datetime.now()
+        entry.save()
+        return Response({'status': 'approved'})
+    elif action == 'reject':
+        entry.status = 'draft'
+        entry.rejected_reason = request.data.get('reason', '')
+        entry.save()
+        return Response({'status': 'rejected'})
+    return Response({'error': 'action must be approve or reject'}, status=400)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def by_facility_view(request):
+    """Emissions breakdown by facility"""
+    from companies.utils import get_current_company
+    from django.db.models import Sum
+    company = get_current_company(request.user)
+    if not company:
+        return Response([])
+
+    year = int(request.query_params.get('year', 2026))
+    data = (
+        EmissionEntry.objects
+        .filter(company=company, year=year, facility__isnull=False)
+        .values('facility__name', 'facility__id')
+        .annotate(total_kg=Sum('calculated_co2e_kg'))
+        .order_by('-total_kg')
+    )
+    return Response([{
+        'facility_id': d['facility__id'],
+        'facility_name': d['facility__name'],
+        'total_kg': float(d['total_kg']),
+        'total_tonne': float(d['total_kg']) / 1000,
+    } for d in data])
