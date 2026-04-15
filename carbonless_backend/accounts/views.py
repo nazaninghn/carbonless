@@ -35,13 +35,13 @@ class RateLimitedLoginView(TokenObtainPairView):
             if access:
                 response.set_cookie(
                     'access_token', access,
-                    httponly=True, secure=is_secure, samesite='Lax',
+                    httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
                     max_age=30 * 60, path='/',
                 )
             if refresh:
                 response.set_cookie(
                     'refresh_token', refresh,
-                    httponly=True, secure=is_secure, samesite='Lax',
+                    httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
                     max_age=7 * 24 * 3600, path='/',
                 )
 
@@ -56,12 +56,9 @@ class RateLimitedLoginView(TokenObtainPairView):
                     target_type='User', target_id=str(user.id),
                 )
 
-            # Remove tokens from response body — cookie-only
-            # In dev (cross-origin localhost), also return tokens for header-based auth
-            if django_settings.DEBUG:
-                pass  # keep access/refresh in body for dev
-            else:
-                response.data = {'status': 'ok', 'message': 'Login successful'}
+            # Always return tokens in body for cross-origin compatibility
+            # Cookie is also set as secondary auth layer
+            # Frontend uses header-based auth (Authorization: Bearer) as primary
         return response
 
 
@@ -193,11 +190,9 @@ class CookieTokenRefreshView(TokenRefreshView):
             if access:
                 response.set_cookie(
                     'access_token', access,
-                    httponly=True, secure=is_secure, samesite='Lax',
+                    httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
                     max_age=30 * 60, path='/',
                 )
-            if django_settings.DEBUG:
-                response.data = {'status': 'ok', 'access': access}
-            else:
-                response.data = {'status': 'ok'}
+            # Always return access token for cross-origin header-based auth
+            response.data = {'status': 'ok', 'access': access}
         return response
