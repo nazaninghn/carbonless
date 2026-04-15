@@ -80,6 +80,14 @@ export default function TeamManagement({ language }) {
                 <span className={`px-2 py-0.5 rounded text-xs ${m.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                   {m.is_active ? (language === 'tr' ? 'Aktif' : 'Active') : (language === 'tr' ? 'Pasif' : 'Inactive')}
                 </span>
+                {m.role !== 'owner' && (
+                  <button
+                    onClick={() => handleRoleChange(m.id, m.is_active ? { is_active: false } : { is_active: true })}
+                    className={`px-2 py-0.5 rounded text-xs ${m.is_active ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
+                  >
+                    {m.is_active ? (language === 'tr' ? 'Devre Dışı' : 'Deactivate') : (language === 'tr' ? 'Etkinleştir' : 'Activate')}
+                  </button>
+                )}
               </div>
             </div>
           ))}

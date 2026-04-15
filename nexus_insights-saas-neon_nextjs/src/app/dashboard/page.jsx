@@ -11,6 +11,8 @@ import {
 import Chatbot from '@/components/Chatbot';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import ReviewTab from '@/components/dashboard/ReviewTab';
+import FacilityChart from '@/components/dashboard/FacilityChart';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -363,6 +365,10 @@ export default function DashboardPage() {
               )}
 
               {/* Progress */}
+              {/* Facility Comparison */}
+              <FacilityChart language={language} selectedYear={selectedYear} />
+
+              {/* Getting Started */}
               <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-xl border border-primary/20 p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
@@ -682,6 +688,11 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* ===== REVIEW TAB ===== */}
+          {activeTab === 'review' && (
+            <ReviewTab language={language} fetchData={fetchData} />
           )}
 
           {/* ===== REDUCTION TARGETS TAB ===== */}

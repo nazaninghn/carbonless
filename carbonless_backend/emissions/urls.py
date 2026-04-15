@@ -21,4 +21,5 @@ urlpatterns = [
     path('export-all/', views.export_all_view, name='emission-export-all'),
     path('entries/<int:pk>/approve/', views.approve_entry_view, name='emission-approve'),
     path('by-facility/', views.by_facility_view, name='emission-by-facility'),
+    path('pending/', views.pending_entries_view, name='emission-pending'),
 ]

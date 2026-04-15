@@ -98,6 +98,9 @@ export const api = {
   // Facility analytics
   getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
 
+  // Pending review
+  getPendingEntries: () => request('/emissions/pending/'),
+
   // Account
   changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),
 

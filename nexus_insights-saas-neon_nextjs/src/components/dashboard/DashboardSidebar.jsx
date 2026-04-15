@@ -1,11 +1,12 @@
 'use client';
-import { LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X } from 'lucide-react';
+import { LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X, ClipboardCheck } from 'lucide-react';
 import NextLink from 'next/link';
 
 export default function DashboardSidebar({ language, activeTab, setActiveTab, user, sidebarOpen, setSidebarOpen, onLogout }) {
   const sidebarItems = [
     { key: 'dashboard', icon: LayoutDashboard, label: language === 'tr' ? 'Kontrol Paneli' : 'Dashboard' },
     { key: 'emissions', icon: Leaf, label: language === 'tr' ? 'Emisyon Yönetimi' : 'Emission Management' },
+    { key: 'review', icon: ClipboardCheck, label: language === 'tr' ? 'Onay Bekleyenler' : 'Pending Review' },
     { key: 'reduction', icon: TrendingDown, label: language === 'tr' ? 'Azaltma Hedefleri' : 'Reduction Targets' },
     { key: 'reporting', icon: FileText, label: language === 'tr' ? 'Raporlama' : 'Reporting' },
     { key: 'settings', icon: Settings, label: language === 'tr' ? 'Ayarlar' : 'Settings' },

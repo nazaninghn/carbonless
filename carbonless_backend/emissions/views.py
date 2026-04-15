@@ -440,3 +440,18 @@ def by_facility_view(request):
         'total_kg': float(d['total_kg']),
         'total_tonne': float(d['total_kg']) / 1000,
     } for d in data])
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def pending_entries_view(request):
+    """List pending emission entries for current company (for review)"""
+    company = get_current_company(request.user)
+    if not company:
+        return Response([])
+    entries = EmissionEntry.objects.filter(
+        company=company, status='submitted'
+    ).select_related('emission_factor', 'facility').order_by('-created_at')
+
+    from .serializers import EmissionEntrySerializer
+    return Response(EmissionEntrySerializer(entries, many=True).data)
