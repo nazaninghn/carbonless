@@ -14,6 +14,17 @@ export function useDashboardData(selectedYear) {
   const [facilityList, setFacilityList] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const parseRes = async (res) => {
+    if (!res || !res.ok) return null;
+    try { return await res.json(); } catch { return null; }
+  };
+
+  const parseList = async (res) => {
+    const data = await parseRes(res);
+    if (!data) return [];
+    return Array.isArray(data) ? data : data.results || [];
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -27,46 +38,31 @@ export function useDashboardData(selectedYear) {
         api.getUnreadCount(),
         api.getFacilities(),
       ]);
-      if (summaryRes.ok) {
-        const data = await summaryRes.json();
-        setSummary(data);
-        if (data.questionnaire_profile) setQuestionnaireProfile(data.questionnaire_profile);
+
+      const summaryData = await parseRes(summaryRes);
+      if (summaryData) {
+        setSummary(summaryData);
+        if (summaryData.questionnaire_profile) setQuestionnaireProfile(summaryData.questionnaire_profile);
       }
-      if (entriesRes.ok) {
-        const data = await entriesRes.json();
-        setEntries(Array.isArray(data) ? data : data.results || []);
-      }
-      if (factorsRes.ok) {
-        const data = await factorsRes.json();
-        setFactors(Array.isArray(data) ? data : data.results || []);
-      }
-      if (targetsRes.ok) {
-        const data = await targetsRes.json();
-        setTargets(Array.isArray(data) ? data : data.results || []);
-      }
-      if (profileRes.ok) setUser(await profileRes.json());
-      if (customRes.ok) {
-        const data = await customRes.json();
-        setCustomRequests(Array.isArray(data) ? data : data.results || []);
-      }
-      if (notifRes.ok) {
-        const data = await notifRes.json();
-        setUnreadCount(data.unread_count || 0);
-      }
-      if (facilityRes.ok) {
-        const data = await facilityRes.json();
-        setFacilityList(Array.isArray(data) ? data : data.results || []);
-      }
+      setEntries(await parseList(entriesRes));
+      setFactors(await parseList(factorsRes));
+      setTargets(await parseList(targetsRes));
+      setCustomRequests(await parseList(customRes));
+      setFacilityList(await parseList(facilityRes));
+
+      const profileData = await parseRes(profileRes);
+      if (profileData) setUser(profileData);
+
+      const notifData = await parseRes(notifRes);
+      if (notifData) setUnreadCount(notifData.unread_count || 0);
     } catch (err) {
-      console.error('Failed to fetch:', err);
+      console.error('Dashboard fetch error:', err);
     } finally {
       setLoading(false);
     }
   }, [selectedYear]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   return {
     user, summary, entries, factors, targets, customRequests,

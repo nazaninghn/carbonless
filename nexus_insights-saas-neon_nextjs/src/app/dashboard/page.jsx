@@ -1,17 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { api } from '@/lib/utils/api';
+import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import {
-  LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut,
-  Menu, X, BarChart3, Target, Plus, Trash2, AlertCircle, Bell, Pencil
+  Leaf, TrendingDown, FileText, Settings,
+  X, Target, Plus, Trash2, AlertCircle, Pencil
 } from 'lucide-react';
-import NextLink from 'next/link';
 import Chatbot from '@/components/Chatbot';
-import CompanySettings from '@/components/CompanySettings';
-import FacilitySettings from '@/components/FacilitySettings';
-import PasswordChange from '@/components/PasswordChange';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 
@@ -20,13 +17,13 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedYear, setSelectedYear] = useState(2026);
-  const [user, setUser] = useState(null);
-  const [summary, setSummary] = useState(null);
-  const [entries, setEntries] = useState([]);
-  const [factors, setFactors] = useState([]);
-  const [targets, setTargets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [questionnaireProfile, setQuestionnaireProfile] = useState(null);
+
+  // Data from hook
+  const {
+    user, summary, entries, factors, targets, customRequests,
+    questionnaireProfile, unreadCount, facilityList, loading,
+    setUnreadCount, fetchData,
+  } = useDashboardData(selectedYear);
 
   // Add Entry form
   const [showAddForm, setShowAddForm] = useState(false);
@@ -59,9 +56,7 @@ export default function DashboardPage() {
   const [customQuantity, setCustomQuantity] = useState('');
   const [customMonth, setCustomMonth] = useState(new Date().getMonth() + 1);
   const [customFacility, setCustomFacility] = useState('');
-  const [customRequests, setCustomRequests] = useState([]);
   const [customSubmitting, setCustomSubmitting] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [entrySearch, setEntrySearch] = useState('');
   const [entryFilterScope, setEntryFilterScope] = useState('');
   const [pdfLoading, setPdfLoading] = useState('');
@@ -69,64 +64,6 @@ export default function DashboardPage() {
   const [editQuantity, setEditQuantity] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editFacility, setEditFacility] = useState('');
-  const [facilityList, setFacilityList] = useState([]);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes, notifRes, facilityRes] = await Promise.all([
-        api.getSummary(selectedYear),
-        api.getEntries(`year=${selectedYear}`),
-        api.getFactors(),
-        api.getTargets(),
-        api.getProfile(),
-        api.getCustomRequests(),
-        api.getUnreadCount(),
-        api.getFacilities(),
-      ]);
-      if (summaryRes.ok) {
-        const data = await summaryRes.json();
-        setSummary(data);
-        // Extract questionnaire profile from summary
-        if (data.questionnaire_profile) {
-          setQuestionnaireProfile(data.questionnaire_profile);
-        }
-      }
-      if (entriesRes.ok) {
-        const data = await entriesRes.json();
-        setEntries(Array.isArray(data) ? data : data.results || []);
-      }
-      if (factorsRes.ok) {
-        const data = await factorsRes.json();
-        setFactors(Array.isArray(data) ? data : data.results || []);
-      }
-      if (targetsRes.ok) {
-        const data = await targetsRes.json();
-        setTargets(Array.isArray(data) ? data : data.results || []);
-      }
-      if (profileRes.ok) setUser(await profileRes.json());
-      if (customRes.ok) {
-        const data = await customRes.json();
-        setCustomRequests(Array.isArray(data) ? data : data.results || []);
-      }
-      if (notifRes.ok) {
-        const data = await notifRes.json();
-        setUnreadCount(data.unread_count || 0);
-      }
-      if (facilityRes.ok) {
-        const data = await facilityRes.json();
-        setFacilityList(Array.isArray(data) ? data : data.results || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedYear]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const handleLogout = async () => {
     const { auth } = await import('@/lib/auth');
