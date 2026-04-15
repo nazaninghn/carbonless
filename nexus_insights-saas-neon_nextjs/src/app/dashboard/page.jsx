@@ -9,6 +9,9 @@ import {
   X, Target, Plus, Trash2, AlertCircle, Pencil
 } from 'lucide-react';
 import Chatbot from '@/components/Chatbot';
+import CompanySettings from '@/components/CompanySettings';
+import FacilitySettings from '@/components/FacilitySettings';
+import PasswordChange from '@/components/PasswordChange';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ReviewTab from '@/components/dashboard/ReviewTab';
