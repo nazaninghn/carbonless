@@ -11,7 +11,7 @@ class CompanyCreateView(generics.CreateAPIView):
     permission_classes = (IsAuthenticated,)
 
     def perform_create(self, serializer):
-        company = serializer.save(user=self.request.user)
+        company = serializer.save()
         CompanyMembership.objects.get_or_create(
             company=company, user=self.request.user,
             defaults={'role': 'owner', 'is_active': True},

@@ -83,7 +83,7 @@ class APITests(TestCase):
         self.user = User.objects.create_user('apiuser', 'api@test.com', 'testpass123')
         from companies.models import Company, CompanyMembership
         self.company = Company.objects.create(
-            user=self.user, legal_entity_name='Test Co', tax_number='123',
+            legal_entity_name='Test Co', tax_number='123',
             country_of_headquarters='TR', countries_of_operation='TR',
             main_activity_description='Test', number_of_employees='1-10',
             annual_turnover_range='<1M', number_of_facilities=1,

@@ -107,8 +107,7 @@ class EmissionEntry(models.Model):
     calculated_co2e_kg = models.DecimalField(max_digits=16, decimal_places=4, editable=False)
 
     description = models.TextField(blank=True)
-    facility = models.CharField(max_length=255, blank=True, help_text='Legacy text field')
-    facility_ref = models.ForeignKey(
+    facility = models.ForeignKey(
         'companies.Facility', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='emission_entries', help_text='Structured facility reference'
     )
@@ -205,8 +204,7 @@ class CustomEmissionRequest(models.Model):
     quantity = models.DecimalField(max_digits=14, decimal_places=4, help_text='Amount consumed')
     year = models.IntegerField()
     month = models.IntegerField(choices=[(i, i) for i in range(1, 13)])
-    facility = models.CharField(max_length=255, blank=True, help_text='Legacy text field')
-    facility_ref = models.ForeignKey(
+    facility = models.ForeignKey(
         'companies.Facility', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='custom_emission_requests', help_text='Structured facility reference'
     )
