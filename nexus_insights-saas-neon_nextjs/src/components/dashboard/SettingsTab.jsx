@@ -1,8 +1,9 @@
 'use client';
-import { Settings, Leaf, Target } from 'lucide-react';
+import { Settings, Leaf, Target, Users } from 'lucide-react';
 import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
+import TeamManagement from '@/components/TeamManagement';
 
 export default function SettingsTab({ language, user }) {
   return (
@@ -55,6 +56,17 @@ export default function SettingsTab({ language, user }) {
         </h3>
         <FacilitySettings language={language} />
       </div>
+
+      {/* Team Management */}
+      {user?.permissions?.can_manage_users && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"><Users className="w-4 h-4 text-blue-600" /></div>
+            {language === 'tr' ? 'Takım Yönetimi' : 'Team Management'}
+          </h3>
+          <TeamManagement language={language} />
+        </div>
+      )}
 
       {/* Password */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">

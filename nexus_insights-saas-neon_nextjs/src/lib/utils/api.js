@@ -69,6 +69,10 @@ export const api = {
   getFacilities: () => request('/companies/facilities/'),
   createFacility: (data) => request('/companies/facilities/', { method: 'POST', body: JSON.stringify(data) }),
 
+  // Memberships
+  getMemberships: () => request('/companies/memberships/'),
+  updateMembership: (id, data) => request(`/companies/memberships/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+
   // Emissions
   getFactors: (params = '') => request(`/emissions/factors/${params ? '?' + params : ''}`),
   getEntries: (params = '') => request(`/emissions/entries/${params ? '?' + params : ''}`),
