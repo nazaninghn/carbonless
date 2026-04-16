@@ -943,9 +943,12 @@ export default function DashboardPage() {
                   <button
                     onClick={() => {
                       setPdfLoading('tr');
-                      fetch(api.getReportUrl(selectedYear, 'tr'), { credentials: 'include' })
-                        .then(r => r.blob())
+                      const headers = {};
+                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
+                      fetch(api.getReportUrl(selectedYear, 'tr'), { credentials: 'include', headers })
+                        .then(r => { if (!r.ok) throw new Error('Report failed'); return r.blob(); })
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_rapor_${selectedYear}_tr.pdf`; a.click(); })
+                        .catch(err => console.error('PDF error:', err))
                         .finally(() => setPdfLoading(''));
                     }}
                     disabled={pdfLoading === 'tr'}
@@ -956,9 +959,12 @@ export default function DashboardPage() {
                   <button
                     onClick={() => {
                       setPdfLoading('en');
-                      fetch(api.getReportUrl(selectedYear, 'en'), { credentials: 'include' })
-                        .then(r => r.blob())
+                      const headers = {};
+                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
+                      fetch(api.getReportUrl(selectedYear, 'en'), { credentials: 'include', headers })
+                        .then(r => { if (!r.ok) throw new Error('Report failed'); return r.blob(); })
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_report_${selectedYear}_en.pdf`; a.click(); })
+                        .catch(err => console.error('PDF error:', err))
                         .finally(() => setPdfLoading(''));
                     }}
                     disabled={pdfLoading === 'en'}
@@ -968,7 +974,9 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => {
-                      fetch(api.getCsvUrl(selectedYear), { credentials: 'include' })
+                      const headers = {};
+                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
+                      fetch(api.getCsvUrl(selectedYear), { credentials: 'include', headers })
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.csv`; a.click(); });
                     }}
@@ -978,7 +986,9 @@ export default function DashboardPage() {
                   </button>
                   <button
                     onClick={() => {
-                      fetch(api.getExcelUrl(selectedYear), { credentials: 'include' })
+                      const headers = {};
+                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
+                      fetch(api.getExcelUrl(selectedYear), { credentials: 'include', headers })
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.xlsx`; a.click(); });
                     }}
