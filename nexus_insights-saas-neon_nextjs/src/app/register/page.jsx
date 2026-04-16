@@ -446,11 +446,13 @@ export default function RegisterPage() {
                     className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
-                    <option value="<1M">&lt; 1M €</option>
-                    <option value="1M-10M">1M - 10M €</option>
-                    <option value="10M-50M">10M - 50M €</option>
-                    <option value="50M-100M">50M - 100M €</option>
-                    <option value="100M+">100M+ €</option>
+                    <option value="<500K">{language === 'tr' ? '< 500 Bin ₺' : '< 500K ₺'}</option>
+                    <option value="500K-2M">{language === 'tr' ? '500 Bin – 2 Milyon ₺' : '500K – 2M ₺'}</option>
+                    <option value="2M-10M">{language === 'tr' ? '2 – 10 Milyon ₺' : '2M – 10M ₺'}</option>
+                    <option value="10M-50M">{language === 'tr' ? '10 – 50 Milyon ₺' : '10M – 50M ₺'}</option>
+                    <option value="50M-250M">{language === 'tr' ? '50 – 250 Milyon ₺' : '50M – 250M ₺'}</option>
+                    <option value="250M-1B">{language === 'tr' ? '250 Milyon – 1 Milyar ₺' : '250M – 1B ₺'}</option>
+                    <option value="1B+">{language === 'tr' ? '1 Milyar ₺ üzeri' : '1B+ ₺'}</option>
                   </select>
                 </div>
 
