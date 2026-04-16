@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
 import { CheckCircle } from 'lucide-react';
+import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
@@ -52,6 +53,10 @@ export default function RegisterPage() {
     setError('');
     if (formData.password !== formData.password2) {
       setError(language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match');
+      return;
+    }
+    if (!isPasswordStrong(formData.password)) {
+      setError(language === 'tr' ? 'Şifre yeterince güçlü değil. Lütfen büyük harf, küçük harf, rakam ve özel karakter kullanın.' : 'Password is not strong enough. Please use uppercase, lowercase, numbers and special characters.');
       return;
     }
     setLoading(true);
@@ -193,6 +198,7 @@ export default function RegisterPage() {
                         {language === 'tr' ? 'Şifre' : 'Password'} *
                       </label>
                       <input type="password" required value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                      <PasswordStrengthIndicator password={formData.password} language={language} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">

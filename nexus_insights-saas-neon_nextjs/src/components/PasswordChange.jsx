@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { api } from '@/lib/utils/api';
+import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
 
 export default function PasswordChange({ language }) {
   const [oldPw, setOldPw] = useState('');
@@ -17,8 +18,8 @@ export default function PasswordChange({ language }) {
       setError(language === 'tr' ? 'Yeni şifreler eşleşmiyor' : 'New passwords do not match');
       return;
     }
-    if (newPw.length < 8) {
-      setError(language === 'tr' ? 'Şifre en az 8 karakter olmalı' : 'Password must be at least 8 characters');
+    if (!isPasswordStrong(newPw)) {
+      setError(language === 'tr' ? 'Şifre yeterince güçlü değil. Lütfen büyük harf, küçük harf, rakam ve özel karakter kullanın.' : 'Password is not strong enough. Please use uppercase, lowercase, numbers and special characters.');
       return;
     }
     setLoading(true);
@@ -44,6 +45,7 @@ export default function PasswordChange({ language }) {
       <div>
         <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Yeni Şifre' : 'New Password'}</label>
         <input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" required />
+        <PasswordStrengthIndicator password={newPw} language={language} />
       </div>
       <div>
         <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Yeni Şifre (Tekrar)' : 'Confirm New Password'}</label>
