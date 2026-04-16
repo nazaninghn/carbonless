@@ -80,7 +80,22 @@ export default function DashboardPage() {
     let match = true;
     if (selectedScope) match = match && f.scope === selectedScope;
     if (selectedCategory) match = match && f.category === selectedCategory;
-    if (selectedCountry) match = match && f.country === selectedCountry;
+    // Country filter: show selected country factors + global fallback for missing categories
+    if (selectedCountry && selectedCountry !== 'global') {
+      // Get categories that have country-specific factors
+      const countryCategories = new Set(
+        factors.filter(ff => ff.country === selectedCountry && (!selectedScope || ff.scope === selectedScope))
+          .map(ff => ff.category)
+      );
+      // Show country-specific if available, otherwise show global
+      if (countryCategories.has(f.category)) {
+        match = match && f.country === selectedCountry;
+      } else {
+        match = match && f.country === 'global';
+      }
+    } else if (selectedCountry) {
+      match = match && f.country === selectedCountry;
+    }
     // Filter by preferred source from questionnaire (S7) — only for global factors
     // Turkey factors always use national/ATOM KABLO sources regardless of preference
     if (selectedCountry !== 'turkey' && questionnaireProfile?.preferred_factor_source && questionnaireProfile.preferred_factor_source !== 'mixed' && questionnaireProfile.preferred_factor_source !== 'unsure') {
@@ -93,7 +108,15 @@ export default function DashboardPage() {
 
   const categories = [...new Set(
     factors.filter(f => !selectedScope || f.scope === selectedScope)
-      .filter(f => !selectedCountry || f.country === selectedCountry)
+      .filter(f => {
+        if (!selectedCountry || selectedCountry === 'global') return !selectedCountry || f.country === selectedCountry;
+        // For non-global country: show categories from that country + global fallback
+        const countryCategories = new Set(
+          factors.filter(ff => ff.country === selectedCountry && (!selectedScope || ff.scope === selectedScope))
+            .map(ff => ff.category)
+        );
+        return countryCategories.has(f.category) ? f.country === selectedCountry : f.country === 'global';
+      })
       .map(f => f.category)
   )];
 
