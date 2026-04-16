@@ -266,7 +266,7 @@ def generate_report(user, year, lang='tr'):
     cname = company.legal_entity_name if company else user.username
 
     entries = EmissionEntry.objects.filter(company=company, year=year).select_related(
-        'emission_factor', 'facility_ref'
+        'emission_factor', 'facility'
     ) if company else EmissionEntry.objects.none()
 
     total_kg = float(entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
@@ -291,8 +291,8 @@ def generate_report(user, year, lang='tr'):
     ).order_by('emission_factor__scope', '-total')
 
     # Facility breakdown
-    fac_data = entries.exclude(facility_ref__isnull=True).values(
-        'facility_ref__name'
+    fac_data = entries.exclude(facility__isnull=True).values(
+        'facility__name'
     ).annotate(total=Sum('calculated_co2e_kg')).order_by('-total')
 
     sources = set()
@@ -302,7 +302,7 @@ def generate_report(user, year, lang='tr'):
 
     entry_count = entries.count()
     cat_count = len(set(e.emission_factor.category for e in entries))
-    fac_count = len(set(e.facility_ref_id for e in entries if e.facility_ref_id))
+    fac_count = len(set(e.facility_id for e in entries if e.facility_id))
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
@@ -538,7 +538,7 @@ def generate_report(user, year, lang='tr'):
         fd = [['Tesis' if tr else 'Facility', 'kg CO2e', 'tCO2e', '%']]
         for f in fac_data:
             t = float(f['total'])
-            fd.append([f['facility_ref__name'] or '—', _fmt(t), _fmt4(t/1000), _pct(t, total_kg)])
+            fd.append([f['facility__name'] or '—', _fmt(t), _fmt4(t/1000), _pct(t, total_kg)])
         ft = Table(fd, colWidths=[65*mm, 32*mm, 28*mm, 16*mm])
         ft.setStyle(_tbl_style(fn, fnb, PRIMARY_LIGHT))
         E.append(ft)
