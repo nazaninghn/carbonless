@@ -58,7 +58,11 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, company=get_current_company(self.request.user))
+        company = get_current_company(self.request.user)
+        if not company:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'error': 'No company found. Please create or join a company first.'})
+        serializer.save(user=self.request.user, company=company)
 
 
 class ReductionTargetViewSet(viewsets.ModelViewSet):
@@ -71,7 +75,11 @@ class ReductionTargetViewSet(viewsets.ModelViewSet):
         return scope_queryset_to_company(ReductionTarget.objects.all(), self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, company=get_current_company(self.request.user))
+        company = get_current_company(self.request.user)
+        if not company:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'error': 'No company found.'})
+        serializer.save(user=self.request.user, company=company)
 
 
 class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
@@ -84,7 +92,11 @@ class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
         return scope_queryset_to_company(CustomEmissionRequest.objects.all(), self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, company=get_current_company(self.request.user))
+        company = get_current_company(self.request.user)
+        if not company:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError({'error': 'No company found.'})
+        serializer.save(user=self.request.user, company=company)
 
 
 @api_view(['GET'])
