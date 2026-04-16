@@ -19,6 +19,7 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = EmissionFactor.objects.filter(is_active=True, is_default=True)
     serializer_class = EmissionFactorSerializer
     permission_classes = [AllowAny]
+    pagination_class = None  # Return all factors at once (small dataset)
 
     def get_queryset(self):
         qs = super().get_queryset()
