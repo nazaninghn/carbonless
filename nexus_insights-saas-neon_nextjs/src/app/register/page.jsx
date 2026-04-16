@@ -46,11 +46,78 @@ export default function RegisterPage() {
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setError('');
+  };
+
+  // Per-section validation
+  const validateSection1 = () => {
+    const missing = [];
+    if (!formData.username.trim()) missing.push(language === 'tr' ? 'Kullanıcı Adı' : 'Username');
+    if (!formData.email.trim()) missing.push(language === 'tr' ? 'E-posta' : 'Email');
+    if (!formData.password) missing.push(language === 'tr' ? 'Şifre' : 'Password');
+    if (!formData.password2) missing.push(language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password');
+    if (!formData.legalEntityName.trim()) missing.push(language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
+    // taxNumber is NOT required
+    if (!formData.countryOfHeadquarters.trim()) missing.push(language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters');
+    if (!formData.countriesOfOperation.trim()) missing.push(language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation');
+    if (!formData.naceCode.trim()) missing.push(language === 'tr' ? 'NACE Kodu' : 'NACE Code');
+    if (!formData.mainActivityDescription.trim()) missing.push(language === 'tr' ? 'Ana Faaliyet Açıklaması' : 'Main Activity Description');
+    if (formData.password && formData.password2 && formData.password !== formData.password2) {
+      setError(language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match');
+      return false;
+    }
+    if (formData.password && !isPasswordStrong(formData.password)) {
+      setError(language === 'tr' ? 'Şifre yeterince güçlü değil' : 'Password is not strong enough');
+      return false;
+    }
+    if (missing.length > 0) {
+      setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', '));
+      return false;
+    }
+    return true;
+  };
+
+  const validateSection2 = () => {
+    const missing = [];
+    if (!formData.numberOfEmployees) missing.push(language === 'tr' ? 'Çalışan Sayısı' : 'Number of Employees');
+    if (!formData.annualTurnoverRange) missing.push(language === 'tr' ? 'Yıllık Ciro Aralığı' : 'Annual Turnover Range');
+    if (!formData.numberOfFacilities && formData.numberOfFacilities !== '0' && formData.numberOfFacilities !== 0) missing.push(language === 'tr' ? 'Tesis Sayısı' : 'Number of Facilities');
+    if (!formData.hasOverseasOperations) missing.push(language === 'tr' ? 'Yurtdışı Operasyonları' : 'Overseas Operations');
+    if (!formData.numberOfSubsidiaries && formData.numberOfSubsidiaries !== '0' && formData.numberOfSubsidiaries !== 0) missing.push(language === 'tr' ? 'Bağlı Şirket Sayısı' : 'Number of Subsidiaries');
+    if (!formData.hasISO14001) missing.push('ISO 14001');
+    if (!formData.hasISO50001) missing.push('ISO 50001');
+    if (!formData.hasISO14064Work) missing.push('ISO 14064');
+    if (missing.length > 0) {
+      setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', '));
+      return false;
+    }
+    return true;
+  };
+
+  const validateSection3 = () => {
+    const missing = [];
+    if (!formData.targetISO14064Verification) missing.push(language === 'tr' ? 'ISO 14064-1 doğrulaması' : 'ISO 14064-1 verification');
+    if (!formData.has3rdPartyAuditPlan) missing.push(language === 'tr' ? '3. taraf denetim planı' : '3rd party audit plan');
+    if (missing.length > 0) {
+      setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', '));
+      return false;
+    }
+    return true;
+  };
+
+  const goToSection = (target) => {
+    setError('');
+    if (target > currentSection) {
+      if (currentSection === 1 && !validateSection1()) return;
+      if (currentSection === 2 && !validateSection2()) return;
+    }
+    setCurrentSection(target);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    if (!validateSection3()) return;
     if (formData.password !== formData.password2) {
       setError(language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match');
       return;
@@ -226,14 +293,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Vergi Numarası' : 'Tax Number'} *
+                    {language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.taxNumber}
                     onChange={(e) => handleInputChange('taxNumber', e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder={language === 'tr' ? 'Opsiyonel' : 'Optional'}
                   />
                 </div>
 
@@ -294,7 +361,7 @@ export default function RegisterPage() {
                 <div className="flex justify-end pt-6">
                   <button
                     type="button"
-                    onClick={() => setCurrentSection(2)}
+                    onClick={() => goToSection(2)}
                     className="px-8 py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-105 transition-all duration-300"
                   >
                     {t.register.next}
@@ -309,6 +376,8 @@ export default function RegisterPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   {language === 'tr' ? 'Bölüm 2 – Ölçek ve Karmaşıklık' : 'Section 2 – Scale & Complexity'}
                 </h2>
+
+                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm mb-4">{error}</div>}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,14 +574,14 @@ export default function RegisterPage() {
                 <div className="flex justify-between pt-6">
                   <button
                     type="button"
-                    onClick={() => setCurrentSection(1)}
+                    onClick={() => goToSection(1)}
                     className="px-8 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-300"
                   >
                     {language === 'tr' ? 'Geri' : 'Back'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCurrentSection(3)}
+                    onClick={() => goToSection(3)}
                     className="px-8 py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-105 transition-all duration-300"
                   >
                     {t.register.next}
@@ -527,6 +596,8 @@ export default function RegisterPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   {language === 'tr' ? 'Bölüm 3 – Denetim ve Amaç' : 'Section 3 – Audit & Purpose'}
                 </h2>
+
+                {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm mb-4">{error}</div>}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -635,7 +706,7 @@ export default function RegisterPage() {
                 <div className="flex justify-between pt-6">
                   <button
                     type="button"
-                    onClick={() => setCurrentSection(2)}
+                    onClick={() => goToSection(2)}
                     className="px-8 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-300"
                   >
                     {language === 'tr' ? 'Geri' : 'Back'}
