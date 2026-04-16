@@ -46,7 +46,7 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company
         qs = scope_queryset_to_company(
-            EmissionEntry.objects.select_related('emission_factor', 'company', 'facility_ref'),
+            EmissionEntry.objects.select_related('emission_factor', 'company', 'facility'),
             self.request.user
         )
         year = self.request.query_params.get('year')
