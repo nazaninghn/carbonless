@@ -236,7 +236,7 @@ export default function RegisterPage() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-8">
+          <form onSubmit={handleSubmit} className="bg-green-50 rounded-2xl shadow-lg border border-green-200 p-4 sm:p-8">
             {/* Section 1: Basic Corporate Information */}
             {currentSection === 1 && (
               <div className="space-y-6">
@@ -245,33 +245,33 @@ export default function RegisterPage() {
                 </h2>
 
                 {/* Account Fields */}
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <div className="bg-white/70 border border-green-200 rounded-lg p-4 mb-4">
                   <h3 className="font-semibold text-green-800 mb-3">{language === 'tr' ? 'Hesap Bilgileri' : 'Account Information'}</h3>
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'tr' ? 'Kullanıcı Adı' : 'Username'} *
+                        {language === 'tr' ? 'Kullanıcı Adı' : 'Username'} <span className="text-green-500 text-lg">*</span>
                       </label>
-                      <input type="text" required value={formData.username} onChange={(e) => handleInputChange('username', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                      <input type="text" required value={formData.username} onChange={(e) => handleInputChange('username', e.target.value)} className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'tr' ? 'E-posta' : 'Email'} *
+                        {language === 'tr' ? 'E-posta' : 'Email'} <span className="text-green-500 text-lg">*</span>
                       </label>
-                      <input type="email" required value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                      <input type="email" required value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'tr' ? 'Şifre' : 'Password'} *
+                        {language === 'tr' ? 'Şifre' : 'Password'} <span className="text-green-500 text-lg">*</span>
                       </label>
-                      <input type="password" required value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                      <input type="password" required value={formData.password} onChange={(e) => handleInputChange('password', e.target.value)} className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
                       <PasswordStrengthIndicator password={formData.password} language={language} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} *
+                        {language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} <span className="text-green-500 text-lg">*</span>
                       </label>
-                      <input type="password" required value={formData.password2} onChange={(e) => handleInputChange('password2', e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
+                      <input type="password" required value={formData.password2} onChange={(e) => handleInputChange('password2', e.target.value)} className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent" />
                     </div>
                   </div>
                 </div>
@@ -280,14 +280,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} *
+                    {language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.legalEntityName}
                     onChange={(e) => handleInputChange('legalEntityName', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
@@ -299,52 +299,52 @@ export default function RegisterPage() {
                     type="text"
                     value={formData.taxNumber}
                     onChange={(e) => handleInputChange('taxNumber', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder={language === 'tr' ? 'Opsiyonel' : 'Optional'}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters'} *
+                    {language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={formData.countryOfHeadquarters}
                     onChange={(e) => handleInputChange('countryOfHeadquarters', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation'}
+                    {language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.countriesOfOperation}
                     onChange={(e) => handleInputChange('countriesOfOperation', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder={language === 'tr' ? 'Örn: Türkiye, Almanya, Fransa' : 'e.g., Turkey, Germany, France'}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {t.register.naceCode}
+                    {t.register.naceCode} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <input
                     type="text"
                     value={formData.naceCode}
                     onChange={(e) => handleInputChange('naceCode', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Ana Faaliyet Açıklaması' : 'Description of Main Activity'} *
+                    {language === 'tr' ? 'Ana Faaliyet Açıklaması' : 'Description of Main Activity'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <textarea
                     required
@@ -352,7 +352,7 @@ export default function RegisterPage() {
                     onChange={(e) => handleInputChange('mainActivityDescription', e.target.value)}
                     maxLength={500}
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                     placeholder={language === 'tr' ? 'Kısa açıklama (max 500 karakter)' : 'Short description (max 500 characters)'}
                   />
                   <p className="text-sm text-gray-500 mt-1">{formData.mainActivityDescription.length}/500</p>
@@ -381,13 +381,13 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Çalışan Sayısı' : 'Number of Employees'} *
+                    {language === 'tr' ? 'Çalışan Sayısı' : 'Number of Employees'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <select
                     required
                     value={formData.numberOfEmployees}
                     onChange={(e) => handleInputChange('numberOfEmployees', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
                     <option value="1-10">1-10</option>
@@ -400,13 +400,13 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Yıllık Ciro Aralığı' : 'Annual Turnover Range'} *
+                    {language === 'tr' ? 'Yıllık Ciro Aralığı' : 'Annual Turnover Range'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <select
                     required
                     value={formData.annualTurnoverRange}
                     onChange={(e) => handleInputChange('annualTurnoverRange', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   >
                     <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
                     <option value="<1M">&lt; 1M €</option>
@@ -419,20 +419,20 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Tesis Sayısı' : 'Number of Facilities'}
+                    {language === 'tr' ? 'Tesis Sayısı' : 'Number of Facilities'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <input
                     type="number"
                     min="0"
                     value={formData.numberOfFacilities}
                     onChange={(e) => handleInputChange('numberOfFacilities', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Yurtdışı Operasyonları Var mı?' : 'Are there Overseas Operations?'}
+                    {language === 'tr' ? 'Yurtdışı Operasyonları Var mı?' : 'Are there Overseas Operations?'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <div className="flex gap-4">
                     <label className="flex items-center">
@@ -462,14 +462,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'Bağlı Şirket Sayısı' : 'Number of Subsidiaries'}
+                    {language === 'tr' ? 'Bağlı Şirket Sayısı' : 'Number of Subsidiaries'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <input
                     type="number"
                     min="0"
                     value={formData.numberOfSubsidiaries}
                     onChange={(e) => handleInputChange('numberOfSubsidiaries', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                   />
                 </div>
 
@@ -481,7 +481,7 @@ export default function RegisterPage() {
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        ISO 14001 {language === 'tr' ? 'var mı?' : 'available?'}
+                        ISO 14001 {language === 'tr' ? 'var mı?' : 'available?'} <span className="text-green-500 text-lg">*</span>
                       </label>
                       <div className="flex gap-4">
                         <label className="flex items-center">
@@ -511,7 +511,7 @@ export default function RegisterPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        ISO 50001 {language === 'tr' ? 'var mı?' : 'available?'}
+                        ISO 50001 {language === 'tr' ? 'var mı?' : 'available?'} <span className="text-green-500 text-lg">*</span>
                       </label>
                       <div className="flex gap-4">
                         <label className="flex items-center">
@@ -541,7 +541,7 @@ export default function RegisterPage() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {language === 'tr' ? 'ISO 14064 çalışması daha önce yapıldı mı?' : 'Has ISO 14064 work been done before?'}
+                        {language === 'tr' ? 'ISO 14064 çalışması daha önce yapıldı mı?' : 'Has ISO 14064 work been done before?'} <span className="text-green-500 text-lg">*</span>
                       </label>
                       <div className="flex gap-4">
                         <label className="flex items-center">
@@ -601,7 +601,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? 'ISO 14064-1 doğrulaması hedefleniyor mu?' : 'Is ISO 14064-1 verification targeted?'}
+                    {language === 'tr' ? 'ISO 14064-1 doğrulaması hedefleniyor mu?' : 'Is ISO 14064-1 verification targeted?'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <div className="flex gap-4">
                     <label className="flex items-center">
@@ -631,7 +631,7 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {language === 'tr' ? '3. taraf denetim planı var mı?' : 'Is there a 3rd party audit plan?'}
+                    {language === 'tr' ? '3. taraf denetim planı var mı?' : 'Is there a 3rd party audit plan?'} <span className="text-green-500 text-lg">*</span>
                   </label>
                   <div className="flex gap-4">
                     <label className="flex items-center">
