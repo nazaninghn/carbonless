@@ -223,4 +223,45 @@ EMISSION_FACTORS = [
     # ============================================
     {'slug': 'equity-investments', 'name': 'Equity investments', 'name_tr': 'Öz sermaye yatırımları', 'scope': 'scope3', 'category': 'investments', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.185, 'source': 'generic', 'reference': ''},
     {'slug': 'debt-investments', 'name': 'Debt investments', 'name_tr': 'Borç yatırımları', 'scope': 'scope3', 'category': 'investments', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.095, 'source': 'generic', 'reference': ''},
+
+    # ============================================
+    # SCOPE 1 - PROCESS EMISSIONS (GHG Protocol Cat)
+    # ============================================
+    {'slug': 'cement-clinker', 'name': 'Cement clinker production', 'name_tr': 'Çimento klinker üretimi', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 525.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 2 (525 kg CO2/t clinker)'},
+    {'slug': 'lime-production', 'name': 'Lime production', 'name_tr': 'Kireç üretimi', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 750.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 2 (750 kg CO2/t lime)'},
+    {'slug': 'steel-bof', 'name': 'Steel (BOF route)', 'name_tr': 'Çelik (BOF yöntemi)', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 1800.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 4 (1.8 t CO2/t steel)'},
+    {'slug': 'steel-eaf', 'name': 'Steel (EAF route)', 'name_tr': 'Çelik (EAF yöntemi)', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 400.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 4 (0.4 t CO2/t steel)'},
+    {'slug': 'aluminium-smelting', 'name': 'Aluminium smelting', 'name_tr': 'Alüminyum eritme', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 1650.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 4 (1.65 t CO2/t Al)'},
+    {'slug': 'glass-production', 'name': 'Glass production', 'name_tr': 'Cam üretimi', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 200.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 2 (0.2 t CO2/t glass)'},
+    {'slug': 'ammonia-production', 'name': 'Ammonia production', 'name_tr': 'Amonyak üretimi', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 1500.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 3 (1.5 t CO2/t NH3)'},
+    {'slug': 'nitric-acid', 'name': 'Nitric acid production', 'name_tr': 'Nitrik asit üretimi', 'scope': 'scope1', 'category': 'process_emissions', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 2050.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – Vol 3, Ch 3 (N2O → CO2e)'},
+
+    # ============================================
+    # SCOPE 3 - PROCESSING OF SOLD PRODUCTS (Cat 10)
+    # ============================================
+    {'slug': 'processing-energy-intensive', 'name': 'Energy-intensive processing', 'name_tr': 'Enerji yoğun işleme', 'scope': 'scope3', 'category': 'processing_of_sold_products', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 350.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate'},
+    {'slug': 'processing-light', 'name': 'Light processing / assembly', 'name_tr': 'Hafif işleme / montaj', 'scope': 'scope3', 'category': 'processing_of_sold_products', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 120.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate'},
+    {'slug': 'processing-chemical', 'name': 'Chemical processing', 'name_tr': 'Kimyasal işleme', 'scope': 'scope3', 'category': 'processing_of_sold_products', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate'},
+
+    # ============================================
+    # SCOPE 3 - USE OF SOLD PRODUCTS (Cat 11)
+    # ============================================
+    {'slug': 'product-electricity-use', 'name': 'Product electricity use (lifetime)', 'name_tr': 'Ürün elektrik tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold_products', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.475, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 11 (grid avg)'},
+    {'slug': 'product-fuel-use', 'name': 'Product fuel use (lifetime)', 'name_tr': 'Ürün yakıt tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold_products', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 2.68, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 11 (diesel equiv)'},
+    {'slug': 'product-gas-use', 'name': 'Product gas use (lifetime)', 'name_tr': 'Ürün gaz tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold_products', 'country': 'global', 'unit': 'gj', 'factor_kg_co2e': 56.211, 'source': 'ipcc_2019', 'reference': 'IPCC 2019 – natural gas'},
+
+    # ============================================
+    # SCOPE 3 - DOWNSTREAM LEASED ASSETS (Cat 13)
+    # ============================================
+    {'slug': 'leased-building-downstream', 'name': 'Leased building (downstream)', 'name_tr': 'Kiralanan bina (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 45.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate'},
+    {'slug': 'leased-vehicle-downstream', 'name': 'Leased vehicle (downstream)', 'name_tr': 'Kiralanan araç (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 2500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate'},
+    {'slug': 'leased-equipment-downstream', 'name': 'Leased equipment (downstream)', 'name_tr': 'Kiralanan ekipman (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 1200.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate'},
+
+    # ============================================
+    # SCOPE 3 - EMPLOYEE COMMUTING (Turkey)
+    # ============================================
+    {'slug': 'car-commute', 'name': 'Car commute (Turkey)', 'name_tr': 'Otomobil (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.172, 'source': 'turkey_fleet', 'reference': 'Turkey fleet 2025 – avg car'},
+    {'slug': 'bus-commute', 'name': 'Bus commute (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Turkey urban bus'},
+    {'slug': 'metro-commute', 'name': 'Metro commute (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro'},
+    {'slug': 'dolmus-commute', 'name': 'Dolmuş commute (Turkey)', 'name_tr': 'Dolmuş (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.082, 'source': 'turkey_fleet', 'reference': 'Shared urban transport'},
 ]
