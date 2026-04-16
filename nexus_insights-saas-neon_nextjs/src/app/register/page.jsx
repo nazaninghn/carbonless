@@ -5,6 +5,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
 import { CheckCircle } from 'lucide-react';
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
+import { ALL_NACE_CODES } from '@/lib/data/naceCodes';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
@@ -43,6 +44,8 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [naceSearch, setNaceSearch] = useState('');
+  const [naceOpen, setNaceOpen] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -334,12 +337,46 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {t.register.naceCode} <span className="text-green-500 text-lg">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.naceCode}
-                    onChange={(e) => handleInputChange('naceCode', e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={naceSearch}
+                      onChange={(e) => { setNaceSearch(e.target.value); setNaceOpen(true); }}
+                      onFocus={() => setNaceOpen(true)}
+                      placeholder={language === 'tr' ? 'Kod veya sektör adı yazın...' : 'Type code or sector name...'}
+                      className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    />
+                    {formData.naceCode && (
+                      <div className="mt-1 px-3 py-1.5 bg-green-100 border border-green-300 rounded-lg text-sm text-green-800 flex items-center justify-between">
+                        <span><b>{formData.naceCode}</b> — {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span>
+                        <button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-green-600 hover:text-red-500 ml-2 text-xs">✕</button>
+                      </div>
+                    )}
+                    {naceOpen && naceSearch.length > 0 && (
+                      <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-green-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {ALL_NACE_CODES.filter(n => {
+                          const q = naceSearch.toLowerCase();
+                          return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q);
+                        }).slice(0, 15).map(n => (
+                          <button
+                            key={n.code}
+                            type="button"
+                            onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }}
+                            className="w-full text-left px-4 py-2 hover:bg-green-50 text-sm border-b border-gray-100 last:border-0"
+                          >
+                            <span className="font-semibold text-primary">{n.code}</span>
+                            <span className="text-gray-600 ml-2">{language === 'tr' ? n.tr : n.en}</span>
+                          </button>
+                        ))}
+                        {ALL_NACE_CODES.filter(n => {
+                          const q = naceSearch.toLowerCase();
+                          return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q);
+                        }).length === 0 && (
+                          <div className="px-4 py-3 text-sm text-gray-500">{language === 'tr' ? 'Sonuç bulunamadı' : 'No results found'}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div>
