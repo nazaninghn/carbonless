@@ -13,7 +13,9 @@ export default function DashboardHeader({ language, selectedYear, setSelectedYea
       <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
         <span className="text-sm text-gray-600">{language === 'tr' ? 'Yıl:' : 'Year:'}</span>
         <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
-          <option value={2026}>2026</option><option value={2025}>2025</option><option value={2024}>2024</option>
+          {Array.from({ length: 7 }, (_, i) => 2026 - i).map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
         </select>
         <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
           <option value="turkey">{language === 'tr' ? 'Türkiye' : 'Turkey'}</option>
