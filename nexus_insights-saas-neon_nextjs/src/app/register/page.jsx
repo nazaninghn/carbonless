@@ -6,6 +6,7 @@ import SimpleHeader from '@/components/SimpleHeader';
 import { CheckCircle } from 'lucide-react';
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
 import { ALL_NACE_CODES } from '@/lib/data/naceCodes';
+import CountryPicker from '@/components/CountryPicker';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
@@ -323,12 +324,11 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters'} <span className="text-green-500 text-lg">*</span>
                   </label>
-                  <input
-                    type="text"
-                    required
+                  <CountryPicker
                     value={formData.countryOfHeadquarters}
-                    onChange={(e) => handleInputChange('countryOfHeadquarters', e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onChange={(val) => handleInputChange('countryOfHeadquarters', val)}
+                    language={language}
+                    placeholder={language === 'tr' ? 'Ülke ara...' : 'Search country...'}
                   />
                 </div>
 
@@ -336,12 +336,12 @@ export default function RegisterPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation'} <span className="text-green-500 text-lg">*</span>
                   </label>
-                  <input
-                    type="text"
+                  <CountryPicker
                     value={formData.countriesOfOperation}
-                    onChange={(e) => handleInputChange('countriesOfOperation', e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder={language === 'tr' ? 'Örn: Türkiye, Almanya, Fransa' : 'e.g., Turkey, Germany, France'}
+                    onChange={(val) => handleInputChange('countriesOfOperation', val)}
+                    language={language}
+                    multi={true}
+                    placeholder={language === 'tr' ? 'Ülke ara ve ekle...' : 'Search and add countries...'}
                   />
                 </div>
 
