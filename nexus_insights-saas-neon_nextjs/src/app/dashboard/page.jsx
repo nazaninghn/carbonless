@@ -9,6 +9,7 @@ import {
   X, Target, Plus, Trash2, AlertCircle, Pencil
 } from 'lucide-react';
 import Chatbot from '@/components/Chatbot';
+import OnboardingTour from '@/components/OnboardingTour';
 import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
@@ -1012,6 +1013,8 @@ export default function DashboardPage() {
 
       {/* Questionnaire Chatbot */}
       <Chatbot language={language} onComplete={fetchData} />
+      {/* Onboarding Tour */}
+      <OnboardingTour language={language} />
     </div>
   );
 }
