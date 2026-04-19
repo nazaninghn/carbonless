@@ -77,6 +77,12 @@ export const api = {
   getFactors: (params = '') => request(`/emissions/factors/${params ? '?' + params : ''}`),
   getEntries: (params = '') => request(`/emissions/entries/${params ? '?' + params : ''}`),
   createEntry: (data) => request('/emissions/entries/', { method: 'POST', body: JSON.stringify(data) }),
+  createEntryWithFile: (formData) => {
+    const headers = {};
+    try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
+    return fetch(`${API_BASE}/emissions/entries/`, { method: 'POST', headers, credentials: 'include', body: formData });
+  },
+  updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteEntry: (id) => request(`/emissions/entries/${id}/`, { method: 'DELETE' }),
   getSummary: (year = 2026) => request(`/emissions/summary/?year=${year}`),
 

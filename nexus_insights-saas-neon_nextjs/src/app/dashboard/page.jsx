@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const [entryQuantity, setEntryQuantity] = useState('');
   const [entryDescription, setEntryDescription] = useState('');
   const [entryFacility, setEntryFacility] = useState('');
+  const [entryFile, setEntryFile] = useState(null);
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -152,18 +153,32 @@ export default function DashboardPage() {
     setFormError('');
     setSubmitting(true);
     try {
-      const res = await api.createEntry({
-        emission_factor: parseInt(selectedFactor),
-        year: selectedYear,
-        month: parseInt(entryMonth),
-        quantity: entryQuantity,
-        description: entryDescription,
-        facility: entryFacility,
-      });
+      let res;
+      if (entryFile) {
+        // Use FormData for file upload
+        const fd = new FormData();
+        fd.append('emission_factor', parseInt(selectedFactor));
+        fd.append('year', selectedYear);
+        fd.append('month', parseInt(entryMonth));
+        fd.append('quantity', entryQuantity);
+        fd.append('description', entryDescription);
+        if (entryFacility) fd.append('facility', entryFacility);
+        fd.append('proof_document', entryFile);
+        res = await api.createEntryWithFile(fd);
+      } else {
+        res = await api.createEntry({
+          emission_factor: parseInt(selectedFactor),
+          year: selectedYear,
+          month: parseInt(entryMonth),
+          quantity: entryQuantity,
+          description: entryDescription,
+          facility: entryFacility,
+        });
+      }
       if (res.ok) {
         setShowAddForm(false);
         setSelectedScope(''); setSelectedCategory(''); setSelectedFactor('');
-        setEntryQuantity(''); setEntryDescription(''); setEntryFacility('');
+        setEntryQuantity(''); setEntryDescription(''); setEntryFacility(''); setEntryFile(null);
         fetchData();
       } else {
         const data = await res.json();
@@ -537,17 +552,49 @@ export default function DashboardPage() {
                       )}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                        <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
-                          <option value="">{language === 'tr' ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
-                          {facilityList.map(f => <option key={f.id} value={f.name}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
-                        </select>
+                        {facilityList.length > 0 ? (
+                          <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                            <option value="">{language === 'tr' ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
+                            {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
+                          </select>
+                        ) : (
+                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
+                            <p className="text-amber-800">{language === 'tr' ? 'Henüz tesis eklenmemiş.' : 'No facilities added yet.'}</p>
+                            <button type="button" onClick={() => { setShowAddForm(false); setActiveTab('settings'); }} className="text-primary text-xs font-medium mt-1 hover:underline">
+                              {language === 'tr' ? '→ Ayarlar\'dan tesis ekleyin' : '→ Add facility from Settings'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
                         <textarea value={entryDescription} onChange={e => setEntryDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} />
                       </div>
-                      <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
-                        💡 {language === 'tr' ? 'Belge yüklemek için (fatura, sayaç okuma vb.) kaydettikten sonra admin panelinden yükleyebilirsiniz.' : 'To upload proof documents (invoices, meter readings), use the admin panel after saving.'}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Kanıt Belgesi' : 'Proof Document'}</label>
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                          {entryFile ? (
+                            <div className="flex items-center justify-between bg-green-50 rounded-lg p-2">
+                              <span className="text-sm text-green-800 truncate">📎 {entryFile.name}</span>
+                              <button type="button" onClick={() => setEntryFile(null)} className="text-red-500 text-xs hover:text-red-700">✕</button>
+                            </div>
+                          ) : (
+                            <>
+                              <input
+                                type="file"
+                                id="proof-upload"
+                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                onChange={e => setEntryFile(e.target.files[0] || null)}
+                                className="hidden"
+                              />
+                              <label htmlFor="proof-upload" className="cursor-pointer">
+                                <div className="text-gray-400 mb-1">📄</div>
+                                <p className="text-sm text-gray-600">{language === 'tr' ? 'Fatura, sayaç okuma veya belge yükleyin' : 'Upload invoice, meter reading or document'}</p>
+                                <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG, DOC, XLS</p>
+                              </label>
+                            </>
+                          )}
+                        </div>
                       </div>
                       {formError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" />{formError}</div>}
                       <button type="submit" disabled={submitting} className="w-full py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-60">
