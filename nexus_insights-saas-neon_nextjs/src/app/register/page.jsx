@@ -102,6 +102,9 @@ export default function RegisterPage() {
     const missing = [];
     if (!formData.targetISO14064Verification) missing.push(language === 'tr' ? 'ISO 14064-1 doğrulaması' : 'ISO 14064-1 verification');
     if (!formData.has3rdPartyAuditPlan) missing.push(language === 'tr' ? '3. taraf denetim planı' : '3rd party audit plan');
+    if (formData.isForFinancing !== 'yes' && formData.isDueToExportPressure !== 'yes' && formData.isForGroupReporting !== 'yes') {
+      missing.push(language === 'tr' ? 'Amaç (en az birini seçin)' : 'Purpose (select at least one)');
+    }
     if (missing.length > 0) {
       setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', '));
       return false;
@@ -712,7 +715,7 @@ export default function RegisterPage() {
 
                 <div className="border-t pt-6 mt-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    {language === 'tr' ? 'Amaç' : 'Purpose'}
+                    {language === 'tr' ? 'Amaç' : 'Purpose'} <span className="text-green-500 text-lg">*</span>
                   </h3>
 
                   <div className="space-y-4">
