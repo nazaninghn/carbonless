@@ -112,7 +112,23 @@ class EmissionEntry(models.Model):
         related_name='emission_entries', help_text='Structured facility reference'
     )
     proof_document = models.FileField(upload_to='proofs/%Y/%m/', blank=True, null=True,
-                                       help_text='Upload invoice, receipt, or meter reading')
+                                       help_text='Upload invoice, receipt, or meter reading',
+                                       validators=[])  # validators added in clean()
+
+    def clean(self):
+        super().clean()
+        if self.proof_document:
+            # Max 10MB
+            if self.proof_document.size > 10 * 1024 * 1024:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({'proof_document': 'File size must be under 10MB.'})
+            # Allowed extensions
+            import os
+            ext = os.path.splitext(self.proof_document.name)[1].lower()
+            allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx']
+            if ext not in allowed:
+                from django.core.exceptions import ValidationError
+                raise ValidationError({'proof_document': f'File type {ext} not allowed. Use: {", ".join(allowed)}'})
 
     # Audit: snapshot factor at time of entry creation
     factor_value_snapshot = models.DecimalField(max_digits=14, decimal_places=6, null=True, blank=True,

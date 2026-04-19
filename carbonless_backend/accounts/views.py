@@ -139,15 +139,20 @@ def unread_count(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def change_password(request):
-    """Change user password"""
+    """Change user password with full Django validation"""
     old_password = request.data.get('old_password')
     new_password = request.data.get('new_password')
     if not old_password or not new_password:
         return Response({'error': 'old_password and new_password required'}, status=400)
     if not request.user.check_password(old_password):
         return Response({'error': 'Current password is incorrect'}, status=400)
-    if len(new_password) < 8:
-        return Response({'error': 'Password must be at least 8 characters'}, status=400)
+    # Full Django password validation
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    try:
+        validate_password(new_password, request.user)
+    except ValidationError as e:
+        return Response({'error': '; '.join(e.messages)}, status=400)
     request.user.set_password(new_password)
     request.user.save()
     from .models import ActivityLog
@@ -236,8 +241,18 @@ def update_profile(request):
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_account(request):
-    """Delete user account and all associated data"""
+    """Delete user account — requires password confirmation"""
+    password = request.data.get('password')
+    if not password or not request.user.check_password(password):
+        return Response({'error': 'Password confirmation required'}, status=400)
     user = request.user
+    from .models import ActivityLog
+    ActivityLog.objects.create(
+        user=user, action='account_deleted',
+        detail=f'User {user.username} deleted their account',
+        ip_address=request.META.get('REMOTE_ADDR'),
+        target_type='User', target_id=str(user.id),
+    )
     user.delete()
     response = Response({'status': 'ok', 'message': 'Account deleted'})
     response.delete_cookie('access_token', path='/')

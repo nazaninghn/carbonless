@@ -41,10 +41,17 @@ export default function SettingsTab({ language, user, fetchData }) {
   };
 
   const handleDelete = async () => {
-    if (!confirm(tr ? 'Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.' : 'Are you sure you want to delete your account? This cannot be undone.')) return;
+    const password = prompt(tr ? 'Hesabınızı silmek için şifrenizi girin:' : 'Enter your password to delete your account:');
+    if (!password) return;
     setDeleting(true);
-    await api.deleteAccount();
-    window.location.href = '/login';
+    const res = await api.deleteAccount(password);
+    if (res.ok) {
+      window.location.href = '/login';
+    } else {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Error');
+      setDeleting(false);
+    }
   };
 
   return (
