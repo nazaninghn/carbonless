@@ -17,7 +17,7 @@ export default function SimpleHeader() {
             <img 
               src="/carbonless.png" 
               alt="Carbonless" 
-              className="h-10 w-auto"
+              className="h-14 w-auto"
             />
             <Text variant="bold" className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               {t.brandName}

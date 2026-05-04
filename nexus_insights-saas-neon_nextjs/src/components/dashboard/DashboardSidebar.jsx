@@ -1,5 +1,5 @@
 'use client';
-import { LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X, ClipboardCheck } from 'lucide-react';
+import { LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X, ClipboardCheck, Bot } from 'lucide-react';
 import NextLink from 'next/link';
 
 export default function DashboardSidebar({ language, activeTab, setActiveTab, user, sidebarOpen, setSidebarOpen, onLogout }) {
@@ -9,6 +9,7 @@ export default function DashboardSidebar({ language, activeTab, setActiveTab, us
     { key: 'review', icon: ClipboardCheck, label: language === 'tr' ? 'Onay Bekleyenler' : 'Pending Review' },
     { key: 'reduction', icon: TrendingDown, label: language === 'tr' ? 'Azaltma Hedefleri' : 'Reduction Targets' },
     { key: 'reporting', icon: FileText, label: language === 'tr' ? 'Raporlama' : 'Reporting' },
+    { key: 'ai_carbon', icon: Bot, label: 'AI Carbon' },
     { key: 'settings', icon: Settings, label: language === 'tr' ? 'Ayarlar' : 'Settings' },
   ];
 
@@ -18,7 +19,7 @@ export default function DashboardSidebar({ language, activeTab, setActiveTab, us
         <div className="h-full flex flex-col">
           <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
             <NextLink href="/" className="flex items-center gap-2">
-              <img src="/carbonless.png" alt="Carbonless" className="h-8 w-auto" />
+              <img src="/carbonless.png" alt="Carbonless" className="h-14 w-auto" />
               <span className="font-bold text-lg gradient-text">Carbonless</span>
             </NextLink>
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden"><X className="w-5 h-5" /></button>

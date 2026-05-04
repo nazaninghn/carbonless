@@ -50,7 +50,7 @@ export default function Page() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16 lg:h-20">
               {/* Logo */}
-              <Link className="flex items-center gap-2" href="/"><img src="/carbonless.png" alt="Carbonless" className="h-10 w-auto" />
+              <Link className="flex items-center gap-2" href="/"><img src="/carbonless.png" alt="Carbonless" className="h-14 w-auto" />
               <Text variant="bold" className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"> {t.brandName} </Text></Link>
               {/* Desktop Navigation */}
               <nav className="hidden lg:flex items-center gap-8">
@@ -92,7 +92,7 @@ export default function Page() {
               <div className="flex flex-col h-full">
                 {/* Mobile Menu Header */}
                 <div className="flex items-center justify-between h-16 lg:h-20 px-6 border-b border-gray-200">
-                  <Link className="flex items-center gap-2" href="/"><img src="/carbonless.png" alt="Carbonless" className="h-10 w-auto" />
+                  <Link className="flex items-center gap-2" href="/"><img src="/carbonless.png" alt="Carbonless" className="h-14 w-auto" />
                   <Text variant="bold" className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent"> {t.brandName} </Text></Link>
                   <button onClick={() => { setMobileMenuOpen(false) }} aria-label="Close menu" className="p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200"><X className="w-6 h-6 text-gray-600" /></button>
                 </div>

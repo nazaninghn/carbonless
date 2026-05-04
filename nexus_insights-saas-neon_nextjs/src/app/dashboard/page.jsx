@@ -1053,13 +1053,18 @@ export default function DashboardPage() {
           {activeTab === 'settings' && (
             <SettingsTab language={language} user={user} fetchData={fetchData} />
           )}
+
+          {/* ===== AI CARBON TAB ===== */}
+          {activeTab === 'ai_carbon' && (
+            <div className="h-[calc(100vh-10rem)]">
+              <Chatbot language={language} onComplete={fetchData} embedded={true} />
+            </div>
+          )}
             </>
           )}
         </main>
       </div>
 
-      {/* Questionnaire Chatbot */}
-      <Chatbot language={language} onComplete={fetchData} />
       {/* Onboarding Tour */}
       <OnboardingTour language={language} />
     </div>

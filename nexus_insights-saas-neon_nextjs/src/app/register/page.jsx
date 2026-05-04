@@ -61,7 +61,11 @@ export default function RegisterPage() {
     if (!formData.password) missing.push(language === 'tr' ? 'Şifre' : 'Password');
     if (!formData.password2) missing.push(language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password');
     if (!formData.legalEntityName.trim()) missing.push(language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
-    // taxNumber is NOT required
+    // taxNumber is NOT required, but if entered must be 10 digits
+    if (formData.taxNumber && formData.taxNumber.length !== 10) {
+      setError(language === 'tr' ? 'Vergi numarası 10 haneli olmalıdır' : 'Tax number must be 10 digits');
+      return false;
+    }
     if (!formData.countryOfHeadquarters.trim()) missing.push(language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters');
     if (!formData.countriesOfOperation.trim()) missing.push(language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation');
     if (!formData.naceCode.trim()) missing.push(language === 'tr' ? 'NACE Kodu' : 'NACE Code');
@@ -223,11 +227,11 @@ export default function RegisterPage() {
       <main className="pt-24 pb-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Page Header */}
-          <div className="text-center mb-8 sm:mb-12">
-            <h1 className="text-2xl sm:text-4xl font-bold mb-4">
+          <div className="mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2 bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               {t.register.title}
             </h1>
-            <p className="text-lg text-gray-600">
+            <p className="text-gray-600">
               {t.register.subtitle}
             </p>
           </div>
@@ -316,11 +320,30 @@ export default function RegisterPage() {
                   </label>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    maxLength={10}
                     value={formData.taxNumber}
-                    onChange={(e) => handleInputChange('taxNumber', e.target.value)}
-                    className="w-full px-4 py-3 bg-white border border-green-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-                    placeholder={language === 'tr' ? 'Opsiyonel' : 'Optional'}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                      handleInputChange('taxNumber', val);
+                    }}
+                    className={`w-full px-4 py-3 bg-white border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent ${
+                      formData.taxNumber && formData.taxNumber.length !== 10 && formData.taxNumber.length > 0
+                        ? 'border-red-400'
+                        : formData.taxNumber.length === 10
+                          ? 'border-green-400'
+                          : 'border-green-200'
+                    }`}
+                    placeholder={language === 'tr' ? 'Opsiyonel — 10 haneli' : 'Optional — 10 digits'}
                   />
+                  {formData.taxNumber && formData.taxNumber.length > 0 && formData.taxNumber.length !== 10 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      {language === 'tr' ? `Lütfen geçerli bir 10 haneli vergi numarası giriniz (${formData.taxNumber.length}/10)` : `Please enter a valid 10-digit tax number (${formData.taxNumber.length}/10)`}
+                    </p>
+                  )}
+                  {formData.taxNumber.length === 10 && (
+                    <p className="text-xs text-green-600 mt-1">✓ {language === 'tr' ? 'Geçerli format' : 'Valid format'}</p>
+                  )}
                 </div>
 
                 <div>

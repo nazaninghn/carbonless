@@ -15,9 +15,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <img 
-                src="/carbonless.png" 
-                alt="Carbonless" 
-                className="h-10 w-auto"
+                src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
               />
               <h3 className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
                 {t.company.name}

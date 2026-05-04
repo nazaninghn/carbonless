@@ -20,9 +20,7 @@ export default function Header() {
           {/* Logo */}
           <NextLink href="/" className="flex items-center gap-2">
             <img 
-              src="/carbonless.png" 
-              alt="Carbonless" 
-              className="h-10 w-auto"
+              src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
             />
             <Text variant="bold" className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
               {t.brandName}
@@ -104,9 +102,7 @@ export default function Header() {
             <div className="flex items-center justify-between h-16 lg:h-20 px-6 border-b border-gray-200">
               <NextLink href="/" className="flex items-center gap-2">
                 <img 
-                  src="/carbonless.png" 
-                  alt="Carbonless" 
-                  className="h-10 w-auto"
+                  src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
                 />
                 <Text variant="bold" className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
                   {t.brandName}
