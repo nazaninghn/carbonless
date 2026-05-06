@@ -74,26 +74,26 @@ export default function SettingsTab({ language, user, fetchData }) {
   };
 
   return (
-    <div className="space-y-5 text-[#302817]">
+    <div className="space-y-3 text-[#302817]">
       {/* Header */}
-      <div className="rounded-[2rem] border border-[#302817]/10 bg-white/70 p-5 shadow-[0_8px_30px_rgba(48,40,23,0.06)] backdrop-blur-xl">
-        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8F92A1]">
+      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white/70 p-4 shadow-[0_6px_20px_rgba(48,40,23,0.04)] backdrop-blur-xl">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B4BE6A]">
           Carbonless Workspace
         </p>
-        <h1 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#302817]">
+        <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#302817]">
           {tr ? 'Ayarlar' : 'Settings'}
         </h1>
-        <p className="mt-1 text-sm leading-6 text-[#302817]/60">
+        <p className="mt-0.5 text-xs text-[#302817]/55">
           {tr
             ? 'Hesap, şirket, güvenlik ve sistem tercihlerinizi yönetin.'
             : 'Manage account, company, security and system preferences.'}
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Sidebar tabs */}
-        <aside className="lg:sticky lg:top-5 lg:h-fit">
-          <div className="flex gap-2 overflow-x-auto rounded-[1.75rem] border border-[#302817]/10 bg-white/60 p-2 shadow-[0_8px_30px_rgba(48,40,23,0.05)] backdrop-blur-xl lg:block lg:space-y-1">
+        <aside className="lg:sticky lg:top-4 lg:h-fit">
+          <div className="flex gap-1.5 overflow-x-auto rounded-[1.25rem] border border-[#302817]/10 bg-white/60 p-1.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl lg:block lg:space-y-0.5">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -101,27 +101,22 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`group flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition lg:w-full ${
+                  className={`group flex min-w-fit items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition lg:w-full ${
                     isActive
-                      ? 'bg-[#302817] text-[#F9EFE5] shadow-lg shadow-[#302817]/15'
-                      : 'text-[#302817]/65 hover:bg-white/80 hover:text-[#302817]'
+                      ? 'bg-[#302817] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
+                      : 'text-[#302817]/60 hover:bg-white/80 hover:text-[#302817]'
                   }`}
                 >
                   <span
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${
+                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
                       isActive
                         ? 'bg-[#F9EFE5]/12 text-[#F9EFE5]'
-                        : 'bg-[#8F92A1]/12 text-[#7F8790]'
+                        : 'bg-[#B4BE6A]/12 text-[#95A847]'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-3.5 w-3.5" />
                   </span>
                   <span className="truncate">{tr ? tab.tr : tab.en}</span>
-                  <ChevronRight
-                    className={`ml-auto hidden h-4 w-4 lg:block ${
-                      isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
-                    }`}
-                  />
                 </button>
               );
             })}
@@ -131,16 +126,16 @@ export default function SettingsTab({ language, user, fetchData }) {
         {/* Content */}
         <section className="min-w-0">
           {/* Section header */}
-          <div className="mb-4 rounded-[1.75rem] border border-[#302817]/10 bg-white/60 p-4 shadow-[0_8px_30px_rgba(48,40,23,0.05)] backdrop-blur-xl">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#8F92A1]/14 text-[#7F8790] ring-1 ring-[#8F92A1]/25">
-                {active && <active.icon className="h-5 w-5" />}
+          <div className="mb-3 rounded-[1.25rem] border border-[#302817]/10 bg-white/60 p-3 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25">
+                {active && <active.icon className="h-4 w-4" />}
               </div>
               <div>
-                <h2 className="text-lg font-bold text-[#302817]">
+                <h2 className="text-sm font-bold text-[#302817]">
                   {active ? (tr ? active.tr : active.en) : ''}
                 </h2>
-                <p className="text-sm text-[#302817]/55">
+                <p className="text-[11px] text-[#302817]/45">
                   {tr ? 'Seçili ayar bölümü' : 'Selected settings section'}
                 </p>
               </div>
@@ -176,7 +171,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                           key={p.key}
                           className={`rounded-2xl border px-3 py-3 text-center text-xs font-bold ${
                             allowed
-                              ? 'border-[#8F92A1]/30 bg-[#8F92A1]/12 text-[#302817]'
+                              ? 'border-[#B4BE6A]/30 bg-[#B4BE6A]/12 text-[#302817]'
                               : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/45'
                           }`}
                         >
@@ -280,7 +275,7 @@ export default function SettingsTab({ language, user, fetchData }) {
 
 function Panel({ children }) {
   return (
-    <div className="rounded-[2rem] border border-[#302817]/10 bg-white/70 p-4 shadow-[0_8px_30px_rgba(48,40,23,0.06)] backdrop-blur-xl sm:p-5 lg:p-6">
+    <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white/70 p-3.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl sm:p-4">
       {children}
     </div>
   );
@@ -288,9 +283,9 @@ function Panel({ children }) {
 
 function PanelTitle({ icon: Icon, title }) {
   return (
-    <h3 className="mb-4 flex items-center gap-3 text-base font-bold text-[#302817]">
-      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#8F92A1]/14 text-[#7F8790] ring-1 ring-[#8F92A1]/25">
-        <Icon className="h-4 w-4" />
+    <h3 className="mb-3 flex items-center gap-2.5 text-sm font-bold text-[#302817]">
+      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25">
+        <Icon className="h-3.5 w-3.5" />
       </div>
       {title}
     </h3>
@@ -299,9 +294,9 @@ function PanelTitle({ icon: Icon, title }) {
 
 function InfoCard({ label, value }) {
   return (
-    <div className="rounded-2xl border border-[#302817]/10 bg-[#F8F8F8] p-3">
-      <p className="text-xs font-bold text-[#302817]/45">{label}</p>
-      <p className="mt-1 truncate text-sm font-bold text-[#302817]">{value}</p>
+    <div className="rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3 py-2">
+      <p className="text-[10px] font-bold text-[#302817]/40">{label}</p>
+      <p className="mt-0.5 truncate text-xs font-bold text-[#302817]">{value}</p>
     </div>
   );
 }

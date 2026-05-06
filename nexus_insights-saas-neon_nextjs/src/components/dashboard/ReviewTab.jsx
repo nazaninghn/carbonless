@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
-import { ClipboardCheck, Check, X, AlertCircle } from 'lucide-react';
+import { ClipboardCheck, Check, X } from 'lucide-react';
 
 export default function ReviewTab({ language, fetchData }) {
   const [pending, setPending] = useState([]);
@@ -9,6 +9,7 @@ export default function ReviewTab({ language, fetchData }) {
   const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(null);
+  const tr = language === 'tr';
 
   const fetchPending = async () => {
     setLoading(true);
@@ -41,56 +42,76 @@ export default function ReviewTab({ language, fetchData }) {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate">{language === 'tr' ? 'Onay Bekleyenler' : 'Pending Review'}</h1>
-        <p className="text-graphite mt-1">{language === 'tr' ? 'Onay bekleyen emisyon kayıtları' : 'Emission entries awaiting approval'}</p>
+    <div className="space-y-3 text-[#302817]">
+      {/* Header */}
+      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-4 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#95A847]">
+              {tr ? 'Onay süreci' : 'Approval workflow'}
+            </p>
+            <h1 className="mt-1 text-lg font-bold tracking-[-0.03em]">
+              {tr ? 'Onay Bekleyenler' : 'Pending Review'}
+            </h1>
+            <p className="mt-0.5 text-xs text-[#302817]/50">
+              {tr ? 'Onay bekleyen emisyon kayıtları' : 'Emission entries awaiting approval'}
+            </p>
+          </div>
+          <div className="rounded-xl bg-[#95A847]/12 px-3 py-1.5 text-xs font-bold text-[#75863B]">
+            {pending.length} {tr ? 'bekleyen' : 'pending'}
+          </div>
+        </div>
       </div>
 
+      {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>
+        <div className="flex justify-center py-10">
+          <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#95A847] border-t-transparent"></div>
+        </div>
       ) : pending.length === 0 ? (
-        <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-12 text-center">
-          <ClipboardCheck className="w-12 h-12 text-graphite/40 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'Bekleyen kayıt yok' : 'No pending entries'}</h3>
-          <p className="text-graphite">{language === 'tr' ? 'Tüm kayıtlar onaylanmış.' : 'All entries have been reviewed.'}</p>
+        <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#302817]/10 bg-white/80 p-6 text-center shadow-[0_4px_16px_rgba(48,40,23,0.04)]">
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#95A847]/12 text-[#95A847]">
+            <ClipboardCheck className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-bold">{tr ? 'Bekleyen kayıt yok' : 'No pending entries'}</p>
+          <p className="mt-0.5 text-[11px] text-[#302817]/45">{tr ? 'Tüm kayıtlar onaylanmış.' : 'All entries have been reviewed.'}</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {pending.map(entry => (
-            <div key={entry.id} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-lg transition">
-              <div className="flex items-start justify-between gap-4">
-                {/* LEFT */}
-                <div className="space-y-2">
-                  <h3 className="text-sm font-bold text-slate-900">
-                    {language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}
+            <div key={entry.id} className="rounded-[1.25rem] border border-[#302817]/10 bg-white/80 p-3.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] transition hover:shadow-[0_6px_20px_rgba(48,40,23,0.07)]">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-1.5">
+                  <h3 className="truncate text-sm font-bold text-[#302817]">
+                    {tr && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}
                   </h3>
-                  <div className="text-xs text-slate-500 flex flex-wrap gap-2">
-                    <span className="bg-slate-100 px-2 py-1 rounded-md">{entry.scope?.replace('scope', 'Scope ')}</span>
-                    <span>{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</span>
-                    <span className="font-semibold text-emerald-600">{parseFloat(entry.calculated_co2e_kg).toFixed(2)} kg CO2e</span>
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    {language === 'tr' ? 'Ay' : 'Month'}: {entry.month} · {entry.facility || ''}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      entry.scope === 'scope1' ? 'bg-[#302817]/10 text-[#302817]' :
+                      entry.scope === 'scope2' ? 'bg-[#95A847]/15 text-[#75863B]' :
+                      'bg-[#B4BE6A]/18 text-[#75863B]'
+                    }`}>{entry.scope?.replace('scope', 'S')}</span>
+                    <span className="text-[11px] font-semibold text-[#302817]/50">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</span>
+                    <span className="text-[11px] font-bold text-[#95A847]">{parseFloat(entry.calculated_co2e_kg).toFixed(1)} kg</span>
+                    <span className="text-[10px] text-[#302817]/35">{tr ? 'Ay' : 'Mo'}: {entry.month}</span>
                   </div>
                 </div>
-                {/* RIGHT ACTIONS */}
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     onClick={() => handleApprove(entry.id)}
                     disabled={processing === entry.id}
-                    className="flex items-center gap-1 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#95A847]/12 px-3 py-2 text-[11px] font-bold text-[#75863B] transition hover:bg-[#95A847]/22 disabled:opacity-50"
                   >
-                    <Check className="w-4 h-4" />
-                    {language === 'tr' ? 'Onayla' : 'Approve'}
+                    <Check className="h-3 w-3" />
+                    {tr ? 'Onayla' : 'Approve'}
                   </button>
                   <button
                     onClick={() => setRejectId(entry.id)}
                     disabled={processing === entry.id}
-                    className="flex items-center gap-1 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-2 text-[11px] font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
                   >
-                    <X className="w-4 h-4" />
-                    {language === 'tr' ? 'Reddet' : 'Reject'}
+                    <X className="h-3 w-3" />
+                    {tr ? 'Reddet' : 'Reject'}
                   </button>
                 </div>
               </div>
@@ -101,18 +122,19 @@ export default function ReviewTab({ language, fetchData }) {
 
       {/* Reject Dialog */}
       {rejectId && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6">
-            <h3 className="text-lg font-bold mb-4">{language === 'tr' ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-[1.25rem] border border-[#302817]/10 bg-white/95 p-5 shadow-[0_20px_60px_rgba(48,40,23,0.15)] backdrop-blur-2xl">
+            <h3 className="text-sm font-bold text-[#302817]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
             <textarea
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
-              placeholder={language === 'tr' ? 'Neden reddedildi...' : 'Why is this rejected...'}
-              className="w-full px-3 py-2 border border-black/[0.06] rounded-lg mb-4" rows={3}
+              placeholder={tr ? 'Neden reddedildi...' : 'Why is this rejected...'}
+              className="mt-3 w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-xs text-[#302817] outline-none placeholder:text-[#302817]/30 focus:ring-4 focus:ring-[#95A847]/15"
+              rows={3}
             />
-            <div className="flex gap-2">
-              <button onClick={handleReject} className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm">{language === 'tr' ? 'Reddet' : 'Reject'}</button>
-              <button onClick={() => { setRejectId(null); setRejectReason(''); }} className="flex-1 py-2 border border-black/[0.06] rounded-lg text-sm">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+            <div className="mt-4 flex gap-2">
+              <button onClick={handleReject} className="flex-1 rounded-full bg-red-500 py-2.5 text-xs font-bold text-white transition hover:bg-red-600">{tr ? 'Reddet' : 'Reject'}</button>
+              <button onClick={() => { setRejectId(null); setRejectReason(''); }} className="flex-1 rounded-full border border-[#302817]/10 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
             </div>
           </div>
         </div>

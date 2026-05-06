@@ -19,6 +19,7 @@ import ReviewTab from '@/components/dashboard/ReviewTab';
 import FacilityChart from '@/components/dashboard/FacilityChart';
 import SettingsTab from '@/components/dashboard/SettingsTab';
 import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
+import ReportingTab from '@/components/dashboard/ReportingTab';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -75,6 +76,8 @@ export default function DashboardPage() {
   const [editFacility, setEditFacility] = useState('');
 
   const handleLogout = async () => {
+    // Remove beforeunload block so redirect works
+    window.onbeforeunload = null;
     const { auth } = await import('@/lib/auth');
     auth.logout();
   };
@@ -271,6 +274,8 @@ export default function DashboardPage() {
       <div className="min-w-0 flex-1 flex flex-col min-h-screen">
         <DashboardHeader
           language={language}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
           selectedYear={selectedYear}
           setSelectedYear={setSelectedYear}
           selectedCountry={selectedCountry}
@@ -283,7 +288,7 @@ export default function DashboardPage() {
         <main className="flex-1 overflow-x-hidden p-3 sm:p-4 lg:p-5">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-[#95A847] border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
             <div className="mx-auto w-full max-w-[1380px]">
@@ -305,32 +310,59 @@ export default function DashboardPage() {
 
           {/* ===== EMISSIONS TAB ===== */}
           {activeTab === 'emissions' && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate">{language === 'tr' ? 'Emisyon Yönetimi' : 'Emission Management'}</h1>
-                  <p className="text-graphite mt-1 text-sm">{language === 'tr' ? 'Emisyon verilerinizi girin ve yönetin' : 'Enter and manage your emission data'}</p>
+            <div className="space-y-4 text-[#302817]">
+              {/* Header */}
+              <div className="rounded-[1.5rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-5 shadow-[0_6px_24px_rgba(48,40,23,0.05)]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#95A847]">{language === 'tr' ? 'Emisyon çalışma alanı' : 'Emission workspace'}</p>
+                    <h1 className="mt-1.5 text-xl font-bold tracking-[-0.03em] sm:text-2xl">{language === 'tr' ? 'Emisyon Yönetimi' : 'Emission Management'}</h1>
+                    <p className="mt-1 text-sm text-[#302817]/55">{language === 'tr' ? 'Emisyon verilerinizi girin ve yönetin' : 'Enter and manage your emission data'}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => setShowAddForm(true)} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black">
+                      <Plus className="w-3.5 h-3.5" />{language === 'tr' ? 'Yeni Kayıt' : 'New Entry'}
+                    </button>
+                    <button onClick={() => setShowCustomForm(true)} className="inline-flex items-center gap-1.5 rounded-full border border-[#95A847]/40 bg-[#95A847]/10 px-4 py-2.5 text-xs font-bold text-[#75863B] transition hover:bg-[#95A847]/18">
+                      <Plus className="w-3.5 h-3.5" />{language === 'tr' ? 'Özel Talep' : 'Custom'}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <button onClick={() => setShowAddForm(true)} className="px-3 sm:px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-1.5 text-sm">
-                    <Plus className="w-4 h-4" /><span className="hidden xs:inline">{language === 'tr' ? 'Yeni Kayıt' : 'New Entry'}</span><span className="xs:hidden">{language === 'tr' ? 'Ekle' : 'Add'}</span>
-                  </button>
-                  <button onClick={() => setShowCustomForm(true)} className="px-3 sm:px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1.5 text-sm">
-                    <Plus className="w-4 h-4" /><span className="hidden sm:inline">{language === 'tr' ? 'Özel Talep' : 'Custom Request'}</span><span className="sm:hidden">{language === 'tr' ? 'Özel' : 'Custom'}</span>
-                  </button>
+              </div>
+
+              {/* Mini KPIs */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="rounded-xl border border-[#302817]/8 bg-white/80 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase text-[#302817]/40">{language === 'tr' ? 'Toplam Kayıt' : 'Total Entries'}</p>
+                  <p className="mt-0.5 text-lg font-bold">{entries.length}</p>
+                </div>
+                <div className="rounded-xl border border-[#302817]/8 bg-white/80 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase text-[#302817]/40">Scope 1</p>
+                  <p className="mt-0.5 text-lg font-bold">{entries.filter(e => e.scope === 'scope1').length}</p>
+                </div>
+                <div className="rounded-xl border border-[#302817]/8 bg-white/80 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase text-[#302817]/40">Scope 2</p>
+                  <p className="mt-0.5 text-lg font-bold">{entries.filter(e => e.scope === 'scope2').length}</p>
+                </div>
+                <div className="rounded-xl border border-[#302817]/8 bg-white/80 px-3 py-2.5">
+                  <p className="text-[10px] font-bold uppercase text-[#302817]/40">Scope 3</p>
+                  <p className="mt-0.5 text-lg font-bold">{entries.filter(e => e.scope === 'scope3').length}</p>
                 </div>
               </div>
 
               {/* Search & Filter */}
-              <div className="flex flex-wrap gap-3">
-                <input
-                  type="text"
-                  value={entrySearch}
-                  onChange={e => setEntrySearch(e.target.value)}
-                  placeholder={language === 'tr' ? 'Kaynak ara...' : 'Search source...'}
-                  className="px-3 py-2 border border-black/[0.06] rounded-lg text-sm flex-1 min-w-[200px]"
-                />
-                <select value={entryFilterScope} onChange={e => setEntryFilterScope(e.target.value)} className="px-3 py-2 border border-black/[0.06] rounded-lg text-sm">
+              <div className="flex flex-wrap gap-2">
+                <div className="flex flex-1 min-w-[200px] items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3.5 py-2.5 shadow-sm">
+                  <svg className="h-4 w-4 text-[#302817]/30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <input
+                    type="text"
+                    value={entrySearch}
+                    onChange={e => setEntrySearch(e.target.value)}
+                    placeholder={language === 'tr' ? 'Kaynak ara...' : 'Search source...'}
+                    className="flex-1 bg-transparent text-sm font-medium outline-none placeholder:text-[#302817]/30"
+                  />
+                </div>
+                <select value={entryFilterScope} onChange={e => setEntryFilterScope(e.target.value)} className="rounded-xl border border-[#302817]/10 bg-white px-3.5 py-2.5 text-xs font-bold text-[#302817] shadow-sm outline-none">
                   <option value="">{language === 'tr' ? 'Tüm Scopelar' : 'All Scopes'}</option>
                   <option value="scope1">Scope 1</option>
                   <option value="scope2">Scope 2</option>
@@ -340,197 +372,264 @@ export default function DashboardPage() {
 
               {/* Add Entry Modal */}
               {showAddForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-                  <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 sm:p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-bold">{language === 'tr' ? 'Emisyon Verisi Ekle' : 'Add Emission Data'}</h2>
-                      <button onClick={() => setShowAddForm(false)}><X className="w-5 h-5" /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
+                  <div className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/82 shadow-[0_20px_60px_rgba(48,40,23,0.12)] backdrop-blur-2xl">
+                    {/* Header */}
+                    <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+                      <div>
+                        <h2 className="text-lg font-bold tracking-[-0.02em] text-[#302817]">{language === 'tr' ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
+                        <p className="mt-0.5 text-xs text-[#302817]/45">{language === 'tr' ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
+                      </div>
+                      <button onClick={() => setShowAddForm(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 transition hover:bg-[#302817]/5"><X className="w-4 h-4" /></button>
                     </div>
-                    <form onSubmit={handleAddEntry} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">Scope</label>
-                        <select value={selectedScope} onChange={e => { setSelectedScope(e.target.value); setSelectedCategory(''); setSelectedFactor(''); }} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
-                          <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
-                          <option value="scope1">Scope 1 – {language === 'tr' ? 'Doğrudan' : 'Direct'}</option>
-                          <option value="scope2">Scope 2 – {language === 'tr' ? 'Enerji' : 'Energy'}</option>
-                          <option value="scope3">Scope 3 – {language === 'tr' ? 'Dolaylı' : 'Indirect'}</option>
-                        </select>
-                      </div>
-                      {selectedScope && (
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Kategori' : 'Category'}</label>
-                          <select value={selectedCategory} onChange={e => { setSelectedCategory(e.target.value); setSelectedFactor(''); }} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
-                            <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
-                            {categories.map(c => <option key={c} value={c}>{categoryLabels[c] || c}</option>)}
-                          </select>
-                        </div>
-                      )}
 
-                      {selectedCategory && (
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
-                          <select value={selectedFactor} onChange={e => setSelectedFactor(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
-                            <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
-                            {filteredFactors.map(f => (
-                              <option key={f.id} value={f.id}>{language === 'tr' && f.name_tr ? f.name_tr : f.name} ({f.factor_kg_co2e} kg CO2e/{f.unit})</option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-                      {selectedFactorObj && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-                          <p className="font-medium text-green-800">{language === 'tr' ? 'Seçilen Faktör:' : 'Selected Factor:'} {selectedFactorObj.factor_kg_co2e} kg CO2e / {selectedFactorObj.unit}</p>
-                          {selectedFactorObj.reference && <p className="text-green-600 mt-1 text-xs">{selectedFactorObj.reference}</p>}
-                          <p className="text-green-600 mt-1 text-xs">⚠️ {language === 'tr' ? `Miktarı ${selectedFactorObj.unit} cinsinden giriniz` : `Enter quantity in ${selectedFactorObj.unit}`}</p>
-                        </div>
-                      )}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
-                          <select value={entryMonth} onChange={e => setEntryMonth(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg">
-                            {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} {selectedFactorObj ? `(${selectedFactorObj.unit})` : ''}</label>
-                          <input type="number" step="any" min="0" value={entryQuantity} onChange={e => setEntryQuantity(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
-                        </div>
-                      </div>
+                    {/* Scrollable Content */}
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                      <form id="add-entry-form" onSubmit={handleAddEntry} className="space-y-5">
+                        {/* Section: Emission Info */}
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Emisyon bilgisi' : 'Emission info'}</p>
 
-                      {entryQuantity && selectedFactorObj && (
-                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
-                          <p className="font-medium text-blue-800">
-                            {language === 'tr' ? 'Tahmini Emisyon:' : 'Estimated Emission:'}{' '}
-                            {(parseFloat(entryQuantity) * parseFloat(selectedFactorObj.factor_kg_co2e)).toFixed(2)} kg CO2e
-                            {' '}({((parseFloat(entryQuantity) * parseFloat(selectedFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} tCO2e)
-                          </p>
-                        </div>
-                      )}
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                        {facilityList.length > 0 ? (
-                          <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg">
-                            <option value="">{language === 'tr' ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
-                            {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
-                          </select>
-                        ) : (
-                          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm">
-                            <p className="text-amber-800">{language === 'tr' ? 'Henüz tesis eklenmemiş.' : 'No facilities added yet.'}</p>
-                            <button type="button" onClick={() => { setShowAddForm(false); setActiveTab('settings'); }} className="text-primary text-xs font-medium mt-1 hover:underline">
-                              {language === 'tr' ? '→ Ayarlar\'dan tesis ekleyin' : '→ Add facility from Settings'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
-                        <textarea value={entryDescription} onChange={e => setEntryDescription(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" rows={2} />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Kanıt Belgesi' : 'Proof Document'}</label>
-                        <div className="border-2 border-dashed border-black/[0.06] rounded-lg p-4 text-center hover:border-primary transition-colors">
-                          {entryFile ? (
-                            <div className="flex items-center justify-between bg-green-50 rounded-lg p-2">
-                              <span className="text-sm text-green-800 truncate">📎 {entryFile.name}</span>
-                              <button type="button" onClick={() => setEntryFile(null)} className="text-red-500 text-xs hover:text-red-700">✕</button>
+                          {/* Scope Segmented */}
+                          <div>
+                            <label className="mb-2 block text-xs font-bold text-[#302817]/60">Scope</label>
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { val: 'scope1', label: 'Scope 1', sub: language === 'tr' ? 'Doğrudan' : 'Direct' },
+                                { val: 'scope2', label: 'Scope 2', sub: language === 'tr' ? 'Enerji' : 'Energy' },
+                                { val: 'scope3', label: 'Scope 3', sub: language === 'tr' ? 'Dolaylı' : 'Indirect' },
+                              ].map(s => (
+                                <button key={s.val} type="button" onClick={() => { setSelectedScope(s.val); setSelectedCategory(''); setSelectedFactor(''); }}
+                                  className={`rounded-2xl border px-3 py-3 text-center transition ${selectedScope === s.val ? 'border-[#95A847]/50 bg-[#95A847]/12 ring-2 ring-[#95A847]/15' : 'border-[#302817]/10 bg-[#F9EFE5]/40 hover:border-[#95A847]/30'}`}>
+                                  <p className="text-xs font-bold text-[#302817]">{s.label}</p>
+                                  <p className="text-[10px] text-[#302817]/40">{s.sub}</p>
+                                </button>
+                              ))}
                             </div>
-                          ) : (
-                            <>
-                              <input
-                                type="file"
-                                id="proof-upload"
-                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
-                                onChange={e => setEntryFile(e.target.files[0] || null)}
-                                className="hidden"
-                              />
-                              <label htmlFor="proof-upload" className="cursor-pointer">
-                                <div className="text-graphite/60 mb-1">📄</div>
-                                <p className="text-sm text-graphite">{language === 'tr' ? 'Fatura, sayaç okuma veya belge yükleyin' : 'Upload invoice, meter reading or document'}</p>
-                                <p className="text-xs text-graphite/60 mt-1">PDF, JPG, PNG, DOC, XLS</p>
-                              </label>
-                            </>
+                          </div>
+
+                          {selectedScope && (
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Kategori' : 'Category'}</label>
+                              <select value={selectedCategory} onChange={e => { setSelectedCategory(e.target.value); setSelectedFactor(''); }} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required>
+                                <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
+                                {categories.map(c => <option key={c} value={c}>{categoryLabels[c] || c}</option>)}
+                              </select>
+                            </div>
+                          )}
+
+                          {selectedCategory && (
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
+                              <select value={selectedFactor} onChange={e => setSelectedFactor(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required>
+                                <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
+                                {filteredFactors.map(f => (
+                                  <option key={f.id} value={f.id}>{language === 'tr' && f.name_tr ? f.name_tr : f.name} ({f.factor_kg_co2e} kg CO₂e/{f.unit})</option>
+                                ))}
+                              </select>
+                            </div>
+                          )}
+
+                          {selectedFactorObj && (
+                            <div className="rounded-2xl border border-[#95A847]/25 bg-[#95A847]/8 px-4 py-3">
+                              <p className="text-xs font-bold text-[#75863B]">{language === 'tr' ? 'Seçilen Faktör:' : 'Selected Factor:'} {selectedFactorObj.factor_kg_co2e} kg CO₂e / {selectedFactorObj.unit}</p>
+                              <p className="mt-1 text-[10px] text-[#75863B]/70">⚠️ {language === 'tr' ? `Miktarı ${selectedFactorObj.unit} cinsinden giriniz` : `Enter quantity in ${selectedFactorObj.unit}`}</p>
+                            </div>
                           )}
                         </div>
-                      </div>
-                      {formError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-center gap-2"><AlertCircle className="w-4 h-4" />{formError}</div>}
-                      <button type="submit" disabled={submitting} className="w-full py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-60">
-                        {submitting ? (language === 'tr' ? 'Kaydediliyor...' : 'Saving...') : (language === 'tr' ? 'Kaydet' : 'Save')}
+
+                        {/* Section: Measurement */}
+                        <div className="space-y-3 border-t border-[#302817]/8 pt-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Ölçüm' : 'Measurement'}</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Ay' : 'Month'}</label>
+                              <select value={entryMonth} onChange={e => setEntryMonth(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15">
+                                {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Miktar' : 'Quantity'} {selectedFactorObj ? `(${selectedFactorObj.unit})` : ''}</label>
+                              <input type="number" step="any" min="0" value={entryQuantity} onChange={e => setEntryQuantity(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                            </div>
+                          </div>
+
+                          {entryQuantity && selectedFactorObj && (
+                            <div className="rounded-2xl border border-blue-200/60 bg-blue-50/60 px-4 py-3">
+                              <p className="text-xs font-bold text-blue-700">
+                                {language === 'tr' ? 'Tahmini:' : 'Estimated:'} {(parseFloat(entryQuantity) * parseFloat(selectedFactorObj.factor_kg_co2e)).toFixed(2)} kg CO₂e ({((parseFloat(entryQuantity) * parseFloat(selectedFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} t)
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Section: Facility */}
+                        <div className="space-y-3 border-t border-[#302817]/8 pt-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Tesis' : 'Facility'}</p>
+                          {facilityList.length > 0 ? (
+                            <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15">
+                              <option value="">{language === 'tr' ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
+                              {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
+                            </select>
+                          ) : (
+                            <div className="rounded-2xl border border-amber-200/60 bg-amber-50/60 px-4 py-3">
+                              <p className="text-xs text-amber-800">{language === 'tr' ? 'Henüz tesis eklenmemiş.' : 'No facilities added yet.'}</p>
+                              <button type="button" onClick={() => { setShowAddForm(false); setActiveTab('settings'); }} className="mt-1 text-xs font-bold text-[#95A847] hover:underline">
+                                {language === 'tr' ? '→ Ayarlar\'dan tesis ekleyin' : '→ Add facility from Settings'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Section: Additional */}
+                        <div className="space-y-3 border-t border-[#302817]/8 pt-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Ek bilgiler' : 'Additional details'}</p>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                            <textarea value={entryDescription} onChange={e => setEntryDescription(e.target.value)} className="w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 py-3 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15" rows={2} />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Kanıt Belgesi' : 'Proof Document'}</label>
+                            <div className="rounded-2xl border-2 border-dashed border-[#95A847]/30 bg-gradient-to-b from-[#95A847]/5 to-transparent p-6 text-center transition hover:border-[#95A847]/50 hover:bg-[#95A847]/8">
+                              {entryFile ? (
+                                <div className="flex items-center justify-between rounded-xl bg-[#95A847]/10 px-4 py-2.5">
+                                  <span className="text-xs font-bold text-[#75863B] truncate">📎 {entryFile.name}</span>
+                                  <button type="button" onClick={() => setEntryFile(null)} className="text-red-400 text-xs font-bold hover:text-red-600">✕</button>
+                                </div>
+                              ) : (
+                                <>
+                                  <input type="file" id="proof-upload" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={e => setEntryFile(e.target.files[0] || null)} className="hidden" />
+                                  <label htmlFor="proof-upload" className="cursor-pointer">
+                                    <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#95A847]/15 text-[#95A847]">📄</div>
+                                    <p className="text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Dosya bırakın veya göz atın' : 'Drop files here or browse'}</p>
+                                    <p className="mt-1 text-[10px] text-[#302817]/35">{language === 'tr' ? 'Fatura, sayaç, ESG belgeleri' : 'Invoices, meter readings, ESG documents'}</p>
+                                  </label>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {formError && <div className="rounded-2xl border border-red-200/60 bg-red-50/60 px-4 py-3 text-xs font-bold text-red-600 flex items-center gap-2"><AlertCircle className="w-4 h-4" />{formError}</div>}
+                      </form>
+                    </div>
+
+                    {/* Sticky Footer */}
+                    <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-6 py-4 backdrop-blur-sm">
+                      <button type="button" onClick={() => setShowAddForm(false)} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]">
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
                       </button>
-                    </form>
+                      <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60">
+                        {submitting ? (language === 'tr' ? 'Kaydediliyor...' : 'Saving...') : (language === 'tr' ? 'Kaydet' : 'Save Entry')}
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Custom Request Modal */}
               {showCustomForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-                  <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 sm:p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-xl font-bold">{language === 'tr' ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
-                      <button onClick={() => setShowCustomForm(false)}><X className="w-5 h-5" /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
+                  <div className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/82 shadow-[0_20px_60px_rgba(48,40,23,0.12)] backdrop-blur-2xl">
+                    {/* Header */}
+                    <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+                      <div>
+                        <h2 className="text-lg font-bold tracking-[-0.02em] text-[#302817]">{language === 'tr' ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
+                        <p className="mt-0.5 text-xs text-[#302817]/45">{language === 'tr' ? 'Listede olmayan kaynak? Bilgileri girin, admin onaylasın.' : 'Source not in the list? Enter details and admin will review.'}</p>
+                      </div>
+                      <button onClick={() => setShowCustomForm(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 transition hover:bg-[#302817]/5"><X className="w-4 h-4" /></button>
                     </div>
-                    <p className="text-sm text-graphite mb-4">{language === 'tr' ? 'Listede olmayan bir emisyon kaynağı mı var? Bilgileri girin, admin inceleyip onaylasın.' : 'Emission source not in the list? Enter details and admin will review.'}</p>
-                    <form onSubmit={handleCustomRequest} className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">Scope</label>
-                        <select value={customScope} onChange={e => setCustomScope(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
-                          <option value="scope1">Scope 1 – {language === 'tr' ? 'Doğrudan' : 'Direct'}</option>
-                          <option value="scope2">Scope 2 – {language === 'tr' ? 'Enerji' : 'Energy'}</option>
-                          <option value="scope3">Scope 3 – {language === 'tr' ? 'Dolaylı' : 'Indirect'}</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Kategori Adı' : 'Category Name'} *</label>
-                        <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder={language === 'tr' ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
-                        <input type="text" value={customSource} onChange={e => setCustomSource(e.target.value)} placeholder={language === 'tr' ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Açıklama' : 'Description'} *</label>
-                        <textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder={language === 'tr' ? 'Detaylı açıklama yazın...' : 'Write detailed description...'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" rows={3} required />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Birim' : 'Unit'} *</label>
-                          <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} placeholder={language === 'tr' ? 'Örn: litre, kg, kWh' : 'e.g. liters, kg, kWh'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
+
+                    {/* Scrollable Content */}
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                      <form id="custom-request-form" onSubmit={handleCustomRequest} className="space-y-5">
+                        {/* Section: Scope */}
+                        <div className="space-y-3">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Kapsam' : 'Scope'}</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {[
+                              { val: 'scope1', label: 'Scope 1', sub: language === 'tr' ? 'Doğrudan' : 'Direct' },
+                              { val: 'scope2', label: 'Scope 2', sub: language === 'tr' ? 'Enerji' : 'Energy' },
+                              { val: 'scope3', label: 'Scope 3', sub: language === 'tr' ? 'Dolaylı' : 'Indirect' },
+                            ].map(s => (
+                              <button key={s.val} type="button" onClick={() => setCustomScope(s.val)}
+                                className={`rounded-2xl border px-3 py-3 text-center transition ${customScope === s.val ? 'border-[#95A847]/50 bg-[#95A847]/12 ring-2 ring-[#95A847]/15' : 'border-[#302817]/10 bg-[#F9EFE5]/40 hover:border-[#95A847]/30'}`}>
+                                <p className="text-xs font-bold text-[#302817]">{s.label}</p>
+                                <p className="text-[10px] text-[#302817]/40">{s.sub}</p>
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} *</label>
-                          <input type="number" step="any" value={customQuantity} onChange={e => setCustomQuantity(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
+
+                        {/* Section: Source Details */}
+                        <div className="space-y-3 border-t border-[#302817]/8 pt-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Kaynak bilgisi' : 'Source details'}</p>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Kategori Adı' : 'Category Name'} *</label>
+                            <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder={language === 'tr' ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15 placeholder:text-[#302817]/30" required />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
+                            <input type="text" value={customSource} onChange={e => setCustomSource(e.target.value)} placeholder={language === 'tr' ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15 placeholder:text-[#302817]/30" required />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Açıklama' : 'Description'} *</label>
+                            <textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder={language === 'tr' ? 'Detaylı açıklama yazın...' : 'Write detailed description...'} className="w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 py-3 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15 placeholder:text-[#302817]/30" rows={3} required />
+                          </div>
                         </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
-                          <select value={customMonth} onChange={e => setCustomMonth(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg">
-                            {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-                          </select>
+
+                        {/* Section: Measurement */}
+                        <div className="space-y-3 border-t border-[#302817]/8 pt-5">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">{language === 'tr' ? 'Ölçüm' : 'Measurement'}</p>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Birim' : 'Unit'} *</label>
+                              <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} placeholder={language === 'tr' ? 'Örn: litre, kg, kWh' : 'e.g. liters, kg, kWh'} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15 placeholder:text-[#302817]/30" required />
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Miktar' : 'Quantity'} *</label>
+                              <input type="number" step="any" value={customQuantity} onChange={e => setCustomQuantity(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Ay' : 'Month'}</label>
+                              <select value={customMonth} onChange={e => setCustomMonth(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15">
+                                {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                              <input type="text" value={customFacility} onChange={e => setCustomFacility(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15 placeholder:text-[#302817]/30" />
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                          <input type="text" value={customFacility} onChange={e => setCustomFacility(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" />
-                        </div>
-                      </div>
-                      <button type="submit" disabled={customSubmitting} className="w-full py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-60">
+                      </form>
+                    </div>
+
+                    {/* Sticky Footer */}
+                    <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-6 py-4 backdrop-blur-sm">
+                      <button type="button" onClick={() => setShowCustomForm(false)} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]">
+                        {language === 'tr' ? 'İptal' : 'Cancel'}
+                      </button>
+                      <button type="submit" form="custom-request-form" disabled={customSubmitting} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60">
                         {customSubmitting ? '...' : (language === 'tr' ? 'Talep Gönder' : 'Submit Request')}
                       </button>
-                    </form>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Custom Requests List */}
               {customRequests.length > 0 && (
-                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
-                  <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'Özel Talepleriniz' : 'Your Custom Requests'}</h3>
+                <div className="bg-white/75 rounded-[1.5rem] border border-[#302817]/10 shadow-[0_6px_20px_rgba(48,40,23,0.045)] p-6">
+                  <h3 className="font-semibold text-[#302817] mb-4">{language === 'tr' ? 'Özel Talepleriniz' : 'Your Custom Requests'}</h3>
                   <div className="space-y-3">
                     {customRequests.map(cr => (
-                      <div key={cr.id} className="flex items-center justify-between p-3 bg-mist rounded-lg">
+                      <div key={cr.id} className="flex items-center justify-between p-3 bg-[#F8F8F8] rounded-lg">
                         <div>
-                          <p className="text-sm font-medium text-slate">{cr.source_name}</p>
-                          <p className="text-xs text-graphite">{cr.category_name} · {cr.quantity} {cr.unit}</p>
+                          <p className="text-sm font-medium text-[#302817]">{cr.source_name}</p>
+                          <p className="text-xs text-[#302817]/55">{cr.category_name} · {cr.quantity} {cr.unit}</p>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${cr.status === 'approved' ? 'bg-green-100 text-green-700' : cr.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                           {cr.status === 'approved' ? (language === 'tr' ? 'Onaylandı' : 'Approved') : cr.status === 'rejected' ? (language === 'tr' ? 'Reddedildi' : 'Rejected') : (language === 'tr' ? 'Beklemede' : 'Pending')}
@@ -544,45 +643,45 @@ export default function DashboardPage() {
 
               {/* Entries Table */}
               {entries.length === 0 ? (
-                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-12 text-center">
+                <div className="bg-white/75 rounded-[1.5rem] border border-[#302817]/10 shadow-[0_6px_20px_rgba(48,40,23,0.045)] p-12 text-center">
                   <Leaf className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</h3>
-                  <p className="text-graphite mb-4">{language === 'tr' ? 'Emisyon verisi ekleyerek başlayın' : 'Start by adding emission data'}</p>
-                  <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors inline-flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-[#302817] mb-2">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</h3>
+                  <p className="text-[#302817]/55 mb-4">{language === 'tr' ? 'Emisyon verisi ekleyerek başlayın' : 'Start by adding emission data'}</p>
+                  <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-[#302817] text-white rounded-lg hover:bg-black transition-colors inline-flex items-center gap-2">
                     <Plus className="w-4 h-4" />{language === 'tr' ? 'İlk Kaydı Ekle' : 'Add First Entry'}
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div className="overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-white/80 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
                   <table className="w-full min-w-[760px] text-sm">
-                      <thead className="bg-mist border-b border-black/[0.04]">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-medium text-graphite">{language === 'tr' ? 'Kaynak' : 'Source'}</th>
-                          <th className="text-left px-4 py-3 font-medium text-graphite">Scope</th>
-                          <th className="text-left px-4 py-3 font-medium text-graphite">{language === 'tr' ? 'Ay' : 'Month'}</th>
-                          <th className="text-right px-4 py-3 font-medium text-graphite">{language === 'tr' ? 'Miktar' : 'Qty'}</th>
-                          <th className="text-right px-4 py-3 font-medium text-graphite">kg CO2e</th>
-                          <th className="text-right px-4 py-3 font-medium text-graphite">tCO2e</th>
+                      <thead className="border-b border-[#302817]/8">
+                        <tr className="bg-[#F8F8F8]">
+                          <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#302817]/40">{language === 'tr' ? 'Kaynak' : 'Source'}</th>
+                          <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#302817]/40">Scope</th>
+                          <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#302817]/40">{language === 'tr' ? 'Ay' : 'Month'}</th>
+                          <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#302817]/40">{language === 'tr' ? 'Miktar' : 'Qty'}</th>
+                          <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#302817]/40">kg CO₂e</th>
+                          <th className="text-right px-4 py-3 text-[11px] font-bold uppercase tracking-[0.1em] text-[#302817]/40">tCO₂e</th>
                           <th className="px-4 py-3"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-[#302817]/6">
                         {entries.filter(entry => {
                           const name = (language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name) || '';
                           const matchSearch = !entrySearch || name.toLowerCase().includes(entrySearch.toLowerCase());
                           const matchScope = !entryFilterScope || entry.scope === entryFilterScope;
                           return matchSearch && matchScope;
                         }).map(entry => (
-                          <tr key={entry.id} className="hover:bg-mist">
-                            <td className="px-4 py-3">{language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}</td>
-                            <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${entry.scope === 'scope1' ? 'bg-red-100 text-red-700' : entry.scope === 'scope2' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{scopeLabel(entry.scope)}</span></td>
-                            <td className="px-4 py-3">{months[entry.month - 1]}</td>
-                            <td className="px-4 py-3 text-right">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</td>
-                            <td className="px-4 py-3 text-right font-medium">{parseFloat(entry.calculated_co2e_kg).toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
-                            <td className="px-4 py-3 text-right">{(parseFloat(entry.calculated_co2e_kg) / 1000).toFixed(4)}</td>
+                          <tr key={entry.id} className="transition-colors hover:bg-[#F9EFE5]/50">
+                            <td className="px-4 py-3 text-sm font-semibold text-[#302817]">{language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}</td>
+                            <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${entry.scope === 'scope1' ? 'bg-[#302817]/10 text-[#302817]' : entry.scope === 'scope2' ? 'bg-[#95A847]/15 text-[#75863B]' : 'bg-[#B4BE6A]/18 text-[#75863B]'}`}>{scopeLabel(entry.scope)}</span></td>
+                            <td className="px-4 py-3 text-xs text-[#302817]/55">{months[entry.month - 1]}</td>
+                            <td className="px-4 py-3 text-right text-xs font-semibold text-[#302817]/70">{parseFloat(entry.quantity).toLocaleString()} <span className="text-[#302817]/35">{entry.unit}</span></td>
+                            <td className="px-4 py-3 text-right text-sm font-bold text-[#302817]">{parseFloat(entry.calculated_co2e_kg).toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
+                            <td className="px-4 py-3 text-right text-xs text-[#302817]/50">{(parseFloat(entry.calculated_co2e_kg) / 1000).toFixed(4)}</td>
                             <td className="px-4 py-3 text-right flex gap-1 justify-end">
-                              <button onClick={() => { setEditingEntry(entry); setEditQuantity(entry.quantity); setEditDescription(entry.description || ''); setEditFacility(entry.facility || ''); }} className="text-graphite/60 hover:text-primary"><Pencil className="w-4 h-4" /></button>
-                              <button onClick={() => handleDeleteEntry(entry.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                              <button onClick={() => { setEditingEntry(entry); setEditQuantity(entry.quantity); setEditDescription(entry.description || ''); setEditFacility(entry.facility || ''); }} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-[#95A847]/15 hover:text-[#95A847]"><Pencil className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteEntry(entry.id)} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-red-50 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                             </td>
                           </tr>
                         ))}
@@ -592,29 +691,29 @@ export default function DashboardPage() {
               )}
               {/* Edit Entry Modal */}
               {editingEntry && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
-                  <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 sm:p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#302817]/30 p-4 backdrop-blur-sm">
+                  <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-[1.5rem] bg-white p-5 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-bold">{language === 'tr' ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
                       <button onClick={() => setEditingEntry(null)}><X className="w-5 h-5" /></button>
                     </div>
-                    <p className="text-sm text-graphite mb-4">{language === 'tr' && editingEntry.emission_factor_name_tr ? editingEntry.emission_factor_name_tr : editingEntry.emission_factor_name}</p>
+                    <p className="text-sm text-[#302817]/55 mb-4">{language === 'tr' && editingEntry.emission_factor_name_tr ? editingEntry.emission_factor_name_tr : editingEntry.emission_factor_name}</p>
                     <form onSubmit={handleEditEntry} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} ({editingEntry.unit})</label>
-                        <input type="number" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
+                        <label className="block text-sm font-medium text-[#302817] mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} ({editingEntry.unit})</label>
+                        <input type="number" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} className="w-full px-3 py-2 border border-[#302817]/10 rounded-lg" required />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                        <input type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" />
+                        <label className="block text-sm font-medium text-[#302817] mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                        <input type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className="w-full px-3 py-2 border border-[#302817]/10 rounded-lg" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
-                        <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" rows={2} />
+                        <label className="block text-sm font-medium text-[#302817] mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                        <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} className="w-full px-3 py-2 border border-[#302817]/10 rounded-lg" rows={2} />
                       </div>
                       <div className="flex gap-2">
-                        <button type="submit" className="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-secondary">{language === 'tr' ? 'Kaydet' : 'Save'}</button>
-                        <button type="button" onClick={() => setEditingEntry(null)} className="flex-1 py-2 border border-black/[0.06] rounded-lg hover:bg-mist">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+                        <button type="submit" className="flex-1 py-2 bg-[#302817] text-white rounded-lg hover:bg-black">{language === 'tr' ? 'Kaydet' : 'Save'}</button>
+                        <button type="button" onClick={() => setEditingEntry(null)} className="flex-1 py-2 border border-[#302817]/10 rounded-lg hover:bg-[#F8F8F8]">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
                       </div>
                     </form>
                   </div>
@@ -630,73 +729,112 @@ export default function DashboardPage() {
 
           {/* ===== REDUCTION TARGETS TAB ===== */}
           {activeTab === 'reduction' && (
-            <div className="space-y-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate">{language === 'tr' ? 'Azaltma Hedefleri' : 'Reduction Targets'}</h1>
-                  <p className="text-graphite mt-1 text-sm">{language === 'tr' ? 'Karbon azaltma hedeflerinizi belirleyin' : 'Set your carbon reduction targets'}</p>
+            <div className="space-y-4 text-[#302817]">
+              {/* Header */}
+              <div className="rounded-[1.5rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-5 shadow-[0_6px_24px_rgba(48,40,23,0.05)]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#95A847]">{language === 'tr' ? 'Hedef yönetimi' : 'Target management'}</p>
+                    <h1 className="mt-1.5 text-xl font-bold tracking-[-0.03em] sm:text-2xl">{language === 'tr' ? 'Azaltma Hedefleri' : 'Reduction Targets'}</h1>
+                    <p className="mt-1 text-sm text-[#302817]/55">{language === 'tr' ? 'Karbon azaltma hedeflerinizi belirleyin ve takip edin' : 'Set and track your carbon reduction targets'}</p>
+                  </div>
+                  <button onClick={() => setShowTargetForm(true)} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black">
+                    <Plus className="w-3.5 h-3.5" />{language === 'tr' ? 'Hedef Ekle' : 'Add Target'}
+                  </button>
                 </div>
-                <button onClick={() => setShowTargetForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 text-sm self-start sm:self-auto">
-                  <Plus className="w-4 h-4" />{language === 'tr' ? 'Hedef Ekle' : 'Add Target'}
-                </button>
               </div>
 
+              {/* Add Target Form */}
               {showTargetForm && (
-                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
-                  <h3 className="font-semibold mb-4">{language === 'tr' ? 'Yeni Hedef' : 'New Target'}</h3>
-                  <form onSubmit={handleAddTarget} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Başlık' : 'Title'}</label>
-                      <input type="text" value={targetTitle} onChange={e => setTargetTitle(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
+                  <div className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/92 shadow-[0_20px_60px_rgba(48,40,23,0.12)] backdrop-blur-2xl">
+                    <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+                      <div>
+                        <h2 className="text-lg font-bold tracking-[-0.02em]">{language === 'tr' ? 'Yeni Hedef' : 'New Target'}</h2>
+                        <p className="mt-0.5 text-xs text-[#302817]/45">{language === 'tr' ? 'Karbon azaltma hedefi belirleyin' : 'Set a carbon reduction target'}</p>
+                      </div>
+                      <button onClick={() => setShowTargetForm(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 transition hover:bg-[#302817]/5"><X className="w-4 h-4" /></button>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</label>
-                      <input type="number" value={targetBaseYear} onChange={e => setTargetBaseYear(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
+                    <div className="flex-1 overflow-y-auto px-6 py-5">
+                      <form id="target-form" onSubmit={handleAddTarget} className="space-y-4">
+                        <div>
+                          <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Başlık' : 'Title'}</label>
+                          <input type="text" value={targetTitle} onChange={e => setTargetTitle(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</label>
+                            <input type="number" value={targetBaseYear} onChange={e => setTargetBaseYear(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Hedef Yıl' : 'Target Year'}</label>
+                            <input type="number" value={targetYear} onChange={e => setTargetYear(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Baz Emisyon (tCO₂e)' : 'Base Emissions (tCO₂e)'}</label>
+                            <input type="number" step="any" value={targetBaseEmissions} onChange={e => setTargetBaseEmissions(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-xs font-bold text-[#302817]/60">{language === 'tr' ? 'Azaltma (%)' : 'Reduction (%)'}</label>
+                            <input type="number" step="any" value={targetReductionPercent} onChange={e => setTargetReductionPercent(e.target.value)} className="h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#95A847]/15" required />
+                          </div>
+                        </div>
+                      </form>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Hedef Yıl' : 'Target Year'}</label>
-                      <input type="number" value={targetYear} onChange={e => setTargetYear(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
+                    <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-6 py-4">
+                      <button type="button" onClick={() => setShowTargetForm(false)} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+                      <button type="submit" form="target-form" className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black">{language === 'tr' ? 'Kaydet' : 'Save Target'}</button>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Baz Emisyon (tCO2e)' : 'Base Emissions (tCO2e)'}</label>
-                      <input type="number" step="any" value={targetBaseEmissions} onChange={e => setTargetBaseEmissions(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'}</label>
-                      <input type="number" step="any" value={targetReductionPercent} onChange={e => setTargetReductionPercent(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
-                    </div>
-                    <div className="md:col-span-2 flex gap-3">
-                      <button type="submit" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary">{language === 'tr' ? 'Kaydet' : 'Save'}</button>
-                      <button type="button" onClick={() => setShowTargetForm(false)} className="px-6 py-2 border border-black/[0.06] rounded-lg hover:bg-mist">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
-                    </div>
-                  </form>
+                  </div>
                 </div>
               )}
 
-              {targets.length === 0 && !showTargetForm ? (
-                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-12 text-center">
-                  <Target className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'Henüz hedef yok' : 'No targets yet'}</h3>
-                  <p className="text-graphite">{language === 'tr' ? 'Karbon azaltma hedefi belirleyin' : 'Set a carbon reduction target'}</p>
+              {/* Empty State */}
+              {targets.length === 0 && !showTargetForm && (
+                <div className="flex min-h-44 flex-col items-center justify-center rounded-[1.5rem] border border-[#302817]/10 bg-white/80 p-8 text-center shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+                  <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#95A847]/15 text-[#95A847]"><Target className="h-5 w-5" /></div>
+                  <p className="text-sm font-bold">{language === 'tr' ? 'Henüz hedef yok' : 'No targets yet'}</p>
+                  <p className="mt-1 text-xs text-[#302817]/50">{language === 'tr' ? 'Karbon azaltma hedefi belirleyin' : 'Set a carbon reduction target'}</p>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {targets.map(tgt => (
-                    <div key={tgt.id} className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
-                      <h4 className="font-semibold text-slate mb-2">{tgt.title}</h4>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div><span className="text-graphite">{language === 'tr' ? 'Baz Yıl:' : 'Base:'}</span> {tgt.base_year}</div>
-                        <div><span className="text-graphite">{language === 'tr' ? 'Hedef:' : 'Target:'}</span> {tgt.target_year}</div>
-                        <div><span className="text-graphite">{language === 'tr' ? 'Baz Emisyon:' : 'Base:'}</span> {(tgt.base_emissions_kg / 1000).toFixed(1)} t</div>
-                        <div><span className="text-graphite">{language === 'tr' ? 'Azaltma:' : 'Reduction:'}</span> {tgt.target_reduction_percent}%</div>
+              )}
+
+              {/* Target Cards */}
+              {targets.length > 0 && (
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {targets.map(tgt => {
+                    const pct = tgt.target_reduction_percent || 0;
+                    return (
+                      <div key={tgt.id} className="group rounded-[1.5rem] border border-[#302817]/10 bg-white/80 p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)] transition hover:shadow-[0_8px_30px_rgba(48,40,23,0.08)]">
+                        <div className="mb-3 flex items-start justify-between">
+                          <h4 className="text-sm font-bold text-[#302817]">{tgt.title}</h4>
+                          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${tgt.status === 'on_track' ? 'bg-[#95A847]/15 text-[#75863B]' : tgt.status === 'succeeded' ? 'bg-[#95A847]/25 text-[#75863B]' : 'bg-red-50 text-red-500'}`}>
+                            {tgt.status === 'on_track' ? (language === 'tr' ? 'Yolunda' : 'On Track') : tgt.status === 'succeeded' ? (language === 'tr' ? 'Başarılı' : 'Succeeded') : (language === 'tr' ? 'Geride' : 'Off Track')}
+                          </span>
+                        </div>
+                        <div className="mb-3 grid grid-cols-2 gap-2">
+                          <div className="rounded-xl bg-[#F8F8F8] px-3 py-2">
+                            <p className="text-[10px] font-bold text-[#302817]/35">{language === 'tr' ? 'Dönem' : 'Period'}</p>
+                            <p className="text-xs font-bold">{tgt.base_year} → {tgt.target_year}</p>
+                          </div>
+                          <div className="rounded-xl bg-[#F8F8F8] px-3 py-2">
+                            <p className="text-[10px] font-bold text-[#302817]/35">{language === 'tr' ? 'Baz' : 'Base'}</p>
+                            <p className="text-xs font-bold">{(tgt.base_emissions_kg / 1000).toFixed(1)} t</p>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="mb-1 flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-[#302817]/40">{language === 'tr' ? 'Hedef' : 'Target'}</span>
+                            <span className="text-xs font-bold text-[#95A847]">-{pct}%</span>
+                          </div>
+                          <div className="h-2 overflow-hidden rounded-full bg-[#302817]/6">
+                            <div className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#95A847] transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
+                          </div>
+                        </div>
                       </div>
-                      <div className="mt-3">
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${tgt.status === 'on_track' ? 'bg-green-100 text-green-700' : tgt.status === 'succeeded' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
-                          {tgt.status === 'on_track' ? (language === 'tr' ? 'Yolunda' : 'On Track') : tgt.status === 'succeeded' ? (language === 'tr' ? 'Başarılı' : 'Succeeded') : (language === 'tr' ? 'Geride' : 'Off Track')}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -704,203 +842,7 @@ export default function DashboardPage() {
 
           {/* ===== REPORTING TAB ===== */}
           {activeTab === 'reporting' && (
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold text-slate">{language === 'tr' ? 'Raporlama' : 'Reporting'}</h1>
-                <p className="text-graphite mt-1">{language === 'tr' ? 'ISO 14064-1 uyumlu raporlar' : 'ISO 14064-1 compliant reports'}</p>
-              </div>
-
-              {/* Summary Stats */}
-              <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-4 sm:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
-                  <div className="py-4 sm:py-8">
-                    <div className="text-3xl sm:text-5xl font-bold text-slate mb-2">{entries.length}</div>
-                    <p className="text-sm text-graphite">{language === 'tr' ? 'Toplam Kayıt' : 'Total Entries'}</p>
-                  </div>
-                  <div className="py-4 sm:py-8 sm:border-x border-t sm:border-t-0 border-black/[0.04]">
-                    <div className="text-3xl sm:text-5xl font-bold text-slate mb-2">{summary?.total_tonne?.toFixed(1) || '0'}</div>
-                    <p className="text-sm text-graphite">{language === 'tr' ? 'Toplam tCO2e' : 'Total tCO2e'}</p>
-                  </div>
-                  <div className="py-4 sm:py-8 border-t sm:border-t-0 border-black/[0.04]">
-                    <div className="text-3xl sm:text-5xl font-bold text-slate mb-2">{targets.length}</div>
-                    <p className="text-sm text-graphite">{language === 'tr' ? 'Aktif Hedef' : 'Active Targets'}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Questionnaire Profile - Inventory Configuration */}
-              {questionnaireProfile?.is_complete && (
-                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
-                  <h3 className="font-semibold text-slate mb-4 flex items-center gap-2">
-                    <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <FileText className="w-4 h-4 text-primary" />
-                    </div>
-                    {language === 'tr' ? 'Envanter Yapılandırması' : 'Inventory Configuration'}
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Reporting Period */}
-                    <div className="bg-mist rounded-lg p-4">
-                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Raporlama Dönemi' : 'Reporting Period'}</p>
-                      <p className="text-sm font-medium text-slate">
-                        {questionnaireProfile.period_type === 'calendar_year' && `${language === 'tr' ? 'Takvim Yılı' : 'Calendar Year'}: ${questionnaireProfile.period_year || ''}`}
-                        {questionnaireProfile.period_type === 'fiscal_year' && (language === 'tr' ? 'Mali Yıl' : 'Fiscal Year')}
-                        {questionnaireProfile.period_type === 'custom' && (language === 'tr' ? 'Özel Dönem' : 'Custom Period')}
-                      </p>
-                    </div>
-                    {/* Base Year */}
-                    <div className="bg-mist rounded-lg p-4">
-                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</p>
-                      <p className="text-sm font-medium text-slate">
-                        {questionnaireProfile.has_base_year ? questionnaireProfile.base_year : (language === 'tr' ? 'Belirlenmedi' : 'Not set')}
-                      </p>
-                    </div>
-                    {/* Factor Source */}
-                    <div className="bg-mist rounded-lg p-4">
-                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Emisyon Faktör Kaynağı' : 'Emission Factor Source'}</p>
-                      <p className="text-sm font-medium text-slate">
-                        {{ national: language === 'tr' ? 'Ulusal Kaynaklar' : 'National Sources', defra: 'DEFRA', ipcc: 'IPCC', mixed: language === 'tr' ? 'Karışık' : 'Mixed', unsure: language === 'tr' ? 'Belirsiz' : 'Unsure' }[questionnaireProfile.preferred_factor_source] || questionnaireProfile.preferred_factor_source}
-                      </p>
-                    </div>
-                    {/* Purpose */}
-                    <div className="bg-mist rounded-lg p-4">
-                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Amaç' : 'Purpose'}</p>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {(questionnaireProfile.purposes || []).map(p => (
-                          <span key={p} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
-                            {{ iso_14064_verification: 'ISO 14064-1', internal_reporting: language === 'tr' ? 'İç Raporlama' : 'Internal', group_reporting: language === 'tr' ? 'Grup' : 'Group', financing: language === 'tr' ? 'Finansman' : 'Financing', export_pressure: language === 'tr' ? 'İhracat' : 'Export', other: language === 'tr' ? 'Diğer' : 'Other' }[p] || p}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    {/* Verification */}
-                    <div className="bg-mist rounded-lg p-4">
-                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? '3. Taraf Doğrulama' : '3rd Party Verification'}</p>
-                      <p className="text-sm font-medium text-slate">
-                        {questionnaireProfile.verification_planned ? `✅ ${language === 'tr' ? 'Planlandı' : 'Planned'}${questionnaireProfile.verification_date ? ` (${questionnaireProfile.verification_date})` : ''}` : questionnaireProfile.verification_within_12m ? `📅 ${language === 'tr' ? '12 ay içinde' : 'Within 12 months'}` : `❌ ${language === 'tr' ? 'Plan yok' : 'No plan'}`}
-                      </p>
-                    </div>
-                    {/* Report Language */}
-                    <div className="bg-mist rounded-lg p-4">
-                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Rapor Dili' : 'Report Language'}</p>
-                      <p className="text-sm font-medium text-slate">
-                        {{ tr: language === 'tr' ? 'Türkçe' : 'Turkish', en: language === 'tr' ? 'İngilizce' : 'English', bilingual: language === 'tr' ? 'Çift Dilli' : 'Bilingual' }[questionnaireProfile.report_language] || questionnaireProfile.report_language}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Warnings */}
-                  {questionnaireProfile.warnings?.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <p className="text-xs font-medium text-amber-700">{language === 'tr' ? 'Uyarılar' : 'Warnings'}</p>
-                      {questionnaireProfile.warnings.map((w, i) => (
-                        <div key={i} className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-200 rounded-lg">
-                          <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                          <p className="text-xs text-amber-800">{language === 'tr' ? w.text_tr : w.text_en}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!questionnaireProfile?.is_complete && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-4">
-                  <AlertCircle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-amber-900 mb-1">{language === 'tr' ? 'Prsşname Tamamlanmadı' : 'Questionnaire Not Complete'}</h3>
-                    <p className="text-sm text-amber-700">{language === 'tr' ? 'Envanter yapılandırması için lütfen sağ alttaki chatbot ile prsşnameyi tamamlayın.' : 'Please complete the questionnaire via the chatbot (bottom right) to configure your inventory.'}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Scope Breakdown for Report */}
-              {entries.length > 0 && (
-                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
-                  <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'Kapsam Dağılımı (Rapor Özeti)' : 'Scope Breakdown (Report Summary)'}</h3>
-                  <div className="space-y-4">
-                    {['scope1', 'scope2', 'scope3'].map(scope => {
-                      const scopeTotal = scope === 'scope1' ? summary?.scope1_tonne : scope === 'scope2' ? summary?.scope2_tonne : summary?.scope3_tonne;
-                      const pct = summary?.total_tonne > 0 ? ((scopeTotal || 0) / summary.total_tonne * 100) : 0;
-                      return (
-                        <div key={scope}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-slate">{scope === 'scope1' ? 'Scope 1' : scope === 'scope2' ? 'Scope 2' : 'Scope 3'}</span>
-                            <span className="text-sm text-graphite">{(scopeTotal || 0).toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
-                          </div>
-                          <div className="w-full bg-mist rounded-full h-2.5">
-                            <div className={`h-2.5 rounded-full ${scope === 'scope1' ? 'bg-red-500' : scope === 'scope2' ? 'bg-yellow-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6 sm:p-8 text-center">
-                <FileText className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'ISO 14064-1 PDF Rapor' : 'ISO 14064-1 PDF Report'}</h3>
-                <p className="text-graphite mb-6 text-sm sm:text-base">{language === 'tr' ? 'Scope dağılımı, kategori detayları, metodoloji ve referanslar dahil profesyonel rapor.' : 'Professional report with scope breakdown, category details, methodology and references.'}</p>
-                <div className="flex flex-wrap justify-center gap-3">
-                  <button
-                    onClick={() => {
-                      setPdfLoading('tr');
-                      const headers = {};
-                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
-                      fetch(api.getReportUrl(selectedYear, 'tr'), { credentials: 'include', headers })
-                        .then(r => { if (!r.ok) throw new Error('Report failed'); return r.blob(); })
-                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_rapor_${selectedYear}_tr.pdf`; a.click(); })
-                        .catch(err => console.error('PDF error:', err))
-                        .finally(() => setPdfLoading(''));
-                    }}
-                    disabled={pdfLoading === 'tr'}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 disabled:opacity-60 text-sm"
-                  >
-                    <FileText className="w-4 h-4" /> {pdfLoading === 'tr' ? (language === 'tr' ? 'Hazırlanıyor...' : 'Generating...') : 'Türkçe PDF'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setPdfLoading('en');
-                      const headers = {};
-                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
-                      fetch(api.getReportUrl(selectedYear, 'en'), { credentials: 'include', headers })
-                        .then(r => { if (!r.ok) throw new Error('Report failed'); return r.blob(); })
-                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `carbonless_report_${selectedYear}_en.pdf`; a.click(); })
-                        .catch(err => console.error('PDF error:', err))
-                        .finally(() => setPdfLoading(''));
-                    }}
-                    disabled={pdfLoading === 'en'}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2 disabled:opacity-60 text-sm"
-                  >
-                    <FileText className="w-4 h-4" /> {pdfLoading === 'en' ? (language === 'tr' ? 'Hazırlanıyor...' : 'Generating...') : 'English PDF'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const headers = {};
-                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
-                      fetch(api.getCsvUrl(selectedYear), { credentials: 'include', headers })
-                        .then(r => r.blob())
-                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.csv`; a.click(); });
-                    }}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 border border-black/[0.06] text-slate rounded-lg hover:bg-mist transition-colors flex items-center gap-2 text-sm"
-                  >
-                    <FileText className="w-4 h-4" /> CSV Export
-                  </button>
-                  <button
-                    onClick={() => {
-                      const headers = {};
-                      try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
-                      fetch(api.getExcelUrl(selectedYear), { credentials: 'include', headers })
-                        .then(r => r.blob())
-                        .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.xlsx`; a.click(); });
-                    }}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 border border-black/[0.06] text-slate rounded-lg hover:bg-mist transition-colors flex items-center gap-2 text-sm"
-                  >
-                    <FileText className="w-4 h-4" /> Excel Export
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ReportingTab language={language} selectedYear={selectedYear} summary={summary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
           )}
 
           {/* ===== SETTINGS TAB ===== */}
@@ -925,13 +867,13 @@ export default function DashboardPage() {
 
 function MetricCard({ title, value, unit, subtitle }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">{title}</p>
+    <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#302817]-400">{title}</p>
       <div className="mt-4 flex items-end gap-2">
-        <span className="text-3xl font-bold tracking-tight text-slate-950">{value}</span>
-        <span className="mb-1 text-sm font-semibold text-slate-400">{unit}</span>
+        <span className="text-3xl font-bold tracking-tight text-[#302817]-950">{value}</span>
+        <span className="mb-1 text-sm font-semibold text-[#302817]-400">{unit}</span>
       </div>
-      <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+      <p className="mt-2 text-sm text-[#302817]-500">{subtitle}</p>
     </div>
   );
 }

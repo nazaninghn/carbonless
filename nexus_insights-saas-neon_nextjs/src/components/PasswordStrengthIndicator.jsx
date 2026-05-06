@@ -22,8 +22,8 @@ function getPasswordStrength(password) {
   const passed = Object.values(checks).filter(Boolean).length;
 
   let level = 'none';
-  let color = 'bg-mist';
-  let textColor = 'text-graphite/60';
+  let color = 'bg-[#F8F8F8]';
+  let textColor = 'text-[#302817]/55/60';
 
   if (password.length === 0) {
     level = 'none';
@@ -100,7 +100,7 @@ export default function PasswordStrengthIndicator({ password, language = 'tr' })
             <div
               key={i}
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                i <= passed ? color : 'bg-mist'
+                i <= passed ? color : 'bg-[#F8F8F8]'
               }`}
             />
           ))}
@@ -121,11 +121,11 @@ export default function PasswordStrengthIndicator({ password, language = 'tr' })
                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
               </svg>
             ) : (
-              <svg className="w-3.5 h-3.5 text-graphite/40 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-3.5 h-3.5 text-[#302817]/55/40 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-11a1 1 0 112 0v3a1 1 0 11-2 0V7zm0 6a1 1 0 112 0 1 1 0 01-2 0z" clipRule="evenodd" />
               </svg>
             )}
-            <span className={ok ? 'text-green-700' : 'text-graphite'}>{label}</span>
+            <span className={ok ? 'text-green-700' : 'text-[#302817]/55'}>{label}</span>
           </li>
         ))}
       </ul>
