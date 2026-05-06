@@ -31,6 +31,7 @@ const copy = {
 
 export default function Home() {
   const [lang, setLang] = useState('en');
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('carbonless_lang');
@@ -55,9 +56,21 @@ export default function Home() {
           <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#302817]">Carbonless</span>
         </Link>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <button onClick={() => changeLang(lang === 'en' ? 'tr' : 'en')} className="inline-flex items-center gap-1.5 rounded-full border border-[#B4BE6A]/25 bg-white/55 px-3 py-2 text-xs font-bold text-[#302817] shadow-lg shadow-[#302817]/5 backdrop-blur-xl transition hover:border-[#B4BE6A]/45 hover:bg-white/80">
-            <Globe2 className="h-4 w-4 text-[#95A847]" />{lang === 'en' ? 'TR' : 'EN'}
-          </button>
+          <div className="relative">
+            <button onClick={() => setShowLangMenu(v => !v)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#B4BE6A]/25 bg-white/55 shadow-sm backdrop-blur-xl transition hover:bg-white/80">
+              <Globe2 className="h-5 w-5 text-[#95A847]" />
+            </button>
+            {showLangMenu && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-xl border border-[#302817]/10 bg-white/95 shadow-[0_8px_24px_rgba(48,40,23,0.12)] backdrop-blur-2xl">
+                <button onClick={() => { changeLang('en'); setShowLangMenu(false); }} className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] ${lang === 'en' ? 'text-[#95A847]' : 'text-[#302817]/70'}`}>
+                  🇬🇧 English {lang === 'en' && '✓'}
+                </button>
+                <button onClick={() => { changeLang('tr'); setShowLangMenu(false); }} className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] ${lang === 'tr' ? 'text-[#95A847]' : 'text-[#302817]/70'}`}>
+                  🇹🇷 Türkçe {lang === 'tr' && '✓'}
+                </button>
+              </div>
+            )}
+          </div>
           <Link href="/login" className="hidden text-sm font-bold text-[#302817]/70 transition hover:text-[#95A847] sm:inline-flex">{t.login}</Link>
           <Link href="/register" className="rounded-full border border-[#302817]/15 bg-white/55 px-4 py-2.5 text-sm font-bold text-[#302817] shadow-xl shadow-[#302817]/10 backdrop-blur-xl transition hover:border-[#B4BE6A]/40 hover:bg-[#302817] hover:text-[#F9EFE5] sm:px-6 sm:py-3">{t.register}</Link>
         </div>
@@ -67,11 +80,11 @@ export default function Home() {
         <div className="relative mx-auto mb-5 w-fit sm:mb-6">
           <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#B4BE6A]/18 blur-[90px] sm:h-[360px] sm:w-[360px] lg:h-[430px] lg:w-[430px]" />
           <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#95A847]/12 blur-[70px] sm:h-[310px] sm:w-[310px] lg:h-[380px] lg:w-[380px]" />
-          <img src="/carbon-hero.png" alt="Carbon molecule with green leaves" className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[5deg] hover:drop-shadow-[0_40px_70px_rgba(48,40,23,0.22)] cursor-pointer" />
+          <img src="/carbon-hero.png" alt="Carbon molecule with green leaves" className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[5deg] active:scale-110 active:rotate-[5deg] hover:drop-shadow-[0_40px_70px_rgba(48,40,23,0.22)] cursor-pointer" />
         </div>
 
-        <div className="group relative mx-auto mb-4 inline-flex max-w-full items-center gap-2 overflow-hidden rounded-full border border-[#B4BE6A]/25 bg-[#F9EFE5] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#B4BE6A] shadow-lg shadow-[#302817]/5 backdrop-blur-xl sm:mb-5 sm:text-xs cursor-pointer">
-          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
+        <div className="group relative mx-auto mb-4 inline-flex max-w-full items-center gap-2 overflow-hidden rounded-full border border-[#B4BE6A]/25 bg-[#F9EFE5] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#B4BE6A] shadow-lg shadow-[#302817]/5 backdrop-blur-xl sm:mb-5 sm:text-xs cursor-pointer active:scale-95">
+          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full group-active:translate-x-full" />
           <Leaf className="h-4 w-4 shrink-0 text-[#95A847]" /><span className="truncate">{t.badge}</span>
         </div>
 
@@ -93,6 +106,12 @@ export default function Home() {
             {t.dashboard}
           </Link>
         </div>
+
+        <p className="mt-6 text-[11px] text-[#302817]/35">
+          <Link href="/terms" className="font-semibold transition hover:text-[#95A847]">Terms of Use</Link>
+          <span className="mx-2">·</span>
+          <Link href="/privacy" className="font-semibold transition hover:text-[#95A847]">Privacy Policy</Link>
+        </p>
       </section>
     </main>
   );

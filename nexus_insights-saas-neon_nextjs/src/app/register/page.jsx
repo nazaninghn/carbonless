@@ -113,9 +113,6 @@ export default function RegisterPage() {
           <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#302817]">Carbonless</span>
         </Link>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <button type="button" onClick={() => changeLanguage(language === 'en' ? 'tr' : 'en')} className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/10 bg-white/55 px-3 py-2 text-xs font-bold text-[#302817] shadow-lg shadow-[#302817]/5 backdrop-blur-xl transition hover:bg-white/80">
-            <Globe2 className="h-4 w-4" />{language === 'en' ? 'TR' : 'EN'}
-          </button>
           <Link href="/login" className="hidden text-sm font-bold text-[#302817]/70 transition hover:text-[#302817] sm:inline-flex">{language === 'tr' ? 'Giriş' : 'Login'}</Link>
         </div>
       </header>

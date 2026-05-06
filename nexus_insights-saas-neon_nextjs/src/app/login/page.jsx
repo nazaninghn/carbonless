@@ -53,17 +53,14 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(248,248,248,0.92),transparent_34%),radial-gradient(circle_at_30%_32%,rgba(127,135,144,0.14),transparent_30%),radial-gradient(circle_at_75%_22%,rgba(143,146,161,0.15),transparent_28%)]" />
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px] bg-gradient-to-b from-white/75 via-[#F9EFE5]/50 to-[#F9EFE5]" />
 
-      <header className="relative z-20 mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <NextLink href="/" className="flex items-center gap-2">
-          <img src="/carbonless.png" alt="Carbonless" className="h-11 w-11 sm:h-14 sm:w-14" />
-          <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#302817]">Carbonless</span>
+      <header className="relative z-20 mx-auto flex h-20 w-full max-w-6xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
+        <NextLink href="/" className="flex min-w-0 items-center gap-2">
+          <img src="/carbonless.png" alt="Carbonless" className="h-10 w-10 shrink-0 sm:h-14 sm:w-14" />
+          <span className="truncate text-lg font-bold tracking-tight text-[#302817] sm:text-[22px]">Carbonless</span>
         </NextLink>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <button onClick={() => changeLanguage(language === 'tr' ? 'en' : 'tr')} className="inline-flex items-center gap-1.5 rounded-full border border-[#B4BE6A]/25 bg-white/55 px-3 py-2 text-xs font-bold text-[#302817] shadow-lg shadow-[#302817]/5 backdrop-blur-xl transition hover:border-[#B4BE6A]/45 hover:bg-white/80">
-            <Globe2 className="h-4 w-4 text-[#95A847]" />{language === 'tr' ? 'EN' : 'TR'}
-          </button>
-          <NextLink href="/register" className="rounded-full border border-[#302817]/15 bg-white/55 px-4 py-2.5 text-sm font-bold text-[#302817] shadow-xl shadow-[#302817]/10 backdrop-blur-xl transition hover:border-[#B4BE6A]/40 hover:bg-[#302817] hover:text-[#F9EFE5] sm:px-6 sm:py-3">
-            {language === 'tr' ? 'Hesap Oluştur' : 'Create account'}
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
+          <NextLink href="/register" className="shrink-0 rounded-full border border-[#302817]/15 bg-white/55 px-3 py-2 text-xs font-bold text-[#302817] shadow-sm backdrop-blur-xl transition hover:bg-[#302817] hover:text-[#F9EFE5] sm:px-5 sm:py-2.5 sm:text-sm">
+            {language === 'tr' ? 'Kayıt' : 'Register'}
           </NextLink>
         </div>
       </header>

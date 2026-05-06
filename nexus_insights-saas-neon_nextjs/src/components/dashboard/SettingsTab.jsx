@@ -90,10 +90,10 @@ export default function SettingsTab({ language, user, fetchData }) {
         </p>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-[220px_minmax(0,1fr)]">
+      <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Sidebar tabs */}
         <aside className="lg:sticky lg:top-4 lg:h-fit">
-          <div className="flex gap-1.5 overflow-x-auto rounded-[1.25rem] border border-[#302817]/10 bg-white/60 p-1.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl lg:block lg:space-y-0.5">
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#302817]/10 lg:bg-white/60 lg:p-1.5 lg:pb-1.5 lg:shadow-[0_4px_16px_rgba(48,40,23,0.04)] lg:backdrop-blur-xl">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -101,22 +101,22 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`group flex min-w-fit items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition lg:w-full ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-bold transition lg:w-full lg:gap-2 lg:px-3 lg:text-xs ${
                     isActive
                       ? 'bg-[#302817] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
-                      : 'text-[#302817]/60 hover:bg-white/80 hover:text-[#302817]'
+                      : 'border border-[#302817]/8 bg-white/70 text-[#302817]/60 hover:bg-white hover:text-[#302817] lg:border-0 lg:bg-transparent'
                   }`}
                 >
                   <span
-                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg lg:h-7 lg:w-7 ${
                       isActive
                         ? 'bg-[#F9EFE5]/12 text-[#F9EFE5]'
                         : 'bg-[#B4BE6A]/12 text-[#95A847]'
                     }`}
                   >
-                    <Icon className="h-3.5 w-3.5" />
+                    <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
                   </span>
-                  <span className="truncate">{tr ? tab.tr : tab.en}</span>
+                  <span className="whitespace-nowrap">{tr ? tab.tr : tab.en}</span>
                 </button>
               );
             })}
@@ -124,11 +124,11 @@ export default function SettingsTab({ language, user, fetchData }) {
         </aside>
 
         {/* Content */}
-        <section className="min-w-0">
+        <section className="w-full min-w-0 max-w-full overflow-hidden">
           {/* Section header */}
-          <div className="mb-3 rounded-[1.25rem] border border-[#302817]/10 bg-white/60 p-3 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25">
+          <div className="mb-3 rounded-xl border border-[#302817]/10 bg-white/60 p-2.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl lg:rounded-[1.25rem] lg:p-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25 lg:h-9 lg:w-9 lg:rounded-xl">
                 {active && <active.icon className="h-4 w-4" />}
               </div>
               <div>
@@ -146,19 +146,21 @@ export default function SettingsTab({ language, user, fetchData }) {
           {activeTab === 'profile' && (
             <Panel>
               <PanelTitle icon={User} title={tr ? 'Profil Bilgileri' : 'Profile Information'} />
-              <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <InfoCard label={tr ? 'Kullanıcı Adı' : 'Username'} value={user?.username || '-'} />
                 <InfoCard label={tr ? 'E-posta' : 'Email'} value={user?.email || '-'} />
                 <InfoCard label={tr ? 'Rol' : 'Role'} value={user?.role_display || user?.role || '-'} />
               </div>
-              <ProfileEdit language={language} user={user} onUpdate={fetchData} />
+              <div className="w-full min-w-0 overflow-hidden">
+                <ProfileEdit language={language} user={user} onUpdate={fetchData} />
+              </div>
 
               {user?.permissions && (
                 <div className="mt-5 border-t border-[#302817]/10 pt-5">
                   <h4 className="mb-3 text-sm font-bold text-[#302817]">
                     {tr ? 'İzinleriniz' : 'Your Permissions'}
                   </h4>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
                     {[
                       { key: 'can_edit_entries', tr: 'Veri Girişi', en: 'Edit Entries' },
                       { key: 'can_manage_users', tr: 'Kullanıcı Yönetimi', en: 'Manage Users' },
@@ -182,10 +184,27 @@ export default function SettingsTab({ language, user, fetchData }) {
                   </div>
                 </div>
               )}
+
+              {/* Language Preference */}
+              <div className="mt-4 border-t border-[#302817]/10 pt-4">
+                <h4 className="mb-2 text-xs font-bold text-[#302817]">{tr ? 'Dil Tercihi' : 'Language Preference'}</h4>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { try { localStorage.setItem('language', 'en'); window.onbeforeunload = null; window.location.reload(); } catch {} }}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
+                  >
+                    🇬🇧 English
+                  </button>
+                  <button
+                    onClick={() => { try { localStorage.setItem('language', 'tr'); window.onbeforeunload = null; window.location.reload(); } catch {} }}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
+                  >
+                    🇹🇷 Türkçe
+                  </button>
+                </div>
+              </div>
             </Panel>
           )}
-
-          {/* ═══ TEAM ═══ */}
           {activeTab === 'team' && (
             <Panel>
               <TeamManagement language={language} />
@@ -275,17 +294,19 @@ export default function SettingsTab({ language, user, fetchData }) {
 
 function Panel({ children }) {
   return (
-    <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white/70 p-3.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl sm:p-4">
-      {children}
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#302817]/10 bg-white/70 p-3 shadow-[0_4px_16px_rgba(48,40,23,0.04)] backdrop-blur-xl sm:rounded-[1.25rem] sm:p-4">
+      <div className="w-full min-w-0 max-w-full overflow-hidden">
+        {children}
+      </div>
     </div>
   );
 }
 
 function PanelTitle({ icon: Icon, title }) {
   return (
-    <h3 className="mb-3 flex items-center gap-2.5 text-sm font-bold text-[#302817]">
-      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25">
-        <Icon className="h-3.5 w-3.5" />
+    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#302817]">
+      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25 sm:h-7 sm:w-7">
+        <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
       </div>
       {title}
     </h3>
@@ -294,9 +315,9 @@ function PanelTitle({ icon: Icon, title }) {
 
 function InfoCard({ label, value }) {
   return (
-    <div className="rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3 py-2">
+    <div className="flex items-center justify-between rounded-xl border border-[#302817]/8 bg-[#F8F8F8] px-3 py-2 sm:block sm:rounded-xl">
       <p className="text-[10px] font-bold text-[#302817]/40">{label}</p>
-      <p className="mt-0.5 truncate text-xs font-bold text-[#302817]">{value}</p>
+      <p className="text-xs font-bold text-[#302817] sm:mt-0.5">{value}</p>
     </div>
   );
 }
