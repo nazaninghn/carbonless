@@ -175,7 +175,7 @@ export default function CarbonAIPage({ language = 'en' }) {
           <img
             src="/chatbot.png"
             alt="CarbonIQ"
-            className="relative h-full w-full object-contain drop-shadow-[0_20px_60px_rgba(48,40,23,0.08)]"
+            className="relative h-full w-full object-contain drop-shadow-[0_20px_60px_rgba(48,40,23,0.08)] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[4deg] cursor-pointer"
             style={{ animation: 'float 5s ease-in-out infinite' }}
           />
         </div>

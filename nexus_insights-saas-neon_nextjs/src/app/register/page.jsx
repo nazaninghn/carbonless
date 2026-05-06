@@ -166,15 +166,15 @@ export default function RegisterPage() {
               <div className="space-y-4">
                 <Panel title={language === 'tr' ? 'Hesap Bilgileri' : 'Account Information'} icon={User}>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <TextField label={language === 'tr' ? 'Kullanıcı Adı' : 'Username'} required value={formData.username} onChange={e => handleInputChange('username', e.target.value)} icon={User} />
-                    <TextField label={language === 'tr' ? 'E-posta' : 'Email'} type="email" required value={formData.email} onChange={e => handleInputChange('email', e.target.value)} icon={Mail} />
-                    <div><TextField label={language === 'tr' ? 'Şifre' : 'Password'} type="password" required value={formData.password} onChange={e => handleInputChange('password', e.target.value)} icon={LockKeyhole} /><PasswordStrengthIndicator password={formData.password} language={language} /></div>
-                    <TextField label={language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} type="password" required value={formData.password2} onChange={e => handleInputChange('password2', e.target.value)} icon={LockKeyhole} />
+                    <TextField label={language === 'tr' ? 'Kullanıcı Adı' : 'Username'} required value={formData.username} onChange={e => handleInputChange('username', e.target.value)} icon={User} placeholder={language === 'tr' ? 'örn: alper_yilmaz' : 'e.g. john_doe'} />
+                    <TextField label={language === 'tr' ? 'E-posta' : 'Email'} type="email" required value={formData.email} onChange={e => handleInputChange('email', e.target.value)} icon={Mail} placeholder={language === 'tr' ? 'ornek@sirket.com' : 'name@company.com'} />
+                    <div><TextField label={language === 'tr' ? 'Şifre' : 'Password'} type="password" required value={formData.password} onChange={e => handleInputChange('password', e.target.value)} icon={LockKeyhole} placeholder={language === 'tr' ? 'En az 8 karakter' : 'Min 8 characters'} /><PasswordStrengthIndicator password={formData.password} language={language} /></div>
+                    <TextField label={language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} type="password" required value={formData.password2} onChange={e => handleInputChange('password2', e.target.value)} icon={LockKeyhole} placeholder={language === 'tr' ? 'Şifreyi tekrar girin' : 'Re-enter password'} />
                   </div>
                 </Panel>
                 <Panel title={language === 'tr' ? 'Temel Kurumsal Bilgiler' : 'Corporate Information'} icon={Building2}>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <TextField label={language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} required value={formData.legalEntityName} onChange={e => handleInputChange('legalEntityName', e.target.value)} icon={Building2} />
+                    <TextField label={language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} required value={formData.legalEntityName} onChange={e => handleInputChange('legalEntityName', e.target.value)} icon={Building2} placeholder={language === 'tr' ? 'örn: ABC Teknoloji A.Ş.' : 'e.g. ABC Technology Inc.'} />
                     <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={10} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel — 10 haneli' : 'Optional — 10 digits'} /></div>
                   </div>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -229,6 +229,13 @@ export default function RegisterPage() {
                   </div>
                 </Panel>
                 <FormActions><SecondaryButton type="button" onClick={() => goToSection(2)}><ArrowLeft className="h-4 w-4" />{language === 'tr' ? 'Geri' : 'Back'}</SecondaryButton><PrimaryButton type="submit" disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}{loading ? '...' : (language === 'tr' ? 'Gönder' : 'Submit')}</PrimaryButton></FormActions>
+                <p className="mt-3 text-center text-[11px] text-[#302817]/40">
+                  {language === 'tr' ? 'Kaydolarak ' : 'By registering you agree to our '}
+                  <a href="/terms" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Kullanım Şartları' : 'Terms of Use'}</a>
+                  {language === 'tr' ? ' ve ' : ' and '}
+                  <a href="/privacy" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
+                  {language === 'tr' ? '\'nı kabul etmiş olursunuz.' : '.'}
+                </p>
               </div>
             )}
           </form>

@@ -45,9 +45,9 @@ export default function Home() {
   const t = copy[lang];
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#F9EFE5] text-[#302817]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(248,248,248,0.92),transparent_34%),radial-gradient(circle_at_30%_32%,rgba(127,135,144,0.14),transparent_30%),radial-gradient(circle_at_75%_22%,rgba(143,146,161,0.16),transparent_28%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px] bg-gradient-to-b from-white/75 via-[#F9EFE5]/45 to-[#F9EFE5]" />
+    <main className="relative min-h-screen overflow-hidden bg-white text-[#302817]">
+      <div className="pointer-events-none absolute inset-0" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px]" />
 
       <header className="relative z-20 mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
@@ -67,10 +67,11 @@ export default function Home() {
         <div className="relative mx-auto mb-5 w-fit sm:mb-6">
           <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#B4BE6A]/18 blur-[90px] sm:h-[360px] sm:w-[360px] lg:h-[430px] lg:w-[430px]" />
           <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#95A847]/12 blur-[70px] sm:h-[310px] sm:w-[310px] lg:h-[380px] lg:w-[380px]" />
-          <img src="/carbon-hero.png" alt="Carbon molecule with green leaves" className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px]" />
+          <img src="/carbon-hero.png" alt="Carbon molecule with green leaves" className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[5deg] hover:drop-shadow-[0_40px_70px_rgba(48,40,23,0.22)] cursor-pointer" />
         </div>
 
-        <div className="mx-auto mb-4 inline-flex max-w-full items-center gap-2 rounded-full border border-[#B4BE6A]/25 bg-white/55 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#B4BE6A] shadow-lg shadow-[#302817]/5 backdrop-blur-xl sm:mb-5 sm:text-xs">
+        <div className="group relative mx-auto mb-4 inline-flex max-w-full items-center gap-2 overflow-hidden rounded-full border border-[#B4BE6A]/25 bg-[#F9EFE5] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#B4BE6A] shadow-lg shadow-[#302817]/5 backdrop-blur-xl sm:mb-5 sm:text-xs cursor-pointer">
+          <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
           <Leaf className="h-4 w-4 shrink-0 text-[#95A847]" /><span className="truncate">{t.badge}</span>
         </div>
 

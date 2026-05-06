@@ -1,40 +1,67 @@
 'use client';
-
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
-import { useLanguage } from '@/lib/i18n/LanguageContext';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
 
 export default function TermsPage() {
-  const { language } = useLanguage();
-  const tr = language === 'tr';
-
   return (
-    <div className="bg-white text-gray-900 antialiased min-h-screen">
-      <Header />
-      <main className="pt-24 lg:pt-40 pb-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold mb-8">{tr ? 'Kullanım Koşulları' : 'Terms of Service'}</h1>
-          <div className="prose prose-gray max-w-none space-y-6 text-gray-600">
-            <p>{tr ? 'Son güncelleme: Nisan 2026' : 'Last updated: April 2026'}</p>
+    <div className="min-h-screen bg-[#FDFCFA] px-4 py-10 sm:px-6">
+      <div className="mx-auto max-w-3xl">
+        <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-[#302817]/50 transition hover:text-[#302817]">
+          <ArrowLeft className="h-4 w-4" /> Back to Home
+        </Link>
 
-            <h2 className="text-xl font-semibold text-gray-900">{tr ? '1. Hizmet Tanımı' : '1. Service Description'}</h2>
-            <p>{tr ? 'Carbonless, ISO 14064-1 standardına uygun karbon envanteri oluşturma, emisyon hesaplama ve raporlama hizmeti sunan bir SaaS platformudur.' : 'Carbonless is a SaaS platform providing carbon inventory creation, emission calculation, and reporting services compliant with ISO 14064-1.'}</p>
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white/80 p-6 shadow-[0_8px_30px_rgba(48,40,23,0.06)] backdrop-blur-xl sm:p-10">
+          <h1 className="text-2xl font-bold tracking-[-0.03em] text-[#302817] sm:text-3xl">Terms of Use</h1>
+          <p className="mt-2 text-sm text-[#302817]/50">Last updated: May 2026</p>
 
-            <h2 className="text-xl font-semibold text-gray-900">{tr ? '2. Kullanıcı Sorumlulukları' : '2. User Responsibilities'}</h2>
-            <p>{tr ? 'Kullanıcılar, girilen emisyon verilerinin doğruluğundan sorumludur. Platform, girilen verilere dayalı hesaplamalar yapar ve sonuçların doğruluğunu garanti etmez.' : 'Users are responsible for the accuracy of entered emission data. The platform performs calculations based on input data and does not guarantee result accuracy.'}</p>
+          <div className="mt-8 space-y-6 text-sm leading-7 text-[#302817]/70">
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">1. Acceptance of Terms</h2>
+              <p>By accessing and using the Carbonless platform ("Service"), you agree to be bound by these Terms of Use. If you do not agree to these terms, please do not use the Service.</p>
+            </section>
 
-            <h2 className="text-xl font-semibold text-gray-900">{tr ? '3. Emisyon Faktörleri' : '3. Emission Factors'}</h2>
-            <p>{tr ? 'Platformda kullanılan emisyon faktörleri Defra 2024, IPCC 2019, ATOM KABLO ISO 14064-1 ve ulusal kaynaklardan alınmıştır. Faktörler periyodik olarak güncellenir.' : 'Emission factors used are sourced from Defra 2024, IPCC 2019, ATOM KABLO ISO 14064-1, and national sources. Factors are periodically updated.'}</p>
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">2. Description of Service</h2>
+              <p>Carbonless is a carbon inventory and reporting platform that helps organizations calculate, manage, and report their greenhouse gas emissions in accordance with ISO 14064-1:2018 and the GHG Protocol Corporate Standard.</p>
+            </section>
 
-            <h2 className="text-xl font-semibold text-gray-900">{tr ? '4. Fikri Mülkiyet' : '4. Intellectual Property'}</h2>
-            <p>{tr ? 'Platform ve içeriği IT Valley - İstinye Üniversitesi bünyesinde geliştirilmiştir. Tüm hakları saklıdır.' : 'The platform and its content were developed at IT Valley - İstinye University. All rights reserved.'}</p>
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">3. User Accounts</h2>
+              <p>You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate and complete information during registration and to update such information as necessary.</p>
+            </section>
 
-            <h2 className="text-xl font-semibold text-gray-900">{tr ? '5. İletişim' : '5. Contact'}</h2>
-            <p>{tr ? 'Sorularınız için info@carbonless.com adresine e-posta gönderebilirsiniz.' : 'For questions, email info@carbonless.com.'}</p>
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">4. Data Ownership</h2>
+              <p>You retain all ownership rights to the data you input into the platform. Carbonless does not claim ownership of your emission data, reports, or any other content you create using the Service.</p>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">5. Acceptable Use</h2>
+              <p>You agree not to misuse the Service, including but not limited to: attempting to gain unauthorized access, interfering with other users, or using the platform for any unlawful purpose.</p>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">6. Disclaimer</h2>
+              <p>The emission calculations and reports generated by Carbonless are based on the data you provide and publicly available emission factors. The platform does not guarantee the accuracy of third-party emission factors. Reports are not a substitute for professional verification.</p>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">7. Limitation of Liability</h2>
+              <p>Carbonless shall not be liable for any indirect, incidental, or consequential damages arising from your use of the Service. Our total liability shall not exceed the amount paid by you in the twelve months preceding the claim.</p>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">8. Modifications</h2>
+              <p>We reserve the right to modify these terms at any time. Continued use of the Service after changes constitutes acceptance of the modified terms.</p>
+            </section>
+
+            <section>
+              <h2 className="mb-2 text-base font-bold text-[#302817]">9. Contact</h2>
+              <p>For questions about these Terms, please contact us at <span className="font-bold text-[#95A847]">legal@carbonless.com</span></p>
+            </section>
           </div>
         </div>
-      </main>
-      <Footer />
+      </div>
     </div>
   );
 }
