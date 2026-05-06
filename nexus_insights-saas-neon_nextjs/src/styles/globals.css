@@ -3,95 +3,133 @@
 
 @layer base {
   [x-cloak] { display: none !important; }
-  html { scrollbar-gutter: stable; overflow-x: hidden; }
-  body { overflow-x: hidden; }
+  html { scrollbar-gutter: stable; overflow-x: hidden; scroll-behavior: smooth; }
+  body { overflow-x: hidden; font-family: 'Inter', sans-serif; color: #1E293B; background-color: #F8FAFC; }
+  
+  /* Mobile safe areas */
+  @supports (padding: env(safe-area-inset-bottom)) {
+    body { padding-bottom: env(safe-area-inset-bottom); }
+  }
+  
+  /* Touch-friendly tap targets */
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  
+  /* Prevent zoom on input focus (iOS) */
+  input, select, textarea { font-size: 16px; }
+  @media (min-width: 640px) {
+    input, select, textarea { font-size: inherit; }
+  }
 }
 
 @layer utilities {
-  .gradient-text { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #34d399 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text; }
-  .glass-card { background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgb(209 209 209 / 30%); }
-  .dark { background: #1a1a1a; }
-  .mesh-gradient { background:
-    radial-gradient(at 40% 20%, rgba(16, 185, 129, 0.3) 0px, transparent 50%),
-    radial-gradient(at 80% 0%, rgba(5, 150, 105, 0.3) 0px, transparent 50%),
-    radial-gradient(at 0% 50%, rgba(52, 211, 153, 0.3) 0px, transparent 50%),
-    radial-gradient(at 80% 50%, rgba(16, 185, 129, 0.2) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(5, 150, 105, 0.3) 0px, transparent 50%),
-    radial-gradient(at 80% 100%, rgba(52, 211, 153, 0.2) 0px, transparent 50%);
-  background-size: 200% 200%;
-  animation: meshMove 15s ease infinite; }
-  .float-animation { animation: float 6s ease-in-out infinite; }
-  .shine-effect { content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(to right,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.3) 50%,
-      rgba(255, 255, 255, 0) 100%);
-  transform: rotate(30deg);
-  animation: shine 3s ease-in-out infinite; }
-  .pricing-highlight { background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); }
-  .mesh-bg { background: linear-gradient(-45deg, #10b981, #059669, #34d399, #10b981);
-  background-size: 400% 400%;
-  animation: mesh-gradient 15s ease infinite; }
-  .prose { background: transparent;
-  padding: 0; }
-  @keyframes meshMove {
-  
-    0%,
-    100% {
-      background-position: 0% 0%;
-    }
-  
-    25% {
-      background-position: 100% 0%;
-    }
-  
-    50% {
-      background-position: 100% 100%;
-    }
-  
-    75% {
-      background-position: 0% 100%;
-    }
+  .gradient-text {
+    background: linear-gradient(135deg, #22C55E 0%, #2DD4BF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+  }
+
+  /* Soft organic shapes */
+  .blob-shape {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+
+  .float-animation {
+    animation: float 8s ease-in-out infinite;
+  }
+
+  .mesh-gradient {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(34, 197, 94, 0.08) 0px, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(45, 212, 191, 0.06) 0px, transparent 50%),
+      radial-gradient(ellipse at 50% 80%, rgba(129, 140, 248, 0.05) 0px, transparent 50%);
+  }
+
+  .shine-effect {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pricing-highlight {
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.05) 0%, rgba(45, 212, 191, 0.05) 100%);
+  }
+
+  .mesh-bg {
+    background: linear-gradient(-45deg, #F8FAFC, #E0F2FE, #F1F5F9, #F8FAFC);
+    background-size: 400% 400%;
+    animation: mesh-gradient-anim 20s ease infinite;
+  }
+
+  .prose {
+    background: transparent;
+    padding: 0;
+  }
+
   @keyframes float {
-  
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-  
-    50% {
-      transform: translateY(-20px);
-    }
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
   }
-  @keyframes shine {
-    0% {
-      transform: translateX(-100%) rotate(30deg);
-    }
-  
-    100% {
-      transform: translateX(100%) rotate(30deg);
-    }
+
+  @keyframes mesh-gradient-anim {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
-  @keyframes mesh-gradient {
-  
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-  
-    50% {
-      background-position: 100% 50%;
-    }
+
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out forwards;
+  }
+
+  /* Carbon hero float animation */
+  @keyframes carbonFloat {
+    0%, 100% { transform: translateY(0) rotate(-1deg) scale(1); }
+    50% { transform: translateY(-12px) rotate(1deg) scale(1.015); }
+  }
+  .carbon-hero-float {
+    animation: carbonFloat 8s ease-in-out infinite;
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .carbon-hero-float { animation: none; }
+  }
+
+  /* Safe area for floating elements */
+  .safe-bottom {
+    bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Scrollbar styling */
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 4px; }
+
+  /* Form field base */
+  .field-base {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid rgb(226 232 240);
+    background-color: rgb(248 250 252);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: rgb(15 23 42);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .field-base::placeholder { color: rgb(148 163 184); }
+  .field-base:focus {
+    border-color: rgb(110 231 183);
+    background-color: white;
+    box-shadow: 0 0 0 4px rgb(209 250 229 / 0.5);
   }
 }

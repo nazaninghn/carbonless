@@ -48,8 +48,8 @@ export default function CompanySettings({ language }) {
     finally { setSaving(false); }
   };
 
-  if (loading) return <p className="text-sm text-gray-500">Loading...</p>;
-  if (!company) return <p className="text-sm text-gray-500">{language === 'tr' ? 'Şirket bilgisi bulunamadı' : 'No company info found'}</p>;
+  if (loading) return <p className="text-sm text-graphite">Loading...</p>;
+  if (!company) return <p className="text-sm text-graphite">{language === 'tr' ? 'Şirket bilgisi bulunamadı' : 'No company info found'}</p>;
 
   if (!editing) {
     return (
@@ -61,9 +61,9 @@ export default function CompanySettings({ language }) {
             { label: language === 'tr' ? 'Ülke' : 'Country', val: company.country_of_headquarters },
             { label: 'NACE', val: company.nace_code },
           ].map((f, i) => (
-            <div key={i} className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">{f.label}</p>
-              <p className="text-sm font-medium text-gray-900">{f.val || '-'}</p>
+            <div key={i} className="bg-mist rounded-lg p-3">
+              <p className="text-xs text-graphite">{f.label}</p>
+              <p className="text-sm font-medium text-slate">{f.val || '-'}</p>
             </div>
           ))}
         </div>
@@ -83,16 +83,16 @@ export default function CompanySettings({ language }) {
         { key: 'nace_code', label: 'NACE' },
       ].map(f => (
         <div key={f.key}>
-          <label className="block text-xs text-gray-600 mb-1">{f.label}</label>
+          <label className="block text-xs text-graphite mb-1">{f.label}</label>
           <input type="text" value={form[f.key] || ''} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+            className="w-full px-3 py-2 border border-black/[0.06] rounded-lg text-sm" />
         </div>
       ))}
       <div className="flex gap-2">
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-secondary disabled:opacity-60">
           {saving ? '...' : (language === 'tr' ? 'Kaydet' : 'Save')}
         </button>
-        <button onClick={() => { setEditing(false); setForm(company); }} className="px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
+        <button onClick={() => { setEditing(false); setForm(company); }} className="px-4 py-2 border border-black/[0.06] rounded-lg text-sm hover:bg-mist">
           {language === 'tr' ? 'İptal' : 'Cancel'}
         </button>
       </div>

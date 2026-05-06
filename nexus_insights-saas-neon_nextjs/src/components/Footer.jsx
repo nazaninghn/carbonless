@@ -17,7 +17,7 @@ export default function Footer() {
               <img 
                 src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
               />
-              <h3 className="text-xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+              <h3 className="text-xl font-bold text-[#16A34A]">
                 {t.company.name}
               </h3>
             </div>

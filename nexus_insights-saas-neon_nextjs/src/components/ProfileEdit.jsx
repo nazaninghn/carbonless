@@ -26,21 +26,21 @@ export default function ProfileEdit({ language, user, onUpdate }) {
     <form onSubmit={handleSave} className="space-y-3 max-w-md">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Ad' : 'First Name'}</label>
-          <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+          <label className="block text-xs text-graphite mb-1">{language === 'tr' ? 'Ad' : 'First Name'}</label>
+          <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg text-sm" />
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Soyad' : 'Last Name'}</label>
-          <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+          <label className="block text-xs text-graphite mb-1">{language === 'tr' ? 'Soyad' : 'Last Name'}</label>
+          <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg text-sm" />
         </div>
       </div>
       <div>
-        <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Telefon' : 'Phone'}</label>
-        <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+        <label className="block text-xs text-graphite mb-1">{language === 'tr' ? 'Telefon' : 'Phone'}</label>
+        <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg text-sm" />
       </div>
       <div>
-        <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Departman' : 'Department'}</label>
-        <input type="text" value={department} onChange={e => setDepartment(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+        <label className="block text-xs text-graphite mb-1">{language === 'tr' ? 'Departman' : 'Department'}</label>
+        <input type="text" value={department} onChange={e => setDepartment(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg text-sm" />
       </div>
       {msg && <p className="text-sm text-green-600">{msg}</p>}
       <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-secondary disabled:opacity-60">

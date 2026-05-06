@@ -1,567 +1,297 @@
 'use client';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  AlertCircle, ArrowLeft, ArrowRight, Bot, Check, CheckCircle2, ChevronDown,
+  ClipboardList, FileText, HelpCircle, Leaf, Loader2, Maximize2, MessageCircle,
+  Minimize2, RotateCcw, Save, Send, ShieldCheck, Sparkles, X,
+} from 'lucide-react';
 
-import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, RotateCcw, CheckCircle2, Loader2 } from 'lucide-react';
-import { api } from '@/lib/utils/api';
+const STORAGE_KEY = 'carboniq_chatbot_state_v1';
 
-// ── Step definitions for the new CarbonIQ wizard ──────────────────────────
-const STEP_CONFIG = {
-  A1: { type: 'text', field: 'legal_name', placeholder: 'e.g. ABC Technology Ltd.' },
-  A2: { type: 'text', field: 'tax_id', placeholder: '0000000000' },
-  A3: { type: 'dual', fields: ['country', 'city'], placeholders: ['Turkey', 'Istanbul'] },
-  A4: { type: 'number', field: 'reporting_year', placeholder: '2025', min: 2015, max: 2026 },
-  A5: { type: 'text', field: 'prepared_by', placeholder: 'e.g. John Doe — Sustainability Dept.' },
-  A6: {
-    type: 'multi_choice',
-    field: 'purposes',
-    options: [
-      { key: 'internal', tr: 'İç yönetim', en: 'Internal management' },
-      { key: 'legal', tr: 'Yasal zorunluluk', en: 'Legal requirement' },
-      { key: 'voluntary', tr: 'Gönüllü açıklama', en: 'Voluntary disclosure' },
-      { key: 'client', tr: 'Müşteri talebi', en: 'Client requirement' },
-      { key: 'skip', tr: 'Atla', en: 'Skip' },
-    ]
-  },
-  A7: {
-    type: 'choice',
-    field: 'has_previous_report',
-    options: [
-      { key: true, tr: 'Evet', en: 'Yes' },
-      { key: false, tr: 'Hayır', en: 'No' },
-    ]
-  },
-  A7a: { type: 'number', field: 'baseline_year', placeholder: '2020', min: 2010, max: 2024 },
-  B1: { type: 'text', field: 'nace_code', placeholder: 'e.g. C26 or Manufacturing' },
-  B2: { type: 'textarea', field: 'activity_description', placeholder: 'Briefly describe your main business activity...' },
-  B3: {
-    type: 'choice',
-    field: 'employee_band',
-    options: [
-      { key: '1-50', tr: '1–50', en: '1–50' },
-      { key: '51-250', tr: '51–250', en: '51–250' },
-      { key: '251-1000', tr: '251–1.000', en: '251–1,000' },
-      { key: '1001-5000', tr: '1.001–5.000', en: '1,001–5,000' },
-      { key: '5000+', tr: '5.000+', en: '5,000+' },
-    ]
-  },
-  B4: { type: 'number', field: 'number_of_facilities', placeholder: '1', min: 1 },
-  B5: {
-    type: 'multi_choice',
-    field: 'facility_types',
-    options: [
-      { key: 'office', tr: 'Ofis', en: 'Office' },
-      { key: 'factory', tr: 'Fabrika', en: 'Factory' },
-      { key: 'warehouse', tr: 'Depo', en: 'Warehouse' },
-      { key: 'field', tr: 'Saha', en: 'Field site' },
-      { key: 'datacenter', tr: 'Veri Merkezi', en: 'Data Center' },
-      { key: 'retail', tr: 'Perakende', en: 'Retail' },
-      { key: 'other', tr: 'Diğer', en: 'Other' },
-    ]
-  },
-  B6: {
-    type: 'choice',
-    field: 'revenue_band',
-    options: [
-      { key: '<1M', tr: '< 500 Bin ₺', en: '< 500K ₺' },
-      { key: '1-10M', tr: '500 Bin – 2 Milyon ₺', en: '500K – 2M ₺' },
-      { key: '10-100M', tr: '2 – 10 Milyon ₺', en: '2M – 10M ₺' },
-      { key: '100M-1B', tr: '10 – 50 Milyon ₺', en: '10M – 50M ₺' },
-      { key: '1B+', tr: '50 Milyon ₺ üzeri', en: '50M+ ₺' },
-      { key: 'skip', tr: 'Atla', en: 'Skip' },
-    ]
-  },
-  C1: {
-    type: 'choice',
-    field: 'has_subsidiaries',
-    options: [
-      { key: true, tr: 'Evet', en: 'Yes' },
-      { key: false, tr: 'Hayır', en: 'No' },
-    ]
-  },
-  C2: {
-    type: 'choice',
-    field: 'has_international',
-    options: [
-      { key: true, tr: 'Evet', en: 'Yes' },
-      { key: false, tr: 'Hayır', en: 'No' },
-    ]
-  },
-  C3: {
-    type: 'choice',
-    field: 'has_jv_franchise',
-    options: [
-      { key: true, tr: 'Evet', en: 'Yes' },
-      { key: false, tr: 'Hayır', en: 'No' },
-    ]
-  },
-  D1: {
-    type: 'choice',
-    field: 'ef_database',
-    options: [
-      { key: 'DEFRA_TUIK', tr: 'DEFRA + TÜİK (Türkiye)', en: 'DEFRA + TÜİK (Turkey)' },
-      { key: 'DEFRA', tr: 'DEFRA 2023', en: 'DEFRA 2023' },
-      { key: 'IPCC_AR6', tr: 'IPCC AR6 2021', en: 'IPCC AR6 2021' },
-      { key: 'EPA', tr: 'EPA (ABD)', en: 'EPA (US)' },
-      { key: 'custom', tr: 'Özel', en: 'Custom' },
-    ]
-  },
-  D3: {
-    type: 'choice',
-    field: 'boundary_approach',
-    options: [
-      { key: 'operational_control', tr: 'Operasyonel Kontrol (Önerilen)', en: 'Operational Control (Recommended)' },
-      { key: 'financial_control', tr: 'Finansal Kontrol', en: 'Financial Control' },
-      { key: 'equity_share', tr: 'Hisse Payı', en: 'Equity Share' },
-    ]
-  },
-  D4: {
-    type: 'choice',
-    field: 'scope3_approach',
-    options: [
-      { key: 'materiality', tr: 'Materyalite Bazlı (Önerilen)', en: 'Materiality Based (Recommended)' },
-      { key: 'full', tr: 'Tam 15 Kategori', en: 'Full 15 Categories' },
-    ]
-  },
-};
+const STAGES = [
+  { id: 1, title: { tr: 'Şirketi Tanıma', en: 'Company Profile' }, iso: '§7.5 / §5.1' },
+  { id: 2, title: { tr: 'Organizasyon Sınırı', en: 'Organizational Boundary' }, iso: '§5.1' },
+  { id: 3, title: { tr: 'Kapsam 1', en: 'Scope 1' }, iso: '§5.2' },
+  { id: 4, title: { tr: 'Kapsam 2', en: 'Scope 2' }, iso: '§5.3' },
+  { id: 5, title: { tr: 'Kapsam 3', en: 'Scope 3' }, iso: '§5.4' },
+  { id: 6, title: { tr: 'Kabuller ve Kapatış', en: 'Assumptions & Close-out' }, iso: '§7.3 / §7.4' },
+  { id: 7, title: { tr: 'Rapor Üretimi', en: 'Report Generation' }, iso: '§7.5' },
+];
 
-const STEP_LABELS = {
-  A1: 'Company Name', A2: 'Tax ID', A3: 'Location', A4: 'Reporting Year',
-  A5: 'Prepared By', A6: 'Purpose', A7: 'Previous Report', A7a: 'Baseline Year',
-  B1: 'NACE Sector', B2: 'Activity', B3: 'Employees', B4: 'Facilities',
-  B5: 'Facility Types', B6: 'Revenue', C1: 'Subsidiaries', C2: 'International',
-  C3: 'JV/Franchise', D1: 'EF Database', D3: 'Boundary', D4: 'Scope 3',
-};
+function yesNoOptions() {
+  return [
+    { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
+    { value: 'no', label: { tr: 'Hayır', en: 'No' } },
+  ];
+}
 
-const PHASE1_STEPS = ['A1','A2','A3','A4','A5','A6','A7','A7a','B1','B2','B3','B4','B5','B6','C1','C2','C3','D1','D3','D4'];
+const QUESTIONS = [
+  { id: 'A1', order: 1, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'text', field: 'company_name', required: true, maxLength: 200, question: { tr: 'Şirketinizin tam ticari unvanı nedir?', en: 'What is the full legal name of your company?' }, placeholder: { tr: 'Örn: ABC Teknoloji Danışmanlık A.Ş.', en: 'Example: ABC Technology Consulting Inc.' }, help: { tr: 'Ticaret sicilinde kayıtlı tam unvanınızı girin.', en: 'Enter the full legal name registered in trade records.' }, validation: { kind: 'text', min: 1, max: 200 }, next: 'A2' },
+  { id: 'A2', order: 2, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'text', inputMode: 'numeric', field: 'tax_id', required: true, maxLength: 10, question: { tr: 'Vergi kimlik numaranız nedir?', en: 'What is your tax identification number?' }, placeholder: { tr: '0000000000', en: '0000000000' }, help: { tr: '10 haneli VKN / TCKN.', en: '10-digit tax ID.' }, validation: { kind: 'digits', length: 10 }, transform: 'digitsOnly', next: 'A3' },
+  { id: 'A3', order: 3, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'group', field: 'registered_location', required: true, question: { tr: 'Şirketinizin kayıtlı olduğu ülke ve şehir nedir?', en: 'In which country and city is your company registered?' }, help: { tr: 'Ana merkezi yazın.', en: 'Enter the headquarters.' }, fields: [{ key: 'country', type: 'select', label: { tr: 'Ülke', en: 'Country' }, required: true, options: [{ value: 'TR', label: { tr: 'Türkiye', en: 'Turkey' } }, { value: 'GB', label: { tr: 'İngiltere', en: 'United Kingdom' } }, { value: 'DE', label: { tr: 'Almanya', en: 'Germany' } }, { value: 'US', label: { tr: 'ABD', en: 'United States' } }, { value: 'OTHER', label: { tr: 'Diğer', en: 'Other' } }] }, { key: 'city', type: 'text', label: { tr: 'Şehir', en: 'City' }, required: true, placeholder: { tr: 'İstanbul', en: 'Istanbul' } }], effects: [{ when: { field: 'country', equals: 'TR' }, message: { type: 'info', tr: 'Türkiye seçiminize göre DEFRA + TÜİK önerilecek.', en: 'Based on Turkey, DEFRA + TÜİK will be recommended.' }, set: { recommended_ef_database: 'DEFRA_TUIK' } }], next: 'A4' },
+  { id: 'A4', order: 4, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'select', field: 'reporting_year', required: true, question: { tr: 'Hangi yıla ait rapor hazırlıyoruz?', en: 'Which reporting year are we preparing this report for?' }, help: { tr: 'Tüm veri girişleriniz bu yıl için geçerli olacak.', en: 'All data entries will apply to this year.' }, options: [2020, 2021, 2022, 2023, 2024, 2025, 2026].map(y => ({ value: String(y), label: { tr: String(y), en: String(y) } })), effects: [{ when: { equals: '2026' }, assumption: { type: 'A', trigger: 'current_year_selected', text: { tr: 'Cari yıl seçildi, bazı veriler tahmini olabilir.', en: 'Current year selected, some data may be estimated.' }, impact: 'May affect completeness.' }, message: { type: 'warning', tr: '2026 henüz tamamlanmadı.', en: '2026 is not complete yet.' } }], next: 'A5' },
+  { id: 'A5', order: 5, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'text', field: 'prepared_by', required: true, maxLength: 100, question: { tr: 'Raporu hazırlayan kişi veya birimin adı nedir?', en: 'Who is preparing this report?' }, placeholder: { tr: 'Örn: Ahmet Yılmaz — Sürdürülebilirlik Birimi', en: 'Example: Alex Green — Sustainability Department' }, help: { tr: "Raporda 'Hazırlayan' alanında görünecek.", en: "This will appear in the report's 'Prepared by' field." }, validation: { kind: 'text', min: 1, max: 100 }, next: 'A6' },
+  { id: 'A6', order: 6, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'multi', field: 'report_purpose', required: false, question: { tr: 'Bu raporun kullanım amacı nedir?', en: 'What is the intended use of this report?' }, help: { tr: 'Birden fazla seçebilirsiniz.', en: 'You can select more than one.' }, options: [{ value: 'internal', label: { tr: 'İç yönetim ve strateji', en: 'Internal management' } }, { value: 'legal', label: { tr: 'Yasal zorunluluk', en: 'Legal requirement' } }, { value: 'voluntary', label: { tr: 'Gönüllü açıklama', en: 'Voluntary disclosure' } }, { value: 'customer', label: { tr: 'Müşteri talebi', en: 'Customer request' } }, { value: 'skip', label: { tr: 'Atlamak istiyorum', en: 'I want to skip' } }], next: 'A7' },
+  { id: 'A7', order: 7, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'choice', field: 'has_previous_report', required: false, question: { tr: 'Daha önce karbon raporu hazırladınız mı?', en: 'Have you prepared a carbon report before?' }, help: { tr: 'Daha önce hazırladıysanız baz yıl karşılaştırması eklenecek.', en: 'If yes, baseline comparison can be added.' }, options: [{ value: 'yes', label: { tr: 'Evet', en: 'Yes' } }, { value: 'no', label: { tr: 'Hayır — ilk raporumuz', en: 'No — first report' } }, { value: 'skip', label: { tr: 'Atla', en: 'Skip' } }], conditionalNext: [{ when: { equals: 'yes' }, next: 'A7a' }, { when: { equals: 'no' }, next: 'B1' }, { when: { equals: 'skip' }, next: 'B1' }] },
+  { id: 'A7a', order: 8, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'select', field: 'baseline_year', required: false, question: { tr: 'Baz yılınız hangi yıl?', en: 'What is your baseline year?' }, help: { tr: 'Baz yıl referans yıldır.', en: 'The baseline year is the reference year.' }, options: Array.from({ length: 12 }, (_, i) => 2014 + i).map(y => ({ value: String(y), label: { tr: String(y), en: String(y) } })), customValidate: 'baselineBeforeReportingYear', next: 'B1' },
+  { id: 'B1', order: 9, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'select', field: 'primary_sector', required: true, question: { tr: 'Şirketinizin ana sektörü nedir?', en: 'What is the primary sector?' }, help: { tr: 'Bu seçim sonraki soruları belirler.', en: 'This shapes later questions.' }, options: [{ value: 'A', label: { tr: 'NACE A — Tarım', en: 'NACE A — Agriculture' } }, { value: 'B', label: { tr: 'NACE B — Madencilik', en: 'NACE B — Mining' } }, { value: 'C', label: { tr: 'NACE C — İmalat', en: 'NACE C — Manufacturing' } }, { value: 'D', label: { tr: 'NACE D — Enerji', en: 'NACE D — Energy' } }, { value: 'F', label: { tr: 'NACE F — İnşaat', en: 'NACE F — Construction' } }, { value: 'G-N', label: { tr: 'NACE G–N — Hizmetler', en: 'NACE G–N — Services' } }, { value: 'K', label: { tr: 'NACE K — Finans', en: 'NACE K — Finance' } }, { value: 'O-U', label: { tr: 'NACE O–U — Kamu', en: 'NACE O–U — Public' } }], next: 'B2' },
+  { id: 'B2', order: 10, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'textarea', field: 'activity_description', required: true, maxLength: 200, question: { tr: 'Şirketinizin faaliyetini kısaca tanımlayın.', en: "Briefly describe your company's main activity." }, placeholder: { tr: 'Örn: Kurumsal eğitim ve danışmanlık', en: 'Example: Corporate training and consulting' }, validation: { kind: 'text', min: 1, max: 200 }, next: 'B3' },
+  { id: 'B3', order: 11, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'select', field: 'employee_band', required: true, question: { tr: 'Toplam çalışan sayınız nedir?', en: 'Total number of employees?' }, options: [{ value: '1-50', label: { tr: '1–50', en: '1–50' } }, { value: '51-250', label: { tr: '51–250', en: '51–250' } }, { value: '251-1000', label: { tr: '251–1.000', en: '251–1,000' } }, { value: '1001-5000', label: { tr: '1.001–5.000', en: '1,001–5,000' } }, { value: '5000+', label: { tr: '5.000+', en: '5,000+' } }], next: 'B4' },
+  { id: 'B4', order: 12, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'number', field: 'location_count', required: true, min: 1, max: 999, question: { tr: 'Kaç farklı lokasyonda faaliyet gösteriyorsunuz?', en: 'How many physical locations?' }, placeholder: { tr: '3', en: '3' }, next: 'B5' },
+  { id: 'B5', order: 13, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'multi', field: 'location_types', required: true, question: { tr: 'Lokasyon türleri neler?', en: 'What types of locations?' }, options: [{ value: 'office', label: { tr: 'Ofis', en: 'Office' } }, { value: 'factory', label: { tr: 'Fabrika', en: 'Factory' } }, { value: 'warehouse', label: { tr: 'Depo', en: 'Warehouse' } }, { value: 'field', label: { tr: 'Saha', en: 'Field' } }, { value: 'data_center', label: { tr: 'Veri Merkezi', en: 'Data Center' } }, { value: 'retail', label: { tr: 'Mağaza', en: 'Retail' } }, { value: 'other', label: { tr: 'Diğer', en: 'Other' } }], next: 'B6' },
+  { id: 'B6', order: 14, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'select', field: 'revenue_band', required: false, question: { tr: 'Yıllık ciro aralığınız? (Opsiyonel)', en: 'Annual revenue range? (Optional)' }, options: [{ value: 'micro', label: { tr: '<1M TL', en: '<1M TRY' } }, { value: 'small', label: { tr: '1–10M TL', en: '1–10M TRY' } }, { value: 'medium', label: { tr: '10–100M TL', en: '10–100M TRY' } }, { value: 'large', label: { tr: '100M–1B TL', en: '100M–1B TRY' } }, { value: 'enterprise', label: { tr: '1B+ TL', en: '1B+ TRY' } }, { value: 'skip', label: { tr: 'Atla', en: 'Skip' } }], next: 'C1' },
+  { id: 'C1', order: 15, stage: 1, block: { tr: 'Yapısal Bilgiler', en: 'Structural Information' }, type: 'choice', field: 'has_subsidiaries', required: true, question: { tr: 'Bağlı şirket var mı?', en: 'Any subsidiaries?' }, options: yesNoOptions(), next: 'C2' },
+  { id: 'C2', order: 16, stage: 1, block: { tr: 'Yapısal Bilgiler', en: 'Structural Information' }, type: 'choice', field: 'has_international_operations', required: true, question: { tr: 'Yurt dışında operasyonunuz var mı?', en: 'International operations?' }, options: yesNoOptions(), next: 'C3' },
+  { id: 'C3', order: 17, stage: 1, block: { tr: 'Yapısal Bilgiler', en: 'Structural Information' }, type: 'choice', field: 'has_jv_franchise', required: true, question: { tr: 'Franchise veya JV var mı?', en: 'Any franchise or JV?' }, options: yesNoOptions(), next: 'D1' },
+  { id: 'D1', order: 18, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'select', field: 'ef_database', required: true, question: { tr: 'Emisyon faktörü veritabanı tercihiniz?', en: 'Emission factor database preference?' }, options: [{ value: 'DEFRA', label: { tr: 'DEFRA 2023', en: 'DEFRA 2023' } }, { value: 'DEFRA_TUIK', label: { tr: 'DEFRA + TÜİK', en: 'DEFRA + TÜİK' } }, { value: 'IPCC_AR6', label: { tr: 'IPCC AR6', en: 'IPCC AR6' } }, { value: 'EPA', label: { tr: 'EPA', en: 'EPA' } }, { value: 'custom', label: { tr: 'Özel faktör', en: 'Custom factors' } }], next: 'D2' },
+  { id: 'D2', order: 19, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'info', field: 'scope2_method_acknowledged', required: true, question: { tr: 'Kapsam 2 metodolojisi hakkında bilgi', en: 'Scope 2 methodology information' }, help: { tr: 'Bu versiyon location-based metodolojisini destekler.', en: 'This version supports location-based methodology.' }, buttonLabel: { tr: 'Anladım, devam', en: 'I understand, continue' }, effects: [{ when: { equals: true }, assumption: { type: 'B', trigger: 'location_based_scope2', text: { tr: 'Location-based metodoloji kabul edildi.', en: 'Location-based methodology acknowledged.' }, impact: 'Scope 2 uses grid average factors.' }, set: { scope2_method: 'location_based' } }], next: 'D3' },
+  { id: 'D3', order: 20, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'choice', field: 'boundary_approach', required: true, question: { tr: 'Organizasyon sınırı yaklaşımı?', en: 'Organizational boundary approach?' }, help: { tr: "Emin değilseniz 'Operasyonel Kontrol' seçin.", en: "If unsure, select 'Operational Control'." }, options: [{ value: 'operational_control', label: { tr: 'Operasyonel Kontrol (Önerilen)', en: 'Operational Control (Recommended)' }, description: { tr: 'Operasyonel politikaları belirlediğiniz tesisler dahil.', en: 'Includes sites where you set operational policies.' } }, { value: 'financial_control', label: { tr: 'Finansal Kontrol', en: 'Financial Control' } }, { value: 'equity_share', label: { tr: 'Hisse Payı', en: 'Equity Share' } }], next: 'D4' },
+  { id: 'D4', order: 21, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'choice', field: 'scope3_approach', required: true, question: { tr: 'Kapsam 3 kapsamını nasıl belirlemek istersiniz?', en: 'How to determine Scope 3 scope?' }, options: [{ value: 'materiality', label: { tr: 'Materyalite Bazlı (Önerilen)', en: 'Materiality-Based (Recommended)' }, description: { tr: 'Önemli kategoriler öne çıkar.', en: 'Prioritizes important categories.' } }, { value: 'full', label: { tr: 'Tam 15 Kategori', en: 'Full 15 Categories' } }], next: '2A-0', completionMessage: { tr: 'Aşama 1 tamamlandı!', en: 'Stage 1 complete!' } },
+  { id: '2A-0', order: 22, stage: 2, block: { tr: 'Organizasyon Sınırı', en: 'Organizational Boundary' }, type: 'info', field: 'stage2_intro_acknowledged', required: true, question: { tr: 'Aşama 2 — Organizasyon sınırınızı belirleyelim.', en: "Stage 2 — Let's define your organizational boundary." }, help: { tr: 'Hangi tesislerin rapora dahil edileceğini belirleyeceğiz.', en: 'We determine which sites are included in the report.' }, buttonLabel: { tr: 'Başlayalım', en: "Let's start" }, next: 'END' },
+];
 
-export default function Chatbot({ language = 'tr', onComplete, embedded = false }) {
-  const [open, setOpen] = useState(embedded ? true : false);
-  const [reportId, setReportId] = useState(null);
-  const [currentStep, setCurrentStep] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [dualValues, setDualValues] = useState({ country: '', city: '' });
-  const [selectedOptions, setSelectedOptions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [phaseComplete, setPhaseComplete] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const messagesEndRef = useRef(null);
-  const startedRef = useRef(false);
+export default function Chatbot({ language = 'en', user, questionnaireProfile, onComplete }) {
+  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [currentId, setCurrentId] = useState('A1');
+  const [answers, setAnswers] = useState({});
+  const [history, setHistory] = useState([]);
+  const [assumptions, setAssumptions] = useState([]);
+  const [systemMessages, setSystemMessages] = useState([]);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  const lang = language === 'tr' ? 'tr' : 'en';
+  const currentQuestion = useMemo(() => QUESTIONS.find(q => q.id === currentId) || QUESTIONS[0], [currentId]);
+  const currentIndex = QUESTIONS.findIndex(q => q.id === currentQuestion.id);
+  const progress = Math.round(((currentIndex + 1) / QUESTIONS.length) * 100);
+  const currentStage = STAGES.find(s => s.id === currentQuestion.stage) || STAGES[0];
+  const stageQuestions = QUESTIONS.filter(q => q.stage === currentQuestion.stage);
+  const stageIndex = stageQuestions.findIndex(q => q.id === currentQuestion.id);
+  const answer = answers[currentQuestion.field];
 
-  const addBotMessages = (msgs) => {
-    const arr = Array.isArray(msgs) ? msgs : [msgs];
-    setMessages(prev => [
-      ...prev,
-      ...arr.filter(Boolean).map(text => ({ type: 'bot', text }))
-    ]);
+  useEffect(() => { try { const saved = localStorage.getItem(STORAGE_KEY); if (!saved) return; const parsed = JSON.parse(saved); setCurrentId(parsed.currentId || 'A1'); setAnswers(parsed.answers || {}); setHistory(parsed.history || []); setAssumptions(parsed.assumptions || []); setSystemMessages(parsed.systemMessages || []); setCompleted(Boolean(parsed.completed)); } catch {} }, []);
+  useEffect(() => { persistState({ currentId, answers, history, assumptions, systemMessages, completed }); }, [currentId, answers, history, assumptions, systemMessages, completed]);
+
+  const setAnswer = (value) => { setError(''); setAnswers(prev => ({ ...prev, [currentQuestion.field]: value })); };
+  const goBack = () => { setError(''); setSystemMessages([]); setHistory(prev => { if (prev.length === 0) return prev; const next = [...prev]; const previousId = next.pop(); setCurrentId(previousId); return next; }); };
+  const reset = () => { const ok = window.confirm(lang === 'tr' ? 'Tüm ilerlemesini sıfırlamak istiyor musunuz?' : 'Reset all progress?'); if (!ok) return; localStorage.removeItem(STORAGE_KEY); setCurrentId('A1'); setAnswers({}); setHistory([]); setAssumptions([]); setSystemMessages([]); setError(''); setCompleted(false); };
+
+  const handleNext = async () => {
+    setError(''); setSystemMessages([]);
+    const normalized = normalizeValue(currentQuestion, answer);
+    const validation = validateAnswer(currentQuestion, normalized, answers, lang);
+    if (!validation.ok) { setError(validation.message); return; }
+    const effectResult = applyEffects(currentQuestion, normalized, answers, lang);
+    if (effectResult.nextAnswers) { setAnswers(prev => ({ ...prev, ...effectResult.nextAnswers, [currentQuestion.field]: normalized })); } else { setAnswers(prev => ({ ...prev, [currentQuestion.field]: normalized })); }
+    if (effectResult.messages.length > 0) setSystemMessages(effectResult.messages);
+    if (effectResult.assumptions.length > 0) setAssumptions(prev => mergeAssumptions(prev, effectResult.assumptions, currentQuestion.id));
+    setSaving(true);
+    await saveAnswerToApi({ question: currentQuestion, value: normalized, answers: { ...answers, [currentQuestion.field]: normalized, ...effectResult.nextAnswers }, assumptions: effectResult.assumptions });
+    setSaving(false);
+    const nextId = getNextQuestionId(currentQuestion, normalized, answers);
+    if (currentQuestion.completionMessage) setSystemMessages(prev => [...prev, { type: 'success', text: currentQuestion.completionMessage[lang] }]);
+    if (nextId === 'END') { setCompleted(true); if (onComplete) onComplete({ answers, assumptions }); return; }
+    setHistory(prev => [...prev, currentQuestion.id]);
+    setCurrentId(nextId || QUESTIONS[Math.min(currentIndex + 1, QUESTIONS.length - 1)]?.id || 'END');
   };
-
-  const addUserMessage = (text) => {
-    setMessages(prev => [...prev, { type: 'user', text }]);
-  };
-
-  const startReport = async () => {
-    if (startedRef.current || reportId) return;
-    startedRef.current = true;
-    setLoading(true);
-    try {
-      const res = await api.startCarbonReport();
-      if (res.ok) {
-        const data = await res.json();
-        setReportId(data.report_id);
-        setCurrentStep(data.current_step);
-        addBotMessages(data.bot_messages);
-        if (data.resumed) {
-          const idx = PHASE1_STEPS.indexOf(data.current_step);
-          setProgress(idx > 0 ? Math.round(idx / PHASE1_STEPS.length * 100) : 0);
-        }
-      } else {
-        addBotMessages(['❌ Could not start report. Please try again.']);
-      }
-    } catch {
-      addBotMessages(['❌ Connection error. Please check your connection.']);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleOpen = () => {
-    setOpen(true);
-    if (!reportId) {
-      setMessages([{
-        type: 'bot',
-        text: language === 'tr'
-          ? '👋 Merhaba! ISO 14064-1 karbon envanteri sihirbazına hoş geldiniz.'
-          : '👋 Hello! Welcome to the ISO 14064-1 carbon inventory wizard.'
-      }]);
-      startReport();
-    }
-  };
-
-  // Auto-start in embedded mode
-  useEffect(() => {
-    if (embedded && !reportId && messages.length === 0) {
-      setMessages([{
-        type: 'bot',
-        text: language === 'tr'
-          ? '👋 Merhaba! ISO 14064-1 karbon envanteri sihirbazına hoş geldiniz. Şirketinizin karbon raporunu birlikte hazırlayalım.'
-          : '👋 Hello! Welcome to the ISO 14064-1 carbon inventory wizard. Let\'s prepare your company\'s carbon report together.'
-      }]);
-      startReport();
-    }
-  }, [embedded]); // eslint-disable-line
-
-  const handleReset = async () => {
-    startedRef.current = false;
-    setReportId(null);
-    setCurrentStep(null);
-    setMessages([]);
-    setInputValue('');
-    setDualValues({ country: '', city: '' });
-    setSelectedOptions([]);
-    setPhaseComplete(false);
-    setProgress(0);
-    setTimeout(() => startReport(), 100);
-  };
-
-  const buildData = () => {
-    const cfg = STEP_CONFIG[currentStep];
-    if (!cfg) return {};
-    if (cfg.type === 'text' || cfg.type === 'textarea') {
-      return { [cfg.field]: inputValue.trim() };
-    }
-    if (cfg.type === 'number') {
-      return { [cfg.field]: parseInt(inputValue) || 0 };
-    }
-    if (cfg.type === 'dual') {
-      return { country: dualValues.country.trim(), city: dualValues.city.trim() };
-    }
-    if (cfg.type === 'choice') {
-      return { [cfg.field]: selectedOptions[0] };
-    }
-    if (cfg.type === 'multi_choice') {
-      return { [cfg.field]: selectedOptions };
-    }
-    return {};
-  };
-
-  const getUserDisplayText = () => {
-    const cfg = STEP_CONFIG[currentStep];
-    if (!cfg) return inputValue;
-    if (cfg.type === 'dual') return `${dualValues.country}, ${dualValues.city}`;
-    if (cfg.type === 'choice' || cfg.type === 'multi_choice') {
-      const opts = cfg.options.filter(o => selectedOptions.includes(o.key));
-      return opts.map(o => language === 'tr' ? o.tr : o.en).join(', ');
-    }
-    return inputValue;
-  };
-
-  const canSubmit = () => {
-    const cfg = STEP_CONFIG[currentStep];
-    if (!cfg) return false;
-    if (cfg.type === 'text' || cfg.type === 'textarea') return inputValue.trim().length > 0;
-    if (cfg.type === 'number') return inputValue.trim().length > 0;
-    if (cfg.type === 'dual') return dualValues.country.trim().length > 0;
-    if (cfg.type === 'choice') return selectedOptions.length === 1;
-    if (cfg.type === 'multi_choice') return selectedOptions.length > 0;
-    return false;
-  };
-
-  const handleSubmit = async () => {
-    if (!canSubmit() || loading || !reportId) return;
-
-    const data = buildData();
-    const displayText = getUserDisplayText();
-    addUserMessage(displayText);
-    setInputValue('');
-    setDualValues({ country: '', city: '' });
-    setSelectedOptions([]);
-    setLoading(true);
-
-    try {
-      const res = await api.submitReportStep(reportId, currentStep, data);
-      const result = await res.json();
-
-      if (result.success) {
-        addBotMessages(result.bot_messages);
-        const nextStep = result.next_step;
-        setCurrentStep(nextStep === 'PHASE2' ? null : nextStep);
-
-        const idx = PHASE1_STEPS.indexOf(nextStep);
-        setProgress(idx >= 0 ? Math.round((idx + 1) / PHASE1_STEPS.length * 100) : 100);
-
-        if (result.phase_complete) {
-          setPhaseComplete(true);
-          if (onComplete) onComplete();
-        }
-      } else {
-        addBotMessages(result.bot_messages || ['❌ Please check your input and try again.']);
-        // Stay on same step
-      }
-    } catch {
-      addBotMessages(['❌ Connection error. Please try again.']);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleOption = (key) => {
-    const cfg = STEP_CONFIG[currentStep];
-    if (!cfg) return;
-    if (cfg.type === 'choice') {
-      setSelectedOptions([key]);
-    } else {
-      setSelectedOptions(prev =>
-        prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
-      );
-    }
-  };
-
-  const cfg = currentStep ? STEP_CONFIG[currentStep] : null;
 
   return (
     <>
-      {/* Floating Button — only in non-embedded mode */}
-      {!embedded && !open && (
-        <button
-          onClick={handleOpen}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
-          aria-label="Open CarbonIQ wizard"
-        >
-          <MessageCircle className="w-6 h-6" />
+      {!open && (
+        <button onClick={() => setOpen(true)} className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-full bg-emerald-600 px-5 py-4 text-sm font-bold text-white shadow-2xl shadow-emerald-600/30 transition hover:-translate-y-0.5 hover:bg-emerald-700">
+          <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/15"><Bot className="h-5 w-5" />{!completed && <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-lime-300 ring-2 ring-emerald-600" />}</span>
+          <span className="hidden sm:inline">CarbonIQ</span>
         </button>
       )}
-
-      {/* Chat Window — popup or embedded */}
       {open && (
-        <div className={embedded
-          ? "w-full h-full bg-white rounded-xl border border-gray-200 flex flex-col overflow-hidden"
-          : "fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[420px] h-full sm:h-[640px] bg-white sm:rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden"
-        }>
+        <div className={`fixed z-50 overflow-hidden border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 transition-all duration-300 ${expanded ? 'inset-3 rounded-[2rem] sm:inset-6' : 'bottom-4 right-4 h-[min(760px,calc(100vh-2rem))] w-[calc(100vw-2rem)] rounded-[2rem] sm:w-[460px]'}`}>
+          <div className="flex h-full flex-col bg-[#fbfdf9]">
+            {/* Header */}
+            <header className="border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"><Bot className="h-6 w-6" /></div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2"><h2 className="truncate text-lg font-bold tracking-tight text-slate-950">CarbonIQ Assistant</h2><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">ISO</span></div>
+                    <p className="mt-0.5 truncate text-xs font-medium text-slate-500">{lang === 'tr' ? 'Karbon envanteri soru akışı' : 'Carbon inventory questionnaire'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setExpanded(v => !v)} className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Toggle size">{expanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}</button>
+                  <button onClick={() => setOpen(false)} className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Close"><X className="h-5 w-5" /></button>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-500"><span>{currentStage.title[lang]}</span><span>{progress}%</span></div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-500" style={{ width: `${progress}%` }} /></div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">{lang === 'tr' ? 'Aşama' : 'Stage'} {currentQuestion.stage}/7 · {currentStage.iso}</div>
+              </div>
+            </header>
 
-          {/* Header */}
-          <div className="bg-gradient-to-r from-primary to-secondary px-4 py-3 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-                <MessageCircle className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm">CarbonIQ Wizard</h3>
-                <p className="text-white/70 text-xs">ISO 14064-1 — Phase 1</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              {reportId && (
-                <button onClick={handleReset} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" title="Restart">
-                  <RotateCcw className="w-4 h-4 text-white" />
-                </button>
+            {/* Main */}
+            <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+              {completed ? <CompletionView lang={lang} answers={answers} assumptions={assumptions} reset={reset} /> : (
+                <div className="mx-auto max-w-3xl space-y-4">
+                  <AssistantIntro lang={lang} question={currentQuestion} stageIndex={stageIndex} stageTotal={stageQuestions.length} />
+                  {systemMessages.length > 0 && <div className="space-y-2">{systemMessages.map((m, i) => <SystemMessage key={i} type={m.type} text={m.text} />)}</div>}
+                  {error && <SystemMessage type="error" text={error} />}
+                  <QuestionCard lang={lang} question={currentQuestion} value={answer} answers={answers} onChange={setAnswer} />
+                  {assumptions.length > 0 && <AssumptionsPanel lang={lang} assumptions={assumptions} />}
+                </div>
               )}
-              <button onClick={() => setOpen(false)} className={`p-1.5 hover:bg-white/20 rounded-lg transition-colors ${embedded ? 'hidden' : ''}`}>
-                <X className="w-4 h-4 text-white" />
-              </button>
-            </div>
-          </div>
+            </main>
 
-          {/* Progress bar */}
-          {progress > 0 && (
-            <div className="h-1 bg-gray-100 flex-shrink-0">
-              <div
-                className="h-full bg-primary transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          )}
-
-          {/* Step indicator */}
-          {currentStep && (
-            <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100 flex-shrink-0">
-              <span className="text-xs text-gray-500">
-                Step <span className="font-semibold text-primary">{currentStep}</span>
-                {STEP_LABELS[currentStep] && ` — ${STEP_LABELS[currentStep]}`}
-                {progress > 0 && <span className="ml-2 text-gray-400">({progress}%)</span>}
-              </span>
-            </div>
-          )}
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.map((msg, i) => (
-              <div key={i}>
-                {msg.type === 'bot' && (
-                  <div className="flex gap-2">
-                    <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <MessageCircle className="w-3.5 h-3.5 text-primary" />
-                    </div>
-                    <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
-                      <p className="text-sm text-gray-800 whitespace-pre-line">{msg.text}</p>
-                    </div>
+            {/* Footer */}
+            {!completed && (
+              <footer className="border-t border-slate-200 bg-white p-4 sm:p-5">
+                <div className="mx-auto flex max-w-3xl flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <button onClick={goBack} disabled={history.length === 0 || saving} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-40"><ArrowLeft className="h-4 w-4" />{lang === 'tr' ? 'Geri' : 'Back'}</button>
+                    <button onClick={reset} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 shadow-sm transition hover:border-red-200 hover:text-red-600 disabled:opacity-40"><RotateCcw className="h-4 w-4" />{lang === 'tr' ? 'Sıfırla' : 'Reset'}</button>
                   </div>
-                )}
-                {msg.type === 'user' && (
-                  <div className="flex justify-end">
-                    <div className="bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
-                      <p className="text-sm">{msg.text}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-
-            {loading && (
-              <div className="flex gap-2">
-                <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Loader2 className="w-3.5 h-3.5 text-primary animate-spin" />
+                  <button onClick={handleNext} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60">
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : currentQuestion.type === 'info' ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                    {saving ? (lang === 'tr' ? 'Kaydediliyor...' : 'Saving...') : currentQuestion.type === 'info' ? (currentQuestion.buttonLabel?.[lang] || (lang === 'tr' ? 'Devam et' : 'Continue')) : (lang === 'tr' ? 'Kaydet ve devam et' : 'Save & continue')}
+                    {!saving && <ArrowRight className="h-4 w-4" />}
+                  </button>
                 </div>
-                <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
-                  <div className="flex gap-1">
-                    {[0, 150, 300].map(d => (
-                      <div key={d} className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
+              </footer>
             )}
-
-            {phaseComplete && (
-              <div className="flex gap-2">
-                <div className="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                </div>
-                <div className="bg-green-50 border border-green-200 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
-                  <p className="text-sm text-green-800 font-medium">
-                    {language === 'tr' ? '✅ Aşama 1 tamamlandı!' : '✅ Phase 1 complete!'}
-                  </p>
-                  <p className="text-xs text-green-700 mt-1">
-                    {language === 'tr'
-                      ? 'Şirket bilgileri kaydedildi. Emisyon verisi girişine başlayabilirsiniz.'
-                      : 'Company information saved. You can now start entering emission data.'}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div ref={messagesEndRef} />
           </div>
-
-          {/* Input Area */}
-          {cfg && !loading && !phaseComplete && (
-            <div className="border-t border-gray-200 p-3 flex-shrink-0 max-h-[45%] overflow-y-auto">
-
-              {/* Choice / Multi-choice */}
-              {(cfg.type === 'choice' || cfg.type === 'multi_choice') && (
-                <div className="space-y-1.5 mb-3">
-                  {cfg.type === 'multi_choice' && (
-                    <p className="text-xs text-gray-500 mb-1">
-                      {language === 'tr' ? '(Birden fazla seçebilirsiniz)' : '(Select all that apply)'}
-                    </p>
-                  )}
-                  {cfg.options.map(opt => (
-                    <button
-                      key={String(opt.key)}
-                      onClick={() => toggleOption(opt.key)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all border ${
-                        selectedOptions.includes(opt.key)
-                          ? 'border-primary bg-primary/10 text-primary font-medium'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                          selectedOptions.includes(opt.key) ? 'border-primary' : 'border-gray-300'
-                        }`}>
-                          {selectedOptions.includes(opt.key) && (
-                            <div className="w-2 h-2 bg-primary rounded-full" />
-                          )}
-                        </div>
-                        <span>{language === 'tr' ? opt.tr : opt.en}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Text input */}
-              {(cfg.type === 'text') && (
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={e => setInputValue(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && canSubmit() && handleSubmit()}
-                  placeholder={cfg.placeholder}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent mb-3"
-                  autoFocus
-                />
-              )}
-
-              {/* Textarea */}
-              {cfg.type === 'textarea' && (
-                <textarea
-                  value={inputValue}
-                  onChange={e => setInputValue(e.target.value)}
-                  placeholder={cfg.placeholder}
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent mb-3 resize-none"
-                  autoFocus
-                />
-              )}
-
-              {/* Number input */}
-              {cfg.type === 'number' && (
-                <input
-                  type="number"
-                  value={inputValue}
-                  onChange={e => setInputValue(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && canSubmit() && handleSubmit()}
-                  placeholder={cfg.placeholder}
-                  min={cfg.min}
-                  max={cfg.max}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent mb-3"
-                  autoFocus
-                />
-              )}
-
-              {/* Dual input (country + city) */}
-              {cfg.type === 'dual' && (
-                <div className="flex gap-2 mb-3">
-                  <input
-                    type="text"
-                    value={dualValues.country}
-                    onChange={e => setDualValues(p => ({ ...p, country: e.target.value }))}
-                    placeholder={cfg.placeholders[0]}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                    autoFocus
-                  />
-                  <input
-                    type="text"
-                    value={dualValues.city}
-                    onChange={e => setDualValues(p => ({ ...p, city: e.target.value }))}
-                    placeholder={cfg.placeholders[1]}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
-                  />
-                </div>
-              )}
-
-              {/* Submit button */}
-              <button
-                onClick={handleSubmit}
-                disabled={!canSubmit()}
-                className={`w-full py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
-                  canSubmit()
-                    ? 'bg-primary text-white hover:bg-secondary cursor-pointer'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-              >
-                <Send className="w-4 h-4" />
-                {language === 'tr' ? 'Gönder' : 'Submit'}
-              </button>
-            </div>
-          )}
         </div>
       )}
     </>
   );
+}
+
+/* ═══ Sub-components ═══ */
+function AssistantIntro({ lang, question, stageIndex, stageTotal }) {
+  return (
+    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"><MessageCircle className="h-5 w-5" /></div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{question.id}</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{question.block?.[lang]}</span><span className="text-xs font-medium text-slate-400">{stageIndex + 1}/{stageTotal}</span></div>
+          <p className="text-sm leading-6 text-slate-600">{lang === 'tr' ? 'Bu adımda verdiğiniz cevap rapor yapısını etkileyebilir.' : 'Your answer may affect the report structure.'}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuestionCard({ lang, question, value, answers, onChange }) {
+  const title = question.question?.[lang] || question.question?.en || question.id;
+  const help = question.help?.[lang] || question.help?.en;
+  return (
+    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+      <div className="mb-6">
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-700"><ClipboardList className="h-4 w-4" />{question.required ? (lang === 'tr' ? 'Zorunlu soru' : 'Required') : (lang === 'tr' ? 'Opsiyonel' : 'Optional')}</div>
+        <h3 className="text-2xl font-bold tracking-[-0.03em] text-slate-950">{title}</h3>
+        {help && <div className="mt-4 flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600"><HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" /><p>{help}</p></div>}
+      </div>
+      <QuestionInput lang={lang} question={question} value={value} answers={answers} onChange={onChange} />
+    </section>
+  );
+}
+
+function QuestionInput({ lang, question, value, onChange }) {
+  if (question.type === 'info') return (
+    <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
+      <div className="mb-3 flex items-center gap-2 font-bold"><ShieldCheck className="h-5 w-5" />{lang === 'tr' ? 'Metodoloji bilgisi' : 'Methodology note'}</div>
+      <p>{question.help?.[lang]}</p>
+      <label className="mt-5 flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-4 text-sm font-bold text-slate-800 ring-1 ring-emerald-200"><input type="checkbox" checked={Boolean(value)} onChange={e => onChange(e.target.checked)} className="h-5 w-5 accent-emerald-600" />{question.buttonLabel?.[lang] || (lang === 'tr' ? 'Anladım' : 'I understand')}</label>
+    </div>
+  );
+  if (question.type === 'text' || question.type === 'number') return (
+    <div><input type={question.type === 'number' ? 'number' : 'text'} inputMode={question.inputMode} min={question.min} max={question.max} maxLength={question.maxLength} value={value || ''} onChange={e => { let v = e.target.value; if (question.transform === 'digitsOnly') v = v.replace(/\D/g, '').slice(0, question.maxLength || 99); onChange(v); }} placeholder={question.placeholder?.[lang] || ''} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" />{question.maxLength && <p className="mt-2 text-right text-xs font-medium text-slate-400">{(value || '').length}/{question.maxLength}</p>}</div>
+  );
+  if (question.type === 'textarea') return (
+    <div><textarea value={value || ''} maxLength={question.maxLength} onChange={e => onChange(e.target.value)} rows={5} placeholder={question.placeholder?.[lang] || ''} className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" />{question.maxLength && <p className="mt-2 text-right text-xs font-medium text-slate-400">{(value || '').length}/{question.maxLength}</p>}</div>
+  );
+  if (question.type === 'select') return (
+    <div className="relative"><select value={value || ''} onChange={e => onChange(e.target.value)} className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 pr-11 text-base font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"><option value="">{lang === 'tr' ? 'Seçiniz' : 'Select'}</option>{question.options?.map(o => <option key={o.value} value={o.value}>{o.label?.[lang] || o.value}</option>)}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /></div>
+  );
+  if (question.type === 'choice') return (
+    <div className="grid gap-3">{question.options?.map(o => { const active = value === o.value; return (<button key={o.value} type="button" onClick={() => onChange(o.value)} className={`rounded-3xl border p-4 text-left transition ${active ? 'border-emerald-300 bg-emerald-50 ring-4 ring-emerald-100' : 'border-slate-200 bg-slate-50 hover:border-emerald-200 hover:bg-white'}`}><div className="flex items-start gap-3"><span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${active ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-white text-transparent'}`}><Check className="h-4 w-4" /></span><span><span className="block text-sm font-bold text-slate-950">{o.label?.[lang] || o.value}</span>{o.description?.[lang] && <span className="mt-1 block text-xs leading-5 text-slate-500">{o.description[lang]}</span>}</span></div></button>); })}</div>
+  );
+  if (question.type === 'multi') { const selected = Array.isArray(value) ? value : []; return (
+    <div className="grid gap-3">{question.options?.map(o => { const active = selected.includes(o.value); return (<button key={o.value} type="button" onClick={() => { if (o.value === 'skip') return onChange(['skip']); const next = active ? selected.filter(i => i !== o.value) : [...selected.filter(i => i !== 'skip'), o.value]; onChange(next); }} className={`rounded-2xl border px-4 py-3 text-left text-sm font-bold transition ${active ? 'border-emerald-300 bg-emerald-50 text-emerald-800 ring-4 ring-emerald-100' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-200 hover:bg-white'}`}><span className="flex items-center gap-3"><span className={`flex h-5 w-5 items-center justify-center rounded-md border ${active ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-white text-transparent'}`}><Check className="h-3.5 w-3.5" /></span>{o.label?.[lang] || o.value}</span></button>); })}</div>
+  ); }
+  if (question.type === 'group') { const gv = value || {}; return (
+    <div className="grid gap-4 sm:grid-cols-2">{question.fields?.map(f => (<div key={f.key}><label className="mb-2 block text-sm font-bold text-slate-700">{f.label?.[lang]} {f.required && <span className="text-emerald-600">*</span>}</label>{f.type === 'select' ? (<select value={gv[f.key] || ''} onChange={e => onChange({ ...gv, [f.key]: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"><option value="">{lang === 'tr' ? 'Seçiniz' : 'Select'}</option>{f.options?.map(o => <option key={o.value} value={o.value}>{o.label?.[lang] || o.value}</option>)}</select>) : (<input value={gv[f.key] || ''} onChange={e => onChange({ ...gv, [f.key]: e.target.value })} placeholder={f.placeholder?.[lang] || ''} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" />)}</div>))}</div>
+  ); }
+  return null;
+}
+
+function SystemMessage({ type, text }) {
+  const styles = { error: 'border-red-200 bg-red-50 text-red-700', warning: 'border-amber-200 bg-amber-50 text-amber-800', info: 'border-blue-200 bg-blue-50 text-blue-800', success: 'border-emerald-200 bg-emerald-50 text-emerald-800' };
+  const Icon = type === 'error' ? AlertCircle : type === 'success' ? CheckCircle2 : type === 'warning' ? AlertCircle : Sparkles;
+  return <div className={`flex gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold leading-6 ${styles[type] || styles.info}`}><Icon className="mt-0.5 h-5 w-5 shrink-0" /><p>{text}</p></div>;
+}
+
+function AssumptionsPanel({ lang, assumptions }) {
+  return (
+    <details className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 open:shadow-sm">
+      <summary className="cursor-pointer font-bold">{lang === 'tr' ? 'Kayıtlı kabuller' : 'Recorded assumptions'} · {assumptions.length}</summary>
+      <div className="mt-4 space-y-3">{assumptions.map(a => (<div key={`${a.questionId}-${a.trigger}`} className="rounded-2xl bg-white p-4 ring-1 ring-amber-200"><div className="mb-2 flex items-center gap-2"><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">Tip {a.type}</span><span className="text-xs font-bold text-slate-400">{a.questionId}</span></div><p className="font-semibold text-slate-800">{a.text?.[lang] || a.text?.en}</p>{a.impact && <p className="mt-1 text-xs leading-5 text-slate-500">{a.impact}</p>}</div>))}</div>
+    </details>
+  );
+}
+
+function CompletionView({ lang, answers, assumptions, reset }) {
+  return (
+    <div className="mx-auto max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/20"><CheckCircle2 className="h-8 w-8" /></div>
+      <h3 className="text-3xl font-bold tracking-tight text-slate-950">{lang === 'tr' ? 'Chatbot akışı tamamlandı' : 'Chatbot flow completed'}</h3>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">{lang === 'tr' ? 'Cevaplarınız kaydedildi.' : 'Your answers have been saved.'}</p>
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-3xl font-bold text-slate-950">{Object.keys(answers).length}</p><p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{lang === 'tr' ? 'Cevap' : 'Answers'}</p></div>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-3xl font-bold text-amber-800">{assumptions.length}</p><p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-amber-600">{lang === 'tr' ? 'Kabul' : 'Assumptions'}</p></div>
+      </div>
+      <button onClick={reset} className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-red-200 hover:text-red-600"><RotateCcw className="h-4 w-4" />{lang === 'tr' ? 'Baştan başlat' : 'Start over'}</button>
+    </div>
+  );
+}
+
+/* ═══ Utility functions ═══ */
+function normalizeValue(q, v) { if (q.type === 'number') return v === '' || v == null ? '' : Number(v); if (q.type === 'info') return Boolean(v); if (q.type === 'multi') return Array.isArray(v) ? v : []; return v; }
+
+function validateAnswer(q, v, answers, lang) {
+  if (q.required) {
+    if (q.type === 'multi' && (!Array.isArray(v) || v.length === 0)) return { ok: false, message: lang === 'tr' ? 'En az bir seçenek seçin.' : 'Select at least one option.' };
+    if (q.type === 'group') { const missing = q.fields?.some(f => f.required && !String(v?.[f.key] || '').trim()); if (missing) return { ok: false, message: lang === 'tr' ? 'Zorunlu alanları doldurun.' : 'Fill required fields.' }; }
+    if (q.type === 'info' && !v) return { ok: false, message: lang === 'tr' ? 'Onay kutusunu işaretleyin.' : 'Check the confirmation box.' };
+    if (!['multi', 'group', 'info'].includes(q.type) && (v === undefined || v === null || String(v).trim() === '')) return { ok: false, message: lang === 'tr' ? 'Bu alan zorunludur.' : 'This field is required.' };
+  }
+  if (q.validation?.kind === 'digits') { const t = String(v || ''); if (!/^\d+$/.test(t) || t.length !== q.validation.length) return { ok: false, message: lang === 'tr' ? `${q.validation.length} haneli rakam girin.` : `Enter exactly ${q.validation.length} digits.` }; }
+  if (q.validation?.kind === 'text') { const t = String(v || ''); if (q.validation.min && t.trim().length < q.validation.min) return { ok: false, message: lang === 'tr' ? 'Boş bırakılamaz.' : 'Cannot be empty.' }; if (q.validation.max && t.length > q.validation.max) return { ok: false, message: lang === 'tr' ? `En fazla ${q.validation.max} karakter.` : `Max ${q.validation.max} characters.` }; }
+  if (q.type === 'number') { if (q.min != null && Number(v) < q.min) return { ok: false, message: lang === 'tr' ? `En az ${q.min}.` : `Min ${q.min}.` }; if (q.max != null && Number(v) > q.max) return { ok: false, message: lang === 'tr' ? `En fazla ${q.max}.` : `Max ${q.max}.` }; }
+  if (q.customValidate === 'baselineBeforeReportingYear') { const ry = Number(answers.reporting_year); const by = Number(v); if (by && ry && by >= ry) return { ok: false, message: lang === 'tr' ? 'Baz yıl raporlama yılından önce olmalı.' : 'Baseline must be before reporting year.' }; }
+  return { ok: true };
+}
+
+function getNextQuestionId(q, v, answers) { if (q.conditionalNext) { const m = q.conditionalNext.find(r => matchesRule(r.when, v, answers)); if (m) return m.next; } return q.next; }
+
+function applyEffects(q, v, answers, lang) {
+  const messages = [], assumptions = [], nextAnswers = {};
+  q.effects?.forEach(e => { if (!matchesRule(e.when, v, answers)) return; if (e.message) messages.push({ type: e.message.type || 'info', text: e.message[lang] || e.message.en }); if (e.assumption) assumptions.push({ ...e.assumption, questionId: q.id }); if (e.set) Object.assign(nextAnswers, e.set); });
+  return { messages, assumptions, nextAnswers: Object.keys(nextAnswers).length > 0 ? nextAnswers : null };
+}
+
+function matchesRule(rule, v, answers) { if (!rule) return false; const t = rule.field ? v?.[rule.field] : v; if (rule.equals !== undefined) return t === rule.equals; if (rule.includes !== undefined) return Array.isArray(t) && t.includes(rule.includes); if (rule.numericGte !== undefined) return Number(t) >= rule.numericGte; return false; }
+
+function mergeAssumptions(prev, next, qId) { const key = i => `${i.questionId || qId}-${i.trigger}`; const map = new Map(prev.map(i => [key(i), i])); next.forEach(i => map.set(key(i), { ...i, questionId: i.questionId || qId })); return Array.from(map.values()); }
+
+function persistState(state) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
+
+async function saveAnswerToApi(payload) {
+  try {
+    const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('_dev_access_token') : null;
+    await fetch(`${API}/questionnaire/carboniq/answer/`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, credentials: 'include', body: JSON.stringify({ question_id: payload.question.id, field: payload.question.field, value: payload.value, stage: payload.question.stage, assumptions: payload.assumptions || [] }) });
+  } catch {}
 }

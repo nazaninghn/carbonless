@@ -30,18 +30,18 @@ export default function OverviewTab({ language, summary, entries, targets, quest
       )}
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Emisyon Profili' : 'Emission Profile'}</h1>
-        <p className="text-gray-600 mt-1">{language === 'tr' ? 'Şirketinizin karbon emisyon verilerine genel bakış' : 'Overview of your company carbon emission data'}</p>
+        <h1 className="text-2xl font-bold text-slate">{language === 'tr' ? 'Emisyon Profili' : 'Emission Profile'}</h1>
+        <p className="text-graphite mt-1">{language === 'tr' ? 'Şirketinizin karbon emisyon verilerine genel bakış' : 'Overview of your company carbon emission data'}</p>
       </div>
 
       {/* Total */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
+      <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-medium text-gray-600">{language === 'tr' ? 'TOPLAM EMİSYONLAR (tCO2e)' : 'TOTAL EMISSIONS (tCO2e)'}</h2>
+          <h2 className="text-sm font-medium text-graphite">{language === 'tr' ? 'TOPLAM EMİSYONLAR (tCO2e)' : 'TOTAL EMISSIONS (tCO2e)'}</h2>
           <button onClick={onAddData} className="text-sm text-primary hover:text-secondary">{language === 'tr' ? 'Veri Ekle' : 'Add Data'}</button>
         </div>
-        <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">{summary?.total_tonne?.toFixed(2) || '0.00'}</div>
-        <p className="text-sm text-gray-500">{language === 'tr' ? `${selectedYear} yılı toplam şirket emisyonları` : `Total company emissions for ${selectedYear}`}</p>
+        <div className="text-4xl sm:text-5xl font-bold text-slate mb-2">{summary?.total_tonne?.toFixed(2) || '0.00'}</div>
+        <p className="text-sm text-graphite">{language === 'tr' ? `${selectedYear} yılı toplam şirket emisyonları` : `Total company emissions for ${selectedYear}`}</p>
       </div>
 
       {/* Scope Cards */}
@@ -51,18 +51,18 @@ export default function OverviewTab({ language, summary, entries, targets, quest
           { label: 'SCOPE 2', val: summary?.scope2_tonne, sub: language === 'tr' ? 'Enerji dolaylı emisyonlar' : 'Energy indirect emissions' },
           { label: 'SCOPE 3', val: summary?.scope3_tonne, sub: language === 'tr' ? 'Diğer dolaylı emisyonlar' : 'Other indirect emissions' },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="text-sm font-medium text-gray-600 mb-2">{s.label} (tCO2e)</div>
-            <div className="text-3xl font-bold text-gray-900 mb-1">{(s.val || 0).toFixed(2)}</div>
-            <div className="text-xs text-gray-500">{s.sub}</div>
+          <div key={s.label} className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+            <div className="text-sm font-medium text-graphite mb-2">{s.label} (tCO2e)</div>
+            <div className="text-3xl font-bold text-slate mb-1">{(s.val || 0).toFixed(2)}</div>
+            <div className="text-xs text-graphite">{s.sub}</div>
           </div>
         ))}
       </div>
 
       {/* Scope Bars */}
       {summary && summary.total_tonne > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'KAPSAM DAĞILIMI' : 'SCOPE DISTRIBUTION'}</h3>
+        <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+          <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'KAPSAM DAĞILIMI' : 'SCOPE DISTRIBUTION'}</h3>
           <div className="space-y-3">
             {[
               { label: 'Scope 1', val: summary.scope1_tonne, color: 'bg-red-500' },
@@ -73,10 +73,10 @@ export default function OverviewTab({ language, summary, entries, targets, quest
               return (
                 <div key={s.label}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">{s.label}</span>
-                    <span className="text-sm text-gray-600">{s.val.toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
+                    <span className="text-sm font-medium text-slate">{s.label}</span>
+                    <span className="text-sm text-graphite">{s.val.toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div className="w-full bg-mist rounded-full h-3">
                     <div className={`h-3 rounded-full ${s.color} transition-all duration-500`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
                   </div>
                 </div>
@@ -88,19 +88,19 @@ export default function OverviewTab({ language, summary, entries, targets, quest
 
       {/* Monthly Trend */}
       {summary?.monthly && summary.monthly.some(m => m.total_kg > 0) && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'AYLIK TREND' : 'MONTHLY TREND'}</h3>
+        <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+          <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'AYLIK TREND' : 'MONTHLY TREND'}</h3>
           <div className="flex items-end gap-1 h-40">
             {summary.monthly.map((m, i) => {
               const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
               const pct = (m.total_kg / maxKg) * 100;
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-xs text-gray-500">{m.total_kg > 0 ? (m.total_kg / 1000).toFixed(2) : ''}</span>
-                  <div className="w-full bg-gray-100 rounded-t flex-1 relative" style={{ minHeight: '4px' }}>
+                  <span className="text-xs text-graphite">{m.total_kg > 0 ? (m.total_kg / 1000).toFixed(2) : ''}</span>
+                  <div className="w-full bg-mist rounded-t flex-1 relative" style={{ minHeight: '4px' }}>
                     <div className="absolute bottom-0 left-0 right-0 bg-primary/70 rounded-t transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 5 : 0)}%` }}></div>
                   </div>
-                  <span className="text-xs text-gray-400">{months[i]}</span>
+                  <span className="text-xs text-graphite/60">{months[i]}</span>
                 </div>
               );
             })}
@@ -110,12 +110,12 @@ export default function OverviewTab({ language, summary, entries, targets, quest
 
       {/* Category Breakdown */}
       {summary?.by_category?.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'KATEGORİ DAĞILIMI' : 'CATEGORY BREAKDOWN'}</h3>
+        <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+          <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'KATEGORİ DAĞILIMI' : 'CATEGORY BREAKDOWN'}</h3>
           <div className="space-y-3">
             {summary.by_category.map(c => (
-              <div key={c.category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-gray-700">{c.category}</span>
+              <div key={c.category} className="flex items-center justify-between p-3 bg-mist rounded-lg">
+                <span className="text-sm text-slate">{c.category}</span>
                 <span className="text-sm font-semibold">{(c.total_kg / 1000).toFixed(2)} tCO2e</span>
               </div>
             ))}
@@ -130,7 +130,7 @@ export default function OverviewTab({ language, summary, entries, targets, quest
             <Target className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-2">{language === 'tr' ? 'Başlangıç Rehberi' : 'Getting Started'}</h3>
+            <h3 className="font-semibold text-slate mb-2">{language === 'tr' ? 'Başlangıç Rehberi' : 'Getting Started'}</h3>
             <div className="space-y-2 mb-4">
               {[
                 { done: !!questionnaireProfile?.is_complete, tr: 'Prsşnameyi tamamla', en: 'Complete questionnaire' },
@@ -139,10 +139,10 @@ export default function OverviewTab({ language, summary, entries, targets, quest
                 { done: facilityList.length > 0, tr: 'Tesis ekle', en: 'Add a facility' },
               ].map((step, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step.done ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
+                  <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step.done ? 'bg-green-100 text-green-600' : 'bg-mist text-graphite/60'}`}>
                     {step.done ? '✓' : (i + 1)}
                   </span>
-                  <span className={step.done ? 'text-gray-500 line-through' : 'text-gray-700'}>{language === 'tr' ? step.tr : step.en}</span>
+                  <span className={step.done ? 'text-graphite line-through' : 'text-slate'}>{language === 'tr' ? step.tr : step.en}</span>
                 </div>
               ))}
             </div>

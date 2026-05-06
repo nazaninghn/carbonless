@@ -16,7 +16,7 @@ const ROLES = [
   { value: 'data_entry', icon: Database, color: 'bg-green-100 text-green-700 border-green-300',
     label: { tr: 'Veri Girişi', en: 'Data Entry' },
     desc: { tr: 'Sadece emisyon verisi girişi', en: 'Emission data entry only' } },
-  { value: 'auditor', icon: Eye, color: 'bg-gray-100 text-gray-700 border-gray-300',
+  { value: 'auditor', icon: Eye, color: 'bg-mist text-slate border-black/[0.06]',
     label: { tr: 'Denetçi', en: 'Auditor' },
     desc: { tr: 'Sadece görüntüleme — veri değiştiremez', en: 'View only — cannot modify data' } },
 ];
@@ -72,7 +72,7 @@ export default function TeamManagement({ language }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-gray-900">
+          <h3 className="font-semibold text-slate">
             {tr ? 'Takım Yönetimi' : 'Team Management'}
           </h3>
           <span className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full font-medium">
@@ -81,7 +81,7 @@ export default function TeamManagement({ language }) {
         </div>
         <button
           onClick={() => setShowRoles(!showRoles)}
-          className="flex items-center gap-1 text-xs text-gray-500 hover:text-primary transition-colors"
+          className="flex items-center gap-1 text-xs text-graphite hover:text-primary transition-colors"
         >
           <Info className="w-3.5 h-3.5" />
           {tr ? 'Roller Hakkında' : 'About Roles'}
@@ -90,8 +90,8 @@ export default function TeamManagement({ language }) {
 
       {/* Role descriptions panel */}
       {showRoles && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3">{tr ? 'Rol Açıklamaları' : 'Role Descriptions'}</h4>
+        <div className="bg-mist rounded-xl p-4 border border-black/[0.04]">
+          <h4 className="text-sm font-semibold text-slate mb-3">{tr ? 'Rol Açıklamaları' : 'Role Descriptions'}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ROLES.map(r => {
               const Icon = r.icon;
@@ -116,8 +116,8 @@ export default function TeamManagement({ language }) {
         </div>
       ) : members.length === 0 ? (
         <div className="text-center py-8">
-          <Users className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">{tr ? 'Henüz üye yok' : 'No members yet'}</p>
+          <Users className="w-10 h-10 text-graphite/40 mx-auto mb-2" />
+          <p className="text-sm text-graphite">{tr ? 'Henüz üye yok' : 'No members yet'}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -126,7 +126,7 @@ export default function TeamManagement({ language }) {
             const RoleIcon = roleInfo.icon;
             return (
               <div key={m.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
-                !m.is_active ? 'bg-gray-50 border-gray-200 opacity-60' : 'bg-white border-gray-200 hover:border-primary/30 hover:shadow-sm'
+                !m.is_active ? 'bg-mist border-black/[0.04] opacity-60' : 'bg-white border-black/[0.04] hover:border-primary/30 hover:shadow-sm'
               }`}>
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
@@ -135,10 +135,10 @@ export default function TeamManagement({ language }) {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-gray-900">{m.username || '—'}</p>
+                      <p className="text-sm font-medium text-slate">{m.username || '—'}</p>
                       {m.role === 'owner' && <Crown className="w-3.5 h-3.5 text-amber-500" />}
                     </div>
-                    <p className="text-xs text-gray-500">{m.user_email || '—'}</p>
+                    <p className="text-xs text-graphite">{m.user_email || '—'}</p>
                   </div>
                 </div>
 
@@ -189,9 +189,9 @@ export default function TeamManagement({ language }) {
       <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl p-4 border border-primary/20">
         <div className="flex items-center gap-2 mb-3">
           <UserPlus className="w-4 h-4 text-primary" />
-          <h4 className="text-sm font-semibold text-gray-900">{tr ? 'Yeni Üye Davet Et' : 'Invite New Member'}</h4>
+          <h4 className="text-sm font-semibold text-slate">{tr ? 'Yeni Üye Davet Et' : 'Invite New Member'}</h4>
         </div>
-        <p className="text-xs text-gray-500 mb-3">
+        <p className="text-xs text-graphite mb-3">
           {tr ? 'E-posta adresi girin ve rol seçin. Davet edilen kişi kayıt olduktan sonra otomatik olarak takıma eklenir.' : 'Enter email and select a role. The invited person will be automatically added to the team after registration.'}
         </p>
         <div className="flex gap-2 flex-wrap">
@@ -200,12 +200,12 @@ export default function TeamManagement({ language }) {
             value={inviteEmail}
             onChange={e => { setInviteEmail(e.target.value); setInviteMsg(''); }}
             placeholder={tr ? 'ornek@sirket.com' : 'example@company.com'}
-            className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-black/[0.06] rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           <select
             value={inviteRole}
             onChange={e => setInviteRole(e.target.value)}
-            className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm"
+            className="px-3 py-2 bg-white border border-black/[0.06] rounded-lg text-sm"
           >
             {ROLES.filter(r => r.value !== 'owner').map(r => (
               <option key={r.value} value={r.value}>{tr ? r.label.tr : r.label.en}</option>
