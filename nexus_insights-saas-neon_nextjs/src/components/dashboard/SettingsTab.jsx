@@ -1,6 +1,16 @@
 'use client';
 import { useState } from 'react';
-import { Settings, Leaf, Target, Users, Bell, Download, Trash2, User, Shield } from 'lucide-react';
+import {
+  Leaf,
+  Target,
+  Users,
+  Bell,
+  Download,
+  Trash2,
+  User,
+  Shield,
+  ChevronRight,
+} from 'lucide-react';
 import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
@@ -24,6 +34,7 @@ export default function SettingsTab({ language, user, fetchData }) {
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   const tr = language === 'tr';
+  const active = TABS.find((tab) => tab.id === activeTab);
 
   const handleExport = async () => {
     setExporting(true);
@@ -31,17 +42,25 @@ export default function SettingsTab({ language, user, fetchData }) {
       const res = await api.exportAll();
       if (res.ok) {
         const data = await res.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: 'application/json',
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = 'carbonless_backup.json'; a.click();
+        a.href = url;
+        a.download = 'carbonless_backup.json';
+        a.click();
       }
     } catch {}
     setExporting(false);
   };
 
   const handleDelete = async () => {
-    const password = prompt(tr ? 'Hesabınızı silmek için şifrenizi girin:' : 'Enter your password to delete your account:');
+    const password = prompt(
+      tr
+        ? 'Hesabınızı silmek için şifrenizi girin:'
+        : 'Enter your password to delete your account:'
+    );
     if (!password) return;
     setDeleting(true);
     const res = await api.deleteAccount(password);
@@ -55,155 +74,234 @@ export default function SettingsTab({ language, user, fetchData }) {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{tr ? 'Ayarlar' : 'Settings'}</h1>
-        <p className="text-gray-600 mt-1">{tr ? 'Hesap, şirket ve sistem ayarları' : 'Account, company and system settings'}</p>
+    <div className="space-y-5 text-[#302817]">
+      {/* Header */}
+      <div className="rounded-[2rem] border border-[#302817]/10 bg-white/70 p-5 shadow-[0_8px_30px_rgba(48,40,23,0.06)] backdrop-blur-xl">
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#8F92A1]">
+          Carbonless Workspace
+        </p>
+        <h1 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#302817]">
+          {tr ? 'Ayarlar' : 'Settings'}
+        </h1>
+        <p className="mt-1 text-sm leading-6 text-[#302817]/60">
+          {tr
+            ? 'Hesap, şirket, güvenlik ve sistem tercihlerinizi yönetin.'
+            : 'Manage account, company, security and system preferences.'}
+        </p>
       </div>
 
-      {/* Sub-navigation tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-1 -mx-1 px-1">
-        {TABS.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
-                isActive
-                  ? 'bg-primary text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {tr ? tab.tr : tab.en}
-            </button>
-          );
-        })}
-      </div>
+      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+        {/* Sidebar tabs */}
+        <aside className="lg:sticky lg:top-5 lg:h-fit">
+          <div className="flex gap-2 overflow-x-auto rounded-[1.75rem] border border-[#302817]/10 bg-white/60 p-2 shadow-[0_8px_30px_rgba(48,40,23,0.05)] backdrop-blur-xl lg:block lg:space-y-1">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`group flex min-w-fit items-center gap-3 rounded-2xl px-4 py-3 text-sm font-bold transition lg:w-full ${
+                    isActive
+                      ? 'bg-[#302817] text-[#F9EFE5] shadow-lg shadow-[#302817]/15'
+                      : 'text-[#302817]/65 hover:bg-white/80 hover:text-[#302817]'
+                  }`}
+                >
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl ${
+                      isActive
+                        ? 'bg-[#F9EFE5]/12 text-[#F9EFE5]'
+                        : 'bg-[#8F92A1]/12 text-[#7F8790]'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className="truncate">{tr ? tab.tr : tab.en}</span>
+                  <ChevronRight
+                    className={`ml-auto hidden h-4 w-4 lg:block ${
+                      isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+                    }`}
+                  />
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-      {/* ═══ PROFILE ═══ */}
-      {activeTab === 'profile' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center"><User className="w-4 h-4 text-primary" /></div>
-            {tr ? 'Profil Bilgileri' : 'Profile Information'}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">{tr ? 'Kullanıcı Adı' : 'Username'}</p>
-              <p className="text-sm font-medium text-gray-900">{user?.username || '-'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">{tr ? 'E-posta' : 'Email'}</p>
-              <p className="text-sm font-medium text-gray-900">{user?.email || '-'}</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3">
-              <p className="text-xs text-gray-500">{tr ? 'Rol' : 'Role'}</p>
-              <p className="text-sm font-medium text-gray-900">{user?.role_display || user?.role || '-'}</p>
+        {/* Content */}
+        <section className="min-w-0">
+          {/* Section header */}
+          <div className="mb-4 rounded-[1.75rem] border border-[#302817]/10 bg-white/60 p-4 shadow-[0_8px_30px_rgba(48,40,23,0.05)] backdrop-blur-xl">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#8F92A1]/14 text-[#7F8790] ring-1 ring-[#8F92A1]/25">
+                {active && <active.icon className="h-5 w-5" />}
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#302817]">
+                  {active ? (tr ? active.tr : active.en) : ''}
+                </h2>
+                <p className="text-sm text-[#302817]/55">
+                  {tr ? 'Seçili ayar bölümü' : 'Selected settings section'}
+                </p>
+              </div>
             </div>
           </div>
-          <ProfileEdit language={language} user={user} onUpdate={fetchData} />
 
-          {/* Permissions */}
-          {user?.permissions && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h4 className="text-sm font-semibold text-gray-900 mb-3">{tr ? 'İzinleriniz' : 'Your Permissions'}</h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { key: 'can_edit_entries', tr: 'Veri Girişi', en: 'Edit Entries' },
-                  { key: 'can_manage_users', tr: 'Kullanıcı Yönetimi', en: 'Manage Users' },
-                  { key: 'can_approve_requests', tr: 'Talep Onayı', en: 'Approve Requests' },
-                  { key: 'can_generate_reports', tr: 'Rapor Oluşturma', en: 'Generate Reports' },
-                ].map(p => (
-                  <div key={p.key} className={`p-2.5 rounded-lg text-center text-xs font-medium ${user.permissions[p.key] ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-gray-50 text-gray-400 border border-gray-200'}`}>
-                    {user.permissions[p.key] ? '✅' : '❌'} {tr ? p.tr : p.en}
+          {/* ═══ PROFILE ═══ */}
+          {activeTab === 'profile' && (
+            <Panel>
+              <PanelTitle icon={User} title={tr ? 'Profil Bilgileri' : 'Profile Information'} />
+              <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <InfoCard label={tr ? 'Kullanıcı Adı' : 'Username'} value={user?.username || '-'} />
+                <InfoCard label={tr ? 'E-posta' : 'Email'} value={user?.email || '-'} />
+                <InfoCard label={tr ? 'Rol' : 'Role'} value={user?.role_display || user?.role || '-'} />
+              </div>
+              <ProfileEdit language={language} user={user} onUpdate={fetchData} />
+
+              {user?.permissions && (
+                <div className="mt-5 border-t border-[#302817]/10 pt-5">
+                  <h4 className="mb-3 text-sm font-bold text-[#302817]">
+                    {tr ? 'İzinleriniz' : 'Your Permissions'}
+                  </h4>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                    {[
+                      { key: 'can_edit_entries', tr: 'Veri Girişi', en: 'Edit Entries' },
+                      { key: 'can_manage_users', tr: 'Kullanıcı Yönetimi', en: 'Manage Users' },
+                      { key: 'can_approve_requests', tr: 'Talep Onayı', en: 'Approve Requests' },
+                      { key: 'can_generate_reports', tr: 'Rapor Oluşturma', en: 'Generate Reports' },
+                    ].map((p) => {
+                      const allowed = user.permissions[p.key];
+                      return (
+                        <div
+                          key={p.key}
+                          className={`rounded-2xl border px-3 py-3 text-center text-xs font-bold ${
+                            allowed
+                              ? 'border-[#8F92A1]/30 bg-[#8F92A1]/12 text-[#302817]'
+                              : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/45'
+                          }`}
+                        >
+                          {allowed ? '✓' : '—'} {tr ? p.tr : p.en}
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
+              )}
+            </Panel>
+          )}
+
+          {/* ═══ TEAM ═══ */}
+          {activeTab === 'team' && (
+            <Panel>
+              <TeamManagement language={language} />
+            </Panel>
+          )}
+
+          {/* ═══ COMPANY ═══ */}
+          {activeTab === 'company' && (
+            <Panel>
+              <PanelTitle icon={Leaf} title={tr ? 'Şirket Bilgileri' : 'Company Information'} />
+              <CompanySettings language={language} />
+            </Panel>
+          )}
+
+          {/* ═══ FACILITIES ═══ */}
+          {activeTab === 'facilities' && (
+            <Panel>
+              <PanelTitle icon={Target} title={tr ? 'Tesis Yönetimi' : 'Facility Management'} />
+              <FacilitySettings language={language} />
+            </Panel>
+          )}
+
+          {/* ═══ SECURITY ═══ */}
+          {activeTab === 'security' && (
+            <Panel>
+              <PanelTitle icon={Shield} title={tr ? 'Şifre Değiştir' : 'Change Password'} />
+              <PasswordChange language={language} />
+            </Panel>
+          )}
+
+          {/* ═══ NOTIFICATIONS ═══ */}
+          {activeTab === 'notifications' && (
+            <Panel>
+              <PanelTitle icon={Bell} title={tr ? 'Bildirim Tercihleri' : 'Notification Preferences'} />
+              <NotificationPreferences language={language} user={user} />
+            </Panel>
+          )}
+
+          {/* ═══ DATA & ACCOUNT ═══ */}
+          {activeTab === 'data' && (
+            <div className="space-y-4">
+              <Panel>
+                <PanelTitle icon={Download} title={tr ? 'Veri Dışa Aktarma' : 'Data Export'} />
+                <p className="mb-4 text-sm leading-6 text-[#302817]/60">
+                  {tr
+                    ? 'Tüm emisyon verilerinizi JSON formatında indirin.'
+                    : 'Download all your emission data in JSON format.'}
+                </p>
+                <button
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/15 transition hover:bg-black disabled:opacity-60 sm:w-auto"
+                >
+                  <Download className="h-4 w-4" />
+                  {exporting ? '...' : tr ? 'Tüm Verileri İndir' : 'Export All Data'}
+                </button>
+              </Panel>
+
+              <div className="rounded-[2rem] border border-red-200 bg-red-50/80 p-5 shadow-[0_8px_30px_rgba(48,40,23,0.05)] backdrop-blur-xl">
+                <h3 className="mb-3 flex items-center gap-2 font-bold text-red-700">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-red-100">
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </div>
+                  {tr ? 'Tehlikeli Bölge' : 'Danger Zone'}
+                </h3>
+                <p className="mb-4 text-sm leading-6 text-red-700/70">
+                  {tr
+                    ? 'Hesabınızı silmek geri alınamaz. Tüm verileriniz kalıcı olarak silinir.'
+                    : 'Deleting your account is irreversible. All your data will be permanently deleted.'}
+                </p>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-60 sm:w-auto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {tr ? 'Hesabı Kalıcı Olarak Sil' : 'Permanently Delete Account'}
+                </button>
               </div>
             </div>
           )}
-        </div>
-      )}
+        </section>
+      </div>
+    </div>
+  );
+}
 
-      {/* ═══ TEAM ═══ */}
-      {activeTab === 'team' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <TeamManagement language={language} />
-        </div>
-      )}
+function Panel({ children }) {
+  return (
+    <div className="rounded-[2rem] border border-[#302817]/10 bg-white/70 p-4 shadow-[0_8px_30px_rgba(48,40,23,0.06)] backdrop-blur-xl sm:p-5 lg:p-6">
+      {children}
+    </div>
+  );
+}
 
-      {/* ═══ COMPANY ═══ */}
-      {activeTab === 'company' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-secondary/10 rounded-lg flex items-center justify-center"><Leaf className="w-4 h-4 text-secondary" /></div>
-            {tr ? 'Şirket Bilgileri' : 'Company Information'}
-          </h3>
-          <CompanySettings language={language} />
-        </div>
-      )}
+function PanelTitle({ icon: Icon, title }) {
+  return (
+    <h3 className="mb-4 flex items-center gap-3 text-base font-bold text-[#302817]">
+      <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#8F92A1]/14 text-[#7F8790] ring-1 ring-[#8F92A1]/25">
+        <Icon className="h-4 w-4" />
+      </div>
+      {title}
+    </h3>
+  );
+}
 
-      {/* ═══ FACILITIES ═══ */}
-      {activeTab === 'facilities' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center"><Target className="w-4 h-4 text-accent" /></div>
-            {tr ? 'Tesis Yönetimi' : 'Facility Management'}
-          </h3>
-          <FacilitySettings language={language} />
-        </div>
-      )}
-
-      {/* ═══ SECURITY ═══ */}
-      {activeTab === 'security' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center"><Shield className="w-4 h-4 text-red-600" /></div>
-            {tr ? 'Şifre Değiştir' : 'Change Password'}
-          </h3>
-          <PasswordChange language={language} />
-        </div>
-      )}
-
-      {/* ═══ NOTIFICATIONS ═══ */}
-      {activeTab === 'notifications' && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center"><Bell className="w-4 h-4 text-amber-600" /></div>
-            {tr ? 'Bildirim Tercihleri' : 'Notification Preferences'}
-          </h3>
-          <NotificationPreferences language={language} user={user} />
-        </div>
-      )}
-
-      {/* ═══ DATA & ACCOUNT ═══ */}
-      {activeTab === 'data' && (
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center"><Download className="w-4 h-4 text-blue-600" /></div>
-              {tr ? 'Veri Dışa Aktarma' : 'Data Export'}
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">{tr ? 'Tüm emisyon verilerinizi JSON formatında indirin.' : 'Download all your emission data in JSON format.'}</p>
-            <button onClick={handleExport} disabled={exporting} className="px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-secondary flex items-center gap-2 disabled:opacity-60 transition-colors">
-              <Download className="w-4 h-4" /> {exporting ? '...' : (tr ? 'Tüm Verileri İndir' : 'Export All Data')}
-            </button>
-          </div>
-
-          <div className="bg-white rounded-xl border border-red-200 p-6">
-            <h3 className="font-semibold text-red-700 mb-3 flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center"><Trash2 className="w-4 h-4 text-red-600" /></div>
-              {tr ? 'Tehlikeli Bölge' : 'Danger Zone'}
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">{tr ? 'Hesabınızı silmek geri alınamaz. Tüm verileriniz kalıcı olarak silinir.' : 'Deleting your account is irreversible. All your data will be permanently deleted.'}</p>
-            <button onClick={handleDelete} disabled={deleting} className="px-5 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 flex items-center gap-2 disabled:opacity-60 transition-colors">
-              <Trash2 className="w-4 h-4" /> {tr ? 'Hesabı Kalıcı Olarak Sil' : 'Permanently Delete Account'}
-            </button>
-          </div>
-        </div>
-      )}
+function InfoCard({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-[#302817]/10 bg-[#F8F8F8] p-3">
+      <p className="text-xs font-bold text-[#302817]/45">{label}</p>
+      <p className="mt-1 truncate text-sm font-bold text-[#302817]">{value}</p>
     </div>
   );
 }

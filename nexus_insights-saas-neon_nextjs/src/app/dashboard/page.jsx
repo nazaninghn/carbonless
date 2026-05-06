@@ -8,16 +8,17 @@ import {
   Leaf, TrendingDown, FileText, Settings,
   X, Target, Plus, Trash2, AlertCircle, Pencil
 } from 'lucide-react';
-import Chatbot from '@/components/Chatbot';
 import OnboardingTour from '@/components/OnboardingTour';
 import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
 import FacilityChart from '@/components/dashboard/FacilityChart';
 import SettingsTab from '@/components/dashboard/SettingsTab';
+import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -254,7 +255,7 @@ export default function DashboardPage() {
   const selectedFactorObj = factors.find(f => f.id === parseInt(selectedFactor));
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-[#F8F8F8] text-[#302817] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar
         language={language}
@@ -267,7 +268,7 @@ export default function DashboardPage() {
       />
 
       {/* Main */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="min-w-0 flex-1 flex flex-col min-h-screen">
         <DashboardHeader
           language={language}
           selectedYear={selectedYear}
@@ -279,188 +280,43 @@ export default function DashboardPage() {
           setSidebarOpen={setSidebarOpen}
         />
 
-        <main className="flex-1 p-3 sm:p-6 overflow-y-auto">
+        <main className="flex-1 overflow-x-hidden p-3 sm:p-4 lg:p-5">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
-            <>
+            <div className="mx-auto w-full max-w-[1380px]">
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              {/* Questionnaire Status Banner */}
-              {questionnaireProfile && !questionnaireProfile.is_complete && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <AlertCircle className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-amber-900">{language === 'tr' ? 'Karbon envanteri prsşnamesini tamamlayın' : 'Complete the carbon inventory questionnaire'}</p>
-                    <p className="text-xs text-amber-700">{language === 'tr' ? 'Sağ alttaki chatbot ile prsşnameyi tamamlayarak raporlama yapılandırmanızı belirleyin.' : 'Use the chatbot (bottom right) to configure your reporting setup.'}</p>
-                  </div>
-                </div>
-              )}
-              {questionnaireProfile?.is_complete && questionnaireProfile?.preferred_factor_source && questionnaireProfile.preferred_factor_source !== 'mixed' && questionnaireProfile.preferred_factor_source !== 'unsure' && (
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3 flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Leaf className="w-4 h-4 text-green-600" />
-                  </div>
-                  <p className="text-xs text-green-800">
-                    {language === 'tr' ? `Emisyon faktörleri tercihinize göre filtreleniyor: ` : `Emission factors filtered by your preference: `}
-                    <span className="font-semibold">{{ national: language === 'tr' ? 'Ulusal Kaynaklar' : 'National Sources', defra: 'DEFRA', ipcc: 'IPCC' }[questionnaireProfile.preferred_factor_source]}</span>
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Emisyon Profili' : 'Emission Profile'}</h1>
-                <p className="text-gray-600 mt-1">{language === 'tr' ? 'Şirketinizin karbon emisyon verilerine genel bakış' : 'Overview of your company carbon emission data'}</p>
-              </div>
-
-              {/* Total */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-medium text-gray-600">{language === 'tr' ? 'TOPLAM EMİSYONLAR (tCO2e)' : 'TOTAL EMISSIONS (tCO2e)'}</h2>
-                  <button onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }} className="text-sm text-primary hover:text-secondary">
-                    {language === 'tr' ? 'Veri Ekle' : 'Add Data'}
-                  </button>
-                </div>
-                <div className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">{summary?.total_tonne?.toFixed(2) || '0.00'}</div>
-                <p className="text-sm text-gray-500">{language === 'tr' ? `${selectedYear} yılı toplam şirket emisyonları` : `Total company emissions for ${selectedYear}`}</p>
-              </div>
-
-              {/* Scope Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[
-                  { label: 'SCOPE 1', val: summary?.scope1_tonne, sub: language === 'tr' ? 'Doğrudan emisyonlar' : 'Direct emissions' },
-                  { label: 'SCOPE 2', val: summary?.scope2_tonne, sub: language === 'tr' ? 'Enerji dolaylı emisyonlar' : 'Energy indirect emissions' },
-                  { label: 'SCOPE 3', val: summary?.scope3_tonne, sub: language === 'tr' ? 'Diğer dolaylı emisyonlar' : 'Other indirect emissions' },
-                ].map(s => (
-                  <div key={s.label} className="bg-white rounded-xl border border-gray-200 p-6">
-                    <div className="text-sm font-medium text-gray-600 mb-2">{s.label} (tCO2e)</div>
-                    <div className="text-3xl font-bold text-gray-900 mb-1">{(s.val || 0).toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">{s.sub}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Category Breakdown */}
-              {/* Scope Visual Bars */}
-              {summary && summary.total_tonne > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'KAPSAM DAĞILIMI' : 'SCOPE DISTRIBUTION'}</h3>
-                  <div className="space-y-3">
-                    {[
-                      { label: 'Scope 1', val: summary.scope1_tonne, color: 'bg-red-500' },
-                      { label: 'Scope 2', val: summary.scope2_tonne, color: 'bg-yellow-500' },
-                      { label: 'Scope 3', val: summary.scope3_tonne, color: 'bg-blue-500' },
-                    ].map(s => {
-                      const pct = summary.total_tonne > 0 ? (s.val / summary.total_tonne * 100) : 0;
-                      return (
-                        <div key={s.label}>
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-700">{s.label}</span>
-                            <span className="text-sm text-gray-600">{s.val.toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div className={`h-3 rounded-full ${s.color} transition-all duration-500`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Monthly Trend */}
-              {summary?.monthly && summary.monthly.some(m => m.total_kg > 0) && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'AYLIK TREND' : 'MONTHLY TREND'}</h3>
-                  <div className="flex items-end gap-1 h-40">
-                    {summary.monthly.map((m, i) => {
-                      const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
-                      const pct = (m.total_kg / maxKg) * 100;
-                      return (
-                        <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                          <span className="text-xs text-gray-500">{m.total_kg > 0 ? (m.total_kg / 1000).toFixed(2) : ''}</span>
-                          <div className="w-full bg-gray-100 rounded-t flex-1 relative" style={{ minHeight: '4px' }}>
-                            <div className="absolute bottom-0 left-0 right-0 bg-primary/70 rounded-t transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 5 : 0)}%` }}></div>
-                          </div>
-                          <span className="text-xs text-gray-400">{months[i]}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Category Breakdown */}
-              {summary?.by_category?.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'KATEGORİ DAĞILIMI' : 'CATEGORY BREAKDOWN'}</h3>
-                  <div className="space-y-3">
-                    {summary.by_category.map(c => (
-                      <div key={c.category} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-700">{categoryLabels[c.category] || c.category}</span>
-                        <span className="text-sm font-semibold">{(c.total_kg / 1000).toFixed(2)} tCO2e</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Progress */}
-              {/* Facility Comparison */}
-              <FacilityChart language={language} selectedYear={selectedYear} />
-
-              {/* Getting Started */}
-              <div className="bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 rounded-xl border border-primary/20 p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Target className="w-6 h-6 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-2">{language === 'tr' ? 'Başlangıç Rehberi' : 'Getting Started'}</h3>
-                    <div className="space-y-2 mb-4">
-                      {[
-                        { done: !!questionnaireProfile?.is_complete, tr: 'Prsşnameyi tamamla', en: 'Complete questionnaire' },
-                        { done: entries.length > 0, tr: 'İlk emisyon verisini gir', en: 'Enter first emission data' },
-                        { done: targets.length > 0, tr: 'Azaltma hedefi belirle', en: 'Set reduction target' },
-                        { done: facilityList.length > 0, tr: 'Tesis ekle', en: 'Add a facility' },
-                      ].map((step, i) => (
-                        <div key={i} className="flex items-center gap-2 text-sm">
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step.done ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'}`}>
-                            {step.done ? '✓' : (i + 1)}
-                          </span>
-                          <span className={step.done ? 'text-gray-500 line-through' : 'text-gray-700'}>{language === 'tr' ? step.tr : step.en}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
-                      <Plus className="w-4 h-4" />{language === 'tr' ? 'Veri Ekle' : 'Add Data'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <DashboardOverview
+              language={language}
+              selectedYear={selectedYear}
+              summary={summary}
+              entries={entries}
+              targets={targets}
+              facilityList={facilityList}
+              questionnaireProfile={questionnaireProfile}
+              setActiveTab={setActiveTab}
+              setShowAddForm={setShowAddForm}
+            />
           )}
 
           {/* ===== EMISSIONS TAB ===== */}
           {activeTab === 'emissions' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Emisyon Yönetimi' : 'Emission Management'}</h1>
-                  <p className="text-gray-600 mt-1">{language === 'tr' ? 'Emisyon verilerinizi girin ve yönetin' : 'Enter and manage your emission data'}</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate">{language === 'tr' ? 'Emisyon Yönetimi' : 'Emission Management'}</h1>
+                  <p className="text-graphite mt-1 text-sm">{language === 'tr' ? 'Emisyon verilerinizi girin ve yönetin' : 'Enter and manage your emission data'}</p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
-                    <Plus className="w-4 h-4" />{language === 'tr' ? 'Yeni Kayıt' : 'New Entry'}
+                <div className="flex gap-2 flex-shrink-0">
+                  <button onClick={() => setShowAddForm(true)} className="px-3 sm:px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-1.5 text-sm">
+                    <Plus className="w-4 h-4" /><span className="hidden xs:inline">{language === 'tr' ? 'Yeni Kayıt' : 'New Entry'}</span><span className="xs:hidden">{language === 'tr' ? 'Ekle' : 'Add'}</span>
                   </button>
-                  <button onClick={() => setShowCustomForm(true)} className="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2">
-                    <Plus className="w-4 h-4" />{language === 'tr' ? 'Özel Talep' : 'Custom Request'}
+                  <button onClick={() => setShowCustomForm(true)} className="px-3 sm:px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-1.5 text-sm">
+                    <Plus className="w-4 h-4" /><span className="hidden sm:inline">{language === 'tr' ? 'Özel Talep' : 'Custom Request'}</span><span className="sm:hidden">{language === 'tr' ? 'Özel' : 'Custom'}</span>
                   </button>
                 </div>
               </div>
@@ -472,9 +328,9 @@ export default function DashboardPage() {
                   value={entrySearch}
                   onChange={e => setEntrySearch(e.target.value)}
                   placeholder={language === 'tr' ? 'Kaynak ara...' : 'Search source...'}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1 min-w-[200px]"
+                  className="px-3 py-2 border border-black/[0.06] rounded-lg text-sm flex-1 min-w-[200px]"
                 />
-                <select value={entryFilterScope} onChange={e => setEntryFilterScope(e.target.value)} className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                <select value={entryFilterScope} onChange={e => setEntryFilterScope(e.target.value)} className="px-3 py-2 border border-black/[0.06] rounded-lg text-sm">
                   <option value="">{language === 'tr' ? 'Tüm Scopelar' : 'All Scopes'}</option>
                   <option value="scope1">Scope 1</option>
                   <option value="scope2">Scope 2</option>
@@ -484,16 +340,16 @@ export default function DashboardPage() {
 
               {/* Add Entry Modal */}
               {showAddForm && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+                  <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 sm:p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-bold">{language === 'tr' ? 'Emisyon Verisi Ekle' : 'Add Emission Data'}</h2>
                       <button onClick={() => setShowAddForm(false)}><X className="w-5 h-5" /></button>
                     </div>
                     <form onSubmit={handleAddEntry} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
-                        <select value={selectedScope} onChange={e => { setSelectedScope(e.target.value); setSelectedCategory(''); setSelectedFactor(''); }} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                        <label className="block text-sm font-medium text-slate mb-1">Scope</label>
+                        <select value={selectedScope} onChange={e => { setSelectedScope(e.target.value); setSelectedCategory(''); setSelectedFactor(''); }} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
                           <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
                           <option value="scope1">Scope 1 – {language === 'tr' ? 'Doğrudan' : 'Direct'}</option>
                           <option value="scope2">Scope 2 – {language === 'tr' ? 'Enerji' : 'Energy'}</option>
@@ -502,8 +358,8 @@ export default function DashboardPage() {
                       </div>
                       {selectedScope && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Kategori' : 'Category'}</label>
-                          <select value={selectedCategory} onChange={e => { setSelectedCategory(e.target.value); setSelectedFactor(''); }} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Kategori' : 'Category'}</label>
+                          <select value={selectedCategory} onChange={e => { setSelectedCategory(e.target.value); setSelectedFactor(''); }} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
                             <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
                             {categories.map(c => <option key={c} value={c}>{categoryLabels[c] || c}</option>)}
                           </select>
@@ -512,8 +368,8 @@ export default function DashboardPage() {
 
                       {selectedCategory && (
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
-                          <select value={selectedFactor} onChange={e => setSelectedFactor(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
+                          <select value={selectedFactor} onChange={e => setSelectedFactor(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
                             <option value="">{language === 'tr' ? 'Seçiniz' : 'Select'}</option>
                             {filteredFactors.map(f => (
                               <option key={f.id} value={f.id}>{language === 'tr' && f.name_tr ? f.name_tr : f.name} ({f.factor_kg_co2e} kg CO2e/{f.unit})</option>
@@ -530,14 +386,14 @@ export default function DashboardPage() {
                       )}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
-                          <select value={entryMonth} onChange={e => setEntryMonth(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
+                          <select value={entryMonth} onChange={e => setEntryMonth(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg">
                             {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} {selectedFactorObj ? `(${selectedFactorObj.unit})` : ''}</label>
-                          <input type="number" step="any" min="0" value={entryQuantity} onChange={e => setEntryQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} {selectedFactorObj ? `(${selectedFactorObj.unit})` : ''}</label>
+                          <input type="number" step="any" min="0" value={entryQuantity} onChange={e => setEntryQuantity(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                         </div>
                       </div>
 
@@ -551,9 +407,9 @@ export default function DashboardPage() {
                         </div>
                       )}
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
                         {facilityList.length > 0 ? (
-                          <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <select value={entryFacility} onChange={e => setEntryFacility(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg">
                             <option value="">{language === 'tr' ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
                             {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
                           </select>
@@ -567,12 +423,12 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
-                        <textarea value={entryDescription} onChange={e => setEntryDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                        <textarea value={entryDescription} onChange={e => setEntryDescription(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" rows={2} />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Kanıt Belgesi' : 'Proof Document'}</label>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary transition-colors">
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Kanıt Belgesi' : 'Proof Document'}</label>
+                        <div className="border-2 border-dashed border-black/[0.06] rounded-lg p-4 text-center hover:border-primary transition-colors">
                           {entryFile ? (
                             <div className="flex items-center justify-between bg-green-50 rounded-lg p-2">
                               <span className="text-sm text-green-800 truncate">📎 {entryFile.name}</span>
@@ -588,9 +444,9 @@ export default function DashboardPage() {
                                 className="hidden"
                               />
                               <label htmlFor="proof-upload" className="cursor-pointer">
-                                <div className="text-gray-400 mb-1">📄</div>
-                                <p className="text-sm text-gray-600">{language === 'tr' ? 'Fatura, sayaç okuma veya belge yükleyin' : 'Upload invoice, meter reading or document'}</p>
-                                <p className="text-xs text-gray-400 mt-1">PDF, JPG, PNG, DOC, XLS</p>
+                                <div className="text-graphite/60 mb-1">📄</div>
+                                <p className="text-sm text-graphite">{language === 'tr' ? 'Fatura, sayaç okuma veya belge yükleyin' : 'Upload invoice, meter reading or document'}</p>
+                                <p className="text-xs text-graphite/60 mt-1">PDF, JPG, PNG, DOC, XLS</p>
                               </label>
                             </>
                           )}
@@ -607,54 +463,54 @@ export default function DashboardPage() {
 
               {/* Custom Request Modal */}
               {showCustomForm && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+                  <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-5 sm:p-6">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-xl font-bold">{language === 'tr' ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
                       <button onClick={() => setShowCustomForm(false)}><X className="w-5 h-5" /></button>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">{language === 'tr' ? 'Listede olmayan bir emisyon kaynağı mı var? Bilgileri girin, admin inceleyip onaylasın.' : 'Emission source not in the list? Enter details and admin will review.'}</p>
+                    <p className="text-sm text-graphite mb-4">{language === 'tr' ? 'Listede olmayan bir emisyon kaynağı mı var? Bilgileri girin, admin inceleyip onaylasın.' : 'Emission source not in the list? Enter details and admin will review.'}</p>
                     <form onSubmit={handleCustomRequest} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Scope</label>
-                        <select value={customScope} onChange={e => setCustomScope(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required>
+                        <label className="block text-sm font-medium text-slate mb-1">Scope</label>
+                        <select value={customScope} onChange={e => setCustomScope(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required>
                           <option value="scope1">Scope 1 – {language === 'tr' ? 'Doğrudan' : 'Direct'}</option>
                           <option value="scope2">Scope 2 – {language === 'tr' ? 'Enerji' : 'Energy'}</option>
                           <option value="scope3">Scope 3 – {language === 'tr' ? 'Dolaylı' : 'Indirect'}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Kategori Adı' : 'Category Name'} *</label>
-                        <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder={language === 'tr' ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Kategori Adı' : 'Category Name'} *</label>
+                        <input type="text" value={customCategory} onChange={e => setCustomCategory(e.target.value)} placeholder={language === 'tr' ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
-                        <input type="text" value={customSource} onChange={e => setCustomSource(e.target.value)} placeholder={language === 'tr' ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
+                        <input type="text" value={customSource} onChange={e => setCustomSource(e.target.value)} placeholder={language === 'tr' ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'} *</label>
-                        <textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder={language === 'tr' ? 'Detaylı açıklama yazın...' : 'Write detailed description...'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={3} required />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Açıklama' : 'Description'} *</label>
+                        <textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder={language === 'tr' ? 'Detaylı açıklama yazın...' : 'Write detailed description...'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" rows={3} required />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Birim' : 'Unit'} *</label>
-                          <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} placeholder={language === 'tr' ? 'Örn: litre, kg, kWh' : 'e.g. liters, kg, kWh'} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Birim' : 'Unit'} *</label>
+                          <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} placeholder={language === 'tr' ? 'Örn: litre, kg, kWh' : 'e.g. liters, kg, kWh'} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} *</label>
-                          <input type="number" step="any" value={customQuantity} onChange={e => setCustomQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} *</label>
+                          <input type="number" step="any" value={customQuantity} onChange={e => setCustomQuantity(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
-                          <select value={customMonth} onChange={e => setCustomMonth(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Ay' : 'Month'}</label>
+                          <select value={customMonth} onChange={e => setCustomMonth(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg">
                             {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                          <input type="text" value={customFacility} onChange={e => setCustomFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                          <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                          <input type="text" value={customFacility} onChange={e => setCustomFacility(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" />
                         </div>
                       </div>
                       <button type="submit" disabled={customSubmitting} className="w-full py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors disabled:opacity-60">
@@ -667,14 +523,14 @@ export default function DashboardPage() {
 
               {/* Custom Requests List */}
               {customRequests.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'Özel Talepleriniz' : 'Your Custom Requests'}</h3>
+                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+                  <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'Özel Talepleriniz' : 'Your Custom Requests'}</h3>
                   <div className="space-y-3">
                     {customRequests.map(cr => (
-                      <div key={cr.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={cr.id} className="flex items-center justify-between p-3 bg-mist rounded-lg">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{cr.source_name}</p>
-                          <p className="text-xs text-gray-500">{cr.category_name} · {cr.quantity} {cr.unit}</p>
+                          <p className="text-sm font-medium text-slate">{cr.source_name}</p>
+                          <p className="text-xs text-graphite">{cr.category_name} · {cr.quantity} {cr.unit}</p>
                         </div>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${cr.status === 'approved' ? 'bg-green-100 text-green-700' : cr.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                           {cr.status === 'approved' ? (language === 'tr' ? 'Onaylandı' : 'Approved') : cr.status === 'rejected' ? (language === 'tr' ? 'Reddedildi' : 'Rejected') : (language === 'tr' ? 'Beklemede' : 'Pending')}
@@ -688,37 +544,36 @@ export default function DashboardPage() {
 
               {/* Entries Table */}
               {entries.length === 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-12 text-center">
                   <Leaf className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</h3>
-                  <p className="text-gray-600 mb-4">{language === 'tr' ? 'Emisyon verisi ekleyerek başlayın' : 'Start by adding emission data'}</p>
+                  <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'Henüz veri yok' : 'No data yet'}</h3>
+                  <p className="text-graphite mb-4">{language === 'tr' ? 'Emisyon verisi ekleyerek başlayın' : 'Start by adding emission data'}</p>
                   <button onClick={() => setShowAddForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors inline-flex items-center gap-2">
                     <Plus className="w-4 h-4" />{language === 'tr' ? 'İlk Kaydı Ekle' : 'Add First Entry'}
                   </button>
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="overflow-x-auto -mx-0">
-                    <table className="w-full text-sm min-w-[640px]">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <table className="w-full min-w-[760px] text-sm">
+                      <thead className="bg-mist border-b border-black/[0.04]">
                         <tr>
-                          <th className="text-left px-4 py-3 font-medium text-gray-600">{language === 'tr' ? 'Kaynak' : 'Source'}</th>
-                          <th className="text-left px-4 py-3 font-medium text-gray-600">Scope</th>
-                          <th className="text-left px-4 py-3 font-medium text-gray-600">{language === 'tr' ? 'Ay' : 'Month'}</th>
-                          <th className="text-right px-4 py-3 font-medium text-gray-600">{language === 'tr' ? 'Miktar' : 'Qty'}</th>
-                          <th className="text-right px-4 py-3 font-medium text-gray-600">kg CO2e</th>
-                          <th className="text-right px-4 py-3 font-medium text-gray-600">tCO2e</th>
+                          <th className="text-left px-4 py-3 font-medium text-graphite">{language === 'tr' ? 'Kaynak' : 'Source'}</th>
+                          <th className="text-left px-4 py-3 font-medium text-graphite">Scope</th>
+                          <th className="text-left px-4 py-3 font-medium text-graphite">{language === 'tr' ? 'Ay' : 'Month'}</th>
+                          <th className="text-right px-4 py-3 font-medium text-graphite">{language === 'tr' ? 'Miktar' : 'Qty'}</th>
+                          <th className="text-right px-4 py-3 font-medium text-graphite">kg CO2e</th>
+                          <th className="text-right px-4 py-3 font-medium text-graphite">tCO2e</th>
                           <th className="px-4 py-3"></th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody className="divide-y divide-slate-100">
                         {entries.filter(entry => {
                           const name = (language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name) || '';
                           const matchSearch = !entrySearch || name.toLowerCase().includes(entrySearch.toLowerCase());
                           const matchScope = !entryFilterScope || entry.scope === entryFilterScope;
                           return matchSearch && matchScope;
                         }).map(entry => (
-                          <tr key={entry.id} className="hover:bg-gray-50">
+                          <tr key={entry.id} className="hover:bg-mist">
                             <td className="px-4 py-3">{language === 'tr' && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}</td>
                             <td className="px-4 py-3"><span className={`px-2 py-0.5 rounded text-xs font-medium ${entry.scope === 'scope1' ? 'bg-red-100 text-red-700' : entry.scope === 'scope2' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}>{scopeLabel(entry.scope)}</span></td>
                             <td className="px-4 py-3">{months[entry.month - 1]}</td>
@@ -726,41 +581,40 @@ export default function DashboardPage() {
                             <td className="px-4 py-3 text-right font-medium">{parseFloat(entry.calculated_co2e_kg).toLocaleString(undefined, {maximumFractionDigits: 2})}</td>
                             <td className="px-4 py-3 text-right">{(parseFloat(entry.calculated_co2e_kg) / 1000).toFixed(4)}</td>
                             <td className="px-4 py-3 text-right flex gap-1 justify-end">
-                              <button onClick={() => { setEditingEntry(entry); setEditQuantity(entry.quantity); setEditDescription(entry.description || ''); setEditFacility(entry.facility || ''); }} className="text-gray-400 hover:text-primary"><Pencil className="w-4 h-4" /></button>
+                              <button onClick={() => { setEditingEntry(entry); setEditQuantity(entry.quantity); setEditDescription(entry.description || ''); setEditFacility(entry.facility || ''); }} className="text-graphite/60 hover:text-primary"><Pencil className="w-4 h-4" /></button>
                               <button onClick={() => handleDeleteEntry(entry.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  </div>
                 </div>
               )}
               {/* Edit Entry Modal */}
               {editingEntry && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                  <div className="bg-white rounded-2xl w-full max-w-md p-6">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-sm">
+                  <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white p-5 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-lg font-bold">{language === 'tr' ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
                       <button onClick={() => setEditingEntry(null)}><X className="w-5 h-5" /></button>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">{language === 'tr' && editingEntry.emission_factor_name_tr ? editingEntry.emission_factor_name_tr : editingEntry.emission_factor_name}</p>
+                    <p className="text-sm text-graphite mb-4">{language === 'tr' && editingEntry.emission_factor_name_tr ? editingEntry.emission_factor_name_tr : editingEntry.emission_factor_name}</p>
                     <form onSubmit={handleEditEntry} className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} ({editingEntry.unit})</label>
-                        <input type="number" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Miktar' : 'Quantity'} ({editingEntry.unit})</label>
+                        <input type="number" step="any" value={editQuantity} onChange={e => setEditQuantity(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
-                        <input type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Tesis' : 'Facility'}</label>
+                        <input type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
-                        <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" rows={2} />
+                        <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Açıklama' : 'Description'}</label>
+                        <textarea value={editDescription} onChange={e => setEditDescription(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" rows={2} />
                       </div>
                       <div className="flex gap-2">
                         <button type="submit" className="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-secondary">{language === 'tr' ? 'Kaydet' : 'Save'}</button>
-                        <button type="button" onClick={() => setEditingEntry(null)} className="flex-1 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+                        <button type="button" onClick={() => setEditingEntry(null)} className="flex-1 py-2 border border-black/[0.06] rounded-lg hover:bg-mist">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
                       </div>
                     </form>
                   </div>
@@ -777,64 +631,64 @@ export default function DashboardPage() {
           {/* ===== REDUCTION TARGETS TAB ===== */}
           {activeTab === 'reduction' && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Azaltma Hedefleri' : 'Reduction Targets'}</h1>
-                  <p className="text-gray-600 mt-1">{language === 'tr' ? 'Karbon azaltma hedeflerinizi belirleyin' : 'Set your carbon reduction targets'}</p>
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate">{language === 'tr' ? 'Azaltma Hedefleri' : 'Reduction Targets'}</h1>
+                  <p className="text-graphite mt-1 text-sm">{language === 'tr' ? 'Karbon azaltma hedeflerinizi belirleyin' : 'Set your carbon reduction targets'}</p>
                 </div>
-                <button onClick={() => setShowTargetForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2">
+                <button onClick={() => setShowTargetForm(true)} className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 text-sm self-start sm:self-auto">
                   <Plus className="w-4 h-4" />{language === 'tr' ? 'Hedef Ekle' : 'Add Target'}
                 </button>
               </div>
 
               {showTargetForm && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
                   <h3 className="font-semibold mb-4">{language === 'tr' ? 'Yeni Hedef' : 'New Target'}</h3>
                   <form onSubmit={handleAddTarget} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Başlık' : 'Title'}</label>
-                      <input type="text" value={targetTitle} onChange={e => setTargetTitle(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Başlık' : 'Title'}</label>
+                      <input type="text" value={targetTitle} onChange={e => setTargetTitle(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</label>
-                      <input type="number" value={targetBaseYear} onChange={e => setTargetBaseYear(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</label>
+                      <input type="number" value={targetBaseYear} onChange={e => setTargetBaseYear(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Hedef Yıl' : 'Target Year'}</label>
-                      <input type="number" value={targetYear} onChange={e => setTargetYear(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Hedef Yıl' : 'Target Year'}</label>
+                      <input type="number" value={targetYear} onChange={e => setTargetYear(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Baz Emisyon (tCO2e)' : 'Base Emissions (tCO2e)'}</label>
-                      <input type="number" step="any" value={targetBaseEmissions} onChange={e => setTargetBaseEmissions(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Baz Emisyon (tCO2e)' : 'Base Emissions (tCO2e)'}</label>
+                      <input type="number" step="any" value={targetBaseEmissions} onChange={e => setTargetBaseEmissions(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{language === 'tr' ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'}</label>
-                      <input type="number" step="any" value={targetReductionPercent} onChange={e => setTargetReductionPercent(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" required />
+                      <label className="block text-sm font-medium text-slate mb-1">{language === 'tr' ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'}</label>
+                      <input type="number" step="any" value={targetReductionPercent} onChange={e => setTargetReductionPercent(e.target.value)} className="w-full px-3 py-2 border border-black/[0.06] rounded-lg" required />
                     </div>
                     <div className="md:col-span-2 flex gap-3">
                       <button type="submit" className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-secondary">{language === 'tr' ? 'Kaydet' : 'Save'}</button>
-                      <button type="button" onClick={() => setShowTargetForm(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+                      <button type="button" onClick={() => setShowTargetForm(false)} className="px-6 py-2 border border-black/[0.06] rounded-lg hover:bg-mist">{language === 'tr' ? 'İptal' : 'Cancel'}</button>
                     </div>
                   </form>
                 </div>
               )}
 
               {targets.length === 0 && !showTargetForm ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-12 text-center">
                   <Target className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{language === 'tr' ? 'Henüz hedef yok' : 'No targets yet'}</h3>
-                  <p className="text-gray-600">{language === 'tr' ? 'Karbon azaltma hedefi belirleyin' : 'Set a carbon reduction target'}</p>
+                  <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'Henüz hedef yok' : 'No targets yet'}</h3>
+                  <p className="text-graphite">{language === 'tr' ? 'Karbon azaltma hedefi belirleyin' : 'Set a carbon reduction target'}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {targets.map(tgt => (
-                    <div key={tgt.id} className="bg-white rounded-xl border border-gray-200 p-6">
-                      <h4 className="font-semibold text-gray-900 mb-2">{tgt.title}</h4>
+                    <div key={tgt.id} className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+                      <h4 className="font-semibold text-slate mb-2">{tgt.title}</h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div><span className="text-gray-500">{language === 'tr' ? 'Baz Yıl:' : 'Base:'}</span> {tgt.base_year}</div>
-                        <div><span className="text-gray-500">{language === 'tr' ? 'Hedef:' : 'Target:'}</span> {tgt.target_year}</div>
-                        <div><span className="text-gray-500">{language === 'tr' ? 'Baz Emisyon:' : 'Base:'}</span> {(tgt.base_emissions_kg / 1000).toFixed(1)} t</div>
-                        <div><span className="text-gray-500">{language === 'tr' ? 'Azaltma:' : 'Reduction:'}</span> {tgt.target_reduction_percent}%</div>
+                        <div><span className="text-graphite">{language === 'tr' ? 'Baz Yıl:' : 'Base:'}</span> {tgt.base_year}</div>
+                        <div><span className="text-graphite">{language === 'tr' ? 'Hedef:' : 'Target:'}</span> {tgt.target_year}</div>
+                        <div><span className="text-graphite">{language === 'tr' ? 'Baz Emisyon:' : 'Base:'}</span> {(tgt.base_emissions_kg / 1000).toFixed(1)} t</div>
+                        <div><span className="text-graphite">{language === 'tr' ? 'Azaltma:' : 'Reduction:'}</span> {tgt.target_reduction_percent}%</div>
                       </div>
                       <div className="mt-3">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${tgt.status === 'on_track' ? 'bg-green-100 text-green-700' : tgt.status === 'succeeded' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
@@ -852,32 +706,32 @@ export default function DashboardPage() {
           {activeTab === 'reporting' && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{language === 'tr' ? 'Raporlama' : 'Reporting'}</h1>
-                <p className="text-gray-600 mt-1">{language === 'tr' ? 'ISO 14064-1 uyumlu raporlar' : 'ISO 14064-1 compliant reports'}</p>
+                <h1 className="text-2xl font-bold text-slate">{language === 'tr' ? 'Raporlama' : 'Reporting'}</h1>
+                <p className="text-graphite mt-1">{language === 'tr' ? 'ISO 14064-1 uyumlu raporlar' : 'ISO 14064-1 compliant reports'}</p>
               </div>
 
               {/* Summary Stats */}
-              <div className="bg-white rounded-xl border border-gray-200 p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                  <div className="py-8">
-                    <div className="text-5xl font-bold text-gray-900 mb-2">{entries.length}</div>
-                    <p className="text-sm text-gray-600">{language === 'tr' ? 'Toplam Kayıt' : 'Total Entries'}</p>
+              <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
+                  <div className="py-4 sm:py-8">
+                    <div className="text-3xl sm:text-5xl font-bold text-slate mb-2">{entries.length}</div>
+                    <p className="text-sm text-graphite">{language === 'tr' ? 'Toplam Kayıt' : 'Total Entries'}</p>
                   </div>
-                  <div className="py-8 md:border-x border-gray-200">
-                    <div className="text-5xl font-bold text-gray-900 mb-2">{summary?.total_tonne?.toFixed(1) || '0'}</div>
-                    <p className="text-sm text-gray-600">{language === 'tr' ? 'Toplam tCO2e' : 'Total tCO2e'}</p>
+                  <div className="py-4 sm:py-8 sm:border-x border-t sm:border-t-0 border-black/[0.04]">
+                    <div className="text-3xl sm:text-5xl font-bold text-slate mb-2">{summary?.total_tonne?.toFixed(1) || '0'}</div>
+                    <p className="text-sm text-graphite">{language === 'tr' ? 'Toplam tCO2e' : 'Total tCO2e'}</p>
                   </div>
-                  <div className="py-8">
-                    <div className="text-5xl font-bold text-gray-900 mb-2">{targets.length}</div>
-                    <p className="text-sm text-gray-600">{language === 'tr' ? 'Aktif Hedef' : 'Active Targets'}</p>
+                  <div className="py-4 sm:py-8 border-t sm:border-t-0 border-black/[0.04]">
+                    <div className="text-3xl sm:text-5xl font-bold text-slate mb-2">{targets.length}</div>
+                    <p className="text-sm text-graphite">{language === 'tr' ? 'Aktif Hedef' : 'Active Targets'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Questionnaire Profile - Inventory Configuration */}
               {questionnaireProfile?.is_complete && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+                  <h3 className="font-semibold text-slate mb-4 flex items-center gap-2">
                     <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                       <FileText className="w-4 h-4 text-primary" />
                     </div>
@@ -885,31 +739,31 @@ export default function DashboardPage() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {/* Reporting Period */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Raporlama Dönemi' : 'Reporting Period'}</p>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="bg-mist rounded-lg p-4">
+                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Raporlama Dönemi' : 'Reporting Period'}</p>
+                      <p className="text-sm font-medium text-slate">
                         {questionnaireProfile.period_type === 'calendar_year' && `${language === 'tr' ? 'Takvim Yılı' : 'Calendar Year'}: ${questionnaireProfile.period_year || ''}`}
                         {questionnaireProfile.period_type === 'fiscal_year' && (language === 'tr' ? 'Mali Yıl' : 'Fiscal Year')}
                         {questionnaireProfile.period_type === 'custom' && (language === 'tr' ? 'Özel Dönem' : 'Custom Period')}
                       </p>
                     </div>
                     {/* Base Year */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</p>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="bg-mist rounded-lg p-4">
+                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Baz Yıl' : 'Base Year'}</p>
+                      <p className="text-sm font-medium text-slate">
                         {questionnaireProfile.has_base_year ? questionnaireProfile.base_year : (language === 'tr' ? 'Belirlenmedi' : 'Not set')}
                       </p>
                     </div>
                     {/* Factor Source */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Emisyon Faktör Kaynağı' : 'Emission Factor Source'}</p>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="bg-mist rounded-lg p-4">
+                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Emisyon Faktör Kaynağı' : 'Emission Factor Source'}</p>
+                      <p className="text-sm font-medium text-slate">
                         {{ national: language === 'tr' ? 'Ulusal Kaynaklar' : 'National Sources', defra: 'DEFRA', ipcc: 'IPCC', mixed: language === 'tr' ? 'Karışık' : 'Mixed', unsure: language === 'tr' ? 'Belirsiz' : 'Unsure' }[questionnaireProfile.preferred_factor_source] || questionnaireProfile.preferred_factor_source}
                       </p>
                     </div>
                     {/* Purpose */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Amaç' : 'Purpose'}</p>
+                    <div className="bg-mist rounded-lg p-4">
+                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Amaç' : 'Purpose'}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {(questionnaireProfile.purposes || []).map(p => (
                           <span key={p} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
@@ -919,16 +773,16 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     {/* Verification */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? '3. Taraf Doğrulama' : '3rd Party Verification'}</p>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="bg-mist rounded-lg p-4">
+                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? '3. Taraf Doğrulama' : '3rd Party Verification'}</p>
+                      <p className="text-sm font-medium text-slate">
                         {questionnaireProfile.verification_planned ? `✅ ${language === 'tr' ? 'Planlandı' : 'Planned'}${questionnaireProfile.verification_date ? ` (${questionnaireProfile.verification_date})` : ''}` : questionnaireProfile.verification_within_12m ? `📅 ${language === 'tr' ? '12 ay içinde' : 'Within 12 months'}` : `❌ ${language === 'tr' ? 'Plan yok' : 'No plan'}`}
                       </p>
                     </div>
                     {/* Report Language */}
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-xs text-gray-500 mb-1">{language === 'tr' ? 'Rapor Dili' : 'Report Language'}</p>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="bg-mist rounded-lg p-4">
+                      <p className="text-xs text-graphite mb-1">{language === 'tr' ? 'Rapor Dili' : 'Report Language'}</p>
+                      <p className="text-sm font-medium text-slate">
                         {{ tr: language === 'tr' ? 'Türkçe' : 'Turkish', en: language === 'tr' ? 'İngilizce' : 'English', bilingual: language === 'tr' ? 'Çift Dilli' : 'Bilingual' }[questionnaireProfile.report_language] || questionnaireProfile.report_language}
                       </p>
                     </div>
@@ -961,8 +815,8 @@ export default function DashboardPage() {
 
               {/* Scope Breakdown for Report */}
               {entries.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-4">{language === 'tr' ? 'Kapsam Dağılımı (Rapor Özeti)' : 'Scope Breakdown (Report Summary)'}</h3>
+                <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
+                  <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'Kapsam Dağılımı (Rapor Özeti)' : 'Scope Breakdown (Report Summary)'}</h3>
                   <div className="space-y-4">
                     {['scope1', 'scope2', 'scope3'].map(scope => {
                       const scopeTotal = scope === 'scope1' ? summary?.scope1_tonne : scope === 'scope2' ? summary?.scope2_tonne : summary?.scope3_tonne;
@@ -970,10 +824,10 @@ export default function DashboardPage() {
                       return (
                         <div key={scope}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-700">{scope === 'scope1' ? 'Scope 1' : scope === 'scope2' ? 'Scope 2' : 'Scope 3'}</span>
-                            <span className="text-sm text-gray-600">{(scopeTotal || 0).toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
+                            <span className="text-sm font-medium text-slate">{scope === 'scope1' ? 'Scope 1' : scope === 'scope2' ? 'Scope 2' : 'Scope 3'}</span>
+                            <span className="text-sm text-graphite">{(scopeTotal || 0).toFixed(2)} tCO2e ({pct.toFixed(1)}%)</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div className="w-full bg-mist rounded-full h-2.5">
                             <div className={`h-2.5 rounded-full ${scope === 'scope1' ? 'bg-red-500' : scope === 'scope2' ? 'bg-yellow-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
                           </div>
                         </div>
@@ -983,11 +837,11 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+              <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6 sm:p-8 text-center">
                 <FileText className="w-12 h-12 text-primary mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{language === 'tr' ? 'ISO 14064-1 PDF Rapor' : 'ISO 14064-1 PDF Report'}</h3>
-                <p className="text-gray-600 mb-6">{language === 'tr' ? 'Scope dağılımı, kategori detayları, metodoloji ve referanslar dahil profesyonel rapor.' : 'Professional report with scope breakdown, category details, methodology and references.'}</p>
-                <div className="flex justify-center gap-3">
+                <h3 className="text-lg font-semibold text-slate mb-2">{language === 'tr' ? 'ISO 14064-1 PDF Rapor' : 'ISO 14064-1 PDF Report'}</h3>
+                <p className="text-graphite mb-6 text-sm sm:text-base">{language === 'tr' ? 'Scope dağılımı, kategori detayları, metodoloji ve referanslar dahil profesyonel rapor.' : 'Professional report with scope breakdown, category details, methodology and references.'}</p>
+                <div className="flex flex-wrap justify-center gap-3">
                   <button
                     onClick={() => {
                       setPdfLoading('tr');
@@ -1000,7 +854,7 @@ export default function DashboardPage() {
                         .finally(() => setPdfLoading(''));
                     }}
                     disabled={pdfLoading === 'tr'}
-                    className="px-6 py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 disabled:opacity-60"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-white rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 disabled:opacity-60 text-sm"
                   >
                     <FileText className="w-4 h-4" /> {pdfLoading === 'tr' ? (language === 'tr' ? 'Hazırlanıyor...' : 'Generating...') : 'Türkçe PDF'}
                   </button>
@@ -1016,7 +870,7 @@ export default function DashboardPage() {
                         .finally(() => setPdfLoading(''));
                     }}
                     disabled={pdfLoading === 'en'}
-                    className="px-6 py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2 disabled:opacity-60"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 border border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors flex items-center gap-2 disabled:opacity-60 text-sm"
                   >
                     <FileText className="w-4 h-4" /> {pdfLoading === 'en' ? (language === 'tr' ? 'Hazırlanıyor...' : 'Generating...') : 'English PDF'}
                   </button>
@@ -1028,7 +882,7 @@ export default function DashboardPage() {
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.csv`; a.click(); });
                     }}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 border border-black/[0.06] text-slate rounded-lg hover:bg-mist transition-colors flex items-center gap-2 text-sm"
                   >
                     <FileText className="w-4 h-4" /> CSV Export
                   </button>
@@ -1040,7 +894,7 @@ export default function DashboardPage() {
                         .then(r => r.blob())
                         .then(blob => { const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `emissions_${selectedYear}.xlsx`; a.click(); });
                     }}
-                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 border border-black/[0.06] text-slate rounded-lg hover:bg-mist transition-colors flex items-center gap-2 text-sm"
                   >
                     <FileText className="w-4 h-4" /> Excel Export
                   </button>
@@ -1056,11 +910,9 @@ export default function DashboardPage() {
 
           {/* ===== AI CARBON TAB ===== */}
           {activeTab === 'ai_carbon' && (
-            <div className="h-[calc(100vh-10rem)]">
-              <Chatbot language={language} onComplete={fetchData} embedded={true} />
-            </div>
+            <CarbonAIPage language={language} />
           )}
-            </>
+            </div>
           )}
         </main>
       </div>
@@ -1070,3 +922,18 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+function MetricCard({ title, value, unit, subtitle }) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">{title}</p>
+      <div className="mt-4 flex items-end gap-2">
+        <span className="text-3xl font-bold tracking-tight text-slate-950">{value}</span>
+        <span className="mb-1 text-sm font-semibold text-slate-400">{unit}</span>
+      </div>
+      <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+    </div>
+  );
+}
+
+

@@ -1,5 +1,8 @@
 'use client';
-import { LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X, ClipboardCheck, Bot } from 'lucide-react';
+import {
+  LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
+  ClipboardCheck, Bot, ChevronRight,
+} from 'lucide-react';
 import NextLink from 'next/link';
 
 export default function DashboardSidebar({ language, activeTab, setActiveTab, user, sidebarOpen, setSidebarOpen, onLogout }) {
@@ -13,44 +16,71 @@ export default function DashboardSidebar({ language, activeTab, setActiveTab, us
     { key: 'settings', icon: Settings, label: language === 'tr' ? 'Ayarlar' : 'Settings' },
   ];
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <>
-      <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-        <div className="h-full flex flex-col">
-          <div className="h-16 flex items-center justify-between px-6 border-b border-gray-200">
-            <NextLink href="/" className="flex items-center gap-2">
-              <img src="/carbonless.png" alt="Carbonless" className="h-14 w-auto" />
-              <span className="font-bold text-lg gradient-text">Carbonless</span>
+      <aside className={`fixed inset-y-0 left-0 z-50 w-[260px] transform bg-white border-r border-[#302817]/6 transition-transform duration-300 lg:static lg:translate-x-0 ${sidebarOpen ? 'translate-x-0 shadow-[0_8px_30px_rgba(48,40,23,0.12)]' : '-translate-x-full'}`}>
+        <div className="flex h-full flex-col">
+          {/* Logo */}
+          <div className="flex h-16 items-center justify-between border-b border-[#302817]/6 px-4">
+            <NextLink href="/" className="flex min-w-0 items-center gap-2.5">
+              <img src="/carbonless.png" alt="Carbonless" className="h-8 w-auto shrink-0" />
+              <span className="truncate text-base font-bold tracking-tight text-[#302817]">Carbonless</span>
             </NextLink>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden"><X className="w-5 h-5" /></button>
+            <button onClick={closeSidebar} className="flex h-8 w-8 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/5 lg:hidden">
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {sidebarItems.map(item => (
-              <button key={item.key} onClick={() => setActiveTab(item.key)} aria-label={item.label} aria-current={activeTab === item.key ? 'page' : undefined}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${activeTab === item.key ? 'bg-primary/10 text-primary' : 'text-gray-600 hover:bg-gray-50'}`}>
-                <item.icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-              </button>
-            ))}
+
+          {/* Nav */}
+          <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#8F92A1]">
+              {language === 'tr' ? 'Çalışma Alanı' : 'Workspace'}
+            </p>
+            {sidebarItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeTab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => { setActiveTab(item.key); closeSidebar(); }}
+                  aria-current={active ? 'page' : undefined}
+                  className={`group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition ${
+                    active
+                      ? 'bg-[#302817] text-white shadow-[0_4px_12px_rgba(48,40,23,0.15)]'
+                      : 'text-[#302817]/65 hover:bg-[#8F92A1]/8 hover:text-[#302817]'
+                  }`}
+                >
+                  <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-white' : 'text-[#8F92A1]'}`} />
+                  <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{item.label}</span>
+                  {active && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />}
+                </button>
+              );
+            })}
           </nav>
-          <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-semibold">
+
+          {/* User */}
+          <div className="border-t border-[#302817]/6 p-3">
+            <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-[#F8F8F8] px-3 py-2.5">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#302817] text-[11px] font-bold text-white">
                 {user?.username?.[0]?.toUpperCase() || 'A'}
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-900">{user?.username || 'User'}</p>
-                <p className="text-xs text-gray-500">{user?.email || ''}</p>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[13px] font-bold text-[#302817]">{user?.username || 'User'}</p>
+                <p className="truncate text-[11px] text-[#302817]/45">{user?.email || ''}</p>
               </div>
             </div>
-            <button onClick={onLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-              <LogOut className="w-4 h-4" />
-              <span>{language === 'tr' ? 'Çıkış Yap' : 'Logout'}</span>
+            <button onClick={onLogout} className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-red-500 transition hover:bg-red-50">
+              <LogOut className="h-3.5 w-3.5" />{language === 'tr' ? 'Çıkış' : 'Logout'}
             </button>
           </div>
         </div>
       </aside>
-      {sidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/50 z-40 lg:hidden" />}
+
+      {sidebarOpen && (
+        <button type="button" aria-label="Close sidebar overlay" onClick={closeSidebar} className="fixed inset-0 z-40 bg-[#302817]/25 backdrop-blur-sm lg:hidden" />
+      )}
     </>
   );
 }
