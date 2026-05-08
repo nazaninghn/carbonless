@@ -10,6 +10,16 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
+const TAB_LABELS = {
+  dashboard: { tr: 'Kontrol Paneli',    en: 'Dashboard'    },
+  emissions:  { tr: 'Emisyon Yönetimi', en: 'Emissions'    },
+  ai_carbon:  { tr: 'AI Carbon',        en: 'AI Carbon'    },
+  reduction:  { tr: 'Azaltma Hedefleri',en: 'Targets'      },
+  reporting:  { tr: 'Raporlama',        en: 'Reports'      },
+  review:     { tr: 'Onay Bekleyenler', en: 'Review'       },
+  settings:   { tr: 'Ayarlar',          en: 'Settings'     },
+};
+
 export default function DashboardHeader({
   language,
   activeTab,
@@ -50,21 +60,28 @@ export default function DashboardHeader({
         <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#302817]/10 bg-white/70 text-[#302817] shadow-sm transition hover:bg-white lg:hidden"
+            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#302817]/10 bg-white/70 text-[#302817] shadow-sm transition hover:bg-white md:flex lg:hidden"
             aria-label="Open sidebar"
           >
             <Menu className="h-4.5 w-4.5" />
           </button>
-          {/* Back to dashboard on mobile when not on dashboard tab */}
+          {/* Back to dashboard — tablet only (md–lg), bottom nav handles mobile */}
           {activeTab !== 'dashboard' && (
             <button
               onClick={() => setActiveTab('dashboard')}
-              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#302817]/10 bg-white/70 px-3 text-xs font-bold text-[#302817]/60 shadow-sm transition hover:bg-white hover:text-[#302817] lg:hidden"
+              className="hidden h-9 items-center gap-1.5 rounded-xl border border-[#302817]/10 bg-white/70 px-3 text-xs font-bold text-[#302817]/60 shadow-sm transition hover:bg-white hover:text-[#302817] md:flex lg:hidden"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
               {tr ? 'Ana Sayfa' : 'Home'}
             </button>
           )}
+          {/* Mobile: active tab label */}
+          <div className="min-w-0 md:hidden">
+            <p className="truncate text-sm font-bold text-[#302817]">
+              {TAB_LABELS[activeTab]?.[tr ? 'tr' : 'en'] ?? (tr ? 'Kontrol Paneli' : 'Dashboard')}
+            </p>
+          </div>
+          {/* Desktop: workspace label */}
           <div className="hidden min-w-0 lg:block">
             <p className="truncate text-sm font-bold text-[#302817]">
               {tr ? 'Kontrol Paneli' : 'Dashboard'}
