@@ -123,10 +123,19 @@ export const api = {
   // Emission entry update
   updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
 
-  // Questionnaire
-  startQuestionnaire: (lang) => request('/questionnaire/start/', { method: 'POST', body: JSON.stringify({ lang }) }),
-  answerQuestion: (data) => request('/questionnaire/answer/', { method: 'POST', body: JSON.stringify(data) }),
-  getQuestionnaireSessions: () => request('/questionnaire/sessions/'),
-  resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
-  getQuestionnaireProfile: () => request('/questionnaire/profile/'),
+  // Questionnaire — Legacy (old chatbot)
+  startQuestionnaire: (lang) => request('/questionnaire/legacy/start/', { method: 'POST', body: JSON.stringify({ lang }) }),
+  answerQuestion: (data) => request('/questionnaire/legacy/answer/', { method: 'POST', body: JSON.stringify(data) }),
+  getQuestionnaireSessions: () => request('/questionnaire/legacy/sessions/'),
+  resetQuestionnaire: () => request('/questionnaire/legacy/reset/', { method: 'POST' }),
+  getQuestionnaireProfile: () => request('/questionnaire/legacy/profile/'),
+
+  // CarbonIQ — New structured report wizard
+  startCarbonReport: () => request('/questionnaire/start/', { method: 'POST' }),
+  submitReportStep: (reportId, step, data) => request(`/questionnaire/${reportId}/step/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ step, data })
+  }),
+  getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
+  listReports: () => request('/questionnaire/'),
 };

@@ -98,14 +98,14 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
                 className={`w-full text-left px-4 py-2 hover:bg-green-50 text-sm border-b border-gray-100 last:border-0 flex items-center gap-2 ${isSelected ? 'bg-green-50' : ''}`}
               >
                 <span>{c.flag}</span>
-                <span className="text-gray-900">{c[lang]}</span>
-                <span className="text-gray-400 text-xs ml-auto">{c.code}</span>
+                <span className="text-slate">{c[lang]}</span>
+                <span className="text-graphite/60 text-xs ml-auto">{c.code}</span>
                 {isSelected && <span className="text-green-500">✓</span>}
               </button>
             );
           })}
           {filtered.length === 0 && (
-            <div className="px-4 py-3 text-sm text-gray-500">{language === 'tr' ? 'Sonuç bulunamadı' : 'No results'}</div>
+            <div className="px-4 py-3 text-sm text-graphite">{language === 'tr' ? 'Sonuç bulunamadı' : 'No results'}</div>
           )}
         </div>
       )}

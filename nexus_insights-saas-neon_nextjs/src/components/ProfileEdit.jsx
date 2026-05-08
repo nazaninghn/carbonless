@@ -10,42 +10,76 @@ export default function ProfileEdit({ language, user, onUpdate }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
+  const tr = language === 'tr';
+
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg('');
-    const res = await api.updateProfile({ first_name: firstName, last_name: lastName, phone, department });
+
+    const res = await api.updateProfile({
+      first_name: firstName,
+      last_name: lastName,
+      phone,
+      department,
+    });
+
     if (res.ok) {
-      setMsg(language === 'tr' ? 'Kaydedildi' : 'Saved');
+      setMsg(tr ? 'Kaydedildi' : 'Saved');
       if (onUpdate) onUpdate();
     }
+
     setSaving(false);
   };
 
   return (
-    <form onSubmit={handleSave} className="space-y-3 max-w-md">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Ad' : 'First Name'}</label>
-          <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-        </div>
-        <div>
-          <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Soyad' : 'Last Name'}</label>
-          <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-        </div>
+    <form
+      onSubmit={handleSave}
+      className="w-full max-w-full min-w-0 overflow-hidden"
+    >
+      <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+        <Field label={tr ? 'Ad' : 'First Name'} value={firstName} onChange={setFirstName} />
+        <Field label={tr ? 'Soyad' : 'Last Name'} value={lastName} onChange={setLastName} />
       </div>
-      <div>
-        <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Telefon' : 'Phone'}</label>
-        <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+
+      <div className="mt-3 grid w-full min-w-0 grid-cols-1 gap-3">
+        <Field label={tr ? 'Telefon' : 'Phone'} value={phone} onChange={setPhone} />
+        <Field label={tr ? 'Departman' : 'Department'} value={department} onChange={setDepartment} />
       </div>
-      <div>
-        <label className="block text-xs text-gray-600 mb-1">{language === 'tr' ? 'Departman' : 'Department'}</label>
-        <input type="text" value={department} onChange={e => setDepartment(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
+
+      <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {msg ? (
+          <p className="rounded-full bg-[#B4BE6A]/15 px-3 py-2 text-xs font-bold text-[#75863B]">
+            {msg}
+          </p>
+        ) : (
+          <span />
+        )}
+
+        <button
+          type="submit"
+          disabled={saving}
+          className="w-full rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-lg shadow-[#302817]/10 transition hover:bg-black disabled:opacity-60 sm:w-auto"
+        >
+          {saving ? '...' : tr ? 'Kaydet' : 'Save'}
+        </button>
       </div>
-      {msg && <p className="text-sm text-green-600">{msg}</p>}
-      <button type="submit" disabled={saving} className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-secondary disabled:opacity-60">
-        {saving ? '...' : (language === 'tr' ? 'Kaydet' : 'Save')}
-      </button>
     </form>
+  );
+}
+
+function Field({ label, value, onChange }) {
+  return (
+    <label className="block w-full min-w-0">
+      <span className="mb-1.5 block text-xs font-bold text-[#302817]/55">
+        {label}
+      </span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="block h-11 w-full min-w-0 max-w-full rounded-2xl border border-[#302817]/10 bg-[#F8F8F8] px-4 text-sm font-semibold text-[#302817] outline-none transition placeholder:text-[#302817]/30 focus:border-[#95A847] focus:bg-white focus:ring-4 focus:ring-[#95A847]/15"
+      />
+    </label>
   );
 }

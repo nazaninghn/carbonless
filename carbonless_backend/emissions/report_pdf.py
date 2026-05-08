@@ -1,19 +1,14 @@
 """
-ISO 14064-1 Carbon Inventory PDF Report Generator — Professional Edition
-Generates enterprise-grade PDF reports with:
-  - Branded cover page with green accent
-  - Table of contents
-  - Executive summary with KPI cards
-  - Scope breakdown with visual bars
-  - Category breakdown per scope
-  - Monthly trend table
-  - Detailed emission entries
-  - Facility breakdown
-  - Custom emission entries
-  - Methodology & scope definitions
-  - Emission factor source references
-  - Header/footer on every page with page numbers
-Supports Turkish characters via DejaVuSans / Arial font.
+ISO 14064-1 Carbon Inventory PDF Report Generator — Premium Edition
+Enterprise-grade PDF with:
+  - Elegant branded cover with geometric accents
+  - Executive summary with large KPI display
+  - Scope breakdown with gradient-style bars
+  - Category analysis per scope
+  - Monthly trend visualization
+  - Facility performance breakdown
+  - Methodology & compliance section
+  - Professional header/footer on every page
 """
 import io
 import os
@@ -36,21 +31,29 @@ from companies.utils import get_current_company
 
 
 # ═══════════════════════════════════════════════════════
-# COLORS
+# BRAND COLORS
 # ═══════════════════════════════════════════════════════
-PRIMARY = colors.HexColor('#059669')
-PRIMARY_LIGHT = colors.HexColor('#10b981')
-PRIMARY_BG = colors.HexColor('#ecfdf5')
-GREEN_BG = colors.HexColor('#f0fdf4')
-GRAY_50 = colors.HexColor('#f9fafb')
-GRAY_100 = colors.HexColor('#f3f4f6')
-GRAY_200 = colors.HexColor('#e5e7eb')
-GRAY_400 = colors.HexColor('#9ca3af')
-GRAY_600 = colors.HexColor('#4b5563')
-GRAY_900 = colors.HexColor('#111827')
-SCOPE1 = colors.HexColor('#ef4444')
-SCOPE2 = colors.HexColor('#f59e0b')
-SCOPE3 = colors.HexColor('#3b82f6')
+BRAND_DARK = colors.HexColor('#302817')
+OLIVE = colors.HexColor('#95A847')
+OLIVE_DARK = colors.HexColor('#75863B')
+OLIVE_LIGHT = colors.HexColor('#B4BE6A')
+CREAM = colors.HexColor('#F9EFE5')
+CREAM_LIGHT = colors.HexColor('#FDF8F3')
+
+GRAY_50 = colors.HexColor('#FAFAFA')
+GRAY_100 = colors.HexColor('#F5F5F5')
+GRAY_200 = colors.HexColor('#E5E5E5')
+GRAY_400 = colors.HexColor('#A3A3A3')
+GRAY_600 = colors.HexColor('#525252')
+GRAY_800 = colors.HexColor('#262626')
+
+SCOPE1_COLOR = OLIVE_DARK
+SCOPE1_BG = colors.HexColor('#F2F5E6')
+SCOPE2_COLOR = OLIVE
+SCOPE2_BG = colors.HexColor('#F5F8EA')
+SCOPE3_COLOR = BRAND_DARK
+SCOPE3_BG = colors.HexColor('#F8F6F2')
+
 WHITE = colors.white
 
 
@@ -63,7 +66,6 @@ def _register_fonts():
     global _font_ok
     if _font_ok:
         return
-    # Windows: Arial
     try:
         wd = os.environ.get('WINDIR', 'C:\\Windows')
         a = os.path.join(wd, 'Fonts', 'arial.ttf')
@@ -75,7 +77,6 @@ def _register_fonts():
             return
     except Exception:
         pass
-    # Linux: DejaVuSans
     try:
         d = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
         db = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
@@ -141,50 +142,57 @@ def _styles():
     S = {}
     S['fn'] = fn
     S['fnb'] = fnb
-    S['cover_title'] = ParagraphStyle('ct', fontName=fnb, fontSize=32, textColor=PRIMARY, alignment=TA_CENTER, leading=38)
-    S['cover_sub'] = ParagraphStyle('cs', fontName=fn, fontSize=14, textColor=GRAY_600, alignment=TA_CENTER, leading=18)
-    S['cover_company'] = ParagraphStyle('cc', fontName=fnb, fontSize=20, textColor=GRAY_900, alignment=TA_CENTER, leading=26)
-    S['cover_date'] = ParagraphStyle('cd', fontName=fn, fontSize=10, textColor=GRAY_400, alignment=TA_CENTER)
-    S['h1'] = ParagraphStyle('h1', fontName=fnb, fontSize=16, textColor=PRIMARY, spaceBefore=10, spaceAfter=6, leading=20)
-    S['h2'] = ParagraphStyle('h2', fontName=fnb, fontSize=12, textColor=GRAY_900, spaceBefore=8, spaceAfter=4, leading=16)
-    S['h3'] = ParagraphStyle('h3', fontName=fnb, fontSize=10, textColor=GRAY_600, spaceBefore=4, spaceAfter=3, leading=13)
-    S['body'] = ParagraphStyle('body', fontName=fn, fontSize=9, textColor=GRAY_900, spaceAfter=3, leading=13)
+    S['cover_title'] = ParagraphStyle('ct', fontName=fnb, fontSize=36, textColor=BRAND_DARK, alignment=TA_CENTER, leading=42)
+    S['cover_sub'] = ParagraphStyle('cs', fontName=fn, fontSize=13, textColor=GRAY_600, alignment=TA_CENTER, leading=18)
+    S['cover_company'] = ParagraphStyle('cc', fontName=fnb, fontSize=22, textColor=BRAND_DARK, alignment=TA_CENTER, leading=28)
+    S['cover_date'] = ParagraphStyle('cd', fontName=fn, fontSize=10, textColor=GRAY_400, alignment=TA_CENTER, leading=14)
+    S['cover_badge'] = ParagraphStyle('cb', fontName=fnb, fontSize=9, textColor=OLIVE_DARK, alignment=TA_CENTER, leading=12)
+    S['h1'] = ParagraphStyle('h1', fontName=fnb, fontSize=18, textColor=BRAND_DARK, spaceBefore=12, spaceAfter=8, leading=22)
+    S['h2'] = ParagraphStyle('h2', fontName=fnb, fontSize=12, textColor=OLIVE_DARK, spaceBefore=10, spaceAfter=5, leading=16)
+    S['h3'] = ParagraphStyle('h3', fontName=fnb, fontSize=10, textColor=GRAY_600, spaceBefore=6, spaceAfter=3, leading=13)
+    S['body'] = ParagraphStyle('body', fontName=fn, fontSize=9.5, textColor=GRAY_800, spaceAfter=4, leading=14)
+    S['body_sm'] = ParagraphStyle('body_sm', fontName=fn, fontSize=8.5, textColor=GRAY_600, spaceAfter=3, leading=12)
     S['small'] = ParagraphStyle('small', fontName=fn, fontSize=7.5, textColor=GRAY_400, spaceAfter=2, leading=10)
     S['footer'] = ParagraphStyle('footer', fontName=fn, fontSize=7, textColor=GRAY_400, alignment=TA_CENTER)
-    S['big_num'] = ParagraphStyle('bn', fontName=fnb, fontSize=42, textColor=PRIMARY, alignment=TA_CENTER, leading=48)
-    S['big_label'] = ParagraphStyle('bl', fontName=fn, fontSize=9, textColor=GRAY_600, alignment=TA_CENTER)
-    S['kpi_num'] = ParagraphStyle('kn', fontName=fnb, fontSize=22, textColor=GRAY_900, alignment=TA_CENTER, leading=28)
-    S['kpi_label'] = ParagraphStyle('kl', fontName=fn, fontSize=8, textColor=GRAY_600, alignment=TA_CENTER)
-    S['toc'] = ParagraphStyle('toc', fontName=fn, fontSize=11, textColor=GRAY_900, spaceBefore=6, spaceAfter=6, leading=16)
+    S['big_num'] = ParagraphStyle('bn', fontName=fnb, fontSize=48, textColor=BRAND_DARK, alignment=TA_CENTER, leading=54)
+    S['big_label'] = ParagraphStyle('bl', fontName=fnb, fontSize=9, textColor=OLIVE_DARK, alignment=TA_CENTER, leading=12)
+    S['kpi_num'] = ParagraphStyle('kn', fontName=fnb, fontSize=24, textColor=BRAND_DARK, alignment=TA_CENTER, leading=30)
+    S['kpi_label'] = ParagraphStyle('kl', fontName=fn, fontSize=8, textColor=GRAY_600, alignment=TA_CENTER, leading=11)
+    S['kpi_pct'] = ParagraphStyle('kp', fontName=fnb, fontSize=8, textColor=OLIVE, alignment=TA_CENTER, leading=11)
+    S['toc'] = ParagraphStyle('toc', fontName=fn, fontSize=11, textColor=GRAY_800, spaceBefore=7, spaceAfter=7, leading=16)
+    S['toc_num'] = ParagraphStyle('tocn', fontName=fnb, fontSize=11, textColor=OLIVE_DARK, spaceBefore=7, spaceAfter=7, leading=16)
+    S['quote'] = ParagraphStyle('quote', fontName=fn, fontSize=9, textColor=GRAY_600, leftIndent=12, spaceAfter=4, leading=13)
     return S
 
 
 # ═══════════════════════════════════════════════════════
 # TABLE HELPERS
 # ═══════════════════════════════════════════════════════
-def _tbl_style(fn, fnb, hdr_color=PRIMARY):
+def _tbl_style(fn, fnb, hdr_color=OLIVE_DARK):
     return TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), hdr_color),
         ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
         ('FONTNAME', (0, 0), (-1, 0), fnb),
         ('FONTNAME', (0, 1), (-1, -1), fn),
-        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('FONTSIZE', (0, 0), (-1, 0), 8.5),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
         ('ALIGN', (0, 0), (0, -1), 'LEFT'),
         ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('GRID', (0, 0), (-1, -1), 0.3, GRAY_200),
+        ('GRID', (0, 0), (-1, -1), 0.25, GRAY_200),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [WHITE, GRAY_50]),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+        ('ROUNDEDCORNERS', [3, 3, 3, 3]),
     ])
 
-def _total_style(fnb):
+def _total_row_style(fnb):
     return TableStyle([
-        ('BACKGROUND', (0, -1), (-1, -1), GREEN_BG),
+        ('BACKGROUND', (0, -1), (-1, -1), CREAM),
         ('FONTNAME', (0, -1), (-1, -1), fnb),
-        ('LINEABOVE', (0, -1), (-1, -1), 1.2, PRIMARY),
+        ('LINEABOVE', (0, -1), (-1, -1), 1.5, OLIVE),
     ])
 
 def _pct(v, total):
@@ -198,7 +206,7 @@ def _fmt4(v):
 
 
 # ═══════════════════════════════════════════════════════
-# PAGE TEMPLATES (Header/Footer)
+# PAGE TEMPLATES
 # ═══════════════════════════════════════════════════════
 class _ReportDocTemplate(BaseDocTemplate):
     def __init__(self, buf, company_name, year, lang, **kw):
@@ -206,10 +214,9 @@ class _ReportDocTemplate(BaseDocTemplate):
         self.company_name = company_name
         self.year = year
         self.lang = lang
-        self.page_count = 0
 
-        frame_cover = Frame(18*mm, 18*mm, A4[0]-36*mm, A4[1]-36*mm, id='cover')
-        frame_body = Frame(18*mm, 18*mm, A4[0]-36*mm, A4[1]-46*mm, id='body')
+        frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
+        frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
 
         self.addPageTemplates([
             PageTemplate(id='cover', frames=[frame_cover], onPage=self._cover_page),
@@ -217,44 +224,59 @@ class _ReportDocTemplate(BaseDocTemplate):
         ])
 
     def _cover_page(self, canvas, doc):
-        # Green top bar
-        canvas.setFillColor(PRIMARY)
-        canvas.rect(0, A4[1]-8*mm, A4[0], 8*mm, fill=1, stroke=0)
-        # Green bottom bar
-        canvas.rect(0, 0, A4[0], 5*mm, fill=1, stroke=0)
+        w, h = A4
+        # Top accent bar - olive gradient effect
+        canvas.setFillColor(OLIVE_DARK)
+        canvas.rect(0, h-6*mm, w, 6*mm, fill=1, stroke=0)
+        # Thin olive line below
+        canvas.setFillColor(OLIVE)
+        canvas.rect(0, h-7*mm, w, 1*mm, fill=1, stroke=0)
+        # Bottom brand bar
+        canvas.setFillColor(BRAND_DARK)
+        canvas.rect(0, 0, w, 4*mm, fill=1, stroke=0)
+        # Decorative corner elements
+        canvas.setStrokeColor(OLIVE_LIGHT)
+        canvas.setLineWidth(0.5)
+        canvas.line(20*mm, h-25*mm, 50*mm, h-25*mm)
+        canvas.line(w-50*mm, h-25*mm, w-20*mm, h-25*mm)
+        # Cream background rectangle for content area
+        canvas.setFillColor(CREAM_LIGHT)
+        canvas.roundRect(25*mm, 30*mm, w-50*mm, h-80*mm, 4*mm, fill=1, stroke=0)
 
     def _content_page(self, canvas, doc):
         fn, fnb = _fonts()
         w, h = A4
-        # Header line
-        canvas.setStrokeColor(PRIMARY)
-        canvas.setLineWidth(1.5)
-        canvas.line(18*mm, h-14*mm, w-18*mm, h-14*mm)
-        # Header text
+        # Header - thin olive line
+        canvas.setStrokeColor(OLIVE)
+        canvas.setLineWidth(1.2)
+        canvas.line(20*mm, h-15*mm, w-20*mm, h-15*mm)
+        # Header left - brand
         canvas.setFont(fnb, 8)
-        canvas.setFillColor(PRIMARY)
-        canvas.drawString(18*mm, h-12*mm, 'CARBONLESS')
+        canvas.setFillColor(OLIVE_DARK)
+        canvas.drawString(20*mm, h-13*mm, 'CARBONLESS')
+        # Header right - meta
         canvas.setFont(fn, 7)
         canvas.setFillColor(GRAY_400)
-        canvas.drawRightString(w-18*mm, h-12*mm, f'ISO 14064-1 | {self.company_name} | {self.year}')
-        # Footer
+        canvas.drawRightString(w-20*mm, h-13*mm, f'ISO 14064-1 \u2022 {self.company_name} \u2022 {self.year}')
+        # Footer line
         canvas.setStrokeColor(GRAY_200)
-        canvas.setLineWidth(0.5)
-        canvas.line(18*mm, 14*mm, w-18*mm, 14*mm)
+        canvas.setLineWidth(0.4)
+        canvas.line(20*mm, 15*mm, w-20*mm, 15*mm)
+        # Footer text
         canvas.setFont(fn, 7)
         canvas.setFillColor(GRAY_400)
-        page_num = doc.page - 1  # cover is page 0
+        page_num = doc.page - 1
         label = 'Sayfa' if self.lang == 'tr' else 'Page'
-        canvas.drawCentredString(w/2, 9*mm, f'{label} {page_num}')
-        canvas.drawString(18*mm, 9*mm, 'Carbonless Platform')
-        canvas.drawRightString(w-18*mm, 9*mm, datetime.now().strftime('%d.%m.%Y'))
+        canvas.drawCentredString(w/2, 10*mm, f'\u2014  {label} {page_num}  \u2014')
+        canvas.drawString(20*mm, 10*mm, 'Carbonless Platform')
+        canvas.drawRightString(w-20*mm, 10*mm, datetime.now().strftime('%d.%m.%Y'))
 
 
 # ═══════════════════════════════════════════════════════
 # MAIN GENERATOR
 # ═══════════════════════════════════════════════════════
 def generate_report(user, year, lang='tr'):
-    """Generate professional ISO 14064-1 PDF report. Returns bytes."""
+    """Generate premium ISO 14064-1 PDF report. Returns bytes."""
     S = _styles()
     fn, fnb = S['fn'], S['fnb']
     tr = lang == 'tr'
@@ -290,7 +312,6 @@ def generate_report(user, year, lang='tr'):
         total=Sum('calculated_co2e_kg')
     ).order_by('emission_factor__scope', '-total')
 
-    # Facility breakdown
     fac_data = entries.exclude(facility__isnull=True).values(
         'facility__name'
     ).annotate(total=Sum('calculated_co2e_kg')).order_by('-total')
@@ -301,38 +322,36 @@ def generate_report(user, year, lang='tr'):
             sources.add(e.emission_factor.reference[:120])
 
     entry_count = entries.count()
-    cat_count = len(set(e.emission_factor.category for e in entries))
-    fac_count = len(set(e.facility_id for e in entries if e.facility_id))
+    total_t = total_kg / 1000
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
     doc = _ReportDocTemplate(buf, cname, year, lang, pagesize=A4,
-                              leftMargin=18*mm, rightMargin=18*mm,
-                              topMargin=20*mm, bottomMargin=18*mm)
+                              leftMargin=20*mm, rightMargin=20*mm,
+                              topMargin=22*mm, bottomMargin=20*mm)
     E = []
 
     # ════════════════════════════════════════════════
     # COVER PAGE
     # ════════════════════════════════════════════════
-    E.append(Spacer(1, 55*mm))
+    E.append(Spacer(1, 45*mm))
     E.append(Paragraph('CARBONLESS', S['cover_title']))
-    E.append(Spacer(1, 6*mm))
+    E.append(Spacer(1, 4*mm))
     E.append(Paragraph(
-        'Sera Gazı Envanteri Raporu' if tr else 'Greenhouse Gas Inventory Report', S['cover_sub']))
-    E.append(Paragraph(f'ISO 14064-1:2018', S['cover_sub']))
-    E.append(Spacer(1, 20*mm))
-    E.append(HRFlowable(width='50%', thickness=2, color=PRIMARY, spaceAfter=10*mm))
+        'Sera Gaz\u0131 Envanteri Raporu' if tr else 'Greenhouse Gas Inventory Report', S['cover_sub']))
+    E.append(Paragraph('ISO 14064-1:2018', S['cover_badge']))
+    E.append(Spacer(1, 18*mm))
+    E.append(HRFlowable(width='40%', thickness=2, color=OLIVE, spaceAfter=12*mm))
     E.append(Paragraph(cname, S['cover_company']))
-    E.append(Spacer(1, 6*mm))
-    E.append(Paragraph(f"{'Raporlama Yılı' if tr else 'Reporting Year'}: {year}", S['cover_date']))
+    E.append(Spacer(1, 8*mm))
+    E.append(Paragraph(f"{'Raporlama Y\u0131l\u0131' if tr else 'Reporting Year'}: {year}", S['cover_date']))
     E.append(Paragraph(
-        f"{'Raporlama Dönemi' if tr else 'Reporting Period'}: 01.01.{year} – 31.12.{year}", S['cover_date']))
+        f"{'Raporlama D\u00f6nemi' if tr else 'Reporting Period'}: 01.01.{year} \u2013 31.12.{year}", S['cover_date']))
     E.append(Paragraph(
         f"{'Rapor Tarihi' if tr else 'Report Date'}: {datetime.now().strftime('%d.%m.%Y')}", S['cover_date']))
-    E.append(Spacer(1, 25*mm))
-    # Confidential notice
+    E.append(Spacer(1, 20*mm))
     E.append(Paragraph(
-        f"{'GİZLİ — Bu rapor yalnızca yetkili kişiler içindir.' if tr else 'CONFIDENTIAL — This report is for authorized personnel only.'}",
+        f"{'G\u0130ZL\u0130 \u2014 Bu rapor yaln\u0131zca yetkili ki\u015filer i\u00e7indir.' if tr else 'CONFIDENTIAL \u2014 This report is for authorized personnel only.'}",
         S['small']))
     E.append(NextPageTemplate('content'))
     E.append(PageBreak())
@@ -340,138 +359,134 @@ def generate_report(user, year, lang='tr'):
     # ════════════════════════════════════════════════
     # TABLE OF CONTENTS
     # ════════════════════════════════════════════════
-    E.append(Paragraph('İçindekiler' if tr else 'Table of Contents', S['h1']))
-    E.append(Spacer(1, 4*mm))
+    E.append(Paragraph('\u0130\u00e7indekiler' if tr else 'Table of Contents', S['h1']))
+    E.append(Spacer(1, 3*mm))
     toc_items = [
-        ('1', 'Yönetici Özeti' if tr else 'Executive Summary'),
-        ('2', 'Kapsam Dağılımı' if tr else 'Scope Distribution'),
-        ('3', 'Kategori Dağılımı' if tr else 'Category Breakdown'),
-        ('4', 'Aylık Trend' if tr else 'Monthly Trend'),
-        ('5', 'Tesis Dağılımı' if tr else 'Facility Breakdown'),
-        ('6', 'Detaylı Emisyon Kayıtları' if tr else 'Detailed Emission Entries'),
-        ('7', 'Metodoloji ve Referanslar' if tr else 'Methodology & References'),
+        ('1', 'Y\u00f6netici \u00d6zeti' if tr else 'Executive Summary'),
+        ('2', 'Kapsam Da\u011f\u0131l\u0131m\u0131' if tr else 'Scope Distribution'),
+        ('3', 'Kategori Analizi' if tr else 'Category Analysis'),
+        ('4', 'Ayl\u0131k Trend' if tr else 'Monthly Trend'),
+        ('5', 'Tesis Performans\u0131' if tr else 'Facility Performance'),
+        ('6', 'Detayl\u0131 Kay\u0131tlar' if tr else 'Detailed Records'),
+        ('7', 'Metodoloji ve Uyumluluk' if tr else 'Methodology & Compliance'),
     ]
     for num, title in toc_items:
-        E.append(Paragraph(f'<b>{num}.</b>  {title}', S['toc']))
-    E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceBefore=6*mm, spaceAfter=4*mm))
+        E.append(Paragraph(f'<font color="#{OLIVE_DARK.hexval()[2:]}">{num}.</font>  {title}', S['toc']))
+    E.append(Spacer(1, 6*mm))
+    E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=4*mm))
     E.append(Paragraph(
-        f"{'Toplam kayıt sayısı' if tr else 'Total entries'}: {entry_count}  |  "
-        f"{'Kategori' if tr else 'Categories'}: {cat_count}  |  "
-        f"{'Tesis' if tr else 'Facilities'}: {fac_count}", S['body']))
+        f"{'Toplam kay\u0131t' if tr else 'Total entries'}: {entry_count}  \u2022  "
+        f"{'Toplam emisyon' if tr else 'Total emissions'}: {total_t:,.2f} tCO\u2082e  \u2022  "
+        f"{'Olu\u015fturma' if tr else 'Generated'}: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
+        S['body_sm']))
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
     # 1. EXECUTIVE SUMMARY
     # ════════════════════════════════════════════════
-    E.append(Paragraph('1. ' + ('Yönetici Özeti' if tr else 'Executive Summary'), S['h1']))
+    E.append(Paragraph('1. ' + ('Y\u00f6netici \u00d6zeti' if tr else 'Executive Summary'), S['h1']))
     E.append(Paragraph(
-        f"{cname} {'şirketinin' if tr else 'company'} {year} "
-        f"{'yılına ait sera gazı emisyonları ISO 14064-1:2018 standardına uygun olarak hesaplanmış ve bu raporda sunulmuştur. Hesaplamalar GHG Protocol Kurumsal Standardı çerçevesinde, operasyonel kontrol yaklaşımı kullanılarak yapılmıştır.' if tr else 'greenhouse gas emissions have been calculated in accordance with ISO 14064-1:2018 and are presented in this report. Calculations follow the GHG Protocol Corporate Standard using the operational control approach.'}",
+        f"{cname} {'firmas\u0131n\u0131n' if tr else 'company\u2019s'} {year} "
+        f"{'y\u0131l\u0131na ait sera gaz\u0131 emisyonlar\u0131 ISO 14064-1:2018 standard\u0131na uygun olarak hesaplanm\u0131\u015f ve bu raporda sunulmu\u015ftur. Hesaplamalar GHG Protocol Kurumsal Standard\u0131 \u00e7er\u00e7evesinde, operasyonel kontrol yakla\u015f\u0131m\u0131 kullan\u0131larak yap\u0131lm\u0131\u015ft\u0131r.' if tr else 'greenhouse gas emissions have been calculated in accordance with ISO 14064-1:2018 and are presented in this report. Calculations follow the GHG Protocol Corporate Standard using the operational control approach.'}",
         S['body']))
+    E.append(Spacer(1, 8*mm))
+
+    # Total KPI - large centered
+    kpi_main = Table([
+        [Paragraph(f'{total_t:,.2f}', S['big_num'])],
+        [Paragraph(('TOPLAM EM\u0130SYONLAR' if tr else 'TOTAL EMISSIONS') + ' (tCO\u2082e)', S['big_label'])],
+    ], colWidths=[150*mm])
+    kpi_main.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), CREAM),
+        ('BOX', (0, 0), (-1, -1), 1.5, OLIVE),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('TOPPADDING', (0, 0), (-1, 0), 14),
+        ('BOTTOMPADDING', (0, -1), (-1, -1), 14),
+        ('ROUNDEDCORNERS', [4, 4, 4, 4]),
+    ]))
+    E.append(kpi_main)
     E.append(Spacer(1, 6*mm))
 
-    # KPI Cards
-    total_t = total_kg / 1000
-    kpi_data = [[
-        Paragraph(f'{total_t:,.2f}', S['big_num']),
-    ], [
-        Paragraph('TOPLAM EMİSYONLAR (tCO2e)' if tr else 'TOTAL EMISSIONS (tCO2e)', S['big_label']),
-    ]]
-    kpi = Table(kpi_data, colWidths=[170*mm])
-    kpi.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, -1), PRIMARY_BG),
-        ('BOX', (0, 0), (-1, -1), 1.5, PRIMARY),
+    # 3 scope cards
+    scope_cards = Table([
+        [Paragraph(f'{s1/1000:,.2f}', S['kpi_num']),
+         Paragraph(f'{s2/1000:,.2f}', S['kpi_num']),
+         Paragraph(f'{s3/1000:,.2f}', S['kpi_num'])],
+        [Paragraph('Scope 1 (tCO\u2082e)', S['kpi_label']),
+         Paragraph('Scope 2 (tCO\u2082e)', S['kpi_label']),
+         Paragraph('Scope 3 (tCO\u2082e)', S['kpi_label'])],
+        [Paragraph(_pct(s1, total_kg), S['kpi_pct']),
+         Paragraph(_pct(s2, total_kg), S['kpi_pct']),
+         Paragraph(_pct(s3, total_kg), S['kpi_pct'])],
+    ], colWidths=[53*mm]*3)
+    scope_cards.setStyle(TableStyle([
+        ('BOX', (0, 0), (0, -1), 0.8, SCOPE1_COLOR),
+        ('BOX', (1, 0), (1, -1), 0.8, SCOPE2_COLOR),
+        ('BOX', (2, 0), (2, -1), 0.8, SCOPE3_COLOR),
+        ('BACKGROUND', (0, 0), (0, -1), SCOPE1_BG),
+        ('BACKGROUND', (1, 0), (1, -1), SCOPE2_BG),
+        ('BACKGROUND', (2, 0), (2, -1), SCOPE3_BG),
         ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('TOPPADDING', (0, 0), (-1, 0), 12),
-        ('BOTTOMPADDING', (0, -1), (-1, -1), 12),
+        ('TOPPADDING', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, -1), (-1, -1), 10),
+        ('ROUNDEDCORNERS', [3, 3, 3, 3]),
     ]))
-    E.append(kpi)
-    E.append(Spacer(1, 4*mm))
-
-    # 3 scope mini-cards
-    scope_cards = [[
-        Paragraph(f'{s1/1000:,.2f}', S['kpi_num']),
-        Paragraph(f'{s2/1000:,.2f}', S['kpi_num']),
-        Paragraph(f'{s3/1000:,.2f}', S['kpi_num']),
-    ], [
-        Paragraph('Scope 1 (tCO2e)', S['kpi_label']),
-        Paragraph('Scope 2 (tCO2e)', S['kpi_label']),
-        Paragraph('Scope 3 (tCO2e)', S['kpi_label']),
-    ]]
-    sc = Table(scope_cards, colWidths=[56.6*mm]*3)
-    sc.setStyle(TableStyle([
-        ('BOX', (0, 0), (0, -1), 0.8, SCOPE1),
-        ('BOX', (1, 0), (1, -1), 0.8, SCOPE2),
-        ('BOX', (2, 0), (2, -1), 0.8, SCOPE3),
-        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#fef2f2')),
-        ('BACKGROUND', (1, 0), (1, -1), colors.HexColor('#fffbeb')),
-        ('BACKGROUND', (2, 0), (2, -1), colors.HexColor('#eff6ff')),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('TOPPADDING', (0, 0), (-1, 0), 8),
-        ('BOTTOMPADDING', (0, -1), (-1, -1), 8),
-    ]))
-    E.append(sc)
+    E.append(scope_cards)
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
     # 2. SCOPE DISTRIBUTION
     # ════════════════════════════════════════════════
-    E.append(Paragraph('2. ' + ('Kapsam Dağılımı' if tr else 'Scope Distribution'), S['h1']))
+    E.append(Paragraph('2. ' + ('Kapsam Da\u011f\u0131l\u0131m\u0131' if tr else 'Scope Distribution'), S['h1']))
 
     scope_tbl = [
-        ['Scope', 'Açıklama' if tr else 'Description', 'kg CO2e', 'tCO2e', '%'],
-        ['Scope 1', 'Doğrudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1), _fmt4(s1/1000), _pct(s1, total_kg)],
-        ['Scope 2', 'Enerji Dolaylı' if tr else 'Energy Indirect', _fmt(s2), _fmt4(s2/1000), _pct(s2, total_kg)],
-        ['Scope 3', 'Diğer Dolaylı' if tr else 'Other Indirect', _fmt(s3), _fmt4(s3/1000), _pct(s3, total_kg)],
+        ['Scope', 'A\u00e7\u0131klama' if tr else 'Description', 'kg CO\u2082e', 'tCO\u2082e', '%'],
+        ['Scope 1', 'Do\u011frudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1), _fmt4(s1/1000), _pct(s1, total_kg)],
+        ['Scope 2', 'Enerji Dolayl\u0131' if tr else 'Energy Indirect', _fmt(s2), _fmt4(s2/1000), _pct(s2, total_kg)],
+        ['Scope 3', 'Di\u011fer Dolayl\u0131' if tr else 'Other Indirect', _fmt(s3), _fmt4(s3/1000), _pct(s3, total_kg)],
         ['TOPLAM' if tr else 'TOTAL', '', _fmt(total_kg), _fmt4(total_t), '100%'],
     ]
-    st = Table(scope_tbl, colWidths=[22*mm, 55*mm, 32*mm, 28*mm, 16*mm])
+    st = Table(scope_tbl, colWidths=[22*mm, 52*mm, 32*mm, 28*mm, 16*mm])
     st.setStyle(_tbl_style(fn, fnb))
-    st.setStyle(_total_style(fnb))
-    st.setStyle(TableStyle([
-        ('TEXTCOLOR', (0, 1), (0, 1), SCOPE1),
-        ('TEXTCOLOR', (0, 2), (0, 2), SCOPE2),
-        ('TEXTCOLOR', (0, 3), (0, 3), SCOPE3),
-    ]))
+    st.setStyle(_total_row_style(fnb))
     E.append(st)
-    E.append(Spacer(1, 6*mm))
+    E.append(Spacer(1, 8*mm))
 
     # Visual bars
     if total_kg > 0:
-        E.append(Paragraph('2.1 ' + ('Görsel Dağılım' if tr else 'Visual Distribution'), S['h2']))
-        for label, val, clr in [('Scope 1', s1, SCOPE1), ('Scope 2', s2, SCOPE2), ('Scope 3', s3, SCOPE3)]:
+        E.append(Paragraph('2.1 ' + ('G\u00f6rsel Da\u011f\u0131l\u0131m' if tr else 'Visual Distribution'), S['h2']))
+        for label, val, clr in [('Scope 1', s1, SCOPE1_COLOR), ('Scope 2', s2, SCOPE2_COLOR), ('Scope 3', s3, SCOPE3_COLOR)]:
             p = val / total_kg * 100
-            bar_w = max(p * 1.5, 3)
-            E.append(Paragraph(f'<b>{label}</b>  —  {val/1000:,.2f} tCO2e  ({p:.1f}%)', S['body']))
-            bar = Table([['']],  colWidths=[bar_w*mm], rowHeights=[5*mm])
+            bar_w = max(p * 1.4, 4)
+            E.append(Paragraph(f'<b>{label}</b>  \u2014  {val/1000:,.2f} tCO\u2082e  ({p:.1f}%)', S['body']))
+            bar = Table([['']],  colWidths=[bar_w*mm], rowHeights=[6*mm])
             bar.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, -1), clr),
-                ('ROUNDEDCORNERS', [2, 2, 2, 2]),
+                ('ROUNDEDCORNERS', [3, 3, 3, 3]),
                 ('LEFTPADDING', (0, 0), (-1, -1), 0),
                 ('RIGHTPADDING', (0, 0), (-1, -1), 0),
                 ('TOPPADDING', (0, 0), (-1, -1), 0),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
             ]))
             E.append(bar)
-            E.append(Spacer(1, 3*mm))
+            E.append(Spacer(1, 4*mm))
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
-    # 3. CATEGORY BREAKDOWN
+    # 3. CATEGORY ANALYSIS
     # ════════════════════════════════════════════════
-    E.append(Paragraph('3. ' + ('Kategori Dağılımı' if tr else 'Category Breakdown'), S['h1']))
+    E.append(Paragraph('3. ' + ('Kategori Analizi' if tr else 'Category Analysis'), S['h1']))
     if cats:
-        # Per-scope sections
         for scope_key, scope_label, scope_color in [
-            ('scope1', 'Scope 1 — ' + ('Doğrudan' if tr else 'Direct'), SCOPE1),
-            ('scope2', 'Scope 2 — ' + ('Enerji Dolaylı' if tr else 'Energy Indirect'), SCOPE2),
-            ('scope3', 'Scope 3 — ' + ('Diğer Dolaylı' if tr else 'Other Indirect'), SCOPE3),
+            ('scope1', 'Scope 1 \u2014 ' + ('Do\u011frudan' if tr else 'Direct'), SCOPE1_COLOR),
+            ('scope2', 'Scope 2 \u2014 ' + ('Enerji Dolayl\u0131' if tr else 'Energy Indirect'), SCOPE2_COLOR),
+            ('scope3', 'Scope 3 \u2014 ' + ('Di\u011fer Dolayl\u0131' if tr else 'Other Indirect'), SCOPE3_COLOR),
         ]:
             scope_cats = [c for c in cats if c['emission_factor__scope'] == scope_key]
             if not scope_cats:
                 continue
             E.append(Paragraph(scope_label, S['h2']))
-            data = [['Kategori' if tr else 'Category', 'kg CO2e', 'tCO2e', '%']]
+            data = [['Kategori' if tr else 'Category', 'kg CO\u2082e', 'tCO\u2082e', '%']]
             scope_total = sum(float(c['total']) for c in scope_cats)
             for c in scope_cats:
                 t = float(c['total'])
@@ -479,153 +494,147 @@ def generate_report(user, year, lang='tr'):
                     cl.get(c['emission_factor__category'], c['emission_factor__category']),
                     _fmt(t), _fmt4(t/1000), _pct(t, total_kg)
                 ])
-            data.append([
-                'Alt Toplam' if tr else 'Subtotal',
-                _fmt(scope_total), _fmt4(scope_total/1000), _pct(scope_total, total_kg)
-            ])
-            ct = Table(data, colWidths=[65*mm, 32*mm, 28*mm, 16*mm])
+            data.append(['Alt Toplam' if tr else 'Subtotal', _fmt(scope_total), _fmt4(scope_total/1000), _pct(scope_total, total_kg)])
+            ct = Table(data, colWidths=[62*mm, 32*mm, 28*mm, 16*mm])
             ct.setStyle(_tbl_style(fn, fnb, scope_color))
-            ct.setStyle(_total_style(fnb))
+            ct.setStyle(_total_row_style(fnb))
             E.append(ct)
-            E.append(Spacer(1, 4*mm))
+            E.append(Spacer(1, 5*mm))
     else:
-        E.append(Paragraph(
-            'Bu dönem için kategori verisi bulunmamaktadır.' if tr else 'No category data for this period.', S['body']))
+        E.append(Paragraph('Bu d\u00f6nem i\u00e7in kategori verisi bulunmamaktad\u0131r.' if tr else 'No category data for this period.', S['body']))
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
     # 4. MONTHLY TREND
     # ════════════════════════════════════════════════
-    E.append(Paragraph('4. ' + ('Aylık Trend' if tr else 'Monthly Trend'), S['h1']))
+    E.append(Paragraph('4. ' + ('Ayl\u0131k Trend' if tr else 'Monthly Trend'), S['h1']))
     if any(m > 0 for m in monthly):
         mt_data = [
             [''] + months,
-            ['tCO2e'] + [f'{m/1000:,.3f}' if m > 0 else '—' for m in monthly],
-            ['kg CO2e'] + [_fmt(m) if m > 0 else '—' for m in monthly],
+            ['tCO\u2082e'] + [f'{m/1000:,.3f}' if m > 0 else '\u2014' for m in monthly],
         ]
         mt = Table(mt_data, colWidths=[16*mm] + [12.5*mm]*12)
         mt.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), PRIMARY),
+            ('BACKGROUND', (0, 0), (-1, 0), OLIVE_DARK),
             ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
             ('BACKGROUND', (0, 1), (0, -1), GRAY_100),
             ('FONTNAME', (0, 0), (-1, -1), fn),
             ('FONTNAME', (0, 0), (0, -1), fnb),
-            ('FONTSIZE', (0, 0), (-1, -1), 7),
+            ('FONTSIZE', (0, 0), (-1, -1), 7.5),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('GRID', (0, 0), (-1, -1), 0.3, GRAY_200),
+            ('GRID', (0, 0), (-1, -1), 0.25, GRAY_200),
             ('ROWBACKGROUNDS', (1, 1), (-1, -1), [WHITE, GRAY_50]),
-            ('TOPPADDING', (0, 0), (-1, -1), 3),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+            ('ROUNDEDCORNERS', [3, 3, 3, 3]),
         ]))
         E.append(mt)
-        E.append(Spacer(1, 2*mm))
-        # Peak month
+        E.append(Spacer(1, 4*mm))
         max_m = max(range(12), key=lambda i: monthly[i])
         if monthly[max_m] > 0:
             E.append(Paragraph(
-                f"{'En yüksek emisyon ayı' if tr else 'Peak emission month'}: <b>{months[max_m]}</b> ({monthly[max_m]/1000:,.3f} tCO2e)",
+                f"\u25cf {'En y\u00fcksek emisyon ay\u0131' if tr else 'Peak emission month'}: <b>{months[max_m]}</b> ({monthly[max_m]/1000:,.3f} tCO\u2082e)",
                 S['body']))
     else:
-        E.append(Paragraph(
-            'Aylık veri bulunmamaktadır.' if tr else 'No monthly data available.', S['body']))
+        E.append(Paragraph('Ayl\u0131k veri bulunmamaktad\u0131r.' if tr else 'No monthly data available.', S['body']))
     E.append(Spacer(1, 6*mm))
 
     # ════════════════════════════════════════════════
-    # 5. FACILITY BREAKDOWN
+    # 5. FACILITY PERFORMANCE
     # ════════════════════════════════════════════════
-    E.append(Paragraph('5. ' + ('Tesis Dağılımı' if tr else 'Facility Breakdown'), S['h1']))
+    E.append(Paragraph('5. ' + ('Tesis Performans\u0131' if tr else 'Facility Performance'), S['h1']))
     if fac_data:
-        fd = [['Tesis' if tr else 'Facility', 'kg CO2e', 'tCO2e', '%']]
+        fd = [['Tesis' if tr else 'Facility', 'kg CO\u2082e', 'tCO\u2082e', '%']]
         for f in fac_data:
             t = float(f['total'])
-            fd.append([f['facility__name'] or '—', _fmt(t), _fmt4(t/1000), _pct(t, total_kg)])
-        ft = Table(fd, colWidths=[65*mm, 32*mm, 28*mm, 16*mm])
-        ft.setStyle(_tbl_style(fn, fnb, PRIMARY_LIGHT))
+            fd.append([f['facility__name'] or '\u2014', _fmt(t), _fmt4(t/1000), _pct(t, total_kg)])
+        ft = Table(fd, colWidths=[62*mm, 32*mm, 28*mm, 16*mm])
+        ft.setStyle(_tbl_style(fn, fnb, OLIVE))
         E.append(ft)
     else:
-        E.append(Paragraph(
-            'Tesis bazlı veri bulunmamaktadır.' if tr else 'No facility-level data available.', S['body']))
+        E.append(Paragraph('Tesis bazl\u0131 veri bulunmamaktad\u0131r.' if tr else 'No facility-level data available.', S['body']))
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
-    # 6. DETAILED ENTRIES
+    # 6. DETAILED RECORDS
     # ════════════════════════════════════════════════
-    E.append(Paragraph('6. ' + ('Detaylı Emisyon Kayıtları' if tr else 'Detailed Emission Entries'), S['h1']))
+    E.append(Paragraph('6. ' + ('Detayl\u0131 Kay\u0131tlar' if tr else 'Detailed Records'), S['h1']))
     if entries.exists():
         hdr = ['Kaynak' if tr else 'Source', 'Scope', 'Ay' if tr else 'Mo',
                'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit',
-               'Faktör' if tr else 'EF', 'kg CO2e']
+               'Fakt\u00f6r' if tr else 'EF', 'kg CO\u2082e']
         rows = [hdr]
         for e in entries[:300]:
             ef = e.emission_factor
-            nm = (ef.name_tr if tr and ef.name_tr else ef.name)[:26]
+            nm = (ef.name_tr if tr and ef.name_tr else ef.name)[:28]
             rows.append([
                 nm, ef.scope.replace('scope', 'S'),
                 months[e.month-1] if 1 <= e.month <= 12 else str(e.month),
                 f'{float(e.quantity):,.1f}', ef.unit,
                 f'{float(ef.factor_kg_co2e):.4f}', _fmt(float(e.calculated_co2e_kg)),
             ])
-        dt = Table(rows, colWidths=[40*mm, 10*mm, 10*mm, 20*mm, 13*mm, 20*mm, 28*mm])
+        dt = Table(rows, colWidths=[42*mm, 10*mm, 10*mm, 20*mm, 13*mm, 18*mm, 28*mm])
         dt.setStyle(_tbl_style(fn, fnb))
         E.append(dt)
     else:
-        E.append(Paragraph(
-            'Bu dönem için emisyon kaydı bulunmamaktadır.' if tr else 'No emission entries for this period.', S['body']))
+        E.append(Paragraph('Bu d\u00f6nem i\u00e7in emisyon kayd\u0131 bulunmamaktad\u0131r.' if tr else 'No emission entries for this period.', S['body']))
 
     if custom_qs.exists():
         E.append(Spacer(1, 6*mm))
-        E.append(Paragraph('6.1 ' + ('Özel Emisyon Kayıtları' if tr else 'Custom Emission Entries'), S['h2']))
-        cr_rows = [['Kaynak' if tr else 'Source', 'Scope', 'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit', 'kg CO2e']]
+        E.append(Paragraph('6.1 ' + ('\u00d6zel Emisyon Kay\u0131tlar\u0131' if tr else 'Custom Emission Entries'), S['h2']))
+        cr_rows = [['Kaynak' if tr else 'Source', 'Scope', 'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit', 'kg CO\u2082e']]
         for cr in custom_qs:
             cr_rows.append([cr.source_name[:35], cr.scope.replace('scope', 'S'),
                            f'{float(cr.quantity):,.1f}', cr.unit, _fmt(float(cr.calculated_co2e_kg))])
         crt = Table(cr_rows, colWidths=[50*mm, 15*mm, 25*mm, 20*mm, 30*mm])
-        crt.setStyle(_tbl_style(fn, fnb, SCOPE2))
+        crt.setStyle(_tbl_style(fn, fnb, SCOPE2_COLOR))
         E.append(crt)
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
-    # 7. METHODOLOGY & REFERENCES
+    # 7. METHODOLOGY & COMPLIANCE
     # ════════════════════════════════════════════════
-    E.append(Paragraph('7. ' + ('Metodoloji ve Referanslar' if tr else 'Methodology & References'), S['h1']))
+    E.append(Paragraph('7. ' + ('Metodoloji ve Uyumluluk' if tr else 'Methodology & Compliance'), S['h1']))
 
-    E.append(Paragraph('7.1 ' + ('Standartlar' if tr else 'Standards'), S['h2']))
-    for label, val in [
-        ('Standart', 'ISO 14064-1:2018, GHG Protocol Corporate Standard'),
-        ('Kapsam Sınırı' if tr else 'Boundary', 'Operasyonel kontrol yaklaşımı' if tr else 'Operational control approach'),
-        ('Sera Gazları' if tr else 'GHGs', 'CO2, CH4, N2O (CO2e)'),
-        ('GWP', 'IPCC AR6 (100-year GWP)'),
-        ('Hesaplama' if tr else 'Calculation', 'Emisyon = Faaliyet Verisi × Emisyon Faktörü' if tr else 'Emission = Activity Data × Emission Factor'),
-    ]:
+    E.append(Paragraph('7.1 ' + ('Standartlar ve \u00c7er\u00e7eve' if tr else 'Standards & Framework'), S['h2']))
+    standards = [
+        ('Standart' if tr else 'Standard', 'ISO 14064-1:2018'),
+        ('\u00c7er\u00e7eve' if tr else 'Framework', 'GHG Protocol Corporate Standard'),
+        ('S\u0131n\u0131r Yakla\u015f\u0131m\u0131' if tr else 'Boundary', 'Operasyonel kontrol' if tr else 'Operational control'),
+        ('Sera Gazlar\u0131' if tr else 'GHGs', 'CO\u2082, CH\u2084, N\u2082O (CO\u2082e)'),
+        ('GWP', 'IPCC AR6 (100-year)'),
+        ('Hesaplama' if tr else 'Calculation', 'Emisyon = Faaliyet Verisi \u00d7 Emisyon Fakt\u00f6r\u00fc' if tr else 'Emission = Activity Data \u00d7 Emission Factor'),
+    ]
+    for label, val in standards:
         E.append(Paragraph(f'<b>{label}:</b>  {val}', S['body']))
-    E.append(Spacer(1, 4*mm))
+    E.append(Spacer(1, 5*mm))
 
-    E.append(Paragraph('7.2 ' + ('Kapsam Tanımları' if tr else 'Scope Definitions'), S['h2']))
+    E.append(Paragraph('7.2 ' + ('Kapsam Tan\u0131mlar\u0131' if tr else 'Scope Definitions'), S['h2']))
     for scope, desc in [
-        ('Scope 1', 'Şirketin sahip olduğu veya kontrol ettiği kaynaklardan doğrudan emisyonlar.' if tr else 'Direct GHG emissions from owned or controlled sources.'),
-        ('Scope 2', 'Satın alınan elektrik, buhar, ısıtma ve soğutmadan kaynaklanan dolaylı emisyonlar.' if tr else 'Indirect emissions from purchased electricity, steam, heating and cooling.'),
-        ('Scope 3', 'Değer zincirindeki diğer tüm dolaylı emisyonlar (15 kategori).' if tr else 'All other indirect value chain emissions (15 categories).'),
+        ('Scope 1', '\u015eirketin sahip oldu\u011fu veya kontrol etti\u011fi kaynaklardan do\u011frudan emisyonlar.' if tr else 'Direct GHG emissions from owned or controlled sources.'),
+        ('Scope 2', 'Sat\u0131n al\u0131nan elektrik, buhar, \u0131s\u0131tma ve so\u011futmadan kaynaklanan dolayl\u0131 emisyonlar.' if tr else 'Indirect emissions from purchased electricity, steam, heating and cooling.'),
+        ('Scope 3', 'De\u011fer zincirindeki di\u011fer t\u00fcm dolayl\u0131 emisyonlar (15 kategori).' if tr else 'All other indirect value chain emissions (15 categories).'),
     ]:
         E.append(Paragraph(f'<b>{scope}:</b>  {desc}', S['body']))
-    E.append(Spacer(1, 4*mm))
+    E.append(Spacer(1, 5*mm))
 
-    E.append(Paragraph('7.3 ' + ('Emisyon Faktör Kaynakları' if tr else 'Emission Factor Sources'), S['h2']))
+    E.append(Paragraph('7.3 ' + ('Emisyon Fakt\u00f6r Kaynaklar\u0131' if tr else 'Emission Factor Sources'), S['h2']))
     if sources:
         for i, s in enumerate(sorted(sources), 1):
-            E.append(Paragraph(f'{i}. {s}', S['small']))
+            E.append(Paragraph(f'{i}. {s}', S['body_sm']))
     else:
-        E.append(Paragraph('—', S['small']))
-    E.append(Spacer(1, 10*mm))
+        E.append(Paragraph('\u2014', S['body_sm']))
+    E.append(Spacer(1, 12*mm))
 
     # Disclaimer
-    E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=4*mm))
+    E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=5*mm))
     E.append(Paragraph(
-        'GİZLİLİK NOTU: Bu rapor Carbonless platformu tarafından otomatik olarak oluşturulmuştur. Veriler kullanıcı tarafından girilmiş olup, doğruluğu kullanıcının sorumluluğundadır. Üçüncü taraf doğrulaması yapılmamıştır.' if tr else
-        'DISCLAIMER: This report was automatically generated by the Carbonless platform. Data was entered by the user and accuracy is the user\'s responsibility. No third-party verification has been performed.',
+        'G\u0130ZL\u0130L\u0130K NOTU: Bu rapor Carbonless platformu taraf\u0131ndan otomatik olarak olu\u015fturulmu\u015ftur. Veriler kullan\u0131c\u0131 taraf\u0131ndan girilmi\u015f olup, do\u011frulu\u011fu kullan\u0131c\u0131n\u0131n sorumlulu\u011fundad\u0131r. \u00dc\u00e7\u00fcnc\u00fc taraf do\u011frulamas\u0131 yap\u0131lmam\u0131\u015ft\u0131r.' if tr else
+        'DISCLAIMER: This report was automatically generated by the Carbonless platform. Data was entered by the user and accuracy is the user\u2019s responsibility. No third-party verification has been performed.',
         S['small']))
     E.append(Spacer(1, 4*mm))
     E.append(Paragraph(
-        f'© {year} Carbonless  |  ISO 14064-1:2018  |  {datetime.now().strftime("%d.%m.%Y %H:%M")}',
+        f'\u00a9 {year} Carbonless  \u2022  ISO 14064-1:2018  \u2022  {datetime.now().strftime("%d.%m.%Y %H:%M")}',
         S['footer']))
 
     # Build

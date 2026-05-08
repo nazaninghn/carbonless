@@ -1,65 +1,196 @@
 'use client';
 import { useState } from 'react';
-import { Menu, Bell } from 'lucide-react';
+import {
+  Bell,
+  CalendarDays,
+  CheckCheck,
+  ChevronDown,
+  Globe2,
+  Menu,
+} from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
-export default function DashboardHeader({ language, selectedYear, setSelectedYear, selectedCountry, setSelectedCountry, unreadCount, setUnreadCount, setSidebarOpen }) {
+export default function DashboardHeader({
+  language,
+  activeTab,
+  setActiveTab,
+  selectedYear,
+  setSelectedYear,
+  selectedCountry,
+  setSelectedCountry,
+  unreadCount,
+  setUnreadCount,
+  setSidebarOpen,
+}) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const tr = language === 'tr';
+
+  const loadNotifications = async () => {
+    const nextState = !showNotifications;
+    setShowNotifications(nextState);
+    if (nextState) {
+      const res = await api.getNotifications();
+      if (res.ok) setNotifications(await res.json());
+    }
+  };
+
+  const markAllRead = async () => {
+    await api.markNotificationsRead();
+    setUnreadCount(0);
+    setNotifications((items) =>
+      items.map((item) => ({ ...item, is_read: true }))
+    );
+  };
 
   return (
-    <header className="h-auto min-h-[4rem] bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 py-2 flex-wrap gap-2">
-      <button onClick={() => setSidebarOpen(true)} className="lg:hidden"><Menu className="w-6 h-6" /></button>
-      <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-        <span className="text-sm text-gray-600">{language === 'tr' ? 'Yıl:' : 'Year:'}</span>
-        <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
-          {Array.from({ length: 7 }, (_, i) => 2026 - i).map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-        <select value={selectedCountry} onChange={e => setSelectedCountry(e.target.value)} className="px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg text-sm">
-          <option value="turkey">{language === 'tr' ? 'Türkiye' : 'Turkey'}</option>
-          <option value="global">{language === 'tr' ? 'Global' : 'Global'}</option>
-        </select>
-
-        {/* Notification Bell */}
-        <div className="relative">
-          <button onClick={async () => {
-            setShowNotifications(!showNotifications);
-            if (!showNotifications) {
-              const res = await api.getNotifications();
-              if (res.ok) setNotifications(await res.json());
-            }
-          }} className="p-2 hover:bg-gray-100 rounded-lg relative">
-            <Bell className="w-5 h-5 text-gray-600" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">{unreadCount}</span>
-            )}
+    <header className="sticky top-0 z-30 border-b border-[#302817]/10 bg-[#F8F8F8]/85 px-3 py-2.5 backdrop-blur-2xl sm:px-4 lg:px-5">
+      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
+        {/* Left */}
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#302817]/10 bg-white/70 text-[#302817] shadow-sm transition hover:bg-white lg:hidden"
+            aria-label="Open sidebar"
+          >
+            <Menu className="h-4.5 w-4.5" />
           </button>
-          {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-y-auto">
-              <div className="p-3 border-b border-gray-200 flex items-center justify-between">
-                <span className="font-semibold text-sm">{language === 'tr' ? 'Bildirimler' : 'Notifications'}</span>
-                {unreadCount > 0 && (
-                  <button onClick={async () => { await api.markNotificationsRead(); setUnreadCount(0); setNotifications(n => n.map(x => ({...x, is_read: true}))); }} className="text-xs text-primary">
-                    {language === 'tr' ? 'Tümünü okundu işaretle' : 'Mark all read'}
-                  </button>
-                )}
-              </div>
-              {notifications.length === 0 ? (
-                <div className="p-4 text-center text-sm text-gray-500">{language === 'tr' ? 'Bildirim yok' : 'No notifications'}</div>
-              ) : (
-                notifications.map(n => (
-                  <div key={n.id} className={`p-3 border-b border-gray-100 ${!n.is_read ? 'bg-primary/5' : ''}`}>
-                    <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                    <p className="text-xs text-gray-600 mt-0.5">{n.message}</p>
-                  </div>
-                ))
-              )}
-            </div>
+          {/* Back to dashboard on mobile when not on dashboard tab */}
+          {activeTab !== 'dashboard' && (
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className="flex h-9 items-center gap-1.5 rounded-xl border border-[#302817]/10 bg-white/70 px-3 text-xs font-bold text-[#302817]/60 shadow-sm transition hover:bg-white hover:text-[#302817] lg:hidden"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              {tr ? 'Ana Sayfa' : 'Home'}
+            </button>
           )}
+          <div className="hidden min-w-0 lg:block">
+            <p className="truncate text-sm font-bold text-[#302817]">
+              {tr ? 'Kontrol Paneli' : 'Dashboard'}
+            </p>
+            <p className="text-xs font-semibold text-[#302817]/45">
+              {tr ? 'Karbon çalışma alanınız' : 'Your carbon workspace'}
+            </p>
+          </div>
+        </div>
+
+        {/* Right */}
+        <div className="flex shrink-0 items-center gap-2">
+          {/* Year */}
+          <MiniSelect
+            icon={CalendarDays}
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          >
+            {Array.from({ length: 7 }, (_, i) => 2026 - i).map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </MiniSelect>
+
+          {/* Country */}
+          <MiniSelect
+            icon={Globe2}
+            value={selectedCountry}
+            onChange={(e) => setSelectedCountry(e.target.value)}
+          >
+            <option value="turkey">{tr ? 'Türkiye' : 'Turkey'}</option>
+            <option value="global">Global</option>
+          </MiniSelect>
+
+          {/* Notifications */}
+          <div className="relative">
+            <button
+              onClick={loadNotifications}
+              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#302817]/10 bg-white/70 text-[#302817] shadow-sm transition hover:bg-white"
+              aria-label="Notifications"
+            >
+              <Bell className="h-[18px] w-[18px]" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#F8F8F8]">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-white shadow-[0_12px_40px_rgba(48,40,23,0.12)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[360px]">
+                <div className="flex items-center justify-between border-b border-[#302817]/10 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-[#302817]">
+                      {tr ? 'Bildirimler' : 'Notifications'}
+                    </p>
+                    <p className="text-xs font-semibold text-[#302817]/40">
+                      {unreadCount > 0
+                        ? `${unreadCount} ${tr ? 'okunmamış' : 'unread'}`
+                        : tr
+                        ? 'Hepsi güncel'
+                        : 'All caught up'}
+                    </p>
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllRead}
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[#B4BE6A]/12 px-3 py-2 text-xs font-bold text-[#95A847] transition hover:bg-[#B4BE6A]/18 hover:text-[#302817]"
+                    >
+                      <CheckCheck className="h-3.5 w-3.5" />
+                      {tr ? 'Okundu' : 'Read all'}
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-[60vh] overflow-y-auto sm:max-h-80">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-10 text-center">
+                      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B4BE6A]/12 text-[#95A847]">
+                        <Bell className="h-5 w-5" />
+                      </div>
+                      <p className="mt-3 text-sm font-bold text-[#302817]">
+                        {tr ? 'Bildirim yok' : 'No notifications'}
+                      </p>
+                      <p className="mt-1 text-xs font-semibold text-[#302817]/45">
+                        {tr
+                          ? 'Yeni bir şey olduğunda burada görünür.'
+                          : 'New updates will appear here.'}
+                      </p>
+                    </div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`border-b border-[#302817]/8 px-4 py-3 last:border-0 ${
+                          !n.is_read ? 'bg-[#B4BE6A]/8' : 'bg-white'
+                        }`}
+                      >
+                        <p className="text-sm font-bold text-[#302817]">{n.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-[#302817]/55">
+                          {n.message}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
+  );
+}
+
+function MiniSelect({ icon: Icon, value, onChange, children }) {
+  return (
+    <label className="flex items-center gap-1.5 rounded-2xl border border-[#302817]/10 bg-white/70 px-2.5 py-2 text-[#302817] shadow-sm transition hover:bg-white">
+      <Icon className="h-3.5 w-3.5 shrink-0 text-[#B4BE6A]" />
+      <select
+        value={value}
+        onChange={onChange}
+        className="max-w-[76px] appearance-none bg-transparent pr-4 text-xs font-bold text-[#302817] outline-none sm:max-w-[120px]"
+      >
+        {children}
+      </select>
+      <ChevronDown className="pointer-events-none -ml-3 h-3 w-3 shrink-0 text-[#302817]/35" />
+    </label>
   );
 }
