@@ -19,6 +19,25 @@ import {
   getTriggeredAssumptions,
   validateCarbonIQAnswer,
 } from '@/lib/carboniq/questions';
+import { api } from '@/lib/utils/api';
+
+// ─── Map frontend answer → backend payload ────────────────────────────────────
+// Steps A1-A7a have strict backend serializers; everything else is stored as-is.
+function mapAnswerForBackend(questionId, value) {
+  switch (questionId) {
+    case 'A1': return { legal_name: value };
+    case 'A2': return { tax_id: value };
+    case 'A3': return { country: value?.country || '', city: value?.city || '' };
+    case 'A4': return { reporting_year: parseInt(value, 10) };
+    case 'A5': return { prepared_by: value };
+    case 'A6': return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip') : [] };
+    case 'A7': return { has_previous_report: value === 'yes' };
+    case 'A7a': return { baseline_year: parseInt(value, 10) };
+    default:
+      // Generic: wrap in {answer:...} for non-primitive types, pass string/number directly
+      return { answer: value };
+  }
+}
 
 export default function CarbonAIPage({ language = 'en' }) {
   const lang = language === 'tr' ? 'tr' : 'en';
@@ -42,6 +61,8 @@ export default function CarbonAIPage({ language = 'en' }) {
   const [error, setError] = useState('');
   const [assumptions, setAssumptions] = useState([]);
   const [completed, setCompleted] = useState(false);
+  const [reportId, setReportId] = useState(null);
+  const [saveError, setSaveError] = useState(null); // non-blocking backend save error
   const scrollRef = useRef(null);
 
   const question = getQuestionById(currentId);
@@ -67,6 +88,19 @@ export default function CarbonAIPage({ language = 'en' }) {
     };
   }, [question, completed, lang]);
 
+  // ─── Save step to backend (fire-and-forget, never blocks the user) ──────────
+  const saveStepToBackend = async (questionId, value, currentReportId) => {
+    const rid = currentReportId || reportId;
+    if (!rid) return;
+    try {
+      const payload = mapAnswerForBackend(questionId, value);
+      await api.submitReportStep(rid, questionId, payload);
+      setSaveError(null);
+    } catch {
+      setSaveError('sync'); // silent — just show a small indicator
+    }
+  };
+
   const submitAnswer = () => {
     if (!question) return;
     const normalizedValue = normalizeAnswerValue(question, answerValue);
@@ -86,6 +120,9 @@ export default function CarbonAIPage({ language = 'en' }) {
     setAnswers(nextAnswers);
     setHistory((prev) => [...prev, question.id]);
     setError('');
+
+    // 🔵 Persist to backend (non-blocking)
+    saveStepToBackend(question.id, normalizedValue, reportId);
 
     const nextMessages = [{ role: 'user', type: 'answer', content: userLabel }];
 
@@ -155,6 +192,24 @@ export default function CarbonAIPage({ language = 'en' }) {
     ]);
   };
 
+  // ─── Start chatbot + create/resume a backend report ─────────────────────────
+  const handleStart = async () => {
+    setStarted(true);
+    try {
+      const res = await api.startCarbonReport();
+      if (res.ok) {
+        const data = await res.json();
+        if (data.report_id) {
+          setReportId(data.report_id);
+          // If resuming, restore progress indicator but don't change the chat flow
+          // (frontend always starts fresh; backend holds the persistent record)
+        }
+      }
+    } catch {
+      // Non-blocking — chatbot still works without backend connectivity
+    }
+  };
+
   // ─── Welcome Screen ───
   if (!started) {
     return (
@@ -197,7 +252,7 @@ export default function CarbonAIPage({ language = 'en' }) {
         {/* CTA */}
         <div className="mt-6 flex items-center gap-2.5">
           <button
-            onClick={() => setStarted(true)}
+            onClick={handleStart}
             className="inline-flex items-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(48,40,23,0.2)] transition hover:-translate-y-0.5 hover:bg-black"
           >
             {lang === 'tr' ? 'Envanteri Başlat' : 'Start Inventory'}
@@ -222,7 +277,7 @@ export default function CarbonAIPage({ language = 'en' }) {
           ].map((item, i) => (
             <button
               key={i}
-              onClick={() => setStarted(true)}
+              onClick={handleStart}
               className="group flex flex-col items-center gap-1.5 rounded-2xl border border-[#95A847]/14 bg-white/72 px-3 py-3.5 shadow-[0_10px_30px_rgba(48,40,23,0.06)] backdrop-blur-2xl transition hover:-translate-y-1 hover:bg-white hover:shadow-[0_14px_40px_rgba(48,40,23,0.1)]"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/12 to-[#B4BE6A]/8 text-lg">{item.icon}</span>
@@ -262,7 +317,7 @@ export default function CarbonAIPage({ language = 'en' }) {
                 ))}
               </div>
               <button
-                onClick={() => { setShowHowItWorks(false); setStarted(true); }}
+                onClick={() => { setShowHowItWorks(false); handleStart(); }}
                 className="mt-5 w-full rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:bg-black"
               >
                 {lang === 'tr' ? 'Başla' : 'Start'}
@@ -313,6 +368,14 @@ export default function CarbonAIPage({ language = 'en' }) {
               />
             </div>
             <span className="text-[11px] font-bold text-[#302817]/40">{answeredCount}/133</span>
+            {saveError && (
+              <span
+                title={lang === 'tr' ? 'Sunucuya kaydedilemedi' : 'Could not sync to server'}
+                className="text-[11px] text-amber-500 cursor-default select-none"
+              >
+                ⚠
+              </span>
+            )}
           </div>
           <button
             type="button"

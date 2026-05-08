@@ -154,56 +154,79 @@ class SubmitStepView(APIView):
         step = request.data.get('step')
         data = request.data.get('data', {})
 
-        if step not in STEP_SERIALIZERS:
-            return Response({'error': f'Unknown step: {step}'}, status=400)
+        if not step:
+            return Response({'error': 'step is required'}, status=400)
 
-        serializer = STEP_SERIALIZERS[step](data=data)
-        if not serializer.is_valid():
-            first_error = list(serializer.errors.values())[0]
-            if isinstance(first_error, list):
-                first_error = first_error[0]
+        # Steps with strict serializer validation + DB side-effects (A1-A7a)
+        STRICT_STEPS = {'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a'}
+
+        if step in STRICT_STEPS and step in STEP_SERIALIZERS:
+            serializer = STEP_SERIALIZERS[step](data=data)
+            if not serializer.is_valid():
+                first_error = list(serializer.errors.values())[0]
+                if isinstance(first_error, list):
+                    first_error = first_error[0]
+                return Response({
+                    'success': False,
+                    'step': step,
+                    'errors': serializer.errors,
+                    'next_step': step,
+                    'bot_messages': [f"❌ {first_error}"]
+                }, status=400)
+
+            result = handle_step(report, step, serializer.validated_data)
+
+            if result.get('duplicate'):
+                return Response({
+                    'success': False,
+                    'step': step,
+                    'next_step': step,
+                    'duplicate': result['duplicate'],
+                    'bot_messages': result['bot_messages'],
+                    'warnings': result.get('warnings', [])
+                })
+
+            ReportStep.objects.update_or_create(
+                report=report,
+                step_id=step,
+                defaults={'answer': serializer.validated_data, 'is_skipped': False}
+            )
+
+            next_step = result['next_step']
+            report.current_step = next_step
+            if next_step == 'PHASE2':
+                report.status = CarbonReport.Status.IN_PROGRESS
+            report.save()
+
             return Response({
-                'success': False,
+                'success': True,
                 'step': step,
-                'errors': serializer.errors,
-                'next_step': step,
-                'bot_messages': [f"❌ {first_error}"]
-            }, status=400)
-
-        result = handle_step(report, step, serializer.validated_data)
-
-        if result.get('duplicate'):
-            return Response({
-                'success': False,
-                'step': step,
-                'next_step': step,
-                'duplicate': result['duplicate'],
+                'next_step': next_step,
+                'message': result['message'],
+                'warnings': result.get('warnings', []),
                 'bot_messages': result['bot_messages'],
-                'warnings': result.get('warnings', [])
+                'phase_complete': result.get('phase_complete', False),
+                'cluster': result.get('cluster'),
+                'suggested_ef': result.get('suggested_ef'),
             })
 
+        # Generic step: store any step answer as raw JSON without strict validation.
+        # Covers B1-B6, C1-C3, D1-D4, Stage 2-7 questions (2A-0 … 7B-INFO).
         ReportStep.objects.update_or_create(
             report=report,
             step_id=step,
-            defaults={'answer': serializer.validated_data, 'is_skipped': False}
+            defaults={'answer': data if data else {}, 'is_skipped': False}
         )
-
-        next_step = result['next_step']
-        report.current_step = next_step
-        if next_step == 'PHASE2':
-            report.status = CarbonReport.Status.IN_PROGRESS
+        report.current_step = step
         report.save()
 
         return Response({
             'success': True,
             'step': step,
-            'next_step': next_step,
-            'message': result['message'],
-            'warnings': result.get('warnings', []),
-            'bot_messages': result['bot_messages'],
-            'phase_complete': result.get('phase_complete', False),
-            'cluster': result.get('cluster'),
-            'suggested_ef': result.get('suggested_ef'),
+            'next_step': step,
+            'message': 'Step saved.',
+            'warnings': [],
+            'bot_messages': [],
         })
 
 
@@ -235,8 +258,8 @@ class ReportStatusView(APIView):
             'completed_steps': completed_steps,
             'progress': {
                 'completed': len(completed_steps),
-                'total_phase1': 21,
-                'percent': round(len(completed_steps) / 21 * 100)
+                'total': 96,  # total questions in the chatbot flow
+                'percent': round(len(completed_steps) / 96 * 100)
             }
         })
 
