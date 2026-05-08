@@ -447,6 +447,16 @@ function ChatBubble({ message, lang, answers }) {
 function AnswerInput({ question, value, setValue, lang, onSubmit }) {
   if (!question) return null;
 
+  if (question.type === 'info') {
+    return (
+      <div className="rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 px-4 py-3 text-sm text-[#302817]/70">
+        {lang === 'tr'
+          ? 'Bilgi alındı. Devam etmek için "Gönder" butonuna tıklayın.'
+          : 'Information noted. Click "Send" to continue.'}
+      </div>
+    );
+  }
+
   if (question.type === 'text') {
     return (
       <div className="flex items-center gap-2 rounded-[22px] border border-[#302817]/10 bg-white px-4 py-3 shadow-[0_4px_20px_rgba(48,40,23,0.05)]">
@@ -566,6 +576,7 @@ function getInitialValue(question) {
 
 function getDisplayValue(question, value, lang) {
   if (!question) return '';
+  if (question.type === 'info') return lang === 'tr' ? 'Anladım, devam edelim.' : 'Got it, let\'s continue.';
   if (question.type === 'country_city') {
     const country = question.options?.find((o) => o.value === value?.country)?.label?.[lang] || value?.country || '';
     return `${country}${value?.city ? `, ${value.city}` : ''}`;
