@@ -382,10 +382,10 @@ export default function ReductionTargetsTab({
       {/* ═══════════════════ ADD TARGET MODAL ════════════════════════════ */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
-          <div className="flex max-h-[88vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl">
+          <div className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl">
 
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Yeni Azaltma Hedefi' : 'New Reduction Target'}
@@ -403,7 +403,7 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="target-form" onSubmit={handleAdd} className="space-y-4">
 
                 {/* Title */}
@@ -490,7 +490,7 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-6 py-4 backdrop-blur-sm">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button
                 type="button"
                 onClick={() => { setShowForm(false); resetForm(); }}

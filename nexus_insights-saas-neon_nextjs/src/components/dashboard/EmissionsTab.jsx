@@ -337,7 +337,7 @@ export default function EmissionsTab({
 
   // ── Shared modal classes ─────────────────────────────────────────────────
   const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md';
-  const MODAL   = 'flex max-h-[88vh] w-full flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl';
+  const MODAL   = 'flex max-h-[90svh] w-full flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl';
   const FIELD   = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15';
   const LABEL   = 'mb-1.5 block text-xs font-bold text-[#302817]/60';
 
@@ -743,7 +743,7 @@ export default function EmissionsTab({
       {showAddForm && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-3xl`}>
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
                 <p className="mt-0.5 text-xs text-[#302817]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
@@ -751,7 +751,7 @@ export default function EmissionsTab({
               <button onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="add-entry-form" onSubmit={handleAdd} className="space-y-5">
                 {/* Scope */}
                 <div className="space-y-3">
@@ -895,7 +895,7 @@ export default function EmissionsTab({
               </form>
             </div>
 
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-6 py-4 backdrop-blur-sm">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
                 {tr ? 'İptal' : 'Cancel'}
               </button>
@@ -911,11 +911,11 @@ export default function EmissionsTab({
       {editing && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-md`}>
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <h2 className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
               <button onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <p className="mb-4 text-sm font-semibold text-[#302817]/60">
                 {tr && editing.emission_factor_name_tr ? editing.emission_factor_name_tr : editing.emission_factor_name}
               </p>
@@ -941,7 +941,7 @@ export default function EmissionsTab({
                 </div>
               </form>
             </div>
-            <div className="flex shrink-0 gap-2 border-t border-[#302817]/8 px-6 py-4">
+            <div className="flex shrink-0 gap-2 border-t border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <button type="button" onClick={() => setEditing(null)} className="flex-1 rounded-full border border-[#302817]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
               <button type="submit" form="edit-form" className="flex-1 rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/12 transition hover:bg-black">{tr ? 'Kaydet' : 'Save'}</button>
             </div>
@@ -953,14 +953,14 @@ export default function EmissionsTab({
       {showCustom && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-2xl`}>
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 className="text-base font-bold">{tr ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
                 <p className="mt-0.5 text-xs text-[#302817]/45">{tr ? 'Listede olmayan kaynak? Admin onaylayacak.' : "Source not in the list? Admin will review."}</p>
               </div>
               <button onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="custom-form" onSubmit={handleCustom} className="space-y-4">
                 <div>
                   <label className={LABEL}>Scope</label>
@@ -1004,7 +1004,7 @@ export default function EmissionsTab({
                 </div>
               </form>
             </div>
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-6 py-4">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 sm:px-6 sm:py-4">
               <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
               <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60">
                 {cSaving ? '…' : (tr ? 'Talep Gönder' : 'Submit Request')}

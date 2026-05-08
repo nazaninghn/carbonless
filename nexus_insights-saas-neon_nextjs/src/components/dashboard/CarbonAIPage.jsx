@@ -190,7 +190,7 @@ function TypingBubble() {
 // ─── Stage Breadcrumb ─────────────────────────────────────────────────────────
 function StageBreadcrumb({ currentStage, lang }) {
   return (
-    <div className="flex items-center gap-1 overflow-x-auto py-2 px-5 border-b border-[#302817]/5 scrollbar-none">
+    <div className="flex items-center gap-1 overflow-x-auto py-2 px-3 border-b border-[#302817]/5 scrollbar-none sm:px-5">
       {CARBONIQ_STAGES.map((s, i) => {
         const done = s.id < currentStage;
         const active = s.id === currentStage;
@@ -616,7 +616,7 @@ export default function CarbonAIPage({ language = 'en' }) {
   // ─── Welcome Screen ───────────────────────────────────────────────────────
   if (!started) {
     return (
-      <section className="relative mx-auto flex h-[calc(100vh-120px)] max-w-[1280px] flex-col items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#F9EFE5] via-[#FDFCFA] to-[#EEF2D3]/40 px-4 text-center sm:px-6 lg:px-10">
+      <section className="relative mx-auto flex h-[calc(100svh-190px)] max-w-[1280px] flex-col items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#F9EFE5] via-[#FDFCFA] to-[#EEF2D3]/40 px-4 text-center sm:h-[calc(100svh-150px)] sm:px-6 lg:h-[calc(100vh-120px)] lg:px-10">
         <div className="pointer-events-none absolute left-[5%] top-[10%] h-[220px] w-[220px] rounded-full bg-[#95A847]/15 blur-[90px]" />
         <div className="pointer-events-none absolute bottom-[10%] right-[8%] h-[180px] w-[180px] rounded-full bg-[#B4BE6A]/12 blur-[70px]" />
 
@@ -625,7 +625,7 @@ export default function CarbonAIPage({ language = 'en' }) {
           {lang === 'tr' ? 'AI destekli karbon raporlama' : 'AI-powered carbon reporting'}
         </div>
 
-        <div className="relative mt-2 h-[200px] w-[200px] sm:h-[220px] sm:w-[220px] lg:h-[240px] lg:w-[240px]">
+        <div className="relative mt-2 h-[140px] w-[140px] sm:h-[200px] sm:w-[200px] lg:h-[240px] lg:w-[240px]">
           <div className="absolute inset-[-70px] rounded-full bg-[#95A847]/18 blur-[90px]" />
           <img
             src="/chatbot.png"
@@ -731,7 +731,7 @@ export default function CarbonAIPage({ language = 'en' }) {
 
   // ─── Chat Interface ───────────────────────────────────────────────────────
   return (
-    <div className="flex h-[calc(100vh-120px)] min-h-[600px] flex-col rounded-[32px] border border-[#302817]/8 bg-white/80 shadow-[0_10px_40px_rgba(48,40,23,0.06)] backdrop-blur-2xl">
+    <div className="flex h-[calc(100svh-190px)] min-h-[520px] flex-col rounded-[32px] border border-[#302817]/8 bg-white/80 shadow-[0_10px_40px_rgba(48,40,23,0.06)] backdrop-blur-2xl sm:h-[calc(100svh-150px)] lg:h-[calc(100vh-120px)]">
 
       {/* Header */}
       <header className="flex shrink-0 items-center justify-between border-b border-[#302817]/6 px-5 py-3">
