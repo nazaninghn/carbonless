@@ -16,12 +16,16 @@ export function LanguageProvider({ children }) {
   // repaints — eliminates the flash of wrong language on client hydration.
   useIsomorphicLayoutEffect(() => {
     try {
+      // Only use saved preference if user explicitly chose it (marked with '_explicit' flag).
+      // Old code used to save 'tr' as default — we ignore those stale values.
       const saved = localStorage.getItem('language');
-      if (saved === 'tr' || saved === 'en') {
+      const explicit = localStorage.getItem('language_explicit');
+      if ((saved === 'tr' || saved === 'en') && explicit === '1') {
         setLanguage(saved);
       } else {
-        // No saved preference — persist the default (English) so other pages read it
+        // No explicit preference — default to English and persist it
         localStorage.setItem('language', 'en');
+        localStorage.removeItem('language_explicit');
       }
     } catch {
       // localStorage blocked (private mode, etc.) — keep default
@@ -33,6 +37,7 @@ export function LanguageProvider({ children }) {
     setLanguage(lang);
     try {
       localStorage.setItem('language', lang);
+      localStorage.setItem('language_explicit', '1'); // marks that user actively chose this
     } catch {}
   };
 

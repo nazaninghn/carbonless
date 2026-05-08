@@ -35,17 +35,22 @@ export default function Home() {
 
   useEffect(() => {
     const saved = localStorage.getItem('language');
-    if (saved === 'tr' || saved === 'en') {
+    const explicit = localStorage.getItem('language_explicit');
+    // Only honour saved language if the user explicitly chose it.
+    // Stale 'tr' values from the old default are ignored.
+    if ((saved === 'tr' || saved === 'en') && explicit === '1') {
       setLang(saved);
     } else {
-      // First visit — default to English, persist it so login/register/dashboard pick it up
+      // No explicit preference — default to English
       localStorage.setItem('language', 'en');
+      localStorage.removeItem('language_explicit');
     }
   }, []);
 
   const changeLang = (next) => {
     setLang(next);
     localStorage.setItem('language', next);
+    localStorage.setItem('language_explicit', '1'); // user actively chose
   };
 
   const t = copy[lang];
