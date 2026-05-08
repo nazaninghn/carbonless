@@ -34,13 +34,13 @@ export default function Home() {
   const [showLangMenu, setShowLangMenu] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem('carbonless_lang');
+    const saved = localStorage.getItem('language');
     if (saved === 'tr' || saved === 'en') setLang(saved);
   }, []);
 
   const changeLang = (next) => {
     setLang(next);
-    localStorage.setItem('carbonless_lang', next);
+    localStorage.setItem('language', next);
   };
 
   const t = copy[lang];
