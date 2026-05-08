@@ -7,6 +7,7 @@ import {
   ChevronDown,
   Globe2,
   Menu,
+  Search,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
@@ -94,6 +95,17 @@ export default function DashboardHeader({
 
         {/* Right */}
         <div className="flex shrink-0 items-center gap-2">
+          {/* ⌘K trigger (desktop only) */}
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+            className="hidden items-center gap-2 rounded-xl border border-[#302817]/10 bg-white/70 px-3 py-2 text-[#302817]/45 shadow-sm transition hover:bg-white hover:text-[#302817] sm:flex"
+            aria-label="Open command palette"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-semibold">{tr ? 'Ara…' : 'Search…'}</span>
+            <kbd className="ml-1 rounded-md border border-[#302817]/10 bg-[#302817]/5 px-1.5 py-0.5 text-[9px] font-bold leading-none">⌘K</kbd>
+          </button>
+
           {/* Year */}
           <MiniSelect
             icon={CalendarDays}

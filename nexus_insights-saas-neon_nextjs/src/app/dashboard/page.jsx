@@ -9,6 +9,7 @@ import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import CommandPalette from '@/components/dashboard/CommandPalette';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
 import FacilityChart from '@/components/dashboard/FacilityChart';
@@ -144,6 +145,14 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
+      {/* Command Palette ⌘K */}
+      <CommandPalette
+        language={language}
+        setActiveTab={setActiveTab}
+        entries={entries}
+        setShowAddForm={setShowAddForm}
+      />
 
       {/* Onboarding Tour */}
       <OnboardingTour language={language} />
