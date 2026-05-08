@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar } from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const CURRENT_YEAR = new Date().getFullYear();
@@ -192,7 +193,8 @@ function TargetCard({ tgt, currentKg, language }) {
 export default function ReductionTargetsTab({
   language, targets, summary, fetchData,
 }) {
-  const tr = language === 'tr';
+  const tr    = language === 'tr';
+  const toast = useToast();
   const currentKg = (summary?.total_tonne || 0) * 1000;
 
   // ── Add target form state ────────────────────────────────────────────────
@@ -219,7 +221,12 @@ export default function ReductionTargetsTab({
       base_emissions_kg: parseFloat(baseEmit) * 1000,
       target_reduction_percent: parseFloat(reducePct),
     });
-    if (res.ok) { setShowForm(false); resetForm(); fetchData(); }
+    if (res.ok) {
+      setShowForm(false); resetForm(); fetchData();
+      toast.success(tr ? 'Hedef başarıyla eklendi ✓' : 'Target saved successfully ✓');
+    } else {
+      toast.error(tr ? 'Hedef kaydedilemedi' : 'Failed to save target');
+    }
     setSaving(false);
   };
 

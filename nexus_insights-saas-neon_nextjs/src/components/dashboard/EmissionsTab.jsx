@@ -6,6 +6,7 @@ import {
   Pencil, Plus, Search, Trash2, X,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+import { useToast } from '@/components/ToastProvider';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const SCOPE_META = {
@@ -105,7 +106,8 @@ export default function EmissionsTab({
   setActiveTab,
   fetchData,
 }) {
-  const tr = language === 'tr';
+  const tr    = language === 'tr';
+  const toast = useToast();
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [search, setSearch]           = useState('');
@@ -271,16 +273,26 @@ export default function EmissionsTab({
           month: parseInt(month), quantity, description: desc, facility,
         });
       }
-      if (res.ok) { setShowAddForm(false); resetAddForm(); fetchData(); }
-      else { const d = await res.json(); setFormError(JSON.stringify(d)); }
-    } catch { setFormError(tr ? 'Bağlantı hatası' : 'Connection error'); }
+      if (res.ok) {
+        setShowAddForm(false); resetAddForm(); fetchData();
+        toast.success(tr ? 'Kayıt başarıyla eklendi ✓' : 'Entry added successfully ✓');
+      } else {
+        const d = await res.json();
+        setFormError(JSON.stringify(d));
+        toast.error(tr ? 'Kayıt eklenemedi' : 'Failed to add entry');
+      }
+    } catch {
+      setFormError(tr ? 'Bağlantı hatası' : 'Connection error');
+      toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
+    }
     finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id) => {
     if (!confirm(tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?')) return;
-    await api.deleteEntry(id);
+    const res = await api.deleteEntry(id);
     fetchData();
+    if (res.ok !== false) toast.success(tr ? 'Kayıt silindi' : 'Entry deleted');
   };
 
   const handleEdit = async (e) => {
@@ -289,7 +301,12 @@ export default function EmissionsTab({
     const res = await api.updateEntry(editing.id, {
       quantity: editQty, description: editDesc, facility: editFacility,
     });
-    if (res.ok) { setEditing(null); fetchData(); }
+    if (res.ok) {
+      setEditing(null); fetchData();
+      toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
+    } else {
+      toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+    }
   };
 
   const openEdit = (entry) => {
@@ -311,6 +328,9 @@ export default function EmissionsTab({
       setShowCustom(false);
       setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCQty('');
       fetchData();
+      toast.info(tr ? 'Özel talep gönderildi — inceleme bekleniyor' : 'Custom request submitted — pending review');
+    } else {
+      toast.error(tr ? 'Talep gönderilemedi' : 'Failed to submit request');
     }
     setCSaving(false);
   };

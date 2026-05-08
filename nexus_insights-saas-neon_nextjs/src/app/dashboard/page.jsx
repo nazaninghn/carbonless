@@ -10,6 +10,7 @@ import PasswordChange from '@/components/PasswordChange';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import CommandPalette from '@/components/dashboard/CommandPalette';
+import { ToastProvider } from '@/components/ToastProvider';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
 import FacilityChart from '@/components/dashboard/FacilityChart';
@@ -44,6 +45,7 @@ export default function DashboardPage() {
   };
 
   return (
+    <ToastProvider>
     <div className="min-h-screen bg-[#F8F8F8] text-[#302817] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar
@@ -157,6 +159,7 @@ export default function DashboardPage() {
       {/* Onboarding Tour */}
       <OnboardingTour language={language} />
     </div>
+    </ToastProvider>
   );
 }
 

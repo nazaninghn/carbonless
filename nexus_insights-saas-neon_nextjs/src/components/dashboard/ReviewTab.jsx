@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
 import { ClipboardCheck, Check, X } from 'lucide-react';
+import { useToast } from '@/components/ToastProvider';
 
 export default function ReviewTab({ language, fetchData }) {
   const [pending, setPending] = useState([]);
@@ -9,7 +10,8 @@ export default function ReviewTab({ language, fetchData }) {
   const [rejectId, setRejectId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [processing, setProcessing] = useState(null);
-  const tr = language === 'tr';
+  const tr    = language === 'tr';
+  const toast = useToast();
 
   const fetchPending = async () => {
     setLoading(true);
@@ -24,21 +26,25 @@ export default function ReviewTab({ language, fetchData }) {
 
   const handleApprove = async (id) => {
     setProcessing(id);
-    await api.approveEntry(id, 'approve');
+    const res = await api.approveEntry(id, 'approve');
     fetchPending();
     if (fetchData) fetchData();
     setProcessing(null);
+    if (res.ok !== false) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
+    else toast.error(tr ? 'Onay başarısız' : 'Approval failed');
   };
 
   const handleReject = async () => {
     if (!rejectId) return;
     setProcessing(rejectId);
-    await api.approveEntry(rejectId, 'reject', rejectReason);
+    const res = await api.approveEntry(rejectId, 'reject', rejectReason);
     setRejectId(null);
     setRejectReason('');
     fetchPending();
     if (fetchData) fetchData();
     setProcessing(null);
+    if (res.ok !== false) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
+    else toast.error(tr ? 'Red işlemi başarısız' : 'Rejection failed');
   };
 
   return (
