@@ -35,7 +35,12 @@ export default function Home() {
 
   useEffect(() => {
     const saved = localStorage.getItem('language');
-    if (saved === 'tr' || saved === 'en') setLang(saved);
+    if (saved === 'tr' || saved === 'en') {
+      setLang(saved);
+    } else {
+      // First visit — default to English, persist it so login/register/dashboard pick it up
+      localStorage.setItem('language', 'en');
+    }
   }, []);
 
   const changeLang = (next) => {

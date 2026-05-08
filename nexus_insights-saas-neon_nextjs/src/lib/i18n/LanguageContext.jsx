@@ -10,7 +10,7 @@ const useIsomorphicLayoutEffect =
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('tr'); // SSR default
+  const [language, setLanguage] = useState('en'); // SSR default — English
 
   // useLayoutEffect fires synchronously after DOM paint but BEFORE the browser
   // repaints — eliminates the flash of wrong language on client hydration.
@@ -19,6 +19,9 @@ export function LanguageProvider({ children }) {
       const saved = localStorage.getItem('language');
       if (saved === 'tr' || saved === 'en') {
         setLanguage(saved);
+      } else {
+        // No saved preference — persist the default (English) so other pages read it
+        localStorage.setItem('language', 'en');
       }
     } catch {
       // localStorage blocked (private mode, etc.) — keep default
