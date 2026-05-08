@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
 import NextLink from 'next/link';
 import { Mail, Lock, ArrowRight, Leaf, TrendingDown, BarChart3 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -44,12 +46,12 @@ export default function LoginPage() {
           const { setAccessToken } = await import('@/lib/utils/api');
           setAccessToken(data.access);
         }
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       } else {
-        setError(t.language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
+        setError(language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
       }
     } catch {
-      setError(t.language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error');
+      setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error');
     } finally {
       setLoading(false);
     }
@@ -77,9 +79,9 @@ export default function LoginPage() {
                   </div>
                   
                   <h1 className="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-                    {t.language === 'tr' ? 'Karbon Yönetiminize' : t.login.welcomeBack}
+                    {language === 'tr' ? 'Karbon Yönetiminize' : t.login.welcomeBack}
                     <span className="block gradient-text mt-2">
-                      {t.language === 'tr' ? 'Hoş Geldiniz' : ''}
+                      {language === 'tr' ? 'Hoş Geldiniz' : ''}
                     </span>
                   </h1>
                   
@@ -221,7 +223,7 @@ export default function LoginPage() {
                     {/* Session Expired */}
                     {sessionExpired && (
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-700 text-sm">
-                        {t.language === 'tr' ? 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' : 'Your session has expired. Please log in again.'}
+                        {language === 'tr' ? 'Oturumunuz sona erdi. Lütfen tekrar giriş yapın.' : 'Your session has expired. Please log in again.'}
                       </div>
                     )}
 
@@ -238,7 +240,7 @@ export default function LoginPage() {
                       disabled={loading}
                       className="w-full px-6 py-4 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-[1.02] transition-all duration-300 shadow-lg shadow-primary/25 flex items-center justify-center gap-2 group disabled:opacity-60 disabled:hover:scale-100"
                     >
-                      {loading ? (t.language === 'tr' ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
+                      {loading ? (language === 'tr' ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                       {!loading && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                     </button>
                   </form>

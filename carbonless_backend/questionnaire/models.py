@@ -8,7 +8,7 @@ class QuestionnaireSession(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     is_complete = models.BooleanField(default=False)
-    current_question = models.CharField(max_length=10, default='S1')
+    current_question = models.CharField(max_length=20, default='A1')
     answers = models.JSONField(default=dict, blank=True)
     warnings = models.JSONField(default=list, blank=True)
 

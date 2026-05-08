@@ -1,27 +1,39 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useLayoutEffect } from 'react';
 import { translations } from './translations';
 
-const LanguageContext = createContext();
+// useLayoutEffect on client, useEffect on server (prevents SSR warning)
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : () => {};
+
+const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('tr'); // Default to Turkish
+  const [language, setLanguage] = useState('tr'); // SSR default
 
-  useEffect(() => {
-    // Load saved language from localStorage
-    const savedLanguage = localStorage.getItem('language');
-    if (savedLanguage && (savedLanguage === 'tr' || savedLanguage === 'en')) {
-      setLanguage(savedLanguage);
+  // useLayoutEffect fires synchronously after DOM paint but BEFORE the browser
+  // repaints — eliminates the flash of wrong language on client hydration.
+  useIsomorphicLayoutEffect(() => {
+    try {
+      const saved = localStorage.getItem('language');
+      if (saved === 'tr' || saved === 'en') {
+        setLanguage(saved);
+      }
+    } catch {
+      // localStorage blocked (private mode, etc.) — keep default
     }
   }, []);
 
   const changeLanguage = (lang) => {
+    if (lang !== 'tr' && lang !== 'en') return;
     setLanguage(lang);
-    localStorage.setItem('language', lang);
+    try {
+      localStorage.setItem('language', lang);
+    } catch {}
   };
 
-  const t = translations[language];
+  const t = translations[language] ?? translations['tr'];
 
   return (
     <LanguageContext.Provider value={{ language, changeLanguage, t }}>
@@ -31,9 +43,7 @@ export function LanguageProvider({ children }) {
 }
 
 export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error('useLanguage must be used within a LanguageProvider');
+  return ctx;
 }

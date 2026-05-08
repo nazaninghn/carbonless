@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
 import { CheckCircle } from 'lucide-react';
@@ -10,6 +11,7 @@ import CountryPicker from '@/components/CountryPicker';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
+  const router = useRouter();
   const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useState({
     // Account
@@ -206,7 +208,7 @@ export default function RegisterPage() {
             is_for_group_reporting: formData.isForGroupReporting === 'yes',
           }),
         });
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       }
     } catch {
       setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error');
