@@ -110,6 +110,9 @@ export default function EmissionsTab({
   // ── Local state ──────────────────────────────────────────────────────────
   const [search, setSearch]           = useState('');
   const [filterScope, setFilterScope] = useState('');
+  const [filterMonth,    setFilterMonth]    = useState(0);   // 0 = all months
+  const [filterFacility, setFilterFacility] = useState('');
+  const [sortBy,         setSortBy]         = useState('month');
 
   // Add form
   const [selScope,    setSelScope]    = useState('');
@@ -211,12 +214,22 @@ export default function EmissionsTab({
 
   const selFactorObj = factors.find(f => f.id === parseInt(selFactor));
 
-  // Filtered entries
-  const filtered = useMemo(() => entries.filter(e => {
-    const name = (tr && e.emission_factor_name_tr ? e.emission_factor_name_tr : e.emission_factor_name) || '';
-    return (!search || name.toLowerCase().includes(search.toLowerCase()))
-        && (!filterScope || e.scope === filterScope);
-  }), [entries, search, filterScope, tr]);
+  // Filtered + sorted entries
+  const filtered = useMemo(() => {
+    const base = entries.filter(e => {
+      const name = (tr && e.emission_factor_name_tr ? e.emission_factor_name_tr : e.emission_factor_name) || '';
+      return (!search         || name.toLowerCase().includes(search.toLowerCase()))
+          && (!filterScope    || e.scope === filterScope)
+          && (!filterMonth    || parseInt(e.month) === filterMonth)
+          && (!filterFacility || String(e.facility ?? '') === filterFacility);
+    });
+    return [...base].sort((a, b) => {
+      if (sortBy === 'kg_desc') return (parseFloat(b.calculated_co2e_kg) || 0) - (parseFloat(a.calculated_co2e_kg) || 0);
+      if (sortBy === 'kg_asc')  return (parseFloat(a.calculated_co2e_kg) || 0) - (parseFloat(b.calculated_co2e_kg) || 0);
+      if (sortBy === 'name')    return (a.emission_factor_name || '').localeCompare(b.emission_factor_name || '');
+      return parseInt(a.month) - parseInt(b.month); // default: month asc
+    });
+  }, [entries, search, filterScope, filterMonth, filterFacility, sortBy, tr]);
 
   const maxKg = useMemo(
     () => Math.max(...filtered.map(e => parseFloat(e.calculated_co2e_kg) || 0), 1),
@@ -346,20 +359,29 @@ export default function EmissionsTab({
       </div>
 
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {[
-          { label: tr ? 'Toplam Kayıt' : 'Total Entries', value: countAll, color: null },
-          { label: 'Scope 1', value: countS('scope1'), color: '#302817' },
-          { label: 'Scope 2', value: countS('scope2'), color: '#95A847' },
-          { label: 'Scope 3', value: countS('scope3'), color: '#B4BE6A' },
-        ].map(k => (
-          <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white/80 px-3 py-2.5">
-            {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
-            <p className="mt-1 text-[18px] font-bold leading-none text-[#302817] sm:text-xl">{k.value}</p>
+      {(() => {
+        const s1kg = entries.filter(e => e.scope === 'scope1').reduce((a,e) => a + (parseFloat(e.calculated_co2e_kg)||0), 0);
+        const s2kg = entries.filter(e => e.scope === 'scope2').reduce((a,e) => a + (parseFloat(e.calculated_co2e_kg)||0), 0);
+        const s3kg = entries.filter(e => e.scope === 'scope3').reduce((a,e) => a + (parseFloat(e.calculated_co2e_kg)||0), 0);
+        const totKg = s1kg + s2kg + s3kg;
+        return (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+            {[
+              { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: (totKg/1000).toFixed(2), sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
+              { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS('scope1')} ${tr?'kayıt':'entries'}`, color: '#302817' },
+              { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS('scope2')} ${tr?'kayıt':'entries'}`, color: '#95A847' },
+              { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS('scope3')} ${tr?'kayıt':'entries'}`, color: '#B4BE6A' },
+            ].map(k => (
+              <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white/80 px-3 py-2.5">
+                {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
+                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
+                <p className="mt-1 text-[18px] font-bold leading-none text-[#302817] sm:text-xl">{k.value}</p>
+                <p className="mt-0.5 text-[9px] font-semibold text-[#302817]/35">{k.sub}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* ── Search + Scope filter ──────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">
@@ -399,6 +421,86 @@ export default function EmissionsTab({
           ))}
         </div>
       </div>
+
+      {/* ── Month filter + Facility + Sort ────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Month pills (only months that actually have data) */}
+        <div className="flex flex-1 gap-1 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setFilterMonth(0)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+              filterMonth === 0
+                ? 'bg-[#302817] text-white'
+                : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
+            }`}
+          >
+            {tr ? 'Tüm Aylar' : 'All Months'}
+          </button>
+          {months.map((m, i) => {
+            const mo = i + 1;
+            const count = entries.filter(e => parseInt(e.month) === mo).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={mo}
+                onClick={() => setFilterMonth(filterMonth === mo ? 0 : mo)}
+                className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition ${
+                  filterMonth === mo
+                    ? 'bg-[#302817] text-white'
+                    : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
+                }`}
+              >
+                {m}
+                <span className="ml-0.5 text-[9px] opacity-50">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Facility filter (only when multiple facilities exist) */}
+        {facilityList.length > 1 && (
+          <select
+            value={filterFacility}
+            onChange={e => setFilterFacility(e.target.value)}
+            className="shrink-0 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[11px] font-bold text-[#302817] shadow-sm outline-none transition hover:bg-[#F9EFE5]/60"
+          >
+            <option value="">{tr ? 'Tüm Tesisler' : 'All Facilities'}</option>
+            {facilityList.map(f => (
+              <option key={f.id} value={String(f.id)}>{f.name}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Sort */}
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value)}
+          className="shrink-0 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[11px] font-bold text-[#302817] shadow-sm outline-none transition hover:bg-[#F9EFE5]/60"
+        >
+          <option value="month">{tr ? 'Ay ↑' : 'Month ↑'}</option>
+          <option value="kg_desc">{tr ? 'CO₂e ↓' : 'CO₂e ↓'}</option>
+          <option value="kg_asc">{tr ? 'CO₂e ↑' : 'CO₂e ↑'}</option>
+          <option value="name">{tr ? 'İsme göre' : 'By name'}</option>
+        </select>
+      </div>
+
+      {/* ── Active filter summary chip ────────────────────────────────── */}
+      {(filterMonth !== 0 || filterFacility || search || filterScope) && (
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="text-[#302817]/40 font-semibold">
+            {tr ? 'Filtre aktif:' : 'Filtered:'}{' '}
+            <strong className="text-[#302817]">{filtered.length}</strong>
+            {' / '}{entries.length}{' '}{tr ? 'kayıt' : 'entries'}
+          </span>
+          <button
+            onClick={() => { setSearch(''); setFilterScope(''); setFilterMonth(0); setFilterFacility(''); }}
+            className="inline-flex items-center gap-1 rounded-full border border-[#302817]/10 bg-white px-2.5 py-1 font-bold text-[#302817]/50 transition hover:border-red-200 hover:text-red-500"
+          >
+            <X className="h-3 w-3" />
+            {tr ? 'Temizle' : 'Clear'}
+          </button>
+        </div>
+      )}
 
       {/* ── Custom Requests list ──────────────────────────────────────── */}
       {customRequests.length > 0 && (
@@ -611,7 +713,7 @@ export default function EmissionsTab({
       {entries.length > 0 && filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#302817]/6 bg-white/60 py-10 text-center">
           <p className="text-sm font-bold text-[#302817]/40">{tr ? 'Sonuç bulunamadı' : 'No results found'}</p>
-          <button onClick={() => { setSearch(''); setFilterScope(''); }} className="text-xs font-bold text-[#95A847] hover:underline">
+          <button onClick={() => { setSearch(''); setFilterScope(''); setFilterMonth(0); setFilterFacility(''); }} className="text-xs font-bold text-[#95A847] hover:underline">
             {tr ? 'Filtreyi temizle' : 'Clear filters'}
           </button>
         </div>
