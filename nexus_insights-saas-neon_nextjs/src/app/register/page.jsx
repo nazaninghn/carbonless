@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
@@ -14,6 +15,7 @@ import CountryPicker from '@/components/CountryPicker';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
+  const router = useRouter();
   const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useState({
     username: '', email: '', password: '', password2: '',
@@ -89,7 +91,7 @@ export default function RegisterPage() {
         const headers = { 'Content-Type': 'application/json' };
         try { const tk = localStorage.getItem('_dev_access_token'); if (tk) headers['Authorization'] = `Bearer ${tk}`; } catch {}
         await fetch(`${API}/companies/create/`, { method: 'POST', headers, credentials: 'include', body: JSON.stringify({ legal_entity_name: formData.legalEntityName, tax_number: formData.taxNumber, country_of_headquarters: formData.countryOfHeadquarters, countries_of_operation: formData.countriesOfOperation, nace_code: formData.naceCode, main_activity_description: formData.mainActivityDescription, number_of_employees: formData.numberOfEmployees, annual_turnover_range: formData.annualTurnoverRange, number_of_facilities: parseInt(formData.numberOfFacilities) || 0, has_overseas_operations: formData.hasOverseasOperations === 'yes', number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0, has_iso_14001: formData.hasISO14001 === 'yes', has_iso_50001: formData.hasISO50001 === 'yes', has_iso_14064_work: formData.hasISO14064Work === 'yes', target_iso_14064_verification: formData.targetISO14064Verification === 'yes', has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes', is_for_financing: formData.isForFinancing === 'yes', is_due_to_export_pressure: formData.isDueToExportPressure === 'yes', is_for_group_reporting: formData.isForGroupReporting === 'yes' }) });
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       }
     } catch { setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error'); }
     finally { setLoading(false); }

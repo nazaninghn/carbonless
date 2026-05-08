@@ -1,297 +1,830 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+
+import { useState, useRef, useEffect, useMemo } from 'react';
 import {
-  AlertCircle, ArrowLeft, ArrowRight, Bot, Check, CheckCircle2, ChevronDown,
-  ClipboardList, FileText, HelpCircle, Leaf, Loader2, Maximize2, MessageCircle,
-  Minimize2, RotateCcw, Save, Send, ShieldCheck, Sparkles, X,
+  MessageCircle, X, Send, RotateCcw, AlertTriangle,
+  CheckCircle2, ChevronDown, Search, Info,
 } from 'lucide-react';
+import { api } from '@/lib/utils/api';
 
-const STORAGE_KEY = 'carboniq_chatbot_state_v1';
+// ─── Phase meta ───────────────────────────────────────────────────────────────
+const PHASE_META = {
+  '1A': { label_tr: 'İdari Bilgiler',       label_en: 'Administrative Info',     color: 'bg-blue-500' },
+  '1B': { label_tr: 'Faaliyet Profili',     label_en: 'Activity Profile',        color: 'bg-blue-500' },
+  '1C': { label_tr: 'Yapısal Bilgiler',     label_en: 'Structural Info',         color: 'bg-blue-500' },
+  '1D': { label_tr: 'Raporlama Tercihleri', label_en: 'Reporting Preferences',   color: 'bg-blue-500' },
+  '2':  { label_tr: 'Organizasyon Sınırı',  label_en: 'Org. Boundary',           color: 'bg-indigo-500' },
+  '3':  { label_tr: 'Kapsam 1',             label_en: 'Scope 1',                 color: 'bg-orange-500' },
+  '4':  { label_tr: 'Kapsam 2',             label_en: 'Scope 2',                 color: 'bg-yellow-500' },
+  '5':  { label_tr: 'Kapsam 3',             label_en: 'Scope 3',                 color: 'bg-purple-500' },
+  '6A': { label_tr: 'Hariç Tutmalar',       label_en: 'Exclusions',              color: 'bg-gray-500' },
+  '6B': { label_tr: 'Kabuller',             label_en: 'Assumptions',             color: 'bg-gray-500' },
+  '6C': { label_tr: 'İstisnalar',           label_en: 'Exceptions',              color: 'bg-gray-500' },
+  '6D': { label_tr: 'Eşik',                 label_en: 'Threshold',               color: 'bg-gray-500' },
+  '6E': { label_tr: 'Belirsizlik',          label_en: 'Uncertainty',             color: 'bg-gray-500' },
+  '6F': { label_tr: 'Baz Yıl',              label_en: 'Base Year',               color: 'bg-gray-500' },
+  '7':  { label_tr: 'Rapor Üretimi',        label_en: 'Report Generation',       color: 'bg-green-500' },
+};
 
-const STAGES = [
-  { id: 1, title: { tr: 'Şirketi Tanıma', en: 'Company Profile' }, iso: '§7.5 / §5.1' },
-  { id: 2, title: { tr: 'Organizasyon Sınırı', en: 'Organizational Boundary' }, iso: '§5.1' },
-  { id: 3, title: { tr: 'Kapsam 1', en: 'Scope 1' }, iso: '§5.2' },
-  { id: 4, title: { tr: 'Kapsam 2', en: 'Scope 2' }, iso: '§5.3' },
-  { id: 5, title: { tr: 'Kapsam 3', en: 'Scope 3' }, iso: '§5.4' },
-  { id: 6, title: { tr: 'Kabuller ve Kapatış', en: 'Assumptions & Close-out' }, iso: '§7.3 / §7.4' },
-  { id: 7, title: { tr: 'Rapor Üretimi', en: 'Report Generation' }, iso: '§7.5' },
-];
+const PHASE_ORDER = ['1A','1B','1C','1D','2','3','4','5','6A','6B','6C','6D','6E','6F','7'];
+const TOTAL_PHASES = PHASE_ORDER.length;
 
-function yesNoOptions() {
-  return [
-    { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
-    { value: 'no', label: { tr: 'Hayır', en: 'No' } },
-  ];
+// ─── Year options ──────────────────────────────────────────────────────────────
+const YEAR_OPTIONS = Array.from({ length: 15 }, (_, i) => 2015 + i);
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function phaseIndex(phase) {
+  return PHASE_ORDER.indexOf(phase);
 }
 
-const QUESTIONS = [
-  { id: 'A1', order: 1, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'text', field: 'company_name', required: true, maxLength: 200, question: { tr: 'Şirketinizin tam ticari unvanı nedir?', en: 'What is the full legal name of your company?' }, placeholder: { tr: 'Örn: ABC Teknoloji Danışmanlık A.Ş.', en: 'Example: ABC Technology Consulting Inc.' }, help: { tr: 'Ticaret sicilinde kayıtlı tam unvanınızı girin.', en: 'Enter the full legal name registered in trade records.' }, validation: { kind: 'text', min: 1, max: 200 }, next: 'A2' },
-  { id: 'A2', order: 2, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'text', inputMode: 'numeric', field: 'tax_id', required: true, maxLength: 10, question: { tr: 'Vergi kimlik numaranız nedir?', en: 'What is your tax identification number?' }, placeholder: { tr: '0000000000', en: '0000000000' }, help: { tr: '10 haneli VKN / TCKN.', en: '10-digit tax ID.' }, validation: { kind: 'digits', length: 10 }, transform: 'digitsOnly', next: 'A3' },
-  { id: 'A3', order: 3, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'group', field: 'registered_location', required: true, question: { tr: 'Şirketinizin kayıtlı olduğu ülke ve şehir nedir?', en: 'In which country and city is your company registered?' }, help: { tr: 'Ana merkezi yazın.', en: 'Enter the headquarters.' }, fields: [{ key: 'country', type: 'select', label: { tr: 'Ülke', en: 'Country' }, required: true, options: [{ value: 'TR', label: { tr: 'Türkiye', en: 'Turkey' } }, { value: 'GB', label: { tr: 'İngiltere', en: 'United Kingdom' } }, { value: 'DE', label: { tr: 'Almanya', en: 'Germany' } }, { value: 'US', label: { tr: 'ABD', en: 'United States' } }, { value: 'OTHER', label: { tr: 'Diğer', en: 'Other' } }] }, { key: 'city', type: 'text', label: { tr: 'Şehir', en: 'City' }, required: true, placeholder: { tr: 'İstanbul', en: 'Istanbul' } }], effects: [{ when: { field: 'country', equals: 'TR' }, message: { type: 'info', tr: 'Türkiye seçiminize göre DEFRA + TÜİK önerilecek.', en: 'Based on Turkey, DEFRA + TÜİK will be recommended.' }, set: { recommended_ef_database: 'DEFRA_TUIK' } }], next: 'A4' },
-  { id: 'A4', order: 4, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'select', field: 'reporting_year', required: true, question: { tr: 'Hangi yıla ait rapor hazırlıyoruz?', en: 'Which reporting year are we preparing this report for?' }, help: { tr: 'Tüm veri girişleriniz bu yıl için geçerli olacak.', en: 'All data entries will apply to this year.' }, options: [2020, 2021, 2022, 2023, 2024, 2025, 2026].map(y => ({ value: String(y), label: { tr: String(y), en: String(y) } })), effects: [{ when: { equals: '2026' }, assumption: { type: 'A', trigger: 'current_year_selected', text: { tr: 'Cari yıl seçildi, bazı veriler tahmini olabilir.', en: 'Current year selected, some data may be estimated.' }, impact: 'May affect completeness.' }, message: { type: 'warning', tr: '2026 henüz tamamlanmadı.', en: '2026 is not complete yet.' } }], next: 'A5' },
-  { id: 'A5', order: 5, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'text', field: 'prepared_by', required: true, maxLength: 100, question: { tr: 'Raporu hazırlayan kişi veya birimin adı nedir?', en: 'Who is preparing this report?' }, placeholder: { tr: 'Örn: Ahmet Yılmaz — Sürdürülebilirlik Birimi', en: 'Example: Alex Green — Sustainability Department' }, help: { tr: "Raporda 'Hazırlayan' alanında görünecek.", en: "This will appear in the report's 'Prepared by' field." }, validation: { kind: 'text', min: 1, max: 100 }, next: 'A6' },
-  { id: 'A6', order: 6, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'multi', field: 'report_purpose', required: false, question: { tr: 'Bu raporun kullanım amacı nedir?', en: 'What is the intended use of this report?' }, help: { tr: 'Birden fazla seçebilirsiniz.', en: 'You can select more than one.' }, options: [{ value: 'internal', label: { tr: 'İç yönetim ve strateji', en: 'Internal management' } }, { value: 'legal', label: { tr: 'Yasal zorunluluk', en: 'Legal requirement' } }, { value: 'voluntary', label: { tr: 'Gönüllü açıklama', en: 'Voluntary disclosure' } }, { value: 'customer', label: { tr: 'Müşteri talebi', en: 'Customer request' } }, { value: 'skip', label: { tr: 'Atlamak istiyorum', en: 'I want to skip' } }], next: 'A7' },
-  { id: 'A7', order: 7, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'choice', field: 'has_previous_report', required: false, question: { tr: 'Daha önce karbon raporu hazırladınız mı?', en: 'Have you prepared a carbon report before?' }, help: { tr: 'Daha önce hazırladıysanız baz yıl karşılaştırması eklenecek.', en: 'If yes, baseline comparison can be added.' }, options: [{ value: 'yes', label: { tr: 'Evet', en: 'Yes' } }, { value: 'no', label: { tr: 'Hayır — ilk raporumuz', en: 'No — first report' } }, { value: 'skip', label: { tr: 'Atla', en: 'Skip' } }], conditionalNext: [{ when: { equals: 'yes' }, next: 'A7a' }, { when: { equals: 'no' }, next: 'B1' }, { when: { equals: 'skip' }, next: 'B1' }] },
-  { id: 'A7a', order: 8, stage: 1, block: { tr: 'İdari Bilgiler', en: 'Administrative Information' }, type: 'select', field: 'baseline_year', required: false, question: { tr: 'Baz yılınız hangi yıl?', en: 'What is your baseline year?' }, help: { tr: 'Baz yıl referans yıldır.', en: 'The baseline year is the reference year.' }, options: Array.from({ length: 12 }, (_, i) => 2014 + i).map(y => ({ value: String(y), label: { tr: String(y), en: String(y) } })), customValidate: 'baselineBeforeReportingYear', next: 'B1' },
-  { id: 'B1', order: 9, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'select', field: 'primary_sector', required: true, question: { tr: 'Şirketinizin ana sektörü nedir?', en: 'What is the primary sector?' }, help: { tr: 'Bu seçim sonraki soruları belirler.', en: 'This shapes later questions.' }, options: [{ value: 'A', label: { tr: 'NACE A — Tarım', en: 'NACE A — Agriculture' } }, { value: 'B', label: { tr: 'NACE B — Madencilik', en: 'NACE B — Mining' } }, { value: 'C', label: { tr: 'NACE C — İmalat', en: 'NACE C — Manufacturing' } }, { value: 'D', label: { tr: 'NACE D — Enerji', en: 'NACE D — Energy' } }, { value: 'F', label: { tr: 'NACE F — İnşaat', en: 'NACE F — Construction' } }, { value: 'G-N', label: { tr: 'NACE G–N — Hizmetler', en: 'NACE G–N — Services' } }, { value: 'K', label: { tr: 'NACE K — Finans', en: 'NACE K — Finance' } }, { value: 'O-U', label: { tr: 'NACE O–U — Kamu', en: 'NACE O–U — Public' } }], next: 'B2' },
-  { id: 'B2', order: 10, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'textarea', field: 'activity_description', required: true, maxLength: 200, question: { tr: 'Şirketinizin faaliyetini kısaca tanımlayın.', en: "Briefly describe your company's main activity." }, placeholder: { tr: 'Örn: Kurumsal eğitim ve danışmanlık', en: 'Example: Corporate training and consulting' }, validation: { kind: 'text', min: 1, max: 200 }, next: 'B3' },
-  { id: 'B3', order: 11, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'select', field: 'employee_band', required: true, question: { tr: 'Toplam çalışan sayınız nedir?', en: 'Total number of employees?' }, options: [{ value: '1-50', label: { tr: '1–50', en: '1–50' } }, { value: '51-250', label: { tr: '51–250', en: '51–250' } }, { value: '251-1000', label: { tr: '251–1.000', en: '251–1,000' } }, { value: '1001-5000', label: { tr: '1.001–5.000', en: '1,001–5,000' } }, { value: '5000+', label: { tr: '5.000+', en: '5,000+' } }], next: 'B4' },
-  { id: 'B4', order: 12, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'number', field: 'location_count', required: true, min: 1, max: 999, question: { tr: 'Kaç farklı lokasyonda faaliyet gösteriyorsunuz?', en: 'How many physical locations?' }, placeholder: { tr: '3', en: '3' }, next: 'B5' },
-  { id: 'B5', order: 13, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'multi', field: 'location_types', required: true, question: { tr: 'Lokasyon türleri neler?', en: 'What types of locations?' }, options: [{ value: 'office', label: { tr: 'Ofis', en: 'Office' } }, { value: 'factory', label: { tr: 'Fabrika', en: 'Factory' } }, { value: 'warehouse', label: { tr: 'Depo', en: 'Warehouse' } }, { value: 'field', label: { tr: 'Saha', en: 'Field' } }, { value: 'data_center', label: { tr: 'Veri Merkezi', en: 'Data Center' } }, { value: 'retail', label: { tr: 'Mağaza', en: 'Retail' } }, { value: 'other', label: { tr: 'Diğer', en: 'Other' } }], next: 'B6' },
-  { id: 'B6', order: 14, stage: 1, block: { tr: 'Faaliyet Profili', en: 'Activity Profile' }, type: 'select', field: 'revenue_band', required: false, question: { tr: 'Yıllık ciro aralığınız? (Opsiyonel)', en: 'Annual revenue range? (Optional)' }, options: [{ value: 'micro', label: { tr: '<1M TL', en: '<1M TRY' } }, { value: 'small', label: { tr: '1–10M TL', en: '1–10M TRY' } }, { value: 'medium', label: { tr: '10–100M TL', en: '10–100M TRY' } }, { value: 'large', label: { tr: '100M–1B TL', en: '100M–1B TRY' } }, { value: 'enterprise', label: { tr: '1B+ TL', en: '1B+ TRY' } }, { value: 'skip', label: { tr: 'Atla', en: 'Skip' } }], next: 'C1' },
-  { id: 'C1', order: 15, stage: 1, block: { tr: 'Yapısal Bilgiler', en: 'Structural Information' }, type: 'choice', field: 'has_subsidiaries', required: true, question: { tr: 'Bağlı şirket var mı?', en: 'Any subsidiaries?' }, options: yesNoOptions(), next: 'C2' },
-  { id: 'C2', order: 16, stage: 1, block: { tr: 'Yapısal Bilgiler', en: 'Structural Information' }, type: 'choice', field: 'has_international_operations', required: true, question: { tr: 'Yurt dışında operasyonunuz var mı?', en: 'International operations?' }, options: yesNoOptions(), next: 'C3' },
-  { id: 'C3', order: 17, stage: 1, block: { tr: 'Yapısal Bilgiler', en: 'Structural Information' }, type: 'choice', field: 'has_jv_franchise', required: true, question: { tr: 'Franchise veya JV var mı?', en: 'Any franchise or JV?' }, options: yesNoOptions(), next: 'D1' },
-  { id: 'D1', order: 18, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'select', field: 'ef_database', required: true, question: { tr: 'Emisyon faktörü veritabanı tercihiniz?', en: 'Emission factor database preference?' }, options: [{ value: 'DEFRA', label: { tr: 'DEFRA 2023', en: 'DEFRA 2023' } }, { value: 'DEFRA_TUIK', label: { tr: 'DEFRA + TÜİK', en: 'DEFRA + TÜİK' } }, { value: 'IPCC_AR6', label: { tr: 'IPCC AR6', en: 'IPCC AR6' } }, { value: 'EPA', label: { tr: 'EPA', en: 'EPA' } }, { value: 'custom', label: { tr: 'Özel faktör', en: 'Custom factors' } }], next: 'D2' },
-  { id: 'D2', order: 19, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'info', field: 'scope2_method_acknowledged', required: true, question: { tr: 'Kapsam 2 metodolojisi hakkında bilgi', en: 'Scope 2 methodology information' }, help: { tr: 'Bu versiyon location-based metodolojisini destekler.', en: 'This version supports location-based methodology.' }, buttonLabel: { tr: 'Anladım, devam', en: 'I understand, continue' }, effects: [{ when: { equals: true }, assumption: { type: 'B', trigger: 'location_based_scope2', text: { tr: 'Location-based metodoloji kabul edildi.', en: 'Location-based methodology acknowledged.' }, impact: 'Scope 2 uses grid average factors.' }, set: { scope2_method: 'location_based' } }], next: 'D3' },
-  { id: 'D3', order: 20, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'choice', field: 'boundary_approach', required: true, question: { tr: 'Organizasyon sınırı yaklaşımı?', en: 'Organizational boundary approach?' }, help: { tr: "Emin değilseniz 'Operasyonel Kontrol' seçin.", en: "If unsure, select 'Operational Control'." }, options: [{ value: 'operational_control', label: { tr: 'Operasyonel Kontrol (Önerilen)', en: 'Operational Control (Recommended)' }, description: { tr: 'Operasyonel politikaları belirlediğiniz tesisler dahil.', en: 'Includes sites where you set operational policies.' } }, { value: 'financial_control', label: { tr: 'Finansal Kontrol', en: 'Financial Control' } }, { value: 'equity_share', label: { tr: 'Hisse Payı', en: 'Equity Share' } }], next: 'D4' },
-  { id: 'D4', order: 21, stage: 1, block: { tr: 'Raporlama Tercihleri', en: 'Reporting Preferences' }, type: 'choice', field: 'scope3_approach', required: true, question: { tr: 'Kapsam 3 kapsamını nasıl belirlemek istersiniz?', en: 'How to determine Scope 3 scope?' }, options: [{ value: 'materiality', label: { tr: 'Materyalite Bazlı (Önerilen)', en: 'Materiality-Based (Recommended)' }, description: { tr: 'Önemli kategoriler öne çıkar.', en: 'Prioritizes important categories.' } }, { value: 'full', label: { tr: 'Tam 15 Kategori', en: 'Full 15 Categories' } }], next: '2A-0', completionMessage: { tr: 'Aşama 1 tamamlandı!', en: 'Stage 1 complete!' } },
-  { id: '2A-0', order: 22, stage: 2, block: { tr: 'Organizasyon Sınırı', en: 'Organizational Boundary' }, type: 'info', field: 'stage2_intro_acknowledged', required: true, question: { tr: 'Aşama 2 — Organizasyon sınırınızı belirleyelim.', en: "Stage 2 — Let's define your organizational boundary." }, help: { tr: 'Hangi tesislerin rapora dahil edileceğini belirleyeceğiz.', en: 'We determine which sites are included in the report.' }, buttonLabel: { tr: 'Başlayalım', en: "Let's start" }, next: 'END' },
-];
+// ─── Input components ─────────────────────────────────────────────────────────
 
-export default function Chatbot({ language = 'en', user, questionnaireProfile, onComplete }) {
+function TextInput({ question, value, onChange, lang }) {
+  return (
+    <div>
+      <input
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={lang === 'tr' ? question.placeholder_tr : question.placeholder_en}
+        maxLength={question.max_length || undefined}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none"
+      />
+    </div>
+  );
+}
+
+function TextareaInput({ question, value, onChange, lang }) {
+  const max = question.max_length || 200;
+  return (
+    <div>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={lang === 'tr' ? question.placeholder_tr : question.placeholder_en}
+        maxLength={max}
+        rows={3}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none resize-none"
+      />
+      <div className={`text-xs mt-1 text-right ${value.length >= max ? 'text-red-500' : 'text-gray-400'}`}>
+        {value.length}/{max}
+      </div>
+    </div>
+  );
+}
+
+function NumberInput({ question, value, onChange, lang }) {
+  return (
+    <input
+      type="number"
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={lang === 'tr' ? question.placeholder_tr : question.placeholder_en}
+      min={question.min ?? undefined}
+      max={question.max ?? undefined}
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none"
+    />
+  );
+}
+
+function YearPicker({ question, value, onChange, lang }) {
+  const refYear = question.reference_year;
+  const years = YEAR_OPTIONS.filter(y => !refYear || y < refYear);
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none bg-white"
+    >
+      <option value="">{lang === 'tr' ? 'Yıl seçin...' : 'Select year...'}</option>
+      {years.map(y => <option key={y} value={y}>{y}</option>)}
+    </select>
+  );
+}
+
+function DropdownInput({ question, value, onChange, lang }) {
+  const opts = question.options || [];
+  return (
+    <select
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/40 focus:border-primary outline-none bg-white"
+    >
+      <option value="">{lang === 'tr' ? 'Seçin...' : 'Select...'}</option>
+      {opts.map(o => (
+        <option key={o.key} value={o.key}>
+          {lang === 'tr' ? o.text_tr || o.text : o.text_en || o.text}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function SearchDropdown({ question, value, onChange, lang }) {
+  const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
-  const [expanded, setExpanded] = useState(false);
-  const [currentId, setCurrentId] = useState('A1');
-  const [answers, setAnswers] = useState({});
-  const [history, setHistory] = useState([]);
-  const [assumptions, setAssumptions] = useState([]);
-  const [systemMessages, setSystemMessages] = useState([]);
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const opts = question.options || [];
 
-  const lang = language === 'tr' ? 'tr' : 'en';
-  const currentQuestion = useMemo(() => QUESTIONS.find(q => q.id === currentId) || QUESTIONS[0], [currentId]);
-  const currentIndex = QUESTIONS.findIndex(q => q.id === currentQuestion.id);
-  const progress = Math.round(((currentIndex + 1) / QUESTIONS.length) * 100);
-  const currentStage = STAGES.find(s => s.id === currentQuestion.stage) || STAGES[0];
-  const stageQuestions = QUESTIONS.filter(q => q.stage === currentQuestion.stage);
-  const stageIndex = stageQuestions.findIndex(q => q.id === currentQuestion.id);
-  const answer = answers[currentQuestion.field];
+  const filtered = useMemo(() =>
+    opts.filter(o => {
+      const txt = lang === 'tr' ? (o.text_tr || o.text) : (o.text_en || o.text);
+      return txt.toLowerCase().includes(query.toLowerCase()) || o.key.toLowerCase().includes(query.toLowerCase());
+    }).slice(0, 12),
+  [opts, query, lang]);
 
-  useEffect(() => { try { const saved = localStorage.getItem(STORAGE_KEY); if (!saved) return; const parsed = JSON.parse(saved); setCurrentId(parsed.currentId || 'A1'); setAnswers(parsed.answers || {}); setHistory(parsed.history || []); setAssumptions(parsed.assumptions || []); setSystemMessages(parsed.systemMessages || []); setCompleted(Boolean(parsed.completed)); } catch {} }, []);
-  useEffect(() => { persistState({ currentId, answers, history, assumptions, systemMessages, completed }); }, [currentId, answers, history, assumptions, systemMessages, completed]);
-
-  const setAnswer = (value) => { setError(''); setAnswers(prev => ({ ...prev, [currentQuestion.field]: value })); };
-  const goBack = () => { setError(''); setSystemMessages([]); setHistory(prev => { if (prev.length === 0) return prev; const next = [...prev]; const previousId = next.pop(); setCurrentId(previousId); return next; }); };
-  const reset = () => { const ok = window.confirm(lang === 'tr' ? 'Tüm ilerlemesini sıfırlamak istiyor musunuz?' : 'Reset all progress?'); if (!ok) return; localStorage.removeItem(STORAGE_KEY); setCurrentId('A1'); setAnswers({}); setHistory([]); setAssumptions([]); setSystemMessages([]); setError(''); setCompleted(false); };
-
-  const handleNext = async () => {
-    setError(''); setSystemMessages([]);
-    const normalized = normalizeValue(currentQuestion, answer);
-    const validation = validateAnswer(currentQuestion, normalized, answers, lang);
-    if (!validation.ok) { setError(validation.message); return; }
-    const effectResult = applyEffects(currentQuestion, normalized, answers, lang);
-    if (effectResult.nextAnswers) { setAnswers(prev => ({ ...prev, ...effectResult.nextAnswers, [currentQuestion.field]: normalized })); } else { setAnswers(prev => ({ ...prev, [currentQuestion.field]: normalized })); }
-    if (effectResult.messages.length > 0) setSystemMessages(effectResult.messages);
-    if (effectResult.assumptions.length > 0) setAssumptions(prev => mergeAssumptions(prev, effectResult.assumptions, currentQuestion.id));
-    setSaving(true);
-    await saveAnswerToApi({ question: currentQuestion, value: normalized, answers: { ...answers, [currentQuestion.field]: normalized, ...effectResult.nextAnswers }, assumptions: effectResult.assumptions });
-    setSaving(false);
-    const nextId = getNextQuestionId(currentQuestion, normalized, answers);
-    if (currentQuestion.completionMessage) setSystemMessages(prev => [...prev, { type: 'success', text: currentQuestion.completionMessage[lang] }]);
-    if (nextId === 'END') { setCompleted(true); if (onComplete) onComplete({ answers, assumptions }); return; }
-    setHistory(prev => [...prev, currentQuestion.id]);
-    setCurrentId(nextId || QUESTIONS[Math.min(currentIndex + 1, QUESTIONS.length - 1)]?.id || 'END');
-  };
+  const selected = opts.find(o => o.key === value);
+  const displayText = selected ? (lang === 'tr' ? selected.text_tr || selected.text : selected.text_en || selected.text) : '';
 
   return (
-    <>
-      {!open && (
-        <button onClick={() => setOpen(true)} className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-full bg-emerald-600 px-5 py-4 text-sm font-bold text-white shadow-2xl shadow-emerald-600/30 transition hover:-translate-y-0.5 hover:bg-emerald-700">
-          <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-white/15"><Bot className="h-5 w-5" />{!completed && <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-lime-300 ring-2 ring-emerald-600" />}</span>
-          <span className="hidden sm:inline">CarbonIQ</span>
-        </button>
+    <div className="relative">
+      <div
+        className="flex items-center gap-2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm cursor-pointer bg-white focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary"
+        onClick={() => setOpen(o => !o)}
+      >
+        <Search className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+        <input
+          type="text"
+          value={open ? query : displayText}
+          onChange={e => { setQuery(e.target.value); setOpen(true); onChange(''); }}
+          placeholder={lang === 'tr' ? question.placeholder_tr || 'Arayın...' : question.placeholder_en || 'Search...'}
+          className="flex-1 outline-none bg-transparent"
+          onFocus={() => setOpen(true)}
+        />
+        <ChevronDown className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+      </div>
+      {open && filtered.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {filtered.map(o => (
+            <button
+              key={o.key}
+              type="button"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 hover:text-primary transition-colors"
+              onMouseDown={e => {
+                e.preventDefault();
+                onChange(o.key);
+                setQuery('');
+                setOpen(false);
+              }}
+            >
+              {lang === 'tr' ? o.text_tr || o.text : o.text_en || o.text}
+            </button>
+          ))}
+        </div>
       )}
-      {open && (
-        <div className={`fixed z-50 overflow-hidden border border-slate-200 bg-white shadow-2xl shadow-slate-950/20 transition-all duration-300 ${expanded ? 'inset-3 rounded-[2rem] sm:inset-6' : 'bottom-4 right-4 h-[min(760px,calc(100vh-2rem))] w-[calc(100vw-2rem)] rounded-[2rem] sm:w-[460px]'}`}>
-          <div className="flex h-full flex-col bg-[#fbfdf9]">
-            {/* Header */}
-            <header className="border-b border-slate-200 bg-white px-4 py-4 sm:px-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/20"><Bot className="h-6 w-6" /></div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2"><h2 className="truncate text-lg font-bold tracking-tight text-slate-950">CarbonIQ Assistant</h2><span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700 ring-1 ring-emerald-100">ISO</span></div>
-                    <p className="mt-0.5 truncate text-xs font-medium text-slate-500">{lang === 'tr' ? 'Karbon envanteri soru akışı' : 'Carbon inventory questionnaire'}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setExpanded(v => !v)} className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Toggle size">{expanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}</button>
-                  <button onClick={() => setOpen(false)} className="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Close"><X className="h-5 w-5" /></button>
-                </div>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
-                <div>
-                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-500"><span>{currentStage.title[lang]}</span><span>{progress}%</span></div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-teal-400 transition-all duration-500" style={{ width: `${progress}%` }} /></div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">{lang === 'tr' ? 'Aşama' : 'Stage'} {currentQuestion.stage}/7 · {currentStage.iso}</div>
-              </div>
-            </header>
+    </div>
+  );
+}
 
-            {/* Main */}
-            <main className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
-              {completed ? <CompletionView lang={lang} answers={answers} assumptions={assumptions} reset={reset} /> : (
-                <div className="mx-auto max-w-3xl space-y-4">
-                  <AssistantIntro lang={lang} question={currentQuestion} stageIndex={stageIndex} stageTotal={stageQuestions.length} />
-                  {systemMessages.length > 0 && <div className="space-y-2">{systemMessages.map((m, i) => <SystemMessage key={i} type={m.type} text={m.text} />)}</div>}
-                  {error && <SystemMessage type="error" text={error} />}
-                  <QuestionCard lang={lang} question={currentQuestion} value={answer} answers={answers} onChange={setAnswer} />
-                  {assumptions.length > 0 && <AssumptionsPanel lang={lang} assumptions={assumptions} />}
-                </div>
-              )}
-            </main>
+function BinaryInput({ question, value, onChange, lang }) {
+  const opts = question.options || [
+    { key: 'yes', text_tr: 'Evet', text_en: 'Yes' },
+    { key: 'no',  text_tr: 'Hayır', text_en: 'No' },
+  ];
+  return (
+    <div className="flex gap-3">
+      {opts.map(o => {
+        const txt = lang === 'tr' ? o.text_tr || o.text : o.text_en || o.text;
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            onClick={() => onChange(o.key)}
+            className={`flex-1 py-3 rounded-xl text-sm font-semibold border-2 transition-all ${
+              active
+                ? 'border-primary bg-primary text-white shadow-md shadow-primary/30'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-primary/40'
+            }`}
+          >
+            {txt}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
-            {/* Footer */}
-            {!completed && (
-              <footer className="border-t border-slate-200 bg-white p-4 sm:p-5">
-                <div className="mx-auto flex max-w-3xl flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex items-center gap-2">
-                    <button onClick={goBack} disabled={history.length === 0 || saving} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700 disabled:opacity-40"><ArrowLeft className="h-4 w-4" />{lang === 'tr' ? 'Geri' : 'Back'}</button>
-                    <button onClick={reset} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-500 shadow-sm transition hover:border-red-200 hover:text-red-600 disabled:opacity-40"><RotateCcw className="h-4 w-4" />{lang === 'tr' ? 'Sıfırla' : 'Reset'}</button>
-                  </div>
-                  <button onClick={handleNext} disabled={saving} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3 text-sm font-bold text-white shadow-xl shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-60">
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : currentQuestion.type === 'info' ? <Check className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                    {saving ? (lang === 'tr' ? 'Kaydediliyor...' : 'Saving...') : currentQuestion.type === 'info' ? (currentQuestion.buttonLabel?.[lang] || (lang === 'tr' ? 'Devam et' : 'Continue')) : (lang === 'tr' ? 'Kaydet ve devam et' : 'Save & continue')}
-                    {!saving && <ArrowRight className="h-4 w-4" />}
-                  </button>
+function SingleChoice({ question, selected, onToggle, inputValues, onInputChange, lang }) {
+  const opts = question.options || [];
+  return (
+    <div className="space-y-2">
+      {opts.map(o => {
+        const txt = lang === 'tr' ? o.text_tr || o.text : o.text_en || o.text;
+        const active = selected === o.key;
+        return (
+          <div key={o.key}>
+            <button
+              type="button"
+              onClick={() => onToggle(o.key)}
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
+                active
+                  ? 'border-primary bg-primary/10 text-primary font-medium'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${active ? 'border-primary' : 'border-gray-300'}`}>
+                  {active && <div className="w-2 h-2 bg-primary rounded-full" />}
                 </div>
-              </footer>
+                <span>{txt}</span>
+                {o.warning && <span className="text-amber-500 text-xs ml-auto">⚠️</span>}
+              </div>
+            </button>
+            {o.has_input && active && (
+              <div className="mt-1.5 ml-6">
+                <label className="text-xs text-gray-500 mb-1 block">
+                  {lang === 'tr' ? o.input_label_tr || o.input_label : o.input_label_en || o.input_label}
+                </label>
+                <SubInput optKey={o.key} inputType={o.input_type} value={inputValues[o.key] || ''} onChange={v => onInputChange(o.key, v)} lang={lang} />
+              </div>
             )}
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function MultiChoice({ question, selected, onToggle, inputValues, onInputChange, lang }) {
+  const opts = question.options || [];
+  return (
+    <div className="space-y-2">
+      {opts.map(o => {
+        const txt = lang === 'tr' ? o.text_tr || o.text : o.text_en || o.text;
+        const active = selected.includes(o.key);
+        return (
+          <div key={o.key}>
+            <button
+              type="button"
+              onClick={() => onToggle(o.key)}
+              className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all border ${
+                active
+                  ? 'border-primary bg-primary/10 text-primary font-medium'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${active ? 'border-primary bg-primary' : 'border-gray-300'}`}>
+                  {active && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                </div>
+                <span>{txt}</span>
+                {o.warning && <span className="text-amber-500 text-xs ml-auto">⚠️</span>}
+              </div>
+            </button>
+            {o.has_input && active && (
+              <div className="mt-1.5 ml-6">
+                <label className="text-xs text-gray-500 mb-1 block">
+                  {lang === 'tr' ? o.input_label_tr || o.input_label : o.input_label_en || o.input_label}
+                </label>
+                <SubInput optKey={o.key} inputType={o.input_type} value={inputValues[o.key] || ''} onChange={v => onInputChange(o.key, v)} lang={lang} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SubInput({ optKey, inputType, value, onChange, lang }) {
+  if (inputType === 'year') return (
+    <input type="number" min="2010" max="2030" placeholder="2024"
+      value={value} onChange={e => onChange(e.target.value)}
+      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none" />
+  );
+  if (inputType === 'date') return (
+    <input type="date" value={value} onChange={e => onChange(e.target.value)}
+      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none" />
+  );
+  if (inputType === 'date_range') return (
+    <div className="flex gap-2">
+      <input type="date" value={value.split('|')[0] || ''} onChange={e => onChange(`${e.target.value}|${value.split('|')[1] || ''}`)}
+        className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none" />
+      <input type="date" value={value.split('|')[1] || ''} onChange={e => onChange(`${value.split('|')[0] || ''}|${e.target.value}`)}
+        className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none" />
+    </div>
+  );
+  return (
+    <input type="text" value={value} onChange={e => onChange(e.target.value)}
+      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none" />
+  );
+}
+
+// ─── Progress Bar ──────────────────────────────────────────────────────────────
+function PhaseBar({ currentPhase, lang }) {
+  const idx = phaseIndex(currentPhase);
+  const pct = idx < 0 ? 100 : Math.round(((idx + 1) / TOTAL_PHASES) * 100);
+  const meta = PHASE_META[currentPhase];
+  const label = meta ? (lang === 'tr' ? meta.label_tr : meta.label_en) : '';
+  return (
+    <div className="px-4 py-2 bg-gray-50 border-b border-gray-100 flex-shrink-0">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-gray-500 font-medium">
+          {label || (lang === 'tr' ? 'Tamamlandı' : 'Complete')}
+        </span>
+        <span className="text-xs text-gray-400">{pct}%</span>
+      </div>
+      <div className="h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Chatbot ──────────────────────────────────────────────────────────────
+export default function Chatbot({ language = 'tr', onComplete }) {
+  const [open, setOpen] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [currentPhase, setCurrentPhase] = useState('1A');
+
+  // For choice-type questions
+  const [selectedOptions, setSelectedOptions] = useState([]);
+  const [inputValues, setInputValues] = useState({});   // for sub-inputs inside options
+
+  // For direct-input questions (text, number, dropdown, etc.)
+  const [directValue, setDirectValue] = useState('');
+
+  const [loading, setLoading] = useState(false);
+  const [complete, setComplete] = useState(false);
+  const [allWarnings, setAllWarnings] = useState([]);
+  const [error, setError] = useState('');
+  const messagesEndRef = useRef(null);
+
+  const lang = language;
+
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const isDirectType = (q) => q && ['text_input', 'textarea', 'number', 'year_picker', 'dropdown', 'search_dropdown', 'binary'].includes(q.type);
+  const isChoiceType = (q) => q && ['single', 'multi'].includes(q.type);
+
+  // ── Start / Resume ──────────────────────────────────────────────────────────
+  const startChat = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await api.startQuestionnaire(lang);
+      if (res?.ok) {
+        const data = await res.json();
+        setSessionId(data.session_id);
+        setComplete(false);
+        setAllWarnings(data.warnings || []);
+
+        if (data.resumed && Object.keys(data.answers || {}).length > 0) {
+          const answeredCount = Object.keys(data.answers).length;
+          addBotMessage(lang === 'tr'
+            ? `👋 Kaldığınız yerden devam ediyoruz... (${answeredCount} soru tamamlandı)`
+            : `👋 Resuming where you left off... (${answeredCount} questions completed)`);
+        } else {
+          addBotMessage(lang === 'tr'
+            ? '👋 Merhaba! CarbonIQ envanter sihirbazına hoş geldiniz. ISO 14064-1 standardına uygun raporunuzu birlikte hazırlayacağız.'
+            : '👋 Welcome to the CarbonIQ inventory wizard. We will prepare your ISO 14064-1 report together.');
+        }
+
+        if (data.question) {
+          setTimeout(() => showQuestion(data.question), 500);
+        }
+      }
+    } catch (err) {
+      setError(lang === 'tr' ? 'Bağlantı hatası.' : 'Connection error.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpen = () => {
+    setOpen(true);
+    if (!sessionId) startChat();
+  };
+
+  // ── Message helpers ─────────────────────────────────────────────────────────
+  const addBotMessage = (text) =>
+    setMessages(prev => [...prev, { type: 'bot', text }]);
+
+  const showQuestion = (q) => {
+    setMessages(prev => [...prev, { type: 'question', data: q }]);
+    setCurrentQuestion(q);
+    setCurrentPhase(q.phase || '1A');
+    setSelectedOptions([]);
+    setInputValues({});
+    setDirectValue('');
+    setError('');
+  };
+
+  // ── Option toggle ────────────────────────────────────────────────────────────
+  const toggleOption = (key) => {
+    if (!currentQuestion) return;
+    if (currentQuestion.type === 'single') {
+      setSelectedOptions([key]);
+    } else {
+      setSelectedOptions(prev =>
+        prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+    }
+  };
+
+  // ── Validation ───────────────────────────────────────────────────────────────
+  const canSubmit = useMemo(() => {
+    if (!currentQuestion || loading || complete) return false;
+    const q = currentQuestion;
+    if (isDirectType(q)) {
+      if (q.type === 'binary') return !!directValue;
+      if (!q.required) return true;   // optional direct fields can submit empty
+      return directValue.trim().length > 0;
+    }
+    if (isChoiceType(q)) {
+      if (selectedOptions.length === 0) return false;
+      const needsInput = (q.options || []).filter(o => selectedOptions.includes(o.key) && o.has_input);
+      return needsInput.every(o => {
+        const v = inputValues[o.key];
+        return v !== undefined && String(v).trim().length > 0;
+      });
+    }
+    return false;
+  }, [currentQuestion, directValue, selectedOptions, inputValues, loading, complete]);
+
+  // ── Submit ────────────────────────────────────────────────────────────────────
+  const handleSubmitAnswer = async () => {
+    if (!canSubmit || !currentQuestion) return;
+    setLoading(true);
+    setError('');
+
+    const q = currentQuestion;
+    let answerData = {};
+    let userText = '';
+
+    if (isDirectType(q)) {
+      const val = directValue.trim();
+      answerData = { value: val };
+      if (q.type === 'binary') {
+        // Find option label for display
+        const opt = (q.options || []).find(o => o.key === val);
+        userText = opt ? (lang === 'tr' ? opt.text_tr || opt.text : opt.text_en || opt.text) : val;
+      } else if (q.type === 'dropdown' || q.type === 'search_dropdown') {
+        const opt = (q.options || []).find(o => o.key === val);
+        userText = opt ? (lang === 'tr' ? opt.text_tr || opt.text : opt.text_en || opt.text) : val;
+      } else {
+        userText = val;
+      }
+    } else {
+      // choice types
+      const selectedOpts = (q.options || []).filter(o => selectedOptions.includes(o.key));
+      answerData = {
+        selected: q.type === 'single' ? selectedOptions[0] : selectedOptions,
+      };
+      for (const opt of selectedOpts.filter(o => o.has_input)) {
+        answerData[`input_${opt.key}`] = inputValues[opt.key];
+      }
+      userText = selectedOpts.map(o => {
+        const txt = lang === 'tr' ? o.text_tr || o.text : o.text_en || o.text;
+        return o.has_input && inputValues[o.key] ? `${txt}: ${inputValues[o.key]}` : txt;
+      }).join(', ');
+    }
+
+    setMessages(prev => [...prev, { type: 'user', text: userText }]);
+
+    try {
+      const res = await api.answerQuestion({
+        session_id: sessionId,
+        question_id: q.id,
+        answer: answerData,
+        lang,
+      });
+
+      if (res?.ok) {
+        const data = await res.json();
+
+        // Show warnings as amber messages
+        for (const w of (data.warnings || [])) {
+          setMessages(prev => [...prev, {
+            type: 'warning',
+            text: lang === 'tr' ? w.text_tr : w.text_en,
+          }]);
+        }
+        setAllWarnings(data.all_warnings || []);
+
+        if (data.is_complete) {
+          setComplete(true);
+          setCurrentQuestion(null);
+          setCurrentPhase('done');
+          setMessages(prev => [...prev, {
+            type: 'success',
+            text: lang === 'tr'
+              ? '✅ Harika! Tüm sorular tamamlandı. Verileriniz kaydedildi. Artık emisyon verisi girişine başlayabilirsiniz.'
+              : '✅ All done! Your answers are saved. You can now start entering emission data.',
+          }]);
+          if (onComplete) onComplete();
+        } else if (data.question) {
+          setTimeout(() => showQuestion(data.question), 400);
+        }
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setError(errData.error || (lang === 'tr' ? 'Bir hata oluştu.' : 'An error occurred.'));
+      }
+    } catch (err) {
+      setError(lang === 'tr' ? 'Bağlantı hatası.' : 'Connection error.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReset = async () => {
+    await api.resetQuestionnaire().catch(() => {});
+    setSessionId(null);
+    setMessages([]);
+    setCurrentQuestion(null);
+    setSelectedOptions([]);
+    setInputValues({});
+    setDirectValue('');
+    setComplete(false);
+    setAllWarnings([]);
+    setCurrentPhase('1A');
+    setError('');
+    startChat();
+  };
+
+  // ── Skip (optional questions) ─────────────────────────────────────────────────
+  const handleSkip = async () => {
+    if (!currentQuestion) return;
+    setLoading(true);
+    try {
+      const res = await api.answerQuestion({
+        session_id: sessionId,
+        question_id: currentQuestion.id,
+        answer: { skipped: true },
+        lang,
+      });
+      if (res?.ok) {
+        const data = await res.json();
+        setMessages(prev => [...prev, { type: 'skip', text: lang === 'tr' ? '— Atlandı' : '— Skipped' }]);
+        if (data.is_complete) {
+          setComplete(true);
+          setCurrentQuestion(null);
+          if (onComplete) onComplete();
+        } else if (data.question) {
+          setTimeout(() => showQuestion(data.question), 300);
+        }
+      }
+    } catch {}
+    finally { setLoading(false); }
+  };
+
+  // ─── Render input area based on type ─────────────────────────────────────────
+  const renderInput = () => {
+    if (!currentQuestion || loading || complete) return null;
+    const q = currentQuestion;
+    const helper = lang === 'tr' ? q.helper_tr || q.helper : q.helper_en || q.helper;
+
+    return (
+      <div className="border-t border-gray-200 p-3 flex-shrink-0 max-h-[55%] overflow-y-auto">
+        {/* Helper text */}
+        {helper && (
+          <div className="flex gap-1.5 mb-3 p-2 bg-blue-50 rounded-lg">
+            <Info className="w-3.5 h-3.5 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-blue-700">{helper}</p>
+          </div>
+        )}
+
+        {/* Input area */}
+        <div className="mb-3">
+          {q.type === 'text_input' && (
+            <TextInput question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'textarea' && (
+            <TextareaInput question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'number' && (
+            <NumberInput question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'year_picker' && (
+            <YearPicker question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'dropdown' && (
+            <DropdownInput question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'search_dropdown' && (
+            <SearchDropdown question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'binary' && (
+            <BinaryInput question={q} value={directValue} onChange={setDirectValue} lang={lang} />
+          )}
+          {q.type === 'single' && (
+            <SingleChoice
+              question={q}
+              selected={selectedOptions[0] || ''}
+              onToggle={toggleOption}
+              inputValues={inputValues}
+              onInputChange={(k, v) => setInputValues(prev => ({ ...prev, [k]: v }))}
+              lang={lang}
+            />
+          )}
+          {q.type === 'multi' && (
+            <MultiChoice
+              question={q}
+              selected={selectedOptions}
+              onToggle={toggleOption}
+              inputValues={inputValues}
+              onInputChange={(k, v) => setInputValues(prev => ({ ...prev, [k]: v }))}
+              lang={lang}
+            />
+          )}
+        </div>
+
+        {/* Error */}
+        {error && (
+          <p className="text-xs text-red-600 mb-2 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" /> {error}
+          </p>
+        )}
+
+        {/* Buttons */}
+        <div className="flex gap-2">
+          {!q.required && q.required !== true && (
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="px-3 py-2.5 rounded-lg text-sm text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              {lang === 'tr' ? 'Atla' : 'Skip'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSubmitAnswer}
+            disabled={!canSubmit}
+            className={`flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+              canSubmit
+                ? 'bg-primary text-white hover:bg-secondary cursor-pointer'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <Send className="w-4 h-4" />
+            {lang === 'tr' ? 'Gönder' : 'Submit'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ─── Message renderer ─────────────────────────────────────────────────────────
+  const renderMessage = (msg, i) => {
+    if (msg.type === 'bot') return (
+      <div key={i} className="flex gap-2">
+        <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+          <MessageCircle className="w-3.5 h-3.5 text-primary" />
+        </div>
+        <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[80%]">
+          <p className="text-sm text-gray-800">{msg.text}</p>
+        </div>
+      </div>
+    );
+
+    if (msg.type === 'user') return (
+      <div key={i} className="flex justify-end">
+        <div className="bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
+          <p className="text-sm">{msg.text}</p>
+        </div>
+      </div>
+    );
+
+    if (msg.type === 'skip') return (
+      <div key={i} className="flex justify-end">
+        <div className="bg-gray-200 text-gray-500 rounded-2xl rounded-tr-sm px-4 py-2 max-w-[60%]">
+          <p className="text-xs italic">{msg.text}</p>
+        </div>
+      </div>
+    );
+
+    if (msg.type === 'warning') return (
+      <div key={i} className="flex gap-2">
+        <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+        </div>
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
+          <p className="text-sm text-amber-800">{msg.text}</p>
+        </div>
+      </div>
+    );
+
+    if (msg.type === 'success') return (
+      <div key={i} className="flex gap-2">
+        <div className="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+          <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
+          <p className="text-sm text-green-800 font-medium">{msg.text}</p>
+          {allWarnings.length > 0 && (
+            <p className="text-xs text-amber-700 mt-1">
+              ⚠️ {allWarnings.length} {lang === 'tr' ? 'uyarı kaydedildi' : 'warning(s) recorded'}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+
+    if (msg.type === 'question') {
+      const q = msg.data;
+      const qText = lang === 'tr' ? q.text_tr || q.text : q.text_en || q.text;
+      const phaseLabel = q.phase && PHASE_META[q.phase]
+        ? (lang === 'tr' ? PHASE_META[q.phase].label_tr : PHASE_META[q.phase].label_en)
+        : '';
+      return (
+        <div key={i} className="flex gap-2">
+          <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+            <MessageCircle className="w-3.5 h-3.5 text-primary" />
+          </div>
+          <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]">
+            {phaseLabel && (
+              <span className="text-xs text-primary/70 font-medium block mb-1">{phaseLabel} · {q.id}</span>
+            )}
+            <p className="text-sm font-medium text-gray-900">{qText}</p>
+            {q.type === 'multi' && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                {lang === 'tr' ? '(Birden fazla seçebilirsiniz)' : '(Multiple selection allowed)'}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // ─── UI ───────────────────────────────────────────────────────────────────────
+  return (
+    <>
+      {/* Floating button */}
+      {!open && (
+        <button
+          onClick={handleOpen}
+          className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-primary to-secondary rounded-full shadow-lg shadow-primary/30 flex items-center justify-center text-white hover:scale-110 transition-transform"
+          aria-label="Open CarbonIQ wizard"
+        >
+          <MessageCircle className="w-6 h-6" />
+        </button>
+      )}
+
+      {/* Chat window */}
+      {open && (
+        <div className="fixed bottom-0 right-0 sm:bottom-6 sm:right-6 z-50 w-full sm:w-[400px] h-full sm:h-[620px] bg-white sm:rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+
+          {/* Header */}
+          <div className="bg-gradient-to-r from-primary to-secondary px-4 py-3 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                <MessageCircle className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold text-sm">CarbonIQ Sihirbazı</h3>
+                <p className="text-white/70 text-xs">ISO 14064-1 · 133 Soru</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              {sessionId && (
+                <button onClick={handleReset} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors" title={lang === 'tr' ? 'Yeniden başla' : 'Restart'}>
+                  <RotateCcw className="w-4 h-4 text-white" />
+                </button>
+              )}
+              <button onClick={() => setOpen(false)} className="p-1.5 hover:bg-white/20 rounded-lg transition-colors">
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Phase progress bar */}
+          <PhaseBar currentPhase={complete ? 'done' : currentPhase} lang={lang} />
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {messages.map(renderMessage)}
+
+            {/* Typing indicator */}
+            {loading && (
+              <div className="flex gap-2">
+                <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <MessageCircle className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <div className="bg-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="flex gap-1">
+                    {[0, 150, 300].map(d => (
+                      <div key={d} className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input area */}
+          {renderInput()}
         </div>
       )}
     </>
   );
-}
-
-/* ═══ Sub-components ═══ */
-function AssistantIntro({ lang, question, stageIndex, stageTotal }) {
-  return (
-    <div className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"><MessageCircle className="h-5 w-5" /></div>
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">{question.id}</span><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 ring-1 ring-emerald-100">{question.block?.[lang]}</span><span className="text-xs font-medium text-slate-400">{stageIndex + 1}/{stageTotal}</span></div>
-          <p className="text-sm leading-6 text-slate-600">{lang === 'tr' ? 'Bu adımda verdiğiniz cevap rapor yapısını etkileyebilir.' : 'Your answer may affect the report structure.'}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function QuestionCard({ lang, question, value, answers, onChange }) {
-  const title = question.question?.[lang] || question.question?.en || question.id;
-  const help = question.help?.[lang] || question.help?.en;
-  return (
-    <section className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-6">
-        <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-700"><ClipboardList className="h-4 w-4" />{question.required ? (lang === 'tr' ? 'Zorunlu soru' : 'Required') : (lang === 'tr' ? 'Opsiyonel' : 'Optional')}</div>
-        <h3 className="text-2xl font-bold tracking-[-0.03em] text-slate-950">{title}</h3>
-        {help && <div className="mt-4 flex gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600"><HelpCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" /><p>{help}</p></div>}
-      </div>
-      <QuestionInput lang={lang} question={question} value={value} answers={answers} onChange={onChange} />
-    </section>
-  );
-}
-
-function QuestionInput({ lang, question, value, onChange }) {
-  if (question.type === 'info') return (
-    <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm leading-7 text-emerald-900">
-      <div className="mb-3 flex items-center gap-2 font-bold"><ShieldCheck className="h-5 w-5" />{lang === 'tr' ? 'Metodoloji bilgisi' : 'Methodology note'}</div>
-      <p>{question.help?.[lang]}</p>
-      <label className="mt-5 flex cursor-pointer items-center gap-3 rounded-2xl bg-white p-4 text-sm font-bold text-slate-800 ring-1 ring-emerald-200"><input type="checkbox" checked={Boolean(value)} onChange={e => onChange(e.target.checked)} className="h-5 w-5 accent-emerald-600" />{question.buttonLabel?.[lang] || (lang === 'tr' ? 'Anladım' : 'I understand')}</label>
-    </div>
-  );
-  if (question.type === 'text' || question.type === 'number') return (
-    <div><input type={question.type === 'number' ? 'number' : 'text'} inputMode={question.inputMode} min={question.min} max={question.max} maxLength={question.maxLength} value={value || ''} onChange={e => { let v = e.target.value; if (question.transform === 'digitsOnly') v = v.replace(/\D/g, '').slice(0, question.maxLength || 99); onChange(v); }} placeholder={question.placeholder?.[lang] || ''} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" />{question.maxLength && <p className="mt-2 text-right text-xs font-medium text-slate-400">{(value || '').length}/{question.maxLength}</p>}</div>
-  );
-  if (question.type === 'textarea') return (
-    <div><textarea value={value || ''} maxLength={question.maxLength} onChange={e => onChange(e.target.value)} rows={5} placeholder={question.placeholder?.[lang] || ''} className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" />{question.maxLength && <p className="mt-2 text-right text-xs font-medium text-slate-400">{(value || '').length}/{question.maxLength}</p>}</div>
-  );
-  if (question.type === 'select') return (
-    <div className="relative"><select value={value || ''} onChange={e => onChange(e.target.value)} className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 pr-11 text-base font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"><option value="">{lang === 'tr' ? 'Seçiniz' : 'Select'}</option>{question.options?.map(o => <option key={o.value} value={o.value}>{o.label?.[lang] || o.value}</option>)}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /></div>
-  );
-  if (question.type === 'choice') return (
-    <div className="grid gap-3">{question.options?.map(o => { const active = value === o.value; return (<button key={o.value} type="button" onClick={() => onChange(o.value)} className={`rounded-3xl border p-4 text-left transition ${active ? 'border-emerald-300 bg-emerald-50 ring-4 ring-emerald-100' : 'border-slate-200 bg-slate-50 hover:border-emerald-200 hover:bg-white'}`}><div className="flex items-start gap-3"><span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${active ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-white text-transparent'}`}><Check className="h-4 w-4" /></span><span><span className="block text-sm font-bold text-slate-950">{o.label?.[lang] || o.value}</span>{o.description?.[lang] && <span className="mt-1 block text-xs leading-5 text-slate-500">{o.description[lang]}</span>}</span></div></button>); })}</div>
-  );
-  if (question.type === 'multi') { const selected = Array.isArray(value) ? value : []; return (
-    <div className="grid gap-3">{question.options?.map(o => { const active = selected.includes(o.value); return (<button key={o.value} type="button" onClick={() => { if (o.value === 'skip') return onChange(['skip']); const next = active ? selected.filter(i => i !== o.value) : [...selected.filter(i => i !== 'skip'), o.value]; onChange(next); }} className={`rounded-2xl border px-4 py-3 text-left text-sm font-bold transition ${active ? 'border-emerald-300 bg-emerald-50 text-emerald-800 ring-4 ring-emerald-100' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-emerald-200 hover:bg-white'}`}><span className="flex items-center gap-3"><span className={`flex h-5 w-5 items-center justify-center rounded-md border ${active ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-slate-300 bg-white text-transparent'}`}><Check className="h-3.5 w-3.5" /></span>{o.label?.[lang] || o.value}</span></button>); })}</div>
-  ); }
-  if (question.type === 'group') { const gv = value || {}; return (
-    <div className="grid gap-4 sm:grid-cols-2">{question.fields?.map(f => (<div key={f.key}><label className="mb-2 block text-sm font-bold text-slate-700">{f.label?.[lang]} {f.required && <span className="text-emerald-600">*</span>}</label>{f.type === 'select' ? (<select value={gv[f.key] || ''} onChange={e => onChange({ ...gv, [f.key]: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100"><option value="">{lang === 'tr' ? 'Seçiniz' : 'Select'}</option>{f.options?.map(o => <option key={o.value} value={o.value}>{o.label?.[lang] || o.value}</option>)}</select>) : (<input value={gv[f.key] || ''} onChange={e => onChange({ ...gv, [f.key]: e.target.value })} placeholder={f.placeholder?.[lang] || ''} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm font-bold text-slate-950 outline-none transition focus:border-emerald-300 focus:bg-white focus:ring-4 focus:ring-emerald-100" />)}</div>))}</div>
-  ); }
-  return null;
-}
-
-function SystemMessage({ type, text }) {
-  const styles = { error: 'border-red-200 bg-red-50 text-red-700', warning: 'border-amber-200 bg-amber-50 text-amber-800', info: 'border-blue-200 bg-blue-50 text-blue-800', success: 'border-emerald-200 bg-emerald-50 text-emerald-800' };
-  const Icon = type === 'error' ? AlertCircle : type === 'success' ? CheckCircle2 : type === 'warning' ? AlertCircle : Sparkles;
-  return <div className={`flex gap-3 rounded-2xl border px-4 py-3 text-sm font-semibold leading-6 ${styles[type] || styles.info}`}><Icon className="mt-0.5 h-5 w-5 shrink-0" /><p>{text}</p></div>;
-}
-
-function AssumptionsPanel({ lang, assumptions }) {
-  return (
-    <details className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 open:shadow-sm">
-      <summary className="cursor-pointer font-bold">{lang === 'tr' ? 'Kayıtlı kabuller' : 'Recorded assumptions'} · {assumptions.length}</summary>
-      <div className="mt-4 space-y-3">{assumptions.map(a => (<div key={`${a.questionId}-${a.trigger}`} className="rounded-2xl bg-white p-4 ring-1 ring-amber-200"><div className="mb-2 flex items-center gap-2"><span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-bold text-amber-800">Tip {a.type}</span><span className="text-xs font-bold text-slate-400">{a.questionId}</span></div><p className="font-semibold text-slate-800">{a.text?.[lang] || a.text?.en}</p>{a.impact && <p className="mt-1 text-xs leading-5 text-slate-500">{a.impact}</p>}</div>))}</div>
-    </details>
-  );
-}
-
-function CompletionView({ lang, answers, assumptions, reset }) {
-  return (
-    <div className="mx-auto max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-8 text-center shadow-sm">
-      <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-3xl bg-emerald-600 text-white shadow-xl shadow-emerald-600/20"><CheckCircle2 className="h-8 w-8" /></div>
-      <h3 className="text-3xl font-bold tracking-tight text-slate-950">{lang === 'tr' ? 'Chatbot akışı tamamlandı' : 'Chatbot flow completed'}</h3>
-      <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-slate-500">{lang === 'tr' ? 'Cevaplarınız kaydedildi.' : 'Your answers have been saved.'}</p>
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-3xl font-bold text-slate-950">{Object.keys(answers).length}</p><p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-slate-400">{lang === 'tr' ? 'Cevap' : 'Answers'}</p></div>
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4"><p className="text-3xl font-bold text-amber-800">{assumptions.length}</p><p className="mt-1 text-xs font-bold uppercase tracking-[0.12em] text-amber-600">{lang === 'tr' ? 'Kabul' : 'Assumptions'}</p></div>
-      </div>
-      <button onClick={reset} className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-red-200 hover:text-red-600"><RotateCcw className="h-4 w-4" />{lang === 'tr' ? 'Baştan başlat' : 'Start over'}</button>
-    </div>
-  );
-}
-
-/* ═══ Utility functions ═══ */
-function normalizeValue(q, v) { if (q.type === 'number') return v === '' || v == null ? '' : Number(v); if (q.type === 'info') return Boolean(v); if (q.type === 'multi') return Array.isArray(v) ? v : []; return v; }
-
-function validateAnswer(q, v, answers, lang) {
-  if (q.required) {
-    if (q.type === 'multi' && (!Array.isArray(v) || v.length === 0)) return { ok: false, message: lang === 'tr' ? 'En az bir seçenek seçin.' : 'Select at least one option.' };
-    if (q.type === 'group') { const missing = q.fields?.some(f => f.required && !String(v?.[f.key] || '').trim()); if (missing) return { ok: false, message: lang === 'tr' ? 'Zorunlu alanları doldurun.' : 'Fill required fields.' }; }
-    if (q.type === 'info' && !v) return { ok: false, message: lang === 'tr' ? 'Onay kutusunu işaretleyin.' : 'Check the confirmation box.' };
-    if (!['multi', 'group', 'info'].includes(q.type) && (v === undefined || v === null || String(v).trim() === '')) return { ok: false, message: lang === 'tr' ? 'Bu alan zorunludur.' : 'This field is required.' };
-  }
-  if (q.validation?.kind === 'digits') { const t = String(v || ''); if (!/^\d+$/.test(t) || t.length !== q.validation.length) return { ok: false, message: lang === 'tr' ? `${q.validation.length} haneli rakam girin.` : `Enter exactly ${q.validation.length} digits.` }; }
-  if (q.validation?.kind === 'text') { const t = String(v || ''); if (q.validation.min && t.trim().length < q.validation.min) return { ok: false, message: lang === 'tr' ? 'Boş bırakılamaz.' : 'Cannot be empty.' }; if (q.validation.max && t.length > q.validation.max) return { ok: false, message: lang === 'tr' ? `En fazla ${q.validation.max} karakter.` : `Max ${q.validation.max} characters.` }; }
-  if (q.type === 'number') { if (q.min != null && Number(v) < q.min) return { ok: false, message: lang === 'tr' ? `En az ${q.min}.` : `Min ${q.min}.` }; if (q.max != null && Number(v) > q.max) return { ok: false, message: lang === 'tr' ? `En fazla ${q.max}.` : `Max ${q.max}.` }; }
-  if (q.customValidate === 'baselineBeforeReportingYear') { const ry = Number(answers.reporting_year); const by = Number(v); if (by && ry && by >= ry) return { ok: false, message: lang === 'tr' ? 'Baz yıl raporlama yılından önce olmalı.' : 'Baseline must be before reporting year.' }; }
-  return { ok: true };
-}
-
-function getNextQuestionId(q, v, answers) { if (q.conditionalNext) { const m = q.conditionalNext.find(r => matchesRule(r.when, v, answers)); if (m) return m.next; } return q.next; }
-
-function applyEffects(q, v, answers, lang) {
-  const messages = [], assumptions = [], nextAnswers = {};
-  q.effects?.forEach(e => { if (!matchesRule(e.when, v, answers)) return; if (e.message) messages.push({ type: e.message.type || 'info', text: e.message[lang] || e.message.en }); if (e.assumption) assumptions.push({ ...e.assumption, questionId: q.id }); if (e.set) Object.assign(nextAnswers, e.set); });
-  return { messages, assumptions, nextAnswers: Object.keys(nextAnswers).length > 0 ? nextAnswers : null };
-}
-
-function matchesRule(rule, v, answers) { if (!rule) return false; const t = rule.field ? v?.[rule.field] : v; if (rule.equals !== undefined) return t === rule.equals; if (rule.includes !== undefined) return Array.isArray(t) && t.includes(rule.includes); if (rule.numericGte !== undefined) return Number(t) >= rule.numericGte; return false; }
-
-function mergeAssumptions(prev, next, qId) { const key = i => `${i.questionId || qId}-${i.trigger}`; const map = new Map(prev.map(i => [key(i), i])); next.forEach(i => map.set(key(i), { ...i, questionId: i.questionId || qId })); return Array.from(map.values()); }
-
-function persistState(state) { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {} }
-
-async function saveAnswerToApi(payload) {
-  try {
-    const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-    const token = typeof window !== 'undefined' ? localStorage.getItem('_dev_access_token') : null;
-    await fetch(`${API}/questionnaire/carboniq/answer/`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, credentials: 'include', body: JSON.stringify({ question_id: payload.question.id, field: payload.question.field, value: payload.value, stage: payload.question.stage, assumptions: payload.assumptions || [] }) });
-  } catch {}
 }

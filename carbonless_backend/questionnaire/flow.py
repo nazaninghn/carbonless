@@ -4,6 +4,8 @@ Based on ISO 14064-1 / GHG Protocol questionnaire
 Implements the conditional logic from the flowchart
 """
 
+FIRST_QUESTION = 'S1'
+
 QUESTIONS = {
     'S1': {
         'text_tr': 'Bu karbon envanteri hangi dönemi kapsıyor?',

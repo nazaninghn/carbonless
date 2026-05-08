@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import {
@@ -10,6 +11,7 @@ import {
 
 export default function LoginPage() {
   const { t, language, changeLanguage } = useLanguage();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -39,7 +41,7 @@ export default function LoginPage() {
       try { data = await res.json(); } catch {}
       if (res.ok) {
         if (data.access) { const { setAccessToken } = await import('@/lib/utils/api'); setAccessToken(data.access); }
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       } else {
         setError(language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
       }
