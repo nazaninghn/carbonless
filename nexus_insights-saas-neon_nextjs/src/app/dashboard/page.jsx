@@ -38,10 +38,8 @@ export default function DashboardPage() {
   const [selectedCountry, setSelectedCountry] = useState('turkey');
 
   const handleLogout = async () => {
-    // Remove beforeunload block so redirect works
-    window.onbeforeunload = null;
-    const { auth } = await import('@/lib/auth');
-    auth.logout();
+    const { api: apiModule } = await import('@/lib/utils/api');
+    apiModule.logout();
   };
 
   return (

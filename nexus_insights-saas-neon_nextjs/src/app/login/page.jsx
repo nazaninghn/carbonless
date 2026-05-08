@@ -37,10 +37,9 @@ export default function LoginPage() {
         credentials: 'include',
         body: JSON.stringify({ username: email, password }),
       });
-      let data = {};
-      try { data = await res.json(); } catch {}
       if (res.ok) {
-        if (data.access) { const { setAccessToken } = await import('@/lib/utils/api'); setAccessToken(data.access); }
+        const { markSessionActive } = await import('@/lib/utils/api');
+        markSessionActive();
         router.push('/dashboard');
       } else {
         setError(language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
@@ -124,11 +123,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 text-xs font-semibold text-[#302817]/60">
-                <input type="checkbox" className="h-4 w-4 rounded border-[#302817]/20 accent-[#B4BE6A]" />{t.login.rememberMe}
-              </label>
-
-              {sessionExpired && <div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-xs font-semibold text-amber-700">{language === 'tr' ? 'Oturumunuz sona erdi.' : 'Your session has expired.'}</div>}
+              {sessionExpired &&<div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-xs font-semibold text-amber-700">{language === 'tr' ? 'Oturumunuz sona erdi.' : 'Your session has expired.'}</div>}
               {error && <div className="rounded-2xl border border-red-200 bg-red-50/90 p-3 text-xs font-semibold text-red-600">{error}</div>}
 
               <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/18 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60">

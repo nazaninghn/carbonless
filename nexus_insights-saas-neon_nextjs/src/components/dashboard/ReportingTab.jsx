@@ -32,15 +32,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
   const handleDownload = (type, lang) => {
     setPdfLoading(type + lang);
-    const headers = {};
-    try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
 
     let url;
     if (type === 'pdf') url = api.getReportUrl(selectedYear, lang);
     else if (type === 'csv') url = api.getCsvUrl(selectedYear);
     else url = api.getExcelUrl(selectedYear);
 
-    fetch(url, { credentials: 'include', headers })
+    fetch(url, { credentials: 'include' })
       .then(r => { if (!r.ok) throw new Error('Failed'); return r.blob(); })
       .then(blob => {
         const u = URL.createObjectURL(blob);
