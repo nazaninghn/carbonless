@@ -506,6 +506,140 @@ function ChatBubble({ message, lang, answers }) {
   );
 }
 
+// ─── City data per country ────────────────────────────────────────────────────
+const CITIES_BY_COUNTRY = {
+  TR: [
+    'Adana','Adıyaman','Afyonkarahisar','Ağrı','Aksaray','Amasya','Ankara','Antalya',
+    'Ardahan','Artvin','Aydın','Balıkesir','Bartın','Batman','Bayburt','Bilecik',
+    'Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum',
+    'Denizli','Diyarbakır','Düzce','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir',
+    'Gaziantep','Giresun','Gümüşhane','Hakkari','Hatay','Iğdır','Isparta','İstanbul',
+    'İzmir','Kahramanmaraş','Karabük','Karaman','Kars','Kastamonu','Kayseri','Kilis',
+    'Kırıkkale','Kırklareli','Kırşehir','Kocaeli','Konya','Kütahya','Malatya','Manisa',
+    'Mardin','Mersin','Muğla','Muş','Nevşehir','Niğde','Ordu','Osmaniye','Rize',
+    'Sakarya','Samsun','Siirt','Sinop','Sivas','Şanlıurfa','Şırnak','Tekirdağ',
+    'Tokat','Trabzon','Tunceli','Uşak','Van','Yalova','Yozgat','Zonguldak',
+  ],
+  GB: [
+    'London','Manchester','Birmingham','Leeds','Glasgow','Liverpool','Edinburgh',
+    'Bristol','Sheffield','Cardiff','Belfast','Leicester','Bradford','Nottingham',
+    'Newcastle upon Tyne','Southampton','Portsmouth','Oxford','Cambridge','York',
+    'Brighton','Coventry','Derby','Plymouth','Stoke-on-Trent','Wolverhampton',
+    'Aberdeen','Dundee','Inverness','Swansea','Newport',
+  ],
+  DE: [
+    'Berlin','Hamburg','Munich','Cologne','Frankfurt','Stuttgart','Düsseldorf',
+    'Dortmund','Essen','Leipzig','Bremen','Dresden','Hanover','Nuremberg',
+    'Duisburg','Bochum','Wuppertal','Bielefeld','Bonn','Münster','Karlsruhe',
+    'Mannheim','Augsburg','Wiesbaden','Gelsenkirchen','Mönchengladbach','Braunschweig',
+    'Kiel','Chemnitz','Aachen','Halle','Magdeburg','Freiburg','Krefeld','Lübeck',
+    'Mainz','Erfurt','Oberhausen','Rostock','Kassel',
+  ],
+  US: [
+    'New York','Los Angeles','Chicago','Houston','Phoenix','Philadelphia','San Antonio',
+    'San Diego','Dallas','San Jose','Austin','Jacksonville','Fort Worth','Columbus',
+    'Charlotte','Indianapolis','San Francisco','Seattle','Denver','Nashville',
+    'Oklahoma City','El Paso','Washington DC','Boston','Portland','Las Vegas',
+    'Louisville','Memphis','Baltimore','Milwaukee','Albuquerque','Tucson','Fresno',
+    'Sacramento','Atlanta','Kansas City','Miami','Minneapolis','New Orleans','Detroit',
+  ],
+  OTHER: [],
+};
+
+// ─── Country + City autocomplete ─────────────────────────────────────────────
+function CountryCityInput({ question, value, setValue, lang }) {
+  const current = value || { country: '', city: '' };
+  const [cityInput, setCityInput] = useState(current.city || '');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  // Keep cityInput in sync with external value (e.g. when user goes back)
+  useEffect(() => {
+    setCityInput(current.city || '');
+  }, [current.city]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const allCities = CITIES_BY_COUNTRY[current.country] || [];
+  const filtered = cityInput.length === 0
+    ? allCities.slice(0, 8)   // show top-8 on empty
+    : allCities.filter((c) =>
+        c.toLowerCase().startsWith(cityInput.toLowerCase())
+      ).slice(0, 8);
+
+  function handleCountryChange(e) {
+    const newCountry = e.target.value;
+    setCityInput('');
+    setValue({ country: newCountry, city: '' });
+    setShowSuggestions(newCountry !== '' && newCountry !== 'OTHER');
+  }
+
+  function handleCityChange(e) {
+    const v = e.target.value;
+    setCityInput(v);
+    setValue({ ...current, city: v });
+    setShowSuggestions(true);
+  }
+
+  function selectSuggestion(city) {
+    setCityInput(city);
+    setValue({ ...current, city });
+    setShowSuggestions(false);
+  }
+
+  return (
+    <div className="grid gap-2 sm:grid-cols-2">
+      {/* Country selector */}
+      <select
+        value={current.country || ''}
+        onChange={handleCountryChange}
+        className="rounded-2xl border border-[#302817]/10 bg-white px-4 py-3 text-sm font-medium text-[#302817] outline-none shadow-sm"
+      >
+        <option value="">{lang === 'tr' ? 'Ülke seçin' : 'Select country'}</option>
+        {question.options.map((opt) => (
+          <option key={opt.value} value={opt.value}>{opt.label[lang]}</option>
+        ))}
+      </select>
+
+      {/* City input with autocomplete */}
+      <div ref={wrapperRef} className="relative">
+        <input
+          value={cityInput}
+          onChange={handleCityChange}
+          onFocus={() => current.country && current.country !== 'OTHER' && setShowSuggestions(true)}
+          placeholder={lang === 'tr' ? 'Şehir girin veya seçin' : 'Type or select city'}
+          autoComplete="off"
+          className="w-full rounded-2xl border border-[#302817]/10 bg-white px-4 py-3 text-sm font-medium text-[#302817] outline-none shadow-sm placeholder:text-[#302817]/30"
+        />
+        {showSuggestions && filtered.length > 0 && (
+          <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-2xl border border-[#302817]/10 bg-white shadow-[0_8px_24px_rgba(48,40,23,0.1)]">
+            {filtered.map((city) => (
+              <li key={city}>
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); selectSuggestion(city); }}
+                  className="w-full px-4 py-2.5 text-left text-sm font-medium text-[#302817] hover:bg-[#B4BE6A]/10 transition-colors"
+                >
+                  {city}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Answer Input ───
 function AnswerInput({ question, value, setValue, lang, onSubmit }) {
   if (!question) return null;
@@ -545,26 +679,13 @@ function AnswerInput({ question, value, setValue, lang, onSubmit }) {
   }
 
   if (question.type === 'country_city') {
-    const current = value || { country: '', city: '' };
     return (
-      <div className="grid gap-2 sm:grid-cols-2">
-        <select
-          value={current.country || ''}
-          onChange={(e) => setValue({ ...current, country: e.target.value })}
-          className="rounded-2xl border border-[#302817]/10 bg-white px-4 py-3 text-sm font-medium text-[#302817] outline-none shadow-sm"
-        >
-          <option value="">{lang === 'tr' ? '\u00dclke se\u00e7in' : 'Select country'}</option>
-          {question.options.map((opt) => (
-            <option key={opt.value} value={opt.value}>{opt.label[lang]}</option>
-          ))}
-        </select>
-        <input
-          value={current.city || ''}
-          onChange={(e) => setValue({ ...current, city: e.target.value })}
-          placeholder={lang === 'tr' ? '\u015eehir' : 'City'}
-          className="rounded-2xl border border-[#302817]/10 bg-white px-4 py-3 text-sm font-medium text-[#302817] outline-none shadow-sm placeholder:text-[#302817]/30"
-        />
-      </div>
+      <CountryCityInput
+        question={question}
+        value={value}
+        setValue={setValue}
+        lang={lang}
+      />
     );
   }
 
