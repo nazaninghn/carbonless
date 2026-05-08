@@ -4,17 +4,39 @@ import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
 import NextLink from 'next/link';
-import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export default function ForgotPasswordPage() {
   const { language } = useLanguage();
-  const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [email, setEmail]     = useState('');
+  const [sent, setSent]       = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError]     = useState('');
+  const tr = language === 'tr';
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // For now just show success — real email sending needs SMTP config
-    setSent(true);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE}/accounts/password-reset/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      // Treat both 200 and 404 as "sent" to avoid email enumeration
+      if (res.ok || res.status === 404) {
+        setSent(true);
+      } else {
+        setError(tr ? 'Bir hata oluştu. Lütfen tekrar deneyin.' : 'An error occurred. Please try again.');
+      }
+    } catch {
+      setError(tr ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,11 +74,20 @@ export default function ForgotPasswordPage() {
                       />
                     </div>
                   </div>
+                  {error && (
+                    <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      {error}
+                    </div>
+                  )}
                   <button
                     type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-[1.02] transition-all"
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-60"
                   >
-                    {language === 'tr' ? 'Sıfırlama Bağlantısı Gönder' : 'Send Reset Link'}
+                    {loading
+                      ? (tr ? 'Gönderiliyor…' : 'Sending…')
+                      : (tr ? 'Sıfırlama Bağlantısı Gönder' : 'Send Reset Link')}
                   </button>
                 </form>
               </>

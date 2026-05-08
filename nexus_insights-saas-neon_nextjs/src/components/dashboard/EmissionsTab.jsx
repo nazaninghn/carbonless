@@ -251,9 +251,25 @@ export default function EmissionsTab({
     setQuantity(''); setDesc(''); setFacility(''); setFile(null); setFormError('');
   };
 
+  const ALLOWED_MIME = new Set(['application/pdf','image/jpeg','image/png','image/jpg','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+  const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+
   const handleAdd = async (e) => {
     e.preventDefault();
     setFormError('');
+
+    // Client-side file validation
+    if (file) {
+      if (file.size > MAX_FILE_BYTES) {
+        setFormError(tr ? 'Dosya 10 MB sınırını aşıyor.' : 'File exceeds the 10 MB limit.');
+        return;
+      }
+      if (!ALLOWED_MIME.has(file.type)) {
+        setFormError(tr ? 'Desteklenmeyen dosya türü.' : 'Unsupported file type.');
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
       let res;
@@ -277,8 +293,8 @@ export default function EmissionsTab({
         setShowAddForm(false); resetAddForm(); fetchData();
         toast.success(tr ? 'Kayıt başarıyla eklendi ✓' : 'Entry added successfully ✓');
       } else {
-        const d = await res.json();
-        setFormError(JSON.stringify(d));
+        // Don't expose raw server response — show a user-friendly message
+        setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
         toast.error(tr ? 'Kayıt eklenemedi' : 'Failed to add entry');
       }
     } catch {

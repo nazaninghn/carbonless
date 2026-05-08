@@ -42,7 +42,6 @@ async function request(endpoint, options = {}) {
       if (newToken) headers['Authorization'] = `Bearer ${newToken}`;
       return fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'include' });
     } else {
-      _accessToken = null;
       clearStoredToken();
       if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
       return new Response(null, { status: 401 });
@@ -79,7 +78,8 @@ export const api = {
   createEntry: (data) => request('/emissions/entries/', { method: 'POST', body: JSON.stringify(data) }),
   createEntryWithFile: (formData) => {
     const headers = {};
-    try { const t = localStorage.getItem('_dev_access_token'); if (t) headers['Authorization'] = `Bearer ${t}`; } catch {}
+    const t = getStoredToken();
+    if (t) headers['Authorization'] = `Bearer ${t}`;
     return fetch(`${API_BASE}/emissions/entries/`, { method: 'POST', headers, credentials: 'include', body: formData });
   },
   updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
