@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Building2, Check, CheckCircle2,
-  ChevronDown, ClipboardCheck, Factory, FileCheck2, Globe2, Leaf,
+  ChevronDown, ClipboardCheck, Eye, EyeOff, Factory, FileCheck2, Globe2, Leaf,
   Loader2, LockKeyhole, Mail, ShieldCheck, User,
 } from 'lucide-react';
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
@@ -29,6 +29,8 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showPassword2, setShowPassword2] = useState(false);
   const [naceSearch, setNaceSearch] = useState('');
   const [naceOpen, setNaceOpen] = useState(false);
 
@@ -272,8 +274,8 @@ export default function RegisterPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <TextField label={language === 'tr' ? 'Kullanıcı Adı' : 'Username'} required value={formData.username} onChange={e => handleInputChange('username', e.target.value)} icon={User} placeholder={language === 'tr' ? 'örn: alper_yilmaz' : 'e.g. john_doe'} />
                     <TextField label={language === 'tr' ? 'E-posta' : 'Email'} type="email" required value={formData.email} onChange={e => handleInputChange('email', e.target.value)} icon={Mail} placeholder={language === 'tr' ? 'ornek@sirket.com' : 'name@company.com'} />
-                    <div><TextField label={language === 'tr' ? 'Şifre' : 'Password'} type="password" required value={formData.password} onChange={e => handleInputChange('password', e.target.value)} icon={LockKeyhole} placeholder={language === 'tr' ? 'En az 8 karakter' : 'Min 8 characters'} /><PasswordStrengthIndicator password={formData.password} language={language} /></div>
-                    <TextField label={language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} type="password" required value={formData.password2} onChange={e => handleInputChange('password2', e.target.value)} icon={LockKeyhole} placeholder={language === 'tr' ? 'Şifreyi tekrar girin' : 'Re-enter password'} />
+                    <div><PasswordField label={language === 'tr' ? 'Şifre' : 'Password'} required value={formData.password} onChange={e => handleInputChange('password', e.target.value)} show={showPassword} onToggle={() => setShowPassword(p => !p)} placeholder={language === 'tr' ? 'En az 8 karakter' : 'Min 8 characters'} /><PasswordStrengthIndicator password={formData.password} language={language} /></div>
+                    <PasswordField label={language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password'} required value={formData.password2} onChange={e => handleInputChange('password2', e.target.value)} show={showPassword2} onToggle={() => setShowPassword2(p => !p)} placeholder={language === 'tr' ? 'Şifreyi tekrar girin' : 'Re-enter password'} />
                   </div>
                 </Panel>
                 <Panel title={language === 'tr' ? 'Temel Kurumsal Bilgiler' : 'Corporate Information'} icon={Building2}>
@@ -353,6 +355,7 @@ export default function RegisterPage() {
 function Panel({ title, icon: Icon, children }) { return (<section className="rounded-[1.5rem] border border-[#302817]/10 bg-white/50 p-4 shadow-sm backdrop-blur-xl sm:p-5"><div className="mb-4 flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25"><Icon className="h-5 w-5" /></div><h3 className="text-base font-bold text-[#302817] sm:text-lg">{title}</h3></div>{children}</section>); }
 function Label({ children, required }) { return <label className="mb-2 block text-sm font-bold text-[#302817]/75">{children} {required && <span className="text-[#B4BE6A]">*</span>}</label>; }
 function TextField({ label, required, icon: Icon, ...props }) { return (<div><Label required={required}>{label}</Label><div className="group flex items-center gap-3 rounded-2xl border border-[#302817]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#B4BE6A]/60 focus-within:ring-4 focus-within:ring-[#B4BE6A]/20">{Icon && <Icon className="h-5 w-5 shrink-0 text-[#95A847]" />}<input {...props} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" /></div></div>); }
+function PasswordField({ label, required, show, onToggle, ...props }) { return (<div><Label required={required}>{label}</Label><div className="group flex items-center gap-3 rounded-2xl border border-[#302817]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#B4BE6A]/60 focus-within:ring-4 focus-within:ring-[#B4BE6A]/20"><LockKeyhole className="h-5 w-5 shrink-0 text-[#95A847]" /><input {...props} type={show ? 'text' : 'password'} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" /><button type="button" onClick={onToggle} className="shrink-0 text-[#302817]/40 transition hover:text-[#302817]" aria-label="Toggle password visibility">{show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></div>); }
 function SelectField({ label, required, children, ...props }) { return (<div><Label required={required}>{label}</Label><div className="relative"><select {...props} className="field-premium appearance-none pr-10">{children}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#302817]/40" /></div></div>); }
 function RadioGroup({ label, required, name, value, onChange, yes, no }) { return (<div className="mt-4"><Label required={required}>{label}</Label><div className="grid gap-3 sm:grid-cols-2"><RadioOption name={name} option="yes" value={value} onChange={onChange} label={yes} /><RadioOption name={name} option="no" value={value} onChange={onChange} label={no} /></div></div>); }
 function RadioCard({ label, required, name, value, onChange, yes, no }) { return (<div className="rounded-2xl border border-[#302817]/10 bg-white/45 p-4 shadow-sm backdrop-blur-xl"><Label required={required}>{label}</Label><div className="mt-3 grid gap-3"><RadioOption name={name} option="yes" value={value} onChange={onChange} label={yes} /><RadioOption name={name} option="no" value={value} onChange={onChange} label={no} /></div></div>); }
