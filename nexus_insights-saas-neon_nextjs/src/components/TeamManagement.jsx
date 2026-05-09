@@ -210,18 +210,18 @@ export default function TeamManagement({ language }) {
         <p className="text-xs text-[#302817]/55 mb-3">
           {tr ? 'E-posta adresi girin ve rol seçin. Davet edilen kişi kayıt olduktan sonra otomatik olarak takıma eklenir.' : 'Enter email and select a role. The invited person will be automatically added to the team after registration.'}
         </p>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
           <input
             type="email"
             value={inviteEmail}
             onChange={e => { setInviteEmail(e.target.value); setInviteMsg(''); }}
             placeholder={tr ? 'ornek@sirket.com' : 'example@company.com'}
-            className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-[#302817]/10 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full px-3 py-2.5 bg-white border border-[#302817]/10 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent sm:flex-1 sm:min-w-[180px]"
           />
           <select
             value={inviteRole}
             onChange={e => setInviteRole(e.target.value)}
-            className="px-3 py-2 bg-white border border-[#302817]/10 rounded-xl text-sm"
+            className="w-full px-3 py-2.5 bg-white border border-[#302817]/10 rounded-xl text-sm sm:w-auto"
           >
             {ROLES.filter(r => r.value !== 'owner').map(r => (
               <option key={r.value} value={r.value}>{tr ? r.label.tr : r.label.en}</option>
@@ -248,7 +248,7 @@ export default function TeamManagement({ language }) {
               setInviting(false);
             }}
             disabled={inviting || !inviteEmail}
-            className="px-5 py-2 bg-[#302817] text-white rounded-xl text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="w-full px-5 py-2.5 bg-[#302817] text-white rounded-xl text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 flex items-center justify-center gap-1 sm:w-auto"
           >
             <UserPlus className="w-4 h-4" />
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}

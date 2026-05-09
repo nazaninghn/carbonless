@@ -45,7 +45,7 @@ export default function OverviewTab({ language, summary, entries, targets, quest
       </div>
 
       {/* Scope Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
         {[
           { label: 'SCOPE 1', val: summary?.scope1_tonne, sub: language === 'tr' ? 'Doğrudan emisyonlar' : 'Direct emissions' },
           { label: 'SCOPE 2', val: summary?.scope2_tonne, sub: language === 'tr' ? 'Enerji dolaylı emisyonlar' : 'Energy indirect emissions' },

@@ -160,7 +160,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                   <h4 className="mb-3 text-sm font-bold text-[#302817]">
                     {tr ? 'İzinleriniz' : 'Your Permissions'}
                   </h4>
-                  <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
                     {[
                       { key: 'can_edit_entries', tr: 'Veri Girişi', en: 'Edit Entries' },
                       { key: 'can_manage_users', tr: 'Kullanıcı Yönetimi', en: 'Manage Users' },

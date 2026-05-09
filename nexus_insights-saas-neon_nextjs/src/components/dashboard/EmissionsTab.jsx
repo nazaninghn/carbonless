@@ -367,7 +367,7 @@ export default function EmissionsTab({
 
   // ── Shared modal classes ─────────────────────────────────────────────────
   const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md';
-  const MODAL   = 'flex max-h-[90svh] w-full flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl';
+  const MODAL   = 'flex max-h-[92svh] w-full flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl';
   const FIELD   = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15';
   const LABEL   = 'mb-1.5 block text-xs font-bold text-[#302817]/60';
 

@@ -60,7 +60,7 @@ export default function LoginPage() {
           <span className="truncate text-lg font-bold tracking-tight text-[#302817] sm:text-[22px]">Carbonless</span>
         </NextLink>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
-          <NextLink href="/register" className="shrink-0 rounded-full border border-[#302817]/15 bg-white/55 px-3 py-2 text-xs font-bold text-[#302817] shadow-sm backdrop-blur-xl transition hover:bg-[#302817] hover:text-[#F9EFE5] sm:px-5 sm:py-2.5 sm:text-sm">
+          <NextLink href="/register" className="shrink-0 rounded-full border border-[#302817]/15 bg-white/55 px-4 py-2.5 text-xs font-bold text-[#302817] shadow-sm backdrop-blur-xl transition hover:bg-[#302817] hover:text-[#F9EFE5] sm:px-5 sm:text-sm">
             {language === 'tr' ? 'Kayıt' : 'Register'}
           </NextLink>
         </div>
