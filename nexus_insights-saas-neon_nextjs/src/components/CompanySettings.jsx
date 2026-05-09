@@ -30,7 +30,28 @@ export default function CompanySettings({ language }) {
     try {
       const { company: c } = await fetchCompanyDetail();
       setCompany(c);
-      if (c) setForm(c);
+      if (c) {
+        setForm(c);
+        // Company now exists — clear any pending data from registration
+        try { sessionStorage.removeItem('pendingCompany'); } catch {}
+      } else {
+        // No company yet — check if registration saved a pending payload
+        try {
+          const raw = sessionStorage.getItem('pendingCompany');
+          if (raw) {
+            const pending = JSON.parse(raw);
+            // Pre-fill the create form with data from registration
+            setForm({
+              legal_entity_name: pending.legal_entity_name || '',
+              tax_number: pending.tax_number || '',
+              country_of_headquarters: pending.country_of_headquarters || '',
+              nace_code: pending.nace_code || '',
+              main_activity_description: pending.main_activity_description || '',
+            });
+            setCreating(true); // Open the form immediately
+          }
+        } catch {}
+      }
     } catch {
       toast.error(tr ? 'Şirket bilgileri yüklenemedi' : 'Failed to load company info');
     } finally {
@@ -61,6 +82,7 @@ export default function CompanySettings({ language }) {
         setCompany(data);
         setForm(data);
         setCreating(false);
+        try { sessionStorage.removeItem('pendingCompany'); } catch {}
         setSuccess(tr ? 'Şirket başarıyla oluşturuldu ✓' : 'Company created successfully ✓');
         toast.success(tr ? 'Şirket oluşturuldu ✓' : 'Company created ✓');
         // Reload so FacilitySettings also picks up the new membership

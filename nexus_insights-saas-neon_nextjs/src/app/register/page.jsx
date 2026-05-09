@@ -89,7 +89,45 @@ export default function RegisterPage() {
       if (loginRes.ok) {
         const { markSessionActive } = await import('@/lib/utils/api');
         markSessionActive();
-        await fetch(`${API}/companies/create/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ legal_entity_name: formData.legalEntityName, tax_number: formData.taxNumber, country_of_headquarters: formData.countryOfHeadquarters, countries_of_operation: formData.countriesOfOperation, nace_code: formData.naceCode, main_activity_description: formData.mainActivityDescription, number_of_employees: formData.numberOfEmployees, annual_turnover_range: formData.annualTurnoverRange, number_of_facilities: parseInt(formData.numberOfFacilities) || 0, has_overseas_operations: formData.hasOverseasOperations === 'yes', number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0, has_iso_14001: formData.hasISO14001 === 'yes', has_iso_50001: formData.hasISO50001 === 'yes', has_iso_14064_work: formData.hasISO14064Work === 'yes', target_iso_14064_verification: formData.targetISO14064Verification === 'yes', has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes', is_for_financing: formData.isForFinancing === 'yes', is_due_to_export_pressure: formData.isDueToExportPressure === 'yes', is_for_group_reporting: formData.isForGroupReporting === 'yes' }) });
+
+        // Build company payload — same data user just entered
+        const companyPayload = {
+          legal_entity_name: formData.legalEntityName,
+          tax_number: formData.taxNumber,
+          country_of_headquarters: formData.countryOfHeadquarters,
+          countries_of_operation: formData.countriesOfOperation,
+          nace_code: formData.naceCode,
+          main_activity_description: formData.mainActivityDescription,
+          number_of_employees: formData.numberOfEmployees,
+          annual_turnover_range: formData.annualTurnoverRange,
+          number_of_facilities: parseInt(formData.numberOfFacilities) || 0,
+          has_overseas_operations: formData.hasOverseasOperations === 'yes',
+          number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0,
+          has_iso_14001: formData.hasISO14001 === 'yes',
+          has_iso_50001: formData.hasISO50001 === 'yes',
+          has_iso_14064_work: formData.hasISO14064Work === 'yes',
+          target_iso_14064_verification: formData.targetISO14064Verification === 'yes',
+          has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes',
+          is_for_financing: formData.isForFinancing === 'yes',
+          is_due_to_export_pressure: formData.isDueToExportPressure === 'yes',
+          is_for_group_reporting: formData.isForGroupReporting === 'yes',
+        };
+
+        const companyRes = await fetch(`${API}/companies/create/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(companyPayload),
+        });
+
+        if (!companyRes.ok) {
+          // Persist payload so Settings → Company can auto-fill the form
+          // without forcing the user to type everything again.
+          try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
+        } else {
+          try { sessionStorage.removeItem('pendingCompany'); } catch {}
+        }
+
         router.push('/dashboard');
       }
     } catch { setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error'); }
