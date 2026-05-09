@@ -176,6 +176,12 @@ if IS_DEV:
 else:
     CORS_ALLOWED_ORIGINS = []
 
+# Allow all *.vercel.app preview & production URLs automatically
+# so we don't need to update CORS every time Vercel generates a new deploy URL.
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://[\w-]+\.vercel\.app$",
+]
+
 VERCEL_URL = os.environ.get('VERCEL_URL', '')
 if VERCEL_URL:
     CORS_ALLOWED_ORIGINS.append(f"https://{VERCEL_URL}")
@@ -184,7 +190,17 @@ FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
 if FRONTEND_URL:
     CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
 
-CSRF_TRUSTED_ORIGINS = []
+# Allow any additional origins from env (comma-separated list)
+# e.g. CORS_EXTRA_ORIGINS=https://mycustomdomain.com,https://staging.example.com
+for extra in os.environ.get('CORS_EXTRA_ORIGINS', '').split(','):
+    extra = extra.strip()
+    if extra:
+        CORS_ALLOWED_ORIGINS.append(extra)
+
+CSRF_TRUSTED_ORIGINS = [
+    # All Vercel preview deployments
+    "https://*.vercel.app",
+]
 if FRONTEND_URL:
     CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
 if VERCEL_URL:
