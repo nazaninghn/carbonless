@@ -9,6 +9,7 @@ export default function FacilitySettings({ language }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
@@ -33,19 +34,31 @@ export default function FacilitySettings({ language }) {
 
   const handleAdd = async (e) => {
     e.preventDefault();
+    setFormError('');
     setSaving(true);
     try {
-      const res = await api.createFacility({ name, city, country, facility_type: facilityType });
+      const res = await api.createFacility({ name, city, country, facility_type: facilityType || undefined });
       if (res.ok) {
         setShowForm(false);
-        setName(''); setCity(''); setCountry(''); setFacilityType('');
+        setName(''); setCity(''); setCountry(''); setFacilityType(''); setFormError('');
         fetchFacilities();
         toast.success(tr ? 'Tesis başarıyla eklendi ✓' : 'Facility added successfully ✓');
       } else {
-        toast.error(tr ? 'Tesis eklenemedi' : 'Failed to add facility');
+        // Parse server error for user-friendly feedback
+        let msg = tr ? 'Tesis eklenemedi' : 'Failed to add facility';
+        try {
+          const data = await res.json();
+          const serverMsg = data?.name?.[0] || data?.detail || data?.error
+            || Object.values(data || {}).flat().join(' ');
+          if (serverMsg) msg = serverMsg;
+        } catch {}
+        setFormError(msg);
+        toast.error(msg);
       }
     } catch {
-      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+      const msg = tr ? 'Bağlantı hatası — lütfen tekrar deneyin' : 'Connection error — please try again';
+      setFormError(msg);
+      toast.error(msg);
     } finally { setSaving(false); }
   };
 
@@ -100,11 +113,16 @@ export default function FacilitySettings({ language }) {
               <input type="text" value={country} onChange={e => setCountry(e.target.value)} className="w-full px-3 py-2 border border-[#302817]/10 rounded-xl text-sm" />
             </div>
           </div>
+          {formError && (
+            <p className="rounded-xl bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+              {formError}
+            </p>
+          )}
           <div className="flex gap-2">
             <button type="submit" disabled={saving} className="px-4 py-2 bg-[#302817] text-white rounded-xl text-sm hover:bg-black disabled:opacity-60">
               {saving ? '…' : (language === 'tr' ? 'Ekle' : 'Add')}
             </button>
-            <button type="button" onClick={() => setShowForm(false)} disabled={saving} className="px-4 py-2 border border-[#302817]/10 rounded-xl text-sm hover:bg-[#F8F8F8] disabled:opacity-60">
+            <button type="button" onClick={() => { setShowForm(false); setFormError(''); }} disabled={saving} className="px-4 py-2 border border-[#302817]/10 rounded-xl text-sm hover:bg-[#F8F8F8] disabled:opacity-60">
               {language === 'tr' ? 'İptal' : 'Cancel'}
             </button>
           </div>

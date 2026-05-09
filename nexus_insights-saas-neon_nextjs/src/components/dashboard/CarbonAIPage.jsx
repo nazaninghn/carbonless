@@ -58,7 +58,8 @@ const CITIES_BY_COUNTRY = {
     'Bristol','Sheffield','Cardiff','Belfast','Leicester','Bradford','Nottingham',
     'Newcastle upon Tyne','Southampton','Portsmouth','Oxford','Cambridge','York',
     'Brighton','Coventry','Derby','Plymouth','Stoke-on-Trent','Wolverhampton',
-    'Aberdeen','Dundee','Inverness','Swansea','Newport',
+    'Aberdeen','Dundee','Inverness','Swansea','Newport','Bath','Exeter','Norwich',
+    'Gloucester','Cheltenham','Worcester','Canterbury','Reading','Milton Keynes',
   ],
   DE: [
     'Berlin','Hamburg','Munich','Cologne','Frankfurt','Stuttgart','Düsseldorf',
@@ -66,7 +67,7 @@ const CITIES_BY_COUNTRY = {
     'Duisburg','Bochum','Wuppertal','Bielefeld','Bonn','Münster','Karlsruhe',
     'Mannheim','Augsburg','Wiesbaden','Gelsenkirchen','Mönchengladbach','Braunschweig',
     'Kiel','Chemnitz','Aachen','Halle','Magdeburg','Freiburg','Krefeld','Lübeck',
-    'Mainz','Erfurt','Oberhausen','Rostock','Kassel',
+    'Mainz','Erfurt','Oberhausen','Rostock','Kassel','Saarbrücken','Potsdam','Heidelberg',
   ],
   US: [
     'New York','Los Angeles','Chicago','Houston','Phoenix','Philadelphia','San Antonio',
@@ -75,7 +76,168 @@ const CITIES_BY_COUNTRY = {
     'Oklahoma City','El Paso','Washington DC','Boston','Portland','Las Vegas',
     'Louisville','Memphis','Baltimore','Milwaukee','Albuquerque','Tucson','Fresno',
     'Sacramento','Atlanta','Kansas City','Miami','Minneapolis','New Orleans','Detroit',
+    'Tampa','Orlando','Pittsburgh','Cincinnati','Cleveland','St. Louis','Raleigh',
   ],
+  FR: [
+    'Paris','Marseille','Lyon','Toulouse','Nice','Nantes','Montpellier','Strasbourg',
+    'Bordeaux','Lille','Rennes','Reims','Saint-Étienne','Toulon','Le Havre',
+    'Grenoble','Dijon','Angers','Nîmes','Villeurbanne','Clermont-Ferrand','Le Mans',
+    'Aix-en-Provence','Brest','Tours','Amiens','Limoges','Annecy','Perpignan','Rouen',
+  ],
+  IT: [
+    'Rome','Milan','Naples','Turin','Palermo','Genoa','Bologna','Florence','Bari',
+    'Catania','Venice','Verona','Messina','Padova','Trieste','Brescia','Taranto',
+    'Prato','Parma','Modena','Reggio Calabria','Reggio Emilia','Perugia','Livorno',
+    'Ravenna','Cagliari','Foggia','Rimini','Salerno','Ferrara','Sassari','Latina',
+  ],
+  ES: [
+    'Madrid','Barcelona','Valencia','Seville','Zaragoza','Málaga','Murcia','Palma',
+    'Las Palmas','Bilbao','Alicante','Córdoba','Valladolid','Vigo','Gijón','Granada',
+    'Vitoria-Gasteiz','A Coruña','Elche','Oviedo','Badalona','Terrassa','Cartagena',
+    'Jerez de la Frontera','Sabadell','Móstoles','Santa Cruz de Tenerife','Pamplona',
+  ],
+  NL: [
+    'Amsterdam','Rotterdam','The Hague','Utrecht','Eindhoven','Groningen','Tilburg',
+    'Almere','Breda','Nijmegen','Enschede','Haarlem','Arnhem','Zaanstad','Amersfoort',
+    'Apeldoorn','Delft','Leiden','Dordrecht','Zoetermeer','Zwolle','Maastricht',
+  ],
+  BE: [
+    'Brussels','Antwerp','Ghent','Charleroi','Liège','Bruges','Namur','Leuven',
+    'Mons','Aalst','Mechelen','La Louvière','Kortrijk','Hasselt','Ostend','Genk',
+  ],
+  AT: [
+    'Vienna','Graz','Linz','Salzburg','Innsbruck','Klagenfurt','Villach','Wels',
+    'Sankt Pölten','Dornbirn','Steyr','Wiener Neustadt','Feldkirch','Bregenz',
+  ],
+  CH: [
+    'Zurich','Geneva','Basel','Bern','Lausanne','Winterthur','Lucerne','St. Gallen',
+    'Lugano','Biel','Thun','Köniz','La Chaux-de-Fonds','Fribourg','Schaffhausen',
+  ],
+  SE: [
+    'Stockholm','Gothenburg','Malmö','Uppsala','Linköping','Örebro','Västerås',
+    'Helsingborg','Jönköping','Norrköping','Lund','Umeå','Gävle','Borås','Södertälje',
+  ],
+  NO: [
+    'Oslo','Bergen','Stavanger','Trondheim','Drammen','Fredrikstad','Kristiansand',
+    'Sandnes','Tromsø','Sarpsborg','Skien','Ålesund','Bodø','Sandefjord','Haugesund',
+  ],
+  DK: [
+    'Copenhagen','Aarhus','Odense','Aalborg','Esbjerg','Randers','Kolding','Horsens',
+    'Vejle','Roskilde','Helsingør','Herning','Silkeborg','Næstved','Fredericia',
+  ],
+  FI: [
+    'Helsinki','Espoo','Tampere','Vantaa','Oulu','Turku','Jyväskylä','Lahti',
+    'Kuopio','Pori','Joensuu','Lappeenranta','Hämeenlinna','Rovaniemi','Vaasa',
+  ],
+  PL: [
+    'Warsaw','Kraków','Łódź','Wrocław','Poznań','Gdańsk','Szczecin','Bydgoszcz',
+    'Lublin','Białystok','Katowice','Gdynia','Częstochowa','Radom','Sosnowiec',
+  ],
+  PT: [
+    'Lisbon','Porto','Amadora','Braga','Setúbal','Coimbra','Funchal','Almada',
+    'Aveiro','Agualva-Cacém','Viseu','Guimarães','Évora','Faro','Leiria',
+  ],
+  GR: [
+    'Athens','Thessaloniki','Patras','Heraklion','Larissa','Volos','Ioannina',
+    'Chania','Chalcis','Agrinio','Katerini','Trikala','Serres','Kavala','Kalamata',
+  ],
+  RU: [
+    'Moscow','Saint Petersburg','Novosibirsk','Yekaterinburg','Kazan','Nizhny Novgorod',
+    'Chelyabinsk','Samara','Omsk','Rostov-on-Don','Ufa','Krasnoyarsk','Perm',
+    'Voronezh','Volgograd','Saratov','Krasnodar','Tyumen','Tolyatti','Izhevsk',
+  ],
+  UA: [
+    'Kyiv','Kharkiv','Odessa','Dnipro','Donetsk','Zaporizhzhia','Lviv','Kryvyi Rih',
+    'Mykolaiv','Mariupol','Luhansk','Vinnytsia','Chernivtsi','Kherson','Poltava',
+  ],
+  CN: [
+    'Shanghai','Beijing','Guangzhou','Shenzhen','Chengdu','Chongqing','Tianjin',
+    'Wuhan','Xi\'an','Hangzhou','Nanjing','Zhengzhou','Changsha','Qingdao','Shenyang',
+    'Dongguan','Foshan','Kunming','Harbin','Dalian','Suzhou','Ningbo','Jinan','Hefei',
+  ],
+  JP: [
+    'Tokyo','Yokohama','Osaka','Nagoya','Sapporo','Fukuoka','Kobe','Kawasaki',
+    'Kyoto','Saitama','Hiroshima','Sendai','Kitakyushu','Chiba','Sakai',
+    'Niigata','Hamamatsu','Okayama','Sagamihara','Shizuoka','Kumamoto','Matsuyama',
+  ],
+  KR: [
+    'Seoul','Busan','Incheon','Daegu','Daejeon','Gwangju','Suwon','Ulsan',
+    'Changwon','Seongnam','Goyang','Yongin','Bucheon','Cheongju','Ansan',
+  ],
+  IN: [
+    'Mumbai','Delhi','Bangalore','Hyderabad','Ahmedabad','Chennai','Kolkata','Surat',
+    'Pune','Jaipur','Lucknow','Kanpur','Nagpur','Indore','Thane','Bhopal',
+    'Visakhapatnam','Pimpri-Chinchwad','Patna','Vadodara','Ghaziabad','Ludhiana',
+  ],
+  SA: [
+    'Riyadh','Jeddah','Mecca','Medina','Dammam','Khobar','Tabuk','Buraidah',
+    'Khamis Mushait','Abha','Najran','Hail','Jubail','Yanbu','Dhahran',
+  ],
+  AE: [
+    'Dubai','Abu Dhabi','Sharjah','Al Ain','Ajman','Ras al-Khaimah','Fujairah',
+    'Umm al-Quwain','Khor Fakkan','Kalba','Dibba al-Hisn',
+  ],
+  QA: ['Doha','Al Rayyan','Al Wakrah','Al Khor','Al Shamal','Madinat ash Shamal'],
+  IL: [
+    'Jerusalem','Tel Aviv','Haifa','Rishon LeZion','Petah Tikva','Ashdod','Netanya',
+    'Beer Sheva','Bnei Brak','Holon','Ramat Gan','Rehovot','Ashkelon','Bat Yam',
+  ],
+  EG: [
+    'Cairo','Alexandria','Giza','Shubra El Kheima','Port Said','Suez','Luxor',
+    'Mansoura','Tanta','Asyut','Ismailia','Faiyum','Zagazig','Damietta',
+  ],
+  MA: [
+    'Casablanca','Rabat','Fes','Marrakech','Agadir','Tangier','Meknes','Oujda',
+    'Kenitra','Tetouan','Safi','El Jadida','Beni Mellal','Nador',
+  ],
+  BR: [
+    'São Paulo','Rio de Janeiro','Brasília','Salvador','Fortaleza','Belo Horizonte',
+    'Manaus','Curitiba','Recife','Porto Alegre','Belém','Goiânia','Guarulhos',
+    'Campinas','São Luís','Maceió','Natal','Teresina','Campo Grande','João Pessoa',
+  ],
+  MX: [
+    'Mexico City','Guadalajara','Monterrey','Puebla','Tijuana','León','Juárez',
+    'Zapopan','Mérida','San Luis Potosí','Aguascalientes','Hermosillo','Mexicali',
+    'Culiacán','Acapulco','Querétaro','Morelia','Cancún','Veracruz','Torreón',
+  ],
+  AR: [
+    'Buenos Aires','Córdoba','Rosario','Mendoza','Tucumán','La Plata','Mar del Plata',
+    'Salta','Santa Fe','San Juan','Resistencia','Neuquén','Santiago del Estero',
+  ],
+  CA: [
+    'Toronto','Montreal','Vancouver','Calgary','Edmonton','Ottawa','Winnipeg',
+    'Quebec City','Hamilton','Kitchener','London','Halifax','Victoria','Windsor',
+    'Oshawa','Saskatoon','Regina','Barrie','Kelowna','Abbotsford',
+  ],
+  AU: [
+    'Sydney','Melbourne','Brisbane','Perth','Adelaide','Gold Coast','Canberra',
+    'Newcastle','Wollongong','Logan City','Geelong','Hobart','Townsville',
+    'Cairns','Darwin','Toowoomba','Ballarat','Bendigo','Launceston',
+  ],
+  NZ: [
+    'Auckland','Wellington','Christchurch','Hamilton','Tauranga','Napier-Hastings',
+    'Dunedin','Palmerston North','Nelson','Rotorua','New Plymouth','Whangarei',
+  ],
+  SG: ['Singapore'],
+  MY: [
+    'Kuala Lumpur','Johor Bahru','Ipoh','Shah Alam','Petaling Jaya','Subang Jaya',
+    'George Town','Kota Kinabalu','Kuching','Malacca','Alor Setar','Miri',
+  ],
+  TH: [
+    'Bangkok','Chiang Mai','Pattaya','Khon Kaen','Hat Yai','Nonthaburi',
+    'Pak Kret','Nakhon Ratchasima','Udon Thani','Chon Buri','Nakhon Si Thammarat',
+  ],
+  ID: [
+    'Jakarta','Surabaya','Bandung','Medan','Semarang','Makassar','Palembang',
+    'Tangerang','Depok','Bekasi','Batam','Pekanbaru','Denpasar','Banjarmasin',
+  ],
+  VN: [
+    'Ho Chi Minh City','Hanoi','Da Nang','Haiphong','Can Tho','Bien Hoa',
+    'Hue','Nha Trang','Vung Tau','Quy Nhon','Da Lat','Buon Ma Thuot',
+  ],
+  GE: ['Tbilisi','Kutaisi','Batumi','Rustavi','Gori','Zugdidi','Poti','Samtredia'],
+  AZ: ['Baku','Ganja','Sumqayit','Mingachevir','Lankaran','Nakhchivan','Shirvan'],
+  KZ: ['Almaty','Nur-Sultan','Shymkent','Karaganda','Aktobe','Taraz','Pavlodar','Ust-Kamenogorsk'],
   OTHER: [],
 };
 
@@ -138,7 +300,11 @@ function CountryCityInput({ question, value, setValue, lang }) {
           value={cityInput}
           onChange={handleCityChange}
           onFocus={() => current.country && current.country !== 'OTHER' && setShowSuggestions(true)}
-          placeholder={lang === 'tr' ? 'Şehir girin veya seçin' : 'Type or select city'}
+          placeholder={
+            !current.country
+              ? (lang === 'tr' ? 'Önce ülke seçin' : 'Select country first')
+              : (lang === 'tr' ? 'Şehir girin veya seçin' : 'Type or select city')
+          }
           autoComplete="off"
           className="w-full rounded-2xl border border-[#302817]/10 bg-white px-4 py-3 text-sm font-medium text-[#302817] outline-none shadow-sm placeholder:text-[#302817]/30"
         />
