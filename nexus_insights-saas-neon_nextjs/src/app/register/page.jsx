@@ -81,57 +81,125 @@ export default function RegisterPage() {
     e.preventDefault(); setError('');
     if (!validateSection3()) return;
     setLoading(true);
+
+    const API = process.env.NEXT_PUBLIC_API_URL;
+    if (!API) {
+      setError(language === 'tr'
+        ? 'API adresi yapılandırılmamış. Lütfen yöneticinize bildirin.'
+        : 'API URL is not configured. Please contact support.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      const regRes = await fetch(`${API}/accounts/register/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: formData.username, email: formData.email, password: formData.password, password2: formData.password2, first_name: formData.legalEntityName }) });
-      if (!regRes.ok) { const d = await regRes.json(); setError(Object.values(d).flat().join(', ')); setLoading(false); return; }
-      const loginRes = await fetch(`${API}/accounts/login/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ username: formData.username, password: formData.password }) });
-      if (loginRes.ok) {
-        const { markSessionActive } = await import('@/lib/utils/api');
-        markSessionActive();
+      // ── Step 1: Create account ────────────────────────────────
+      let regRes;
+      try {
+        regRes = await fetch(`${API}/accounts/register/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+            password2: formData.password2,
+            first_name: formData.legalEntityName,
+          }),
+        });
+      } catch {
+        setError(language === 'tr'
+          ? 'Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.'
+          : 'Cannot reach the server. Check your internet connection.');
+        setLoading(false);
+        return;
+      }
 
-        // Build company payload — same data user just entered
-        const companyPayload = {
-          legal_entity_name: formData.legalEntityName,
-          tax_number: formData.taxNumber,
-          country_of_headquarters: formData.countryOfHeadquarters,
-          countries_of_operation: formData.countriesOfOperation,
-          nace_code: formData.naceCode,
-          main_activity_description: formData.mainActivityDescription,
-          number_of_employees: formData.numberOfEmployees,
-          annual_turnover_range: formData.annualTurnoverRange,
-          number_of_facilities: parseInt(formData.numberOfFacilities) || 0,
-          has_overseas_operations: formData.hasOverseasOperations === 'yes',
-          number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0,
-          has_iso_14001: formData.hasISO14001 === 'yes',
-          has_iso_50001: formData.hasISO50001 === 'yes',
-          has_iso_14064_work: formData.hasISO14064Work === 'yes',
-          target_iso_14064_verification: formData.targetISO14064Verification === 'yes',
-          has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes',
-          is_for_financing: formData.isForFinancing === 'yes',
-          is_due_to_export_pressure: formData.isDueToExportPressure === 'yes',
-          is_for_group_reporting: formData.isForGroupReporting === 'yes',
-        };
+      if (!regRes.ok) {
+        const d = await regRes.json().catch(() => ({}));
+        setError(Object.values(d).flat().join(', ') || (language === 'tr' ? 'Kayıt hatası' : 'Registration error'));
+        setLoading(false);
+        return;
+      }
 
+      // ── Step 2: Login ─────────────────────────────────────────
+      let loginRes;
+      try {
+        loginRes = await fetch(`${API}/accounts/login/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ username: formData.username, password: formData.password }),
+        });
+      } catch {
+        setError(language === 'tr'
+          ? 'Hesap oluşturuldu fakat giriş yapılamadı. Lütfen giriş sayfasına gidin.'
+          : 'Account created but login failed. Please go to the login page.');
+        setLoading(false);
+        return;
+      }
+
+      if (!loginRes.ok) {
+        setError(language === 'tr'
+          ? 'Hesap oluşturuldu fakat otomatik giriş başarısız. Lütfen manuel giriş yapın.'
+          : 'Account created but auto-login failed. Please log in manually.');
+        setLoading(false);
+        return;
+      }
+
+      // ── Step 3: Create company ────────────────────────────────
+      const { markSessionActive } = await import('@/lib/utils/api');
+      markSessionActive();
+
+      const companyPayload = {
+        legal_entity_name: formData.legalEntityName,
+        tax_number: formData.taxNumber,
+        country_of_headquarters: formData.countryOfHeadquarters,
+        countries_of_operation: formData.countriesOfOperation,
+        nace_code: formData.naceCode,
+        main_activity_description: formData.mainActivityDescription,
+        number_of_employees: formData.numberOfEmployees,
+        annual_turnover_range: formData.annualTurnoverRange,
+        number_of_facilities: parseInt(formData.numberOfFacilities) || 0,
+        has_overseas_operations: formData.hasOverseasOperations === 'yes',
+        number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0,
+        has_iso_14001: formData.hasISO14001 === 'yes',
+        has_iso_50001: formData.hasISO50001 === 'yes',
+        has_iso_14064_work: formData.hasISO14064Work === 'yes',
+        target_iso_14064_verification: formData.targetISO14064Verification === 'yes',
+        has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes',
+        is_for_financing: formData.isForFinancing === 'yes',
+        is_due_to_export_pressure: formData.isDueToExportPressure === 'yes',
+        is_for_group_reporting: formData.isForGroupReporting === 'yes',
+      };
+
+      try {
         const companyRes = await fetch(`${API}/companies/create/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify(companyPayload),
         });
-
         if (!companyRes.ok) {
-          // Persist payload so Settings → Company can auto-fill the form
-          // without forcing the user to type everything again.
+          // Save so Settings → Company can auto-fill — no re-typing needed
           try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
         } else {
           try { sessionStorage.removeItem('pendingCompany'); } catch {}
         }
-
-        router.push('/dashboard');
+      } catch {
+        // Company creation failed — save data for Settings → Company auto-fill
+        try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
       }
-    } catch { setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error'); }
-    finally { setLoading(false); }
+
+      router.push('/dashboard');
+
+    } catch (err) {
+      console.error('[register] unexpected error:', err);
+      setError(language === 'tr'
+        ? `Beklenmeyen hata: ${err?.message || 'Bilinmeyen'}`
+        : `Unexpected error: ${err?.message || 'Unknown'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const steps = [
