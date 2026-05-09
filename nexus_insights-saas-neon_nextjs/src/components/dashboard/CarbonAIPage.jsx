@@ -261,8 +261,8 @@ function CountryCityInput({ question, value, setValue, lang }) {
 
   const allCities = CITIES_BY_COUNTRY[current.country] || [];
   const filtered = cityInput.length === 0
-    ? allCities.slice(0, 8)
-    : allCities.filter(c => c.toLowerCase().includes(cityInput.toLowerCase())).slice(0, 8);
+    ? allCities                                                                        // show ALL cities when input is empty
+    : allCities.filter(c => c.toLowerCase().includes(cityInput.toLowerCase()));        // show ALL matches while typing
 
   function handleCountryChange(e) {
     const c = e.target.value;
@@ -309,7 +309,7 @@ function CountryCityInput({ question, value, setValue, lang }) {
           className="w-full rounded-2xl border border-[#302817]/10 bg-white px-4 py-3 text-sm font-medium text-[#302817] outline-none shadow-sm placeholder:text-[#302817]/30"
         />
         {showSuggestions && filtered.length > 0 && (
-          <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto rounded-2xl border border-[#302817]/10 bg-white shadow-[0_8px_24px_rgba(48,40,23,0.10)]">
+          <ul className="absolute left-0 right-0 top-full z-50 mt-1 max-h-72 overflow-y-auto rounded-2xl border border-[#302817]/10 bg-white shadow-[0_8px_24px_rgba(48,40,23,0.10)]">
             {filtered.map(city => (
               <li key={city}>
                 <button
