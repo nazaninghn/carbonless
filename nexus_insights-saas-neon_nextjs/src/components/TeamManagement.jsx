@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
+import { useToast } from '@/components/ToastProvider';
 import { Users, UserPlus, Shield, Crown, Pencil, Database, Eye, Info } from 'lucide-react';
 
 const ROLES = [
@@ -30,10 +31,10 @@ export default function TeamManagement({ language }) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('data_entry');
   const [inviting, setInviting] = useState(false);
-  const [inviteMsg, setInviteMsg] = useState('');
   const [showRoles, setShowRoles] = useState(false);
 
-  const tr = language === 'tr';
+  const tr    = language === 'tr';
+  const toast = useToast();
 
   const fetchMembers = async () => {
     try {
@@ -42,8 +43,9 @@ export default function TeamManagement({ language }) {
         const data = await res.json();
         setMembers(Array.isArray(data) ? data : data.results || []);
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error(tr ? 'Üyeler yüklenemedi' : 'Failed to load members');
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchMembers(); }, []);
@@ -52,18 +54,32 @@ export default function TeamManagement({ language }) {
     setUpdating(id);
     try {
       const res = await api.updateMembership(id, { role: newRole });
-      if (res.ok) fetchMembers();
-    } catch (e) { console.error(e); }
-    finally { setUpdating(null); }
+      if (res.ok) {
+        fetchMembers();
+        toast.success(tr ? 'Rol güncellendi' : 'Role updated');
+      } else {
+        toast.error(tr ? 'Rol güncellenemedi' : 'Failed to update role');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setUpdating(null); }
   };
 
   const handleToggleActive = async (m) => {
     setUpdating(m.id);
     try {
       const res = await api.updateMembership(m.id, { is_active: !m.is_active });
-      if (res.ok) fetchMembers();
-    } catch (e) { console.error(e); }
-    finally { setUpdating(null); }
+      if (res.ok) {
+        fetchMembers();
+        toast.success(m.is_active
+          ? (tr ? 'Üye devre dışı bırakıldı' : 'Member deactivated')
+          : (tr ? 'Üye etkinleştirildi' : 'Member activated'));
+      } else {
+        toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setUpdating(null); }
   };
 
   return (
@@ -214,18 +230,21 @@ export default function TeamManagement({ language }) {
           <button
             onClick={async () => {
               if (!inviteEmail) return;
-              setInviting(true); setInviteMsg('');
+              setInviting(true);
               try {
                 const res = await api.inviteMember({ email: inviteEmail, role: inviteRole });
                 if (res.ok) {
                   const data = await res.json();
-                  setInviteMsg(tr ? `✅ Davet gönderildi: ${data.email}` : `✅ Invite sent: ${data.email}`);
+                  toast.success(tr ? `Davet gönderildi: ${data.email}` : `Invite sent to ${data.email}`);
                   setInviteEmail('');
                 } else {
-                  const err = await res.json();
-                  setInviteMsg(`❌ ${err.error || 'Error'}`);
+                  let msg = 'Error';
+                  try { const err = await res.json(); msg = err.error || msg; } catch {}
+                  toast.error(msg);
                 }
-              } catch { setInviteMsg('❌ Connection error'); }
+              } catch {
+                toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+              }
               setInviting(false);
             }}
             disabled={inviting || !inviteEmail}
@@ -235,9 +254,6 @@ export default function TeamManagement({ language }) {
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}
           </button>
         </div>
-        {inviteMsg && (
-          <p className={`text-xs mt-2 ${inviteMsg.startsWith('✅') ? 'text-green-600' : 'text-red-600'}`}>{inviteMsg}</p>
-        )}
       </div>
     </div>
   );

@@ -1,16 +1,21 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
+import { useToast } from '@/components/ToastProvider';
 import { Plus, Trash2 } from 'lucide-react';
 
 export default function FacilitySettings({ language }) {
   const [facilities, setFacilities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [name, setName] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
   const [facilityType, setFacilityType] = useState('');
+
+  const tr    = language === 'tr';
+  const toast = useToast();
 
   const fetchFacilities = async () => {
     try {
@@ -19,20 +24,29 @@ export default function FacilitySettings({ language }) {
         const data = await res.json();
         setFacilities(Array.isArray(data) ? data : data.results || []);
       }
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch {
+      toast.error(tr ? 'Tesisler yüklenemedi' : 'Failed to load facilities');
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchFacilities(); }, []);
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    const res = await api.createFacility({ name, city, country, facility_type: facilityType });
-    if (res.ok) {
-      setShowForm(false);
-      setName(''); setCity(''); setCountry(''); setFacilityType('');
-      fetchFacilities();
-    }
+    setSaving(true);
+    try {
+      const res = await api.createFacility({ name, city, country, facility_type: facilityType });
+      if (res.ok) {
+        setShowForm(false);
+        setName(''); setCity(''); setCountry(''); setFacilityType('');
+        fetchFacilities();
+        toast.success(tr ? 'Tesis başarıyla eklendi ✓' : 'Facility added successfully ✓');
+      } else {
+        toast.error(tr ? 'Tesis eklenemedi' : 'Failed to add facility');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setSaving(false); }
   };
 
   if (loading) return <p className="text-sm text-[#302817]/55">Loading...</p>;
@@ -87,10 +101,10 @@ export default function FacilitySettings({ language }) {
             </div>
           </div>
           <div className="flex gap-2">
-            <button type="submit" className="px-4 py-2 bg-[#302817] text-white rounded-xl text-sm hover:bg-black">
-              {language === 'tr' ? 'Ekle' : 'Add'}
+            <button type="submit" disabled={saving} className="px-4 py-2 bg-[#302817] text-white rounded-xl text-sm hover:bg-black disabled:opacity-60">
+              {saving ? '…' : (language === 'tr' ? 'Ekle' : 'Add')}
             </button>
-            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-[#302817]/10 rounded-xl text-sm hover:bg-[#F8F8F8]">
+            <button type="button" onClick={() => setShowForm(false)} disabled={saving} className="px-4 py-2 border border-[#302817]/10 rounded-xl text-sm hover:bg-[#F8F8F8] disabled:opacity-60">
               {language === 'tr' ? 'İptal' : 'Cancel'}
             </button>
           </div>

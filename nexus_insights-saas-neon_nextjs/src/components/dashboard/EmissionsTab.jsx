@@ -133,6 +133,7 @@ export default function EmissionsTab({
   const [editQty,     setEditQty]     = useState('');
   const [editDesc,    setEditDesc]    = useState('');
   const [editFacility,setEditFacility]= useState('');
+  const [editSaving,  setEditSaving]  = useState(false);
 
   // Custom request
   const [showCustom,   setShowCustom]  = useState(false);
@@ -306,23 +307,36 @@ export default function EmissionsTab({
 
   const handleDelete = async (id) => {
     if (!confirm(tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?')) return;
-    const res = await api.deleteEntry(id);
-    fetchData();
-    if (res.ok !== false) toast.success(tr ? 'Kayıt silindi' : 'Entry deleted');
+    try {
+      const res = await api.deleteEntry(id);
+      if (res.ok || res.status === 204) {
+        fetchData();
+        toast.success(tr ? 'Kayıt silindi' : 'Entry deleted');
+      } else {
+        toast.error(tr ? 'Kayıt silinemedi' : 'Failed to delete entry');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    }
   };
 
   const handleEdit = async (e) => {
     e.preventDefault();
     if (!editing) return;
-    const res = await api.updateEntry(editing.id, {
-      quantity: editQty, description: editDesc, facility: editFacility,
-    });
-    if (res.ok) {
-      setEditing(null); fetchData();
-      toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
-    } else {
-      toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
-    }
+    setEditSaving(true);
+    try {
+      const res = await api.updateEntry(editing.id, {
+        quantity: editQty, description: editDesc, facility: editFacility,
+      });
+      if (res.ok) {
+        setEditing(null); fetchData();
+        toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
+      } else {
+        toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setEditSaving(false); }
   };
 
   const openEdit = (entry) => {
@@ -958,8 +972,8 @@ export default function EmissionsTab({
               </form>
             </div>
             <div className="flex shrink-0 gap-2 border-t border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
-              <button type="button" onClick={() => setEditing(null)} className="flex-1 rounded-full border border-[#302817]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
-              <button type="submit" form="edit-form" className="flex-1 rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/12 transition hover:bg-black">{tr ? 'Kaydet' : 'Save'}</button>
+              <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#302817]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
+              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/12 transition hover:bg-black disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
             </div>
           </div>
         </div>

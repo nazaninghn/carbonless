@@ -84,6 +84,8 @@ export const api = {
   // Targets
   getTargets: () => request('/emissions/targets/'),
   createTarget: (data) => request('/emissions/targets/', { method: 'POST', body: JSON.stringify(data) }),
+  updateTarget: (id, data) => request(`/emissions/targets/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteTarget: (id) => request(`/emissions/targets/${id}/`, { method: 'DELETE' }),
 
   // Custom Emission Requests
   getCustomRequests: () => request('/emissions/custom-requests/'),

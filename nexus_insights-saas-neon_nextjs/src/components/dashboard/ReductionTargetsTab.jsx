@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { api } from '@/lib/utils/api';
-import { Plus, Target, X, TrendingDown, Zap, Calendar } from 'lucide-react';
+import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -90,7 +90,7 @@ function TimelineBar({ baseYear, targetYear, currentYear, language }) {
 }
 
 // ─── Target Card ──────────────────────────────────────────────────────────────
-function TargetCard({ tgt, currentKg, language }) {
+function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
   const tr = language === 'tr';
 
   const baseKg     = parseFloat(tgt.base_emissions_kg) || 0;
@@ -116,12 +116,32 @@ function TargetCard({ tgt, currentKg, language }) {
   return (
     <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#302817]/10 bg-white/82 p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)] transition hover:shadow-[0_10px_32px_rgba(48,40,23,0.09)]">
 
-      {/* Title + status */}
+      {/* Title + status + actions */}
       <div className="flex items-start justify-between gap-2">
         <h4 className="text-sm font-bold leading-tight text-[#302817]">{tgt.title}</h4>
-        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${st.bg} ${st.text}`}>
-          {st.label}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${st.bg} ${st.text}`}>
+            {st.label}
+          </span>
+          {onEdit && (
+            <button
+              onClick={() => onEdit(tgt)}
+              title={tr ? 'Düzenle' : 'Edit'}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-[#95A847]/10 hover:text-[#95A847]"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={() => onDelete(tgt.id)}
+              title={tr ? 'Sil' : 'Delete'}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-red-50 hover:text-red-500"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Arc gauge + center text */}
@@ -206,9 +226,27 @@ export default function ReductionTargetsTab({
   const [reducePct,  setReducePct]  = useState('');
   const [saving,     setSaving]     = useState(false);
 
+  // ── Edit target state ────────────────────────────────────────────────────
+  const [editTarget,    setEditTarget]    = useState(null); // the target being edited
+  const [editTitle,     setEditTitle]     = useState('');
+  const [editBaseYear,  setEditBaseYear]  = useState('');
+  const [editTgtYear,   setEditTgtYear]   = useState('');
+  const [editBaseEmit,  setEditBaseEmit]  = useState('');
+  const [editReducePct, setEditReducePct] = useState('');
+  const [editSaving,    setEditSaving]    = useState(false);
+
   const resetForm = () => {
     setTitle(''); setBaseEmit(''); setReducePct('');
     setBaseYear(new Date().getFullYear() - 1); setTgtYear(2030);
+  };
+
+  const openEdit = (tgt) => {
+    setEditTarget(tgt);
+    setEditTitle(tgt.title);
+    setEditBaseYear(tgt.base_year);
+    setEditTgtYear(tgt.target_year);
+    setEditBaseEmit((parseFloat(tgt.base_emissions_kg) / 1000).toString());
+    setEditReducePct(tgt.target_reduction_percent.toString());
   };
 
   const handleAdd = async (e) => {
@@ -228,6 +266,37 @@ export default function ReductionTargetsTab({
       toast.error(tr ? 'Hedef kaydedilemedi' : 'Failed to save target');
     }
     setSaving(false);
+  };
+
+  const handleEditSave = async (e) => {
+    e.preventDefault();
+    if (!editTarget) return;
+    setEditSaving(true);
+    const res = await api.updateTarget(editTarget.id, {
+      title: editTitle,
+      base_year: parseInt(editBaseYear),
+      target_year: parseInt(editTgtYear),
+      base_emissions_kg: parseFloat(editBaseEmit) * 1000,
+      target_reduction_percent: parseFloat(editReducePct),
+    });
+    if (res.ok) {
+      setEditTarget(null); fetchData();
+      toast.success(tr ? 'Hedef güncellendi ✓' : 'Target updated ✓');
+    } else {
+      toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+    }
+    setEditSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm(tr ? 'Bu hedefi silmek istediğinize emin misiniz?' : 'Delete this target?')) return;
+    const res = await api.deleteTarget(id);
+    if (res.ok || res.status === 204) {
+      fetchData();
+      toast.success(tr ? 'Hedef silindi' : 'Target deleted');
+    } else {
+      toast.error(tr ? 'Hedef silinemedi' : 'Failed to delete target');
+    }
   };
 
   // ── Summary KPIs ─────────────────────────────────────────────────────────
@@ -355,6 +424,8 @@ export default function ReductionTargetsTab({
               tgt={tgt}
               currentKg={currentKg}
               language={language}
+              onEdit={openEdit}
+              onDelete={handleDelete}
             />
           ))}
         </div>
@@ -375,6 +446,120 @@ export default function ReductionTargetsTab({
                 ? 'Emisyon azaltma faaliyetlerinizi gözden geçirin ve hızlandırın.'
                 : 'Review and accelerate your emission reduction activities.'}
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════ EDIT TARGET MODAL ══════════════════════════ */}
+      {editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
+          <div className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl">
+
+            {/* Header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
+              <div>
+                <h2 className="text-base font-bold tracking-[-0.02em]">
+                  {tr ? 'Hedefi Düzenle' : 'Edit Target'}
+                </h2>
+                <p className="mt-0.5 text-xs text-[#302817]/45">
+                  {editTarget.title}
+                </p>
+              </div>
+              <button
+                onClick={() => setEditTarget(null)}
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 transition hover:bg-[#302817]/5"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+              <form id="edit-target-form" onSubmit={handleEditSave} className="space-y-4">
+                <div>
+                  <label className={LABEL}>{tr ? 'Hedef Başlığı' : 'Target Title'} *</label>
+                  <input
+                    type="text" value={editTitle} onChange={e => setEditTitle(e.target.value)}
+                    className={FIELD} required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={LABEL}>{tr ? 'Baz Yıl' : 'Base Year'} *</label>
+                    <input
+                      type="number" min="2000" max="2030"
+                      value={editBaseYear} onChange={e => setEditBaseYear(e.target.value)}
+                      className={FIELD} required
+                    />
+                  </div>
+                  <div>
+                    <label className={LABEL}>{tr ? 'Hedef Yıl' : 'Target Year'} *</label>
+                    <input
+                      type="number" min="2025" max="2060"
+                      value={editTgtYear} onChange={e => setEditTgtYear(e.target.value)}
+                      className={FIELD} required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={LABEL}>{tr ? 'Baz Emisyon (tCO₂e)' : 'Base Emissions (tCO₂e)'} *</label>
+                    <input
+                      type="number" step="any" min="0"
+                      value={editBaseEmit} onChange={e => setEditBaseEmit(e.target.value)}
+                      className={FIELD} required
+                    />
+                  </div>
+                  <div>
+                    <label className={LABEL}>{tr ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'} *</label>
+                    <input
+                      type="number" step="any" min="1" max="100"
+                      value={editReducePct} onChange={e => setEditReducePct(e.target.value)}
+                      className={FIELD} required
+                    />
+                  </div>
+                </div>
+
+                {/* Live preview */}
+                {editBaseEmit && editReducePct && (
+                  <div className="rounded-2xl border border-[#95A847]/25 bg-[#95A847]/7 px-4 py-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#75863B]/60">
+                      {tr ? 'Önizleme' : 'Preview'}
+                    </p>
+                    <div className="mt-2 flex items-center gap-3">
+                      <div className="text-center">
+                        <p className="text-[10px] text-[#302817]/40">{tr ? 'Baz' : 'Base'}</p>
+                        <p className="text-sm font-bold">{fmt(parseFloat(editBaseEmit))} t</p>
+                      </div>
+                      <div className="flex-1 text-center text-xs font-bold text-[#75863B]">→ -{editReducePct}% →</div>
+                      <div className="text-center">
+                        <p className="text-[10px] text-[#302817]/40">{tr ? 'Hedef' : 'Goal'}</p>
+                        <p className="text-sm font-bold text-[#75863B]">
+                          {fmt(parseFloat(editBaseEmit) * (1 - parseFloat(editReducePct) / 100))} t
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+              <button
+                type="button"
+                onClick={() => setEditTarget(null)}
+                className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
+              >
+                {tr ? 'İptal' : 'Cancel'}
+              </button>
+              <button
+                type="submit" form="edit-target-form" disabled={editSaving}
+                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60"
+              >
+                {editSaving ? '…' : (tr ? 'Kaydet' : 'Save Changes')}
+              </button>
+            </div>
           </div>
         </div>
       )}

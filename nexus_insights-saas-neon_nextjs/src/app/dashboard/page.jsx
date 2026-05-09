@@ -19,6 +19,7 @@ import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -81,65 +82,79 @@ export default function DashboardPage() {
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
-            <DashboardOverview
-              language={language}
-              selectedYear={selectedYear}
-              summary={summary}
-              entries={entries}
-              targets={targets}
-              facilityList={facilityList}
-              questionnaireProfile={questionnaireProfile}
-              setActiveTab={setActiveTab}
-              setShowAddForm={setShowAddForm}
-            />
+            <ErrorBoundary>
+              <DashboardOverview
+                language={language}
+                selectedYear={selectedYear}
+                summary={summary}
+                entries={entries}
+                targets={targets}
+                facilityList={facilityList}
+                questionnaireProfile={questionnaireProfile}
+                setActiveTab={setActiveTab}
+                setShowAddForm={setShowAddForm}
+              />
+            </ErrorBoundary>
           )}
 
           {/* ===== EMISSIONS TAB ===== */}
           {activeTab === 'emissions' && (
-            <EmissionsTab
-              language={language}
-              selectedYear={selectedYear}
-              selectedCountry={selectedCountry}
-              entries={entries}
-              factors={factors}
-              facilityList={facilityList}
-              customRequests={customRequests}
-              questionnaireProfile={questionnaireProfile}
-              showAddForm={showAddForm}
-              setShowAddForm={setShowAddForm}
-              setActiveTab={setActiveTab}
-              fetchData={fetchData}
-            />
+            <ErrorBoundary>
+              <EmissionsTab
+                language={language}
+                selectedYear={selectedYear}
+                selectedCountry={selectedCountry}
+                entries={entries}
+                factors={factors}
+                facilityList={facilityList}
+                customRequests={customRequests}
+                questionnaireProfile={questionnaireProfile}
+                showAddForm={showAddForm}
+                setShowAddForm={setShowAddForm}
+                setActiveTab={setActiveTab}
+                fetchData={fetchData}
+              />
+            </ErrorBoundary>
           )}
 
           {/* ===== REVIEW TAB ===== */}
           {activeTab === 'review' && (
-            <ReviewTab language={language} fetchData={fetchData} />
+            <ErrorBoundary>
+              <ReviewTab language={language} fetchData={fetchData} />
+            </ErrorBoundary>
           )}
 
           {/* ===== REDUCTION TARGETS TAB ===== */}
           {activeTab === 'reduction' && (
-            <ReductionTargetsTab
-              language={language}
-              targets={targets}
-              summary={summary}
-              fetchData={fetchData}
-            />
+            <ErrorBoundary>
+              <ReductionTargetsTab
+                language={language}
+                targets={targets}
+                summary={summary}
+                fetchData={fetchData}
+              />
+            </ErrorBoundary>
           )}
 
           {/* ===== REPORTING TAB ===== */}
           {activeTab === 'reporting' && (
-            <ReportingTab language={language} selectedYear={selectedYear} summary={summary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
+            <ErrorBoundary>
+              <ReportingTab language={language} selectedYear={selectedYear} summary={summary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
+            </ErrorBoundary>
           )}
 
           {/* ===== SETTINGS TAB ===== */}
           {activeTab === 'settings' && (
-            <SettingsTab language={language} user={user} fetchData={fetchData} />
+            <ErrorBoundary>
+              <SettingsTab language={language} user={user} fetchData={fetchData} />
+            </ErrorBoundary>
           )}
 
           {/* ===== AI CARBON TAB ===== */}
           {activeTab === 'ai_carbon' && (
-            <CarbonAIPage language={language} />
+            <ErrorBoundary>
+              <CarbonAIPage language={language} />
+            </ErrorBoundary>
           )}
             </div>
           )}
