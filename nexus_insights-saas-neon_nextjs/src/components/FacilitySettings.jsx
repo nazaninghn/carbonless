@@ -53,6 +53,13 @@ export default function FacilitySettings({ language }) {
     e.preventDefault();
     setFormError('');
     setSuccessMsg('');
+
+    // Manual validation — no browser native popup
+    if (!name.trim()) {
+      setFormError(tr ? 'Tesis adı zorunludur' : 'Facility name is required');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -177,7 +184,7 @@ export default function FacilitySettings({ language }) {
 
       {/* Form */}
       {showForm ? (
-        <form onSubmit={handleAdd} className="space-y-3 rounded-2xl border border-[#302817]/10 bg-[#F8F8F8] p-4">
+        <form onSubmit={handleAdd} noValidate className="space-y-3 rounded-2xl border border-[#302817]/10 bg-[#F8F8F8] p-4">
           <p className="text-xs font-bold text-[#302817]/60 uppercase tracking-wide">
             {tr ? 'Yeni Tesis' : 'New Facility'}
           </p>
@@ -193,7 +200,6 @@ export default function FacilitySettings({ language }) {
                 onChange={e => setName(e.target.value)}
                 placeholder={tr ? 'Örn. İstanbul Merkez Ofis' : 'e.g. Istanbul Head Office'}
                 className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#95A847] focus:outline-none"
-                required
               />
             </div>
             <div>

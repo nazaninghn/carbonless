@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { api } from '@/lib/utils/api';
+import { useToast } from '@/components/ToastProvider';
 
 export default function ProfileEdit({ language, user, onUpdate }) {
   const [firstName, setFirstName] = useState(user?.first_name || '');
@@ -9,27 +10,44 @@ export default function ProfileEdit({ language, user, onUpdate }) {
   const [department, setDepartment] = useState(user?.department || '');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
+  const [error, setError] = useState('');
 
-  const tr = language === 'tr';
+  const tr    = language === 'tr';
+  const toast = useToast();
 
   const handleSave = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg('');
+    setError('');
 
-    const res = await api.updateProfile({
-      first_name: firstName,
-      last_name: lastName,
-      phone,
-      department,
-    });
+    try {
+      const res = await api.updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        department,
+      });
 
-    if (res.ok) {
-      setMsg(tr ? 'Kaydedildi' : 'Saved');
-      if (onUpdate) onUpdate();
+      if (res.ok) {
+        setMsg(tr ? 'Kaydedildi ✓' : 'Saved ✓');
+        toast.success(tr ? 'Profil güncellendi ✓' : 'Profile updated ✓');
+        if (onUpdate) onUpdate();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        const errMsg = data?.detail || data?.error
+          || Object.values(data || {}).flat().filter(Boolean).join(' ')
+          || (tr ? 'Kaydedilemedi' : 'Failed to save');
+        setError(String(errMsg));
+        toast.error(String(errMsg));
+      }
+    } catch {
+      const errMsg = tr ? 'Bağlantı hatası' : 'Connection error';
+      setError(errMsg);
+      toast.error(errMsg);
+    } finally {
+      setSaving(false);
     }
-
-    setSaving(false);
   };
 
   return (
@@ -47,6 +65,13 @@ export default function ProfileEdit({ language, user, onUpdate }) {
         <Field label={tr ? 'Departman' : 'Department'} value={department} onChange={setDepartment} />
       </div>
 
+      {error && (
+        <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5">
+          <span className="mt-0.5 text-red-500">⚠</span>
+          <p className="text-xs text-red-700">{error}</p>
+        </div>
+      )}
+
       <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {msg ? (
           <p className="rounded-full bg-[#B4BE6A]/15 px-3 py-2 text-xs font-bold text-[#75863B]">
@@ -61,7 +86,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
           disabled={saving}
           className="w-full rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-lg shadow-[#302817]/10 transition hover:bg-black disabled:opacity-60 sm:w-auto"
         >
-          {saving ? '...' : tr ? 'Kaydet' : 'Save'}
+          {saving ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save')}
         </button>
       </div>
     </form>

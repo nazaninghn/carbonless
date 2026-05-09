@@ -63,6 +63,9 @@ export const api = {
   markNotificationsRead: (ids) => request('/accounts/notifications/read/', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) }),
   getUnreadCount: () => request('/accounts/notifications/unread-count/'),
 
+  // Company
+  createCompany: (data) => request('/companies/create/', { method: 'POST', body: JSON.stringify(data) }),
+
   // Facilities
   getFacilities: () => request('/companies/facilities/'),
   createFacility: (data) => request('/companies/facilities/', { method: 'POST', body: JSON.stringify(data) }),
