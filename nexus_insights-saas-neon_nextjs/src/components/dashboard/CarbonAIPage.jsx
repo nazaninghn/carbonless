@@ -458,6 +458,26 @@ function AnswerInput({ question, value, setValue, lang, onSubmit }) {
   }
 
   if (question.type === 'text') {
+    if (question.subtype === 'multi_line') {
+      return (
+        <div className="rounded-[18px] border border-[#302817]/10 bg-white px-4 py-3 shadow-[0_4px_20px_rgba(48,40,23,0.05)]">
+          <textarea
+            rows={4}
+            maxLength={question.maxLength || undefined}
+            value={value || ''}
+            onChange={e => setValue(e.target.value)}
+            placeholder={question.placeholder?.[lang] || ''}
+            autoFocus
+            className="w-full resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30"
+          />
+          {question.maxLength && (
+            <div className="mt-1 text-right text-[11px] font-bold text-[#302817]/25">
+              {(value || '').length}/{question.maxLength}
+            </div>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="flex items-center gap-2 rounded-[22px] border border-[#302817]/10 bg-white px-4 py-3 shadow-[0_4px_20px_rgba(48,40,23,0.05)]">
         <input
@@ -488,6 +508,33 @@ function AnswerInput({ question, value, setValue, lang, onSubmit }) {
 
   // single_select & year_select: clicking a chip auto-submits
   if (question.type === 'year_select' || question.type === 'single_select') {
+    // Large option sets (>8) → scrollable list for readability
+    if (question.options.length > 8) {
+      return (
+        <div className="max-h-64 overflow-y-auto rounded-[18px] border border-[#302817]/10 bg-white shadow-[0_4px_20px_rgba(48,40,23,0.05)]">
+          {question.options.map((opt, i) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { setValue(opt.value); setTimeout(() => onSubmit(opt.value), 0); }}
+              className={[
+                'flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium transition',
+                i !== 0 && 'border-t border-[#302817]/6',
+                value === opt.value
+                  ? 'bg-[#B4BE6A]/15 text-[#75863B]'
+                  : 'text-[#302817] hover:bg-[#B4BE6A]/8',
+              ].filter(Boolean).join(' ')}
+            >
+              <span className={[
+                'h-4 w-4 shrink-0 rounded-full border-2 transition',
+                value === opt.value ? 'border-[#95A847] bg-[#95A847]' : 'border-[#302817]/20',
+              ].join(' ')} />
+              {opt.label?.[lang] || opt.value}
+            </button>
+          ))}
+        </div>
+      );
+    }
     return (
       <div className="flex flex-wrap gap-2">
         {question.options.map(opt => (
