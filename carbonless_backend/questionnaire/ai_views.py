@@ -12,8 +12,8 @@ from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 
-GROK_API_URL = "https://api.x.ai/v1/chat/completions"
-GROK_MODEL   = "grok-3-mini"   # free tier model
+GROK_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROK_MODEL   = "llama-3.1-8b-instant"   # Groq free tier — very fast
 TIMEOUT_SEC  = 8
 
 SYSTEM_PROMPT_EN = """You are CarbonIQ, an expert GHG inventory assistant built into Carbonless, an ISO 14064-1 carbon accounting platform.
@@ -89,7 +89,7 @@ class AIChatView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        api_key = os.environ.get("GROK_API_KEY", "").strip()
+        api_key = os.environ.get("GROQ_API_KEY", "").strip()
         if not api_key:
             # No key configured — frontend will use static messages
             return JsonResponse({"message": None, "source": "fallback"})
