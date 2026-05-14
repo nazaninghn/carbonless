@@ -179,23 +179,35 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-    """Refresh token from HttpOnly cookie, set new access cookie."""
+    """
+    Refresh JWT tokens.
+    Accepts refresh token from:
+      1. Request body { refresh: "..." }  ← primary (localStorage / cross-origin compatible)
+      2. HttpOnly cookie 'refresh_token'   ← fallback (same-site setups)
+    Returns new access + refresh tokens in the body AND sets cookies.
+    """
 
     def post(self, request, *args, **kwargs):
-        refresh = request.COOKIES.get('refresh_token')
+        # Prefer body token (localStorage-based auth — works on Safari/iOS/Edge)
+        # Fall back to cookie (same-site / old browser path)
+        refresh = request.data.get('refresh') or request.COOKIES.get('refresh_token')
         if not refresh:
             return Response({'detail': 'No refresh token'}, status=401)
 
-        # QueryDict is immutable by default
-        request.data._mutable = True
-        request.data['refresh'] = refresh
-        request.data._mutable = False
+        # Make request.data mutable so parent view can read the refresh field
+        try:
+            request.data._mutable = True
+            request.data['refresh'] = refresh
+            request.data._mutable = False
+        except AttributeError:
+            pass  # regular dict — already mutable
 
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
             from django.conf import settings as django_settings
             access = response.data.get('access')
+            new_refresh = response.data.get('refresh')  # rotated refresh token
             is_secure = not django_settings.DEBUG
             if access:
                 response.set_cookie(
@@ -203,8 +215,14 @@ class CookieTokenRefreshView(TokenRefreshView):
                     httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
                     max_age=30 * 60, path='/',
                 )
-            # Always return access token for cross-origin header-based auth
-            response.data = {'status': 'ok', 'access': access}
+            if new_refresh:
+                response.set_cookie(
+                    'refresh_token', new_refresh,
+                    httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
+                    max_age=7 * 24 * 3600, path='/',
+                )
+            # Return BOTH tokens in body so localStorage-based clients can update them
+            response.data = {'status': 'ok', 'access': access, 'refresh': new_refresh}
         return response
 
 

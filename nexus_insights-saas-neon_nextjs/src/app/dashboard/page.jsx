@@ -57,8 +57,8 @@ export default function DashboardPage() {
         onLogout={handleLogout}
       />
 
-      {/* Main */}
-      <div className="min-w-0 max-w-full flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      {/* Main — do NOT add overflow-x-hidden here: it breaks sticky header positioning */}
+      <div className="min-w-0 max-w-full flex-1 flex flex-col min-h-screen">
         <DashboardHeader
           language={language}
           activeTab={activeTab}

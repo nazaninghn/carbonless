@@ -1,7 +1,8 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 // ── Session indicator cookie (client-readable, used by middleware for routing) ──
-// NOT the auth token — actual auth is the HttpOnly JWT cookie set by the backend.
+// NOT the auth token — actual auth uses localStorage JWT + Authorization header.
+// This first-party cookie is safe on all browsers (same-site, not HttpOnly).
 export function markSessionActive() {
   if (typeof document === 'undefined') return;
   document.cookie = 'carbonless_auth=1; path=/; SameSite=Lax; Max-Age=86400';
@@ -11,26 +12,73 @@ export function clearSessionCookie() {
   document.cookie = 'carbonless_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
 }
 
+// ── Token storage (localStorage) ─────────────────────────────────────────────
+// localStorage is NOT subject to cross-site / ITP cookie restrictions.
+// Works on Safari, iOS, Edge, Chrome — everywhere.
+// Backend CookieJWTAuthentication checks Authorization header FIRST, then cookie.
+function getAccessToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('access_token');
+}
+function getRefreshToken() {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('refresh_token');
+}
+export function saveTokens(access, refresh) {
+  if (typeof window === 'undefined') return;
+  if (access) localStorage.setItem('access_token', access);
+  if (refresh) localStorage.setItem('refresh_token', refresh);
+}
+export function clearTokens() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+}
+
+// ── Authenticated fetch ───────────────────────────────────────────────────────
 async function request(endpoint, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const access = getAccessToken();
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+    // Bearer token — works cross-origin on all browsers (no cookie ITP issue)
+    ...(access ? { Authorization: `Bearer ${access}` } : {}),
+  };
 
   const res = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
-    credentials: 'include',
+    credentials: 'include', // keep for cookie fallback on same-site setups
   });
 
   if (res.status === 401) {
-    // Try silent refresh via HttpOnly refresh cookie
+    // Try silent token refresh using stored refresh token
+    const refresh = getRefreshToken();
+    if (!refresh) {
+      clearSessionCookie();
+      clearTokens();
+      if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
+      return new Response(null, { status: 401 });
+    }
+
     const refreshRes = await fetch(`${API_BASE}/accounts/token/refresh/`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }), // send in body — works cross-origin
     });
+
     if (refreshRes.ok) {
-      return fetch(`${API_BASE}${endpoint}`, { ...options, headers, credentials: 'include' });
+      const refreshData = await refreshRes.json();
+      saveTokens(refreshData.access, refreshData.refresh);
+      const retryHeaders = {
+        ...headers,
+        Authorization: `Bearer ${refreshData.access}`,
+      };
+      return fetch(`${API_BASE}${endpoint}`, { ...options, headers: retryHeaders, credentials: 'include' });
     } else {
       clearSessionCookie();
+      clearTokens();
       if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
       return new Response(null, { status: 401 });
     }
@@ -39,22 +87,34 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  login: (email, password) =>
-    fetch(`${API_BASE}/accounts/login/`, {
+  // Login — parses token from response body and saves to localStorage
+  login: async (email, password) => {
+    const res = await fetch(`${API_BASE}/accounts/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({ username: email, password }),
-    }),
+    });
+    if (res.ok) {
+      try {
+        const data = await res.clone().json();
+        saveTokens(data.access, data.refresh);
+      } catch { /* tokens already in cookie if same-site */ }
+    }
+    return res;
+  },
 
   logout: async () => {
+    const access = getAccessToken();
     try {
       await fetch(`${API_BASE}/accounts/logout/`, {
         method: 'POST',
         credentials: 'include',
+        headers: access ? { Authorization: `Bearer ${access}` } : {},
       });
     } catch {}
     clearSessionCookie();
+    clearTokens();
     if (typeof window !== 'undefined') window.location.href = '/login';
   },
 
@@ -78,8 +138,15 @@ export const api = {
   getFactors: (params = '') => request(`/emissions/factors/${params ? '?' + params : ''}`),
   getEntries: (params = '') => request(`/emissions/entries/${params ? '?' + params : ''}`),
   createEntry: (data) => request('/emissions/entries/', { method: 'POST', body: JSON.stringify(data) }),
-  createEntryWithFile: (formData) =>
-    fetch(`${API_BASE}/emissions/entries/`, { method: 'POST', credentials: 'include', body: formData }),
+  createEntryWithFile: (formData) => {
+    const access = getAccessToken();
+    return fetch(`${API_BASE}/emissions/entries/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: access ? { Authorization: `Bearer ${access}` } : {},
+      body: formData,
+    });
+  },
   updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteEntry: (id) => request(`/emissions/entries/${id}/`, { method: 'DELETE' }),
   getSummary: (year = 2026) => request(`/emissions/summary/?year=${year}`),

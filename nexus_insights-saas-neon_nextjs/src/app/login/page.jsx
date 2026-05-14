@@ -31,15 +31,12 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/accounts/login/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username: email, password }),
-      });
+      // api.login() saves access+refresh tokens to localStorage automatically
+      // This works on all browsers (Safari, iOS, Edge) — no cross-site cookie issues
+      const { api, markSessionActive } = await import('@/lib/utils/api');
+      const res = await api.login(email, password);
       if (res.ok) {
-        const { markSessionActive } = await import('@/lib/utils/api');
-        markSessionActive();
+        markSessionActive(); // sets first-party carbonless_auth cookie for middleware routing
         router.push('/dashboard');
       } else {
         setError(language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
