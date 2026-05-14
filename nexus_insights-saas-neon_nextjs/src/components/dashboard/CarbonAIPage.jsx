@@ -693,7 +693,7 @@ export default function CarbonAIPage({ language = 'en' }) {
   const question = getQuestionById(currentId);
   const stage = CARBONIQ_STAGES.find(s => s.id === question?.stage);
   const answeredCount = Object.keys(answers).length;
-  const progress = Math.min(Math.round((answeredCount / 96) * 100), 100);
+  const progress = Math.min(Math.round((answeredCount / 98) * 100), 100);
 
   // Smooth auto-scroll to bottom
   useEffect(() => {
