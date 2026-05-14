@@ -79,17 +79,19 @@ class StepA7aSerializer(serializers.Serializer):
 
 
 class StepB1Serializer(serializers.Serializer):
-    nace_code = serializers.CharField(max_length=50)
-    nace_label = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
+    """B1 = Employee count (shown 2nd in B block)."""
+    BANDS = ['1_50', '51_250', '251_1000', '1001_5000', 'over_5000']
+    employee_band = serializers.ChoiceField(choices=BANDS)
 
 
 class StepB2Serializer(serializers.Serializer):
-    activity_description = serializers.CharField(max_length=500)
+    activity_description = serializers.CharField(max_length=1000)
 
 
 class StepB3Serializer(serializers.Serializer):
-    BANDS = ['1-50', '51-250', '251-1000', '1001-5000', '5000+']
-    employee_band = serializers.ChoiceField(choices=BANDS)
+    """B3 = NACE sector (shown 1st in B block)."""
+    nace_code = serializers.CharField(max_length=50)
+    nace_label = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')
 
 
 class StepB4Serializer(serializers.Serializer):
@@ -97,7 +99,7 @@ class StepB4Serializer(serializers.Serializer):
 
 
 class StepB5Serializer(serializers.Serializer):
-    TYPES = ['office', 'factory', 'warehouse', 'field', 'datacenter', 'retail', 'other']
+    TYPES = ['office', 'factory', 'warehouse', 'field', 'data_center', 'retail', 'other']
     facility_types = serializers.ListField(
         child=serializers.ChoiceField(choices=TYPES),
         min_length=1
@@ -105,7 +107,7 @@ class StepB5Serializer(serializers.Serializer):
 
 
 class StepB6Serializer(serializers.Serializer):
-    BANDS = ['<1M', '1-10M', '10-100M', '100M-1B', '1B+', 'skip']
+    BANDS = ['under_1m', '1m_10m', '10m_100m', '100m_1b', 'over_1b', 'skip']
     revenue_band = serializers.ChoiceField(choices=BANDS)
 
 
@@ -122,7 +124,7 @@ class StepC3Serializer(serializers.Serializer):
 
 
 class StepD1Serializer(serializers.Serializer):
-    DATABASES = ['DEFRA', 'DEFRA_TUIK', 'IPCC_AR6', 'EPA', 'custom']
+    DATABASES = ['DEFRA', 'DEFRA_TUIK', 'IPCC_AR6', 'EPA', 'ecoinvent', 'other', 'custom']
     ef_database = serializers.ChoiceField(choices=DATABASES)
     ef_custom_source = serializers.CharField(
         max_length=200, required=False, allow_blank=True, default=''
@@ -136,5 +138,5 @@ class StepD3Serializer(serializers.Serializer):
 
 
 class StepD4Serializer(serializers.Serializer):
-    APPROACHES = ['materiality', 'full']
+    APPROACHES = ['materiality', 'full_15', 'exclude']
     scope3_approach = serializers.ChoiceField(choices=APPROACHES)

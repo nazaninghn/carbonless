@@ -157,8 +157,13 @@ class SubmitStepView(APIView):
         if not step:
             return Response({'error': 'step is required'}, status=400)
 
-        # Steps with strict serializer validation + DB side-effects (A1-A7a)
-        STRICT_STEPS = {'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a'}
+        # Steps with strict serializer validation + DB side-effects (A1-A7a, B1-B6, C1-C3, D1/D3/D4)
+        STRICT_STEPS = {
+            'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+            'B3', 'B1', 'B2', 'B4', 'B5', 'B6',
+            'C1', 'C2', 'C3',
+            'D1', 'D3', 'D4',
+        }
 
         if step in STRICT_STEPS and step in STEP_SERIALIZERS:
             serializer = STEP_SERIALIZERS[step](data=data)
@@ -258,8 +263,8 @@ class ReportStatusView(APIView):
             'completed_steps': completed_steps,
             'progress': {
                 'completed': len(completed_steps),
-                'total': 96,  # total questions in the chatbot flow
-                'percent': round(len(completed_steps) / 96 * 100)
+                'total': 98,  # total questions in the chatbot flow
+                'percent': round(len(completed_steps) / 98 * 100)
             }
         })
 

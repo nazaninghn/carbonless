@@ -7,14 +7,14 @@ class Company(models.Model):
     legal_entity_name = models.CharField(max_length=255)
     tax_number = models.CharField(max_length=100)
     country_of_headquarters = models.CharField(max_length=100)
-    countries_of_operation = models.TextField()
+    countries_of_operation = models.TextField(blank=True, default='')
     nace_code = models.CharField(max_length=50, blank=True)
-    main_activity_description = models.TextField()
-    
+    main_activity_description = models.TextField(blank=True, default='')
+
     # Section 2: Scale & Complexity
-    number_of_employees = models.CharField(max_length=50)
-    annual_turnover_range = models.CharField(max_length=50)
-    number_of_facilities = models.IntegerField()
+    number_of_employees = models.CharField(max_length=50, blank=True, default='')
+    annual_turnover_range = models.CharField(max_length=50, blank=True, default='')
+    number_of_facilities = models.IntegerField(default=0)
     has_overseas_operations = models.BooleanField(default=False)
     number_of_subsidiaries = models.IntegerField(default=0)
     has_iso_14001 = models.BooleanField(default=False)

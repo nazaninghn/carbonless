@@ -336,7 +336,7 @@ def handle_B5(report, data):
         bot_messages.append(
             "ℹ️ Factory selected — industrial process emissions and heavy machinery questions will be added."
         )
-    if 'datacenter' in types:
+    if 'data_center' in types:
         bot_messages.append(
             "ℹ️ Data center selected — a PUE (Power Usage Effectiveness) question will be added in Scope 2."
         )
@@ -361,7 +361,7 @@ def handle_B6(report, data):
         bot_messages.append(
             "ℹ️ Revenue not provided — Scope 3 materiality will be based on sector only."
         )
-    elif band in ['100M-1B', '1B+']:
+    elif band in ['100m_1b', 'over_1b']:
         bot_messages.append(
             "ℹ️ Large organization — we recommend reporting all 15 Scope 3 categories."
         )
@@ -483,7 +483,7 @@ def handle_D3(report, data):
         'bot_messages': [
             f"✅ Boundary approach: **{labels[approach]}**.",
             "How would you like to determine the scope of your Scope 3 reporting?\n\n"
-            "Options: **materiality** *(recommended — faster)* / **full** *(all 15 categories)*"
+            "Options: **materiality** *(recommended)* / **full_15** *(all 15 categories)* / **exclude** *(Scope 1 & 2 only)*"
         ]
     }
 
@@ -493,13 +493,18 @@ def handle_D4(report, data):
     report.scope3_approach = approach
     report.status = 'in_progress'
     report.save()
+    approach_labels = {
+        'materiality': 'Materiality Based',
+        'full_15': 'Full 15 Categories',
+        'exclude': 'Scope 1 & 2 Only',
+    }
     return {
         'next_step': 'PHASE2',
         'message': f"Scope 3: {approach}",
         'warnings': [],
         'phase_complete': True,
         'bot_messages': [
-            f"✅ Scope 3 approach: **{'Materiality Based' if approach == 'materiality' else 'Full 15 Categories'}**.",
+            f"✅ Scope 3 approach: **{approach_labels.get(approach, approach)}**.",
             "🎉 **Phase 1 complete!** All company identification information has been saved.",
             "📋 **Summary:**",
             f"• Company: {report.company.legal_entity_name}",

@@ -15,6 +15,8 @@ class CarbonReport(models.Model):
         DEFRA_TUIK = 'DEFRA_TUIK', 'DEFRA + TÜİK'
         IPCC_AR6 = 'IPCC_AR6', 'IPCC AR6 2021'
         EPA = 'EPA', 'EPA'
+        ECOINVENT = 'ecoinvent', 'ecoinvent'
+        OTHER = 'other', 'Other / Country-specific'
         CUSTOM = 'custom', 'Custom'
 
     class OrgBoundary(models.TextChoices):
@@ -24,7 +26,8 @@ class CarbonReport(models.Model):
 
     class Scope3Approach(models.TextChoices):
         MATERIALITY = 'materiality', 'Materiality Based'
-        FULL = 'full', 'Full 15 Categories'
+        FULL_15 = 'full_15', 'Full 15 Categories'
+        EXCLUDE = 'exclude', 'Scope 1 & 2 Only'
 
     company = models.ForeignKey(
         Company, on_delete=models.CASCADE, related_name='carbon_reports'
