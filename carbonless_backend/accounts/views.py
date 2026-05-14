@@ -179,23 +179,31 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 
 class CookieTokenRefreshView(TokenRefreshView):
-    """Refresh token from HttpOnly cookie, set new access cookie."""
+    """
+    Refresh JWT. Accepts refresh token from request body (primary — sent by
+    Next.js /api/auth/refresh proxy) or HttpOnly cookie (fallback).
+    Returns new access + refresh tokens in body.
+    """
 
     def post(self, request, *args, **kwargs):
-        refresh = request.COOKIES.get('refresh_token')
+        # Body first (Next.js server proxy sends it here), cookie as fallback
+        refresh = request.data.get('refresh') or request.COOKIES.get('refresh_token')
         if not refresh:
             return Response({'detail': 'No refresh token'}, status=401)
 
-        # QueryDict is immutable by default
-        request.data._mutable = True
-        request.data['refresh'] = refresh
-        request.data._mutable = False
+        try:
+            request.data._mutable = True
+            request.data['refresh'] = refresh
+            request.data._mutable = False
+        except AttributeError:
+            pass
 
         response = super().post(request, *args, **kwargs)
 
         if response.status_code == 200:
             from django.conf import settings as django_settings
             access = response.data.get('access')
+            new_refresh = response.data.get('refresh')
             is_secure = not django_settings.DEBUG
             if access:
                 response.set_cookie(
@@ -203,8 +211,13 @@ class CookieTokenRefreshView(TokenRefreshView):
                     httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
                     max_age=30 * 60, path='/',
                 )
-            # Always return access token for cross-origin header-based auth
-            response.data = {'status': 'ok', 'access': access}
+            if new_refresh:
+                response.set_cookie(
+                    'refresh_token', new_refresh,
+                    httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
+                    max_age=7 * 24 * 3600, path='/',
+                )
+            response.data = {'status': 'ok', 'access': access, 'refresh': new_refresh}
         return response
 
 

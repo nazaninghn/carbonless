@@ -31,14 +31,9 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/accounts/login/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username: email, password }),
-      });
+      const { api, markSessionActive } = await import('@/lib/utils/api');
+      const res = await api.login(email, password);
       if (res.ok) {
-        const { markSessionActive } = await import('@/lib/utils/api');
         markSessionActive();
         router.push('/dashboard');
       } else {
