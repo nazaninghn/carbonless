@@ -21,8 +21,9 @@ import {
 import { api } from '@/lib/utils/api';
 
 // ─── Map frontend answer → backend payload ────────────────────────────────────
-function mapAnswerForBackend(questionId, value) {
+function mapAnswerForBackend(questionId, value, questionDef) {
   switch (questionId) {
+    // ── Block A ──
     case 'A1': return { legal_name: value };
     case 'A2': return { tax_id: value };
     case 'A3': return { country: value?.country || '', city: value?.city || '' };
@@ -31,6 +32,30 @@ function mapAnswerForBackend(questionId, value) {
     case 'A6': return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip') : [] };
     case 'A7': return { has_previous_report: value === 'yes' };
     case 'A7a': return { baseline_year: parseInt(value, 10) };
+
+    // ── Block B ──
+    case 'B3': {
+      // sector — send NACE code + human-readable label
+      const opt = questionDef?.options?.find(o => o.value === value);
+      const label = opt?.label?.en || value;
+      return { nace_code: value, nace_label: label };
+    }
+    case 'B1': return { employee_band: value };
+    case 'B2': return { activity_description: value };
+    case 'B4': return { number_of_facilities: parseInt(value, 10) || 1 };
+    case 'B5': return { facility_types: Array.isArray(value) ? value : [value] };
+    case 'B6': return { revenue_band: value || 'skip' };
+
+    // ── Block C ──
+    case 'C1': return { has_subsidiaries: value === 'yes' };
+    case 'C2': return { has_international: value === 'yes' };
+    case 'C3': return { has_jv_franchise: value === 'yes' };
+
+    // ── Block D ──
+    case 'D1': return { ef_database: value };
+    case 'D3': return { boundary_approach: value };
+    case 'D4': return { scope3_approach: value };
+
     default: return { answer: value };
   }
 }
@@ -693,7 +718,7 @@ export default function CarbonAIPage({ language = 'en' }) {
     const id = rid || reportId;
     if (!id) return;
     try {
-      await api.submitReportStep(id, questionId, mapAnswerForBackend(questionId, value));
+      await api.submitReportStep(id, questionId, mapAnswerForBackend(questionId, value, getQuestionById(questionId)));
       setSaveError(null);
     } catch {
       setSaveError('sync');

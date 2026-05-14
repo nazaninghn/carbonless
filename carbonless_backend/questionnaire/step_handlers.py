@@ -7,8 +7,9 @@ import datetime
 STEP_FLOW = {
     'A1': 'A2', 'A2': 'A3', 'A3': 'A4',
     'A4': 'A5', 'A5': 'A6', 'A6': 'A7',
-    'A7': 'A7a', 'A7a': 'B1',
-    'B1': 'B2', 'B2': 'B3', 'B3': 'B4',
+    'A7': 'A7a', 'A7a': 'B3',
+    # B order matches frontend: sector(B3) → employees(B1) → activity(B2) → ...
+    'B3': 'B1', 'B1': 'B2', 'B2': 'B4',
     'B4': 'B5', 'B5': 'B6', 'B6': 'C1',
     'C1': 'C2', 'C2': 'C3', 'C3': 'D1',
     'D1': 'D3', 'D3': 'D4',
@@ -202,7 +203,7 @@ def handle_A7(report, data):
             ]
         }
     return {
-        'next_step': 'B1',
+        'next_step': 'B3',
         'message': 'First report.',
         'warnings': [],
         'bot_messages': [
@@ -227,7 +228,7 @@ def handle_A7a(report, data):
     report.baseline_year = baseline_year
     report.save()
     return {
-        'next_step': 'B1',
+        'next_step': 'B3',
         'message': f"Baseline year: {baseline_year}",
         'warnings': [],
         'bot_messages': [
@@ -237,12 +238,17 @@ def handle_A7a(report, data):
     }
 
 
-def handle_B1(report, data):
-    nace_code = data['nace_code']
+def handle_B3(report, data):
+    """B3 = Sector / NACE — shown first in the frontend B block."""
+    nace_code = data.get('nace_code', '')
     nace_label = data.get('nace_label', '')
-    report.company.nace_code = nace_code
+    # Support both 'NACE_C' (frontend value) and bare letter 'C'
+    if nace_code.upper().startswith('NACE_'):
+        nace_letter = nace_code[5:].upper()   # 'NACE_C' → 'C'
+    else:
+        nace_letter = nace_code[0].upper() if nace_code else 'G'
+    report.company.nace_code = nace_letter
     report.company.save()
-    nace_letter = nace_code[0].upper() if nace_code else 'G'
     cluster = NACE_CLUSTER.get(nace_letter, 'service')
     bot_messages = [f"✅ Sector: **{nace_label or nace_code}** saved."]
     if cluster == 'service':
@@ -258,46 +264,47 @@ def handle_B1(report, data):
         bot_messages.append(
             "ℹ️ Finance sector — Scope 3 Category 15 (Investments) will use PCAF standard."
         )
-    bot_messages.append("Briefly describe your company's main business activity. (max 500 chars)")
+    bot_messages.append("What is your total number of employees?")
     return {
-        'next_step': 'B2',
-        'message': f"NACE: {nace_code}",
+        'next_step': 'B1',
+        'message': f"NACE: {nace_letter}",
         'warnings': [],
         'cluster': cluster,
         'bot_messages': bot_messages
     }
 
 
+def handle_B1(report, data):
+    """B1 = Employee range — shown second in the frontend B block."""
+    band = data.get('employee_band', '')
+    report.company.number_of_employees = band
+    report.company.save()
+    bot_messages = [f"✅ Employee range: **{band}**."]
+    if band in ['1001_5000', 'over_5000']:
+        bot_messages.append(
+            "ℹ️ Large organization — for employee commute calculations we'll ask for location-based distribution."
+        )
+    bot_messages.append("Briefly describe your company's main business activities. (max 200 chars)")
+    return {
+        'next_step': 'B2',
+        'message': f"Employees: {band}",
+        'warnings': [],
+        'bot_messages': bot_messages
+    }
+
+
 def handle_B2(report, data):
-    report.company.main_activity_description = data['activity_description']
+    """B2 = Activity description — shown third in the frontend B block."""
+    report.company.main_activity_description = data.get('activity_description', '')
     report.company.save()
     return {
-        'next_step': 'B3',
+        'next_step': 'B4',
         'message': 'Activity description saved.',
         'warnings': [],
         'bot_messages': [
             "✅ Activity description saved.",
-            "What is your total number of employees?\n\n"
-            "Options: **1-50** / **51-250** / **251-1000** / **1001-5000** / **5000+**"
+            "How many physical locations does your company operate from? (min 1)"
         ]
-    }
-
-
-def handle_B3(report, data):
-    band = data['employee_band']
-    report.company.number_of_employees = band
-    report.company.save()
-    bot_messages = [f"✅ Employee count: **{band}**."]
-    if band in ['1001-5000', '5000+']:
-        bot_messages.append(
-            "ℹ️ Large organization — for employee commute calculations we'll ask for location-based distribution."
-        )
-    bot_messages.append("How many physical locations does your company operate from? (min 1)")
-    return {
-        'next_step': 'B4',
-        'message': f"Employees: {band}",
-        'warnings': [],
-        'bot_messages': bot_messages
     }
 
 
@@ -510,7 +517,8 @@ HANDLERS = {
     'A1': handle_A1, 'A2': handle_A2, 'A3': handle_A3,
     'A4': handle_A4, 'A5': handle_A5, 'A6': handle_A6,
     'A7': handle_A7, 'A7a': handle_A7a,
-    'B1': handle_B1, 'B2': handle_B2, 'B3': handle_B3,
+    # B order: B3=sector, B1=employees, B2=activity, B4=facilities, B5=location_types, B6=revenue
+    'B3': handle_B3, 'B1': handle_B1, 'B2': handle_B2,
     'B4': handle_B4, 'B5': handle_B5, 'B6': handle_B6,
     'C1': handle_C1, 'C2': handle_C2, 'C3': handle_C3,
     'D1': handle_D1, 'D3': handle_D3, 'D4': handle_D4,
