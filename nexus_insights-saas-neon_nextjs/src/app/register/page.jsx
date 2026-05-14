@@ -100,6 +100,7 @@ export default function RegisterPage() {
         regRes = await fetch(`${API}/accounts/register/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             username: formData.username,
             email: formData.email,

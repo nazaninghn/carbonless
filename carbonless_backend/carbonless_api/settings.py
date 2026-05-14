@@ -222,8 +222,14 @@ if IS_PRODUCTION:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
+    # SameSite=None is required for cross-origin requests (Vercel → Render).
+    # Without this, Firefox / Safari / Edge refuse to send the session cookie
+    # on fetch() calls with credentials:'include', so only Chrome works.
+    # SameSite=None must be paired with Secure=True (already set above).
+    SESSION_COOKIE_SAMESITE = 'None'
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_HTTPONLY = False  # JS needs to read CSRF token
+    CSRF_COOKIE_SAMESITE = 'None'
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
