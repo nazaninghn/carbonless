@@ -300,8 +300,8 @@ export const CARBONIQ_QUESTIONS = [
     ],
     nextByValue: {
       yes: 'A7a',
-      no: 'B1',
-      skip: 'B1',
+      no: 'B3',
+      skip: 'B3',
     },
     systemMessages: {
       yes: {
@@ -354,7 +354,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Baseline year selected. We will ask you to enter emission data for this year at the end of the report flow.',
       },
     },
-    next: 'B1',
+    next: 'B3',
   },
 
   // ── BLOCK B ─ Activity Profile ─────────────────────────────────────────────
@@ -410,7 +410,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'over_1b', label: { tr: '1 Milyar TL üzeri', en: 'Over 1B TRY' } },
       { value: 'skip', label: { tr: 'Atlamak istiyorum', en: 'I want to skip' } },
     ],
-    next: 'B3',
+    next: 'B4',
   },
   {
     id: 'B3',
@@ -447,7 +447,7 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lütfen bir sektör seçin.', en: 'Please select a sector.' },
     },
-    next: 'B4',
+    next: 'B1',
   },
   {
     id: 'B4',

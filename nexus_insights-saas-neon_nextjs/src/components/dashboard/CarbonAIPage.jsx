@@ -388,9 +388,16 @@ function ChatBubble({ message, lang, answers }) {
   const isError   = message.type === 'error';
   const isInfo    = message.type === 'info';
   const isSuccess = message.type === 'success';
+  const isAI      = message.type === 'ai';   // Grok response
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      {/* Grok AI label */}
+      {isAI && (
+        <div className="mr-2 mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#95A847] to-[#B4BE6A] shadow-sm">
+          <span className="text-[10px] font-bold text-white">AI</span>
+        </div>
+      )}
       <div
         className={`max-w-[88%] rounded-[22px] px-5 py-3.5 text-[14px] leading-6 sm:max-w-[72%] ${
           isUser
@@ -401,13 +408,15 @@ function ChatBubble({ message, lang, answers }) {
             ? 'border border-red-200/60 bg-red-50 text-red-600'
             : isInfo || isSuccess
             ? 'bg-[#B4BE6A]/8 text-[#302817]'
+            : isAI
+            ? 'border border-[#95A847]/25 bg-gradient-to-br from-[#F9EFE5] to-white text-[#302817] shadow-[0_2px_12px_rgba(149,168,71,0.10)]'
             : 'border border-[#302817]/6 bg-white text-[#302817] shadow-[0_2px_12px_rgba(48,40,23,0.06)]'
         }`}
       >
         {message.type === 'question' && (
           <div className="mb-2.5 inline-flex items-center gap-2 rounded-full bg-[#B4BE6A]/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#B4BE6A]">
             <span>
-              {lang === 'tr' ? 'Soru' : 'Q'} {message.question.number} / 133
+              {lang === 'tr' ? 'Soru' : 'Q'} {message.question.number} / 96
             </span>
             <span className="opacity-50">·</span>
             <span>
@@ -612,7 +621,7 @@ export default function CarbonAIPage({ language = 'en' }) {
   const question = getQuestionById(currentId);
   const stage = CARBONIQ_STAGES.find(s => s.id === question?.stage);
   const answeredCount = Object.keys(answers).length;
-  const progress = Math.min(Math.round((answeredCount / 133) * 100), 100);
+  const progress = Math.min(Math.round((answeredCount / 96) * 100), 100);
 
   // Smooth auto-scroll to bottom
   useEffect(() => {
@@ -647,7 +656,7 @@ export default function CarbonAIPage({ language = 'en' }) {
   // ─── Submit answer ────────────────────────────────────────────────────────
   // `overrideValue` is used by single_select chips to pass the selected value
   // directly, since React state update (setValue) is async.
-  const submitAnswer = useCallback((overrideValue) => {
+  const submitAnswer = useCallback(async (overrideValue) => {
     if (!question || isTyping) return;
 
     const rawValue = overrideValue !== undefined ? overrideValue : answerValue;
@@ -684,36 +693,62 @@ export default function CarbonAIPage({ language = 'en' }) {
       }));
     }
 
-    // Store msg count for Back undo
-    const msgCount = outgoing.length;
-    setHistory(prev => [...prev, { questionId: question.id, msgCount }]);
-
+    // Store msg count for Back undo (Grok message also counted if it appears)
+    setHistory(prev => [...prev, { questionId: question.id, msgCount: outgoing.length }]);
     setMessages(prev => [...prev, ...outgoing]);
 
-    // Show typing indicator, then advance to next question after a delay
+    // ── Ask Grok for a contextual response ───────────────────────────────
     setIsTyping(true);
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
 
-    typingTimerRef.current = setTimeout(() => {
-      setIsTyping(false);
+    let aiMessage = null;
+    try {
+      const aiRes = await Promise.race([
+        api.aiChat({
+          question_id:    question.id,
+          question_text:  question.text?.[lang] || '',
+          user_answer:    userLabel,
+          language:       lang,
+          company_name:   nextAnswers['A1'] || '',
+          reporting_year: nextAnswers['A4'] || '',
+        }).then(r => r.ok ? r.json() : null),
+        // Hard timeout — never block more than 6 s
+        new Promise(resolve => { typingTimerRef.current = setTimeout(() => resolve(null), 6000); }),
+      ]);
+      if (aiRes?.message) aiMessage = aiRes.message;
+    } catch { /* Grok unavailable — use static flow */ }
 
-      if (!nextId || !getQuestionById(nextId)) {
-        setMessages(prev => [
-          ...prev,
-          mkMsg({
-            role: 'assistant', type: 'success',
-            content: lang === 'tr'
-              ? '✅ Bu bölüm tamamlandı. Yanıtlarınızı kaydettim.'
-              : '✅ This section is complete. I saved your answers.',
-          }),
-        ]);
-        setCompleted(true);
-        setAnswerValue('');
-      } else {
-        setCurrentId(nextId);
-        setAnswerValue(getInitialValue(getQuestionById(nextId)));
-      }
-    }, 550);
+    // Show Grok reply (or nothing if unavailable)
+    if (aiMessage) {
+      setMessages(prev => [
+        ...prev,
+        mkMsg({ role: 'assistant', type: 'ai', content: aiMessage }),
+      ]);
+    }
+
+    // Brief pause before the next question appears
+    await new Promise(resolve => {
+      typingTimerRef.current = setTimeout(resolve, aiMessage ? 400 : 550);
+    });
+
+    setIsTyping(false);
+
+    if (!nextId || !getQuestionById(nextId)) {
+      setMessages(prev => [
+        ...prev,
+        mkMsg({
+          role: 'assistant', type: 'success',
+          content: lang === 'tr'
+            ? '✅ Bu bölüm tamamlandı. Yanıtlarınızı kaydettim.'
+            : '✅ This section is complete. I saved your answers.',
+        }),
+      ]);
+      setCompleted(true);
+      setAnswerValue('');
+    } else {
+      setCurrentId(nextId);
+      setAnswerValue(getInitialValue(getQuestionById(nextId)));
+    }
   }, [question, isTyping, answerValue, answers, lang, reportId, saveStepToBackend]);
 
   // ─── Go back ─────────────────────────────────────────────────────────────

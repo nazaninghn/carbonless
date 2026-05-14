@@ -133,4 +133,10 @@ export const api = {
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   listReports: () => request('/questionnaire/'),
+
+  // CarbonIQ — Grok AI chat (contextual response after each answer)
+  aiChat: (data) => request('/questionnaire/ai/chat/', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }),
 };

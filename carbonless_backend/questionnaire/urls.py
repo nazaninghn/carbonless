@@ -11,11 +11,13 @@ from .views import (
     reset_session,
     get_profile,
 )
+from .ai_views import AIChatView
 
 urlpatterns = [
     # New CarbonIQ API
     path('', ReportListView.as_view()),
     path('start/', StartReportView.as_view()),
+    path('ai/chat/', AIChatView.as_view()),
     path('<int:report_id>/', ReportStatusView.as_view()),
     path('<int:report_id>/step/', SubmitStepView.as_view()),
 
