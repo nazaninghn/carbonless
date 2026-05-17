@@ -330,6 +330,27 @@ def generate_report(user, year, lang='tr'):
     entry_count = entries.count()
     total_t = total_kg / 1000
 
+    # ── Pre-computed bilingual labels (avoids \u in f-string expressions, Python < 3.12) ──
+    _yr   = 'Raporlama Yılı' if tr else 'Reporting Year'
+    _per  = 'Raporlama Dönemi' if tr else 'Reporting Period'
+    _dat  = 'Rapor Tarihi' if tr else 'Report Date'
+    _cfid = ('GİZLİ — Bu rapor yalnızca yetkili kişiler içindir.'
+             if tr else 'CONFIDENTIAL — This report is for authorized personnel only.')
+    _tent = 'Toplam kayıt' if tr else 'Total entries'
+    _tem  = 'Toplam emisyon' if tr else 'Total emissions'
+    _gen  = 'Oluşturma' if tr else 'Generated'
+    _of   = 'firmasının' if tr else 'company’s'
+    _body = (
+        'yılına ait sera gazı emisyonları ISO 14064-1:2018 standardına uygun olarak '
+        'hesaplanmış ve bu raporda sunulmuştur. Hesaplamalar GHG Protocol Kurumsal '
+        'Standardı çerçevesinde, operasyonel kontrol yaklaşımı kullanılarak yapılmıştır.'
+        if tr else
+        'greenhouse gas emissions have been calculated in accordance with ISO 14064-1:2018 and are '
+        'presented in this report. Calculations follow the GHG Protocol Corporate Standard using '
+        'the operational control approach.'
+    )
+    _peak = 'En yüksek emisyon ayı' if tr else 'Peak emission month'
+
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
     doc = _ReportDocTemplate(buf, cname, year, lang, pagesize=A4,
@@ -350,15 +371,11 @@ def generate_report(user, year, lang='tr'):
     E.append(HRFlowable(width='40%', thickness=2, color=OLIVE, spaceAfter=12*mm))
     E.append(Paragraph(cname, S['cover_company']))
     E.append(Spacer(1, 8*mm))
-    E.append(Paragraph(f"{'Raporlama Y\u0131l\u0131' if tr else 'Reporting Year'}: {year}", S['cover_date']))
-    E.append(Paragraph(
-        f"{'Raporlama D\u00f6nemi' if tr else 'Reporting Period'}: 01.01.{year} \u2013 31.12.{year}", S['cover_date']))
-    E.append(Paragraph(
-        f"{'Rapor Tarihi' if tr else 'Report Date'}: {datetime.now().strftime('%d.%m.%Y')}", S['cover_date']))
+    E.append(Paragraph(f"{_yr}: {year}", S['cover_date']))
+    E.append(Paragraph(f"{_per}: 01.01.{year} \u2013 31.12.{year}", S['cover_date']))
+    E.append(Paragraph(f"{_dat}: {datetime.now().strftime('%d.%m.%Y')}", S['cover_date']))
     E.append(Spacer(1, 20*mm))
-    E.append(Paragraph(
-        f"{'G\u0130ZL\u0130 \u2014 Bu rapor yaln\u0131zca yetkili ki\u015filer i\u00e7indir.' if tr else 'CONFIDENTIAL \u2014 This report is for authorized personnel only.'}",
-        S['small']))
+    E.append(Paragraph(_cfid, S['small']))
     E.append(NextPageTemplate('content'))
     E.append(PageBreak())
 
@@ -381,9 +398,9 @@ def generate_report(user, year, lang='tr'):
     E.append(Spacer(1, 6*mm))
     E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=4*mm))
     E.append(Paragraph(
-        f"{'Toplam kay\u0131t' if tr else 'Total entries'}: {entry_count}  \u2022  "
-        f"{'Toplam emisyon' if tr else 'Total emissions'}: {total_t:,.2f} tCO\u2082e  \u2022  "
-        f"{'Olu\u015fturma' if tr else 'Generated'}: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
+        f"{_tent}: {entry_count}  \u2022  "
+        f"{_tem}: {total_t:,.2f} tCO\u2082e  \u2022  "
+        f"{_gen}: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
         S['body_sm']))
     E.append(PageBreak())
 
@@ -391,10 +408,7 @@ def generate_report(user, year, lang='tr'):
     # 1. EXECUTIVE SUMMARY
     # ════════════════════════════════════════════════
     E.append(Paragraph('1. ' + ('Y\u00f6netici \u00d6zeti' if tr else 'Executive Summary'), S['h1']))
-    E.append(Paragraph(
-        f"{cname} {'firmas\u0131n\u0131n' if tr else 'company\u2019s'} {year} "
-        f"{'y\u0131l\u0131na ait sera gaz\u0131 emisyonlar\u0131 ISO 14064-1:2018 standard\u0131na uygun olarak hesaplanm\u0131\u015f ve bu raporda sunulmu\u015ftur. Hesaplamalar GHG Protocol Kurumsal Standard\u0131 \u00e7er\u00e7evesinde, operasyonel kontrol yakla\u015f\u0131m\u0131 kullan\u0131larak yap\u0131lm\u0131\u015ft\u0131r.' if tr else 'greenhouse gas emissions have been calculated in accordance with ISO 14064-1:2018 and are presented in this report. Calculations follow the GHG Protocol Corporate Standard using the operational control approach.'}",
-        S['body']))
+    E.append(Paragraph(f"{cname} {_of} {year} {_body}", S['body']))
     E.append(Spacer(1, 8*mm))
 
     # Total KPI - large centered
@@ -539,7 +553,7 @@ def generate_report(user, year, lang='tr'):
         max_m = max(range(12), key=lambda i: monthly[i])
         if monthly[max_m] > 0:
             E.append(Paragraph(
-                f"\u25cf {'En y\u00fcksek emisyon ay\u0131' if tr else 'Peak emission month'}: <b>{months[max_m]}</b> ({monthly[max_m]/1000:,.3f} tCO\u2082e)",
+                f"\u25cf {_peak}: <b>{months[max_m]}</b> ({monthly[max_m]/1000:,.3f} tCO\u2082e)",
                 S['body']))
     else:
         E.append(Paragraph('Ayl\u0131k veri bulunmamaktad\u0131r.' if tr else 'No monthly data available.', S['body']))
