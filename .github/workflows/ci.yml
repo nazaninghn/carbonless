@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python manage.py test emissions accounts questionnaire companies
+      - run: python manage.py test emissions accounts questionnaire companies chat
 
   frontend:
     runs-on: ubuntu-latest
@@ -34,3 +34,4 @@ jobs:
           node-version: '20'
       - run: npm ci
       - run: npm run build
+

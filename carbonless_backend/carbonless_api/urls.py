@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/companies/', include('companies.urls')),
     path('api/emissions/', include('emissions.urls')),
     path('api/questionnaire/', include('questionnaire.urls')),
+    path('api/chat/', include('chat.urls')),
 ]
 
 if settings.DEBUG:

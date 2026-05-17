@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'companies',
     'emissions',
     'questionnaire',
+    'chat',
 ]
 
 MIDDLEWARE = [
