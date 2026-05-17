@@ -1,6 +1,6 @@
 ﻿const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
-// â”€â”€ Session cookie for Next.js middleware routing (first-party, not auth) â”€â”€â”€â”€â”€
+// Session cookie for Next.js middleware routing (first-party, not auth)
 export function markSessionActive() {
   if (typeof document === 'undefined') return;
   document.cookie = 'carbonless_auth=1; path=/; SameSite=Lax; Max-Age=86400';
@@ -10,7 +10,7 @@ export function clearSessionCookie() {
   document.cookie = 'carbonless_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
 }
 
-// â”€â”€ Access token (memory + localStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Access token (memory + localStorage)
 let _token = null;
 
 function getToken() {
@@ -29,7 +29,7 @@ function setToken(t) {
   }
 }
 
-// â”€â”€ Authenticated fetch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Authenticated fetch
 async function request(endpoint, options = {}) {
   const token = getToken();
   const headers = {
@@ -46,7 +46,6 @@ async function request(endpoint, options = {}) {
 
   if (res.status !== 401) return res;
 
-  // Silent refresh via same-origin Next.js route (no cross-site cookie issues)
   const rr = await fetch('/api/auth/refresh', { method: 'POST' }).catch(() => null);
   if (!rr?.ok) {
     setToken(null);
@@ -66,7 +65,6 @@ async function request(endpoint, options = {}) {
 }
 
 export const api = {
-  // Login via Next.js proxy â€” same-origin, no cross-site cookie issues on any browser
   login: async (email, password) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -160,13 +158,12 @@ export const api = {
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   listReports: () => request('/questionnaire/'),
 
-    aiChat: (data) => request('/questionnaire/ai/chat/', { method: 'POST', body: JSON.stringify(data) }),
+  aiChat: (data) => request('/questionnaire/ai/chat/', { method: 'POST', body: JSON.stringify(data) }),
 
   // Chat sessions
   getChatSessions: () => request('/chat/sessions/'),
   createChatSession: (title = 'New Chat') => request('/chat/sessions/new/', { method: 'POST', body: JSON.stringify({ title }) }),
-  getChatSession: (id) => request(/chat/sessions//),
-  deleteChatSession: (id) => request(/chat/sessions//, { method: 'DELETE' }),
-  sendChatMessage: (sessionId, content) => request(/chat/sessions//message/, { method: 'POST', body: JSON.stringify({ content }) }),
+  getChatSession: (id) => request(`/chat/sessions/${id}/`),
+  deleteChatSession: (id) => request(`/chat/sessions/${id}/`, { method: 'DELETE' }),
+  sendChatMessage: (sessionId, content) => request(`/chat/sessions/${sessionId}/message/`, { method: 'POST', body: JSON.stringify({ content }) }),
 };
-
