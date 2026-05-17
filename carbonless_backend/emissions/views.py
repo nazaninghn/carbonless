@@ -226,8 +226,13 @@ def generate_report_view(request):
     year = int(request.query_params.get('year', 2026))
     lang = request.query_params.get('lang', 'tr')
 
-    from .report_pdf import generate_report
-    pdf_bytes = generate_report(request.user, year, lang)
+    try:
+        from .report_pdf import generate_report
+        pdf_bytes = generate_report(request.user, year, lang)
+    except Exception as e:
+        import traceback, logging
+        logging.getLogger(__name__).error('PDF generation failed: %s\n%s', e, traceback.format_exc())
+        return Response({'error': f'PDF generation failed: {e}'}, status=500)
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="carbonless_report_{year}_{lang}.pdf"'

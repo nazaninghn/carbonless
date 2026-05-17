@@ -60,38 +60,44 @@ WHITE = colors.white
 # ═══════════════════════════════════════════════════════
 # FONT REGISTRATION
 # ═══════════════════════════════════════════════════════
-_font_ok = False
+_font_tried = False
+_font_registered = False  # True only when CF/CFB are actually registered
+
+_FONT_CANDIDATES = [
+    # Linux / Render (Ubuntu)
+    ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+     '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
+    ('/usr/share/fonts/dejavu/DejaVuSans.ttf',
+     '/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf'),
+    # macOS
+    ('/System/Library/Fonts/Helvetica.ttc',
+     '/System/Library/Fonts/Helvetica.ttc'),
+    # Windows
+    (os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arial.ttf'),
+     os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arialbd.ttf')),
+]
+
 
 def _register_fonts():
-    global _font_ok
-    if _font_ok:
+    global _font_tried, _font_registered
+    if _font_tried:
         return
-    try:
-        wd = os.environ.get('WINDIR', 'C:\\Windows')
-        a = os.path.join(wd, 'Fonts', 'arial.ttf')
-        ab = os.path.join(wd, 'Fonts', 'arialbd.ttf')
-        if os.path.exists(a):
-            pdfmetrics.registerFont(TTFont('CF', a))
-            pdfmetrics.registerFont(TTFont('CFB', ab if os.path.exists(ab) else a))
-            _font_ok = True
-            return
-    except Exception:
-        pass
-    try:
-        d = '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-        db = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
-        if os.path.exists(d):
-            pdfmetrics.registerFont(TTFont('CF', d))
-            pdfmetrics.registerFont(TTFont('CFB', db if os.path.exists(db) else d))
-            _font_ok = True
-            return
-    except Exception:
-        pass
-    _font_ok = True
+    _font_tried = True
+    for regular, bold in _FONT_CANDIDATES:
+        try:
+            if os.path.exists(regular):
+                pdfmetrics.registerFont(TTFont('CF', regular))
+                pdfmetrics.registerFont(TTFont('CFB', bold if os.path.exists(bold) else regular))
+                _font_registered = True
+                return
+        except Exception:
+            continue
+
 
 def _fonts():
     _register_fonts()
-    return ('CF', 'CFB') if _font_ok else ('Helvetica', 'Helvetica-Bold')
+    # Fall back to built-in ReportLab fonts — always available, no registration needed
+    return ('CF', 'CFB') if _font_registered else ('Helvetica', 'Helvetica-Bold')
 
 
 # ═══════════════════════════════════════════════════════
