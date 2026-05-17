@@ -746,7 +746,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Welcome Screen
 // ─────────────────────────────────────────────────────────────────────────────
-function QuestionnaireWelcome({ onStart, loading, answeredCount, tr }) {
+function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12 text-center">
       <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 shadow-[0_4px_20px_rgba(149,168,71,0.2)]">
@@ -762,11 +762,16 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr }) {
             : '133-question ISO 14064-1 structured inventory flow. AI assistant by your side at every step.'}
         </p>
       </div>
-      {answeredCount > 0 && (
+      {answeredCount > 0 && !error && (
         <div className="rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 px-5 py-3 text-sm font-semibold text-[#75863B]">
           {tr
             ? `${answeredCount} soru daha önce yanıtlandı — kaldığınız yerden devam edebilirsiniz.`
             : `${answeredCount} questions already answered — you can continue where you left off.`}
+        </div>
+      )}
+      {error && (
+        <div className="max-w-sm rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-600">
+          {error}
         </div>
       )}
       <div className="flex flex-col items-center gap-3">
@@ -798,6 +803,7 @@ function QuestionnaireTab({ language }) {
   // State
   const [started, setStarted] = useState(false);
   const [startLoading, setStartLoading] = useState(false);
+  const [startError, setStartError] = useState('');
   const [currentId, setCurrentId] = useState(() => getInitialQuestionId());
   const [answers, setAnswers] = useState({});
   const [answerValue, setAnswerValue] = useState('');
@@ -834,24 +840,32 @@ function QuestionnaireTab({ language }) {
   // ── handleStart ────────────────────────────────────────────────────────────
   const handleStart = async () => {
     setStartLoading(true);
+    setStartError('');
     try {
       const res = await api.startCarbonReport();
-      if (res.ok) {
-        const data = await res.json();
-        setReportId(data.id);
-        // Restore any existing answers from server
-        if (data.answers && Object.keys(data.answers).length > 0) {
-          setAnswers(data.answers);
-          // Find last answered question and set next
-          const answeredIds = Object.keys(data.answers);
-          const lastId = answeredIds[answeredIds.length - 1];
-          const nextId = getNextQuestionId(lastId, data.answers);
-          const initId = nextId || getInitialQuestionId();
-          setCurrentId(initId);
-        }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // No company or other server error
+        setStartError(
+          data.error ||
+          (tr
+            ? 'Rapor başlatılamadı. Lütfen önce Ayarlar bölümünden bir şirket oluşturun.'
+            : 'Could not start report. Please create a company first in Settings.')
+        );
+        setStartLoading(false);
+        return;
+      }
+      // Fix: backend returns report_id (not id)
+      setReportId(data.report_id);
+      // If resuming an existing report, jump to where user left off
+      if (data.resumed && data.current_step && data.current_step !== 'DONE') {
+        setCurrentId(data.current_step);
       }
     } catch (e) {
       console.error('Start error:', e);
+      setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error. Please try again.');
+      setStartLoading(false);
+      return;
     }
 
     // Build welcome message
@@ -1021,6 +1035,7 @@ function QuestionnaireTab({ language }) {
         loading={startLoading}
         answeredCount={Object.keys(answers).length}
         tr={tr}
+        error={startError}
       />
     );
   }
