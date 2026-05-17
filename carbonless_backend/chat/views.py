@@ -1,11 +1,11 @@
 import os
+from datetime import datetime
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 from .models import ChatSession, ChatMessage
 
-SYSTEM_PROMPT = """You are CarbonIQ, an expert AI assistant specialized in carbon accounting,
+BASE_SYSTEM_PROMPT = """You are CarbonIQ, an expert AI assistant specialized in carbon accounting,
 greenhouse gas (GHG) reporting, and sustainability. You help companies measure, report, and reduce
 their carbon footprint following ISO 14064-1 standards and GHG Protocol.
 
@@ -19,7 +19,85 @@ You can help with:
 - Turkish and English language support
 
 Always be professional, accurate, and helpful. When giving numerical data, cite your source
-(e.g. IPCC, DEFRA, IEA). Keep responses concise but complete. If asked in Turkish, respond in Turkish."""
+(e.g. IPCC, DEFRA, IEA). Keep responses concise but complete. If asked in Turkish, respond in Turkish.
+
+IMPORTANT: When the user asks for a report, summary, or analysis of their emissions, use the
+real data provided in the DATA CONTEXT section below. Do NOT ask them to provide data you already have.
+Generate a professional ISO 14064-1 style summary using their actual numbers."""
+
+
+def _get_user_emission_context(user):
+    """Fetch the user's real emission data to inject into the AI system prompt."""
+    try:
+        from django.db.models import Sum
+        from emissions.models import EmissionEntry
+        from companies.utils import get_current_company
+
+        company = get_current_company(user)
+        if not company:
+            return ''
+
+        year = datetime.now().year
+        entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
+        total_kg = float(entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+
+        if total_kg == 0:
+            # Try previous year
+            year -= 1
+            entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
+            total_kg = float(entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+
+        if total_kg == 0:
+            return f'\n\nDATA CONTEXT:\nCompany: {company.legal_entity_name}\nNo emission entries recorded yet.'
+
+        s1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        s2 = float(entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        s3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        entry_count = entries.count()
+
+        # Category breakdown
+        cats = (
+            entries.values('emission_factor__scope', 'emission_factor__category')
+            .annotate(total=Sum('calculated_co2e_kg'))
+            .order_by('emission_factor__scope', '-total')[:10]
+        )
+        cat_lines = []
+        for c in cats:
+            scope = c['emission_factor__scope'].replace('scope', 'Scope ')
+            cat = c['emission_factor__category'].replace('_', ' ').title()
+            kg = float(c['total'])
+            cat_lines.append(f'  - {scope} / {cat}: {kg/1000:.3f} tCO2e')
+
+        # Monthly breakdown
+        monthly = []
+        month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        for m in range(1, 13):
+            kg = float(entries.filter(month=m).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+            if kg > 0:
+                monthly.append(f'  {month_names[m-1]}: {kg/1000:.3f} tCO2e')
+
+        lines = [
+            '',
+            '--- DATA CONTEXT (User\'s real emission data — use this to answer any report/summary requests) ---',
+            f'Company: {company.legal_entity_name}',
+            f'Reporting Year: {year}',
+            f'Standard: ISO 14064-1:2018 | Boundary: Operational Control',
+            f'',
+            f'TOTAL EMISSIONS: {total_kg/1000:.3f} tCO2e ({total_kg:,.0f} kg CO2e)',
+            f'  Scope 1 (Direct):          {s1/1000:.3f} tCO2e  ({s1/total_kg*100:.1f}%)',
+            f'  Scope 2 (Energy Indirect): {s2/1000:.3f} tCO2e  ({s2/total_kg*100:.1f}%)',
+            f'  Scope 3 (Other Indirect):  {s3/1000:.3f} tCO2e  ({s3/total_kg*100:.1f}%)',
+            f'  Total entries logged: {entry_count}',
+        ]
+        if cat_lines:
+            lines += ['', 'TOP CATEGORIES:'] + cat_lines
+        if monthly:
+            lines += ['', 'MONTHLY BREAKDOWN:'] + monthly
+        lines.append('--- END DATA CONTEXT ---')
+
+        return '\n'.join(lines)
+    except Exception:
+        return ''
 
 
 def _get_groq_client():
@@ -33,14 +111,15 @@ def _get_groq_client():
         return None
 
 
-def _call_groq(messages_history):
-    """Call Groq API with conversation history. Returns (text, error)."""
+def _call_groq(messages_history, user_context=''):
+    """Call Groq API with conversation history and optional user data context."""
     client = _get_groq_client()
     if not client:
         return None, 'GROQ_API_KEY not configured'
 
-    groq_messages = [{'role': 'system', 'content': SYSTEM_PROMPT}]
-    # Keep last 20 messages for context
+    system_prompt = BASE_SYSTEM_PROMPT + user_context
+
+    groq_messages = [{'role': 'system', 'content': system_prompt}]
     for msg in messages_history[-20:]:
         groq_messages.append({'role': msg['role'], 'content': msg['content']})
 
@@ -49,7 +128,7 @@ def _call_groq(messages_history):
             model='llama-3.3-70b-versatile',
             messages=groq_messages,
             temperature=0.7,
-            max_tokens=1024,
+            max_tokens=1500,
         )
         return response.choices[0].message.content, None
     except Exception as e:
@@ -132,14 +211,17 @@ def send_message(request, session_id):
         session.title = content[:80]
         session.save(update_fields=['title'])
 
+    # Fetch user's real emission data to give AI full context
+    user_context = _get_user_emission_context(request.user)
+
     # Call Groq
-    ai_text, error = _call_groq(history)
+    ai_text, error = _call_groq(history, user_context)
     if error:
         return Response({'error': f'AI error: {error}'}, status=502)
 
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=ai_text)
-    session.save(update_fields=['updated_at'])  # bump updated_at
+    session.save(update_fields=['updated_at'])
 
     return Response({
         'id': ai_msg.id,
