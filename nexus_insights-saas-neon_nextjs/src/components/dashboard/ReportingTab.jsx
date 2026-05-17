@@ -30,25 +30,39 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
   ];
   const readiness = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
 
-  const handleDownload = (type, lang) => {
+  const handleDownload = async (type, lang) => {
     setPdfLoading(type + lang);
+    try {
+      let res;
+      if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
+      else if (type === 'csv') res = await api.downloadCsv(selectedYear);
+      else res = await api.downloadExcel(selectedYear);
 
-    let url;
-    if (type === 'pdf') url = api.getReportUrl(selectedYear, lang);
-    else if (type === 'csv') url = api.getCsvUrl(selectedYear);
-    else url = api.getExcelUrl(selectedYear);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(tr ? `İndirme hatası: ${err.error || res.status}` : `Download error: ${err.error || res.status}`);
+        return;
+      }
 
-    fetch(url, { credentials: 'include' })
-      .then(r => { if (!r.ok) throw new Error('Failed'); return r.blob(); })
-      .then(blob => {
-        const u = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = u;
-        a.download = type === 'pdf' ? `carbonless_report_${selectedYear}_${lang}.pdf` : type === 'csv' ? `emissions_${selectedYear}.csv` : `emissions_${selectedYear}.xlsx`;
-        a.click();
-      })
-      .catch(err => console.error(err))
-      .finally(() => setPdfLoading(''));
+      const blob = await res.blob();
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u;
+      a.download = type === 'pdf'
+        ? `carbonless_report_${selectedYear}_${lang}.pdf`
+        : type === 'csv'
+        ? `emissions_${selectedYear}.csv`
+        : `emissions_${selectedYear}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(u), 1000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      alert(tr ? 'İndirme başarısız. Lütfen tekrar deneyin.' : 'Download failed. Please try again.');
+    } finally {
+      setPdfLoading('');
+    }
   };
 
   return (

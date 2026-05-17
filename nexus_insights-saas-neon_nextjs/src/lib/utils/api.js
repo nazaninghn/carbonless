@@ -132,6 +132,10 @@ export const api = {
   getCsvUrl: (year) => `${API_BASE}/emissions/export-csv/?year=${year}`,
   getExcelUrl: (year) => `${API_BASE}/emissions/export-excel/?year=${year}`,
 
+  downloadReport: (year, lang) => request(`/emissions/report/?year=${year}&lang=${lang}`),
+  downloadCsv: (year) => request(`/emissions/export-csv/?year=${year}`),
+  downloadExcel: (year) => request(`/emissions/export-excel/?year=${year}`),
+
   approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
   getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
   getPendingEntries: () => request('/emissions/pending/'),
