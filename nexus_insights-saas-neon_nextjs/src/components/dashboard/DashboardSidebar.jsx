@@ -36,9 +36,9 @@ export default function DashboardSidebar({
       {/* ═══════════════════ DESKTOP SIDEBAR ════════════════════════════ */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-[260px] transform bg-white
-          border-r border-[#302817]/6 transition-transform duration-300
-          lg:static lg:translate-x-0
+          fixed inset-y-0 left-0 z-50 w-[260px] bg-white
+          border-r border-[#302817]/6 transition-transform duration-300 will-change-transform
+          lg:static lg:translate-x-0 lg:will-change-auto
           ${sidebarOpen ? 'translate-x-0 shadow-[0_8px_40px_rgba(48,40,23,0.14)]' : '-translate-x-full'}
         `}
       >
@@ -125,7 +125,7 @@ export default function DashboardSidebar({
           type="button"
           aria-label="Close sidebar"
           onClick={closeSidebar}
-          className="fixed inset-0 z-40 bg-[#302817]/25 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-[#302817]/30 lg:hidden"
         />
       )}
 
@@ -135,9 +135,8 @@ export default function DashboardSidebar({
         className="
           fixed bottom-0 left-0 right-0 z-40
           border-t border-[#302817]/8
-          bg-white/92 backdrop-blur-2xl
+          bg-white
           lg:hidden
-          safe-bottom
         "
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >

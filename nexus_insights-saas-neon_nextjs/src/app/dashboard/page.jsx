@@ -73,12 +73,16 @@ export default function DashboardPage() {
         />
 
         <main className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-4 border-[#95A847] border-t-transparent rounded-full animate-spin"></div>
+          {/* Loading bar — non-disruptive, no layout shift */}
+          {loading && (
+            <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] bg-[#95A847]/20">
+              <div className="h-full w-1/2 animate-[shimmer_1s_ease-in-out_infinite] bg-[#95A847] rounded-full" />
             </div>
-          ) : (
-            <div className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden">
+          )}
+          <div
+            className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden transition-opacity duration-200"
+            style={{ opacity: loading ? 0.4 : 1 }}
+          >
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
@@ -156,8 +160,7 @@ export default function DashboardPage() {
               <CarbonAIPage language={language} />
             </ErrorBoundary>
           )}
-            </div>
-          )}
+          </div>
         </main>
       </div>
 

@@ -1,18 +1,34 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useReducer } from 'react';
 import { api } from '@/lib/utils/api';
 
+const initialState = {
+  user: null,
+  summary: null,
+  entries: [],
+  factors: [],
+  targets: [],
+  customRequests: [],
+  questionnaireProfile: null,
+  unreadCount: 0,
+  facilityList: [],
+  loading: true,
+};
+
+function reducer(state, action) {
+  switch (action.type) {
+    case 'LOADED':
+      return { ...state, ...action.payload, loading: false };
+    case 'LOADING':
+      return { ...state, loading: true };
+    default:
+      return state;
+  }
+}
+
 export function useDashboardData(selectedYear) {
-  const [user, setUser] = useState(null);
-  const [summary, setSummary] = useState(null);
-  const [entries, setEntries] = useState([]);
-  const [factors, setFactors] = useState([]);
-  const [targets, setTargets] = useState([]);
-  const [customRequests, setCustomRequests] = useState([]);
-  const [questionnaireProfile, setQuestionnaireProfile] = useState(null);
+  const [state, dispatch] = useReducer(reducer, initialState);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [facilityList, setFacilityList] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   const parseRes = async (res) => {
     if (!res || !res.ok) return null;
@@ -26,9 +42,10 @@ export function useDashboardData(selectedYear) {
   };
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    dispatch({ type: 'LOADING' });
     try {
-      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes, customRes, notifRes, facilityRes] = await Promise.all([
+      const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes,
+             customRes, notifRes, facilityRes] = await Promise.all([
         api.getSummary(selectedYear),
         api.getEntries(`year=${selectedYear}`),
         api.getFactors(),
@@ -39,34 +56,45 @@ export function useDashboardData(selectedYear) {
         api.getFacilities(),
       ]);
 
-      const summaryData = await parseRes(summaryRes);
-      if (summaryData) {
-        setSummary(summaryData);
-        if (summaryData.questionnaire_profile) setQuestionnaireProfile(summaryData.questionnaire_profile);
-      }
-      setEntries(await parseList(entriesRes));
-      setFactors(await parseList(factorsRes));
-      setTargets(await parseList(targetsRes));
-      setCustomRequests(await parseList(customRes));
-      setFacilityList(await parseList(facilityRes));
+      const summaryData  = await parseRes(summaryRes);
+      const profileData  = await parseRes(profileRes);
+      const notifData    = await parseRes(notifRes);
+      const entriesData  = await parseList(entriesRes);
+      const factorsData  = await parseList(factorsRes);
+      const targetsData  = await parseList(targetsRes);
+      const customData   = await parseList(customRes);
+      const facilityData = await parseList(facilityRes);
 
-      const profileData = await parseRes(profileRes);
-      if (profileData) setUser(profileData);
+      const newUnread = notifData?.unread_count || 0;
+      setUnreadCount(newUnread);
 
-      const notifData = await parseRes(notifRes);
-      if (notifData) setUnreadCount(notifData.unread_count || 0);
+      // Single dispatch → single re-render
+      dispatch({
+        type: 'LOADED',
+        payload: {
+          summary:              summaryData || null,
+          questionnaireProfile: summaryData?.questionnaire_profile || null,
+          entries:              entriesData,
+          factors:              factorsData,
+          targets:              targetsData,
+          customRequests:       customData,
+          facilityList:         facilityData,
+          user:                 profileData || null,
+          unreadCount:          newUnread,
+        },
+      });
     } catch (err) {
       console.error('Dashboard fetch error:', err);
-    } finally {
-      setLoading(false);
+      dispatch({ type: 'LOADED', payload: {} }); // clear loading even on error
     }
   }, [selectedYear]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
   return {
-    user, summary, entries, factors, targets, customRequests,
-    questionnaireProfile, unreadCount, facilityList, loading,
-    setUnreadCount, fetchData,
+    ...state,
+    unreadCount,
+    setUnreadCount,
+    fetchData,
   };
 }

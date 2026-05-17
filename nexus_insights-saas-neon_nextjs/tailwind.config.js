@@ -31,6 +31,15 @@ module.exports = {
         'card': '0 4px 25px -5px rgba(0, 0, 0, 0.06), 0 10px 10px -5px rgba(0, 0, 0, 0.02)',
         'glow': '0 0 30px rgba(34, 197, 94, 0.1)',
       },
+      keyframes: {
+        shimmer: {
+          '0%':   { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(300%)' },
+        },
+      },
+      animation: {
+        shimmer: 'shimmer 1s ease-in-out infinite',
+      },
     },
   },
   plugins: [],
