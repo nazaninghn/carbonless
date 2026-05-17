@@ -77,7 +77,7 @@ export default function FacilityChart({ language, selectedYear, compact }) {
 
   // Full view (used standalone)
   return (
-    <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white/80 p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] backdrop-blur-xl sm:p-5">
+    <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5">
       <h3 className="mb-4 text-sm font-bold text-[#302817]">
         {tr ? 'Tesis Karşılaştırması' : 'Facility Comparison'}
       </h3>

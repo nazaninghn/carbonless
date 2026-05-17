@@ -55,7 +55,7 @@ export default function DashboardHeader({
   };
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#302817]/10 bg-[#F8F8F8]/90 px-3 py-2.5 backdrop-blur-xl will-change-transform sm:px-4 lg:px-5" style={{ transform: 'translateZ(0)' }}>
+    <header className="sticky top-0 z-30 border-b border-[#302817]/10 bg-[#F8F8F8] px-3 py-2.5 sm:px-4 lg:px-5">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
         {/* Left */}
         <div className="flex min-w-0 items-center gap-2">

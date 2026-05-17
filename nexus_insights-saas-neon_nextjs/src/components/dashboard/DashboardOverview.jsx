@@ -235,7 +235,7 @@ function TargetRing({ target, currentTonne, tr }) {
   const s = STATUS[target.status] ?? STATUS.on_track;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#302817]/6 bg-white/60 px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-[#302817]/6 bg-white px-3 py-2.5">
       {/* Ring */}
       <div className="relative shrink-0">
         <svg width={80} height={80} viewBox="0 0 80 80">
@@ -282,7 +282,7 @@ function EmptyState({ label }) {
 // ─── Chart Card wrapper ────────────────────────────────────────────────────
 function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '' }) {
   return (
-    <section className={`flex flex-col rounded-[1.5rem] border border-[#302817]/8 bg-white/80 p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] backdrop-blur-xl sm:p-5 ${className}`}>
+    <section className={`flex flex-col rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5 ${className}`}>
       <div className="mb-4 flex items-center gap-2.5">
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9 ${iconBg}`}>
           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -303,7 +303,7 @@ function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor })
     <div className={`relative overflow-hidden rounded-[1.25rem] border p-3.5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-4 ${
       accent
         ? 'border-[#95A847]/35 bg-gradient-to-br from-[#95A847]/10 to-[#B4BE6A]/6'
-        : 'border-[#302817]/7 bg-white/80'
+        : 'border-[#302817]/7 bg-white'
     }`}>
       {topColor && (
         <div className="absolute left-4 right-4 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: topColor }} />
@@ -368,8 +368,6 @@ export default function DashboardOverview({
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/10 p-4 shadow-[0_6px_24px_rgba(48,40,23,0.06)] sm:p-5">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[#95A847]/10 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 h-44 w-44 rounded-full bg-[#B4BE6A]/8 blur-3xl" />
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div>
@@ -409,7 +407,7 @@ export default function DashboardOverview({
 
         {/* AI insight strip */}
         {totalTonne > 0 && (
-          <div className="relative mt-3 flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-white/60 px-3.5 py-2.5 backdrop-blur-sm sm:mt-4">
+          <div className="relative mt-3 flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-[#F9EFE5]/60 px-3.5 py-2.5 sm:mt-4">
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#95A847]" />
             <p className="text-[11px] font-semibold leading-5 text-[#302817]/70 sm:text-xs">
               {tr
