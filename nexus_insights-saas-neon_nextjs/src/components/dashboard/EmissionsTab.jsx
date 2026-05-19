@@ -422,7 +422,7 @@ export default function EmissionsTab({
               { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS('scope2')} ${tr?'kayıt':'entries'}`, color: '#95A847' },
               { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS('scope3')} ${tr?'kayıt':'entries'}`, color: '#B4BE6A' },
             ].map(k => (
-              <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white/80 px-3 py-2.5">
+              <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
                 {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
                 <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
                 <p className="mt-1 text-[18px] font-bold leading-none text-[#302817] sm:text-xl">{k.value}</p>
@@ -554,7 +554,7 @@ export default function EmissionsTab({
 
       {/* ── Custom Requests list ──────────────────────────────────────── */}
       {customRequests.length > 0 && (
-        <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white/75 p-4 shadow-[0_4px_16px_rgba(48,40,23,0.04)] sm:p-5">
+        <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-sm sm:p-5">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#95A847]">
             {tr ? 'Özel Talepler' : 'Custom Requests'}
           </p>
@@ -584,7 +584,7 @@ export default function EmissionsTab({
 
       {/* ── Empty state ────────────────────────────────────────────────── */}
       {entries.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[#302817]/8 bg-white/80 p-12 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[#302817]/8 bg-white p-12 text-center shadow-sm">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#95A847]/10 text-[#95A847]">
             <Leaf className="h-7 w-7" />
           </div>
@@ -606,7 +606,7 @@ export default function EmissionsTab({
 
       {/* ── DESKTOP TABLE (md+) ───────────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="hidden overflow-hidden rounded-[1.5rem] border border-[#302817]/8 bg-white/80 shadow-[0_4px_20px_rgba(48,40,23,0.04)] md:block">
+        <div className="hidden overflow-hidden rounded-[1.5rem] border border-[#302817]/8 bg-white shadow-[0_4px_20px_rgba(48,40,23,0.04)] md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
               <thead className="border-b border-[#302817]/6 bg-[#F8F8F8]/80">
@@ -748,7 +748,7 @@ export default function EmissionsTab({
             />
           ))}
           {/* Mobile totals */}
-          <div className="flex items-center justify-between rounded-xl border border-[#302817]/8 bg-white/80 px-4 py-3">
+          <div className="flex items-center justify-between rounded-xl border border-[#302817]/8 bg-white px-4 py-3">
             <span className="text-xs font-bold text-[#302817]/40">
               {filtered.length} {tr ? 'kayıt' : 'entries'} · {tr ? 'Toplam' : 'Total'}
             </span>

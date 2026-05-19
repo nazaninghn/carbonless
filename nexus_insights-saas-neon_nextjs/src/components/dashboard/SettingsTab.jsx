@@ -76,7 +76,7 @@ export default function SettingsTab({ language, user, fetchData }) {
   return (
     <div className="space-y-3 text-[#302817]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-4 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-4 shadow-sm">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B4BE6A]">
           Carbonless Workspace
         </p>
@@ -93,7 +93,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Sidebar tabs */}
         <aside className="lg:sticky lg:top-4 lg:h-fit">
-          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#302817]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-[0_4px_16px_rgba(48,40,23,0.04)]">
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#302817]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-sm">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -126,7 +126,7 @@ export default function SettingsTab({ language, user, fetchData }) {
         {/* Content */}
         <section className="w-full min-w-0 max-w-full overflow-hidden">
           {/* Section header */}
-          <div className="mb-3 rounded-xl border border-[#302817]/10 bg-white p-2.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] lg:rounded-[1.25rem] lg:p-3">
+          <div className="mb-3 rounded-xl border border-[#302817]/10 bg-white p-2.5 shadow-sm lg:rounded-[1.25rem] lg:p-3">
             <div className="flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25 lg:h-9 lg:w-9 lg:rounded-xl">
                 {active && <active.icon className="h-4 w-4" />}
@@ -294,7 +294,7 @@ export default function SettingsTab({ language, user, fetchData }) {
 
 function Panel({ children }) {
   return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#302817]/10 bg-white p-3 shadow-[0_4px_16px_rgba(48,40,23,0.04)] sm:rounded-[1.25rem] sm:p-4">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#302817]/10 bg-white p-3 shadow-sm sm:rounded-[1.25rem] sm:p-4">
       <div className="w-full min-w-0 max-w-full overflow-hidden">
         {children}
       </div>

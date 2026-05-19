@@ -50,7 +50,7 @@ export default function ReviewTab({ language, fetchData }) {
   return (
     <div className="space-y-3 text-[#302817]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-4 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#95A847]">
@@ -75,7 +75,7 @@ export default function ReviewTab({ language, fetchData }) {
           <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#95A847] border-t-transparent"></div>
         </div>
       ) : pending.length === 0 ? (
-        <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#302817]/10 bg-white/80 p-6 text-center shadow-[0_4px_16px_rgba(48,40,23,0.04)]">
+        <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#302817]/10 bg-white p-6 text-center shadow-sm">
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#95A847]/12 text-[#95A847]">
             <ClipboardCheck className="h-5 w-5" />
           </div>
@@ -85,7 +85,7 @@ export default function ReviewTab({ language, fetchData }) {
       ) : (
         <div className="space-y-2">
           {pending.map(entry => (
-            <div key={entry.id} className="rounded-[1.25rem] border border-[#302817]/10 bg-white/80 p-3.5 shadow-[0_4px_16px_rgba(48,40,23,0.04)] transition hover:shadow-[0_6px_20px_rgba(48,40,23,0.07)]">
+            <div key={entry.id} className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(48,40,23,0.07)]">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 space-y-1.5">
                   <h3 className="truncate text-sm font-bold text-[#302817]">

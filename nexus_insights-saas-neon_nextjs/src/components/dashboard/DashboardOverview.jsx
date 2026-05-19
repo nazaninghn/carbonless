@@ -367,7 +367,7 @@ export default function DashboardOverview({
     <div className="space-y-3 sm:space-y-4">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-[0_6px_24px_rgba(48,40,23,0.06)] sm:p-5">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-sm sm:p-5">
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div>
@@ -398,7 +398,7 @@ export default function DashboardOverview({
             </button>
             <button
               onClick={() => setActiveTab('reporting')}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/10 bg-white/70 px-4 py-2 text-xs font-bold text-[#302817]/70 transition hover:bg-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/10 bg-white px-4 py-2 text-xs font-bold text-[#302817]/70 transition hover:bg-white"
             >
               {tr ? 'Rapor' : 'Report'}
             </button>

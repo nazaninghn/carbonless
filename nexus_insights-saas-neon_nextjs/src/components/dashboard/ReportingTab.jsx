@@ -68,7 +68,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
   return (
     <div className="space-y-4 text-[#302817]">
       {/* ─── HERO ─── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-5 shadow-[0_6px_24px_rgba(48,40,23,0.06)]">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-5 shadow-sm">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#95A847]">
@@ -97,7 +97,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 1: Readiness + AI Insights ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Report Readiness */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A847]/15 text-[#95A847]">
@@ -149,7 +149,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 2: Scope Breakdown + Trend ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.2fr]">
         {/* Scope Breakdown */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B4BE6A]/18 text-[#95A847]">
               <Target className="h-4 w-4" />
@@ -184,7 +184,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
 
         {/* Monthly Trend */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A847] text-white">
               <TrendingDown className="h-4 w-4" />
@@ -219,7 +219,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 3: Export Center + Compliance ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Export Center */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A847]/15 text-[#95A847]">
               <Download className="h-4 w-4" />
@@ -235,7 +235,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
 
         {/* Compliance Status */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#302817] text-white">
               <CheckCircle2 className="h-4 w-4" />
@@ -262,7 +262,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
       {/* ─── Inventory Config (if questionnaire complete) ─── */}
       {questionnaireProfile?.is_complete && (
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-[0_6px_20px_rgba(48,40,23,0.04)]">
+        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B4BE6A]/18 text-[#95A847]">
               <FileText className="h-4 w-4" />

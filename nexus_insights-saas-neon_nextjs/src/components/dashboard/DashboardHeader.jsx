@@ -61,7 +61,7 @@ export default function DashboardHeader({
         <div className="flex min-w-0 items-center gap-2">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#302817]/10 bg-white/70 text-[#302817] shadow-sm transition hover:bg-white md:flex lg:hidden"
+            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#302817]/10 bg-white text-[#302817] shadow-sm transition hover:bg-white md:flex lg:hidden"
             aria-label="Open sidebar"
           >
             <Menu className="h-4.5 w-4.5" />
@@ -70,7 +70,7 @@ export default function DashboardHeader({
           {activeTab !== 'dashboard' && (
             <button
               onClick={() => setActiveTab('dashboard')}
-              className="hidden h-9 items-center gap-1.5 rounded-xl border border-[#302817]/10 bg-white/70 px-3 text-xs font-bold text-[#302817]/60 shadow-sm transition hover:bg-white hover:text-[#302817] md:flex lg:hidden"
+              className="hidden h-9 items-center gap-1.5 rounded-xl border border-[#302817]/10 bg-white px-3 text-xs font-bold text-[#302817]/60 shadow-sm transition hover:bg-white hover:text-[#302817] md:flex lg:hidden"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
               {tr ? 'Ana Sayfa' : 'Home'}
@@ -98,7 +98,7 @@ export default function DashboardHeader({
           {/* ⌘K trigger (desktop only) */}
           <button
             onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
-            className="hidden items-center gap-2 rounded-xl border border-[#302817]/10 bg-white/70 px-3 py-2 text-[#302817]/45 shadow-sm transition hover:bg-white hover:text-[#302817] sm:flex"
+            className="hidden items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[#302817]/45 shadow-sm transition hover:bg-white hover:text-[#302817] sm:flex"
             aria-label="Open command palette"
           >
             <Search className="h-3.5 w-3.5" />
@@ -131,7 +131,7 @@ export default function DashboardHeader({
           <div className="relative">
             <button
               onClick={loadNotifications}
-              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#302817]/10 bg-white/70 text-[#302817] shadow-sm transition hover:bg-white"
+              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#302817]/10 bg-white text-[#302817] shadow-sm transition hover:bg-white"
               aria-label="Notifications"
             >
               <Bell className="h-[18px] w-[18px]" />
@@ -210,7 +210,7 @@ export default function DashboardHeader({
 
 function MiniSelect({ icon: Icon, value, onChange, children }) {
   return (
-    <label className="flex items-center gap-1.5 rounded-2xl border border-[#302817]/10 bg-white/70 px-2.5 py-2 text-[#302817] shadow-sm transition hover:bg-white">
+    <label className="flex items-center gap-1.5 rounded-2xl border border-[#302817]/10 bg-white px-2.5 py-2 text-[#302817] shadow-sm transition hover:bg-white">
       <Icon className="h-3.5 w-3.5 shrink-0 text-[#B4BE6A]" />
       <select
         value={value}
