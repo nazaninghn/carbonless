@@ -243,7 +243,8 @@ function TargetRing({ target, currentTonne, tr }) {
             strokeWidth={SW}
             strokeDasharray={`${dash} ${C}`}
             strokeLinecap="round"
-            style={{ transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px`, transition: 'stroke-dasharray 0.9s ease' }}
+            transform={`rotate(-90 ${cx} ${cy})`}
+            style={{ transition: 'stroke-dasharray 0.9s ease' }}
           />
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -296,9 +297,9 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
 // ─── KPI Card ──────────────────────────────────────────────────────────────
 function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor }) {
   return (
-    <div className={`relative overflow-hidden rounded-[1.25rem] border p-3.5 transition-colors sm:p-4 ${
+    <div className={`relative rounded-[1.25rem] border p-3.5 transition-colors sm:p-4 ${
       accent
-        ? 'border-[#95A847]/35 bg-gradient-to-br from-[#95A847]/10 to-[#B4BE6A]/6'
+        ? 'border-[#95A847]/35 bg-[#EFF4DA]'
         : 'border-[#302817]/7 bg-white'
     }`}>
       {topColor && (
@@ -416,7 +417,7 @@ export default function DashboardOverview({
     <div className="space-y-3 sm:space-y-4">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-sm sm:p-5">
+      <div className="relative rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-sm sm:p-5">
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div>
@@ -456,7 +457,7 @@ export default function DashboardOverview({
 
         {/* AI insight strip */}
         {totalTonne > 0 && (
-          <div className="relative mt-3 flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-[#F9EFE5]/60 px-3.5 py-2.5 sm:mt-4">
+          <div className="relative mt-3 flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-[#FBF6F1] px-3.5 py-2.5 sm:mt-4">
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#95A847]" />
             <p className="text-[11px] font-semibold leading-5 text-[#302817]/70 sm:text-xs">
               {tr
@@ -469,7 +470,7 @@ export default function DashboardOverview({
 
       {/* ── QUESTIONNAIRE BANNER ─────────────────────────────────────── */}
       {questionnaireProfile && !questionnaireProfile.is_complete && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200/60 bg-amber-50/80 px-4 py-2.5">
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-xs font-semibold text-amber-800">
             {tr

@@ -230,9 +230,17 @@
     transition: none !important;
   }
 
+  /* ── GPU compositor tile fix ─────────────────────────────────────────────
+     overflow:hidden + border-radius forces Chrome to create a GPU compositor
+     tile (to hardware-clip the rounded corners). On Android with limited GPU
+     memory, multiple simultaneous tiles cause scan-line artifacts.
+     overflow:clip is visually identical but does NOT create a BFC or GPU tile.  */
+  main .overflow-hidden {
+    overflow: clip !important;
+  }
+
   main svg {
     shape-rendering: geometricPrecision;
-    transform: none !important;
   }
 
   main .sticky,
