@@ -414,6 +414,7 @@ export default function DashboardOverview({
   }
 
   return (
+    <div className="space-y-3 sm:space-y-4">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-sm sm:p-5">
