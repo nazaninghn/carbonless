@@ -173,3 +173,39 @@
     box-shadow: 0 0 0 4px rgb(209 250 229 / 0.5);
   }
 }
+
+
+/* ═══ Android Tablet GPU artifact fix ═══ */
+@media (hover: none) and (pointer: coarse) and (min-width: 600px) and (max-width: 1180px) {
+  .dashboard-android-fix,
+  .dashboard-android-fix * {
+    -webkit-font-smoothing: antialiased;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .dashboard-android-fix .rounded-\[1\.5rem\],
+  .dashboard-android-fix .rounded-2xl,
+  .dashboard-android-fix .rounded-xl {
+    box-shadow: none !important;
+    transform: none !important;
+    will-change: auto !important;
+    contain: paint;
+  }
+
+  .dashboard-android-fix .overflow-hidden {
+    overflow: clip;
+  }
+
+  .dashboard-android-fix [class*="bg-gradient"],
+  .dashboard-android-fix [class*="transition"],
+  .dashboard-android-fix [class*="duration-"] {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .dashboard-android-fix header.sticky {
+    position: relative !important;
+    top: auto !important;
+  }
+}
