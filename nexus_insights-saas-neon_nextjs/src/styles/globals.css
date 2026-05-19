@@ -209,3 +209,35 @@
     top: auto !important;
   }
 }
+
+
+/* ═══ Aggressive Android Tablet fix (wider range) ═══ */
+@media (hover: none) and (pointer: coarse) and (max-width: 1400px) {
+  main {
+    isolation: isolate;
+    background: #f8fafc !important;
+  }
+
+  main *,
+  main *::before,
+  main *::after {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    mix-blend-mode: normal !important;
+    box-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  main svg {
+    shape-rendering: geometricPrecision;
+    transform: none !important;
+  }
+
+  main .sticky,
+  header.sticky {
+    position: relative !important;
+    top: auto !important;
+  }
+}
