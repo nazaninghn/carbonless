@@ -1,6 +1,10 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useLayoutEffect } from 'react';
+
+// useLayoutEffect fires before browser paint → no flicker frame on Android tablets
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import {
   AlertCircle,
   Bot,
@@ -354,11 +358,10 @@ export default function DashboardOverview({
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-  // Touch-tablet simplified view — use matchMedia (reliable on all Android/iPad)
-  // UA sniffing is unreliable; matchMedia('hover:none + pointer:coarse') is the
-  // same signal our CSS media queries use, so they stay in sync.
+  // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
+  // so GPU-heavy complex view is never painted to screen on Android tablets.
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     setIsAndroidTablet(isTouch && window.innerWidth >= 768);
   }, []);

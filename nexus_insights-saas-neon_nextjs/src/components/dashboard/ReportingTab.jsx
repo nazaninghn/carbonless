@@ -1,5 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useLayoutEffect } from 'react';
+
+// useLayoutEffect fires before browser paint → no flicker frame on Android tablets
+// Falls back to useEffect on server (SSR) to avoid Next.js hydration warnings
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 import {
   CheckCircle2,
   Download,
@@ -65,9 +70,10 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     }
   };
 
-  // Touch-tablet simplified view — matchMedia is reliable on all Android/iPad
+  // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
+  // so the GPU-heavy complex view is never rendered to screen on Android tablets.
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     setIsAndroidTablet(isTouch && window.innerWidth >= 768);
   }, []);
