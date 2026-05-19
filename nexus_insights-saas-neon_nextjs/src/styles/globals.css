@@ -215,7 +215,7 @@
 @media (hover: none) and (pointer: coarse) and (max-width: 1400px) {
   main {
     isolation: isolate;
-    background: #f8fafc !important;
+    background: #ffffff !important;
   }
 
   main *,

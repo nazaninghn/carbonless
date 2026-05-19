@@ -48,7 +48,7 @@ export default function DashboardPage() {
 
   return (
     <ToastProvider>
-    <div className="dashboard-android-fix min-h-screen bg-[#F8F8F8] text-[#302817] flex font-inter">
+    <div className="dashboard-android-fix min-h-screen bg-white text-[#302817] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar
         language={language}
