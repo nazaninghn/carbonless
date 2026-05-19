@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   CheckCircle2,
   Download,
@@ -65,8 +65,11 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     }
   };
 
-  // Android tablet simplified view (avoids GPU rendering artifacts)
-  const isAndroidTablet = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) && window.innerWidth >= 700;
+  // Android tablet simplified view — useEffect to avoid SSR hydration mismatch
+  const [isAndroidTablet, setIsAndroidTablet] = useState(false);
+  useEffect(() => {
+    setIsAndroidTablet(/Android/i.test(navigator.userAgent) && window.innerWidth >= 700);
+  }, []);
 
   if (isAndroidTablet) {
     return (

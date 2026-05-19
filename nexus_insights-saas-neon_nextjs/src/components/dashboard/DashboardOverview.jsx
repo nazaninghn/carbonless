@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   AlertCircle,
   Bot,
@@ -72,11 +72,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
                 strokeWidth={SW}
                 strokeDasharray={`${dash} ${C}`}
                 strokeLinecap="butt"
-                style={{
-                  transform: `rotate(${rot}deg)`,
-                  transformOrigin: `${cx}px ${cy}px`,
-                  transition: 'stroke-dasharray 0.9s cubic-bezier(0.4,0,0.2,1)',
-                }}
+                transform={`rotate(${rot} ${cx} ${cy})`}
               />
             );
           })}
@@ -363,8 +359,11 @@ export default function DashboardOverview({
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-  // Android tablet simplified view (avoids GPU rendering artifacts)
-  const isAndroidTablet = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) && window.innerWidth >= 700;
+  // Android tablet simplified view — must use useEffect to avoid SSR hydration mismatch
+  const [isAndroidTablet, setIsAndroidTablet] = useState(false);
+  useEffect(() => {
+    setIsAndroidTablet(/Android/i.test(navigator.userAgent) && window.innerWidth >= 700);
+  }, []);
 
   if (isAndroidTablet) {
     return (
