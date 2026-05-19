@@ -314,7 +314,7 @@ export default function ReductionTargetsTab({
     <div className="space-y-3 sm:space-y-4 text-[#302817]">
 
       {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-4 shadow-[0_6px_24px_rgba(48,40,23,0.05)] sm:p-5">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-[0_6px_24px_rgba(48,40,23,0.05)] sm:p-5">
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#95A847]">

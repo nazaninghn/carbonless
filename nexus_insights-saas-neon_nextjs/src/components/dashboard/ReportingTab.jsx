@@ -68,7 +68,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
   return (
     <div className="space-y-4 text-[#302817]">
       {/* ─── HERO ─── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/10 p-5 shadow-[0_6px_24px_rgba(48,40,23,0.06)]">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-5 shadow-[0_6px_24px_rgba(48,40,23,0.06)]">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#95A847]">

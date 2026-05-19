@@ -367,7 +367,7 @@ export default function DashboardOverview({
     <div className="space-y-3 sm:space-y-4">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/10 p-4 shadow-[0_6px_24px_rgba(48,40,23,0.06)] sm:p-5">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-[0_6px_24px_rgba(48,40,23,0.06)] sm:p-5">
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div>
