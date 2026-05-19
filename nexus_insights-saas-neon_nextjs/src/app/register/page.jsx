@@ -210,9 +210,7 @@ export default function RegisterPage() {
   const progress = Math.round(((currentSection - 1) / 2) * 100);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#F9EFE5] text-[#302817]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(248,248,248,0.92),transparent_34%),radial-gradient(circle_at_30%_32%,rgba(127,135,144,0.14),transparent_30%),radial-gradient(circle_at_75%_22%,rgba(143,146,161,0.15),transparent_28%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px] bg-gradient-to-b from-white/75 via-[#F9EFE5]/50 to-[#F9EFE5]" />
+    <main className="relative min-h-screen bg-white text-[#302817]">
 
       <header className="relative z-20 mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
