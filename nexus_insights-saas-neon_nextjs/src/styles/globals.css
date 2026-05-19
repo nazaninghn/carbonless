@@ -103,6 +103,46 @@
     .carbon-hero-float { animation: none; }
   }
 
+  /* ─── Android/tablet GPU flicker fix ───────────────────────────────────────
+     backdrop-filter, continuous transforms and will-change on large containers
+     cause GPU compositing artifacts (horizontal scan lines) on Chrome Android.
+     Disable all GPU-intensive effects below 1024px as a safety net.           */
+  @media (max-width: 1023px) {
+    /* Kill all backdrop blur/filter globally on tablet & mobile */
+    *,
+    *::before,
+    *::after {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    /* Disable continuous animations that keep GPU layers active */
+    .carbon-hero-float {
+      animation: none !important;
+      will-change: auto !important;
+      transform: none !important;
+    }
+    .mesh-bg {
+      animation: none !important;
+      background: #F8FAFC !important;
+    }
+    .float-animation {
+      animation: none !important;
+    }
+
+    /* glass-card: solid background instead of blurred glass */
+    .glass-card {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(255, 255, 255, 0.97) !important;
+    }
+
+    /* Remove speculative GPU layer hints */
+    * {
+      will-change: auto !important;
+    }
+  }
+
   /* Safe area for floating elements */
   .safe-bottom {
     bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
