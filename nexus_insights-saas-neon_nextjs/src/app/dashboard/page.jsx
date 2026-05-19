@@ -34,6 +34,9 @@ export default function DashboardPage() {
     setUnreadCount, fetchData,
   } = useDashboardData(selectedYear);
 
+  // loading = true only on first render; subsequent fetches use `refreshing`
+  // so the page never flashes/flickers on refresh
+
   // Add Entry form (showAddForm shared with DashboardOverview)
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('turkey');
@@ -73,16 +76,13 @@ export default function DashboardPage() {
         />
 
         <main className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5">
-          {/* Loading bar — non-disruptive, no layout shift */}
+          {/* Slim top bar — only on very first load, no layout shift */}
           {loading && (
-            <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] bg-[#95A847]/20">
-              <div className="h-full w-1/2 animate-[shimmer_1s_ease-in-out_infinite] bg-[#95A847] rounded-full" />
+            <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] overflow-hidden bg-[#95A847]/15">
+              <div className="h-full animate-[shimmer_1s_ease-in-out_infinite] bg-[#95A847] rounded-full" style={{ width: '40%' }} />
             </div>
           )}
-          <div
-            className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden transition-opacity duration-200"
-            style={{ opacity: loading ? 0.4 : 1 }}
-          >
+          <div className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden">
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (

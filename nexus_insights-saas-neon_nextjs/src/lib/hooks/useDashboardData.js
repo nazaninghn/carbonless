@@ -12,15 +12,19 @@ const initialState = {
   questionnaireProfile: null,
   unreadCount: 0,
   facilityList: [],
-  loading: true,
+  loading: true,       // true only on first load
+  refreshing: false,   // true on subsequent refreshes (no UI flash)
 };
 
 function reducer(state, action) {
   switch (action.type) {
     case 'LOADED':
-      return { ...state, ...action.payload, loading: false };
+      return { ...state, ...action.payload, loading: false, refreshing: false };
     case 'LOADING':
-      return { ...state, loading: true };
+      // First load → show loading; subsequent → just set refreshing silently
+      return state.loading
+        ? { ...state, loading: true }
+        : { ...state, refreshing: true };
     default:
       return state;
   }

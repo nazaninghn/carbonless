@@ -535,7 +535,9 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
   return (
     <aside
       className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#FAFAF8] transition-all duration-300 ${
-        open ? 'w-[220px]' : 'w-0 overflow-hidden'
+        open
+          ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
+          : 'w-0 overflow-hidden'
       }`}
     >
       <div className="flex items-center justify-between border-b border-[#302817]/6 px-3 py-3">
@@ -814,8 +816,12 @@ function QuestionnaireTab({ language }) {
   const [completed, setCompleted] = useState(false);
   const [assumptions, setAssumptions] = useState([]);
   const [saveError, setSaveError] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // On mobile sidebar starts closed; desktop starts open
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
+  }, []);
 
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
@@ -1042,6 +1048,13 @@ function QuestionnaireTab({ language }) {
 
   return (
     <div className="flex flex-1 min-h-0 overflow-hidden relative">
+      {/* Mobile backdrop for progress sidebar */}
+      {sidebarOpen && (
+        <div
+          className="absolute inset-0 z-20 bg-black/25 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       {/* Progress sidebar */}
       <ProgressSidebar
         answers={answers}
@@ -1190,8 +1203,13 @@ function FreeChatTab({ language }) {
   const [sending, setSending] = useState(false);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [loadingMessages, setLoadingMessages] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // On mobile starts closed; desktop opens automatically
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
+  }, []);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -1291,9 +1309,20 @@ function FreeChatTab({ language }) {
   const activeSession = sessions.find(s => s.id === activeId);
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden">
+    <div className="relative flex flex-1 min-h-0 overflow-hidden">
+      {/* Mobile backdrop for chat sidebar */}
+      {sidebarOpen && (
+        <div
+          className="absolute inset-0 z-20 bg-black/25 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       {/* Sidebar */}
-      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#FAFAF8] transition-all duration-300 ${sidebarOpen ? 'w-[220px]' : 'w-0 overflow-hidden'}`}>
+      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#FAFAF8] transition-all duration-300 ${
+        sidebarOpen
+          ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
+          : 'w-0 overflow-hidden'
+      }`}>
         <div className="flex items-center justify-between border-b border-[#302817]/6 px-3 py-3">
           <span className="text-xs font-bold text-[#302817]/50 uppercase tracking-wider">
             {tr ? 'Sohbetler' : 'Chats'}
