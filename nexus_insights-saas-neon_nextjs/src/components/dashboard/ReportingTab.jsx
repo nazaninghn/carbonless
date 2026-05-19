@@ -65,6 +65,38 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     }
   };
 
+  // Android tablet simplified view (avoids GPU rendering artifacts)
+  const isAndroidTablet = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) && window.innerWidth >= 700;
+
+  if (isAndroidTablet) {
+    return (
+      <div className="space-y-4 text-[#302817]">
+        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#95A847]">
+            {tr ? 'Rapor merkezi' : 'Report center'}
+          </p>
+          <h1 className="mt-2 text-2xl font-black text-[#302817]">
+            {tr ? 'Karbon Rapor Merkezi' : 'Carbon Report Center'}
+          </h1>
+        </div>
+        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+          <p className="text-xs text-[#302817]/50">{tr ? 'Rapor Hazırlığı' : 'Readiness'}</p>
+          <p className="text-3xl font-black text-[#95A847]">{readiness}%</p>
+        </div>
+        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+          <p className="text-xs text-[#302817]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
+          <p className="text-3xl font-black text-[#302817]">{totalTonne.toFixed(2)} tCO₂e</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">PDF TR</button>
+          <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">PDF EN</button>
+          <button onClick={() => handleDownload('csv', '')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">CSV</button>
+          <button onClick={() => handleDownload('excel', '')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">Excel</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 text-[#302817]">
       {/* ─── HERO ─── */}

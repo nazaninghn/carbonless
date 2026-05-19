@@ -363,8 +363,57 @@ export default function DashboardOverview({
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+  // Android tablet simplified view (avoids GPU rendering artifacts)
+  const isAndroidTablet = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent) && window.innerWidth >= 700;
+
+  if (isAndroidTablet) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#95A847]">
+            {tr ? 'Karbon çalışma alanı' : 'Carbon workspace'}
+          </p>
+          <h1 className="mt-2 text-2xl font-black text-[#302817]">
+            {tr ? 'Emisyon Profili' : 'Emission Profile'} · {selectedYear}
+          </h1>
+          <p className="mt-1 text-sm text-[#302817]/55">
+            {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCO₂e
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+            <p className="text-xs text-[#302817]/50">Scope 1</p>
+            <p className="text-2xl font-black text-[#302817]">{s1.toFixed(2)} <span className="text-sm font-normal">tCO₂e</span></p>
+          </div>
+          <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+            <p className="text-xs text-[#302817]/50">Scope 2</p>
+            <p className="text-2xl font-black text-[#302817]">{s2.toFixed(2)} <span className="text-sm font-normal">tCO₂e</span></p>
+          </div>
+          <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+            <p className="text-xs text-[#302817]/50">Scope 3</p>
+            <p className="text-2xl font-black text-[#302817]">{s3.toFixed(2)} <span className="text-sm font-normal">tCO₂e</span></p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
+          <h2 className="text-sm font-bold text-[#302817]">{tr ? 'Başlangıç Rehberi' : 'Getting Started'}</h2>
+          <div className="mt-3 space-y-2">
+            {[
+              { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anketi tamamla' : 'Complete questionnaire' },
+              { done: entries.length > 0, label: tr ? 'Emisyon verisi gir' : 'Enter emission data' },
+              { done: targets.length > 0, label: tr ? 'Hedef belirle' : 'Set target' },
+              { done: facilityList.length > 0, label: tr ? 'Tesis ekle' : 'Add facility' },
+            ].map((s, i) => (
+              <p key={i} className={`text-sm ${s.done ? 'text-[#95A847] line-through' : 'text-[#302817]/70'}`}>
+                {s.done ? '✓' : `${i+1}.`} {s.label}
+              </p>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-3 sm:space-y-4">
 
       {/* ── HERO ─────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-sm sm:p-5">
