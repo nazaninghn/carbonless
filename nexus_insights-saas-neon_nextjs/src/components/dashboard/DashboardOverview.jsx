@@ -300,7 +300,7 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
 // ─── KPI Card ──────────────────────────────────────────────────────────────
 function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor }) {
   return (
-    <div className={`relative overflow-hidden rounded-[1.25rem] border p-3.5 transition hover:-translate-y-0.5 hover:shadow-md sm:p-4 ${
+    <div className={`relative overflow-hidden rounded-[1.25rem] border p-3.5 transition-colors sm:p-4 ${
       accent
         ? 'border-[#95A847]/35 bg-gradient-to-br from-[#95A847]/10 to-[#B4BE6A]/6'
         : 'border-[#302817]/7 bg-white'
@@ -384,7 +384,7 @@ export default function DashboardOverview({
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Veri Ekle' : 'Add Data'}

@@ -202,7 +202,7 @@ export default function OnboardingTour({ language, onComplete }) {
               )}
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:-translate-y-0.5 hover:bg-black"
+                className="flex items-center gap-1 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black"
               >
                 {isLast ? (tr ? 'Başla!' : 'Get Started!') : (tr ? 'İleri' : 'Next')}
                 {!isLast && <ChevronRight className="h-3.5 w-3.5" />}
