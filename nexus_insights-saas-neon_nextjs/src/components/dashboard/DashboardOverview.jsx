@@ -297,17 +297,11 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
 // ─── KPI Card ──────────────────────────────────────────────────────────────
 function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor }) {
   return (
-    <div className={`relative rounded-[1.25rem] border p-3.5 transition-colors sm:p-4 ${
+    <div className={`relative rounded-[1.25rem] border p-3.5 sm:p-4 ${
       accent
-        ? 'border-[#95A847]/35 bg-[#EFF4DA]'
-        : 'border-[#302817]/7 bg-white'
+        ? 'border-[#95A847] bg-[#EFF4DA]'
+        : 'border-[#E2E8D8] bg-white'
     }`}>
-      {topColor && (
-        <div className="absolute left-4 right-4 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: topColor }} />
-      )}
-      {accent && (
-        <div className="absolute left-4 right-4 top-0 h-[3px] rounded-b-full bg-gradient-to-r from-[#75863B] to-[#B4BE6A]" />
-      )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#302817]/40 sm:text-[10px]">{title}</p>
@@ -319,7 +313,7 @@ function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor })
         </div>
         {Icon && (
           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-8 sm:w-8 ${
-            accent ? 'bg-[#95A847]/15 text-[#95A847]' : 'bg-[#302817]/5 text-[#302817]/40'
+            accent ? 'bg-[#D6E4A0] text-[#5A6B28]' : 'bg-[#EBEBEB] text-[#302817]'
           }`}>
             <Icon className="h-3.5 w-3.5" />
           </div>
@@ -360,10 +354,13 @@ export default function DashboardOverview({
   const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
   const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-  // Android tablet simplified view — must use useEffect to avoid SSR hydration mismatch
+  // Touch-tablet simplified view — use matchMedia (reliable on all Android/iPad)
+  // UA sniffing is unreliable; matchMedia('hover:none + pointer:coarse') is the
+  // same signal our CSS media queries use, so they stay in sync.
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
   useEffect(() => {
-    setIsAndroidTablet(/Android/i.test(navigator.userAgent) && window.innerWidth >= 700);
+    const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    setIsAndroidTablet(isTouch && window.innerWidth >= 768);
   }, []);
 
   if (isAndroidTablet) {

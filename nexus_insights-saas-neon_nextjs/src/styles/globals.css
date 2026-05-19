@@ -214,7 +214,6 @@
 /* ═══ Aggressive Android Tablet fix (wider range) ═══ */
 @media (hover: none) and (pointer: coarse) and (max-width: 1400px) {
   main {
-    isolation: isolate;
     background: #ffffff !important;
   }
 

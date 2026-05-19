@@ -65,10 +65,11 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     }
   };
 
-  // Android tablet simplified view — useEffect to avoid SSR hydration mismatch
+  // Touch-tablet simplified view — matchMedia is reliable on all Android/iPad
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
   useEffect(() => {
-    setIsAndroidTablet(/Android/i.test(navigator.userAgent) && window.innerWidth >= 700);
+    const isTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    setIsAndroidTablet(isTouch && window.innerWidth >= 768);
   }, []);
 
   if (isAndroidTablet) {
