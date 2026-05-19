@@ -93,7 +93,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Sidebar tabs */}
         <aside className="lg:sticky lg:top-4 lg:h-fit">
-          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#302817]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-[0_4px_16px_rgba(48,40,23,0.04)] lg:backdrop-blur-xl">
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#302817]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-[0_4px_16px_rgba(48,40,23,0.04)]">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;

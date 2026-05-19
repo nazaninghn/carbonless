@@ -37,8 +37,8 @@ export default function DashboardSidebar({
       <aside
         className={`
           fixed inset-y-0 left-0 z-50 w-[260px] bg-white
-          border-r border-[#302817]/6 transition-transform duration-300 will-change-transform
-          lg:static lg:translate-x-0 lg:will-change-auto
+          border-r border-[#302817]/6 transition-transform duration-300
+          lg:static lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0 shadow-[0_8px_40px_rgba(48,40,23,0.14)]' : '-translate-x-full'}
         `}
       >
