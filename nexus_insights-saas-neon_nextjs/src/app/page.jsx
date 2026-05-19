@@ -88,8 +88,7 @@ export default function Home() {
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] w-full max-w-6xl flex-col items-center justify-center px-4 pb-8 pt-0 text-center sm:px-6">
         <div className="relative mx-auto mb-5 w-fit sm:mb-6">
-          <div className="absolute left-1/2 top-1/2 h-[260px] w-[260px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#B4BE6A]/18 blur-[90px] sm:h-[360px] sm:w-[360px] lg:h-[430px] lg:w-[430px]" />
-          <div className="absolute left-1/2 top-1/2 h-[220px] w-[220px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#95A847]/12 blur-[70px] sm:h-[310px] sm:w-[310px] lg:h-[380px] lg:w-[380px]" />
+          <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#F0EEE8] blur-[80px] sm:h-[400px] sm:w-[400px] lg:h-[460px] lg:w-[460px]" />
           <img src="/carbon-hero.png" alt="Carbon molecule with green leaves" className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[5deg] active:scale-110 active:rotate-[5deg] hover:drop-shadow-[0_40px_70px_rgba(48,40,23,0.22)] cursor-pointer" />
         </div>
 
