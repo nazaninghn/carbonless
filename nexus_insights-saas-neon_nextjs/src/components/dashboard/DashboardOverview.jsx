@@ -629,7 +629,7 @@ export default function DashboardOverview({
                 en: 'Upload a proof document',
                 tab: 'emissions',
               },
-            ].map((step) => (
+            ].map((step, i) => (
               <button
                 key={step.en}
                 onClick={() => !step.done && setActiveTab(step.tab)}

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { ClipboardCheck, Check, X } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
@@ -13,38 +13,54 @@ export default function ReviewTab({ language, fetchData }) {
   const tr    = language === 'tr';
   const toast = useToast();
 
-  const fetchPending = async () => {
+  // useCallback so the useEffect dep array stays stable and ESLint is satisfied.
+  const fetchPending = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.getPendingEntries();
       if (res.ok) setPending(await res.json());
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+      // non-ok (e.g. 403) is silently ignored — pending stays empty
+    } catch {
+      // Network error: keep existing list; spinner stops
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { fetchPending(); }, []);
+  useEffect(() => { fetchPending(); }, [fetchPending]);
 
   const handleApprove = async (id) => {
     setProcessing(id);
-    const res = await api.approveEntry(id, 'approve');
-    fetchPending();
-    if (fetchData) fetchData();
-    setProcessing(null);
-    if (res.ok !== false) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
-    else toast.error(tr ? 'Onay başarısız' : 'Approval failed');
+    try {
+      const res = await api.approveEntry(id, 'approve');
+      if (res.ok) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
+      else toast.error(tr ? 'Onay başarısız' : 'Approval failed');
+      await fetchPending();
+      if (fetchData) fetchData();
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const handleReject = async () => {
     if (!rejectId) return;
-    setProcessing(rejectId);
-    const res = await api.approveEntry(rejectId, 'reject', rejectReason);
+    const id = rejectId;
+    setProcessing(id);
     setRejectId(null);
     setRejectReason('');
-    fetchPending();
-    if (fetchData) fetchData();
-    setProcessing(null);
-    if (res.ok !== false) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
-    else toast.error(tr ? 'Red işlemi başarısız' : 'Rejection failed');
+    try {
+      const res = await api.approveEntry(id, 'reject', rejectReason);
+      if (res.ok) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
+      else toast.error(tr ? 'Red işlemi başarısız' : 'Rejection failed');
+      await fetchPending();
+      if (fetchData) fetchData();
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setProcessing(null);
+    }
   };
 
   return (

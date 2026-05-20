@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Leaf,
   Target,
@@ -33,6 +33,11 @@ export default function SettingsTab({ language, user, fetchData }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // Delete-account confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const deleteInputRef = useRef(null);
   const tr = language === 'tr';
   const active = TABS.find((tab) => tab.id === activeTab);
 
@@ -55,20 +60,30 @@ export default function SettingsTab({ language, user, fetchData }) {
     setExporting(false);
   };
 
+  const openDeleteModal = () => {
+    setDeletePassword('');
+    setDeleteError('');
+    setShowDeleteModal(true);
+    // Focus the input after the modal renders
+    setTimeout(() => deleteInputRef.current?.focus(), 50);
+  };
+
   const handleDelete = async () => {
-    const password = prompt(
-      tr
-        ? 'Hesabınızı silmek için şifrenizi girin:'
-        : 'Enter your password to delete your account:'
-    );
-    if (!password) return;
+    if (!deletePassword) return;
     setDeleting(true);
-    const res = await api.deleteAccount(password);
-    if (res.ok) {
-      window.location.href = '/login';
-    } else {
-      const data = await res.json().catch(() => ({}));
-      alert(data.error || 'Error');
+    setDeleteError('');
+    try {
+      const res = await api.deleteAccount(deletePassword);
+      if (res.ok) {
+        // Navigate away — no beforeunload mutation needed; page is intentionally leaving
+        window.location.href = '/login';
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error || (tr ? 'Hata oluştu' : 'An error occurred'));
+        setDeleting(false);
+      }
+    } catch {
+      setDeleteError(tr ? 'Bağlantı hatası' : 'Connection error');
       setDeleting(false);
     }
   };
@@ -190,13 +205,13 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <h4 className="mb-2 text-xs font-bold text-[#302817]">{tr ? 'Dil Tercihi' : 'Language Preference'}</h4>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { try { localStorage.setItem('language', 'en'); window.onbeforeunload = null; window.location.reload(); } catch {} }}
+                    onClick={() => { try { localStorage.setItem('language', 'en'); window.location.reload(); } catch {} }}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇬🇧 English
                   </button>
                   <button
-                    onClick={() => { try { localStorage.setItem('language', 'tr'); window.onbeforeunload = null; window.location.reload(); } catch {} }}
+                    onClick={() => { try { localStorage.setItem('language', 'tr'); window.location.reload(); } catch {} }}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇹🇷 Türkçe
@@ -276,7 +291,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                     : 'Deleting your account is irreversible. All your data will be permanently deleted.'}
                 </p>
                 <button
-                  onClick={handleDelete}
+                  onClick={openDeleteModal}
                   disabled={deleting}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-60 sm:w-auto"
                 >
@@ -288,6 +303,53 @@ export default function SettingsTab({ language, user, fetchData }) {
           )}
         </section>
       </div>
+
+      {/* ─── Delete Account Confirmation Modal ─────────────────────────────── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(48,40,23,0.18)]">
+            <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100">
+              <Trash2 className="h-5 w-5 text-red-600" />
+            </div>
+            <h3 className="text-base font-bold text-[#302817]">
+              {tr ? 'Hesabı Sil' : 'Delete Account'}
+            </h3>
+            <p className="mt-1.5 text-xs leading-5 text-[#302817]/60">
+              {tr
+                ? 'Bu işlem geri alınamaz. Onaylamak için şifrenizi girin.'
+                : 'This action is irreversible. Enter your password to confirm.'}
+            </p>
+            <input
+              ref={deleteInputRef}
+              type="password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDelete()}
+              placeholder={tr ? 'Şifreniz' : 'Your password'}
+              className="mt-4 w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-red-300 focus:ring-4 focus:ring-red-100"
+            />
+            {deleteError && (
+              <p className="mt-2 text-xs font-semibold text-red-600">{deleteError}</p>
+            )}
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting || !deletePassword}
+                className="flex-1 rounded-full bg-red-600 py-2.5 text-xs font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? '...' : tr ? 'Sil' : 'Delete'}
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1 rounded-full border border-[#302817]/10 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]"
+              >
+                {tr ? 'İptal' : 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
