@@ -62,7 +62,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(u), 1000);
+      setTimeout(() => URL.revokeObjectURL(u), 30_000); // 30s — give browser time to start download
     } catch (err) {
       console.error('Download failed:', err);
       setDlError(tr ? 'İndirme başarısız. Lütfen tekrar deneyin.' : 'Download failed. Please try again.');

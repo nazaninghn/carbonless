@@ -47,20 +47,31 @@ async function request(endpoint, options = {}) {
 
   if (res.status !== 401) return res;
 
+  // Singleton refresh: parse JSON inside the chain so all concurrent
+  // awaiters share the same resolved { ok, access } value — not a
+  // single-use Response stream that only one caller can consume.
   if (!_refreshPromise) {
     _refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
-      .then(rr => rr)
+      .then(async rr => {
+        if (!rr.ok) return { ok: false, access: null };
+        try {
+          const data = await rr.json();
+          return { ok: true, access: data.access || null };
+        } catch {
+          return { ok: false, access: null };
+        }
+      })
       .finally(() => { _refreshPromise = null; });
   }
-  const rr = await _refreshPromise;
-  if (!rr?.ok) {
+  const refreshResult = await _refreshPromise;
+  if (!refreshResult?.ok) {
     setToken(null);
     clearSessionCookie();
     if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
     return new Response(null, { status: 401 });
   }
 
-  const { access } = await rr.clone().json();
+  const { access } = refreshResult;
   setToken(access);
 
   return fetch(`${API_BASE}${endpoint}`, {

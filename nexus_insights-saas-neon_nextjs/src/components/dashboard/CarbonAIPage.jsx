@@ -624,7 +624,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       setInput(pre);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [open, currentQuestion?.id]);
+  }, [open, currentQuestion?.id, lang, tr]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -827,6 +827,8 @@ function QuestionnaireTab({ language }) {
 
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
+  const isMounted = useRef(true);
+  useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
 
   const currentQuestion = getQuestionById(currentId);
 
@@ -958,6 +960,7 @@ function QuestionnaireTab({ language }) {
     setIsTyping(true);
 
     setTimeout(() => {
+      if (!isMounted.current) return; // component unmounted — skip all state updates
       setIsTyping(false);
       const nextId = getNextQuestionId(currentId, newAnswers);
 

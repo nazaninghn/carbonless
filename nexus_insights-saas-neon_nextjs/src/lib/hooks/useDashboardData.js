@@ -91,8 +91,11 @@ export function useDashboardData(selectedYear) {
       isFirstLoad.current = false;
     } catch (err) {
       console.error('Dashboard fetch error:', err);
-      if (isFirstLoad.current) dispatch({ type: 'LOADED', payload: {} }); // only clear on first load
-      // on background refresh errors, silently ignore to keep existing data
+      if (isFirstLoad.current) {
+        dispatch({ type: 'LOADED', payload: {} }); // stop spinner on first-load failure
+        isFirstLoad.current = false;               // prevent re-running as "first load" on retry
+      }
+      // background refresh errors: silently ignore — keep existing data visible
     }
   }, [selectedYear]);
 

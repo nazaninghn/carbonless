@@ -121,15 +121,14 @@ export default function RegisterPage() {
         return;
       }
 
-      // ── Step 2: Login ─────────────────────────────────────────
+      // ── Step 2: Login via proxy (sets localStorage token + session cookie) ──
+      // Must use /api/auth/login (not direct backend) so api.js stores the
+      // access token in localStorage and markSessionActive() takes effect.
       let loginRes;
       try {
-        loginRes = await fetch(`${API}/accounts/login/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ username: formData.username, password: formData.password }),
-        });
+        const { api: apiModule, markSessionActive: activate } = await import('@/lib/utils/api');
+        loginRes = await apiModule.login(formData.username, formData.password);
+        if (loginRes.ok) activate();
       } catch {
         setError(language === 'tr'
           ? 'Hesap oluşturuldu fakat giriş yapılamadı. Lütfen giriş sayfasına gidin.'
@@ -146,9 +145,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // ── Step 3: Create company ────────────────────────────────
-      const { markSessionActive } = await import('@/lib/utils/api');
-      markSessionActive();
+      // ── Step 3: Create company (token is now set — api.createCompany works) ─
 
       const companyPayload = {
         legal_entity_name: formData.legalEntityName,
@@ -173,12 +170,8 @@ export default function RegisterPage() {
       };
 
       try {
-        const companyRes = await fetch(`${API}/companies/create/`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(companyPayload),
-        });
+        const { api: apiModule2 } = await import('@/lib/utils/api');
+        const companyRes = await apiModule2.createCompany(companyPayload);
         if (!companyRes.ok) {
           // Save so Settings → Company can auto-fill — no re-typing needed
           try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
