@@ -8,19 +8,17 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Clean Atmosphere + Minimalist Tech
-        primary: '#22C55E',       // Leaf Green - CTAs, success
-        mint: '#2DD4BF',          // Mint Tech - accent
-        indigo: '#818CF8',        // Soft Indigo - secondary accent
-        sky: '#F8FAFC',           // Sky White - main bg
-        glacier: '#E0F2FE',       // Glacier Blue - card bg
-        graphite: '#475569',      // Graphite Grey - body text
-        slate: '#1E293B',         // Deep text
-        mist: '#F1F5F9',         // Subtle bg sections
-        // Backward compat
-        secondary: '#2DD4BF',
-        accent: '#22C55E',
-        dark: '#1E293B',
+        // Carbonless brand palette
+        primary:   '#95A847',   // Brand olive green — CTAs, icons, badges
+        secondary: '#B4BE6A',   // Brand light olive — gradient midpoints
+        accent:    '#75863B',   // Brand dark olive — gradient endpoints, hover
+        mint:      '#B4BE6A',   // Alias of secondary (legacy compat)
+        // Neutral UI tokens (unchanged)
+        graphite:  '#475569',   // Body text
+        slate:     '#1E293B',   // Deep text
+        mist:      '#F1F5F9',   // Subtle bg sections
+        sky:       '#F8FAFC',   // Main bg
+        dark:      '#302817',   // App-specific dark brown
       },
       fontFamily: {
         "inter": ["Inter", "sans-serif"],

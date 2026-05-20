@@ -23,7 +23,7 @@ export default function SimpleHeader() {
           {/* Language Toggle */}
           <button 
             onClick={() => changeLanguage(language === 'tr' ? 'en' : 'tr')} 
-            className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-emerald-200 hover:text-emerald-700"
+            className="flex items-center gap-2 rounded-full border border-[#302817]/15 bg-white px-4 py-2 text-sm font-semibold text-[#302817]/60 shadow-sm transition hover:border-[#95A847]/40 hover:text-[#75863B]"
           >
             <Globe className="w-4 h-4" />
             {language === 'tr' ? 'EN' : 'TR'}
