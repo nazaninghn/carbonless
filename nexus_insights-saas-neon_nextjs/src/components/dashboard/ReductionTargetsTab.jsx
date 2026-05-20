@@ -7,7 +7,8 @@ import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const CURRENT_YEAR = new Date().getFullYear();
+// Evaluated at call time so the year stays correct if the app stays open past midnight
+function currentYear() { return new Date().getFullYear(); }
 
 function fmt(n, d = 1) {
   return parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d });
@@ -103,7 +104,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
     ? Math.min((achievedKg / neededKg) * 100, 100)
     : 0;
 
-  const yearsLeft = Math.max(tgt.target_year - CURRENT_YEAR, 0);
+  const yearsLeft = Math.max(tgt.target_year - currentYear(), 0);
   const remainingKg = Math.max(currentKg - targetKg, 0);
   const annualNeededT = yearsLeft > 0 ? (remainingKg / yearsLeft / 1000) : 0;
 
@@ -182,7 +183,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
         <TimelineBar
           baseYear={tgt.base_year}
           targetYear={tgt.target_year}
-          currentYear={CURRENT_YEAR}
+          currentYear={currentYear()}
           language={language}
         />
       </div>

@@ -83,20 +83,16 @@ export default function RegisterPage() {
     if (!validateSection3()) return;
     setLoading(true);
 
-    const API = process.env.NEXT_PUBLIC_API_URL;
-    if (!API) {
-      setError(language === 'tr'
-        ? 'API adresi yapılandırılmamış. Lütfen yöneticinize bildirin.'
-        : 'API URL is not configured. Please contact support.');
-      setLoading(false);
-      return;
-    }
+    // Step 1 registration hits the backend directly (no auth token needed yet).
+    // api.js does not export API_BASE, so we read the same env var here.
+    // This is intentional — subsequent authenticated calls use api.* helpers.
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
     try {
       // ── Step 1: Create account ────────────────────────────────
       let regRes;
       try {
-        regRes = await fetch(`${API}/accounts/register/`, {
+        regRes = await fetch(`${API_BASE_URL}/accounts/register/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

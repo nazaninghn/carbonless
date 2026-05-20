@@ -19,6 +19,11 @@ import {
 } from '@/lib/carboniq/questions';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Timing constants
+const TYPING_DELAY_MS = 900;       // simulated AI "thinking" animation duration
+const CHIP_AUTO_SUBMIT_DELAY_MS = 80; // lets React flush state before sendMessage reads it
+
+// ─────────────────────────────────────────────────────────────────────────────
 // City data
 // ─────────────────────────────────────────────────────────────────────────────
 const CITIES_BY_COUNTRY = {
@@ -142,6 +147,10 @@ function isConditionalRequired(q, answers) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared: Markdown renderer
+// Safety: input is HTML-escaped before any regex substitution, so injected
+// content cannot contain raw HTML tags. The only elements we emit are
+// hard-coded tag strings (strong, em, code, p, li, br) — no href/src
+// attributes are produced, so javascript: URI injection is not possible.
 // ─────────────────────────────────────────────────────────────────────────────
 function Markdown({ text }) {
   const html = (text || '')
@@ -438,7 +447,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={y}
             label={String(y)}
             selected={value === String(y)}
-            onClick={() => { onChange(String(y)); setTimeout(onSubmit, 80); }}
+            onClick={() => { onChange(String(y)); setTimeout(onSubmit, CHIP_AUTO_SUBMIT_DELAY_MS); }}
           />
         ))}
       </div>
@@ -453,7 +462,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={opt.value}
             label={opt.label?.[lang] || opt.label?.en || opt.value}
             selected={value === opt.value}
-            onClick={() => { onChange(opt.value); setTimeout(onSubmit, 80); }}
+            onClick={() => { onChange(opt.value); setTimeout(onSubmit, CHIP_AUTO_SUBMIT_DELAY_MS); }}
           />
         ))}
       </div>
@@ -1026,7 +1035,7 @@ function QuestionnaireTab({ language }) {
           content,
         }]);
       }
-    }, 900);
+    }, TYPING_DELAY_MS);
   }, [currentId, answerValue, answers, isTyping, reportId, lang, tr]);
 
   // ── goBack ─────────────────────────────────────────────────────────────────
@@ -1294,7 +1303,7 @@ function FreeChatTab({ language }) {
         // Tiny delay lets React flush the state above (activeId, messages) before
         // sendMessage reads them. sendMessage is in the dep array so this closure
         // always has the current version — no stale-closure risk.
-        setTimeout(() => sendMessage(initialPrompt, session.id), 50);
+        setTimeout(() => sendMessage(initialPrompt, session.id), CHIP_AUTO_SUBMIT_DELAY_MS);
       }
     } catch {}
   }, [sendMessage]); // sendMessage is a stable useCallback; include it to avoid stale closure

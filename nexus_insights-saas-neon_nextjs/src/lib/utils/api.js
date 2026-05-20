@@ -149,7 +149,7 @@ export const api = {
   },
   updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteEntry: (id) => request(`/emissions/entries/${id}/`, { method: 'DELETE' }),
-  getSummary: (year = 2026) => request(`/emissions/summary/?year=${year}`),
+  getSummary: (year = new Date().getFullYear()) => request(`/emissions/summary/?year=${year}`),
 
   getTargets: () => request('/emissions/targets/'),
   createTarget: (data) => request('/emissions/targets/', { method: 'POST', body: JSON.stringify(data) }),

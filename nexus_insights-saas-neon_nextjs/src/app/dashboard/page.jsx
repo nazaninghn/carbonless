@@ -178,6 +178,3 @@ export default function DashboardPage() {
     </ToastProvider>
   );
 }
-
-
-

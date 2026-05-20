@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Globe2, Leaf } from 'lucide-react';
@@ -33,6 +33,23 @@ const copy = {
 export default function Home() {
   const [lang, setLang] = useState('en');
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const langMenuRef = useRef(null);
+
+  // Close language dropdown on click-outside or Escape
+  useEffect(() => {
+    if (!showLangMenu) return;
+    const onKey = (e) => { if (e.key === 'Escape') setShowLangMenu(false); };
+    const onClickOutside = (e) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target))
+        setShowLangMenu(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClickOutside);
+    };
+  }, [showLangMenu]);
 
   useEffect(() => {
     const saved = localStorage.getItem('language');
@@ -67,7 +84,7 @@ export default function Home() {
           <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#302817]">Carbonless</span>
         </Link>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="relative">
+          <div className="relative" ref={langMenuRef}>
             <button onClick={() => setShowLangMenu(v => !v)} className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#B4BE6A]/25 bg-white/55 shadow-sm backdrop-blur-xl transition hover:bg-white/80">
               <Globe2 className="h-5 w-5 text-[#95A847]" />
             </button>

@@ -1,6 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
+
+// ─── Month name arrays (module-level to avoid per-render allocation) ──────────
+const MONTHS_TR_SHORT = ['O','Ş','M','N','M','H','T','A','E','E','K','A'];
+const MONTHS_EN_SHORT = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+
 import {
   CheckCircle2,
   Download,
@@ -157,8 +162,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             <div className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#95A847] transition-all duration-700" style={{ width: `${readiness}%` }} />
           </div>
           <div className="space-y-2">
-            {checks.map((c, i) => (
-              <div key={i} className="flex items-center gap-2.5">
+            {checks.map((c) => (
+              <div key={c.label} className="flex items-center gap-2.5">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#95A847] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
@@ -244,7 +249,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               {(() => {
                 // Compute maxKg once outside the map — not 12× per render
                 const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
-                const months = tr ? ['O','Ş','M','N','M','H','T','A','E','E','K','A'] : ['J','F','M','A','M','J','J','A','S','O','N','D'];
+                const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT;
                 return summary.monthly.map((m, i) => {
                 const pct = (m.total_kg / maxKg) * 100;
                 return (
@@ -297,8 +302,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               { done: entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
               { done: entries.length > 0, label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
               { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
-            ].map((c, i) => (
-              <div key={i} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5">
+            ].map((c) => (
+              <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#95A847] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
