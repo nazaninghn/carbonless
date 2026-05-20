@@ -5,8 +5,6 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import Image from 'next/image';
 import { Globe, Menu, X } from 'lucide-react';
-import { Text } from '@/components/Text';
-import { Link } from '@/components/Link';
 
 export default function Header() {
   const { language, changeLanguage, t } = useLanguage();
@@ -27,9 +25,9 @@ export default function Header() {
           {/* Logo */}
           <NextLink href="/" className="flex items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
-            <Text variant="bold" className="text-xl font-bold text-[#16A34A]">
+            <span className="text-xl font-bold text-[#302817]">
               {t.brandName}
-            </Text>
+            </span>
           </NextLink>
           
           {/* Desktop Navigation */}
@@ -63,10 +61,10 @@ export default function Header() {
             </NextLink>
             <NextLink 
               href="/register" 
-              className="relative group px-6 py-2.5 bg-gradient-to-r from-primary to-mint text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-glow"
+              className="relative group px-6 py-2.5 bg-gradient-to-r from-[#75863B] to-[#95A847] text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(149,168,71,0.35)]"
             >
-              <Text className="relative z-10">{t.nav.register}</Text>
-              <div className="absolute inset-0 bg-gradient-to-r from-mint to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <Text className="relative z-10">{t.nav.register}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#95A847] to-[#B4BE6A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NextLink>
           </div>
           
@@ -107,9 +105,9 @@ export default function Header() {
             <div className="flex items-center justify-between h-16 lg:h-20 px-6 border-b border-black/[0.04]">
               <NextLink href="/" className="flex items-center gap-2">
                 <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
-                <Text variant="bold" className="text-xl font-bold text-[#16A34A]">
+                <span className="text-xl font-bold text-[#302817]">
                   {t.brandName}
-                </Text>
+                </span>
               </NextLink>
               <button 
                 onClick={() => setMobileMenuOpen(false)} 
@@ -156,7 +154,7 @@ export default function Header() {
               </NextLink>
               <NextLink 
                 href="/register" 
-                className="block w-full px-6 py-3 text-center bg-gradient-to-r from-primary to-mint text-white font-semibold rounded-xl hover:shadow-glow transition-all duration-200"
+                className="block w-full px-6 py-3 text-center bg-gradient-to-r from-[#75863B] to-[#95A847] text-white font-semibold rounded-xl hover:shadow-[0_0_20px_rgba(149,168,71,0.35)] transition-all duration-200"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 {t.nav.register}

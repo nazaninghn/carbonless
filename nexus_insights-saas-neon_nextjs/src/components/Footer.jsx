@@ -1,93 +1,80 @@
 'use client';
 
-import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import Image from 'next/image';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function Footer() {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
+  const tr = language === 'tr';
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-50 border-t border-gray-200 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Company Info */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center gap-3 mb-4">
-              <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
-              <h3 className="text-xl font-bold text-[#16A34A]">
-                {t.company.name}
-              </h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              {t.footer.description}
+    <footer className="bg-[#302817] text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+
+          {/* Brand */}
+          <div>
+            <NextLink href="/" className="inline-flex items-center gap-2 mb-4">
+              <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
+              <span className="text-lg font-bold text-white">Carbonless</span>
+            </NextLink>
+            <p className="text-sm text-white/55 leading-relaxed max-w-xs">
+              {tr
+                ? 'ISO 14064-1 uyumlu karbon envanteri yönetimi için SaaS platformu.'
+                : 'SaaS platform for ISO 14064-1 compliant carbon inventory management.'}
             </p>
-            
-            {/* Contact Info */}
-            <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
-                <p className="text-sm text-gray-600">{t.company.address}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                <a href={`tel:${t.company.phone}`} className="text-sm text-gray-600 hover:text-primary">
-                  {t.company.phone}
-                </a>
-              </div>
-              <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-primary flex-shrink-0" />
-                <a href={`mailto:${t.company.email}`} className="text-sm text-gray-600 hover:text-primary">
-                  {t.company.email}
-                </a>
-              </div>
-            </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Navigation */}
           <div>
-            <h4 className="font-semibold text-gray-900 mb-4">{t.footer.quickLinks}</h4>
-            <ul className="space-y-2">
-              <li>
-                <NextLink href="/features" className="text-gray-600 hover:text-primary transition-colors text-sm">
-                  {t.nav.features}
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35 mb-4">
+              {tr ? 'Sayfalar' : 'Pages'}
+            </p>
+            <nav className="flex flex-col gap-2.5">
+              {[
+                { href: '/features', label: tr ? 'Özellikler' : 'Features' },
+                { href: '/about',    label: tr ? 'Hakkımızda' : 'About' },
+                { href: '/contact',  label: tr ? 'İletişim'   : 'Contact' },
+                { href: '/login',    label: tr ? 'Giriş'      : 'Login' },
+                { href: '/register', label: tr ? 'Kayıt Ol'   : 'Register' },
+              ].map(({ href, label }) => (
+                <NextLink
+                  key={href}
+                  href={href}
+                  className="text-sm text-white/60 hover:text-white transition-colors duration-200"
+                >
+                  {label}
                 </NextLink>
-              </li>
-              <li>
-                <NextLink href="/about" className="text-gray-600 hover:text-primary transition-colors text-sm">
-                  {t.nav.about}
-                </NextLink>
-              </li>
-              <li>
-                <NextLink href="/contact" className="text-gray-600 hover:text-primary transition-colors text-sm">
-                  {t.nav.contact}
-                </NextLink>
-              </li>
-            </ul>
+              ))}
+            </nav>
           </div>
 
-          {/* Legal */}
+          {/* Standards */}
           <div>
-            <h4 className="font-semibold text-gray-900 mb-4">{t.footer.legal}</h4>
-            <ul className="space-y-2">
-              <li>
-                <NextLink href="/privacy" className="text-gray-600 hover:text-primary transition-colors text-sm">
-                  {t.footer.privacy}
-                </NextLink>
-              </li>
-              <li>
-                <NextLink href="/terms" className="text-gray-600 hover:text-primary transition-colors text-sm">
-                  {t.footer.terms}
-                </NextLink>
-              </li>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35 mb-4">
+              {tr ? 'Standartlar' : 'Standards'}
+            </p>
+            <ul className="flex flex-col gap-2">
+              {['ISO 14064-1:2018', 'GHG Protocol', 'Defra/DESNZ 2024', 'IPCC 2019 + AR6'].map((s) => (
+                <li key={s} className="text-sm text-white/55">{s}</li>
+              ))}
             </ul>
           </div>
         </div>
 
-        {/* Copyright */}
-        <div className="mt-8 pt-8 border-t border-gray-200 text-center">
-          <p className="text-sm text-gray-600">{t.footer.copyright}</p>
+        {/* Bottom bar */}
+        <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-white/35">
+            © {year} Carbonless.{' '}
+            {tr ? 'Tüm hakları saklıdır.' : 'All rights reserved.'}
+          </p>
+          <p className="text-xs text-white/25">
+            {tr
+              ? 'İstinye Üniversitesi IT Valley bünyesinde geliştirilmiştir.'
+              : 'Developed at İstinye University IT Valley.'}
+          </p>
         </div>
       </div>
     </footer>

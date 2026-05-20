@@ -93,7 +93,7 @@ export default function AboutPage() {
                 },
                 {
                   icon: Users,
-                  title: tr ? 'Prsşname Sihirbazı' : 'Questionnaire Wizard',
+                  title: tr ? 'Anket Sihirbazı' : 'Questionnaire Wizard',
                   desc: tr ? 'ISO 14064-1 uyumlu chatbot ile envanter yapılandırmanızı kolayca belirleyin.' : 'Easily configure your inventory setup with our ISO 14064-1 compliant chatbot wizard.',
                 },
               ].map((f, i) => (
