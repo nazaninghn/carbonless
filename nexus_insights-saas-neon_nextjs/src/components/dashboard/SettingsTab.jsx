@@ -55,6 +55,8 @@ export default function SettingsTab({ language, user, fetchData }) {
         a.href = url;
         a.download = 'carbonless_backup.json';
         a.click();
+        // Revoke after 30 s — enough time for the browser to start the download
+        setTimeout(() => URL.revokeObjectURL(url), 30_000);
       }
     } catch {}
     setExporting(false);

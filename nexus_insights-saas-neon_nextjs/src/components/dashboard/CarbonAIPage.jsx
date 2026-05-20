@@ -624,6 +624,10 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  // Tracks whether the drawer is currently open so async continuations in
+  // sendHelp don't dispatch state updates after the drawer has been closed.
+  const openRef = useRef(open);
+  useEffect(() => { openRef.current = open; }, [open]);
 
   // Pre-fill when opened
   useEffect(() => {
@@ -665,14 +669,20 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     setMessages(prev => [...prev, { id: Date.now(), role: 'user', content }]);
     try {
       const res = await api.sendChatMessage(helpSessionRef.current, content);
-      if (res.ok) {
+      // Guard: drawer may have been closed while the request was in-flight.
+      // Updating state on a closed (visually hidden) drawer is harmless but wasteful.
+      if (openRef.current && res.ok) {
         const aiMsg = await res.json();
         // Ensure a stable key even if the API omits `id`
         setMessages(prev => [...prev, { id: aiMsg.id ?? `ai-${Date.now()}`, ...aiMsg }]);
       }
     } catch {}
-    setSending(false);
-    inputRef.current?.focus();
+    if (openRef.current) {
+      setSending(false);
+      inputRef.current?.focus();
+    } else {
+      setSending(false); // always reset sending so the button isn't stuck on re-open
+    }
   }, [input, sending, tr, helpSessionRef]);
 
   if (!open) return null;

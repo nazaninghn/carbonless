@@ -20,6 +20,11 @@ export default function FacilityChart({ language, selectedYear, compact }) {
     return () => { cancelled = true; };
   }, [selectedYear]);
 
+  // useMemo MUST be called unconditionally (Rules of Hooks) — before any early return.
+  // When data is empty or still loading, Math.max returns 1 (the fallback), which is harmless.
+  const maxKg = useMemo(() => Math.max(...data.map(d => d.total_kg), 1), [data]);
+  const SCOPE_COLORS = ['#75863B', '#95A847', '#B4BE6A', '#302817'];
+
   if (loading) {
     return (
       <div className="space-y-3">
@@ -45,9 +50,6 @@ export default function FacilityChart({ language, selectedYear, compact }) {
       </div>
     );
   }
-
-  const maxKg = useMemo(() => Math.max(...data.map(d => d.total_kg), 1), [data]);
-  const SCOPE_COLORS = ['#75863B', '#95A847', '#B4BE6A', '#302817'];
 
   if (compact) {
     return (
