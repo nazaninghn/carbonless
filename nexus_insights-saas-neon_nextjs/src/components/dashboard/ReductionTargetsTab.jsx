@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const CURRENT_YEAR = new Date().getFullYear();
@@ -226,6 +227,9 @@ export default function ReductionTargetsTab({
   const [reducePct,  setReducePct]  = useState('');
   const [saving,     setSaving]     = useState(false);
 
+  // ── Delete confirm state ─────────────────────────────────────────────────
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // stores the target id to delete
+
   // ── Edit target state ────────────────────────────────────────────────────
   const [editTarget,    setEditTarget]    = useState(null); // the target being edited
   const [editTitle,     setEditTitle]     = useState('');
@@ -252,50 +256,69 @@ export default function ReductionTargetsTab({
   const handleAdd = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await api.createTarget({
-      title,
-      base_year: parseInt(baseYear),
-      target_year: parseInt(tgtYear),
-      base_emissions_kg: parseFloat(baseEmit) * 1000,
-      target_reduction_percent: parseFloat(reducePct),
-    });
-    if (res.ok) {
-      setShowForm(false); resetForm(); fetchData();
-      toast.success(tr ? 'Hedef başarıyla eklendi ✓' : 'Target saved successfully ✓');
-    } else {
-      toast.error(tr ? 'Hedef kaydedilemedi' : 'Failed to save target');
+    try {
+      const res = await api.createTarget({
+        title,
+        base_year: parseInt(baseYear),
+        target_year: parseInt(tgtYear),
+        base_emissions_kg: parseFloat(baseEmit) * 1000,
+        target_reduction_percent: parseFloat(reducePct),
+      });
+      if (res.ok) {
+        setShowForm(false); resetForm(); fetchData();
+        toast.success(tr ? 'Hedef başarıyla eklendi ✓' : 'Target saved successfully ✓');
+      } else {
+        toast.error(tr ? 'Hedef kaydedilemedi' : 'Failed to save target');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   const handleEditSave = async (e) => {
     e.preventDefault();
     if (!editTarget) return;
     setEditSaving(true);
-    const res = await api.updateTarget(editTarget.id, {
-      title: editTitle,
-      base_year: parseInt(editBaseYear),
-      target_year: parseInt(editTgtYear),
-      base_emissions_kg: parseFloat(editBaseEmit) * 1000,
-      target_reduction_percent: parseFloat(editReducePct),
-    });
-    if (res.ok) {
-      setEditTarget(null); fetchData();
-      toast.success(tr ? 'Hedef güncellendi ✓' : 'Target updated ✓');
-    } else {
-      toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+    try {
+      const res = await api.updateTarget(editTarget.id, {
+        title: editTitle,
+        base_year: parseInt(editBaseYear),
+        target_year: parseInt(editTgtYear),
+        base_emissions_kg: parseFloat(editBaseEmit) * 1000,
+        target_reduction_percent: parseFloat(editReducePct),
+      });
+      if (res.ok) {
+        setEditTarget(null); fetchData();
+        toast.success(tr ? 'Hedef güncellendi ✓' : 'Target updated ✓');
+      } else {
+        toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setEditSaving(false);
     }
-    setEditSaving(false);
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(tr ? 'Bu hedefi silmek istediğinize emin misiniz?' : 'Delete this target?')) return;
-    const res = await api.deleteTarget(id);
-    if (res.ok || res.status === 204) {
-      fetchData();
-      toast.success(tr ? 'Hedef silindi' : 'Target deleted');
-    } else {
-      toast.error(tr ? 'Hedef silinemedi' : 'Failed to delete target');
+  const handleDelete = (id) => {
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm;
+    setDeleteConfirm(null);
+    try {
+      const res = await api.deleteTarget(id);
+      if (res.ok || res.status === 204) {
+        fetchData();
+        toast.success(tr ? 'Hedef silindi' : 'Target deleted');
+      } else {
+        toast.error(tr ? 'Hedef silinemedi' : 'Failed to delete target');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     }
   };
 
@@ -448,6 +471,18 @@ export default function ReductionTargetsTab({
           </div>
         </div>
       )}
+
+      {/* ═══════════════════ DELETE CONFIRM DIALOG ══════════════════════ */}
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        type="danger"
+        title={tr ? 'Hedefi Sil' : 'Delete Target'}
+        message={tr ? 'Bu hedefi silmek istediğinize emin misiniz?' : 'Delete this target?'}
+        confirmText={tr ? 'Sil' : 'Delete'}
+        cancelText={tr ? 'İptal' : 'Cancel'}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
       {/* ═══════════════════ EDIT TARGET MODAL ══════════════════════════ */}
       {editTarget && (

@@ -19,6 +19,7 @@ const NAV_ITEMS = [
 
 // Bottom nav shows the 5 most-used tabs; Settings & Review live in the slide-out
 const BOTTOM_NAV_KEYS = ['dashboard', 'emissions', 'ai_carbon', 'reduction', 'reporting'];
+const BOTTOM_ITEMS = NAV_ITEMS.filter(i => BOTTOM_NAV_KEYS.includes(i.key));
 
 export default function DashboardSidebar({
   language, activeTab, setActiveTab, user, sidebarOpen, setSidebarOpen, onLogout,
@@ -28,8 +29,6 @@ export default function DashboardSidebar({
 
   const closeSidebar = () => setSidebarOpen(false);
   const navigate     = (key) => { setActiveTab(key); closeSidebar(); };
-
-  const bottomItems = NAV_ITEMS.filter(i => BOTTOM_NAV_KEYS.includes(i.key));
 
   return (
     <>
@@ -143,7 +142,7 @@ export default function DashboardSidebar({
         <div className="flex items-stretch">
 
           {/* 5 main tabs */}
-          {bottomItems.map((item) => {
+          {BOTTOM_ITEMS.map((item) => {
             const Icon     = item.icon;
             const isActive = activeTab === item.key;
             const isAI     = item.key === 'ai_carbon';
@@ -180,8 +179,7 @@ export default function DashboardSidebar({
                 >
                   <Icon
                     className={`
-                      transition-all
-                      ${isAI ? 'h-4 w-4' : 'h-4 w-4'}
+                      transition-all h-4 w-4
                       ${isAI && isActive
                         ? 'text-white'
                         : isActive

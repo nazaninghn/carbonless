@@ -12,6 +12,7 @@ export function clearSessionCookie() {
 
 // Access token (memory + localStorage)
 let _token = null;
+let _refreshPromise = null;
 
 function getToken() {
   if (_token) return _token;
@@ -46,7 +47,12 @@ async function request(endpoint, options = {}) {
 
   if (res.status !== 401) return res;
 
-  const rr = await fetch('/api/auth/refresh', { method: 'POST' }).catch(() => null);
+  if (!_refreshPromise) {
+    _refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+      .then(rr => rr)
+      .finally(() => { _refreshPromise = null; });
+  }
+  const rr = await _refreshPromise;
   if (!rr?.ok) {
     setToken(null);
     clearSessionCookie();
@@ -54,7 +60,7 @@ async function request(endpoint, options = {}) {
     return new Response(null, { status: 401 });
   }
 
-  const { access } = await rr.json();
+  const { access } = await rr.clone().json();
   setToken(access);
 
   return fetch(`${API_BASE}${endpoint}`, {

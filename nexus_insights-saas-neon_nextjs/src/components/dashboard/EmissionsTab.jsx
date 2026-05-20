@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const SCOPE_META = {
@@ -23,6 +24,35 @@ const STATUS_META = {
 
 function scopeLabel(s) { return SCOPE_META[s]?.label ?? s; }
 function fmt(n, d = 2) { return parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d }); }
+
+const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const CATEGORY_LABELS = {
+  stationary_combustion:    { tr: 'Sabit Yanma',          en: 'Stationary Combustion' },
+  mobile_combustion:        { tr: 'Mobil Yanma',           en: 'Mobile Combustion' },
+  fugitive_emissions:       { tr: 'Kaçak Emisyon',         en: 'Fugitive Emissions' },
+  process_emissions:        { tr: 'Proses',                en: 'Process Emissions' },
+  electricity:              { tr: 'Elektrik',              en: 'Electricity' },
+  steam_heat:               { tr: 'Buhar / Isı',           en: 'Steam & Heat' },
+  purchased_goods:          { tr: 'Satın Alınan Mal',      en: 'Purchased Goods' },
+  capital_goods:            { tr: 'Sermaye Malları',        en: 'Capital Goods' },
+  fuel_energy:              { tr: 'Yakıt & Enerji',        en: 'Fuel & Energy' },
+  upstream_transport:       { tr: 'Yukarı Akış Taşıma',    en: 'Upstream Transport' },
+  waste:                    { tr: 'Atık',                  en: 'Waste' },
+  business_travel:          { tr: 'İş Seyahati',           en: 'Business Travel' },
+  employee_commuting:       { tr: 'Çalışan Ulaşımı',       en: 'Employee Commuting' },
+  upstream_leased:          { tr: 'Kiral. Var. (Yukarı)',   en: 'Upstream Leased' },
+  downstream_transport:     { tr: 'Aşağı Akış Taşıma',     en: 'Downstream Transport' },
+  processing_of_sold_products:{ tr: 'Satılan Ürün İşleme', en: 'Processing Sold Products'},
+  use_of_sold_products:     { tr: 'Satılan Ürün Kullanımı',en: 'Use of Sold Products' },
+  end_of_life:              { tr: 'Ömür Sonu',             en: 'End of Life' },
+  downstream_leased:        { tr: 'Kiral. Var. (Aşağı)',   en: 'Downstream Leased' },
+  franchises:               { tr: 'Franchise',             en: 'Franchises' },
+  investments:              { tr: 'Yatırımlar',            en: 'Investments' },
+  water:                    { tr: 'Su',                    en: 'Water' },
+  custom:                   { tr: 'Özel',                  en: 'Custom' },
+};
 
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
@@ -135,6 +165,9 @@ export default function EmissionsTab({
   const [editFacility,setEditFacility]= useState('');
   const [editSaving,  setEditSaving]  = useState(false);
 
+  // Delete confirm
+  const [deleteConfirm, setDeleteConfirm] = useState(null); // stores the entry id to delete
+
   // Custom request
   const [showCustom,   setShowCustom]  = useState(false);
   const [cScope,  setCScope]   = useState('scope1');
@@ -147,35 +180,7 @@ export default function EmissionsTab({
   const [cSaving, setCSaving]  = useState(false);
 
   // ── Derived ──────────────────────────────────────────────────────────────
-  const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-  const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const months = tr ? MONTHS_TR : MONTHS_EN;
-
-  const CATEGORY_LABELS = {
-    stationary_combustion:    { tr: 'Sabit Yanma',          en: 'Stationary Combustion' },
-    mobile_combustion:        { tr: 'Mobil Yanma',           en: 'Mobile Combustion' },
-    fugitive_emissions:       { tr: 'Kaçak Emisyon',         en: 'Fugitive Emissions' },
-    process_emissions:        { tr: 'Proses',                en: 'Process Emissions' },
-    electricity:              { tr: 'Elektrik',              en: 'Electricity' },
-    steam_heat:               { tr: 'Buhar / Isı',           en: 'Steam & Heat' },
-    purchased_goods:          { tr: 'Satın Alınan Mal',      en: 'Purchased Goods' },
-    capital_goods:            { tr: 'Sermaye Malları',        en: 'Capital Goods' },
-    fuel_energy:              { tr: 'Yakıt & Enerji',        en: 'Fuel & Energy' },
-    upstream_transport:       { tr: 'Yukarı Akış Taşıma',    en: 'Upstream Transport' },
-    waste:                    { tr: 'Atık',                  en: 'Waste' },
-    business_travel:          { tr: 'İş Seyahati',           en: 'Business Travel' },
-    employee_commuting:       { tr: 'Çalışan Ulaşımı',       en: 'Employee Commuting' },
-    upstream_leased:          { tr: 'Kiral. Var. (Yukarı)',   en: 'Upstream Leased' },
-    downstream_transport:     { tr: 'Aşağı Akış Taşıma',     en: 'Downstream Transport' },
-    processing_of_sold_products:{ tr: 'Satılan Ürün İşleme', en: 'Processing Sold Products'},
-    use_of_sold_products:     { tr: 'Satılan Ürün Kullanımı',en: 'Use of Sold Products' },
-    end_of_life:              { tr: 'Ömür Sonu',             en: 'End of Life' },
-    downstream_leased:        { tr: 'Kiral. Var. (Aşağı)',   en: 'Downstream Leased' },
-    franchises:               { tr: 'Franchise',             en: 'Franchises' },
-    investments:              { tr: 'Yatırımlar',            en: 'Investments' },
-    water:                    { tr: 'Su',                    en: 'Water' },
-    custom:                   { tr: 'Özel',                  en: 'Custom' },
-  };
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
 
   // Filtered factors (same logic as page.jsx, incl. questionnaire preferred source)
@@ -305,8 +310,13 @@ export default function EmissionsTab({
     finally { setSubmitting(false); }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm(tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?')) return;
+  const handleDelete = (id) => {
+    setDeleteConfirm(id);
+  };
+
+  const confirmDelete = async () => {
+    const id = deleteConfirm;
+    setDeleteConfirm(null);
     try {
       const res = await api.deleteEntry(id);
       if (res.ok || res.status === 204) {
@@ -349,20 +359,25 @@ export default function EmissionsTab({
   const handleCustom = async (e) => {
     e.preventDefault();
     setCSaving(true);
-    const res = await api.createCustomRequest({
-      scope: cScope, category_name: cCat, source_name: cSrc,
-      description: cDesc, unit: cUnit, quantity: cQty,
-      year: selectedYear, month: parseInt(cMonth),
-    });
-    if (res.ok) {
-      setShowCustom(false);
-      setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCQty('');
-      fetchData();
-      toast.info(tr ? 'Özel talep gönderildi — inceleme bekleniyor' : 'Custom request submitted — pending review');
-    } else {
-      toast.error(tr ? 'Talep gönderilemedi' : 'Failed to submit request');
+    try {
+      const res = await api.createCustomRequest({
+        scope: cScope, category_name: cCat, source_name: cSrc,
+        description: cDesc, unit: cUnit, quantity: cQty,
+        year: selectedYear, month: parseInt(cMonth),
+      });
+      if (res.ok) {
+        setShowCustom(false);
+        setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCQty('');
+        fetchData();
+        toast.info(tr ? 'Özel talep gönderildi — inceleme bekleniyor' : 'Custom request submitted — pending review');
+      } else {
+        toast.error(tr ? 'Talep gönderilemedi' : 'Failed to submit request');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setCSaving(false);
     }
-    setCSaving(false);
   };
 
   // ── Shared modal classes ─────────────────────────────────────────────────
@@ -441,6 +456,7 @@ export default function EmissionsTab({
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={tr ? 'Kaynak ara…' : 'Search source…'}
+            aria-label="Search emission sources"
             className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30"
           />
           {search && (
@@ -978,6 +994,18 @@ export default function EmissionsTab({
           </div>
         </div>
       )}
+
+      {/* ═══════════════════ DELETE CONFIRM DIALOG ═══════════════════════ */}
+      <ConfirmDialog
+        open={deleteConfirm !== null}
+        type="danger"
+        title={tr ? 'Kaydı Sil' : 'Delete Entry'}
+        message={tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?'}
+        confirmText={tr ? 'Sil' : 'Delete'}
+        cancelText={tr ? 'İptal' : 'Cancel'}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
 
       {/* ═══════════════════ CUSTOM REQUEST MODAL ════════════════════════ */}
       {showCustom && (

@@ -1,6 +1,17 @@
 'use client';
-import { useState, useEffect, useCallback, useReducer } from 'react';
+import { useState, useEffect, useCallback, useReducer, useRef } from 'react';
 import { api } from '@/lib/utils/api';
+
+async function parseRes(res) {
+  if (!res || !res.ok) return null;
+  try { return await res.json(); } catch { return null; }
+}
+
+async function parseList(res) {
+  const data = await parseRes(res);
+  if (!data) return [];
+  return Array.isArray(data) ? data : data.results || [];
+}
 
 const initialState = {
   user: null,
@@ -33,17 +44,7 @@ function reducer(state, action) {
 export function useDashboardData(selectedYear) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  const parseRes = async (res) => {
-    if (!res || !res.ok) return null;
-    try { return await res.json(); } catch { return null; }
-  };
-
-  const parseList = async (res) => {
-    const data = await parseRes(res);
-    if (!data) return [];
-    return Array.isArray(data) ? data : data.results || [];
-  };
+  const isFirstLoad = useRef(true);
 
   const fetchData = useCallback(async () => {
     dispatch({ type: 'LOADING' });
@@ -87,9 +88,11 @@ export function useDashboardData(selectedYear) {
           unreadCount:          newUnread,
         },
       });
+      isFirstLoad.current = false;
     } catch (err) {
       console.error('Dashboard fetch error:', err);
-      dispatch({ type: 'LOADED', payload: {} }); // clear loading even on error
+      if (isFirstLoad.current) dispatch({ type: 'LOADED', payload: {} }); // only clear on first load
+      // on background refresh errors, silently ignore to keep existing data
     }
   }, [selectedYear]);
 

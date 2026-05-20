@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedYear, setSelectedYear] = useState(2026);
+  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
   const {

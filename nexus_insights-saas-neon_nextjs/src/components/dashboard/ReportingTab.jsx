@@ -19,6 +19,7 @@ import { api } from '@/lib/utils/api';
 
 export default function ReportingTab({ language, selectedYear, summary, entries, targets, questionnaireProfile }) {
   const [pdfLoading, setPdfLoading] = useState('');
+  const [dlError, setDlError] = useState('');
   const tr = language === 'tr';
   const totalTonne = summary?.total_tonne || 0;
   const s1 = summary?.scope1_tonne || 0;
@@ -45,7 +46,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(tr ? `İndirme hatası: ${err.error || res.status}` : `Download error: ${err.error || res.status}`);
+        setDlError(tr ? `İndirme hatası: ${err.error || res.status}` : `Download error: ${err.error || res.status}`);
         return;
       }
 
@@ -64,7 +65,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       setTimeout(() => URL.revokeObjectURL(u), 1000);
     } catch (err) {
       console.error('Download failed:', err);
-      alert(tr ? 'İndirme başarısız. Lütfen tekrar deneyin.' : 'Download failed. Please try again.');
+      setDlError(tr ? 'İndirme başarısız. Lütfen tekrar deneyin.' : 'Download failed. Please try again.');
     } finally {
       setPdfLoading('');
     }
@@ -109,6 +110,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
   return (
     <div className="space-y-4 text-[#302817]">
+      {/* ─── Download error ─── */}
+      {dlError && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
+          <span>{dlError}</span>
+          <button onClick={() => setDlError('')} className="shrink-0 text-red-400 hover:text-red-600">✕</button>
+        </div>
+      )}
       {/* ─── HERO ─── */}
       <div className="relative rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-5 shadow-sm">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -286,8 +294,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           </div>
           <div className="space-y-2">
             {[
-              { done: true, label: 'ISO 14064-1' },
-              { done: true, label: 'GHG Protocol' },
+              { done: entries.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
+              { done: entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
               { done: entries.length > 0, label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
               { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c, i) => (

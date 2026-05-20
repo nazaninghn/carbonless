@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
+const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - i);
+
 const TAB_LABELS = {
   dashboard: { tr: 'Kontrol Paneli',    en: 'Dashboard'    },
   emissions:  { tr: 'Emisyon Yönetimi', en: 'Emissions'    },
@@ -41,17 +43,29 @@ export default function DashboardHeader({
     const nextState = !showNotifications;
     setShowNotifications(nextState);
     if (nextState) {
-      const res = await api.getNotifications();
-      if (res.ok) setNotifications(await res.json());
+      try {
+        const res = await api.getNotifications();
+        if (res.ok) setNotifications(await res.json());
+      } catch (err) {
+        console.error('Failed to load notifications:', err);
+      }
     }
   };
 
   const markAllRead = async () => {
-    await api.markNotificationsRead();
+    const prevCount = unreadCount;
+    const prevNotifications = notifications;
     setUnreadCount(0);
     setNotifications((items) =>
       items.map((item) => ({ ...item, is_read: true }))
     );
+    try {
+      await api.markNotificationsRead();
+    } catch (err) {
+      console.error('Failed to mark notifications read:', err);
+      setUnreadCount(prevCount);
+      setNotifications(prevNotifications);
+    }
   };
 
   return (
@@ -112,7 +126,7 @@ export default function DashboardHeader({
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
           >
-            {Array.from({ length: 7 }, (_, i) => 2026 - i).map((y) => (
+            {YEAR_OPTIONS.map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </MiniSelect>

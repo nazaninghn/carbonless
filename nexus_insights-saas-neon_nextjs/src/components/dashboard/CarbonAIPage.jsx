@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ChevronRight, ClipboardList, AlertTriangle, Info, RotateCcw, X,
-  HelpCircle, CheckCircle2, ChevronDown, ChevronUp, Menu,
+  HelpCircle, CheckCircle2, Menu,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import {
@@ -167,11 +167,10 @@ function TypingDots() {
       {[0, 1, 2].map(i => (
         <span
           key={i}
-          className="h-2 w-2 rounded-full bg-[#B4BE6A]"
-          style={{ animation: `dot 1.2s ${i * 0.2}s ease-in-out infinite` }}
+          className="typing-dot h-2 w-2 rounded-full bg-[#B4BE6A]"
+          style={{ animationDelay: `${i * 0.2}s` }}
         />
       ))}
-      <style>{`@keyframes dot{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}`}</style>
     </div>
   );
 }
@@ -206,9 +205,12 @@ function Bubble({ role, content }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function SessionItem({ session, active, onClick, onDelete, tr }) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`group relative w-full rounded-xl px-3 py-2.5 text-left transition ${
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      className={`group relative w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
         active
           ? 'bg-[#302817]/8 text-[#302817]'
           : 'text-[#302817]/60 hover:bg-[#302817]/5 hover:text-[#302817]'
@@ -224,7 +226,7 @@ function SessionItem({ session, active, onClick, onDelete, tr }) {
       >
         <Trash2 className="h-3 w-3" />
       </button>
-    </button>
+    </div>
   );
 }
 
@@ -841,7 +843,7 @@ function QuestionnaireTab({ language }) {
       const existing = answers[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
     }
-  }, [currentId]);
+  }, [currentId, answers]);
 
   // ── handleStart ────────────────────────────────────────────────────────────
   const handleStart = async () => {
