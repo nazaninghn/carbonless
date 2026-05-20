@@ -29,7 +29,7 @@ export default function ReviewTab({ language, fetchData }) {
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
-  const handleApprove = async (id) => {
+  const handleApprove = useCallback(async (id) => {
     setProcessing(id);
     try {
       const res = await api.approveEntry(id, 'approve');
@@ -42,9 +42,9 @@ export default function ReviewTab({ language, fetchData }) {
     } finally {
       setProcessing(null);
     }
-  };
+  }, [tr, fetchPending, fetchData]);
 
-  const handleReject = async () => {
+  const handleReject = useCallback(async () => {
     if (!rejectId) return;
     const id     = rejectId;
     const reason = rejectReason;   // capture before clearing state
@@ -62,7 +62,7 @@ export default function ReviewTab({ language, fetchData }) {
     } finally {
       setProcessing(null);
     }
-  };
+  }, [rejectId, rejectReason, tr, fetchPending, fetchData]);
 
   return (
     <div className="space-y-3 text-[#302817]">

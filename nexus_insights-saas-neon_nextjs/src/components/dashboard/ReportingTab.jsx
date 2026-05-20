@@ -1,11 +1,6 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
-
-// ─── Month name arrays (module-level to avoid per-render allocation) ──────────
-const MONTHS_TR_SHORT = ['O','Ş','M','N','M','H','T','A','E','E','K','A'];
-const MONTHS_EN_SHORT = ['J','F','M','A','M','J','J','A','S','O','N','D'];
-
 import {
   CheckCircle2,
   Download,
@@ -17,6 +12,12 @@ import {
   Shield,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+
+// ─── Month name arrays (module-level to avoid per-render allocation) ──────────
+// 3-letter abbreviations used so months sharing the same initial letter are
+// distinguishable on the bar-chart x-axis (e.g. Mar vs May, Jun vs Jul vs Jan).
+const MONTHS_TR_SHORT = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const MONTHS_EN_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function ReportingTab({ language, selectedYear, summary, entries, targets, questionnaireProfile }) {
   const [pdfLoading, setPdfLoading] = useState('');
@@ -46,7 +47,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     [summary?.monthly],
   );
 
-  const handleDownload = async (type, lang) => {
+  const handleDownload = useCallback(async (type, lang) => {
     setPdfLoading(type + lang);
     try {
       let res;
@@ -78,7 +79,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     } finally {
       setPdfLoading('');
     }
-  };
+  }, [selectedYear, tr]);
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so the GPU-heavy complex view is never rendered to screen on Android tablets.

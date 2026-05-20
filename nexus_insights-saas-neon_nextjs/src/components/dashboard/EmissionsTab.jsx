@@ -381,7 +381,7 @@ export default function EmissionsTab({
     setEditFacility(entry.facility || '');
   }, []);
 
-  const handleCustom = async (e) => {
+  const handleCustom = useCallback(async (e) => {
     e.preventDefault();
     setCSaving(true);
     try {
@@ -403,7 +403,7 @@ export default function EmissionsTab({
     } finally {
       setCSaving(false);
     }
-  };
+  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, tr, fetchData]);
 
   // ── Shared modal classes ─────────────────────────────────────────────────
   const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md';

@@ -1311,24 +1311,8 @@ function FreeChatTab({ language }) {
     return () => { cancelled = true; }; // cleanup: ignore response if activeId changed
   }, [activeId]);
 
-  const startNew = useCallback(async (initialPrompt = '') => {
-    try {
-      const res = await api.createChatSession();
-      if (!res.ok) return;
-      const session = await res.json();
-      setSessions(prev => [session, ...prev]);
-      setActiveId(session.id);
-      setMessages([]);
-      setError('');
-      if (initialPrompt) {
-        // Tiny delay lets React flush the state above (activeId, messages) before
-        // sendMessage reads them. sendMessage is stable (no input dep), so it is
-        // safe to omit from this dep array.
-        setTimeout(() => sendMessage(initialPrompt, session.id), CHIP_AUTO_SUBMIT_DELAY_MS);
-      }
-    } catch {}
-  }, [sendMessage]);
-
+  // sendMessage declared BEFORE startNew so that startNew's dep array [sendMessage]
+  // references an already-initialised variable (avoids TDZ / stale-undefined dep).
   const sendMessage = useCallback(async (text, sid) => {
     // Read input from the ref mirror rather than from closure so that `input`
     // does not need to be in the dep array — if it were, sendMessage (and
@@ -1366,6 +1350,24 @@ function FreeChatTab({ language }) {
     setSending(false);
     inputRef.current?.focus();
   }, [activeId, sending, tr]); // `input` removed — read via inputValueRef.current
+
+  const startNew = useCallback(async (initialPrompt = '') => {
+    try {
+      const res = await api.createChatSession();
+      if (!res.ok) return;
+      const session = await res.json();
+      setSessions(prev => [session, ...prev]);
+      setActiveId(session.id);
+      setMessages([]);
+      setError('');
+      if (initialPrompt) {
+        // Tiny delay lets React flush the state above (activeId, messages) before
+        // sendMessage reads them. sendMessage is stable (no input dep), so it is
+        // safe to omit from this dep array.
+        setTimeout(() => sendMessage(initialPrompt, session.id), CHIP_AUTO_SUBMIT_DELAY_MS);
+      }
+    } catch {}
+  }, [sendMessage]);
 
   const deleteSession = useCallback(async (id) => {
     try {
