@@ -150,7 +150,7 @@ export const translations = {
     // Footer
     footer: {
       description: 'Karbon ayak izinizi hesaplayın ve çevre için fark yaratın.',
-      copyright: '© 2024 Carbonless. Tüm hakları saklıdır.',
+      copyright: `© ${new Date().getFullYear()} Carbonless. Tüm hakları saklıdır.`,
       quickLinks: 'Hızlı Bağlantılar',
       legal: 'Yasal',
       privacy: 'Gizlilik',
@@ -320,7 +320,7 @@ export const translations = {
     // Footer
     footer: {
       description: 'Calculate your carbon footprint and make a difference for the environment.',
-      copyright: '© 2024 Carbonless. All rights reserved.',
+      copyright: `© ${new Date().getFullYear()} Carbonless. All rights reserved.`,
       quickLinks: 'Quick Links',
       legal: 'Legal',
       privacy: 'Privacy',
