@@ -42,42 +42,42 @@ export default function RegisterPage() {
 
   const validateSection1 = () => {
     const missing = [];
-    if (!formData.username.trim()) missing.push(language === 'tr' ? 'Kullanıcı Adı' : 'Username');
-    if (!formData.email.trim()) missing.push(language === 'tr' ? 'E-posta' : 'Email');
-    if (!formData.password) missing.push(language === 'tr' ? 'Şifre' : 'Password');
-    if (!formData.password2) missing.push(language === 'tr' ? 'Şifre Tekrar' : 'Confirm Password');
-    if (!formData.legalEntityName.trim()) missing.push(language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
-    if (formData.taxNumber && formData.taxNumber.length !== 10) { setError(language === 'tr' ? 'Vergi numarası 10 haneli olmalıdır' : 'Tax number must be 10 digits'); return false; }
-    if (!formData.countryOfHeadquarters.trim()) missing.push(language === 'tr' ? 'Merkez Ülkesi' : 'Country of Headquarters');
-    if (!formData.countriesOfOperation.trim()) missing.push(language === 'tr' ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation');
-    if (!formData.naceCode.trim()) missing.push(language === 'tr' ? 'NACE Kodu' : 'NACE Code');
-    if (!formData.mainActivityDescription.trim()) missing.push(language === 'tr' ? 'Ana Faaliyet Açıklaması' : 'Main Activity Description');
-    if (formData.password && formData.password2 && formData.password !== formData.password2) { setError(language === 'tr' ? 'Şifreler eşleşmiyor' : 'Passwords do not match'); return false; }
-    if (formData.password && !isPasswordStrong(formData.password)) { setError(language === 'tr' ? 'Şifre yeterince güçlü değil' : 'Password is not strong enough'); return false; }
-    if (missing.length > 0) { setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
+    if (!formData.username.trim()) missing.push(tr ? 'Kullanıcı Adı' : 'Username');
+    if (!formData.email.trim()) missing.push(tr ? 'E-posta' : 'Email');
+    if (!formData.password) missing.push(tr ? 'Şifre' : 'Password');
+    if (!formData.password2) missing.push(tr ? 'Şifre Tekrar' : 'Confirm Password');
+    if (!formData.legalEntityName.trim()) missing.push(tr ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
+    if (formData.taxNumber && formData.taxNumber.length !== 10) { setError(tr ? 'Vergi numarası 10 haneli olmalıdır' : 'Tax number must be 10 digits'); return false; }
+    if (!formData.countryOfHeadquarters.trim()) missing.push(tr ? 'Merkez Ülkesi' : 'Country of Headquarters');
+    if (!formData.countriesOfOperation.trim()) missing.push(tr ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation');
+    if (!formData.naceCode.trim()) missing.push(tr ? 'NACE Kodu' : 'NACE Code');
+    if (!formData.mainActivityDescription.trim()) missing.push(tr ? 'Ana Faaliyet Açıklaması' : 'Main Activity Description');
+    if (formData.password && formData.password2 && formData.password !== formData.password2) { setError(tr ? 'Şifreler eşleşmiyor' : 'Passwords do not match'); return false; }
+    if (formData.password && !isPasswordStrong(formData.password)) { setError(tr ? 'Şifre yeterince güçlü değil' : 'Password is not strong enough'); return false; }
+    if (missing.length > 0) { setError((tr ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
     return true;
   };
 
   const validateSection2 = () => {
     const missing = [];
-    if (!formData.numberOfEmployees) missing.push(language === 'tr' ? 'Çalışan Sayısı' : 'Number of Employees');
-    if (!formData.annualTurnoverRange) missing.push(language === 'tr' ? 'Yıllık Ciro' : 'Annual Turnover');
-    if (!formData.numberOfFacilities && formData.numberOfFacilities !== '0') missing.push(language === 'tr' ? 'Tesis Sayısı' : 'Facilities');
-    if (!formData.hasOverseasOperations) missing.push(language === 'tr' ? 'Yurtdışı Operasyonları' : 'Overseas Operations');
-    if (!formData.numberOfSubsidiaries && formData.numberOfSubsidiaries !== '0') missing.push(language === 'tr' ? 'Bağlı Şirket' : 'Subsidiaries');
+    if (!formData.numberOfEmployees) missing.push(tr ? 'Çalışan Sayısı' : 'Number of Employees');
+    if (!formData.annualTurnoverRange) missing.push(tr ? 'Yıllık Ciro' : 'Annual Turnover');
+    if (!formData.numberOfFacilities && formData.numberOfFacilities !== '0') missing.push(tr ? 'Tesis Sayısı' : 'Facilities');
+    if (!formData.hasOverseasOperations) missing.push(tr ? 'Yurtdışı Operasyonları' : 'Overseas Operations');
+    if (!formData.numberOfSubsidiaries && formData.numberOfSubsidiaries !== '0') missing.push(tr ? 'Bağlı Şirket' : 'Subsidiaries');
     if (!formData.hasISO14001) missing.push('ISO 14001');
     if (!formData.hasISO50001) missing.push('ISO 50001');
     if (!formData.hasISO14064Work) missing.push('ISO 14064');
-    if (missing.length > 0) { setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
+    if (missing.length > 0) { setError((tr ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
     return true;
   };
 
   const validateSection3 = () => {
     const missing = [];
     if (!formData.targetISO14064Verification) missing.push('ISO 14064-1');
-    if (!formData.has3rdPartyAuditPlan) missing.push(language === 'tr' ? '3. taraf denetim' : '3rd party audit');
-    if (formData.isForFinancing !== 'yes' && formData.isDueToExportPressure !== 'yes' && formData.isForGroupReporting !== 'yes') missing.push(language === 'tr' ? 'Amaç' : 'Purpose');
-    if (missing.length > 0) { setError((language === 'tr' ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
+    if (!formData.has3rdPartyAuditPlan) missing.push(tr ? '3. taraf denetim' : '3rd party audit');
+    if (formData.isForFinancing !== 'yes' && formData.isDueToExportPressure !== 'yes' && formData.isForGroupReporting !== 'yes') missing.push(tr ? 'Amaç' : 'Purpose');
+    if (missing.length > 0) { setError((tr ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
     return true;
   };
 

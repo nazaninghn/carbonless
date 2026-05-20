@@ -1,18 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import Image from 'next/image';
-import { Globe } from 'lucide-react';
-import { Menu } from 'lucide-react';
+import { Globe, Menu, X } from 'lucide-react';
 import { Text } from '@/components/Text';
-import { X } from 'lucide-react';
 import { Link } from '@/components/Link';
 
 export default function Header() {
   const { language, changeLanguage, t } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Dismiss mobile menu on Escape — consistent with all other overlays
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileMenuOpen]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">

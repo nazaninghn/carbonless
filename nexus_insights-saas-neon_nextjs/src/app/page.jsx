@@ -131,9 +131,9 @@ export default function Home() {
         </div>
 
         <p className="mt-6 text-[11px] text-[#302817]/35">
-          <Link href="/terms" className="font-semibold transition hover:text-[#95A847]">Terms of Use</Link>
+          <Link href="/terms" className="font-semibold transition hover:text-[#95A847]">{lang === 'tr' ? 'Kullanım Koşulları' : 'Terms of Use'}</Link>
           <span className="mx-2">·</span>
-          <Link href="/privacy" className="font-semibold transition hover:text-[#95A847]">Privacy Policy</Link>
+          <Link href="/privacy" className="font-semibold transition hover:text-[#95A847]">{lang === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</Link>
         </p>
       </section>
     </main>

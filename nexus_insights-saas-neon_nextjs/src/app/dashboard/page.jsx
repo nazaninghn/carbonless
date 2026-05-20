@@ -13,7 +13,6 @@ import CommandPalette from '@/components/dashboard/CommandPalette';
 import { ToastProvider } from '@/components/ToastProvider';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
-import FacilityChart from '@/components/dashboard/FacilityChart';
 import SettingsTab from '@/components/dashboard/SettingsTab';
 import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
 import ReportingTab from '@/components/dashboard/ReportingTab';
