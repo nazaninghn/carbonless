@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
@@ -253,6 +253,21 @@ export default function ReductionTargetsTab({
     setEditBaseEmit((parseFloat(tgt.base_emissions_kg) / 1000).toString());
     setEditReducePct(tgt.target_reduction_percent.toString());
   }, []);
+
+  // Escape key handlers — consistent with all other modals in the app
+  useEffect(() => {
+    if (!editTarget) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !editSaving) setEditTarget(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [editTarget, editSaving]);
+
+  useEffect(() => {
+    if (!showForm) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !saving) { setShowForm(false); resetForm(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showForm, saving, resetForm]);
 
   const handleAdd = useCallback(async (e) => {
     e.preventDefault();

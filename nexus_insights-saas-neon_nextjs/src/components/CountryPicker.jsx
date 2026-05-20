@@ -15,11 +15,16 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
-  // Close on outside click
+  // Close on outside click or Escape key
   useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const onMouse = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    const onKey   = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onMouse);
+    document.addEventListener('keydown',   onKey);
+    return () => {
+      document.removeEventListener('mousedown', onMouse);
+      document.removeEventListener('keydown',   onKey);
+    };
   }, []);
 
   const lang = language === 'tr' ? 'tr' : 'en';
