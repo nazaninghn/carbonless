@@ -47,21 +47,33 @@ async function request(endpoint, options = {}) {
 
   if (res.status !== 401) return res;
 
-  // Singleton refresh: parse JSON inside the chain so all concurrent
-  // awaiters share the same resolved { ok, access } value — not a
-  // single-use Response stream that only one caller can consume.
+  // Singleton refresh: one network call for any number of concurrent 401s.
+  // The promise resolves with a plain { ok, access } object so every concurrent
+  // awaiter gets the same parsed value (a Response body can only be consumed once).
+  // We clear _refreshPromise INSIDE the .then() chain — after the token is written
+  // but before callers retry — so a new burst of 401s that arrives in this tiny
+  // window will correctly wait for the token rather than starting a second refresh.
   if (!_refreshPromise) {
     _refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
       .then(async rr => {
-        if (!rr.ok) return { ok: false, access: null };
+        if (!rr.ok) {
+          _refreshPromise = null;
+          return { ok: false, access: null };
+        }
         try {
           const data = await rr.json();
-          return { ok: true, access: data.access || null };
+          const access = data.access || null;
+          // Write the token here so any concurrent caller that was already past the
+          // `await _refreshPromise` line won't race on setToken vs. a second refresh.
+          if (access) setToken(access);
+          _refreshPromise = null;
+          return { ok: !!access, access };
         } catch {
+          _refreshPromise = null;
           return { ok: false, access: null };
         }
       })
-      .finally(() => { _refreshPromise = null; });
+      .catch(() => { _refreshPromise = null; return { ok: false, access: null }; });
   }
   const refreshResult = await _refreshPromise;
   if (!refreshResult?.ok) {
@@ -72,6 +84,8 @@ async function request(endpoint, options = {}) {
   }
 
   const { access } = refreshResult;
+  // Token already written inside the refresh chain above; setToken here is a no-op
+  // if the value matches, but keeps the code path symmetric for clarity.
   setToken(access);
 
   return fetch(`${API_BASE}${endpoint}`, {

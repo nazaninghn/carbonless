@@ -125,9 +125,13 @@ export default function RegisterPage() {
       // ── Step 2: Login via proxy (sets localStorage token + session cookie) ──
       // Must use /api/auth/login (not direct backend) so api.js stores the
       // access token in localStorage and markSessionActive() takes effect.
+      // Import once here and reuse for Step 3 — two separate imports of the same
+      // dynamic module were previously used, which risked the second call missing
+      // the auth token on a cold SSR edge case.
       let loginRes;
+      let apiModule, activate;
       try {
-        const { api: apiModule, markSessionActive: activate } = await import('@/lib/utils/api');
+        ({ api: apiModule, markSessionActive: activate } = await import('@/lib/utils/api'));
         loginRes = await apiModule.login(formData.username, formData.password);
         if (loginRes.ok) activate();
       } catch {
@@ -171,8 +175,7 @@ export default function RegisterPage() {
       };
 
       try {
-        const { api: apiModule2 } = await import('@/lib/utils/api');
-        const companyRes = await apiModule2.createCompany(companyPayload);
+        const companyRes = await apiModule.createCompany(companyPayload); // reuse same import
         if (!companyRes.ok) {
           // Save so Settings → Company can auto-fill — no re-typing needed
           try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}

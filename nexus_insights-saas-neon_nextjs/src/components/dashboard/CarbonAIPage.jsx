@@ -829,7 +829,15 @@ function QuestionnaireTab({ language }) {
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
   const isMounted = useRef(true);
-  useEffect(() => { isMounted.current = true; return () => { isMounted.current = false; }; }, []);
+  const typingTimerRef = useRef(null);
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      // Cancel any pending typing animation so it doesn't fire on a dead component
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+  }, []);
 
   const currentQuestion = getQuestionById(currentId);
 
@@ -967,7 +975,10 @@ function QuestionnaireTab({ language }) {
     // Show typing
     setIsTyping(true);
 
-    setTimeout(() => {
+    // Cancel any previous timer that hasn't fired yet (e.g. answer submitted twice quickly)
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      typingTimerRef.current = null;
       if (!isMounted.current) return; // component unmounted — skip all state updates
       setIsTyping(false);
       const nextId = getNextQuestionId(currentId, newAnswers);
@@ -1233,30 +1244,37 @@ function FreeChatTab({ language }) {
   }, [messages, sending]);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       setLoadingSessions(true);
       try {
         const res = await api.getChatSessions();
-        if (res.ok) setSessions(await res.json());
+        if (!cancelled && res.ok) setSessions(await res.json());
       } catch {}
-      setLoadingSessions(false);
+      if (!cancelled) setLoadingSessions(false);
     })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
     if (!activeId) { setMessages([]); return; }
+    let cancelled = false;
+    setLoadingMessages(true);
     (async () => {
-      setLoadingMessages(true);
       try {
         const res = await api.getChatSession(activeId);
+        if (cancelled) return; // tab switched before response arrived
         if (res.ok) {
           const data = await res.json();
-          setMessages(data.messages || []);
+          if (!cancelled) setMessages(data.messages || []);
         }
       } catch {}
-      setLoadingMessages(false);
-      inputRef.current?.focus();
+      if (!cancelled) {
+        setLoadingMessages(false);
+        inputRef.current?.focus();
+      }
     })();
+    return () => { cancelled = true; }; // cleanup: ignore response if activeId changed
   }, [activeId]);
 
   const startNew = useCallback(async (initialPrompt = '') => {
@@ -1269,10 +1287,13 @@ function FreeChatTab({ language }) {
       setMessages([]);
       setError('');
       if (initialPrompt) {
+        // Tiny delay lets React flush the state above (activeId, messages) before
+        // sendMessage reads them. sendMessage is in the dep array so this closure
+        // always has the current version — no stale-closure risk.
         setTimeout(() => sendMessage(initialPrompt, session.id), 50);
       }
     } catch {}
-  }, []); // eslint-disable-line
+  }, [sendMessage]); // sendMessage is a stable useCallback; include it to avoid stale closure
 
   const sendMessage = useCallback(async (text, sid) => {
     const content = (text || input).trim();
