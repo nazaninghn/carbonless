@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Building2, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
@@ -25,7 +25,7 @@ export default function CompanySettings({ language }) {
   const tr    = language === 'tr';
   const toast = useToast();
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { company: c } = await fetchCompanyDetail();
@@ -57,12 +57,12 @@ export default function CompanySettings({ language }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tr, toast]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   /* ─── CREATE ─── */
-  const handleCreate = async (e) => {
+  const handleCreate = useCallback(async (e) => {
     e.preventDefault();
     setError(''); setSuccess('');
     if (!form.legal_entity_name?.trim()) {
@@ -101,10 +101,10 @@ export default function CompanySettings({ language }) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, tr, toast]);
 
   /* ─── SAVE EDIT ─── */
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setError(''); setSuccess('');
     if (!form.legal_entity_name?.trim()) {
       setError(tr ? 'Şirket adı zorunludur' : 'Company name is required');
@@ -145,7 +145,7 @@ export default function CompanySettings({ language }) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, tr, toast]);
 
   const field = (key) => form[key] || '';
   const set   = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import OnboardingTour from '@/components/OnboardingTour';
@@ -41,10 +41,10 @@ export default function DashboardPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('turkey');
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     const { api: apiModule } = await import('@/lib/utils/api');
     apiModule.logout();
-  };
+  }, []);
 
   return (
     <ToastProvider>

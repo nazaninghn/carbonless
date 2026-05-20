@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useMemo } from 'react';
 import {
   Leaf,
   Target,
@@ -39,9 +39,10 @@ export default function SettingsTab({ language, user, fetchData }) {
   const [deleteError, setDeleteError] = useState('');
   const deleteInputRef = useRef(null);
   const tr = language === 'tr';
-  const active = TABS.find((tab) => tab.id === activeTab);
+  // TABS is module-level (never changes); only dep is activeTab
+  const active = useMemo(() => TABS.find((tab) => tab.id === activeTab), [activeTab]);
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     setExporting(true);
     try {
       const res = await api.exportAll();
@@ -60,17 +61,17 @@ export default function SettingsTab({ language, user, fetchData }) {
       }
     } catch {}
     setExporting(false);
-  };
+  }, []);
 
-  const openDeleteModal = () => {
+  const openDeleteModal = useCallback(() => {
     setDeletePassword('');
     setDeleteError('');
     setShowDeleteModal(true);
     // Focus the input after the modal renders
     setTimeout(() => deleteInputRef.current?.focus(), 50);
-  };
+  }, []);
 
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deletePassword) return;
     setDeleting(true);
     setDeleteError('');
@@ -88,7 +89,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       setDeleteError(tr ? 'Bağlantı hatası' : 'Connection error');
       setDeleting(false);
     }
-  };
+  }, [deletePassword, tr]);
 
   return (
     <div className="space-y-3 text-[#302817]">

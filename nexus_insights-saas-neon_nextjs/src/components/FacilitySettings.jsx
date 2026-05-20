@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Plus, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function FacilitySettings({ language }) {
   const tr    = language === 'tr';
   const toast = useToast();
 
-  const fetchFacilities = async () => {
+  const fetchFacilities = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.getFacilities();
@@ -40,16 +40,16 @@ export default function FacilitySettings({ language }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tr, toast]);
 
-  useEffect(() => { fetchFacilities(); }, []);
+  useEffect(() => { fetchFacilities(); }, [fetchFacilities]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setName(''); setCity(''); setCountry(''); setFacilityType('');
     setFormError(''); setSuccessMsg('');
-  };
+  }, []);
 
-  const handleAdd = async (e) => {
+  const handleAdd = useCallback(async (e) => {
     e.preventDefault();
     setFormError('');
     setSuccessMsg('');
@@ -105,7 +105,7 @@ export default function FacilitySettings({ language }) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [name, city, country, facilityType, tr, toast, fetchFacilities, resetForm]);
 
   /* ─── Loading ─── */
   if (loading) {

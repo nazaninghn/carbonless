@@ -114,7 +114,8 @@ function DonutChart({ s1, s2, s3, total, tr }) {
 // ─── Monthly Bar Chart ─────────────────────────────────────────────────────
 function MonthlyChart({ monthly, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
-  const maxKg = Math.max(...(monthly ?? []).map(m => m.total_kg), 1);
+  // Memoized so the spread+map only runs when monthly data changes, not on every hover state update
+  const maxKg = useMemo(() => Math.max(...(monthly ?? []).map(m => m.total_kg), 1), [monthly]);
   const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level — no recreation
   const curMonth = new Date().getFullYear() === selectedYear ? new Date().getMonth() : -1;
 

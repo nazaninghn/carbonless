@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Users, UserPlus, Shield, Crown, Pencil, Database, Eye, Info } from 'lucide-react';
@@ -36,7 +36,7 @@ export default function TeamManagement({ language }) {
   const tr    = language === 'tr';
   const toast = useToast();
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     try {
       const res = await api.getMemberships();
       if (res.ok) {
@@ -46,11 +46,11 @@ export default function TeamManagement({ language }) {
     } catch {
       toast.error(tr ? 'Üyeler yüklenemedi' : 'Failed to load members');
     } finally { setLoading(false); }
-  };
+  }, [tr, toast]);
 
-  useEffect(() => { fetchMembers(); }, []);
+  useEffect(() => { fetchMembers(); }, [fetchMembers]);
 
-  const handleRoleChange = async (id, newRole) => {
+  const handleRoleChange = useCallback(async (id, newRole) => {
     setUpdating(id);
     try {
       const res = await api.updateMembership(id, { role: newRole });
@@ -63,9 +63,9 @@ export default function TeamManagement({ language }) {
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     } finally { setUpdating(null); }
-  };
+  }, [tr, toast, fetchMembers]);
 
-  const handleToggleActive = async (m) => {
+  const handleToggleActive = useCallback(async (m) => {
     setUpdating(m.id);
     try {
       const res = await api.updateMembership(m.id, { is_active: !m.is_active });
@@ -80,7 +80,7 @@ export default function TeamManagement({ language }) {
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     } finally { setUpdating(null); }
-  };
+  }, [tr, toast, fetchMembers]);
 
   return (
     <div className="space-y-5">
@@ -214,7 +214,7 @@ export default function TeamManagement({ language }) {
           <input
             type="email"
             value={inviteEmail}
-            onChange={e => { setInviteEmail(e.target.value); setInviteMsg(''); }}
+            onChange={e => setInviteEmail(e.target.value)}
             placeholder={tr ? 'ornek@sirket.com' : 'example@company.com'}
             className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-[#302817]/10 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
           />
