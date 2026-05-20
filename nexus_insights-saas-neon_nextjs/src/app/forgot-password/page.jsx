@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
   }, [email, tr]);
 
   return (
-    <div className="bg-gradient-to-br from-green-50 via-white to-emerald-50 text-gray-900 antialiased min-h-screen">
+    <div className="bg-gradient-to-br from-[#F9EFE5]/60 via-white to-[#B4BE6A]/8 text-[#302817] antialiased min-h-screen">
       <SimpleHeader />
       <main className="pt-24 lg:pt-32 pb-16">
         <div className="max-w-md mx-auto px-4">
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-primary via-secondary to-accent text-white font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-60"
+                    className="w-full py-3 bg-gradient-to-r from-[#75863B] to-[#95A847] text-white font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-60"
                   >
                     {loading
                       ? (tr ? 'Gönderiliyor…' : 'Sending…')
@@ -105,7 +105,7 @@ export default function ForgotPasswordPage() {
               </div>
             )}
             <div className="mt-6 text-center">
-              <NextLink href="/login" className="text-sm text-primary hover:text-secondary flex items-center justify-center gap-1">
+              <NextLink href="/login" className="text-sm text-[#95A847] hover:text-[#75863B] flex items-center justify-center gap-1">
                 <ArrowLeft className="w-4 h-4" />
                 {language === 'tr' ? 'Giriş sayfasına dön' : 'Back to login'}
               </NextLink>

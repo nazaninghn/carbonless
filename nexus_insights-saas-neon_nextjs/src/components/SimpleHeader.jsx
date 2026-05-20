@@ -15,7 +15,7 @@ export default function SimpleHeader() {
           {/* Logo */}
           <NextLink href="/" className="flex items-center gap-3">
             <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-11 w-11 sm:h-14 sm:w-14 object-contain" />
-            <span className="text-xl sm:text-[22px] font-bold tracking-[-0.02em] text-[#16A34A]">
+            <span className="text-xl sm:text-[22px] font-bold tracking-[-0.02em] text-[#302817]">
               Carbonless
             </span>
           </NextLink>

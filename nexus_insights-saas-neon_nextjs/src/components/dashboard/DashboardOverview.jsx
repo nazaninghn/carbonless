@@ -16,35 +16,15 @@ import {
   BarChart2,
 } from 'lucide-react';
 import FacilityChart from '@/components/dashboard/FacilityChart';
+import {
+  CATEGORY_LABELS, catLabel,
+  MONTHS_TR as MONTHS_TR_SHORT,
+  MONTHS_EN as MONTHS_EN_SHORT,
+} from '@/lib/constants/emissions';
 
-// ─── Shared month-name arrays (module-level so they are created once) ────────
+// ─── Full month names (only needed here for the detailed monthly breakdown) ──
 const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const MONTHS_EN_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const MONTHS_TR_SHORT = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-const MONTHS_EN_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-// ─── Category display names ────────────────────────────────────────────────
-const CATEGORY_LABELS = {
-  combustion:          { tr: 'Sabit Yanma',       en: 'Stationary Combustion' },
-  fleet_vehicles:      { tr: 'Araç Filosu',        en: 'Fleet Vehicles' },
-  electricity:         { tr: 'Elektrik',           en: 'Electricity' },
-  business_travel:     { tr: 'İş Seyahati',        en: 'Business Travel' },
-  freight:             { tr: 'Yük Taşıma',         en: 'Freight' },
-  waste:               { tr: 'Atık',               en: 'Waste' },
-  water:               { tr: 'Su',                 en: 'Water' },
-  purchased_goods:     { tr: 'Satın Alınan Ürün',  en: 'Purchased Goods' },
-  employee_commuting:  { tr: 'İşe Gidiş-Geliş',   en: 'Employee Commuting' },
-  capital_goods:       { tr: 'Sermaye Malları',    en: 'Capital Goods' },
-  upstream_transport:  { tr: 'Üst. Taşımacılık',   en: 'Upstream Transport' },
-  downstream_transport:{ tr: 'Alt. Taşımacılık',   en: 'Downstream Transport' },
-  refrigerants:        { tr: 'Soğutucu Gaz',       en: 'Refrigerants' },
-  process_emissions:   { tr: 'Proses Emisyonu',    en: 'Process Emissions' },
-  steam_heat:          { tr: 'Buhar / Isı',        en: 'Steam / Heat' },
-};
-
-function catLabel(key, tr) {
-  return CATEGORY_LABELS[key]?.[tr ? 'tr' : 'en'] ?? key;
-}
 
 // ─── SVG Donut Chart ───────────────────────────────────────────────────────
 function DonutChart({ s1, s2, s3, total, tr }) {
