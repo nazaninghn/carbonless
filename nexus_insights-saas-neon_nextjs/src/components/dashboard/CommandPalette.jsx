@@ -110,6 +110,23 @@ export default function CommandPalette({
     return [...navResults, ...quickResults, ...entryResults];
   }, [query, tr, entries]);
 
+  // ── Activate an item ───────────────────────────────────────────────────────
+  // Declared BEFORE the arrow-key useEffect so the dep array can reference it
+  // without a temporal dead zone (const is not hoisted like var).
+  const activate = useCallback((item) => {
+    setOpen(false);
+    setActiveTab(item.tab);
+    if (item.action === 'addEntry' && setShowAddForm) {
+      setTimeout(() => setShowAddForm(true), 120);
+    }
+  }, [setActiveTab, setShowAddForm]);
+
+  const scrollItemIntoView = useCallback((idx) => {
+    if (!listRef.current) return;
+    const el = listRef.current.querySelector(`[data-idx="${idx}"]`);
+    el?.scrollIntoView({ block: 'nearest' });
+  }, []);
+
   // ── Arrow-key + Enter navigation ──────────────────────────────────────────
   useEffect(() => {
     if (!open) return;
@@ -136,22 +153,7 @@ export default function CommandPalette({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, highlighted, items, activate]);
-
-  const scrollItemIntoView = (idx) => {
-    if (!listRef.current) return;
-    const el = listRef.current.querySelector(`[data-idx="${idx}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
-  };
-
-  // ── Activate an item ───────────────────────────────────────────────────────
-  const activate = useCallback((item) => {
-    setOpen(false);
-    setActiveTab(item.tab);
-    if (item.action === 'addEntry' && setShowAddForm) {
-      setTimeout(() => setShowAddForm(true), 120);
-    }
-  }, [setActiveTab, setShowAddForm]);
+  }, [open, highlighted, items, activate, scrollItemIntoView]);
 
   if (!open) return null;
 

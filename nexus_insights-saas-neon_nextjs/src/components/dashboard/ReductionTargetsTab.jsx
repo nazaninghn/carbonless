@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
@@ -324,12 +324,21 @@ export default function ReductionTargetsTab({
   }, [deleteConfirm, tr, fetchData]);
 
   // ── Summary KPIs ─────────────────────────────────────────────────────────
-  const onTrack   = targets.filter(t => t.status === 'on_track').length;
-  const succeeded = targets.filter(t => t.status === 'succeeded').length;
-  const offTrack  = targets.filter(t => t.status === 'off_track').length;
-  const totalReductionPct = targets.length > 0
-    ? (targets.reduce((s, t) => s + (parseFloat(t.target_reduction_percent) || 0), 0) / targets.length).toFixed(0)
-    : 0;
+  // Single useMemo: one pass to count statuses + one reduce for avg reduction.
+  // Previously 4 separate O(n) passes (3× filter + 1× reduce) per render.
+  const { onTrack, succeeded, offTrack, totalReductionPct } = useMemo(() => {
+    let onTrack = 0, succeeded = 0, offTrack = 0, sumPct = 0;
+    for (const t of targets) {
+      if (t.status === 'on_track')  onTrack++;
+      else if (t.status === 'succeeded') succeeded++;
+      else if (t.status === 'off_track') offTrack++;
+      sumPct += parseFloat(t.target_reduction_percent) || 0;
+    }
+    const totalReductionPct = targets.length > 0
+      ? (sumPct / targets.length).toFixed(0)
+      : 0;
+    return { onTrack, succeeded, offTrack, totalReductionPct };
+  }, [targets]);
 
   const FIELD = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15';
   const LABEL = 'mb-1.5 block text-xs font-bold text-[#302817]/60';

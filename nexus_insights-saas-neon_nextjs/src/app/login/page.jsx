@@ -6,12 +6,12 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import Image from 'next/image';
 import {
-  ArrowRight, CheckCircle2, Eye, EyeOff, Globe2,
+  ArrowRight, CheckCircle2, Eye, EyeOff,
   LockKeyhole, Mail, ShieldCheck, Sparkles,
 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { t, language, changeLanguage } = useLanguage();
+  const { t, language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const tr = tr;
+  const tr = language === 'tr';
 
   // useSearchParams() integrates with React's streaming/suspense — safer than
   // reading window.location.search directly in a useEffect.

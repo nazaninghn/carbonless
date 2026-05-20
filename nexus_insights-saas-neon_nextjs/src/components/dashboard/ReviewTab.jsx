@@ -29,6 +29,16 @@ export default function ReviewTab({ language, fetchData }) {
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 
+  // Dismiss reject dialog on Escape — consistent with all other modals
+  useEffect(() => {
+    if (!rejectId) return;
+    const onKey = (e) => {
+      if (e.key === 'Escape') { setRejectId(null); setRejectReason(''); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [rejectId]);
+
   const handleApprove = useCallback(async (id) => {
     setProcessing(id);
     try {
