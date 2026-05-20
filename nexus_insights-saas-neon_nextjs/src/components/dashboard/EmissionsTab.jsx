@@ -194,41 +194,55 @@ export default function EmissionsTab({
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
 
   // Filtered factors (same logic as page.jsx, incl. questionnaire preferred source)
-  const filteredFactors = useMemo(() => factors.filter(f => {
-    let m = true;
-    if (selScope)    m = m && f.scope === selScope;
-    if (selCategory) m = m && f.category === selCategory;
-    if (selectedCountry && selectedCountry !== 'global') {
-      const ccCats = new Set(
-        factors.filter(ff => ff.country === selectedCountry && (!selScope || ff.scope === selScope))
-          .map(ff => ff.category)
-      );
-      m = m && (ccCats.has(f.category) ? f.country === selectedCountry : f.country === 'global');
-    } else if (selectedCountry === 'global') {
-      m = m && f.country === 'global';
-    }
-    // Preferred source from questionnaire (S7) — only for non-turkey global factors
+  const filteredFactors = useMemo(() => {
+    // Hoist the country-category Set out of the per-item callback — O(n) not O(n²)
+    const ccCats = (selectedCountry && selectedCountry !== 'global')
+      ? new Set(
+          factors
+            .filter(ff => ff.country === selectedCountry && (!selScope || ff.scope === selScope))
+            .map(ff => ff.category)
+        )
+      : null;
+    // Preferred source lookup — build once, not per-item
+    let preferred = null;
     if (selectedCountry !== 'turkey' && questionnaireProfile?.preferred_factor_source
         && !['mixed','unsure'].includes(questionnaireProfile.preferred_factor_source)) {
       const srcMap = { national: ['turkey_grid','turkey_fleet','atom_kablo'], defra: ['defra_2024'], ipcc: ['ipcc_2006','ipcc_2019'] };
-      const preferred = srcMap[questionnaireProfile.preferred_factor_source];
-      if (preferred) m = m && preferred.includes(f.source);
+      preferred = srcMap[questionnaireProfile.preferred_factor_source] ?? null;
     }
-    return m;
-  }), [factors, selScope, selCategory, selectedCountry, questionnaireProfile]);
+    return factors.filter(f => {
+      let m = true;
+      if (selScope)    m = m && f.scope === selScope;
+      if (selCategory) m = m && f.category === selCategory;
+      if (ccCats) {
+        m = m && (ccCats.has(f.category) ? f.country === selectedCountry : f.country === 'global');
+      } else if (selectedCountry === 'global') {
+        m = m && f.country === 'global';
+      }
+      if (preferred) m = m && preferred.includes(f.source);
+      return m;
+    });
+  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile]);
 
-  const categories = useMemo(() => [...new Set(
-    factors.filter(f => !selScope || f.scope === selScope)
-      .filter(f => {
-        if (!selectedCountry || selectedCountry === 'global') return true;
-        const ccCats = new Set(
-          factors.filter(ff => ff.country === selectedCountry && (!selScope || ff.scope === selScope))
+  const categories = useMemo(() => {
+    // Hoist the country-category Set — O(n) not O(n²)
+    const ccCats = (selectedCountry && selectedCountry !== 'global')
+      ? new Set(
+          factors
+            .filter(ff => ff.country === selectedCountry && (!selScope || ff.scope === selScope))
             .map(ff => ff.category)
-        );
-        return ccCats.has(f.category) ? f.country === selectedCountry : f.country === 'global';
-      })
-      .map(f => f.category)
-  )], [factors, selScope, selectedCountry]);
+        )
+      : null;
+    return [...new Set(
+      factors
+        .filter(f => !selScope || f.scope === selScope)
+        .filter(f => {
+          if (!ccCats) return true; // global or no country
+          return ccCats.has(f.category) ? f.country === selectedCountry : f.country === 'global';
+        })
+        .map(f => f.category)
+    )];
+  }, [factors, selScope, selectedCountry]);
 
   const selFactorObj = useMemo(
     () => factors.find(f => f.id === parseInt(selFactor)),
@@ -263,20 +277,17 @@ export default function EmissionsTab({
     [filtered],
   );
 
-  // KPI counts — computed once per render, not via a function called 3× per render
+  // KPI counts + kg totals — single O(n) pass replaces 6 separate filter/reduce calls
   const countAll = entries.length;
-  const [countS1, countS2, countS3] = useMemo(() => [
-    entries.filter(e => e.scope === 'scope1').length,
-    entries.filter(e => e.scope === 'scope2').length,
-    entries.filter(e => e.scope === 'scope3').length,
-  ], [entries]);
-
-  // KPI kg totals — replaces the per-render IIFE in JSX (O(n) work on each render)
-  const [s1kg, s2kg, s3kg, totKg] = useMemo(() => {
-    const s1 = entries.filter(e => e.scope === 'scope1').reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
-    const s2 = entries.filter(e => e.scope === 'scope2').reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
-    const s3 = entries.filter(e => e.scope === 'scope3').reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
-    return [s1, s2, s3, s1 + s2 + s3];
+  const { countS1, countS2, countS3, s1kg, s2kg, s3kg, totKg } = useMemo(() => {
+    let countS1 = 0, countS2 = 0, countS3 = 0, s1kg = 0, s2kg = 0, s3kg = 0;
+    for (const e of entries) {
+      const kg = parseFloat(e.calculated_co2e_kg) || 0;
+      if      (e.scope === 'scope1') { countS1++; s1kg += kg; }
+      else if (e.scope === 'scope2') { countS2++; s2kg += kg; }
+      else if (e.scope === 'scope3') { countS3++; s3kg += kg; }
+    }
+    return { countS1, countS2, countS3, s1kg, s2kg, s3kg, totKg: s1kg + s2kg + s3kg };
   }, [entries]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────

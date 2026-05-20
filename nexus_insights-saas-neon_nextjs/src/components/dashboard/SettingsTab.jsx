@@ -55,7 +55,10 @@ export default function SettingsTab({ language, user, fetchData }) {
         const a = document.createElement('a');
         a.href = url;
         a.download = 'carbonless_backup.json';
+        // Append to DOM — required by Firefox/older Safari for blob downloads
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         // Revoke after 30 s — enough time for the browser to start the download
         setTimeout(() => URL.revokeObjectURL(url), 30_000);
       }

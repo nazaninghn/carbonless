@@ -35,7 +35,7 @@ export default function DashboardSidebar({
     <>
       {/* ═══════════════════ DESKTOP SIDEBAR ════════════════════════════ */}
       <aside
-        aria-label={language === 'tr' ? 'Ana gezinme' : 'Main navigation'}
+        aria-label={tr ? 'Ana gezinme' : 'Main navigation'}
         className={`
           fixed inset-y-0 left-0 z-50 w-[260px] bg-white
           border-r border-[#302817]/6 transition-transform duration-300
