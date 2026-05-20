@@ -75,9 +75,6 @@ export default function Home() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-white text-[#302817]">
-      <div className="pointer-events-none absolute inset-0" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[620px]" />
-
       <header className="relative z-20 mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-11 w-11 sm:h-14 sm:w-14" />

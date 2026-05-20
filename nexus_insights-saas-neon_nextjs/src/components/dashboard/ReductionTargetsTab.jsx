@@ -75,7 +75,7 @@ function TimelineBar({ baseYear, targetYear, currentYear, language }) {
           />
         )}
       </div>
-      <div className="mt-1.5 flex justify-between text-[9px] font-bold text-[#302817]/30">
+      <div className="relative mt-1.5 flex justify-between text-[9px] font-bold text-[#302817]/30">
         <span>{baseYear}</span>
         {nowPct > 5 && nowPct < 95 && (
           <span

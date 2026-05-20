@@ -354,12 +354,15 @@ export default function DashboardOverview({
     ? activeMos.reduce((a, m) => a + m.total_kg, 0) / activeMos.length / 1000
     : 0;
 
-  // Biggest monthly spike — memoized so it only recomputes when monthly data changes
+  // Language-aware month name arrays (used in JSX, not inside any memo)
+  const MONTHS_FULL = tr ? MONTHS_TR_FULL : MONTHS_EN_FULL;
+
+  // Biggest monthly spike — memoized so it only recomputes when monthly data changes.
+  // Returns a numeric index into `monthly`; the name lookup uses MONTHS_FULL at render time.
   const peakMonth = useMemo(
     () => monthly.reduce((best, m, i) => m.total_kg > (monthly[best]?.total_kg ?? 0) ? i : best, 0),
     [monthly],
   );
-  const MONTHS_FULL = tr ? MONTHS_TR_FULL : MONTHS_EN_FULL;
 
   // Getting-started completion count — derived once, shared by both the step list
   // and the progress bar below (replaces a duplicate IIFE inside JSX).

@@ -23,7 +23,7 @@
 
 @layer utilities {
   .gradient-text {
-    background: linear-gradient(135deg, #22C55E 0%, #2DD4BF 100%);
+    background: linear-gradient(135deg, #75863B 0%, #B4BE6A 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -119,6 +119,13 @@
   @keyframes cpIn {
     from { opacity: 0; transform: scale(0.96) translateY(-8px); }
     to   { opacity: 1; transform: scale(1)    translateY(0);     }
+  }
+
+  /* Toast progress bar shrink — defined here so ToastContainer doesn't inject
+     a duplicate <style> node on every toast render (DOM leak). */
+  @keyframes toastProg {
+    from { width: 100%; }
+    to   { width: 0%;   }
   }
 }
 

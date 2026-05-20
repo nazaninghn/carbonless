@@ -219,6 +219,9 @@ export default function SettingsTab({ language, user, fetchData }) {
                     🇹🇷 Türkçe
                   </button>
                 </div>
+                <p className="mt-2 text-[10px] font-semibold text-[#302817]/35">
+                  {tr ? 'Dil değiştirmek sayfayı yeniden yükler.' : 'Switching language reloads the page.'}
+                </p>
               </div>
             </Panel>
           )}

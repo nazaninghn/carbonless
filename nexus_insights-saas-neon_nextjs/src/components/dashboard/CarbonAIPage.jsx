@@ -404,6 +404,13 @@ function CountryCityInput({ value, onChange, lang }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
   const tr = lang === 'tr';
+  // Guard against duplicate auto-submits from rapid double-taps on chip options
+  const chipTimerRef = useRef(null);
+  const scheduleSubmit = () => {
+    if (chipTimerRef.current !== null) clearTimeout(chipTimerRef.current);
+    chipTimerRef.current = setTimeout(() => { chipTimerRef.current = null; onSubmit(); }, CHIP_AUTO_SUBMIT_DELAY_MS);
+  };
+
   if (!question) return null;
 
   const { type, subtype, options, placeholder, minYear, maxYear } = question;
@@ -447,7 +454,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={y}
             label={String(y)}
             selected={value === String(y)}
-            onClick={() => { onChange(String(y)); setTimeout(onSubmit, CHIP_AUTO_SUBMIT_DELAY_MS); }}
+            onClick={() => { onChange(String(y)); scheduleSubmit(); }}
           />
         ))}
       </div>
@@ -462,7 +469,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={opt.value}
             label={opt.label?.[lang] || opt.label?.en || opt.value}
             selected={value === opt.value}
-            onClick={() => { onChange(opt.value); setTimeout(onSubmit, CHIP_AUTO_SUBMIT_DELAY_MS); }}
+            onClick={() => { onChange(opt.value); scheduleSubmit(); }}
           />
         ))}
       </div>

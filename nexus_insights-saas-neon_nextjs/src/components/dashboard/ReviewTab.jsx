@@ -46,12 +46,13 @@ export default function ReviewTab({ language, fetchData }) {
 
   const handleReject = async () => {
     if (!rejectId) return;
-    const id = rejectId;
+    const id     = rejectId;
+    const reason = rejectReason;   // capture before clearing state
     setProcessing(id);
     setRejectId(null);
     setRejectReason('');
     try {
-      const res = await api.approveEntry(id, 'reject', rejectReason);
+      const res = await api.approveEntry(id, 'reject', reason);
       if (res.ok) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
       else toast.error(tr ? 'Red işlemi başarısız' : 'Rejection failed');
       await fetchPending();

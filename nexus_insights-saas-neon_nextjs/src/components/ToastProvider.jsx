@@ -141,12 +141,6 @@ function Toast({ id, type, message, duration, onDismiss }) {
 function ToastContainer({ toasts, onDismiss }) {
   return (
     <>
-      <style>{`
-        @keyframes toastProg {
-          from { width: 100%; }
-          to   { width: 0%;   }
-        }
-      `}</style>
       {/* bottom-20 on mobile keeps toasts above the fixed bottom nav (h-16 + safe-area)
           bottom-6 on lg because no bottom nav */}
       <div

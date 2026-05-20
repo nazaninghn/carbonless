@@ -20,9 +20,9 @@ export default class ErrorBoundary extends Component {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error, info) {
-    // Surface in dev console so it's not silently swallowed
-    console.error('[ErrorBoundary] caught:', error, info?.componentStack);
+  componentDidCatch(_error, _info) {
+    // Intentionally silent in production — error state is surfaced via render fallback.
+    // To debug locally: set a breakpoint here or hook into window.onerror.
   }
 
   render() {
