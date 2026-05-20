@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   AlertCircle, FileText, Leaf, Paperclip,
   Pencil, Plus, Search, Trash2, X,
@@ -24,6 +24,16 @@ const STATUS_META = {
 
 function scopeLabel(s) { return SCOPE_META[s]?.label ?? s; }
 function fmt(n, d = 2) { return parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d }); }
+
+const ALLOWED_MIME = new Set([
+  'application/pdf',
+  'image/jpeg','image/png','image/jpg',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]);
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -220,7 +230,10 @@ export default function EmissionsTab({
       .map(f => f.category)
   )], [factors, selScope, selectedCountry]);
 
-  const selFactorObj = factors.find(f => f.id === parseInt(selFactor));
+  const selFactorObj = useMemo(
+    () => factors.find(f => f.id === parseInt(selFactor)),
+    [factors, selFactor],
+  );
 
   // Filtered + sorted entries
   const filtered = useMemo(() => {
@@ -256,9 +269,6 @@ export default function EmissionsTab({
     setSelScope(''); setSelCategory(''); setSelFactor('');
     setQuantity(''); setDesc(''); setFacility(''); setFile(null); setFormError('');
   };
-
-  const ALLOWED_MIME = new Set(['application/pdf','image/jpeg','image/png','image/jpg','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
-  const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
 
   const handleAdd = async (e) => {
     e.preventDefault();

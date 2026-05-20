@@ -1,10 +1,7 @@
 'use client';
 
-import { useMemo, useState, useEffect, useLayoutEffect } from 'react';
-
-// useLayoutEffect fires before browser paint → no flicker frame on Android tablets
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+import { useMemo, useState, useEffect } from 'react';
+import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 import {
   AlertCircle,
   Bot,

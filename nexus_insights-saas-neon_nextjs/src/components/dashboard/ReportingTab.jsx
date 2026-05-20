@@ -1,10 +1,6 @@
 'use client';
-import { useState, useEffect, useLayoutEffect } from 'react';
-
-// useLayoutEffect fires before browser paint → no flicker frame on Android tablets
-// Falls back to useEffect on server (SSR) to avoid Next.js hydration warnings
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+import { useState, useEffect } from 'react';
+import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 import {
   CheckCircle2,
   Download,

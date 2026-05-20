@@ -9,6 +9,7 @@ import {
 import { api } from '@/lib/utils/api';
 import {
   CARBONIQ_STAGES,
+  TOTAL_QUESTIONS,
   getInitialQuestionId,
   getNextQuestionId,
   getQuestionById,
@@ -531,8 +532,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
   });
 
   const totalAnswered = Object.keys(answers).length;
-  const totalQuestions = 133;
-  const pct = Math.round((totalAnswered / totalQuestions) * 100);
+  const pct = Math.round((totalAnswered / TOTAL_QUESTIONS) * 100);
 
   return (
     <aside
@@ -558,7 +558,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
       <div className="border-b border-[#302817]/6 px-3 py-3">
         <div className="mb-1.5 flex items-center justify-between">
           <span className="text-[10px] font-semibold text-[#302817]/60">
-            {totalAnswered} / {totalQuestions}
+            {totalAnswered} / {TOTAL_QUESTIONS}
           </span>
           <span className="text-[10px] font-bold text-[#95A847]">{pct}%</span>
         </div>
@@ -654,7 +654,8 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       const res = await api.sendChatMessage(helpSessionRef.current, content);
       if (res.ok) {
         const aiMsg = await res.json();
-        setMessages(prev => [...prev, aiMsg]);
+        // Ensure a stable key even if the API omits `id`
+        setMessages(prev => [...prev, { id: aiMsg.id ?? `ai-${Date.now()}`, ...aiMsg }]);
       }
     } catch {}
     setSending(false);
@@ -698,8 +699,8 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
               </p>
             </div>
           )}
-          {messages.map((msg, i) => (
-            <div key={msg.id || i} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          {messages.map((msg) => (
+            <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={`max-w-[90%] rounded-[18px] px-3 py-2.5 text-[12.5px] leading-[1.6] ${
                   msg.role === 'user'
@@ -762,8 +763,8 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         </h2>
         <p className="mt-3 text-sm text-[#302817]/55 max-w-md">
           {tr
-            ? '133 sorudan oluşan ISO 14064-1 uyumlu yapılandırılmış envanter akışı. AI asistanı her adımda yanınızda.'
-            : '133-question ISO 14064-1 structured inventory flow. AI assistant by your side at every step.'}
+            ? `${TOTAL_QUESTIONS} sorudan oluşan ISO 14064-1 uyumlu yapılandırılmış envanter akışı. AI asistanı her adımda yanınızda.`
+            : `${TOTAL_QUESTIONS}-question ISO 14064-1 structured inventory flow. AI assistant by your side at every step.`}
         </p>
       </div>
       {answeredCount > 0 && !error && (
@@ -839,13 +840,21 @@ function QuestionnaireTab({ language }) {
     }
   }, [messages, isTyping]);
 
-  // Init answer value when question changes
+  // Keep a ref so the init effect can read the latest answers without being
+  // re-triggered on every setAnswers call (which would race with submitAnswer).
+  const answersRef = useRef(answers);
+  useEffect(() => { answersRef.current = answers; });
+
+  // Init answer value when the QUESTION changes (navigation / goBack).
+  // Deliberately excludes `answers` from the dep array — the ref above is used
+  // instead to avoid re-running on every keystroke / submission.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentQuestion) {
-      const existing = answers[currentId];
+      const existing = answersRef.current[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
     }
-  }, [currentId, answers]);
+  }, [currentId]); // only run when the question changes
 
   // ── handleStart ────────────────────────────────────────────────────────────
   const handleStart = async () => {
@@ -871,8 +880,7 @@ function QuestionnaireTab({ language }) {
       if (data.resumed && data.current_step && data.current_step !== 'DONE') {
         setCurrentId(data.current_step);
       }
-    } catch (e) {
-      console.error('Start error:', e);
+    } catch {
       setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error. Please try again.');
       setStartLoading(false);
       return;
@@ -884,8 +892,8 @@ function QuestionnaireTab({ language }) {
       id: 'welcome',
       role: 'assistant',
       content: tr
-        ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size 133 soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n**Soru 1:** ${firstQ?.text?.tr || firstQ?.text?.en}`
-        : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you 133 questions. You can go back at any time.\n\n**Question 1:** ${firstQ?.text?.en}`,
+        ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size ${TOTAL_QUESTIONS} soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n**Soru 1:** ${firstQ?.text?.tr || firstQ?.text?.en}`
+        : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you ${TOTAL_QUESTIONS} questions. You can go back at any time.\n\n**Question 1:** ${firstQ?.text?.en}`,
     };
     if (firstQ?.helper) {
       welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;

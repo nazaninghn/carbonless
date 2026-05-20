@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, useReducer, useRef } from 'react';
+import { useEffect, useCallback, useReducer, useRef } from 'react';
 import { api } from '@/lib/utils/api';
 
 async function parseRes(res) {
@@ -32,10 +32,11 @@ function reducer(state, action) {
     case 'LOADED':
       return { ...state, ...action.payload, loading: false, refreshing: false };
     case 'LOADING':
-      // First load → show loading; subsequent → just set refreshing silently
-      return state.loading
-        ? { ...state, loading: true }
-        : { ...state, refreshing: true };
+      // First load → show spinner; subsequent → set refreshing silently
+      if (state.loading) return state;                      // already loading — no new object
+      return { ...state, refreshing: true };
+    case 'SET_UNREAD':
+      return { ...state, unreadCount: action.payload };
     default:
       return state;
   }
@@ -43,8 +44,12 @@ function reducer(state, action) {
 
 export function useDashboardData(selectedYear) {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [unreadCount, setUnreadCount] = useState(0);
   const isFirstLoad = useRef(true);
+  // Stable setter so consumers can optimistically update the badge count
+  const setUnreadCount = useCallback(
+    (count) => dispatch({ type: 'SET_UNREAD', payload: count }),
+    [],
+  );
 
   const fetchData = useCallback(async () => {
     dispatch({ type: 'LOADING' });
@@ -71,7 +76,6 @@ export function useDashboardData(selectedYear) {
       const facilityData = await parseList(facilityRes);
 
       const newUnread = notifData?.unread_count || 0;
-      setUnreadCount(newUnread);
 
       // Single dispatch → single re-render
       dispatch({
@@ -102,8 +106,7 @@ export function useDashboardData(selectedYear) {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   return {
-    ...state,
-    unreadCount,
+    ...state,       // includes state.unreadCount
     setUnreadCount,
     fetchData,
   };

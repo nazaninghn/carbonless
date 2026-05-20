@@ -2497,6 +2497,9 @@ export const CARBONIQ_QUESTIONS = [
   },
 ];
 
+/** Total number of questions in the inventory flow. Used for progress display. */
+export const TOTAL_QUESTIONS = CARBONIQ_QUESTIONS.length;
+
 export function getQuestionById(id) {
   return CARBONIQ_QUESTIONS.find((question) => question.id === id);
 }

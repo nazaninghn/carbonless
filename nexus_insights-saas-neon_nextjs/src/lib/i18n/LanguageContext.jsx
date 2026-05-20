@@ -1,11 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, useLayoutEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 import { translations } from './translations';
-
-// useLayoutEffect on client, useEffect on server (prevents SSR warning)
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : () => {};
+import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 
 const LanguageContext = createContext(null);
 

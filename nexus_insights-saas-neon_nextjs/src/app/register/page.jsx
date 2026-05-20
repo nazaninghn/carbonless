@@ -186,7 +186,6 @@ export default function RegisterPage() {
       router.push('/dashboard');
 
     } catch (err) {
-      console.error('[register] unexpected error:', err);
       setError(language === 'tr'
         ? `Beklenmeyen hata: ${err?.message || 'Bilinmeyen'}`
         : `Unexpected error: ${err?.message || 'Unknown'}`);

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -37,18 +37,24 @@ export default function DashboardHeader({
 }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const notifFetchedAt = useRef(0);          // timestamp of last successful fetch
   const tr = language === 'tr';
 
   const loadNotifications = async () => {
     const nextState = !showNotifications;
     setShowNotifications(nextState);
-    if (nextState) {
-      try {
-        const res = await api.getNotifications();
-        if (res.ok) setNotifications(await res.json());
-      } catch (err) {
-        console.error('Failed to load notifications:', err);
+    if (!nextState) return;
+    // Cache for 60 s — avoid a round-trip on every open
+    const age = Date.now() - notifFetchedAt.current;
+    if (age < 60_000 && notifications.length > 0) return;
+    try {
+      const res = await api.getNotifications();
+      if (res.ok) {
+        setNotifications(await res.json());
+        notifFetchedAt.current = Date.now();
       }
+    } catch {
+      // Network error — keep existing list visible, no user-facing alert needed
     }
   };
 
@@ -61,8 +67,8 @@ export default function DashboardHeader({
     );
     try {
       await api.markNotificationsRead();
-    } catch (err) {
-      console.error('Failed to mark notifications read:', err);
+    } catch {
+      // Roll back on failure
       setUnreadCount(prevCount);
       setNotifications(prevNotifications);
     }
@@ -111,7 +117,11 @@ export default function DashboardHeader({
         <div className="flex shrink-0 items-center gap-2">
           {/* ⌘K trigger (desktop only) */}
           <button
-            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, bubbles: true }))}
+            onClick={() => {
+              // metaKey = Mac ⌘K, ctrlKey = Windows/Linux Ctrl+K
+              const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
+              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: isMac, ctrlKey: !isMac, bubbles: true }));
+            }}
             className="hidden items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[#302817]/45 shadow-sm transition hover:bg-white hover:text-[#302817] sm:flex"
             aria-label="Open command palette"
           >

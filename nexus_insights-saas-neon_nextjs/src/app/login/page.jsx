@@ -98,7 +98,7 @@ export default function LoginPage() {
                 <label className="mb-1.5 block text-sm font-bold text-[#302817]/75">{t.login.email}</label>
                 <div className="group flex items-center gap-3 rounded-2xl border border-[#302817]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#B4BE6A]/60 focus-within:bg-white/70 focus-within:ring-4 focus-within:ring-[#B4BE6A]/20">
                   <Mail className="h-5 w-5 text-[#95A847]" />
-                  <input type="text" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" placeholder={t.login.emailPlaceholder} required />
+                  <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" placeholder={t.login.emailPlaceholder} required />
                 </div>
               </div>
 

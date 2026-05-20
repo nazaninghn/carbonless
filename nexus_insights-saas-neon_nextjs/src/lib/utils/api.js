@@ -145,10 +145,6 @@ export const api = {
   getCustomRequests: () => request('/emissions/custom-requests/'),
   createCustomRequest: (data) => request('/emissions/custom-requests/', { method: 'POST', body: JSON.stringify(data) }),
 
-  getReportUrl: (year, lang) => `${API_BASE}/emissions/report/?year=${year}&lang=${lang}`,
-  getCsvUrl: (year) => `${API_BASE}/emissions/export-csv/?year=${year}`,
-  getExcelUrl: (year) => `${API_BASE}/emissions/export-excel/?year=${year}`,
-
   downloadReport: (year, lang) => request(`/emissions/report/?year=${year}&lang=${lang}`),
   downloadCsv: (year) => request(`/emissions/export-csv/?year=${year}`),
   downloadExcel: (year) => request(`/emissions/export-excel/?year=${year}`),

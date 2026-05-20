@@ -4,7 +4,7 @@
 @layer base {
   [x-cloak] { display: none !important; }
   html { scrollbar-gutter: stable; overflow-x: hidden; scroll-behavior: smooth; }
-  body { overflow-x: hidden; font-family: 'Inter', sans-serif; color: #1E293B; background-color: #F8FAFC; }
+  body { overflow-x: hidden; font-family: 'Inter', sans-serif; color: #302817; background-color: #F8FAFC; }
   
   /* Mobile safe areas */
   @supports (padding: env(safe-area-inset-bottom)) {
@@ -212,7 +212,8 @@
     animation: none !important;
   }
 
-  .dashboard-android-fix header.sticky {
+  /* Only de-stick the dashboard header — not every sticky element */
+  .dashboard-android-fix > header.sticky {
     position: relative !important;
     top: auto !important;
   }
