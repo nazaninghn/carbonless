@@ -522,7 +522,7 @@ export default function ReductionTargetsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Baz Yıl' : 'Base Year'} *</label>
                     <input
-                      type="number" min="2000" max="2030"
+                      type="number" min="2000" max={currentYear() + 9}
                       value={editBaseYear} onChange={e => setEditBaseYear(e.target.value)}
                       className={FIELD} required
                     />
@@ -641,7 +641,7 @@ export default function ReductionTargetsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Baz Yıl' : 'Base Year'} *</label>
                     <input
-                      type="number" min="2000" max="2030"
+                      type="number" min="2000" max={currentYear() + 9}
                       value={baseYear} onChange={e => setBaseYear(e.target.value)}
                       className={FIELD} required
                     />

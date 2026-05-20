@@ -877,7 +877,7 @@ export default function EmissionsTab({
                     <div>
                       <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
                       <select value={month} onChange={e => setMonth(e.target.value)} className={FIELD}>
-                        {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                        {months.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                       </select>
                     </div>
                     <div>
@@ -1074,7 +1074,7 @@ export default function EmissionsTab({
                 <div>
                   <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
                   <select value={cMonth} onChange={e => setCMonth(e.target.value)} className={FIELD}>
-                    {months.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
+                    {months.map((m, i) => <option key={i + 1} value={i + 1}>{m}</option>)}
                   </select>
                 </div>
               </form>

@@ -504,7 +504,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     <div className="flex w-full max-w-sm gap-2 items-end">
       <input
         className="flex-1 rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
-        type={subtype === 'numeric' ? 'text' : 'text'}
+        type="text"
         inputMode={subtype === 'numeric' ? 'numeric' : 'text'}
         value={value}
         onChange={e => onChange(e.target.value)}

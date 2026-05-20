@@ -27,15 +27,18 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
   const s2 = summary?.scope2_tonne || 0;
   const s3 = summary?.scope3_tonne || 0;
 
-  // Readiness calculation
-  const checks = [
-    { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed' },
-    { done: entries.length > 0, label: tr ? 'Emisyon verisi girildi' : 'Emission data entered' },
-    { done: entries.length >= 5, label: tr ? 'Yeterli veri (5+ kayıt)' : 'Sufficient data (5+ entries)' },
-    { done: totalTonne > 0, label: tr ? 'Scope haritalama tamam' : 'Scope mapping complete' },
-    { done: targets.length > 0, label: tr ? 'Azaltma hedefi belirlendi' : 'Reduction target set' },
-  ];
-  const readiness = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
+  // Readiness — useMemo so this is only recalculated when data actually changes,
+  // not on every local state update (e.g. pdfLoading spinner toggling).
+  const { checks, readiness } = useMemo(() => {
+    const list = [
+      { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed' },
+      { done: entries.length > 0, label: tr ? 'Emisyon verisi girildi' : 'Emission data entered' },
+      { done: entries.length >= 5, label: tr ? 'Yeterli veri (5+ kayıt)' : 'Sufficient data (5+ entries)' },
+      { done: totalTonne > 0, label: tr ? 'Scope haritalama tamam' : 'Scope mapping complete' },
+      { done: targets.length > 0, label: tr ? 'Azaltma hedefi belirlendi' : 'Reduction target set' },
+    ];
+    return { checks: list, readiness: Math.round((list.filter(c => c.done).length / list.length) * 100) };
+  }, [questionnaireProfile, entries.length, targets.length, totalTonne, tr]);
 
   // Monthly chart max — computed once, not inside the render IIFE
   const monthlyMaxKg = useMemo(
