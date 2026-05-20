@@ -1,7 +1,16 @@
 'use client';
-import { AlertTriangle, LogOut, X } from 'lucide-react';
+import { useEffect } from 'react';
+import { AlertTriangle, LogOut } from 'lucide-react';
 
 export default function ConfirmDialog({ open, onConfirm, onCancel, title, message, confirmText, cancelText, type = 'warning' }) {
+  // Dismiss on Escape key — consistent with every other modal in the app
+  useEffect(() => {
+    if (!open) return;
+    const handleKey = (e) => { if (e.key === 'Escape') onCancel(); };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [open, onCancel]);
+
   if (!open) return null;
 
   return (

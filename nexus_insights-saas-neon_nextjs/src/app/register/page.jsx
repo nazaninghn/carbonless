@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -32,8 +32,13 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [naceSearch, setNaceSearch] = useState('');
   const [naceOpen, setNaceOpen] = useState(false);
+  const tr = language === 'tr';
 
-  const handleInputChange = (field, value) => { setFormData(prev => ({ ...prev, [field]: value })); setError(''); };
+  // Stable across renders — setFormData and setError are guaranteed stable by React
+  const handleInputChange = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setError('');
+  }, []);
 
   const validateSection1 = () => {
     const missing = [];
@@ -78,7 +83,7 @@ export default function RegisterPage() {
 
   const goToSection = (target) => { setError(''); if (target > currentSection) { if (currentSection === 1 && !validateSection1()) return; if (currentSection === 2 && !validateSection2()) return; } setCurrentSection(target); };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault(); setError('');
     if (!validateSection3()) return;
     setLoading(true);
@@ -186,13 +191,13 @@ export default function RegisterPage() {
       router.push('/dashboard');
 
     } catch (err) {
-      setError(language === 'tr'
+      setError(tr
         ? `Beklenmeyen hata: ${err?.message || 'Bilinmeyen'}`
         : `Unexpected error: ${err?.message || 'Unknown'}`);
     } finally {
       setLoading(false);
     }
-  };
+  }, [formData, tr, router]);
 
   const steps = [
     { id: 1, icon: Building2, title: language === 'tr' ? 'Kurumsal Bilgiler' : 'Corporate Info', subtitle: language === 'tr' ? 'Hesap ve şirket profili' : 'Account and company profile' },

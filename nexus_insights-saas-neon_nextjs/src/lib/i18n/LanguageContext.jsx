@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { translations } from './translations';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 
@@ -29,19 +29,28 @@ export function LanguageProvider({ children }) {
     }
   }, []);
 
-  const changeLanguage = (lang) => {
+  const changeLanguage = useCallback((lang) => {
     if (lang !== 'tr' && lang !== 'en') return;
     setLanguage(lang);
     try {
       localStorage.setItem('language', lang);
       localStorage.setItem('language_explicit', '1'); // marks that user actively chose this
     } catch {}
-  };
+  }, []);
 
+  // `translations` is a module-level import — same reference for the lifetime of the page.
+  // `t` only changes when `language` changes, so this lookup is already stable.
   const t = translations[language] ?? translations['tr'];
 
+  // Memoize context value so every useLanguage() consumer isn't forced to re-render
+  // on unrelated LanguageProvider re-renders (e.g. during initial layout effects).
+  const contextValue = useMemo(
+    () => ({ language, changeLanguage, t }),
+    [language, changeLanguage, t],
+  );
+
   return (
-    <LanguageContext.Provider value={{ language, changeLanguage, t }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

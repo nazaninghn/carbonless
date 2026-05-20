@@ -11,7 +11,7 @@
 
 import {
   createContext, useCallback, useContext,
-  useEffect, useRef, useState,
+  useEffect, useMemo, useRef, useState,
 } from 'react';
 import { AlertCircle, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
 
@@ -176,12 +176,16 @@ export function ToastProvider({ children }) {
     setToasts(prev => [...prev.slice(-4), { id, type, message, duration }]);
   }, []);
 
-  const toast = {
+  // Memoize so the context value reference stays stable across re-renders
+  // triggered by toasts state changes — prevents all useToast() consumers from
+  // re-rendering every time a toast is added or dismissed.
+  // `add` is already useCallback([]) so its reference never changes.
+  const toast = useMemo(() => ({
     success: (msg, dur) => add('success', msg, dur),
     error:   (msg, dur) => add('error',   msg, dur),
     warning: (msg, dur) => add('warning', msg, dur),
     info:    (msg, dur) => add('info',    msg, dur),
-  };
+  }), [add]);
 
   return (
     <ToastCtx.Provider value={toast}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
@@ -19,12 +19,13 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const tr = tr;
 
   // useSearchParams() integrates with React's streaming/suspense — safer than
   // reading window.location.search directly in a useEffect.
   const sessionExpired = searchParams.get('reason') === 'session_expired';
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -35,12 +36,12 @@ export default function LoginPage() {
         markSessionActive();
         router.push('/dashboard');
       } else {
-        setError(language === 'tr' ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
+        setError(tr ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
       }
     } catch {
-      setError(language === 'tr' ? 'Sunucu bağlantı hatası' : 'Server connection error');
+      setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
     } finally { setLoading(false); }
-  };
+  }, [email, password, tr, router]);
 
   return (
     <main className="relative min-h-screen bg-white text-[#302817]">
@@ -52,7 +53,7 @@ export default function LoginPage() {
         </NextLink>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <NextLink href="/register" className="shrink-0 rounded-full border border-[#302817]/15 bg-white/55 px-3 py-2 text-xs font-bold text-[#302817] shadow-sm backdrop-blur-xl transition hover:bg-[#302817] hover:text-[#F9EFE5] sm:px-5 sm:py-2.5 sm:text-sm">
-            {language === 'tr' ? 'Kayıt' : 'Register'}
+            {tr ? 'Kayıt' : 'Register'}
           </NextLink>
         </div>
       </header>
@@ -62,16 +63,16 @@ export default function LoginPage() {
         <div className="hidden lg:block">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#B4BE6A]/25 bg-white/55 px-4 py-2 text-sm font-bold text-[#B4BE6A] shadow-lg shadow-[#302817]/5 backdrop-blur-xl">
             <Sparkles className="h-4 w-4 text-[#95A847]" />
-            {language === 'tr' ? 'Akıllı karbon raporlamaya hoş geldiniz' : 'Welcome back to smarter carbon reporting'}
+            {tr ? 'Akıllı karbon raporlamaya hoş geldiniz' : 'Welcome back to smarter carbon reporting'}
           </div>
           <h1 className="mt-5 max-w-xl text-4xl font-bold leading-[1.05] tracking-[-0.055em] text-[#302817] xl:text-5xl">
-            {language === 'tr' ? 'Karbon envanterinize netlikle devam edin.' : 'Continue your carbon inventory with clarity.'}
+            {tr ? 'Karbon envanterinize netlikle devam edin.' : 'Continue your carbon inventory with clarity.'}
           </h1>
           <p className="mt-5 max-w-lg text-base leading-7 text-[#302817]/65">
-            {language === 'tr' ? 'Emisyon verilerinize ve raporlarınıza tek bir temiz çalışma alanından erişin.' : 'Access emissions, reports and reduction targets from one clean workspace.'}
+            {tr ? 'Emisyon verilerinize ve raporlarınıza tek bir temiz çalışma alanından erişin.' : 'Access emissions, reports and reduction targets from one clean workspace.'}
           </p>
           <div className="mt-8 grid max-w-lg gap-3">
-            {(language === 'tr' ? ['Scope 1, 2 ve 3 emisyonlarını takip edin', 'Ekibiniz için temiz raporlar oluşturun', 'Şirket verilerinizi güvenli tutun'] : ['Track Scope 1, 2 and 3 emissions', 'Generate clean reports for your team', 'Keep company data secure']).map((item) => (
+            {(tr ? ['Scope 1, 2 ve 3 emisyonlarını takip edin', 'Ekibiniz için temiz raporlar oluşturun', 'Şirket verilerinizi güvenli tutun'] : ['Track Scope 1, 2 and 3 emissions', 'Generate clean reports for your team', 'Keep company data secure']).map((item) => (
               <div key={item} className="flex items-center gap-3 rounded-2xl border border-[#302817]/10 bg-white/55 px-4 py-3 shadow-sm shadow-[#302817]/5 backdrop-blur-xl">
                 <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-[#B4BE6A]" />
                 <span className="text-sm font-semibold text-[#302817]/75">{item}</span>
@@ -114,11 +115,11 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {sessionExpired &&<div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-xs font-semibold text-amber-700">{language === 'tr' ? 'Oturumunuz sona erdi.' : 'Your session has expired.'}</div>}
+              {sessionExpired &&<div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-xs font-semibold text-amber-700">{tr ? 'Oturumunuz sona erdi.' : 'Your session has expired.'}</div>}
               {error && <div className="rounded-2xl border border-red-200 bg-red-50/90 p-3 text-xs font-semibold text-red-600">{error}</div>}
 
               <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/18 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60">
-                {loading ? (language === 'tr' ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
+                {loading ? (tr ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                 {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>
             </form>
