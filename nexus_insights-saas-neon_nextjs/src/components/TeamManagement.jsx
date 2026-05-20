@@ -65,6 +65,27 @@ export default function TeamManagement({ language }) {
     } finally { setUpdating(null); }
   }, [tr, toast, fetchMembers]);
 
+  const handleInvite = useCallback(async () => {
+    if (!inviteEmail) return;
+    setInviting(true);
+    try {
+      const res = await api.inviteMember({ email: inviteEmail, role: inviteRole });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(tr ? `Davet gönderildi: ${data.email}` : `Invite sent to ${data.email}`);
+        setInviteEmail('');
+      } else {
+        let msg = 'Error';
+        try { const err = await res.json(); msg = err.error || msg; } catch {}
+        toast.error(msg);
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setInviting(false);
+    }
+  }, [inviteEmail, inviteRole, tr, toast]);
+
   const handleToggleActive = useCallback(async (m) => {
     setUpdating(m.id);
     try {
@@ -228,25 +249,7 @@ export default function TeamManagement({ language }) {
             ))}
           </select>
           <button
-            onClick={async () => {
-              if (!inviteEmail) return;
-              setInviting(true);
-              try {
-                const res = await api.inviteMember({ email: inviteEmail, role: inviteRole });
-                if (res.ok) {
-                  const data = await res.json();
-                  toast.success(tr ? `Davet gönderildi: ${data.email}` : `Invite sent to ${data.email}`);
-                  setInviteEmail('');
-                } else {
-                  let msg = 'Error';
-                  try { const err = await res.json(); msg = err.error || msg; } catch {}
-                  toast.error(msg);
-                }
-              } catch {
-                toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
-              }
-              setInviting(false);
-            }}
+            onClick={handleInvite}
             disabled={inviting || !inviteEmail}
             className="px-5 py-2 bg-[#302817] text-white rounded-xl text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-1"
           >

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   Leaf,
   Target,
@@ -73,6 +73,14 @@ export default function SettingsTab({ language, user, fetchData }) {
     // Focus the input after the modal renders
     setTimeout(() => deleteInputRef.current?.focus(), 50);
   }, []);
+
+  // Escape dismisses the delete-account modal — consistent with all other modals
+  useEffect(() => {
+    if (!showDeleteModal) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !deleting) setShowDeleteModal(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDeleteModal, deleting]);
 
   const handleDelete = useCallback(async () => {
     if (!deletePassword) return;
@@ -211,13 +219,13 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <h4 className="mb-2 text-xs font-bold text-[#302817]">{tr ? 'Dil Tercihi' : 'Language Preference'}</h4>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => { try { localStorage.setItem('language', 'en'); window.location.reload(); } catch {} }}
+                    onClick={() => { try { localStorage.setItem('language', 'en'); localStorage.setItem('language_explicit', '1'); window.location.reload(); } catch {} }}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇬🇧 English
                   </button>
                   <button
-                    onClick={() => { try { localStorage.setItem('language', 'tr'); window.location.reload(); } catch {} }}
+                    onClick={() => { try { localStorage.setItem('language', 'tr'); localStorage.setItem('language_explicit', '1'); window.location.reload(); } catch {} }}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇹🇷 Türkçe

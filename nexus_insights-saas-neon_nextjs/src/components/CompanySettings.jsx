@@ -243,12 +243,12 @@ export default function CompanySettings({ language }) {
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {[
-            { label: tr ? 'Şirket Adı' : 'Company Name', val: company.legal_entity_name },
-            { label: tr ? 'Vergi No' : 'Tax Number',      val: company.tax_number },
-            { label: tr ? 'Ülke' : 'Country',             val: company.country_of_headquarters },
-            { label: 'NACE',                               val: company.nace_code },
-          ].map((f, i) => (
-            <div key={i} className="rounded-xl bg-[#F8F8F8] p-3">
+            { key: 'name',    label: tr ? 'Şirket Adı' : 'Company Name', val: company.legal_entity_name },
+            { key: 'tax',     label: tr ? 'Vergi No' : 'Tax Number',      val: company.tax_number },
+            { key: 'country', label: tr ? 'Ülke' : 'Country',             val: company.country_of_headquarters },
+            { key: 'nace',    label: 'NACE',                               val: company.nace_code },
+          ].map((f) => (
+            <div key={f.key} className="rounded-xl bg-[#F8F8F8] p-3">
               <p className="text-xs text-[#302817]/50">{f.label}</p>
               <p className="mt-0.5 text-sm font-medium text-[#302817]">{f.val || '—'}</p>
             </div>

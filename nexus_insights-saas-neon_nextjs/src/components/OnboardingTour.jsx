@@ -134,6 +134,14 @@ export default function OnboardingTour({ language, onComplete }) {
     if (step > 0) setStep(s => s - 1);
   }, [step]);
 
+  // Escape closes the tour — consistent with all other overlays in the app
+  useEffect(() => {
+    if (!show) return;
+    const onKey = (e) => { if (e.key === 'Escape') handleClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [show, handleClose]);
+
   if (!show) return null;
 
   const current = steps[step];
