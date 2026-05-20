@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
@@ -240,21 +240,21 @@ export default function ReductionTargetsTab({
   const [editReducePct, setEditReducePct] = useState('');
   const [editSaving,    setEditSaving]    = useState(false);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setTitle(''); setBaseEmit(''); setReducePct('');
     setBaseYear(new Date().getFullYear() - 1); setTgtYear(2030);
-  };
+  }, []);
 
-  const openEdit = (tgt) => {
+  const openEdit = useCallback((tgt) => {
     setEditTarget(tgt);
     setEditTitle(tgt.title);
     setEditBaseYear(tgt.base_year);
     setEditTgtYear(tgt.target_year);
     setEditBaseEmit((parseFloat(tgt.base_emissions_kg) / 1000).toString());
     setEditReducePct(tgt.target_reduction_percent.toString());
-  };
+  }, []);
 
-  const handleAdd = async (e) => {
+  const handleAdd = useCallback(async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
@@ -276,9 +276,9 @@ export default function ReductionTargetsTab({
     } finally {
       setSaving(false);
     }
-  };
+  }, [title, baseYear, tgtYear, baseEmit, reducePct, tr, resetForm, fetchData]);
 
-  const handleEditSave = async (e) => {
+  const handleEditSave = useCallback(async (e) => {
     e.preventDefault();
     if (!editTarget) return;
     setEditSaving(true);
@@ -301,13 +301,13 @@ export default function ReductionTargetsTab({
     } finally {
       setEditSaving(false);
     }
-  };
+  }, [editTarget, editTitle, editBaseYear, editTgtYear, editBaseEmit, editReducePct, tr, fetchData]);
 
-  const handleDelete = (id) => {
+  const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     const id = deleteConfirm;
     setDeleteConfirm(null);
     try {
@@ -321,7 +321,7 @@ export default function ReductionTargetsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     }
-  };
+  }, [deleteConfirm, tr, fetchData]);
 
   // ── Summary KPIs ─────────────────────────────────────────────────────────
   const onTrack   = targets.filter(t => t.status === 'on_track').length;

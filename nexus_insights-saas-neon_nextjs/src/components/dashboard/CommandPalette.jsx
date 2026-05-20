@@ -136,7 +136,7 @@ export default function CommandPalette({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, highlighted, items]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, highlighted, items, activate]);
 
   const scrollItemIntoView = (idx) => {
     if (!listRef.current) return;
@@ -145,13 +145,13 @@ export default function CommandPalette({
   };
 
   // ── Activate an item ───────────────────────────────────────────────────────
-  const activate = (item) => {
+  const activate = useCallback((item) => {
     setOpen(false);
     setActiveTab(item.tab);
     if (item.action === 'addEntry' && setShowAddForm) {
       setTimeout(() => setShowAddForm(true), 120);
     }
-  };
+  }, [setActiveTab, setShowAddForm]);
 
   if (!open) return null;
 

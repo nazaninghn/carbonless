@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   AlertCircle, FileText, Leaf, Paperclip,
   Pencil, Plus, Search, Trash2, X,
@@ -280,12 +280,12 @@ export default function EmissionsTab({
   }, [entries]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
-  const resetAddForm = () => {
+  const resetAddForm = useCallback(() => {
     setSelScope(''); setSelCategory(''); setSelFactor('');
     setQuantity(''); setDesc(''); setFacility(''); setFile(null); setFormError('');
-  };
+  }, []);
 
-  const handleAdd = async (e) => {
+  const handleAdd = useCallback(async (e) => {
     e.preventDefault();
     setFormError('');
 
@@ -333,13 +333,13 @@ export default function EmissionsTab({
       toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
     }
     finally { setSubmitting(false); }
-  };
+  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, resetAddForm, fetchData]);
 
-  const handleDelete = (id) => {
+  const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     const id = deleteConfirm;
     setDeleteConfirm(null);
     try {
@@ -353,9 +353,9 @@ export default function EmissionsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     }
-  };
+  }, [deleteConfirm, tr, fetchData]);
 
-  const handleEdit = async (e) => {
+  const handleEdit = useCallback(async (e) => {
     e.preventDefault();
     if (!editing) return;
     setEditSaving(true);
@@ -372,14 +372,14 @@ export default function EmissionsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     } finally { setEditSaving(false); }
-  };
+  }, [editing, editQty, editDesc, editFacility, tr, fetchData]);
 
-  const openEdit = (entry) => {
+  const openEdit = useCallback((entry) => {
     setEditing(entry);
     setEditQty(entry.quantity);
     setEditDesc(entry.description || '');
     setEditFacility(entry.facility || '');
-  };
+  }, []);
 
   const handleCustom = async (e) => {
     e.preventDefault();

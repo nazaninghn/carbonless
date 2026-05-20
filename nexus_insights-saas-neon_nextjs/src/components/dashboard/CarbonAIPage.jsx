@@ -888,7 +888,7 @@ function QuestionnaireTab({ language }) {
   }, [currentId]); // only run when the question changes
 
   // ── handleStart ────────────────────────────────────────────────────────────
-  const handleStart = async () => {
+  const handleStart = useCallback(async () => {
     setStartLoading(true);
     setStartError('');
     try {
@@ -932,10 +932,10 @@ function QuestionnaireTab({ language }) {
     setMessages([welcomeMsg]);
     setStarted(true);
     setStartLoading(false);
-  };
+  }, [currentId, reportId, tr, lang]);
 
   // ── saveStepToBackend ──────────────────────────────────────────────────────
-  const saveStepToBackend = async (questionId, value, rid) => {
+  const saveStepToBackend = useCallback(async (questionId, value, rid) => {
     const rid_ = rid || reportId;
     if (!rid_) return;
     try {
@@ -949,7 +949,7 @@ function QuestionnaireTab({ language }) {
     } catch {
       setSaveError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     }
-  };
+  }, [reportId, tr, lang]);
 
   // ── submitAnswer ───────────────────────────────────────────────────────────
   const submitAnswer = useCallback(async (overrideValue) => {
@@ -1046,7 +1046,7 @@ function QuestionnaireTab({ language }) {
         }]);
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, reportId, lang, tr]);
+  }, [currentId, answerValue, answers, isTyping, reportId, lang, tr, saveStepToBackend]);
 
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {

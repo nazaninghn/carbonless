@@ -77,7 +77,7 @@ export default function DashboardHeader({
     }
   }, [showNotifications, notifications.length]);
 
-  const markAllRead = async () => {
+  const markAllRead = useCallback(async () => {
     const prevCount = unreadCount;
     const prevNotifications = notifications;
     setUnreadCount(0);
@@ -91,7 +91,7 @@ export default function DashboardHeader({
       setUnreadCount(prevCount);
       setNotifications(prevNotifications);
     }
-  };
+  }, [unreadCount, notifications, setUnreadCount]);
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#302817]/10 bg-white px-3 py-2.5 sm:px-4 lg:px-5">
