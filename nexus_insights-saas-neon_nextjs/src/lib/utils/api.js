@@ -128,6 +128,8 @@ export const api = {
   markNotificationsRead: (ids) => request('/accounts/notifications/read/', { method: 'POST', body: JSON.stringify(ids ? { ids } : {}) }),
   getUnreadCount: () => request('/accounts/notifications/unread-count/'),
 
+  getCompanyDetail: () => request('/companies/detail/'),
+  updateCompany: (data) => request('/companies/detail/', { method: 'PATCH', body: JSON.stringify(data) }),
   createCompany: (data) => request('/companies/create/', { method: 'POST', body: JSON.stringify(data) }),
 
   getFacilities: () => request('/companies/facilities/'),

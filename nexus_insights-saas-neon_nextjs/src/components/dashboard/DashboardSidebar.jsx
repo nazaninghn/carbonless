@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
   ClipboardCheck, Bot, ChevronRight, MoreHorizontal,
@@ -28,8 +28,8 @@ export default function DashboardSidebar({
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const tr = language === 'tr';
 
-  const closeSidebar = () => setSidebarOpen(false);
-  const navigate     = (key) => { setActiveTab(key); closeSidebar(); };
+  const closeSidebar = useCallback(() => setSidebarOpen(false), [setSidebarOpen]);
+  const navigate     = useCallback((key) => { setActiveTab(key); closeSidebar(); }, [setActiveTab, closeSidebar]);
 
   return (
     <>

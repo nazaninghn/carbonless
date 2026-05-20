@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, ChevronRight, ChevronLeft, Leaf, BarChart3, FileText, Users, Settings, Bot, Target, Sparkles } from 'lucide-react';
 
 const STEPS = {
@@ -119,20 +119,20 @@ export default function OnboardingTour({ language, onComplete }) {
   const steps = STEPS[language] || STEPS.en;
   const tr = language === 'tr';
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setShow(false);
     try { localStorage.setItem('carbonless_tour_seen', 'true'); } catch {}
     if (onComplete) onComplete();
-  };
+  }, [onComplete]);
 
-  const handleNext = () => {
-    if (step < steps.length - 1) setStep(step + 1);
+  const handleNext = useCallback(() => {
+    if (step < steps.length - 1) setStep(s => s + 1);
     else handleClose();
-  };
+  }, [step, steps.length, handleClose]);
 
-  const handlePrev = () => {
-    if (step > 0) setStep(step - 1);
-  };
+  const handlePrev = useCallback(() => {
+    if (step > 0) setStep(s => s - 1);
+  }, [step]);
 
   if (!show) return null;
 

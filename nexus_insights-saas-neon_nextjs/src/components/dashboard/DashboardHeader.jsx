@@ -138,7 +138,8 @@ export default function DashboardHeader({
           <button
             onClick={() => {
               // metaKey = Mac ⌘K, ctrlKey = Windows/Linux Ctrl+K
-              const isMac = typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform);
+              // navigator.platform is deprecated; userAgent is the recommended fallback
+              const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
               window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: isMac, ctrlKey: !isMac, bubbles: true }));
             }}
             className="hidden items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[#302817]/45 shadow-sm transition hover:bg-white hover:text-[#302817] sm:flex"

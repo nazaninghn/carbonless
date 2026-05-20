@@ -4,13 +4,8 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Building2, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 
-const API = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
-async function fetchCompanyDetail() {
-  const res = await fetch(`${API}/companies/detail/`, { credentials: 'include' });
-  if (res.ok) return { company: await res.json(), status: res.status };
-  return { company: null, status: res.status };
-}
+// fetchCompanyDetail now uses api.getCompanyDetail() so it automatically carries
+// the Bearer token + 401 auto-refresh, matching every other API call in the app.
 
 export default function CompanySettings({ language }) {
   const [company, setCompany]   = useState(null);
@@ -28,7 +23,8 @@ export default function CompanySettings({ language }) {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { company: c } = await fetchCompanyDetail();
+      const res = await api.getCompanyDetail();
+      const c = res.ok ? await res.json() : null;
       setCompany(c);
       if (c) {
         setForm(c);
@@ -112,17 +108,12 @@ export default function CompanySettings({ language }) {
     }
     setSaving(true);
     try {
-      const res = await fetch(`${API}/companies/detail/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          legal_entity_name: form.legal_entity_name,
-          tax_number: form.tax_number || '',
-          country_of_headquarters: form.country_of_headquarters || '',
-          nace_code: form.nace_code || '',
-          main_activity_description: form.main_activity_description || '',
-        }),
+      const res = await api.updateCompany({
+        legal_entity_name: form.legal_entity_name,
+        tax_number: form.tax_number || '',
+        country_of_headquarters: form.country_of_headquarters || '',
+        nace_code: form.nace_code || '',
+        main_activity_description: form.main_activity_description || '',
       });
       if (res.ok) {
         const data = await res.json();

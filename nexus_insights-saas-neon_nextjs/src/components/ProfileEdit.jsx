@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 
@@ -15,7 +15,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
   const tr    = language === 'tr';
   const toast = useToast();
 
-  const handleSave = async (e) => {
+  const handleSave = useCallback(async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg('');
@@ -48,7 +48,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [firstName, lastName, phone, department, tr, toast, onUpdate]);
 
   return (
     <form
