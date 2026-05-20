@@ -406,6 +406,8 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
   const tr = lang === 'tr';
   // Guard against duplicate auto-submits from rapid double-taps on chip options
   const chipTimerRef = useRef(null);
+  // Cancel any pending submit timer when this component unmounts (e.g. tab switch)
+  useEffect(() => () => { if (chipTimerRef.current !== null) clearTimeout(chipTimerRef.current); }, []);
   const scheduleSubmit = () => {
     if (chipTimerRef.current !== null) clearTimeout(chipTimerRef.current);
     chipTimerRef.current = setTimeout(() => { chipTimerRef.current = null; onSubmit(); }, CHIP_AUTO_SUBMIT_DELAY_MS);
@@ -881,7 +883,7 @@ function QuestionnaireTab({ language }) {
   // Keep a ref so the init effect can read the latest answers without being
   // re-triggered on every setAnswers call (which would race with submitAnswer).
   const answersRef = useRef(answers);
-  useEffect(() => { answersRef.current = answers; });
+  useEffect(() => { answersRef.current = answers; }, [answers]);
 
   // Init answer value when the QUESTION changes (navigation / goBack).
   // Deliberately excludes `answers` from the dep array — the ref above is used
@@ -1381,7 +1383,7 @@ function FreeChatTab({ language }) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   }, [sendMessage]);
 
-  const activeSession = sessions.find(s => s.id === activeId);
+  const activeSession = useMemo(() => sessions.find(s => s.id === activeId), [sessions, activeId]);
 
   return (
     <div className="relative flex flex-1 min-h-0 overflow-hidden">

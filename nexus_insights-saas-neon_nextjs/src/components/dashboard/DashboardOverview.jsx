@@ -20,8 +20,8 @@ import FacilityChart from '@/components/dashboard/FacilityChart';
 // ─── Shared month-name arrays (module-level so they are created once) ────────
 const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const MONTHS_EN_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const MONTHS_TR_SHORT = ['O','Ş','M','N','M','H','T','A','E','E','K','A'];
-const MONTHS_EN_SHORT = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+const MONTHS_TR_SHORT = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const MONTHS_EN_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 // ─── Category display names ────────────────────────────────────────────────
 const CATEGORY_LABELS = {
@@ -348,11 +348,14 @@ export default function DashboardOverview({
   const s3         = summary?.scope3_tonne ?? 0;
   const monthly    = summary?.monthly ?? [];
 
-  // Derived: average monthly (only months with data)
-  const activeMos = monthly.filter(m => m.total_kg > 0);
-  const avgTonne  = activeMos.length > 0
-    ? activeMos.reduce((a, m) => a + m.total_kg, 0) / activeMos.length / 1000
-    : 0;
+  // Derived: average monthly (only months with data) — memoized so the filter/reduce
+  // only re-runs when monthly data changes, not on every local state update.
+  const avgTonne = useMemo(() => {
+    const active = monthly.filter(m => m.total_kg > 0);
+    return active.length > 0
+      ? active.reduce((a, m) => a + m.total_kg, 0) / active.length / 1000
+      : 0;
+  }, [monthly]);
 
   // Language-aware month name arrays (used in JSX, not inside any memo)
   const MONTHS_FULL = tr ? MONTHS_TR_FULL : MONTHS_EN_FULL;
