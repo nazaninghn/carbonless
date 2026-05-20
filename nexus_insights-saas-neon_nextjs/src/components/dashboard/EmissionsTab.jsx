@@ -8,61 +8,13 @@ import {
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-const SCOPE_META = {
-  scope1: { label: 'Scope 1', bg: 'bg-[#302817]/10', text: 'text-[#302817]',   bar: '#302817' },
-  scope2: { label: 'Scope 2', bg: 'bg-[#95A847]/15', text: 'text-[#75863B]',   bar: '#95A847' },
-  scope3: { label: 'Scope 3', bg: 'bg-[#B4BE6A]/20', text: 'text-[#75863B]',   bar: '#B4BE6A' },
-};
-
-const STATUS_META = {
-  submitted: { bg: 'bg-amber-100',     text: 'text-amber-700',  tr: 'Beklemede',  en: 'Pending'  },
-  approved:  { bg: 'bg-[#95A847]/12',  text: 'text-[#75863B]', tr: 'Onaylı',     en: 'Approved' },
-  draft:     { bg: 'bg-[#302817]/8',   text: 'text-[#302817]/50', tr: 'Taslak',  en: 'Draft'    },
-};
-
-function scopeLabel(s) { return SCOPE_META[s]?.label ?? s; }
-function fmt(n, d = 2) { return parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d }); }
-
-const ALLOWED_MIME = new Set([
-  'application/pdf',
-  'image/jpeg','image/png','image/jpg',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-]);
-const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-const CATEGORY_LABELS = {
-  stationary_combustion:    { tr: 'Sabit Yanma',          en: 'Stationary Combustion' },
-  mobile_combustion:        { tr: 'Mobil Yanma',           en: 'Mobile Combustion' },
-  fugitive_emissions:       { tr: 'Kaçak Emisyon',         en: 'Fugitive Emissions' },
-  process_emissions:        { tr: 'Proses',                en: 'Process Emissions' },
-  electricity:              { tr: 'Elektrik',              en: 'Electricity' },
-  steam_heat:               { tr: 'Buhar / Isı',           en: 'Steam & Heat' },
-  purchased_goods:          { tr: 'Satın Alınan Mal',      en: 'Purchased Goods' },
-  capital_goods:            { tr: 'Sermaye Malları',        en: 'Capital Goods' },
-  fuel_energy:              { tr: 'Yakıt & Enerji',        en: 'Fuel & Energy' },
-  upstream_transport:       { tr: 'Yukarı Akış Taşıma',    en: 'Upstream Transport' },
-  waste:                    { tr: 'Atık',                  en: 'Waste' },
-  business_travel:          { tr: 'İş Seyahati',           en: 'Business Travel' },
-  employee_commuting:       { tr: 'Çalışan Ulaşımı',       en: 'Employee Commuting' },
-  upstream_leased:          { tr: 'Kiral. Var. (Yukarı)',   en: 'Upstream Leased' },
-  downstream_transport:     { tr: 'Aşağı Akış Taşıma',     en: 'Downstream Transport' },
-  processing_of_sold_products:{ tr: 'Satılan Ürün İşleme', en: 'Processing Sold Products'},
-  use_of_sold_products:     { tr: 'Satılan Ürün Kullanımı',en: 'Use of Sold Products' },
-  end_of_life:              { tr: 'Ömür Sonu',             en: 'End of Life' },
-  downstream_leased:        { tr: 'Kiral. Var. (Aşağı)',   en: 'Downstream Leased' },
-  franchises:               { tr: 'Franchise',             en: 'Franchises' },
-  investments:              { tr: 'Yatırımlar',            en: 'Investments' },
-  water:                    { tr: 'Su',                    en: 'Water' },
-  custom:                   { tr: 'Özel',                  en: 'Custom' },
-};
+import {
+  SCOPE_META, STATUS_META, CATEGORY_LABELS,
+  MONTHS_TR, MONTHS_EN,
+  ALLOWED_UPLOAD_MIME as ALLOWED_MIME,
+  MAX_UPLOAD_BYTES as MAX_FILE_BYTES,
+  scopeLabel, fmt,
+} from '@/lib/constants/emissions';
 
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {

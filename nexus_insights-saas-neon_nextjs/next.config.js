@@ -28,6 +28,23 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
           // Basic XSS filter for older browsers
           { key: 'X-XSS-Protection', value: '1; mode=block' },
+          // Content Security Policy — restricts script/style/connect sources.
+          // 'unsafe-inline' for styles is required by Tailwind's runtime utilities.
+          // Adjust connect-src if the backend URL changes from the default.
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval'",        // 'unsafe-eval' required by Next.js dev HMR; remove in strict prod build
+              "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
+              "img-src 'self' data: blob: https://images.unsplash.com",
+              "font-src 'self' data:",
+              "connect-src 'self' https: http://localhost:8000",  // covers backend API + any HTTPS fetch
+              "frame-ancestors 'none'",                 // belt-and-suspenders alongside X-Frame-Options
+              "base-uri 'self'",
+              "form-action 'self' mailto:",             // mailto: needed for contact form
+            ].join('; '),
+          },
         ],
       },
     ];
