@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import Image from 'next/image';
@@ -13,19 +13,16 @@ import {
 export default function LoginPage() {
   const { t, language, changeLanguage } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [sessionExpired, setSessionExpired] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('reason') === 'session_expired') setSessionExpired(true);
-    }
-  }, []);
+  // useSearchParams() integrates with React's streaming/suspense — safer than
+  // reading window.location.search directly in a useEffect.
+  const sessionExpired = searchParams.get('reason') === 'session_expired';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

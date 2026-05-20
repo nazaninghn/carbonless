@@ -257,12 +257,19 @@ export default function EmissionsTab({
     [filtered]
   );
 
-  // Totals
-  const totalKg = filtered.reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
+  // Totals — memoized so the reduce only re-runs when `filtered` actually changes
+  const totalKg = useMemo(
+    () => filtered.reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0),
+    [filtered],
+  );
 
-  // KPI counts
+  // KPI counts — computed once per render, not via a function called 3× per render
   const countAll = entries.length;
-  const countS = s => entries.filter(e => e.scope === s).length;
+  const [countS1, countS2, countS3] = useMemo(() => [
+    entries.filter(e => e.scope === 'scope1').length,
+    entries.filter(e => e.scope === 'scope2').length,
+    entries.filter(e => e.scope === 'scope3').length,
+  ], [entries]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const resetAddForm = () => {
@@ -443,9 +450,9 @@ export default function EmissionsTab({
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
             {[
               { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: (totKg/1000).toFixed(2), sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
-              { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS('scope1')} ${tr?'kayıt':'entries'}`, color: '#302817' },
-              { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS('scope2')} ${tr?'kayıt':'entries'}`, color: '#95A847' },
-              { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS('scope3')} ${tr?'kayıt':'entries'}`, color: '#B4BE6A' },
+              { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#302817' },
+              { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#95A847' },
+              { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#B4BE6A' },
             ].map(k => (
               <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
                 {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
@@ -479,9 +486,9 @@ export default function EmissionsTab({
         <div className="flex gap-1.5">
           {[
             { val: '', label: tr ? 'Tümü' : 'All', count: countAll },
-            { val: 'scope1', label: 'S1', count: countS('scope1') },
-            { val: 'scope2', label: 'S2', count: countS('scope2') },
-            { val: 'scope3', label: 'S3', count: countS('scope3') },
+            { val: 'scope1', label: 'S1', count: countS1 },
+            { val: 'scope2', label: 'S2', count: countS2 },
+            { val: 'scope3', label: 'S3', count: countS3 },
           ].map(p => (
             <button
               key={p.val}
@@ -645,10 +652,10 @@ export default function EmissionsTab({
                     'kg CO₂e',
                     'tCO₂e',
                     tr ? 'CO₂e payı' : 'CO₂e share',
-                    '',
+                    'actions',
                   ].map((h, i) => (
                     <th
-                      key={i}
+                      key={h}
                       className={`px-4 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#302817]/35 ${
                         i >= 3 && i <= 6 ? 'text-right' : 'text-left'
                       }`}

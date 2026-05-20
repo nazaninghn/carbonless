@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ChevronRight, ClipboardList, AlertTriangle, Info, RotateCcw, X,
@@ -521,18 +521,20 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
 function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
   const tr = lang === 'tr';
 
-  // Count questions per stage using getQuestionById
-  const allAnswered = Object.keys(answers);
-  const stageStats = CARBONIQ_STAGES.map(stage => {
-    const answeredInStage = allAnswered.filter(qid => {
-      const q = getQuestionById(qid);
-      return q && q.stage === stage.id;
+  // O(stages × answers) — memoized so it only recomputes when answers or currentId change
+  const { stageStats, totalAnswered, pct } = useMemo(() => {
+    const allAnswered = Object.keys(answers);
+    const stageStats = CARBONIQ_STAGES.map(stage => {
+      const answeredInStage = allAnswered.filter(qid => {
+        const q = getQuestionById(qid);
+        return q && q.stage === stage.id;
+      });
+      return { stage, answeredCount: answeredInStage.length };
     });
-    return { stage, answeredCount: answeredInStage.length };
-  });
-
-  const totalAnswered = Object.keys(answers).length;
-  const pct = Math.round((totalAnswered / TOTAL_QUESTIONS) * 100);
+    const totalAnswered = allAnswered.length;
+    const pct = Math.round((totalAnswered / TOTAL_QUESTIONS) * 100);
+    return { stageStats, totalAnswered, pct };
+  }, [answers]);
 
   return (
     <aside
@@ -624,7 +626,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       setInput(pre);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [open, currentQuestion?.id, lang, tr]);
+  // Include the full question object (not just .id) so a language switch that
+  // changes question.text while keeping the same id still re-fills the input.
+  }, [open, currentQuestion, lang, tr]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1104,7 +1108,7 @@ function QuestionnaireTab({ language }) {
             {currentQuestion && (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-[#302817]/40">
-                  {tr ? 'Soru' : 'Q'} {currentQuestion.number} / 133
+                  {tr ? 'Soru' : 'Q'} {currentQuestion.number} / {TOTAL_QUESTIONS}
                 </span>
                 {currentQuestion.isoRef && (
                   <span className="rounded-full bg-[#B4BE6A]/15 px-2 py-0.5 text-[9px] font-bold text-[#75863B]">
@@ -1336,9 +1340,9 @@ function FreeChatTab({ language }) {
     } catch {}
   }, [activeId]);
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  };
+  }, [sendMessage]);
 
   const activeSession = sessions.find(s => s.id === activeId);
 

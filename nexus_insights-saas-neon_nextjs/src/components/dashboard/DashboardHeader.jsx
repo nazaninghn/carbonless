@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -38,7 +38,26 @@ export default function DashboardHeader({
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifFetchedAt = useRef(0);          // timestamp of last successful fetch
+  const notifPanelRef = useRef(null);        // for click-outside detection
   const tr = language === 'tr';
+
+  // Close on Escape or click outside the notification panel
+  const closeNotifications = useCallback(() => setShowNotifications(false), []);
+  useEffect(() => {
+    if (!showNotifications) return;
+    const onKey = (e) => { if (e.key === 'Escape') closeNotifications(); };
+    const onClickOutside = (e) => {
+      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target)) {
+        closeNotifications();
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onClickOutside);
+    };
+  }, [showNotifications, closeNotifications]);
 
   const loadNotifications = async () => {
     const nextState = !showNotifications;
@@ -152,7 +171,7 @@ export default function DashboardHeader({
           </MiniSelect>
 
           {/* Notifications */}
-          <div className="relative">
+          <div className="relative" ref={notifPanelRef}>
             <button
               onClick={loadNotifications}
               className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#302817]/10 bg-white text-[#302817] shadow-sm transition hover:bg-white"

@@ -59,8 +59,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(u), 30_000); // 30s — give browser time to start download
-    } catch (err) {
-      console.error('Download failed:', err);
+    } catch {
       setDlError(tr ? 'İndirme başarısız. Lütfen tekrar deneyin.' : 'Download failed. Please try again.');
     } finally {
       setPdfLoading('');
@@ -242,19 +241,23 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           </div>
           {summary?.monthly && summary.monthly.some(m => m.total_kg > 0) ? (
             <div className="flex h-40 items-end gap-1.5">
-              {summary.monthly.map((m, i) => {
+              {(() => {
+                // Compute maxKg once outside the map — not 12× per render
                 const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
-                const pct = (m.total_kg / maxKg) * 100;
                 const months = tr ? ['O','Ş','M','N','M','H','T','A','E','E','K','A'] : ['J','F','M','A','M','J','J','A','S','O','N','D'];
+                return summary.monthly.map((m, i) => {
+                const pct = (m.total_kg / maxKg) * 100;
                 return (
-                  <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                  // Use m.month (1-12) as stable key; fall back to i for safety
+                  <div key={m.month ?? i} className="flex flex-1 flex-col items-center gap-1">
                     <div className="relative h-32 w-full overflow-hidden rounded-lg bg-[#95A847]/8">
                       <div className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#75863B] to-[#95A847] transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 6 : 0)}%` }} />
                     </div>
                     <span className="text-[10px] font-bold text-[#302817]/35">{months[i]}</span>
                   </div>
                 );
-              })}
+              });
+              })()}
             </div>
           ) : (
             <p className="flex h-40 items-center justify-center text-xs font-semibold text-[#302817]/35">{tr ? 'Trend verisi yok' : 'No trend data'}</p>

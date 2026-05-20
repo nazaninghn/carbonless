@@ -17,6 +17,12 @@ import {
 } from 'lucide-react';
 import FacilityChart from '@/components/dashboard/FacilityChart';
 
+// ─── Shared month-name arrays (module-level so they are created once) ────────
+const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const MONTHS_EN_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_TR_SHORT = ['O','Ş','M','N','M','H','T','A','E','E','K','A'];
+const MONTHS_EN_SHORT = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+
 // ─── Category display names ────────────────────────────────────────────────
 const CATEGORY_LABELS = {
   combustion:          { tr: 'Sabit Yanma',       en: 'Stationary Combustion' },
@@ -109,9 +115,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
 function MonthlyChart({ monthly, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   const maxKg = Math.max(...(monthly ?? []).map(m => m.total_kg), 1);
-  const months = tr
-    ? ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
-    : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level — no recreation
   const curMonth = new Date().getFullYear() === selectedYear ? new Date().getMonth() : -1;
 
   if (!monthly || !monthly.some(m => m.total_kg > 0)) {
@@ -127,9 +131,10 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
         const hasData = m.total_kg > 0;
         const isHovered = hoveredIdx === i;
         const isCur = i === curMonth;
+        // Use m.month (1-12 from API) as stable key; fall back to index for safety
         return (
           <div
-            key={i}
+            key={m.month ?? i}
             className="group/bar relative flex flex-1 flex-col items-center gap-1"
             onMouseEnter={() => setHoveredIdx(i)}
             onMouseLeave={() => setHoveredIdx(null)}
@@ -349,11 +354,22 @@ export default function DashboardOverview({
     ? activeMos.reduce((a, m) => a + m.total_kg, 0) / activeMos.length / 1000
     : 0;
 
-  // Biggest monthly spike
-  const peakMonth = monthly.reduce((best, m, i) =>
-    m.total_kg > (monthly[best]?.total_kg ?? 0) ? i : best, 0);
-  const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Biggest monthly spike — memoized so it only recomputes when monthly data changes
+  const peakMonth = useMemo(
+    () => monthly.reduce((best, m, i) => m.total_kg > (monthly[best]?.total_kg ?? 0) ? i : best, 0),
+    [monthly],
+  );
+  const MONTHS_FULL = tr ? MONTHS_TR_FULL : MONTHS_EN_FULL;
+
+  // Getting-started completion count — derived once, shared by both the step list
+  // and the progress bar below (replaces a duplicate IIFE inside JSX).
+  const gettingStartedDone = useMemo(() => [
+    !!questionnaireProfile?.is_complete,
+    entries.length > 0,
+    targets.length > 0,
+    facilityList.length > 0,
+    entries.some(e => e.proof_document),
+  ].filter(Boolean).length, [questionnaireProfile, entries, targets, facilityList]);
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so GPU-heavy complex view is never painted to screen on Android tablets.
@@ -458,8 +474,8 @@ export default function DashboardOverview({
             <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#95A847]" />
             <p className="text-[11px] font-semibold leading-5 text-[#302817]/70 sm:text-xs">
               {tr
-                ? `Toplam ${totalTonne.toFixed(1)} tCO₂e kaydedildi — en yüksek ay ${MONTHS_TR[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO₂e.`
-                : `Total ${totalTonne.toFixed(1)} tCO₂e recorded — peak month ${MONTHS_EN[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO₂e.`}
+                ? `Toplam ${totalTonne.toFixed(1)} tCO₂e kaydedildi — en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO₂e.`
+                : `Total ${totalTonne.toFixed(1)} tCO₂e recorded — peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO₂e.`}
             </p>
           </div>
         )}
@@ -613,9 +629,9 @@ export default function DashboardOverview({
                 en: 'Upload a proof document',
                 tab: 'emissions',
               },
-            ].map((step, i) => (
+            ].map((step) => (
               <button
-                key={i}
+                key={step.en}
                 onClick={() => !step.done && setActiveTab(step.tab)}
                 className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-[#302817]/4 disabled:cursor-default"
                 disabled={step.done}
@@ -636,31 +652,21 @@ export default function DashboardOverview({
               </button>
             ))}
           </div>
-          {/* Progress bar */}
-          {(() => {
-            const steps = [
-              !!questionnaireProfile?.is_complete,
-              entries.length > 0,
-              targets.length > 0,
-              facilityList.length > 0,
-              entries.filter(e => e.proof_document).length > 0,
-            ];
-            const done = steps.filter(Boolean).length;
-            return (
-              <div className="mt-3 border-t border-[#302817]/6 pt-3">
-                <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#302817]/40">{tr ? 'İlerleme' : 'Progress'}</span>
-                  <span className="text-[10px] font-bold text-[#302817]/40">{done}/5</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#B4BE6A] transition-all duration-700"
-                    style={{ width: `${(done / 5) * 100}%` }}
-                  />
-                </div>
+          {/* Progress bar — count derived once, no IIFE needed */}
+          {gettingStartedDone > 0 && (
+            <div className="mt-3 border-t border-[#302817]/6 pt-3">
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#302817]/40">{tr ? 'İlerleme' : 'Progress'}</span>
+                <span className="text-[10px] font-bold text-[#302817]/40">{gettingStartedDone}/5</span>
               </div>
-            );
-          })()}
+              <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#B4BE6A] transition-all duration-700"
+                  style={{ width: `${(gettingStartedDone / 5) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
         </ChartCard>
       </div>
     </div>
