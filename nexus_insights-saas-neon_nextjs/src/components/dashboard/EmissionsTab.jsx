@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   AlertCircle, FileText, Leaf, Paperclip,
   Pencil, Plus, Search, Trash2, X,
@@ -415,6 +415,28 @@ export default function EmissionsTab({
       setCSaving(false);
     }
   }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, tr, fetchData]);
+
+  // ── Escape key handlers — one per modal ─────────────────────────────────
+  useEffect(() => {
+    if (!showAddForm) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !submitting) { setShowAddForm(false); resetAddForm(); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showAddForm, submitting, setShowAddForm, resetAddForm]);
+
+  useEffect(() => {
+    if (!editing) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !editSaving) setEditing(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [editing, editSaving]);
+
+  useEffect(() => {
+    if (!showCustom) return;
+    const onKey = (e) => { if (e.key === 'Escape' && !cSaving) setShowCustom(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showCustom, cSaving]);
 
   // ── Shared modal classes ─────────────────────────────────────────────────
   const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md';

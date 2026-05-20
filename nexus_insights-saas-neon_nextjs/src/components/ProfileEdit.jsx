@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 
@@ -14,6 +14,15 @@ export default function ProfileEdit({ language, user, onUpdate }) {
 
   const tr    = language === 'tr';
   const toast = useToast();
+
+  // Re-sync form fields when the parent delivers the user profile asynchronously
+  // (useState only captures the value at mount; user may be undefined initially)
+  useEffect(() => {
+    setFirstName(user?.first_name || '');
+    setLastName(user?.last_name || '');
+    setPhone(user?.phone || '');
+    setDepartment(user?.department || '');
+  }, [user]);
 
   const handleSave = useCallback(async (e) => {
     e.preventDefault();
