@@ -633,6 +633,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  // Monotonically-incrementing counter for stable message keys — avoids the
+  // Date.now() collision risk when two messages land in the same millisecond.
+  const msgIdRef = useRef(0);
   // Tracks whether the drawer is currently open so async continuations in
   // sendHelp don't dispatch state updates after the drawer has been closed.
   const openRef = useRef(open);
@@ -675,7 +678,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 
     setInput('');
     setSending(true);
-    setMessages(prev => [...prev, { id: Date.now(), role: 'user', content }]);
+    setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
     try {
       const res = await api.sendChatMessage(helpSessionRef.current, content);
       // Guard: drawer may have been closed while the request was in-flight.
@@ -683,7 +686,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       if (openRef.current && res.ok) {
         const aiMsg = await res.json();
         // Ensure a stable key even if the API omits `id`
-        setMessages(prev => [...prev, { id: aiMsg.id ?? `ai-${Date.now()}`, ...aiMsg }]);
+        setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
       }
     } catch {}
     if (openRef.current) {
@@ -862,6 +865,8 @@ function QuestionnaireTab({ language }) {
   const scrollRef = useRef(null);
   const isMounted = useRef(true);
   const typingTimerRef = useRef(null);
+  // Stable message-key counter — avoids Date.now() collisions
+  const msgIdRef = useRef(0);
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -973,7 +978,7 @@ function QuestionnaireTab({ language }) {
       const err = validateCarbonIQAnswer(q, value, answers);
       if (err) {
         setMessages(prev => [...prev, {
-          id: Date.now() + '-err',
+          id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'error',
           content: err[lang] || err.en || String(err),
@@ -985,7 +990,7 @@ function QuestionnaireTab({ language }) {
     // Add user bubble
     const displayVal = getDisplayValue(q, value, lang);
     if (q.type !== 'info') {
-      setMessages(prev => [...prev, { id: Date.now() + '-user', role: 'user', content: displayVal }]);
+      setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content: displayVal }]);
     }
 
     // Save answer
@@ -1018,7 +1023,7 @@ function QuestionnaireTab({ language }) {
       // Show warning if any
       if (warning) {
         setMessages(prev => [...prev, {
-          id: Date.now() + '-warn',
+          id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'warning',
           content: warning[lang] || warning.en || String(warning),
@@ -1029,7 +1034,7 @@ function QuestionnaireTab({ language }) {
         // Completed
         setCompleted(true);
         setMessages(prev => [...prev, {
-          id: Date.now() + '-done',
+          id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'info',
           content: tr
@@ -1048,7 +1053,7 @@ function QuestionnaireTab({ language }) {
 
         const bubbleType = nextQ?.type === 'info' ? 'info' : 'assistant';
         setMessages(prev => [...prev, {
-          id: Date.now() + '-q',
+          id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: bubbleType,
           content,
@@ -1269,6 +1274,8 @@ function FreeChatTab({ language }) {
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  // Stable message-key counter — avoids Date.now() collisions
+  const msgIdRef = useRef(0);
   // Ref mirror of `input` — lets sendMessage read the current value without
   // adding `input` to its dep array (which would cause it to be recreated on
   // every keystroke, cascading to startNew and handleKeyDown).
@@ -1328,7 +1335,7 @@ function FreeChatTab({ language }) {
     inputValueRef.current = '';
     setSending(true);
     setError('');
-    setMessages(prev => [...prev, { id: Date.now(), role: 'user', content }]);
+    setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
 
     try {
       const res = await api.sendChatMessage(sessionId, content);

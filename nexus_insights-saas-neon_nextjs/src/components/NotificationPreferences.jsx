@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 
@@ -7,6 +7,13 @@ export default function NotificationPreferences({ language, user }) {
   const [approvals, setApprovals] = useState(user?.notify_approvals ?? true);
   const [system, setSystem] = useState(user?.notify_system ?? true);
   const [saving, setSaving] = useState(false);
+
+  // Sync checkboxes when the parent delivers the user profile asynchronously
+  // (the initial useState snapshot may be undefined if user hasn't loaded yet).
+  useEffect(() => {
+    setApprovals(user?.notify_approvals ?? true);
+    setSystem(user?.notify_system ?? true);
+  }, [user]);
 
   const tr    = language === 'tr';
   const toast = useToast();
