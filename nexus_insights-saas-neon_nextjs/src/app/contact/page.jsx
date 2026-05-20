@@ -10,6 +10,8 @@ export default function ContactPage() {
   const { t, language } = useLanguage();
   const tr = language === 'tr';
   const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const setField = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));
 
   return (
     <div className="bg-white text-gray-900 antialiased overflow-x-hidden">
@@ -72,24 +74,59 @@ export default function ContactPage() {
                       <p className="text-green-700 font-medium">{tr ? 'Teşekkürler! 24 saat içinde yanıt vereceğiz.' : 'Thank you! We will respond within 24 hours.'}</p>
                     </div>
                   ) : (
-                    <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }} className="space-y-6">
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        // Open the user's email client pre-filled; backend integration can replace this later
+                        const subject = encodeURIComponent(form.subject || (tr ? 'İletişim Formu' : 'Contact Form'));
+                        const body = encodeURIComponent(
+                          `${tr ? 'Ad Soyad' : 'Full Name'}: ${form.name}\n${tr ? 'E-posta' : 'Email'}: ${form.email}\n\n${form.message}`
+                        );
+                        window.location.href = `mailto:${t.company.email}?subject=${subject}&body=${body}`;
+                        setSubmitted(true);
+                      }}
+                      className="space-y-6"
+                    >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">{tr ? 'Ad Soyad' : 'Full Name'} *</label>
-                          <input type="text" required className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent" />
+                          <input
+                            type="text"
+                            required
+                            value={form.name}
+                            onChange={setField('name')}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">{tr ? 'E-posta' : 'Email'} *</label>
-                          <input type="email" required className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent" />
+                          <input
+                            type="email"
+                            required
+                            value={form.email}
+                            onChange={setField('email')}
+                            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                          />
                         </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">{tr ? 'Konu' : 'Subject'}</label>
-                        <input type="text" className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent" />
+                        <input
+                          type="text"
+                          value={form.subject}
+                          onChange={setField('subject')}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">{tr ? 'Mesaj' : 'Message'} *</label>
-                        <textarea rows={5} required className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent resize-none" />
+                        <textarea
+                          rows={5}
+                          required
+                          value={form.message}
+                          onChange={setField('message')}
+                          className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                        />
                       </div>
                       <button type="submit" className="px-8 py-3 bg-primary text-white font-semibold rounded-xl hover:bg-secondary transition-colors flex items-center gap-2">
                         <Send className="w-5 h-5" /> {tr ? 'Mesaj Gönder' : 'Send Message'}
