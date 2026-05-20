@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import SimpleHeader from '@/components/SimpleHeader';
 import NextLink from 'next/link';
@@ -16,7 +16,7 @@ export default function ForgotPasswordPage() {
   const [error, setError]     = useState('');
   const tr = language === 'tr';
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, tr]);
 
   return (
     <div className="bg-gradient-to-br from-green-50 via-white to-emerald-50 text-gray-900 antialiased min-h-screen">

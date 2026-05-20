@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { COUNTRIES } from '@/lib/data/countries';
 
 /**
@@ -26,17 +26,19 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
   const selected = multi ? (value || '').split(',').map(s => s.trim()).filter(Boolean) : [];
   const singleVal = !multi ? value : '';
 
-  const filtered = COUNTRIES.filter(c => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return c.tr.toLowerCase().includes(q) || c.en.toLowerCase().includes(q) || c.code.toLowerCase().includes(q);
-  });
+    return COUNTRIES.filter(c =>
+      c.tr.toLowerCase().includes(q) || c.en.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)
+    );
+  }, [search]);
 
   const getLabel = (code) => {
     const c = COUNTRIES.find(x => x.code === code || x.tr === code || x.en === code);
     return c ? `${c.flag} ${c[lang]}` : code;
   };
 
-  const handleSelect = (country) => {
+  const handleSelect = useCallback((country) => {
     if (multi) {
       const name = country[lang];
       const newList = selected.includes(name) ? selected.filter(s => s !== name) : [...selected, name];
@@ -46,15 +48,15 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
       setSearch('');
       setOpen(false);
     }
-  };
+  }, [multi, selected, lang, onChange]);
 
-  const handleRemove = (name) => {
+  const handleRemove = useCallback((name) => {
     if (multi) {
       onChange(selected.filter(s => s !== name).join(', '));
     } else {
       onChange('');
     }
-  };
+  }, [multi, selected, onChange]);
 
   return (
     <div ref={ref} className="relative">

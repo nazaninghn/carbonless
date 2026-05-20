@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   MessageCircle, X, Send, RotateCcw, AlertTriangle,
   CheckCircle2, ChevronDown, Search, Info,
@@ -354,6 +354,9 @@ export default function Chatbot({ language = 'tr', onComplete }) {
   const [allWarnings, setAllWarnings] = useState([]);
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
+  // Stable ID counter — gives each message a unique key so React never reorders
+  // on list updates (array-index keys flip when earlier messages are removed).
+  const msgIdRef = useRef(0);
 
   const lang = language;
 
@@ -363,7 +366,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
   const isChoiceType = (q) => q && ['single', 'multi'].includes(q.type);
 
   // ── Start / Resume ──────────────────────────────────────────────────────────
-  const startChat = async () => {
+  const startChat = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -394,29 +397,32 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [lang, addBotMessage, showQuestion]);
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     setOpen(true);
     if (!sessionId) startChat();
-  };
+  }, [sessionId, startChat]);
 
   // ── Message helpers ─────────────────────────────────────────────────────────
-  const addBotMessage = (text) =>
-    setMessages(prev => [...prev, { type: 'bot', text }]);
+  const addBotMessage = useCallback((text) => {
+    const id = ++msgIdRef.current;
+    setMessages(prev => [...prev, { id, type: 'bot', text }]);
+  }, []);
 
-  const showQuestion = (q) => {
-    setMessages(prev => [...prev, { type: 'question', data: q }]);
+  const showQuestion = useCallback((q) => {
+    const id = ++msgIdRef.current;
+    setMessages(prev => [...prev, { id, type: 'question', data: q }]);
     setCurrentQuestion(q);
     setCurrentPhase(q.phase || '1A');
     setSelectedOptions([]);
     setInputValues({});
     setDirectValue('');
     setError('');
-  };
+  }, []);
 
   // ── Option toggle ────────────────────────────────────────────────────────────
-  const toggleOption = (key) => {
+  const toggleOption = useCallback((key) => {
     if (!currentQuestion) return;
     if (currentQuestion.type === 'single') {
       setSelectedOptions([key]);
@@ -424,7 +430,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
       setSelectedOptions(prev =>
         prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
     }
-  };
+  }, [currentQuestion]);
 
   // ── Validation ───────────────────────────────────────────────────────────────
   const canSubmit = useMemo(() => {
@@ -447,7 +453,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
   }, [currentQuestion, directValue, selectedOptions, inputValues, loading, complete]);
 
   // ── Submit ────────────────────────────────────────────────────────────────────
-  const handleSubmitAnswer = async () => {
+  const handleSubmitAnswer = useCallback(async () => {
     if (!canSubmit || !currentQuestion) return;
     setLoading(true);
     setError('');
@@ -484,7 +490,8 @@ export default function Chatbot({ language = 'tr', onComplete }) {
       }).join(', ');
     }
 
-    setMessages(prev => [...prev, { type: 'user', text: userText }]);
+    const userId = ++msgIdRef.current;
+    setMessages(prev => [...prev, { id: userId, type: 'user', text: userText }]);
 
     try {
       const res = await api.answerQuestion({
@@ -499,7 +506,9 @@ export default function Chatbot({ language = 'tr', onComplete }) {
 
         // Show warnings as amber messages
         for (const w of (data.warnings || [])) {
+          const wId = ++msgIdRef.current;
           setMessages(prev => [...prev, {
+            id: wId,
             type: 'warning',
             text: lang === 'tr' ? w.text_tr : w.text_en,
           }]);
@@ -510,7 +519,9 @@ export default function Chatbot({ language = 'tr', onComplete }) {
           setComplete(true);
           setCurrentQuestion(null);
           setCurrentPhase('done');
+          const successId = ++msgIdRef.current;
           setMessages(prev => [...prev, {
+            id: successId,
             type: 'success',
             text: lang === 'tr'
               ? '✅ Harika! Tüm sorular tamamlandı. Verileriniz kaydedildi. Artık emisyon verisi girişine başlayabilirsiniz.'
@@ -529,9 +540,9 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [canSubmit, currentQuestion, directValue, selectedOptions, inputValues, sessionId, lang, onComplete, showQuestion]);
 
-  const handleReset = async () => {
+  const handleReset = useCallback(async () => {
     await api.resetQuestionnaire().catch(() => {});
     setSessionId(null);
     setMessages([]);
@@ -544,10 +555,10 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     setCurrentPhase('1A');
     setError('');
     startChat();
-  };
+  }, [startChat]);
 
   // ── Skip (optional questions) ─────────────────────────────────────────────────
-  const handleSkip = async () => {
+  const handleSkip = useCallback(async () => {
     if (!currentQuestion) return;
     setLoading(true);
     try {
@@ -559,7 +570,8 @@ export default function Chatbot({ language = 'tr', onComplete }) {
       });
       if (res?.ok) {
         const data = await res.json();
-        setMessages(prev => [...prev, { type: 'skip', text: lang === 'tr' ? '— Atlandı' : '— Skipped' }]);
+        const skipId = ++msgIdRef.current;
+        setMessages(prev => [...prev, { id: skipId, type: 'skip', text: lang === 'tr' ? '— Atlandı' : '— Skipped' }]);
         if (data.is_complete) {
           setComplete(true);
           setCurrentQuestion(null);
@@ -570,7 +582,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
       }
     } catch {}
     finally { setLoading(false); }
-  };
+  }, [currentQuestion, sessionId, lang, onComplete, showQuestion]);
 
   // ─── Render input area based on type ─────────────────────────────────────────
   const renderInput = () => {
@@ -670,9 +682,10 @@ export default function Chatbot({ language = 'tr', onComplete }) {
   };
 
   // ─── Message renderer ─────────────────────────────────────────────────────────
-  const renderMessage = (msg, i) => {
+  // Uses msg.id (stable counter) as key — not array index, which flips on removes.
+  const renderMessage = (msg) => {
     if (msg.type === 'bot') return (
-      <div key={i} className="flex gap-2">
+      <div key={msg.id} className="flex gap-2">
         <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
           <MessageCircle className="w-3.5 h-3.5 text-primary" />
         </div>
@@ -683,7 +696,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     );
 
     if (msg.type === 'user') return (
-      <div key={i} className="flex justify-end">
+      <div key={msg.id} className="flex justify-end">
         <div className="bg-primary text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[80%]">
           <p className="text-sm">{msg.text}</p>
         </div>
@@ -691,7 +704,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     );
 
     if (msg.type === 'skip') return (
-      <div key={i} className="flex justify-end">
+      <div key={msg.id} className="flex justify-end">
         <div className="bg-gray-200 text-gray-500 rounded-2xl rounded-tr-sm px-4 py-2 max-w-[60%]">
           <p className="text-xs italic">{msg.text}</p>
         </div>
@@ -699,7 +712,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     );
 
     if (msg.type === 'warning') return (
-      <div key={i} className="flex gap-2">
+      <div key={msg.id} className="flex gap-2">
         <div className="w-7 h-7 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
         </div>
@@ -710,7 +723,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
     );
 
     if (msg.type === 'success') return (
-      <div key={i} className="flex gap-2">
+      <div key={msg.id} className="flex gap-2">
         <div className="w-7 h-7 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
           <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
         </div>
@@ -732,7 +745,7 @@ export default function Chatbot({ language = 'tr', onComplete }) {
         ? (lang === 'tr' ? PHASE_META[q.phase].label_tr : PHASE_META[q.phase].label_en)
         : '';
       return (
-        <div key={i} className="flex gap-2">
+        <div key={msg.id} className="flex gap-2">
           <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
             <MessageCircle className="w-3.5 h-3.5 text-primary" />
           </div>

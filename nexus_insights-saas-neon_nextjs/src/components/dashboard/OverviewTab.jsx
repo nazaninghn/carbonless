@@ -11,8 +11,8 @@ export default function OverviewTab({ language, summary, entries, targets, quest
             <AlertCircle className="w-5 h-5 text-amber-600" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-amber-900">{language === 'tr' ? 'Karbon envanteri prsşnamesini tamamlayın' : 'Complete the carbon inventory questionnaire'}</p>
-            <p className="text-xs text-amber-700">{language === 'tr' ? 'Sağ alttaki chatbot ile prsşnameyi tamamlayarak raporlama yapılandırmanızı belirleyin.' : 'Use the chatbot (bottom right) to configure your reporting setup.'}</p>
+            <p className="text-sm font-medium text-amber-900">{language === 'tr' ? 'Karbon envanteri anketini tamamlayın' : 'Complete the carbon inventory questionnaire'}</p>
+            <p className="text-xs text-amber-700">{language === 'tr' ? 'Sağ alttaki chatbot ile anketi tamamlayarak raporlama yapılandırmanızı belirleyin.' : 'Use the chatbot (bottom right) to configure your reporting setup.'}</p>
           </div>
         </div>
       )}
@@ -91,8 +91,10 @@ export default function OverviewTab({ language, summary, entries, targets, quest
         <div className="bg-white rounded-xl border border-black/[0.04] shadow-soft p-6">
           <h3 className="font-semibold text-slate mb-4">{language === 'tr' ? 'AYLIK TREND' : 'MONTHLY TREND'}</h3>
           <div className="flex items-end gap-1 h-40">
-            {summary.monthly.map((m, i) => {
+            {(() => {
+              // Compute once, not once-per-bar (was O(n²))
               const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
+              return summary.monthly.map((m, i) => {
               const pct = (m.total_kg / maxKg) * 100;
               return (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
@@ -103,7 +105,8 @@ export default function OverviewTab({ language, summary, entries, targets, quest
                   <span className="text-xs text-graphite/60">{months[i]}</span>
                 </div>
               );
-            })}
+              }); // end monthly.map
+            })()}
           </div>
         </div>
       )}
@@ -133,7 +136,7 @@ export default function OverviewTab({ language, summary, entries, targets, quest
             <h3 className="font-semibold text-slate mb-2">{language === 'tr' ? 'Başlangıç Rehberi' : 'Getting Started'}</h3>
             <div className="space-y-2 mb-4">
               {[
-                { done: !!questionnaireProfile?.is_complete, tr: 'Prsşnameyi tamamla', en: 'Complete questionnaire' },
+                { done: !!questionnaireProfile?.is_complete, tr: 'Anketi tamamla', en: 'Complete questionnaire' },
                 { done: entries.length > 0, tr: 'İlk emisyon verisini gir', en: 'Enter first emission data' },
                 { done: targets.length > 0, tr: 'Azaltma hedefi belirle', en: 'Set reduction target' },
                 { done: facilityList.length > 0, tr: 'Tesis ekle', en: 'Add a facility' },

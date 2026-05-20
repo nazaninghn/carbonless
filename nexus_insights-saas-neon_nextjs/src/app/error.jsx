@@ -1,19 +1,41 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+
 export default function Error({ error, reset }) {
+  // error.jsx renders outside LanguageProvider (it can catch layout-level errors),
+  // so we read the language preference directly from localStorage.
+  const [tr, setTr] = useState(false);
+
+  useEffect(() => {
+    try {
+      const lang = localStorage.getItem('language');
+      const explicit = localStorage.getItem('language_explicit');
+      setTr(lang === 'tr' && explicit === '1');
+    } catch {
+      // localStorage blocked — keep English default
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#F9EFE5]/40 px-4">
       <div className="text-center max-w-md">
         <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-2xl">⚠️</span>
         </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Bir hata oluştu</h2>
-        <p className="text-gray-600 mb-6 text-sm">{error?.message || 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'}</p>
+        <h2 className="text-xl font-bold text-[#302817] mb-2">
+          {tr ? 'Bir hata oluştu' : 'Something went wrong'}
+        </h2>
+        <p className="text-[#302817]/60 mb-6 text-sm">
+          {error?.message || (tr
+            ? 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'
+            : 'An unexpected error occurred. Please try again.')}
+        </p>
         <button
           onClick={() => reset()}
-          className="px-6 py-3 bg-primary text-white rounded-xl hover:bg-secondary transition-colors"
+          className="px-6 py-3 bg-[#302817] text-[#F9EFE5] rounded-xl hover:bg-black transition-colors font-semibold"
         >
-          Tekrar Dene
+          {tr ? 'Tekrar Dene' : 'Try Again'}
         </button>
       </div>
     </div>
