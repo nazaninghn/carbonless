@@ -645,7 +645,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     }
   }, [messages, sending]);
 
-  const sendHelp = async () => {
+  const sendHelp = useCallback(async () => {
     const content = input.trim();
     if (!content || sending) return;
 
@@ -673,7 +673,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     } catch {}
     setSending(false);
     inputRef.current?.focus();
-  };
+  }, [input, sending, tr, helpSessionRef]);
 
   if (!open) return null;
 
@@ -1250,6 +1250,10 @@ function FreeChatTab({ language }) {
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  // Ref mirror of `input` — lets sendMessage read the current value without
+  // adding `input` to its dep array (which would cause it to be recreated on
+  // every keystroke, cascading to startNew and handleKeyDown).
+  const inputValueRef = useRef('');
 
   useEffect(() => {
     if (scrollRef.current)
@@ -1301,19 +1305,24 @@ function FreeChatTab({ language }) {
       setError('');
       if (initialPrompt) {
         // Tiny delay lets React flush the state above (activeId, messages) before
-        // sendMessage reads them. sendMessage is in the dep array so this closure
-        // always has the current version — no stale-closure risk.
+        // sendMessage reads them. sendMessage is stable (no input dep), so it is
+        // safe to omit from this dep array.
         setTimeout(() => sendMessage(initialPrompt, session.id), CHIP_AUTO_SUBMIT_DELAY_MS);
       }
     } catch {}
-  }, [sendMessage]); // sendMessage is a stable useCallback; include it to avoid stale closure
+  }, [sendMessage]);
 
   const sendMessage = useCallback(async (text, sid) => {
-    const content = (text || input).trim();
+    // Read input from the ref mirror rather than from closure so that `input`
+    // does not need to be in the dep array — if it were, sendMessage (and
+    // everything that depends on it: startNew, handleKeyDown) would be
+    // recreated on every keystroke, causing unnecessary re-renders.
+    const content = (text || inputValueRef.current).trim();
     const sessionId = sid || activeId;
     if (!content || !sessionId || sending) return;
 
     setInput('');
+    inputValueRef.current = '';
     setSending(true);
     setError('');
     setMessages(prev => [...prev, { id: Date.now(), role: 'user', content }]);
@@ -1339,7 +1348,7 @@ function FreeChatTab({ language }) {
     }
     setSending(false);
     inputRef.current?.focus();
-  }, [input, activeId, sending, tr]);
+  }, [activeId, sending, tr]); // `input` removed — read via inputValueRef.current
 
   const deleteSession = useCallback(async (id) => {
     try {
@@ -1482,7 +1491,7 @@ function FreeChatTab({ language }) {
             <textarea
               ref={inputRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
               onKeyDown={handleKeyDown}
               disabled={!activeId && !sending}
               placeholder={

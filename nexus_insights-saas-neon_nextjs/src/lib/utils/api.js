@@ -47,12 +47,26 @@ async function request(endpoint, options = {}) {
 
   if (res.status !== 401) return res;
 
-  // Singleton refresh: one network call for any number of concurrent 401s.
-  // The promise resolves with a plain { ok, access } object so every concurrent
-  // awaiter gets the same parsed value (a Response body can only be consumed once).
-  // We clear _refreshPromise INSIDE the .then() chain — after the token is written
-  // but before callers retry — so a new burst of 401s that arrives in this tiny
-  // window will correctly wait for the token rather than starting a second refresh.
+  const refreshResult = await doRefresh();
+  if (!refreshResult?.ok) return new Response(null, { status: 401 });
+
+  const { access } = refreshResult;
+  // Token already written inside doRefresh; setToken here keeps the path symmetric.
+  setToken(access);
+
+  return fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: { ...headers, Authorization: `Bearer ${access}` },
+    credentials: 'include',
+  });
+}
+
+// Singleton refresh: one network call for any number of concurrent 401s.
+// The promise resolves with { ok, access }; body is consumed once and shared.
+// _refreshPromise is cleared INSIDE .then() — after the token is written —
+// so concurrent callers that arrive in the tiny gap wait for the token,
+// not start a second refresh.
+async function doRefresh() {
   if (!_refreshPromise) {
     _refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
       .then(async rr => {
@@ -63,8 +77,6 @@ async function request(endpoint, options = {}) {
         try {
           const data = await rr.json();
           const access = data.access || null;
-          // Write the token here so any concurrent caller that was already past the
-          // `await _refreshPromise` line won't race on setToken vs. a second refresh.
           if (access) setToken(access);
           _refreshPromise = null;
           return { ok: !!access, access };
@@ -75,24 +87,13 @@ async function request(endpoint, options = {}) {
       })
       .catch(() => { _refreshPromise = null; return { ok: false, access: null }; });
   }
-  const refreshResult = await _refreshPromise;
-  if (!refreshResult?.ok) {
+  const result = await _refreshPromise;
+  if (!result?.ok) {
     setToken(null);
     clearSessionCookie();
     if (typeof window !== 'undefined') window.location.href = '/login?reason=session_expired';
-    return new Response(null, { status: 401 });
   }
-
-  const { access } = refreshResult;
-  // Token already written inside the refresh chain above; setToken here is a no-op
-  // if the value matches, but keeps the code path symmetric for clarity.
-  setToken(access);
-
-  return fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers: { ...headers, Authorization: `Bearer ${access}` },
-    credentials: 'include',
-  });
+  return result;
 }
 
 export const api = {
@@ -138,12 +139,23 @@ export const api = {
   getFactors: (params = '') => request(`/emissions/factors/${params ? '?' + params : ''}`),
   getEntries: (params = '') => request(`/emissions/entries/${params ? '?' + params : ''}`),
   createEntry: (data) => request('/emissions/entries/', { method: 'POST', body: JSON.stringify(data) }),
-  createEntryWithFile: (formData) => {
+  createEntryWithFile: async (formData) => {
+    // FormData uploads cannot use request() (which sets Content-Type: application/json),
+    // so we handle the 401 token-refresh path manually here.
     const token = getToken();
-    return fetch(`${API_BASE}/emissions/entries/`, {
+    const res = await fetch(`${API_BASE}/emissions/entries/`, {
       method: 'POST',
       credentials: 'include',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+    if (res.status !== 401) return res;
+    const refreshResult = await doRefresh();
+    if (!refreshResult?.ok) return new Response(null, { status: 401 });
+    return fetch(`${API_BASE}/emissions/entries/`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { Authorization: `Bearer ${refreshResult.access}` },
       body: formData,
     });
   },

@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/utils/api';
 
 export default function FacilityChart({ language, selectedYear, compact }) {
@@ -46,7 +46,7 @@ export default function FacilityChart({ language, selectedYear, compact }) {
     );
   }
 
-  const maxKg = Math.max(...data.map(d => d.total_kg), 1);
+  const maxKg = useMemo(() => Math.max(...data.map(d => d.total_kg), 1), [data]);
   const SCOPE_COLORS = ['#75863B', '#95A847', '#B4BE6A', '#302817'];
 
   if (compact) {

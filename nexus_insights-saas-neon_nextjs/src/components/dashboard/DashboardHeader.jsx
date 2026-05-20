@@ -59,7 +59,7 @@ export default function DashboardHeader({
     };
   }, [showNotifications, closeNotifications]);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     const nextState = !showNotifications;
     setShowNotifications(nextState);
     if (!nextState) return;
@@ -75,7 +75,7 @@ export default function DashboardHeader({
     } catch {
       // Network error — keep existing list visible, no user-facing alert needed
     }
-  };
+  }, [showNotifications, notifications.length]);
 
   const markAllRead = async () => {
     const prevCount = unreadCount;

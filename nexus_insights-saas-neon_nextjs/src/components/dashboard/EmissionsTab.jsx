@@ -271,6 +271,14 @@ export default function EmissionsTab({
     entries.filter(e => e.scope === 'scope3').length,
   ], [entries]);
 
+  // KPI kg totals — replaces the per-render IIFE in JSX (O(n) work on each render)
+  const [s1kg, s2kg, s3kg, totKg] = useMemo(() => {
+    const s1 = entries.filter(e => e.scope === 'scope1').reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
+    const s2 = entries.filter(e => e.scope === 'scope2').reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
+    const s3 = entries.filter(e => e.scope === 'scope3').reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0);
+    return [s1, s2, s3, s1 + s2 + s3];
+  }, [entries]);
+
   // ── Handlers ─────────────────────────────────────────────────────────────
   const resetAddForm = () => {
     setSelScope(''); setSelCategory(''); setSelFactor('');
@@ -441,29 +449,21 @@ export default function EmissionsTab({
       </div>
 
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
-      {(() => {
-        const s1kg = entries.filter(e => e.scope === 'scope1').reduce((a,e) => a + (parseFloat(e.calculated_co2e_kg)||0), 0);
-        const s2kg = entries.filter(e => e.scope === 'scope2').reduce((a,e) => a + (parseFloat(e.calculated_co2e_kg)||0), 0);
-        const s3kg = entries.filter(e => e.scope === 'scope3').reduce((a,e) => a + (parseFloat(e.calculated_co2e_kg)||0), 0);
-        const totKg = s1kg + s2kg + s3kg;
-        return (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-            {[
-              { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: (totKg/1000).toFixed(2), sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
-              { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#302817' },
-              { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#95A847' },
-              { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#B4BE6A' },
-            ].map(k => (
-              <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
-                {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
-                <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
-                <p className="mt-1 text-[18px] font-bold leading-none text-[#302817] sm:text-xl">{k.value}</p>
-                <p className="mt-0.5 text-[9px] font-semibold text-[#302817]/35">{k.sub}</p>
-              </div>
-            ))}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
+        {[
+          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: (totKg/1000).toFixed(2), sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
+          { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#302817' },
+          { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#95A847' },
+          { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#B4BE6A' },
+        ].map(k => (
+          <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
+            {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
+            <p className="mt-1 text-[18px] font-bold leading-none text-[#302817] sm:text-xl">{k.value}</p>
+            <p className="mt-0.5 text-[9px] font-semibold text-[#302817]/35">{k.sub}</p>
           </div>
-        );
-      })()}
+        ))}
+      </div>
 
       {/* ── Search + Scope filter ──────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bot,
   ClipboardCheck,
@@ -76,7 +76,9 @@ export default function CommandPalette({
   }, [open]);
 
   // ── Build flat result list ─────────────────────────────────────────────────
-  const items = useCallback(() => {
+  // useMemo (not useCallback + immediate invoke) so the array is only rebuilt
+  // when query, language, or entries change — not on every render.
+  const items = useMemo(() => {
     const q = query.trim().toLowerCase();
 
     const navResults = NAV_ITEMS
@@ -106,7 +108,7 @@ export default function CommandPalette({
       : [];
 
     return [...navResults, ...quickResults, ...entryResults];
-  }, [query, tr, entries])();
+  }, [query, tr, entries]);
 
   // ── Arrow-key + Enter navigation ──────────────────────────────────────────
   useEffect(() => {

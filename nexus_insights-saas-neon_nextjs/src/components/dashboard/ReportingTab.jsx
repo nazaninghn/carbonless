@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 
 // ─── Month name arrays (module-level to avoid per-render allocation) ──────────
@@ -36,6 +36,12 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     { done: targets.length > 0, label: tr ? 'Azaltma hedefi belirlendi' : 'Reduction target set' },
   ];
   const readiness = Math.round((checks.filter(c => c.done).length / checks.length) * 100);
+
+  // Monthly chart max — computed once, not inside the render IIFE
+  const monthlyMaxKg = useMemo(
+    () => Math.max(...(summary?.monthly?.map(x => x.total_kg) ?? []), 1),
+    [summary?.monthly],
+  );
 
   const handleDownload = async (type, lang) => {
     setPdfLoading(type + lang);
@@ -247,11 +253,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           {summary?.monthly && summary.monthly.some(m => m.total_kg > 0) ? (
             <div className="flex h-40 items-end gap-1.5">
               {(() => {
-                // Compute maxKg once outside the map — not 12× per render
-                const maxKg = Math.max(...summary.monthly.map(x => x.total_kg), 1);
                 const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT;
                 return summary.monthly.map((m, i) => {
-                const pct = (m.total_kg / maxKg) * 100;
+                const pct = (m.total_kg / monthlyMaxKg) * 100;
                 return (
                   // Use m.month (1-12) as stable key; fall back to i for safety
                   <div key={m.month ?? i} className="flex flex-1 flex-col items-center gap-1">

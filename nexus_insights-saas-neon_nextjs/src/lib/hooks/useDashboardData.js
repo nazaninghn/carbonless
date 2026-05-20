@@ -104,9 +104,8 @@ export function useDashboardData(selectedYear) {
         },
       });
       isFirstLoad.current = false;
-    } catch (err) {
+    } catch {
       if (thisGen !== fetchGen.current) return; // stale — ignore
-      console.error('Dashboard fetch error:', err);
       if (isFirstLoad.current) {
         dispatch({ type: 'LOADED', payload: {} }); // stop spinner on first-load failure
         isFirstLoad.current = false;               // prevent re-running as "first load" on retry
