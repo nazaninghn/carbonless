@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
+import Image from 'next/image';
 import { Globe } from 'lucide-react';
 import { Menu } from 'lucide-react';
 import { Text } from '@/components/Text';
@@ -19,9 +20,7 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <NextLink href="/" className="flex items-center gap-2">
-            <img 
-              src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
-            />
+            <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
             <Text variant="bold" className="text-xl font-bold text-[#16A34A]">
               {t.brandName}
             </Text>
@@ -101,9 +100,7 @@ export default function Header() {
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between h-16 lg:h-20 px-6 border-b border-black/[0.04]">
               <NextLink href="/" className="flex items-center gap-2">
-                <img 
-                  src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
-                />
+                <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
                 <Text variant="bold" className="text-xl font-bold text-[#16A34A]">
                   {t.brandName}
                 </Text>

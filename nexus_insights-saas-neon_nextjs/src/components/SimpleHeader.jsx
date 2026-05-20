@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
+import Image from 'next/image';
 import { Globe } from 'lucide-react';
 
 export default function SimpleHeader() {
@@ -13,11 +14,7 @@ export default function SimpleHeader() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <NextLink href="/" className="flex items-center gap-3">
-            <img 
-              src="/carbonless.png" 
-              alt="Carbonless" 
-              className="h-11 w-11 sm:h-14 sm:w-14 object-contain"
-            />
+            <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-11 w-11 sm:h-14 sm:w-14 object-contain" />
             <span className="text-xl sm:text-[22px] font-bold tracking-[-0.02em] text-[#16A34A]">
               Carbonless
             </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight, Globe2, Leaf } from 'lucide-react';
 
 const copy = {
@@ -62,7 +63,7 @@ export default function Home() {
 
       <header className="relative z-20 mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
-          <img src="/carbonless.png" alt="Carbonless" className="h-11 w-11 sm:h-14 sm:w-14" />
+          <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-11 w-11 sm:h-14 sm:w-14" />
           <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#302817]">Carbonless</span>
         </Link>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -88,7 +89,7 @@ export default function Home() {
 
       <section className="relative z-10 mx-auto flex min-h-[calc(100vh-80px)] w-full max-w-6xl flex-col items-center justify-center px-4 pb-8 pt-0 text-center sm:px-6">
         <div className="relative mx-auto mb-5 w-fit sm:mb-6">
-          <img src="/carbon-hero.png" alt="Carbon molecule with green leaves" className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[5deg] active:scale-110 active:rotate-[5deg] hover:drop-shadow-[0_40px_70px_rgba(48,40,23,0.22)] cursor-pointer" />
+          <Image src="/carbon-hero.png" alt="Carbon molecule with green leaves" width={420} height={420} className="carbon-hero-float relative mx-auto w-[245px] drop-shadow-[0_32px_55px_rgba(48,40,23,0.16)] sm:w-[330px] md:w-[370px] lg:w-[420px] transition-transform duration-500 ease-out hover:scale-110 hover:rotate-[5deg] active:scale-110 active:rotate-[5deg] hover:drop-shadow-[0_40px_70px_rgba(48,40,23,0.22)] cursor-pointer" />
         </div>
 
         <div className="group relative mx-auto mb-4 inline-flex max-w-full items-center gap-2 overflow-hidden rounded-full border border-[#B4BE6A]/25 bg-[#F9EFE5] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#B4BE6A] shadow-lg shadow-[#302817]/5 backdrop-blur-xl sm:mb-5 sm:text-xs cursor-pointer active:scale-95">

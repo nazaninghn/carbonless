@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
+import Image from 'next/image';
 import { Mail, Phone, MapPin } from 'lucide-react';
 
 export default function Footer() {
@@ -14,9 +15,7 @@ export default function Footer() {
           {/* Company Info */}
           <div className="lg:col-span-2">
             <div className="flex items-center gap-3 mb-4">
-              <img 
-                src="/carbonless.png" alt="Carbonless" className="h-14 w-auto"
-              />
+              <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
               <h3 className="text-xl font-bold text-[#16A34A]">
                 {t.company.name}
               </h3>

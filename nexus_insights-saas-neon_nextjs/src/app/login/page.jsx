@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
+import Image from 'next/image';
 import {
   ArrowRight, CheckCircle2, Eye, EyeOff, Globe2,
   LockKeyhole, Mail, ShieldCheck, Sparkles,
@@ -49,7 +50,7 @@ export default function LoginPage() {
 
       <header className="relative z-20 mx-auto flex h-20 w-full max-w-6xl items-center justify-between gap-2 px-4 sm:px-6 lg:px-8">
         <NextLink href="/" className="flex min-w-0 items-center gap-2">
-          <img src="/carbonless.png" alt="Carbonless" className="h-10 w-10 shrink-0 sm:h-14 sm:w-14" />
+          <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-10 w-10 shrink-0 sm:h-14 sm:w-14" />
           <span className="truncate text-lg font-bold tracking-tight text-[#302817] sm:text-[22px]">Carbonless</span>
         </NextLink>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">

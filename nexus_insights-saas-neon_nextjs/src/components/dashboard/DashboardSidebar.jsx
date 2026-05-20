@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
   ClipboardCheck, Bot, ChevronRight, MoreHorizontal,
 } from 'lucide-react';
+import Image from 'next/image';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -49,7 +50,7 @@ export default function DashboardSidebar({
               onClick={() => navigate('dashboard')}
               className="flex min-w-0 items-center gap-2"
             >
-              <img src="/carbonless.png" alt="Carbonless" className="h-10 w-auto shrink-0" />
+              <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-auto shrink-0" />
               <span className="truncate text-base font-bold tracking-tight text-[#302817]">
                 Carbonless
               </span>
