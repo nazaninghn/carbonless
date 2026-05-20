@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -32,7 +32,20 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [naceSearch, setNaceSearch] = useState('');
   const [naceOpen, setNaceOpen] = useState(false);
+  const naceRef = useRef(null);
   const tr = language === 'tr';
+
+  // Close NACE dropdown when clicking outside its container
+  useEffect(() => {
+    if (!naceOpen) return;
+    const onMouse = (e) => {
+      if (naceRef.current && !naceRef.current.contains(e.target)) {
+        setNaceOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onMouse);
+    return () => document.removeEventListener('mousedown', onMouse);
+  }, [naceOpen]);
 
   // Stable across renders — setFormData and setError are guaranteed stable by React
   const handleInputChange = useCallback((field, value) => {
@@ -282,7 +295,7 @@ export default function RegisterPage() {
                   </div>
                 </Panel>
                 <Panel title={language === 'tr' ? 'Sektör' : 'Sector'} icon={Globe2}>
-                  <div><Label required>{language === 'tr' ? 'NACE Kodu' : 'NACE Code'}</Label><div className="relative"><input type="text" value={naceSearch} onChange={e => { setNaceSearch(e.target.value); setNaceOpen(true); }} onFocus={() => setNaceOpen(true)} placeholder={language === 'tr' ? 'Kod veya sektör adı...' : 'Code or sector name...'} className="field-premium" />{formData.naceCode && <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/12 px-4 py-3 text-sm"><span><b>{formData.naceCode}</b> — {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span><button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-xs text-red-500">✕</button></div>}{naceOpen && naceSearch.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#302817]/10 bg-white p-2 shadow-2xl">{ALL_NACE_CODES.filter(n => { const q = naceSearch.toLowerCase(); return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q); }).slice(0, 12).map(n => <button key={n.code} type="button" onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }} className="w-full rounded-xl px-4 py-3 text-left text-sm hover:bg-[#B4BE6A]/10"><b className="text-[#95A847]">{n.code}</b> <span className="text-[#302817]/70">{language === 'tr' ? n.tr : n.en}</span></button>)}</div>}</div></div>
+                  <div><Label required>{language === 'tr' ? 'NACE Kodu' : 'NACE Code'}</Label><div ref={naceRef} className="relative"><input type="text" value={naceSearch} onChange={e => { setNaceSearch(e.target.value); setNaceOpen(true); }} onFocus={() => setNaceOpen(true)} placeholder={language === 'tr' ? 'Kod veya sektör adı...' : 'Code or sector name...'} className="field-premium" />{formData.naceCode && <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/12 px-4 py-3 text-sm"><span><b>{formData.naceCode}</b> — {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span><button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-xs text-red-500">✕</button></div>}{naceOpen && naceSearch.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#302817]/10 bg-white p-2 shadow-2xl">{ALL_NACE_CODES.filter(n => { const q = naceSearch.toLowerCase(); return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q); }).slice(0, 12).map(n => <button key={n.code} type="button" onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }} className="w-full rounded-xl px-4 py-3 text-left text-sm hover:bg-[#B4BE6A]/10"><b className="text-[#95A847]">{n.code}</b> <span className="text-[#302817]/70">{language === 'tr' ? n.tr : n.en}</span></button>)}</div>}</div></div>
                   <div className="mt-4"><Label required>{language === 'tr' ? 'Ana Faaliyet' : 'Main Activity'}</Label><textarea required value={formData.mainActivityDescription} onChange={e => handleInputChange('mainActivityDescription', e.target.value)} maxLength={500} rows={3} className="field-premium resize-none" placeholder={language === 'tr' ? 'Kısa açıklama...' : 'Short description...'} /></div>
                 </Panel>
                 <FormActions><PrimaryButton type="button" onClick={() => goToSection(2)}>{language === 'tr' ? 'Devam' : 'Continue'}<ArrowRight className="h-4 w-4" /></PrimaryButton></FormActions>
