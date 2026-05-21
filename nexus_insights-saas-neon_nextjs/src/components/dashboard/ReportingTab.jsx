@@ -12,12 +12,10 @@ import {
   Shield,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
-
-// ─── Month name arrays (module-level to avoid per-render allocation) ──────────
-// 3-letter abbreviations used so months sharing the same initial letter are
-// distinguishable on the bar-chart x-axis (e.g. Mar vs May, Jun vs Jul vs Jan).
-const MONTHS_TR_SHORT = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-const MONTHS_EN_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+import {
+  MONTHS_TR as MONTHS_TR_SHORT,
+  MONTHS_EN as MONTHS_EN_SHORT,
+} from '@/lib/constants/emissions';
 
 export default function ReportingTab({ language, selectedYear, summary, entries, targets, questionnaireProfile }) {
   const [pdfLoading, setPdfLoading] = useState('');
