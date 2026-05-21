@@ -21,7 +21,7 @@ module.exports = {
         dark:      '#302817',   // App-specific dark brown
       },
       fontFamily: {
-        "inter": ["Inter", "sans-serif"],
+        "inter": ["var(--font-inter)", "sans-serif"],
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -4px rgba(0, 0, 0, 0.03)',
