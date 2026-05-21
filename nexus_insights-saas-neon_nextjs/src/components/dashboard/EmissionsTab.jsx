@@ -871,8 +871,8 @@ export default function EmissionsTab({
                     </div>
                   </div>
                   {quantity && selFactorObj && (
-                    <div className="rounded-2xl border border-blue-200/60 bg-blue-50/60 px-4 py-3">
-                      <p className="text-xs font-bold text-blue-700">
+                    <div className="rounded-2xl border border-[#95A847]/25 bg-[#95A847]/8 px-4 py-3">
+                      <p className="text-xs font-bold text-[#75863B]">
                         {tr ? 'Tahmini:' : 'Estimated:'}{' '}
                         {(parseFloat(quantity) * parseFloat(selFactorObj.factor_kg_co2e)).toFixed(2)} kg CO₂e
                         {' '}({((parseFloat(quantity) * parseFloat(selFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} t)

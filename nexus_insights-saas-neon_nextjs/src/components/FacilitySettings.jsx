@@ -147,9 +147,9 @@ export default function FacilitySettings({ language }) {
     <div className="space-y-3">
       {/* Success banner */}
       {successMsg && (
-        <div className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 px-3 py-2">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
-          <p className="text-xs text-green-700">{successMsg}</p>
+        <div className="flex items-center gap-2 rounded-xl border border-[#95A847]/30 bg-[#95A847]/8 px-3 py-2">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#75863B]" />
+          <p className="text-xs text-[#75863B]">{successMsg}</p>
         </div>
       )}
 
@@ -166,7 +166,7 @@ export default function FacilitySettings({ language }) {
               </div>
               <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
                 f.is_active
-                  ? 'bg-green-100 text-green-700'
+                  ? 'bg-[#95A847]/12 text-[#75863B]'
                   : 'bg-[#F0F0F0] text-[#302817]/50'
               }`}>
                 {f.is_active

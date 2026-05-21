@@ -37,11 +37,11 @@ export default function NotificationPreferences({ language, user }) {
   return (
     <div className="space-y-3 max-w-md">
       <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" checked={approvals} onChange={e => setApprovals(e.target.checked)} className="w-4 h-4 text-[#95A847] rounded" />
+        <input type="checkbox" checked={approvals} onChange={e => setApprovals(e.target.checked)} className="w-4 h-4 accent-[#95A847] rounded" />
         <span className="text-sm text-[#302817]">{tr ? 'Onay bildirimleri' : 'Approval notifications'}</span>
       </label>
       <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" checked={system} onChange={e => setSystem(e.target.checked)} className="w-4 h-4 text-[#95A847] rounded" />
+        <input type="checkbox" checked={system} onChange={e => setSystem(e.target.checked)} className="w-4 h-4 accent-[#95A847] rounded" />
         <span className="text-sm text-[#302817]">{tr ? 'Sistem bildirimleri' : 'System notifications'}</span>
       </label>
       <button

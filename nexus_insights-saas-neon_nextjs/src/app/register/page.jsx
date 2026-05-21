@@ -345,7 +345,7 @@ export default function RegisterPage() {
                   {language === 'tr' ? 'Kaydolarak ' : 'By registering you agree to our '}
                   <a href="/terms" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Kullanım Şartları' : 'Terms of Use'}</a>
                   {language === 'tr' ? ' ve ' : ' and '}
-                  <a href="/privacy" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
+                  <a href="/terms#privacy" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
                   {language === 'tr' ? '\'nı kabul etmiş olursunuz.' : '.'}
                 </p>
               </div>
