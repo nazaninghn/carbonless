@@ -35,7 +35,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval'",        // 'unsafe-eval' required by Next.js dev HMR; remove in strict prod build
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js 15 needs unsafe-inline for hydration chunks
               "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
               "img-src 'self' data: blob: https://images.unsplash.com",
               "font-src 'self' data:",
