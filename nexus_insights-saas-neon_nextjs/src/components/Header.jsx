@@ -63,7 +63,7 @@ export default function Header() {
               href="/register" 
               className="relative group px-6 py-2.5 bg-gradient-to-r from-[#75863B] to-[#95A847] text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(149,168,71,0.35)]"
             >
-              <Text className="relative z-10">{t.nav.register}</span>
+              <span className="relative z-10">{t.nav.register}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-[#95A847] to-[#B4BE6A] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </NextLink>
           </div>

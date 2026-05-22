@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { api, markSessionActive } from '@/lib/utils/api';
 
-export default function LoginPage() {
+function LoginContent() {
   const { t, language } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -136,5 +136,13 @@ export default function LoginPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }
