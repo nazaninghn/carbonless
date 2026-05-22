@@ -232,6 +232,7 @@ function SessionItem({ session, active, onClick, onDelete, tr }) {
       </p>
       <button
         onClick={e => { e.stopPropagation(); onDelete(session.id); }}
+        aria-label={tr ? 'Sohbeti sil' : 'Delete chat'}
         className="absolute right-2 top-2.5 hidden rounded-md p-1 text-[#302817]/30 transition hover:bg-red-50 hover:text-red-400 group-hover:flex"
       >
         <Trash2 className="h-3 w-3" />
@@ -707,7 +708,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
         onClick={onClose}
       />
       {/* Drawer */}
-      <div className="absolute inset-y-0 right-0 z-50 flex w-[min(340px,100vw)] flex-col border-l border-[#302817]/8 bg-white shadow-[−8px_0_40px_rgba(48,40,23,0.08)] md:relative md:inset-auto md:z-auto md:w-[300px] md:shadow-none">
+      <div className="absolute inset-y-0 right-0 z-50 flex w-[min(340px,100vw)] flex-col border-l border-[#302817]/8 bg-white shadow-[-8px_0_40px_rgba(48,40,23,0.08)] md:relative md:inset-auto md:z-auto md:w-[300px] md:shadow-none">
         {/* Header */}
         <div className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 px-4 py-3">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10">
@@ -857,6 +858,7 @@ function QuestionnaireTab({ language }) {
   // On mobile sidebar starts closed; desktop starts open
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
@@ -905,6 +907,9 @@ function QuestionnaireTab({ language }) {
   const handleStart = useCallback(async () => {
     setStartLoading(true);
     setStartError('');
+    // Capture the effective starting question ID before any async setState calls
+    // (setState is async — reading currentId after setCurrentId still sees the old value)
+    let effectiveId = currentId;
     try {
       const res = await api.startCarbonReport();
       const data = await res.json().catch(() => ({}));
@@ -923,6 +928,7 @@ function QuestionnaireTab({ language }) {
       setReportId(data.report_id);
       // If resuming an existing report, jump to where user left off
       if (data.resumed && data.current_step && data.current_step !== 'DONE') {
+        effectiveId = data.current_step;
         setCurrentId(data.current_step);
       }
     } catch {
@@ -931,14 +937,15 @@ function QuestionnaireTab({ language }) {
       return;
     }
 
-    // Build welcome message
-    const firstQ = getQuestionById(currentId);
+    // Build welcome message using effectiveId — not the stale currentId from the closure
+    const firstQ = getQuestionById(effectiveId);
+    const isResume = effectiveId !== currentId;
     const welcomeMsg = {
       id: 'welcome',
       role: 'assistant',
       content: tr
-        ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size ${TOTAL_QUESTIONS} soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n**Soru 1:** ${firstQ?.text?.tr || firstQ?.text?.en}`
-        : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you ${TOTAL_QUESTIONS} questions. You can go back at any time.\n\n**Question 1:** ${firstQ?.text?.en}`,
+        ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size ${TOTAL_QUESTIONS} soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n${isResume ? `**Kaldığınız yer — Soru ${firstQ?.number}:**` : '**Soru 1:**'} ${firstQ?.text?.tr || firstQ?.text?.en}`
+        : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you ${TOTAL_QUESTIONS} questions. You can go back at any time.\n\n${isResume ? `**Resuming — Question ${firstQ?.number}:**` : '**Question 1:**'} ${firstQ?.text?.en}`,
     };
     if (firstQ?.helper) {
       welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
@@ -946,7 +953,7 @@ function QuestionnaireTab({ language }) {
     setMessages([welcomeMsg]);
     setStarted(true);
     setStartLoading(false);
-  }, [currentId, reportId, tr, lang]);
+  }, [currentId, tr, lang]);
 
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid) => {
@@ -963,7 +970,7 @@ function QuestionnaireTab({ language }) {
     } catch {
       setSaveError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     }
-  }, [reportId, tr, lang]);
+  }, [reportId, tr]);
 
   // ── submitAnswer ───────────────────────────────────────────────────────────
   const submitAnswer = useCallback(async (overrideValue) => {
@@ -973,15 +980,15 @@ function QuestionnaireTab({ language }) {
     const raw = overrideValue !== undefined ? overrideValue : answerValue;
     const value = normalizeAnswerValue(q, raw);
 
-    // Validate
+    // Validate — validateCarbonIQAnswer returns {ok, message}; check .ok not truthiness
     if (q.type !== 'info') {
-      const err = validateCarbonIQAnswer(q, value, answers);
-      if (err) {
+      const err = validateCarbonIQAnswer(q, value, answers, lang);
+      if (!err.ok) {
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'error',
-          content: err[lang] || err.en || String(err),
+          content: err.message || (lang === 'tr' ? 'Geçersiz yanıt.' : 'Invalid answer.'),
         }]);
         return;
       }
@@ -1001,10 +1008,10 @@ function QuestionnaireTab({ language }) {
     // Save to backend
     await saveStepToBackend(currentId, value, reportId);
 
-    // Check for warnings
-    const warning = getQuestionWarning ? getQuestionWarning(currentId, value, newAnswers) : null;
-    // Check for triggered assumptions
-    const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(currentId, value, newAnswers) : [];
+    // getQuestionWarning/getTriggeredAssumptions take the question OBJECT + single value + lang
+    // (not the question ID string, not the full answers map)
+    const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
+    const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value, lang) : [];
     if (newAssumptions.length > 0) {
       setAssumptions(prev => [...prev, ...newAssumptions]);
     }
@@ -1018,15 +1025,16 @@ function QuestionnaireTab({ language }) {
       typingTimerRef.current = null;
       if (!isMounted.current) return; // component unmounted — skip all state updates
       setIsTyping(false);
-      const nextId = getNextQuestionId(currentId, newAnswers);
+      // getNextQuestionId takes the question OBJECT and the single answer value, not the full map
+      const nextId = getNextQuestionId(q, value);
 
-      // Show warning if any
+      // Show warning if any — getQuestionWarning already returns a localised string
       if (warning) {
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'warning',
-          content: warning[lang] || warning.en || String(warning),
+          content: warning,
         }]);
       }
 
@@ -1070,8 +1078,14 @@ function QuestionnaireTab({ language }) {
     setCurrentId(prevId);
     const prevQ = getQuestionById(prevId);
     setAnswerValue(normalizeAnswerValue(prevQ, answers[prevId]) ?? getInitialValue(prevQ));
-    // Remove last 2 messages (user answer + AI question)
-    setMessages(prev => prev.slice(0, -2));
+    // Determine how many messages were added when prevId was answered:
+    //   info type: 1  (no user bubble, just the next question bubble)
+    //   non-info without warning: 2  (user bubble + next question bubble)
+    //   non-info with warning: 3  (user bubble + warning bubble + next question bubble)
+    // getQuestionWarning takes the question OBJECT + single value + lang (not ID, not answers map)
+    const hadWarning = getQuestionWarning && getQuestionWarning(prevQ, answers[prevId], lang);
+    const toRemove = prevQ?.type === 'info' ? 1 : hadWarning ? 3 : 2;
+    setMessages(prev => prev.slice(0, -toRemove));
   }, [history, answers]);
 
   // ── resetFlow ──────────────────────────────────────────────────────────────
@@ -1083,6 +1097,8 @@ function QuestionnaireTab({ language }) {
     setCompleted(false);
     setAssumptions([]);
     setSaveError(null);
+    setResetConfirm(false);
+    helpSessionRef.current = null; // clear help session so next help opens a fresh one
     const firstQ = getQuestionById(initId);
     setMessages([{
       id: 'reset',
@@ -1156,26 +1172,46 @@ function QuestionnaireTab({ language }) {
               <button
                 onClick={goBack}
                 title={tr ? 'Geri' : 'Back'}
+                aria-label={tr ? 'Önceki soruya dön' : 'Go back to previous question'}
                 className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
             )}
-            <button
-              onClick={resetFlow}
-              title={tr ? 'Sıfırla' : 'Reset'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-            </button>
+            {resetConfirm ? (
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-bold text-red-500">{tr ? 'Emin misin?' : 'Sure?'}</span>
+                <button
+                  onClick={() => { setResetConfirm(false); resetFlow(); }}
+                  className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-bold text-white transition hover:bg-red-600"
+                >
+                  {tr ? 'Evet' : 'Yes'}
+                </button>
+                <button
+                  onClick={() => setResetConfirm(false)}
+                  className="rounded-full border border-[#302817]/15 px-2 py-1 text-[10px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/5"
+                >
+                  {tr ? 'Hayır' : 'No'}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setResetConfirm(true)}
+                title={tr ? 'Sıfırla' : 'Reset'}
+                aria-label={tr ? 'Envanteri sıfırla' : 'Reset inventory'}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Chat messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-            {messages.map((msg, i) => (
-              <ChatBubble key={msg.id || i} msg={msg} />
+            {messages.map((msg) => (
+              <ChatBubble key={msg.id} msg={msg} />
             ))}
             {isTyping && (
               <div className="flex gap-2.5">
@@ -1227,13 +1263,21 @@ function QuestionnaireTab({ language }) {
         {completed && (
           <div className="shrink-0 border-t border-[#302817]/6 px-4 py-4 sm:px-6">
             <div className="mx-auto w-full max-w-2xl flex items-center justify-center gap-3">
-              <button
-                onClick={resetFlow}
-                className="flex items-center gap-2 rounded-full border border-[#302817]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#302817]/70 shadow-sm transition hover:bg-[#302817]/5"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                {tr ? 'Yeniden Başla' : 'Start Over'}
-              </button>
+              {resetConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-[#302817]/60">{tr ? 'Tüm yanıtlar silinecek. Emin misin?' : 'All answers will be cleared. Sure?'}</span>
+                  <button onClick={() => { setResetConfirm(false); resetFlow(); }} className="rounded-full bg-red-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-600">{tr ? 'Evet, Sıfırla' : 'Yes, Reset'}</button>
+                  <button onClick={() => setResetConfirm(false)} className="rounded-full border border-[#302817]/15 px-4 py-2 text-xs font-bold text-[#302817]/50 transition hover:bg-[#302817]/5">{tr ? 'İptal' : 'Cancel'}</button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setResetConfirm(true)}
+                  className="flex items-center gap-2 rounded-full border border-[#302817]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#302817]/70 shadow-sm transition hover:bg-[#302817]/5"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  {tr ? 'Yeniden Başla' : 'Start Over'}
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1309,7 +1353,7 @@ function FreeChatTab({ language }) {
         if (cancelled) return; // tab switched before response arrived
         if (res.ok) {
           const data = await res.json();
-          if (!cancelled) setMessages(data.messages || []);
+          if (!cancelled) setMessages((data.messages || []).map((m, i) => ({ id: m.id ?? `hist-${i}`, ...m })));
         }
       } catch {}
       if (!cancelled) {
@@ -1344,7 +1388,7 @@ function FreeChatTab({ language }) {
         setError(d.error || (tr ? 'Bir hata oluştu.' : 'Something went wrong.'));
       } else {
         const aiMsg = await res.json();
-        setMessages(prev => [...prev, aiMsg]);
+        setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
         if (aiMsg.session_title) {
           setSessions(prev => prev.map(s =>
             s.id === sessionId
@@ -1383,8 +1427,10 @@ function FreeChatTab({ language }) {
       await api.deleteChatSession(id);
       setSessions(prev => prev.filter(s => s.id !== id));
       if (activeId === id) { setActiveId(null); setMessages([]); }
-    } catch {}
-  }, [activeId]);
+    } catch {
+      setError(tr ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
+    }
+  }, [activeId, tr]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -1492,8 +1538,8 @@ function FreeChatTab({ language }) {
             </div>
           ) : (
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-              {messages.map((msg, i) => (
-                <Bubble key={msg.id || i} role={msg.role} content={msg.content} />
+              {messages.map((msg) => (
+                <Bubble key={msg.id} role={msg.role} content={msg.content} />
               ))}
               {sending && (
                 <div className="flex gap-2.5">

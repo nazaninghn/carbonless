@@ -9,6 +9,7 @@ import {
   ArrowRight, CheckCircle2, Eye, EyeOff,
   LockKeyhole, Mail, ShieldCheck, Sparkles,
 } from 'lucide-react';
+import { api, markSessionActive } from '@/lib/utils/api';
 
 export default function LoginPage() {
   const { t, language } = useLanguage();
@@ -30,7 +31,6 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const { api, markSessionActive } = await import('@/lib/utils/api');
       const res = await api.login(email, password);
       if (res.ok) {
         markSessionActive();

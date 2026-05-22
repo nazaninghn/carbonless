@@ -47,6 +47,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
   const handleDownload = useCallback(async (type, lang) => {
     setPdfLoading(type + lang);
+    setDlError('');
     try {
       let res;
       if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
@@ -195,7 +196,10 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
                 <InsightItem text={tr ? `Scope 1 toplam emisyonun %${s1 > 0 ? ((s1/totalTonne)*100).toFixed(0) : 0}'ini oluşturuyor.` : `Scope 1 accounts for ${s1 > 0 ? ((s1/totalTonne)*100).toFixed(0) : 0}% of total emissions.`} />
                 {s2 > s1 && <InsightItem text={tr ? 'Elektrik tüketimi Scope 2\'de baskın.' : 'Electricity consumption dominates Scope 2.'} />}
                 {entries.length < 10 && <InsightItem text={tr ? 'Daha fazla veri girişi rapor kalitesini artırır.' : 'More data entries will improve report quality.'} type="warning" />}
-                <InsightItem text={tr ? 'Ulaşım aktivitelerinde azaltma potansiyeli tespit edildi.' : 'Reduction potential detected in transport activities.'} />
+                {entries.some(e => ['transport', 'business_travel', 'employee_commuting', 'mobile_combustion'].includes(e.category)) && (
+                  <InsightItem text={tr ? 'Ulaşım aktivitelerinde azaltma potansiyeli tespit edildi.' : 'Reduction potential detected in transport activities.'} />
+                )}
+                {s3 > s1 + s2 && <InsightItem text={tr ? 'Scope 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' : 'Scope 3 dominates — consider supply chain focused reductions.'} />}
               </>
             ) : (
               <InsightItem text={tr ? 'Veri girildikten sonra AI analizi burada görünecek.' : 'AI analysis will appear here after data entry.'} type="neutral" />
@@ -303,7 +307,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             {[
               { done: entries.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
               { done: entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
-              { done: entries.length > 0, label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
+              { done: entries.some(e => e.proof_document), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
               { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
               <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5">

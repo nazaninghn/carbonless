@@ -43,12 +43,14 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
           )}
           <button
             onClick={() => onEdit(entry)}
+            aria-label={language === 'tr' ? 'Kaydı düzenle' : 'Edit entry'}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-[#95A847]/10 hover:text-[#95A847]"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => onDelete(entry.id)}
+            aria-label={language === 'tr' ? 'Kaydı sil' : 'Delete entry'}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-red-50 hover:text-red-500"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -280,7 +282,7 @@ export default function EmissionsTab({
       } else {
         res = await api.createEntry({
           emission_factor: parseInt(selFactor), year: selectedYear,
-          month: parseInt(month), quantity, description: desc, facility,
+          month: parseInt(month), quantity: parseFloat(quantity), description: desc, facility,
         });
       }
       if (res.ok) {
@@ -296,7 +298,7 @@ export default function EmissionsTab({
       toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
     }
     finally { setSubmitting(false); }
-  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, resetAddForm, fetchData]);
+  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, resetAddForm, fetchData, setShowAddForm]);
 
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
@@ -366,7 +368,7 @@ export default function EmissionsTab({
     } finally {
       setCSaving(false);
     }
-  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, tr, fetchData]);
+  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, tr, fetchData, setShowCustom]);
 
   // ── Escape key handlers — one per modal ─────────────────────────────────
   useEffect(() => {
@@ -715,12 +717,14 @@ export default function EmissionsTab({
                         <div className="flex justify-end gap-1 opacity-0 transition group-hover/row:opacity-100">
                           <button
                             onClick={() => openEdit(entry)}
+                            aria-label={tr ? 'Kaydı düzenle' : 'Edit entry'}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-[#95A847]/12 hover:text-[#95A847]"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(entry.id)}
+                            aria-label={tr ? 'Kaydı sil' : 'Delete entry'}
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-red-50 hover:text-red-500"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -911,13 +915,21 @@ export default function EmissionsTab({
                   {/* File upload */}
                   <div>
                     <label className={LABEL}>{tr ? 'Kanıt Belgesi' : 'Proof Document'}</label>
-                    <div className="rounded-2xl border-2 border-dashed border-[#95A847]/30 bg-[#95A847]/4 p-5 text-center transition hover:border-[#95A847]/50 hover:bg-[#95A847]/7">
+                    <div
+                      className="rounded-2xl border-2 border-dashed border-[#95A847]/30 bg-[#95A847]/4 p-5 text-center transition hover:border-[#95A847]/50 hover:bg-[#95A847]/7"
+                      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+                      onDrop={e => {
+                        e.preventDefault();
+                        const dropped = e.dataTransfer.files[0];
+                        if (dropped) setFile(dropped);
+                      }}
+                    >
                       {file ? (
                         <div className="flex items-center justify-between rounded-xl bg-[#95A847]/10 px-4 py-2.5">
                           <span className="flex items-center gap-2 truncate text-xs font-bold text-[#75863B]">
                             <FileText className="h-3.5 w-3.5 shrink-0" />{file.name}
                           </span>
-                          <button type="button" onClick={() => setFile(null)} className="shrink-0 text-xs font-bold text-red-400 hover:text-red-600">✕</button>
+                          <button type="button" onClick={() => setFile(null)} className="shrink-0 text-xs font-bold text-red-400 hover:text-red-600" aria-label={tr ? 'Dosyayı kaldır' : 'Remove file'}>✕</button>
                         </div>
                       ) : (
                         <>

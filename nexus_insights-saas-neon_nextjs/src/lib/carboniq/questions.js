@@ -171,11 +171,11 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Tüm veri girişleriniz bu yıl için geçerli olacak. Cari yılı seçerseniz bazı verilerin tahmini olacağını unutmayın.',
       en: 'All data entries will apply to this year. If you select the current year, some data may need to be estimated.',
     },
-    options: [2020, 2021, 2022, 2023, 2024, 2025].map((year) => ({
+    options: [2020, 2021, 2022, 2023, 2024, 2025, 2026].map((year) => ({
       value: String(year),
       label: {
-        tr: year === 2025 ? '2025 (cari yıl — veri eksik olabilir)' : String(year),
-        en: year === 2025 ? '2025 (current year — data may be incomplete)' : String(year),
+        tr: year === 2026 ? '2026 (cari yıl — veri eksik olabilir)' : String(year),
+        en: year === 2026 ? '2026 (current year — data may be incomplete)' : String(year),
       },
     })),
     validate: {
@@ -186,7 +186,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     assumptions: [
       {
-        when: { equals: '2025' },
+        when: { equals: '2026' },
         type: 'A',
         trigger: 'current_year_selected',
         text: {
@@ -197,10 +197,10 @@ export const CARBONIQ_QUESTIONS = [
       },
     ],
     warning: {
-      when: { equals: '2025' },
+      when: { equals: '2026' },
       text: {
-        tr: '2025 henüz tamamlanmadı. Yıl sonu verileriniz eksik olabilir — bazı kalemlerde tahmini veri kullanmak gerekebilir. Bu durum raporunuzda belgelenecek.',
-        en: '2025 is not complete yet. Year-end data may be incomplete — some items may require estimated data. This will be documented in your report.',
+        tr: '2026 henüz tamamlanmadı. Yıl sonu verileriniz eksik olabilir — bazı kalemlerde tahmini veri kullanmak gerekebilir. Bu durum raporunuzda belgelenecek.',
+        en: '2026 is not complete yet. Year-end data may be incomplete — some items may require estimated data. This will be documented in your report.',
       },
     },
     next: 'A5',
@@ -332,7 +332,7 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Baz yıl, emisyon trendlerinizi kıyaslayacağınız referans yıldır. Genellikle en eski güvenilir veri yılı seçilir.',
       en: 'The baseline year is the reference year used to compare your emissions trend. Usually, the earliest reliable data year is selected.',
     },
-    options: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024].map((year) => ({
+    options: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025].map((year) => ({
       value: String(year),
       label: { tr: String(year), en: String(year) },
     })),

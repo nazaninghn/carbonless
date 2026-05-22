@@ -16,6 +16,7 @@ import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { api } from '@/lib/utils/api';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
@@ -37,9 +38,8 @@ export default function DashboardPage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('turkey');
 
-  const handleLogout = useCallback(async () => {
-    const { api: apiModule } = await import('@/lib/utils/api');
-    apiModule.logout();
+  const handleLogout = useCallback(() => {
+    api.logout();
   }, []);
 
   return (
