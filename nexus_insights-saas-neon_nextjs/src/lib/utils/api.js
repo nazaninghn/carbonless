@@ -106,11 +106,14 @@ async function doRefresh() {
 }
 
 export const api = {
-  login: async (email, password) => {
+  login: async (credential, password) => {
+    const c = typeof credential === 'string' ? credential.trim() : credential;
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: email, password }),
+      // Send both fields so the backend can match by username OR email
+      // depending on which Django auth backend is configured.
+      body: JSON.stringify({ username: c, email: c, password }),
     });
     if (res.ok) {
       const d = await res.clone().json().catch(() => ({}));

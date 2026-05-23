@@ -36,7 +36,14 @@ function LoginContent() {
         markSessionActive();
         router.push('/dashboard');
       } else {
-        setError(tr ? 'E-posta veya şifre hatalı' : 'Invalid email or password');
+        const data = await res.json().catch(() => ({}));
+        if (res.status >= 500) {
+          setError(tr ? 'Sunucu hatası. Lütfen tekrar deneyin.' : 'Server error. Please try again.');
+        } else {
+          // Show the backend's own message (e.g. "No active account found…")
+          // so the user and developer can see exactly what went wrong.
+          setError(data?.error || (tr ? 'Kullanıcı adı veya şifre hatalı.' : 'Invalid username or password.'));
+        }
       }
     } catch {
       setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
