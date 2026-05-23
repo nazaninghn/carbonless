@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Building2, Check, CheckCircle2,
-  ChevronDown, ClipboardCheck, Factory, FileCheck2, Globe2, Leaf,
+  ChevronDown, ClipboardCheck, Factory, FileCheck2, Globe2,
   Loader2, LockKeyhole, Mail, ShieldCheck, User,
 } from 'lucide-react';
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
@@ -16,7 +16,7 @@ import CountryPicker from '@/components/CountryPicker';
 import { api as apiModule, markSessionActive as activate } from '@/lib/utils/api';
 
 export default function RegisterPage() {
-  const { language, changeLanguage, t } = useLanguage();
+  const { language, t } = useLanguage();
   const router = useRouter();
   const [currentSection, setCurrentSection] = useState(1);
   const [formData, setFormData] = useState({
@@ -126,7 +126,6 @@ export default function RegisterPage() {
         setError(language === 'tr'
           ? 'Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.'
           : 'Cannot reach the server. Check your internet connection.');
-        setLoading(false);
         return;
       }
 
@@ -151,7 +150,6 @@ export default function RegisterPage() {
         setError(language === 'tr'
           ? 'Hesap oluşturuldu fakat giriş yapılamadı. Lütfen giriş sayfasına gidin.'
           : 'Account created but login failed. Please go to the login page.');
-        setLoading(false);
         return;
       }
 
@@ -159,7 +157,6 @@ export default function RegisterPage() {
         setError(language === 'tr'
           ? 'Hesap oluşturuldu fakat otomatik giriş başarısız. Lütfen manuel giriş yapın.'
           : 'Account created but auto-login failed. Please log in manually.');
-        setLoading(false);
         return;
       }
 
