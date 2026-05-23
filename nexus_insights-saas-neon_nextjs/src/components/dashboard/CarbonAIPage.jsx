@@ -108,6 +108,7 @@ function mapAnswerForBackend(questionId, value) {
 function normalizeAnswerValue(q, raw) {
   if (!q) return raw;
   if (q.type === 'multi_select') return Array.isArray(raw) ? raw : (raw ? [raw] : []);
+  if (q.type === 'compound') return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
   return raw ?? '';
 }
 
@@ -115,6 +116,7 @@ function getInitialValue(q) {
   if (!q) return '';
   if (q.type === 'multi_select') return [];
   if (q.type === 'country_city') return { country: '', city: '' };
+  if (q.type === 'compound') return {};
   return '';
 }
 
@@ -136,13 +138,26 @@ function getDisplayValue(q, value, lang = 'en') {
     const opt = q.options?.find(o => o.value === value);
     return opt ? (opt.label?.[lang] || opt.label?.en || value) : value;
   }
+  if (q.type === 'compound') {
+    if (!value || typeof value !== 'object') return '—';
+    return Object.entries(value)
+      .filter(([, v]) => v !== '' && v !== undefined && v !== null)
+      .map(([k, v]) => {
+        const field = q.fields?.find(f => f.id === k);
+        const label = field?.label?.[lang] || field?.label?.en || k;
+        return `${label}: ${v}`;
+      })
+      .join(' · ') || '—';
+  }
   return String(value);
 }
 
-function isConditionalRequired(q, answers) {
+// Returns whether a question's conditionalRequired condition is satisfied.
+// Uses the same field names as questions.js: { questionId, equals }
+function checkConditionalRequired(q, answers) {
   if (!q?.conditionalRequired) return q?.required ?? true;
-  const { dependsOn, value } = q.conditionalRequired;
-  return answers[dependsOn] === value;
+  const { questionId, equals } = q.conditionalRequired;
+  return answers[questionId] === equals;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -401,6 +416,66 @@ function CountryCityInput({ value, onChange, lang }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Questionnaire: CompoundInput
+// ─────────────────────────────────────────────────────────────────────────────
+function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
+  const val = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+  return (
+    <div className="flex flex-col gap-3 w-full max-w-lg">
+      {fields.map(field => {
+        const fieldVal = val[field.id] ?? '';
+        const setField = (v) => onChange({ ...val, [field.id]: v });
+        const charLen = field.maxLength ? String(fieldVal).length : null;
+        return (
+          <div key={field.id} className="flex flex-col gap-1">
+            <label className="text-xs font-semibold text-[#302817]/70">
+              {field.label?.[lang] || field.label?.en || field.id}
+              {field.required && <span className="ml-1 text-red-400">*</span>}
+            </label>
+            {field.type === 'single_select' ? (
+              <div className="flex flex-wrap gap-2">
+                {(field.options || []).map(opt => (
+                  <Chip
+                    key={opt.value}
+                    label={opt.label?.[lang] || opt.label?.en || opt.value}
+                    selected={fieldVal === opt.value}
+                    onClick={() => !disabled && setField(opt.value)}
+                  />
+                ))}
+              </div>
+            ) : field.subtype === 'multi_line' ? (
+              <textarea
+                className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20 resize-none"
+                rows={3}
+                value={fieldVal}
+                onChange={e => setField(e.target.value)}
+                placeholder={field.placeholder?.[lang] || field.placeholder?.en || ''}
+                disabled={disabled}
+                maxLength={field.maxLength}
+              />
+            ) : (
+              <input
+                className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+                type="text"
+                inputMode={field.subtype === 'numeric' ? 'numeric' : 'text'}
+                value={fieldVal}
+                onChange={e => setField(e.target.value)}
+                placeholder={field.placeholder?.[lang] || field.placeholder?.en || ''}
+                disabled={disabled}
+                maxLength={field.maxLength}
+              />
+            )}
+            {field.maxLength && (
+              <span className="text-right text-[10px] text-[#302817]/35">{charLen}/{field.maxLength}</span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: AnswerInput
 // ─────────────────────────────────────────────────────────────────────────────
 function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
@@ -509,27 +584,100 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     );
   }
 
-  // text / numeric / etc.
+  if (type === 'compound') {
+    const fields = question.fields || [];
+    const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+    const requiredFields = fields.filter(f => f.required !== false);
+    const allRequiredFilled = requiredFields.every(f => {
+      const v = compoundVal[f.id];
+      return v !== undefined && v !== null && String(v).trim() !== '';
+    });
+    return (
+      <div className="flex flex-col gap-4 w-full max-w-lg">
+        <CompoundInput
+          fields={fields}
+          value={value}
+          onChange={onChange}
+          lang={lang}
+          disabled={disabled}
+        />
+        <button
+          onClick={onSubmit}
+          disabled={disabled || !allRequiredFilled}
+          className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+        >
+          {tr ? 'Onayla →' : 'Confirm →'}
+        </button>
+      </div>
+    );
+  }
+
+  // multi_line text
+  if (subtype === 'multi_line') {
+    const maxLen = question.maxLength;
+    const charCount = String(value || '').length;
+    return (
+      <div className="flex flex-col gap-1 w-full max-w-lg">
+        <textarea
+          className="w-full rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20 resize-none"
+          rows={4}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+              e.preventDefault();
+              onSubmit();
+            }
+          }}
+          placeholder={placeholder?.[lang] || placeholder?.en || ''}
+          disabled={disabled}
+          autoFocus
+          maxLength={maxLen}
+        />
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[10px] text-[#302817]/40">{tr ? 'Göndermek için Ctrl+Enter' : 'Ctrl+Enter to submit'}</span>
+          {maxLen && <span className="text-[10px] text-[#302817]/35">{charCount}/{maxLen}</span>}
+        </div>
+        <button
+          onClick={onSubmit}
+          disabled={disabled || !String(value || '').trim()}
+          className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+        >
+          {tr ? 'Onayla →' : 'Confirm →'}
+        </button>
+      </div>
+    );
+  }
+
+  // text / numeric / single-line
+  const maxLen = question.maxLength;
+  const charCount = String(value || '').length;
   return (
-    <div className="flex w-full max-w-sm gap-2 items-end">
-      <input
-        className="flex-1 rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
-        type="text"
-        inputMode={subtype === 'numeric' ? 'numeric' : 'text'}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } }}
-        placeholder={placeholder?.[lang] || placeholder?.en || ''}
-        disabled={disabled}
-        autoFocus
-      />
-      <button
-        onClick={onSubmit}
-        disabled={disabled || !String(value || '').trim()}
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-40"
-      >
-        <Send className="h-3.5 w-3.5" />
-      </button>
+    <div className="flex flex-col gap-1 w-full max-w-sm">
+      <div className="flex gap-2 items-center">
+        <input
+          className="flex-1 rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+          type="text"
+          inputMode={subtype === 'numeric' ? 'numeric' : 'text'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } }}
+          placeholder={placeholder?.[lang] || placeholder?.en || ''}
+          disabled={disabled}
+          autoFocus
+          maxLength={maxLen}
+        />
+        <button
+          onClick={onSubmit}
+          disabled={disabled || !String(value || '').trim()}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+        >
+          <Send className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {maxLen && (
+        <span className="text-right text-[10px] text-[#302817]/35 pr-12">{charCount}/{maxLen}</span>
+      )}
     </div>
   );
 }
@@ -674,8 +822,14 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
         if (res.ok) {
           const sess = await res.json();
           helpSessionRef.current = sess.id;
-        } else return;
-      } catch { return; }
+        } else {
+          setHelpError(tr ? 'Oturum başlatılamadı. Lütfen tekrar deneyin.' : 'Could not start session. Please try again.');
+          return;
+        }
+      } catch {
+        setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+        return;
+      }
     }
 
     setInput('');
@@ -859,6 +1013,9 @@ function QuestionnaireTab({ language }) {
   const [completed, setCompleted] = useState(false);
   const [assumptions, setAssumptions] = useState([]);
   const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  // loopState: { questionId, items, itemLabels, currentIndex, collected }
+  const [loopState, setLoopState] = useState(null);
   // On mobile sidebar starts closed; desktop starts open
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -871,6 +1028,8 @@ function QuestionnaireTab({ language }) {
   const scrollRef = useRef(null);
   const isMounted = useRef(true);
   const typingTimerRef = useRef(null);
+  const saveSuccessTimerRef = useRef(null);
+  const scrollTimerRef = useRef(null);
   // Synchronous mutex — prevents a second submitAnswer call from passing the
   // isTyping guard during the await saveStepToBackend network window.
   const isSubmittingRef = useRef(false);
@@ -880,18 +1039,24 @@ function QuestionnaireTab({ language }) {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
-      // Cancel any pending typing animation so it doesn't fire on a dead component
+      // Cancel any pending timers so they don't fire on a dead component
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     };
   }, []);
 
   const currentQuestion = getQuestionById(currentId);
 
-  // Auto scroll
+  // Auto scroll — debounced to prevent double-fire when messages + isTyping update together
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-    }
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      scrollTimerRef.current = null;
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      }
+    }, 50);
   }, [messages, isTyping]);
 
   // Keep a ref so the init effect can read the latest answers without being
@@ -965,25 +1130,65 @@ function QuestionnaireTab({ language }) {
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid) => {
     const rid_ = rid || reportId;
-    if (!rid_) return;
+    if (!rid_) return true; // no backend configured — treat as success
     try {
       const backendData = mapAnswerForBackend(questionId, value);
       const res = await api.submitReportStep(rid_, questionId, backendData);
       if (!res.ok) {
         setSaveError(tr ? 'Kayıt hatası oluştu.' : 'Save error occurred.');
-      } else {
-        setSaveError(null);
+        setSaveSuccess(false);
+        return false;
       }
+      setSaveError(null);
+      setSaveSuccess(true);
+      if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
+      saveSuccessTimerRef.current = setTimeout(() => {
+        if (isMounted.current) setSaveSuccess(false);
+      }, 2000);
+      return true;
     } catch {
       setSaveError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+      setSaveSuccess(false);
+      return false;
     }
   }, [reportId, tr]);
+
+  // ── advanceToQuestion ──────────────────────────────────────────────────────
+  // Shared helper: navigate to nextId and post its question bubble.
+  // Call only from inside a typingTimerRef.current timeout (after setIsTyping(false)).
+  const advanceToQuestion = useCallback((nextId, answersSnap) => {
+    if (!nextId) {
+      setCompleted(true);
+      setMessages(prev => [...prev, {
+        id: `m-${++msgIdRef.current}`,
+        role: 'assistant',
+        type: 'info',
+        content: tr
+          ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
+          : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
+      }]);
+      return;
+    }
+    const nextQ = getQuestionById(nextId);
+    setCurrentId(nextId);
+    setAnswerValue(getInitialValue(nextQ));
+    let questionText = nextQ?.text?.[lang] || nextQ?.text?.en || '';
+    let helperText = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
+    let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number}:** ${questionText}`;
+    if (helperText) content += `\n\n_${helperText}_`;
+    const bubbleType = nextQ?.type === 'info' ? 'info' : 'assistant';
+    setMessages(prev => [...prev, {
+      id: `m-${++msgIdRef.current}`,
+      role: 'assistant',
+      type: bubbleType,
+      content,
+    }]);
+  }, [lang, tr]);
 
   // ── submitAnswer ───────────────────────────────────────────────────────────
   const submitAnswer = useCallback(async (overrideValue) => {
     const q = getQuestionById(currentId);
     if (!q || isTyping) return;
-
     if (isSubmittingRef.current) return;
 
     const raw = overrideValue !== undefined ? overrideValue : answerValue;
@@ -1003,6 +1208,97 @@ function QuestionnaireTab({ language }) {
       }
     }
 
+    // ── Loop handling ──────────────────────────────────────────────────────────
+    // If we are currently iterating a loop, collect the item answer and either
+    // ask the next item or advance past the loop question entirely.
+    if (loopState && loopState.questionId === currentId) {
+      const { items, itemLabels, currentIndex, collected } = loopState;
+      const itemLabel = itemLabels[currentIndex] || items[currentIndex] || `#${currentIndex + 1}`;
+      const newCollected = { ...collected, [items[currentIndex]]: value };
+
+      // Show user bubble with item context
+      const displayVal = getDisplayValue(q, value, lang);
+      if (q.type !== 'info') {
+        setMessages(prev => [...prev, {
+          id: `m-${++msgIdRef.current}`,
+          role: 'user',
+          content: `[${itemLabel}] ${displayVal}`,
+        }]);
+      }
+
+      const nextIndex = currentIndex + 1;
+
+      if (nextIndex < items.length) {
+        // More items to ask — stay on same question, advance index
+        const nextLabel = itemLabels[nextIndex] || items[nextIndex] || `#${nextIndex + 1}`;
+        setLoopState({ ...loopState, currentIndex: nextIndex, collected: newCollected });
+        setAnswerValue(getInitialValue(q));
+
+        // Save collected-so-far to backend
+        isSubmittingRef.current = true;
+        await saveStepToBackend(currentId, newCollected, reportId);
+        isSubmittingRef.current = false;
+
+        setIsTyping(true);
+        if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = setTimeout(() => {
+          typingTimerRef.current = null;
+          if (!isMounted.current) return;
+          setIsTyping(false);
+          const loopText = q?.text?.[lang] || q?.text?.en || '';
+          const loopHelper = q?.helper?.[lang] || q?.helper?.en || '';
+          let content = `**${tr ? 'Soru' : 'Question'} ${q?.number} — ${nextLabel}:** ${loopText}`;
+          if (loopHelper) content += `\n\n_${loopHelper}_`;
+          setMessages(prev => [...prev, {
+            id: `m-${++msgIdRef.current}`,
+            role: 'assistant',
+            type: 'assistant',
+            content,
+          }]);
+        }, TYPING_DELAY_MS);
+        return;
+      }
+
+      // All items done — save final collected value and advance past loop question
+      const finalAnswers = { ...answers, [currentId]: newCollected };
+      setAnswers(finalAnswers);
+      setHistory(prev => [...prev, currentId]);
+      setLoopState(null);
+
+      isSubmittingRef.current = true;
+      await saveStepToBackend(currentId, newCollected, reportId);
+      isSubmittingRef.current = false;
+
+      const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
+      const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value, lang) : [];
+      if (newAssumptions.length > 0) setAssumptions(prev => [...prev, ...newAssumptions]);
+
+      setIsTyping(true);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      typingTimerRef.current = setTimeout(() => {
+        typingTimerRef.current = null;
+        if (!isMounted.current) return;
+        setIsTyping(false);
+        if (warning) {
+          setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'warning', content: warning }]);
+        }
+        // Advance past loop, skipping any conditionalShow-hidden questions
+        let nextId = q.loopNext || null;
+        while (nextId) {
+          const candidate = getQuestionById(nextId);
+          if (!candidate?.conditionalShow) break;
+          const { questionId: csQid, includesValue: csVal } = candidate.conditionalShow;
+          const csAnswer = finalAnswers[csQid];
+          const matches = Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal;
+          if (matches) break;
+          nextId = getNextQuestionId(candidate, getInitialValue(candidate));
+        }
+        advanceToQuestion(nextId, finalAnswers);
+      }, TYPING_DELAY_MS);
+      return;
+    }
+    // ── End loop handling ──────────────────────────────────────────────────────
+
     // Add user bubble
     const displayVal = getDisplayValue(q, value, lang);
     if (q.type !== 'info') {
@@ -1021,7 +1317,6 @@ function QuestionnaireTab({ language }) {
     isSubmittingRef.current = false;
 
     // getQuestionWarning/getTriggeredAssumptions take the question OBJECT + single value + lang
-    // (not the question ID string, not the full answers map)
     const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
     const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value, lang) : [];
     if (newAssumptions.length > 0) {
@@ -1031,16 +1326,13 @@ function QuestionnaireTab({ language }) {
     // Show typing
     setIsTyping(true);
 
-    // Cancel any previous timer that hasn't fired yet (e.g. answer submitted twice quickly)
+    // Cancel any previous timer that hasn't fired yet
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     typingTimerRef.current = setTimeout(() => {
       typingTimerRef.current = null;
-      if (!isMounted.current) return; // component unmounted — skip all state updates
+      if (!isMounted.current) return;
       setIsTyping(false);
-      // getNextQuestionId takes the question OBJECT and the single answer value, not the full map
-      const nextId = getNextQuestionId(q, value);
 
-      // Show warning if any — getQuestionWarning already returns a localised string
       if (warning) {
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
@@ -1050,8 +1342,19 @@ function QuestionnaireTab({ language }) {
         }]);
       }
 
+      // Compute candidate next question, then skip any conditionalShow-hidden questions
+      let nextId = getNextQuestionId(q, value);
+      while (nextId) {
+        const candidate = getQuestionById(nextId);
+        if (!candidate?.conditionalShow) break;
+        const { questionId: csQid, includesValue: csVal } = candidate.conditionalShow;
+        const csAnswer = newAnswers[csQid];
+        const matches = Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal;
+        if (matches) break;
+        nextId = getNextQuestionId(candidate, getInitialValue(candidate));
+      }
+
       if (!nextId) {
-        // Completed
         setCompleted(true);
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
@@ -1063,24 +1366,36 @@ function QuestionnaireTab({ language }) {
         }]);
       } else {
         const nextQ = getQuestionById(nextId);
-        setCurrentId(nextId);
-        setAnswerValue(getInitialValue(nextQ));
 
-        let questionText = nextQ?.text?.[lang] || nextQ?.text?.en || '';
-        let helperText = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
-        let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number}:** ${questionText}`;
-        if (helperText) content += `\n\n_${helperText}_`;
+        // Initialize loop state if the next question is a loop question
+        if (nextQ?.loopType && nextQ?.loopSource) {
+          const sourceAnswer = newAnswers[nextQ.loopSource];
+          const items = Array.isArray(sourceAnswer) ? sourceAnswer : (sourceAnswer ? [sourceAnswer] : []);
+          const sourceQ = getQuestionById(nextQ.loopSource);
+          const itemLabels = items.map(item => {
+            const opt = sourceQ?.options?.find(o => o.value === item);
+            return opt?.label?.[lang] || opt?.label?.en || item;
+          });
+          if (items.length > 0) {
+            setLoopState({ questionId: nextId, items, itemLabels, currentIndex: 0, collected: {} });
+            setCurrentId(nextId);
+            setAnswerValue(getInitialValue(nextQ));
+            const firstLabel = itemLabels[0] || items[0];
+            const loopText = nextQ?.text?.[lang] || nextQ?.text?.en || '';
+            const loopHelper = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
+            let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
+            if (loopHelper) content += `\n\n_${loopHelper}_`;
+            setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }]);
+            return;
+          }
+          // No items to loop — skip the loop question entirely
+          nextId = nextQ.loopNext || null;
+        }
 
-        const bubbleType = nextQ?.type === 'info' ? 'info' : 'assistant';
-        setMessages(prev => [...prev, {
-          id: `m-${++msgIdRef.current}`,
-          role: 'assistant',
-          type: bubbleType,
-          content,
-        }]);
+        advanceToQuestion(nextId, newAnswers);
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, reportId, lang, tr, saveStepToBackend]);
+  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, advanceToQuestion]);
 
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
@@ -1109,7 +1424,10 @@ function QuestionnaireTab({ language }) {
     setCompleted(false);
     setAssumptions([]);
     setSaveError(null);
+    setSaveSuccess(false);
+    setLoopState(null);
     setResetConfirm(false);
+    if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
     helpSessionRef.current = null; // clear help session so next help opens a fresh one
     const firstQ = getQuestionById(initId);
     setMessages([{
@@ -1235,6 +1553,11 @@ function QuestionnaireTab({ language }) {
                 </div>
               </div>
             )}
+            {saveSuccess && (
+              <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-700">
+                {tr ? '✓ Kaydedildi' : '✓ Saved'}
+              </div>
+            )}
             {saveError && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
                 {saveError}
@@ -1349,11 +1672,14 @@ function FreeChatTab({ language }) {
       try {
         const res = await api.getChatSessions();
         if (!cancelled && res.ok) setSessions(await res.json());
-      } catch {}
+        else if (!cancelled && !res.ok) setError(tr ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
+      } catch {
+        if (!cancelled) setError(tr ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
+      }
       if (!cancelled) setLoadingSessions(false);
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [tr]);
 
   useEffect(() => {
     if (!activeId) { setMessages([]); return; }
@@ -1366,15 +1692,19 @@ function FreeChatTab({ language }) {
         if (res.ok) {
           const data = await res.json();
           if (!cancelled) setMessages((data.messages || []).map((m, i) => ({ id: m.id ?? `hist-${i}`, ...m })));
+        } else if (!cancelled) {
+          setError(tr ? 'Mesajlar yüklenemedi.' : 'Could not load messages.');
         }
-      } catch {}
+      } catch {
+        if (!cancelled) setError(tr ? 'Mesajlar yüklenemedi.' : 'Could not load messages.');
+      }
       if (!cancelled) {
         setLoadingMessages(false);
         inputRef.current?.focus();
       }
     })();
     return () => { cancelled = true; }; // cleanup: ignore response if activeId changed
-  }, [activeId]);
+  }, [activeId, tr]);
 
   // sendMessage declared BEFORE startNew so that startNew's dep array [sendMessage]
   // references an already-initialised variable (avoids TDZ / stale-undefined dep).

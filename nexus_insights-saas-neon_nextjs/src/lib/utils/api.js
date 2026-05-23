@@ -201,12 +201,6 @@ export const api = {
   deleteAccount: (password) => request('/accounts/delete-account/', { method: 'DELETE', body: JSON.stringify({ password }) }),
   exportAll: () => request('/emissions/export-all/'),
 
-  startQuestionnaire: (lang) => request('/questionnaire/legacy/start/', { method: 'POST', body: JSON.stringify({ lang }) }),
-  answerQuestion: (data) => request('/questionnaire/legacy/answer/', { method: 'POST', body: JSON.stringify(data) }),
-  getQuestionnaireSessions: () => request('/questionnaire/legacy/sessions/'),
-  resetQuestionnaire: () => request('/questionnaire/legacy/reset/', { method: 'POST' }),
-  getQuestionnaireProfile: () => request('/questionnaire/legacy/profile/'),
-
   startCarbonReport: () => request('/questionnaire/start/', { method: 'POST' }),
   submitReportStep: (reportId, step, data) => request(`/questionnaire/${reportId}/step/`, {
     method: 'PATCH',
