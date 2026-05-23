@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
-  ChevronRight, ClipboardList, AlertTriangle, Info, RotateCcw, X,
+  ClipboardList, AlertTriangle, RotateCcw, X,
   HelpCircle, CheckCircle2, Menu,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
@@ -236,7 +236,7 @@ function SessionItem({ session, active, onClick, onDelete, tr }) {
     >
       <p className="truncate text-xs font-bold leading-tight pr-6">{session.title}</p>
       <p className="mt-0.5 text-[10px] font-medium text-[#302817]/35">
-        {session.message_count} {tr ? 'mesaj' : 'msgs'} · {new Date(session.updated_at).toLocaleDateString()}
+        {session.message_count ?? 0} {tr ? 'mesaj' : 'msgs'}{session.updated_at ? ` · ${new Date(session.updated_at).toLocaleDateString()}` : ''}
       </p>
       <button
         onClick={e => { e.stopPropagation(); onDelete(session.id); }}
@@ -350,12 +350,13 @@ function ChatBubble({ msg }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Chip
 // ─────────────────────────────────────────────────────────────────────────────
-function Chip({ label, selected, onClick, multi }) {
+function Chip({ label, selected, onClick, multi, disabled }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+      disabled={disabled}
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
         selected
           ? 'border-[#95A847] bg-[#95A847] text-white shadow-sm'
           : 'border-[#302817]/12 bg-white text-[#302817]/70 hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 hover:text-[#302817]'
@@ -526,6 +527,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             label={String(y)}
             selected={value === String(y)}
             onClick={() => { onChange(String(y)); scheduleSubmit(); }}
+            disabled={disabled}
           />
         ))}
       </div>
@@ -541,6 +543,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             label={opt.label?.[lang] || opt.label?.en || opt.value}
             selected={value === opt.value}
             onClick={() => { onChange(opt.value); scheduleSubmit(); }}
+            disabled={disabled}
           />
         ))}
       </div>
@@ -692,7 +695,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
       return { stage, answeredCount: answeredInStage.length };
     });
     const totalAnswered = allAnswered.length;
-    const pct = Math.round((totalAnswered / TOTAL_QUESTIONS) * 100);
+    const pct = Math.min(100, Math.round((totalAnswered / TOTAL_QUESTIONS) * 100));
     return { stageStats, totalAnswered, pct };
   }, [answers]);
 
@@ -1393,6 +1396,11 @@ function QuestionnaireTab({ language }) {
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
     if (history.length === 0) return;
+    // Cancel any in-flight typing timer — its callback would overwrite the
+    // currentId/answerValue we're about to set and append a stale bubble.
+    if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
+    isSubmittingRef.current = false;
+    setIsTyping(false);
     // Clear any active loop — going back exits the loop entirely
     setLoopState(null);
     const prevId = history[history.length - 1];
