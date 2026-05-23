@@ -632,6 +632,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [helpError, setHelpError] = useState('');
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   // Monotonically-incrementing counter for stable message keys — avoids the
@@ -679,23 +680,23 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 
     setInput('');
     setSending(true);
+    setHelpError('');
     setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
     try {
       const res = await api.sendChatMessage(helpSessionRef.current, content);
-      // Guard: drawer may have been closed while the request was in-flight.
-      // Updating state on a closed (visually hidden) drawer is harmless but wasteful.
-      if (openRef.current && res.ok) {
-        const aiMsg = await res.json();
-        // Ensure a stable key even if the API omits `id`
-        setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
+      if (openRef.current) {
+        if (res.ok) {
+          const aiMsg = await res.json();
+          setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
+        } else {
+          setHelpError(tr ? 'Yanıt alınamadı. Lütfen tekrar deneyin.' : 'Could not get a response. Please try again.');
+        }
       }
-    } catch {}
-    if (openRef.current) {
-      setSending(false);
-      inputRef.current?.focus();
-    } else {
-      setSending(false); // always reset sending so the button isn't stuck on re-open
+    } catch {
+      if (openRef.current) setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     }
+    setSending(false);
+    if (openRef.current) inputRef.current?.focus();
   }, [input, sending, tr, helpSessionRef]);
 
   if (!open) return null;
@@ -778,6 +779,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
               {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             </button>
           </div>
+          {helpError && (
+            <p className="mt-1.5 text-[11px] font-semibold text-red-500">{helpError}</p>
+          )}
         </div>
       </div>
     </>
@@ -867,6 +871,9 @@ function QuestionnaireTab({ language }) {
   const scrollRef = useRef(null);
   const isMounted = useRef(true);
   const typingTimerRef = useRef(null);
+  // Synchronous mutex — prevents a second submitAnswer call from passing the
+  // isTyping guard during the await saveStepToBackend network window.
+  const isSubmittingRef = useRef(false);
   // Stable message-key counter — avoids Date.now() collisions
   const msgIdRef = useRef(0);
   useEffect(() => {
@@ -977,6 +984,8 @@ function QuestionnaireTab({ language }) {
     const q = getQuestionById(currentId);
     if (!q || isTyping) return;
 
+    if (isSubmittingRef.current) return;
+
     const raw = overrideValue !== undefined ? overrideValue : answerValue;
     const value = normalizeAnswerValue(q, raw);
 
@@ -1005,8 +1014,11 @@ function QuestionnaireTab({ language }) {
     setAnswers(newAnswers);
     setHistory(prev => [...prev, currentId]);
 
-    // Save to backend
+    // Save to backend — lock out further submits until save completes;
+    // setIsTyping(true) takes over blocking once the timer fires.
+    isSubmittingRef.current = true;
     await saveStepToBackend(currentId, value, reportId);
+    isSubmittingRef.current = false;
 
     // getQuestionWarning/getTriggeredAssumptions take the question OBJECT + single value + lang
     // (not the question ID string, not the full answers map)
@@ -1086,7 +1098,7 @@ function QuestionnaireTab({ language }) {
     const hadWarning = getQuestionWarning && getQuestionWarning(prevQ, answers[prevId], lang);
     const toRemove = prevQ?.type === 'info' ? 1 : hadWarning ? 3 : 2;
     setMessages(prev => prev.slice(0, -toRemove));
-  }, [history, answers]);
+  }, [history, answers, lang]);
 
   // ── resetFlow ──────────────────────────────────────────────────────────────
   const resetFlow = useCallback(() => {
@@ -1407,7 +1419,10 @@ function FreeChatTab({ language }) {
   const startNew = useCallback(async (initialPrompt = '') => {
     try {
       const res = await api.createChatSession();
-      if (!res.ok) return;
+      if (!res.ok) {
+        setError(tr ? 'Sohbet başlatılamadı.' : 'Failed to start chat.');
+        return;
+      }
       const session = await res.json();
       setSessions(prev => [session, ...prev]);
       setActiveId(session.id);
@@ -1419,12 +1434,18 @@ function FreeChatTab({ language }) {
         // safe to omit from this dep array.
         setTimeout(() => sendMessage(initialPrompt, session.id), CHIP_AUTO_SUBMIT_DELAY_MS);
       }
-    } catch {}
-  }, [sendMessage]);
+    } catch {
+      setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+    }
+  }, [sendMessage, tr]);
 
   const deleteSession = useCallback(async (id) => {
     try {
-      await api.deleteChatSession(id);
+      const res = await api.deleteChatSession(id);
+      if (!res.ok) {
+        setError(tr ? 'Sohbet silinemedi.' : 'Failed to delete chat.');
+        return;
+      }
       setSessions(prev => prev.filter(s => s.id !== id));
       if (activeId === id) { setActiveId(null); setMessages([]); }
     } catch {
