@@ -3,7 +3,8 @@
 // Session cookie for Next.js middleware routing (first-party, not auth)
 export function markSessionActive() {
   if (typeof document === 'undefined') return;
-  document.cookie = 'carbonless_auth=1; path=/; SameSite=Lax; Max-Age=86400';
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `carbonless_auth=1; path=/; SameSite=Lax; Max-Age=86400${secure}`;
 }
 export function clearSessionCookie() {
   if (typeof document === 'undefined') return;
@@ -30,6 +31,14 @@ function setToken(t) {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
+function fetchWithTimeout(url, opts = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 // Authenticated fetch
 async function request(endpoint, options = {}) {
   const token = getToken();
@@ -39,7 +48,7 @@ async function request(endpoint, options = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetchWithTimeout(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
     credentials: 'include',
@@ -54,7 +63,7 @@ async function request(endpoint, options = {}) {
   // Token already written inside doRefresh; setToken here keeps the path symmetric.
   setToken(access);
 
-  return fetch(`${API_BASE}${endpoint}`, {
+  return fetchWithTimeout(`${API_BASE}${endpoint}`, {
     ...options,
     headers: { ...headers, Authorization: `Bearer ${access}` },
     credentials: 'include',

@@ -13,6 +13,7 @@ import {
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
 import { ALL_NACE_CODES } from '@/lib/data/naceCodes';
 import CountryPicker from '@/components/CountryPicker';
+import { api as apiModule, markSessionActive as activate } from '@/lib/utils/api';
 
 export default function RegisterPage() {
   const { language, changeLanguage, t } = useLanguage();
@@ -143,9 +144,7 @@ export default function RegisterPage() {
       // dynamic module were previously used, which risked the second call missing
       // the auth token on a cold SSR edge case.
       let loginRes;
-      let apiModule, activate;
       try {
-        ({ api: apiModule, markSessionActive: activate } = await import('@/lib/utils/api'));
         loginRes = await apiModule.login(formData.username, formData.password);
         if (loginRes.ok) activate();
       } catch {
@@ -345,7 +344,7 @@ export default function RegisterPage() {
                   {language === 'tr' ? 'Kaydolarak ' : 'By registering you agree to our '}
                   <a href="/terms" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Kullanım Şartları' : 'Terms of Use'}</a>
                   {language === 'tr' ? ' ve ' : ' and '}
-                  <a href="/terms#privacy" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
+                  <a href="/privacy" target="_blank" className="font-bold text-[#95A847] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
                   {language === 'tr' ? '\'nı kabul etmiş olursunuz.' : '.'}
                 </p>
               </div>

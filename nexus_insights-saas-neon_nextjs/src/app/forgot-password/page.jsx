@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
                   <h2 className="text-2xl font-bold mb-2">
                     {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password'}
                   </h2>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-sm text-[#302817]/60">
                     {language === 'tr'
                       ? 'E-posta adresinizi girin, şifre sıfırlama bağlantısı göndereceğiz.'
                       : 'Enter your email and we will send you a password reset link.'}
@@ -59,11 +59,11 @@ export default function ForgotPasswordPage() {
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-bold text-[#302817]/75 mb-2">
                       {language === 'tr' ? 'E-posta' : 'Email'}
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#95A847]" />
                       <input
                         type="email"
                         value={email}
@@ -93,11 +93,11 @@ export default function ForgotPasswordPage() {
               </>
             ) : (
               <div className="text-center py-4">
-                <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+                <CheckCircle className="w-16 h-16 text-[#95A847] mx-auto mb-4" />
                 <h2 className="text-xl font-bold mb-2">
                   {language === 'tr' ? 'E-posta Gönderildi' : 'Email Sent'}
                 </h2>
-                <p className="text-gray-600 text-sm mb-4">
+                <p className="text-sm text-[#302817]/60 mb-4">
                   {language === 'tr'
                     ? `${email} adresine şifre sıfırlama bağlantısı gönderildi. Lütfen gelen kutunuzu kontrol edin.`
                     : `A password reset link has been sent to ${email}. Please check your inbox.`}
