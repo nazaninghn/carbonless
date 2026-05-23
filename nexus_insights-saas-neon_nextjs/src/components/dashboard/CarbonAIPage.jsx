@@ -93,11 +93,11 @@ function mapAnswerForBackend(questionId, value) {
     case 'A1': return { legal_name: value };
     case 'A2': return { tax_id: value };
     case 'A3': return { country: value?.country || '', city: value?.city || '' };
-    case 'A4': return { reporting_year: parseInt(value, 10) };
+    case 'A4': { const y = parseInt(value, 10); return { reporting_year: Number.isNaN(y) ? null : y }; }
     case 'A5': return { prepared_by: value };
     case 'A6': return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip') : [] };
     case 'A7': return { has_previous_report: value === 'yes' };
-    case 'A7a': return { baseline_year: parseInt(value, 10) };
+    case 'A7a': { const y = parseInt(value, 10); return { baseline_year: Number.isNaN(y) ? null : y }; }
     default: return { answer: value };
   }
 }
@@ -152,14 +152,6 @@ function getDisplayValue(q, value, lang = 'en') {
   return String(value);
 }
 
-// Returns whether a question's conditionalRequired condition is satisfied.
-// Uses the same field names as questions.js: { questionId, equals }
-function checkConditionalRequired(q, answers) {
-  if (!q?.conditionalRequired) return q?.required ?? true;
-  const { questionId, equals } = q.conditionalRequired;
-  return answers[questionId] === equals;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared: Markdown renderer
 // Safety: input is HTML-escaped before any regex substitution, so injected
@@ -172,6 +164,7 @@ function Markdown({ text }) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code class="rounded bg-black/10 px-1 py-0.5 text-[12px] font-mono">$1</code>')
     .replace(/^### (.+)$/gm, '<p class="mt-3 mb-1 font-bold text-[#302817]">$1</p>')
     .replace(/^## (.+)$/gm, '<p class="mt-4 mb-1 text-base font-bold text-[#302817]">$1</p>')
@@ -1156,7 +1149,7 @@ function QuestionnaireTab({ language }) {
   // ── advanceToQuestion ──────────────────────────────────────────────────────
   // Shared helper: navigate to nextId and post its question bubble.
   // Call only from inside a typingTimerRef.current timeout (after setIsTyping(false)).
-  const advanceToQuestion = useCallback((nextId, answersSnap) => {
+  const advanceToQuestion = useCallback((nextId) => {
     if (!nextId) {
       setCompleted(true);
       setMessages(prev => [...prev, {
@@ -1293,7 +1286,7 @@ function QuestionnaireTab({ language }) {
           if (matches) break;
           nextId = getNextQuestionId(candidate, getInitialValue(candidate));
         }
-        advanceToQuestion(nextId, finalAnswers);
+        advanceToQuestion(nextId);
       }, TYPING_DELAY_MS);
       return;
     }
@@ -1392,7 +1385,7 @@ function QuestionnaireTab({ language }) {
           nextId = nextQ.loopNext || null;
         }
 
-        advanceToQuestion(nextId, newAnswers);
+        advanceToQuestion(nextId);
       }
     }, TYPING_DELAY_MS);
   }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, advanceToQuestion]);
@@ -1400,6 +1393,8 @@ function QuestionnaireTab({ language }) {
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
     if (history.length === 0) return;
+    // Clear any active loop — going back exits the loop entirely
+    setLoopState(null);
     const prevId = history[history.length - 1];
     setHistory(prev => prev.slice(0, -1));
     setCurrentId(prevId);
@@ -1417,6 +1412,10 @@ function QuestionnaireTab({ language }) {
 
   // ── resetFlow ──────────────────────────────────────────────────────────────
   const resetFlow = useCallback(() => {
+    // Cancel any in-flight typing animation so it can't post stale bubbles
+    if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
+    if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
+    isSubmittingRef.current = false;
     const initId = getInitialQuestionId();
     setCurrentId(initId);
     setAnswers({});
@@ -1426,8 +1425,8 @@ function QuestionnaireTab({ language }) {
     setSaveError(null);
     setSaveSuccess(false);
     setLoopState(null);
+    setIsTyping(false);
     setResetConfirm(false);
-    if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
     helpSessionRef.current = null; // clear help session so next help opens a fresh one
     const firstQ = getQuestionById(initId);
     setMessages([{
@@ -1551,6 +1550,18 @@ function QuestionnaireTab({ language }) {
                 <div className="rounded-[22px] rounded-tl-sm border border-[#302817]/6 bg-white px-4 py-3 shadow-[0_2px_12px_rgba(48,40,23,0.05)]">
                   <TypingDots />
                 </div>
+              </div>
+            )}
+            {assumptions.length > 0 && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-600">
+                  {tr ? 'ISO 14064-1 Varsayımları' : 'ISO 14064-1 Assumptions'}
+                </p>
+                <ul className="flex flex-col gap-1">
+                  {assumptions.map((a, i) => (
+                    <li key={i} className="text-xs text-blue-800">• {a}</li>
+                  ))}
+                </ul>
               </div>
             )}
             {saveSuccess && (
@@ -1873,6 +1884,13 @@ function FreeChatTab({ language }) {
           )}
         </header>
 
+        {/* Error banner — shown at all times (session load, message load, send errors) */}
+        {error && (
+          <div className="shrink-0 mx-4 mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
+            {error}
+          </div>
+        )}
+
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
@@ -1900,11 +1918,6 @@ function FreeChatTab({ language }) {
                   <div className="rounded-[20px] rounded-tl-sm border border-[#302817]/6 bg-white px-4 py-3 shadow-[0_2px_12px_rgba(48,40,23,0.05)]">
                     <TypingDots />
                   </div>
-                </div>
-              )}
-              {error && (
-                <div className="mx-auto w-full max-w-3xl rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
-                  {error}
                 </div>
               )}
             </div>
