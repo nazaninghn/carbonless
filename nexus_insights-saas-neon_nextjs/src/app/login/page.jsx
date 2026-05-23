@@ -94,21 +94,21 @@ function LoginContent() {
 
             <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="mb-1.5 block text-sm font-bold text-[#302817]/75">{t.login.email}</label>
+                <label htmlFor="login-email" className="mb-1.5 block text-sm font-bold text-[#302817]/75">{t.login.email}</label>
                 <div className="group flex items-center gap-3 rounded-2xl border border-[#302817]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#B4BE6A]/60 focus-within:bg-white/70 focus-within:ring-4 focus-within:ring-[#B4BE6A]/20">
                   <Mail className="h-5 w-5 text-[#95A847]" />
-                  <input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" placeholder={t.login.emailPlaceholder} required />
+                  <input id="login-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" placeholder={t.login.emailPlaceholder} required />
                 </div>
               </div>
 
               <div>
                 <div className="mb-1.5 flex items-center justify-between gap-4">
-                  <label className="block text-sm font-bold text-[#302817]/75">{t.login.password}</label>
+                  <label htmlFor="login-password" className="block text-sm font-bold text-[#302817]/75">{t.login.password}</label>
                   <NextLink href="/forgot-password" className="text-xs font-bold text-[#95A847] transition hover:text-[#302817]">{t.login.forgotPassword}</NextLink>
                 </div>
                 <div className="group flex items-center gap-3 rounded-2xl border border-[#302817]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#B4BE6A]/60 focus-within:bg-white/70 focus-within:ring-4 focus-within:ring-[#B4BE6A]/20">
                   <LockKeyhole className="h-5 w-5 text-[#95A847]" />
-                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" placeholder="••••••••" required />
+                  <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/35" placeholder="••••••••" required />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-[#302817]/45 transition hover:text-[#302817]" aria-label="Toggle password visibility">
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>

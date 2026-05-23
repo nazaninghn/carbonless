@@ -59,8 +59,8 @@ export default function AboutPage() {
                   { icon: BarChart3, val: '131+', label: tr ? 'Emisyon Faktörü' : 'Emission Factors' },
                   { icon: Globe, val: '2', label: tr ? 'Ülke Desteği' : 'Country Support' },
                   { icon: Shield, val: 'GHG', label: tr ? 'Protokol Uyumlu' : 'Protocol Compliant' },
-                ].map((s, i) => (
-                  <div key={i} className="bg-[#F9EFE5]/40 rounded-xl p-6 text-center">
+                ].map((s) => (
+                  <div key={s.val} className="bg-[#F9EFE5]/40 rounded-xl p-6 text-center">
                     <s.icon className="w-8 h-8 text-primary mx-auto mb-3" />
                     <p className="text-2xl font-bold text-[#302817]">{s.val}</p>
                     <p className="text-sm text-[#302817]/60">{s.label}</p>
@@ -96,8 +96,8 @@ export default function AboutPage() {
                   title: tr ? 'Anket Sihirbazı' : 'Questionnaire Wizard',
                   desc: tr ? 'ISO 14064-1 uyumlu chatbot ile envanter yapılandırmanızı kolayca belirleyin.' : 'Easily configure your inventory setup with our ISO 14064-1 compliant chatbot wizard.',
                 },
-              ].map((f, i) => (
-                <div key={i} className="bg-white rounded-2xl p-8 shadow-sm border border-[#302817]/8">
+              ].map((f) => (
+                <div key={f.title} className="bg-white rounded-2xl p-8 shadow-sm border border-[#302817]/8">
                   <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
                     <f.icon className="w-7 h-7 text-primary" />
                   </div>
@@ -127,8 +127,8 @@ export default function AboutPage() {
                 { name: 'ICAO 2025', desc: tr ? 'Havacılık emisyonları' : 'Aviation emissions' },
                 { name: 'Turkey National', desc: tr ? 'Ulusal enerji verileri' : 'National energy data' },
                 { name: 'Turkey Fleet 2025', desc: tr ? 'Araç filosu verileri' : 'Vehicle fleet data' },
-              ].map((s, i) => (
-                <div key={i} className="flex items-start gap-3 p-4 bg-[#F9EFE5]/30 rounded-lg">
+              ].map((s) => (
+                <div key={s.name} className="flex items-start gap-3 p-4 bg-[#F9EFE5]/30 rounded-lg">
                   <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-[#302817]">{s.name}</p>

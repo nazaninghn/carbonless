@@ -53,13 +53,13 @@ export default class ErrorBoundary extends Component {
               onClick={() => this.setState({ hasError: false, error: null })}
               className="rounded-full bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700"
             >
-              Try Again
+              {this.props.language === 'tr' ? 'Tekrar Dene' : 'Try Again'}
             </button>
             <button
               onClick={() => window.location.reload()}
               className="rounded-full border border-red-300 bg-white px-5 py-2 text-xs font-bold text-red-700 transition hover:bg-red-50"
             >
-              Reload Page
+              {this.props.language === 'tr' ? 'Sayfayı Yenile' : 'Reload Page'}
             </button>
           </div>
         </div>

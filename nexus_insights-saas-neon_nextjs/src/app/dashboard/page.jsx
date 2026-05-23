@@ -82,7 +82,7 @@ export default function DashboardPage() {
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <DashboardOverview
                 language={language}
                 selectedYear={selectedYear}
@@ -99,7 +99,7 @@ export default function DashboardPage() {
 
           {/* ===== EMISSIONS TAB ===== */}
           {activeTab === 'emissions' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <EmissionsTab
                 language={language}
                 selectedYear={selectedYear}
@@ -119,14 +119,14 @@ export default function DashboardPage() {
 
           {/* ===== REVIEW TAB ===== */}
           {activeTab === 'review' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <ReviewTab language={language} fetchData={fetchData} />
             </ErrorBoundary>
           )}
 
           {/* ===== REDUCTION TARGETS TAB ===== */}
           {activeTab === 'reduction' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <ReductionTargetsTab
                 language={language}
                 targets={targets}
@@ -138,21 +138,21 @@ export default function DashboardPage() {
 
           {/* ===== REPORTING TAB ===== */}
           {activeTab === 'reporting' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <ReportingTab language={language} selectedYear={selectedYear} summary={summary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
             </ErrorBoundary>
           )}
 
           {/* ===== SETTINGS TAB ===== */}
           {activeTab === 'settings' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <SettingsTab language={language} user={user} fetchData={fetchData} />
             </ErrorBoundary>
           )}
 
           {/* ===== AI CARBON TAB ===== */}
           {activeTab === 'ai_carbon' && (
-            <ErrorBoundary>
+            <ErrorBoundary language={language}>
               <CarbonAIPage language={language} />
             </ErrorBoundary>
           )}

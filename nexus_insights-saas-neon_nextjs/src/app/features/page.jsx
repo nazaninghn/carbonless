@@ -52,8 +52,8 @@ export default function FeaturesPage() {
         <section className="py-20 lg:py-28">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {features.map((f, i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 border border-[#302817]/8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+              {features.map((f) => (
+                <div key={f.title} className="bg-white rounded-2xl p-6 border border-[#302817]/8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                     <f.icon className="w-6 h-6 text-primary" />
                   </div>
@@ -81,8 +81,8 @@ export default function FeaturesPage() {
                 'Defra/DESNZ 2024', 'IPCC 2006', 'IPCC 2019 + AR6 GWP',
                 'ATOM KABLO ISO 14064-1', 'Turkey National Grid', 'Turkey Fleet 2025',
                 'ICAO 2025', 'Generic/Estimated'
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-[#302817]/8">
+              ].map((s) => (
+                <div key={s} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-[#302817]/8">
                   <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
                   <span className="text-sm text-[#302817]/70">{s}</span>
                 </div>
