@@ -4707,20 +4707,25 @@ export function getQuestionWarning(question, value, lang = 'en') {
  *
  * Keys in `question.systemMessages` are option values (for single_select /
  * year_select) or one of the first selected values (for multi_select).
+ * A special sentinel key `'selected'` fires for ANY non-empty selection on
+ * single_select / year_select questions — used when the same message applies
+ * regardless of which option is picked (e.g. A7a baseline-year confirmation).
  * Returns a resolved string in the correct language, or null.
  */
 export function getSystemMessage(question, value, lang = 'en') {
   if (!question?.systemMessages) return null;
   const msgs = question.systemMessages;
 
-  // Single-select and year_select: key = selected option value
+  // Single-select and year_select: key = selected option value.
+  // Sentinel key 'selected' fires for any non-empty value (covers questions like
+  // A7a where the same contextual message applies regardless of which year is chosen).
   if (
     question.type === 'single_select' ||
     question.type === 'year_select' ||
     question.type === 'equipment_loop' ||
     question.type === 'fuel_loop'
   ) {
-    const msg = msgs[value];
+    const msg = msgs[value] ?? (value != null && value !== '' ? msgs['selected'] : undefined);
     if (!msg) return null;
     return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
   }

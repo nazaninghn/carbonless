@@ -2035,6 +2035,7 @@ function FreeChatTab({ language }) {
   const deleteSession = useCallback(async (id) => {
     try {
       const res = await api.deleteChatSession(id);
+      if (!isMountedRef.current) return;
       if (!res.ok) {
         setError(tr ? 'Sohbet silinemedi.' : 'Failed to delete chat.');
         return;
@@ -2042,7 +2043,7 @@ function FreeChatTab({ language }) {
       setSessions(prev => prev.filter(s => s.id !== id));
       if (activeId === id) { setActiveId(null); setMessages([]); }
     } catch {
-      setError(tr ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
+      if (isMountedRef.current) setError(tr ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
     }
   }, [activeId, tr]);
 
