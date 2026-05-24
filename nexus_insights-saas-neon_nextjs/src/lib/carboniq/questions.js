@@ -2886,6 +2886,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Almost every company purchases goods and services — office supplies, IT, cleaning, consulting. Are you sure there are no external purchases?',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C1-1', no: 'K3C2-0' },
   },
   {
@@ -2930,6 +2931,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Does this overlap with your Scope 1 entries? Check to avoid double counting.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen en az bir seçenek belirtin.', en: 'Please select at least one option.' } },
     next: 'K3C1-2',
   },
   {
@@ -2965,6 +2967,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Is there really no spend in this category?',
       },
     },
+    validate: { requiredMessage: { tr: 'Bu alan zorunludur.', en: 'This field is required.' } },
     next: 'K3C1-3',
   },
   {
@@ -3045,6 +3048,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
       { value: 'no', label: { tr: 'Hayır', en: 'No' } },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C2-1', no: 'K3C3-INFO' },
   },
   {
@@ -3095,6 +3099,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'This investment amount is notably large. We recommend adding an \'extraordinary capital investment\' note to the report.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C3-INFO',
   },
   {
@@ -3124,6 +3129,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Cat.3 calculation: K1 fuel × DEFRA WTT factors + K2 electricity × IEA T&D loss rate (Turkey: 14.8%). Source: DEFRA 2023 + IEA 2023.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C4-0',
   },
   {
@@ -3147,6 +3153,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
       { value: 'no', label: { tr: 'Hayır', en: 'No' } },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C4-1', no: 'K3C5-0' },
   },
   {
@@ -3177,6 +3184,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'You entered logistics service spend in Category 1. Do not enter the same amount here — this causes double counting.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C5-0',
   },
   {
@@ -3206,6 +3214,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Office paper and e-waste also fall in this scope. Are you sure?',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C5-1', no: 'K3C6-0' },
   },
   {
@@ -3237,6 +3246,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Metal recycling produces negative emissions (aluminium: -9,100 kg CO₂e/tonne). This value reduces your total Scope 3 emissions.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C6-0',
   },
   {
@@ -3260,6 +3270,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
       { value: 'no', label: { tr: 'Hayır', en: 'No' } },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C6-1', no: 'K3C7-0' },
   },
   {
@@ -3294,6 +3305,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Radiative Forcing Index (RFI=1.9x): Covers the additional climate impact of high-altitude flights. DEFRA recommends, GHG Protocol does not require. Your choice is documented in the report.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C7-0',
   },
   {
@@ -3327,6 +3339,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'For hybrid models, commute EF applies on office days and DEFRA home office EF (2.49 kg CO₂e/day) on remote days. Specify annual office day count.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C8-0',
   },
   {
@@ -3356,6 +3369,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Since you selected Operational Control, leased buildings are likely already in K1. This category is only for leased assets that could not be included in K1.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C8-1', no: 'K3C9-0' },
   },
   {
@@ -3393,6 +3407,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'owner_declaration', type: 'boolean', required: true },
       { id: 'declaration_kwh', type: 'numeric', required: false, conditionalOn: 'owner_declaration' },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C9-0',
   },
   {
@@ -3422,6 +3437,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'We will use the same structure as Cat.4: GLEC Framework emission factors, transport mode and tonne-km data.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C10-0',
   },
   {
@@ -3474,6 +3490,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'If you sell fuel or energy products, this is typically the largest Scope 3 item. Calculation: sales volume × fuel EF × customer usage rate.',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { yes: 'K3C11-1', no: 'K3C12-0' },
   },
   {
@@ -3512,6 +3529,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'use_lifetime_years', type: 'numeric', required: false },
       { id: 'lca_available', type: 'boolean', required: false },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C12-0',
   },
   {
@@ -3535,6 +3553,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'yes', label: { tr: 'Evet — fiziksel ürün satıyoruz', en: 'Yes — we sell physical products' } },
       { value: 'no', label: { tr: 'Hayır — hizmet satıyoruz', en: 'No — we sell services' } },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C13-0',
   },
   {
@@ -3564,6 +3583,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'In Stage 2 you selected \'tenant manages\' for this facility. It falls under Category 13. Can you obtain energy consumption data from the tenant?',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     next: 'K3C14-0',
   },
   {
@@ -3664,6 +3684,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'PCAF attribution: ([Investment] / ([Company value] + [Debt])) × [Company emissions] = [tCO₂e]. PCAF data quality score: [1–5].',
       },
     },
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3-TY',
   },
   {
@@ -4006,6 +4027,7 @@ export const CARBONIQ_QUESTIONS = [
         placeholder: { tr: 'Neden standart metodoloji yerine bu yaklaşım benimsendi?', en: 'Why was this approach adopted instead of the standard methodology?' },
       },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: '6C-3',
   },
   // #117
@@ -4278,6 +4300,7 @@ export const CARBONIQ_QUESTIONS = [
         ],
       },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: '7A-INFO',
   },
   // #126
@@ -4327,6 +4350,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'view_assumptions', label: { tr: 'Kabulleri Gözden Geçir', en: 'Review Assumptions' } },
       { value: 'done', label: { tr: 'Tamamlandı — kapat', en: 'Done — close' } },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     nextByValue: { view_assumptions: '6B-0' },
   },
 
