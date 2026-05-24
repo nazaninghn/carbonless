@@ -650,8 +650,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
 
   // multi_line text
   if (subtype === 'multi_line') {
+    const mlRequired = question.required !== false;
     const maxLen = question.maxLength;
     const charCount = String(value || '').length;
+    const mlEmpty = !String(value || '').trim();
     return (
       <div className="flex flex-col gap-1 w-full max-w-lg">
         <textarea
@@ -674,9 +676,14 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
           <span className="text-[10px] text-[#302817]/40">{tr ? 'Göndermek için Ctrl+Enter' : 'Ctrl+Enter to submit'}</span>
           {maxLen && <span className="text-[10px] text-[#302817]/35">{charCount}/{maxLen}</span>}
         </div>
+        {!mlRequired && mlEmpty && (
+          <span className="text-[10px] text-[#302817]/40 pl-1">
+            {tr ? 'Bu alan isteğe bağlıdır — boş bırakabilirsiniz.' : 'This field is optional — you may leave it blank.'}
+          </span>
+        )}
         <button
           onClick={onSubmit}
-          disabled={disabled || !String(value || '').trim()}
+          disabled={disabled || (mlRequired && mlEmpty)}
           className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
@@ -686,8 +693,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
   }
 
   // text / numeric / single-line
+  const isRequired = question.required !== false;
   const maxLen = question.maxLength;
   const charCount = String(value || '').length;
+  const isEmpty = !String(value || '').trim();
   return (
     <div className="flex flex-col gap-1 w-full max-w-sm">
       <div className="flex gap-2 items-center">
@@ -705,7 +714,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
         />
         <button
           onClick={onSubmit}
-          disabled={disabled || !String(value || '').trim()}
+          disabled={disabled || (isRequired && isEmpty)}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
           <Send className="h-3.5 w-3.5" />
@@ -713,6 +722,11 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
       </div>
       {maxLen && (
         <span className="text-right text-[10px] text-[#302817]/35 pr-12">{charCount}/{maxLen}</span>
+      )}
+      {!isRequired && isEmpty && (
+        <span className="text-[10px] text-[#302817]/40 pl-1">
+          {tr ? 'Bu alan isteğe bağlıdır — boş bırakabilirsiniz.' : 'This field is optional — you may leave it blank.'}
+        </span>
       )}
     </div>
   );
@@ -1228,6 +1242,71 @@ function QuestionnaireTab({ language }) {
     }]);
   }, [lang, tr]);
 
+  // ── initLoopOrAdvance ──────────────────────────────────────────────────────
+  // If the target question has `loopSource`, initialises a fresh per-item loop
+  // using items extracted from currentAnswers[loopSource].  Otherwise just
+  // calls advanceToQuestion.  Always call from inside a typingTimerRef callback
+  // (i.e. after setIsTyping(false) has been called).
+  //
+  // Source-answer shapes handled:
+  //   • Array  — multi_select answer (most common)
+  //   • String — free-text list, split on comma / newline
+  //   • Object — collected from a prior loop { item: answer | answer[] };
+  //              values are flattened + deduplicated (e.g. fuel types per equipment)
+  const initLoopOrAdvance = useCallback((nextId, currentAnswers) => {
+    if (!nextId) { advanceToQuestion(null); return; }
+    const nextQ = getQuestionById(nextId);
+    if (nextQ?.loopSource) {
+      const sourceAnswer = currentAnswers[nextQ.loopSource];
+      let items;
+      if (Array.isArray(sourceAnswer)) {
+        items = sourceAnswer;
+      } else if (typeof sourceAnswer === 'string' && sourceAnswer.trim()) {
+        items = sourceAnswer.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+      } else if (sourceAnswer && typeof sourceAnswer === 'object') {
+        // Collected from a prior per-item loop — flatten all values, deduplicate
+        const seen = new Set();
+        items = [];
+        for (const v of Object.values(sourceAnswer)) {
+          const arr = Array.isArray(v) ? v : (v != null ? [v] : []);
+          for (const x of arr) { if (x && !seen.has(x)) { seen.add(x); items.push(x); } }
+        }
+      } else {
+        items = [];
+      }
+      const sourceQ = getQuestionById(nextQ.loopSource);
+      // Remove exclusive / sentinel options (e.g. value='none') — they signal
+      // "nothing selected" and should never become loop items.
+      const exclusiveVals = new Set(
+        (sourceQ?.options || [])
+          .filter(o => o.exclusive || o.value === 'none')
+          .map(o => o.value)
+      );
+      items = items.filter(x => !exclusiveVals.has(x));
+      const itemLabels = items.map(item => {
+        const opt = sourceQ?.options?.find(o => o.value === item);
+        return opt?.label?.[lang] || opt?.label?.en || item;
+      });
+      if (items.length > 0) {
+        setLoopState({ questionId: nextId, items, itemLabels, currentIndex: 0, collected: {} });
+        setCurrentId(nextId);
+        setAnswerValue(getInitialValue(nextQ));
+        const firstLabel = itemLabels[0] || items[0];
+        const loopText  = nextQ?.text?.[lang]   || nextQ?.text?.en   || '';
+        const loopHelper = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
+        let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
+        if (loopHelper) content += `\n\n_${loopHelper}_`;
+        setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }]);
+        return;
+      }
+      // No items → skip this loop question and try the next one in the chain
+      // (use initLoopOrAdvance so a run of empty-loop questions all get skipped)
+      initLoopOrAdvance(nextQ.loopNext || null, currentAnswers);
+      return;
+    }
+    advanceToQuestion(nextId);
+  }, [advanceToQuestion, lang, tr]);
+
   // ── submitAnswer ───────────────────────────────────────────────────────────
   const submitAnswer = useCallback(async (overrideValue) => {
     const q = getQuestionById(currentId);
@@ -1330,15 +1409,17 @@ function QuestionnaireTab({ language }) {
         while (nextId) {
           const candidate = getQuestionById(nextId);
           if (!candidate?.conditionalShow) break;
-          const { questionId: csQid, includesValue: csVal, inValues: csVals } = candidate.conditionalShow;
+          const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
           const csAnswer = finalAnswers[csQid];
           const matches = csVals
             ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
-            : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
+            : csEquals !== undefined
+              ? csAnswer === csEquals
+              : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
           if (matches) break;
           nextId = getNextQuestionId(candidate, getInitialValue(candidate));
         }
-        advanceToQuestion(nextId);
+        initLoopOrAdvance(nextId, finalAnswers);
       }, TYPING_DELAY_MS);
       return;
     }
@@ -1394,11 +1475,13 @@ function QuestionnaireTab({ language }) {
       while (nextId) {
         const candidate = getQuestionById(nextId);
         if (!candidate?.conditionalShow) break;
-        const { questionId: csQid, includesValue: csVal, inValues: csVals } = candidate.conditionalShow;
+        const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
         const csAnswer = newAnswers[csQid];
         const matches = csVals
           ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
-          : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
+          : csEquals !== undefined
+            ? csAnswer === csEquals
+            : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
         if (matches) break;
         nextId = getNextQuestionId(candidate, getInitialValue(candidate));
       }
@@ -1414,42 +1497,10 @@ function QuestionnaireTab({ language }) {
             : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
         }]);
       } else {
-        const nextQ = getQuestionById(nextId);
-
-        // Initialize loop state if the next question is a loop question
-        if (nextQ?.loopType && nextQ?.loopSource) {
-          const sourceAnswer = newAnswers[nextQ.loopSource];
-          // Arrays come from multi_select; strings (e.g. free-text facility list) are split by comma/newline
-          const items = Array.isArray(sourceAnswer)
-            ? sourceAnswer
-            : (typeof sourceAnswer === 'string' && sourceAnswer.trim()
-                ? sourceAnswer.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
-                : []);
-          const sourceQ = getQuestionById(nextQ.loopSource);
-          const itemLabels = items.map(item => {
-            const opt = sourceQ?.options?.find(o => o.value === item);
-            return opt?.label?.[lang] || opt?.label?.en || item;
-          });
-          if (items.length > 0) {
-            setLoopState({ questionId: nextId, items, itemLabels, currentIndex: 0, collected: {} });
-            setCurrentId(nextId);
-            setAnswerValue(getInitialValue(nextQ));
-            const firstLabel = itemLabels[0] || items[0];
-            const loopText = nextQ?.text?.[lang] || nextQ?.text?.en || '';
-            const loopHelper = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
-            let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
-            if (loopHelper) content += `\n\n_${loopHelper}_`;
-            setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }]);
-            return;
-          }
-          // No items to loop — skip the loop question entirely
-          nextId = nextQ.loopNext || null;
-        }
-
-        advanceToQuestion(nextId);
+        initLoopOrAdvance(nextId, newAnswers);
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, advanceToQuestion]);
+  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance]);
 
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
