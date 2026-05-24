@@ -262,7 +262,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'legal_obligation', label: { tr: 'Yasal zorunluluk (mevzuat uyumu)', en: 'Legal obligation / regulatory compliance' }, infoKey: 'legalInfo' },
       { value: 'voluntary_disclosure', label: { tr: 'Gönüllü açıklama (CDP, GRI, TCFD vb.)', en: 'Voluntary disclosure (CDP, GRI, TCFD etc.)' }, infoKey: 'voluntaryInfo' },
       { value: 'customer_request', label: { tr: 'Müşteri / tedarik zinciri talebi', en: 'Customer / supply chain request' } },
-      { value: 'skip', label: { tr: 'Atlamak istiyorum', en: 'I want to skip' } },
+      { value: 'skip', exclusive: true, label: { tr: 'Atlamak istiyorum', en: 'I want to skip' } },
     ],
     systemMessages: {
       legalInfo: {
@@ -528,6 +528,7 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lokasyon sayısı zorunludur.', en: 'Location count is required.' },
       formatMessage: { tr: 'Lütfen yalnızca rakam girin.', en: 'Please enter digits only.' },
+      maxLengthMessage: { tr: 'En fazla 6 karakter girin.', en: 'Maximum 6 characters allowed.' },
     },
     next: 'B5',
   },
@@ -954,6 +955,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     validate: {
       requiredMessage: { tr: 'Lütfen en az bir organizasyon birimi veya tesis girin.', en: 'Please enter at least one organizational unit or facility.' },
+      maxLengthMessage: { tr: 'Liste en fazla 600 karakter olabilir.', en: 'List must be at most 600 characters.' },
     },
     next: '2A-2',
   },
@@ -1589,6 +1591,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     validate: {
       requiredMessage: { tr: 'Tahmin yöntemi zorunludur. Kısa bir açıklama yeterli.', en: 'Estimation method is required. A short explanation is sufficient.' },
+      maxLengthMessage: { tr: 'Açıklama en fazla 300 karakter olabilir.', en: 'Description must be at most 300 characters.' },
     },
     next: '3A-EF',
   },
@@ -2103,7 +2106,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'EQ-3D-13', label: { tr: 'EQ-3D-13 — HFC/PFC kullanan proses ekipmanı', en: 'EQ-3D-13 — Process equipment using HFC/PFC' } },
       { value: 'EQ-3D-14', label: { tr: 'EQ-3D-14 — NF₃ kullanan temizleme ekipmanı', en: 'EQ-3D-14 — Cleaning equipment using NF₃' } },
       { value: 'EQ-3D-99', label: { tr: 'EQ-3D-99 — Diğer (listede yok)', en: 'EQ-3D-99 — Other (not in list)' } },
-      { value: 'none', label: { tr: 'Hiçbiri — kaçak emisyon kaynağım yok', en: 'None — I have no fugitive emission sources' } },
+      { value: 'none', exclusive: true, label: { tr: 'Hiçbiri — kaçak emisyon kaynağım yok', en: 'None — I have no fugitive emission sources' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen kaçak emisyon kaynaklarınızı seçin veya "Hiçbiri" seçeneğini işaretleyin.', en: 'Please select your fugitive emission sources or check "None".' },
@@ -2365,7 +2368,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     loopType: 'per_facility',
     loopSource: '2A-1',
-    loopNext: '4A-2',
+    loopNext: '4A-1a',
     reportField: 'scope2.facility_electricity_kwh',
     text: {
       tr: '[Tesis adı] — Yıllık elektrik tüketimi nedir?',
@@ -2417,12 +2420,15 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.3',
     type: 'text',
     subtype: 'numeric',
-    required: true,
-    conditionalShow: { questionId: '4A-1', equals: 'tl' },
+    required: false,
+    // conditionalShow removed: 4A-1 is a per-facility loop question whose answer is
+    // a collected object, not the string 'tl'. The condition could never match.
+    // 4A-1a is now always shown after the loop as an optional follow-up; users who
+    // entered kWh values can leave it blank and continue.
     reportField: 'scope2.facility_unit_price',
     text: {
-      tr: '[Fatura tutarı girilmişse] Birim elektrik fiyatı nedir?',
-      en: '[If invoice amount entered] What is the unit electricity price?',
+      tr: '[Fatura tutarı girilmişse] Birim elektrik fiyatı nedir? (İsteğe bağlı)',
+      en: '[If invoice amount entered] What is the unit electricity price? (Optional)',
     },
     placeholder: {
       tr: 'Örn: 3.85 TL/kWh',
@@ -3804,6 +3810,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     validate: {
       requiredMessage: { tr: 'Lütfen gerekçeyi açıklayın.', en: 'Please describe the justification.' },
+      maxLengthMessage: { tr: 'Gerekçe en fazla 500 karakter olabilir.', en: 'Justification must be at most 500 characters.' },
     },
     next: '6A-4',
   },

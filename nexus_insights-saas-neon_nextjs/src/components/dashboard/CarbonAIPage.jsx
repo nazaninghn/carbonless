@@ -1877,6 +1877,15 @@ function FreeChatTab({ language }) {
   // every keystroke, cascading to startNew and handleKeyDown).
   const inputValueRef = useRef('');
   const scrollTimerRef = useRef(null);
+  // isMounted guard — prevents state updates after component unmounts from async callbacks
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
@@ -1947,11 +1956,13 @@ function FreeChatTab({ language }) {
 
     try {
       const res = await api.sendChatMessage(sessionId, content);
+      if (!isMountedRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        setError(d.error || (tr ? 'Bir hata oluştu.' : 'Something went wrong.'));
+        if (isMountedRef.current) setError(d.error || (tr ? 'Bir hata oluştu.' : 'Something went wrong.'));
       } else {
         const aiMsg = await res.json();
+        if (!isMountedRef.current) return;
         setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
         if (aiMsg.session_title) {
           setSessions(prev => prev.map(s =>
@@ -1962,20 +1973,24 @@ function FreeChatTab({ language }) {
         }
       }
     } catch {
-      setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+      if (isMountedRef.current) setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     }
-    setSending(false);
-    inputRef.current?.focus();
+    if (isMountedRef.current) {
+      setSending(false);
+      inputRef.current?.focus();
+    }
   }, [activeId, sending, tr]); // `input` removed — read via inputValueRef.current
 
   const startNew = useCallback(async (initialPrompt = '') => {
     try {
       const res = await api.createChatSession();
+      if (!isMountedRef.current) return;
       if (!res.ok) {
-        setError(tr ? 'Sohbet başlatılamadı.' : 'Failed to start chat.');
+        if (isMountedRef.current) setError(tr ? 'Sohbet başlatılamadı.' : 'Failed to start chat.');
         return;
       }
       const session = await res.json();
+      if (!isMountedRef.current) return;
       setSessions(prev => [session, ...prev]);
       setActiveId(session.id);
       setMessages([]);
@@ -1984,10 +1999,10 @@ function FreeChatTab({ language }) {
         // Tiny delay lets React flush the state above (activeId, messages) before
         // sendMessage reads them. sendMessage is stable (no input dep), so it is
         // safe to omit from this dep array.
-        setTimeout(() => sendMessage(initialPrompt, session.id), CHIP_AUTO_SUBMIT_DELAY_MS);
+        setTimeout(() => { if (isMountedRef.current) sendMessage(initialPrompt, session.id); }, CHIP_AUTO_SUBMIT_DELAY_MS);
       }
     } catch {
-      setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+      if (isMountedRef.current) setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     }
   }, [sendMessage, tr]);
 
