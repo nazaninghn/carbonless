@@ -1253,7 +1253,7 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Organizasyon sınırı tanımlandı. Şimdi Kapsam 1 (Doğrudan) emisyonlarını girmeye başlayacağız.',
       en: 'The organizational boundary has been defined. We will now begin entering Scope 1 (Direct) emissions.',
     },
-    next: '3A-0',
+    next: '3-GİRİŞ',
   },
 
   // ── STAGE 3 ─ Scope 1 Emissions ───────────────────────────────────────────
@@ -2345,7 +2345,7 @@ export const CARBONIQ_QUESTIONS = [
     subtype: 'numeric',
     required: true,
     loopType: 'per_facility',
-    loopSource: 'scope2.facilities',
+    loopSource: '2A-1',
     loopNext: '4A-2',
     reportField: 'scope2.facility_electricity_kwh',
     text: {
@@ -2563,8 +2563,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Share ratio = Company area / Building total area. Example: 350/2400 = 14.6% → This ratio is applied to the building\'s total electricity consumption. Net area is stated in your lease agreement.',
     },
     fields: [
-      { key: 'company_m2', label: { tr: 'Şirket kira alanı (m²)', en: 'Company lease area (m²)' }, type: 'numeric', required: true },
-      { key: 'building_m2', label: { tr: 'Bina toplam alanı (m²)', en: 'Building total area (m²)' }, type: 'numeric', required: true },
+      { id: 'company_m2', label: { tr: 'Şirket kira alanı (m²)', en: 'Company lease area (m²)' }, type: 'numeric', required: true },
+      { id: 'building_m2', label: { tr: 'Bina toplam alanı (m²)', en: 'Building total area (m²)' }, type: 'numeric', required: true },
     ],
     systemMessages: {
       logicError: {
@@ -2640,9 +2640,9 @@ export const CARBONIQ_QUESTIONS = [
       en: 'You can obtain the annual production amount from inverter or meter data. The portion sold to the grid will be recorded separately — grid sales do not reduce Scope 2, they are only reported.',
     },
     fields: [
-      { key: 'production_kwh', label: { tr: 'Yıllık üretim (kWh)', en: 'Annual production (kWh)' }, type: 'numeric', required: true },
-      { key: 'grid_sales', label: { tr: 'Şebekeye satış var mı?', en: 'Any grid sales?' }, type: 'boolean', required: true },
-      { key: 'grid_sales_kwh', label: { tr: 'Şebeke satış miktarı (kWh)', en: 'Grid sales amount (kWh)' }, type: 'numeric', required: false, conditionalOn: 'grid_sales' },
+      { id: 'production_kwh', label: { tr: 'Yıllık üretim (kWh)', en: 'Annual production (kWh)' }, type: 'numeric', required: true },
+      { id: 'grid_sales', label: { tr: 'Şebekeye satış var mı?', en: 'Any grid sales?' }, type: 'boolean', required: true },
+      { id: 'grid_sales_kwh', label: { tr: 'Şebeke satış miktarı (kWh)', en: 'Grid sales amount (kWh)' }, type: 'numeric', required: false, conditionalOn: 'grid_sales' },
     ],
     systemMessages: {
       gridSales: {
@@ -2919,7 +2919,7 @@ export const CARBONIQ_QUESTIONS = [
     subtype: 'numeric',
     required: true,
     loopType: 'per_category',
-    loopSource: 'scope3.cat1.categories',
+    loopSource: 'K3C1-1',
     loopNext: 'K3C1-3',
     reportField: 'scope3.cat1.spend',
     text: {
@@ -3044,7 +3044,7 @@ export const CARBONIQ_QUESTIONS = [
     placeholder: { tr: 'Kategori: Bina | Yıl: 2025 | Tutar: 2.800.000 TL', en: 'Category: Building | Year: 2025 | Amount: 2,800,000 TL' },
     fields: [
       {
-        key: 'category',
+        id: 'category',
         type: 'select',
         required: true,
         options: [
@@ -3058,9 +3058,9 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'CG-08', label: { tr: 'CG-08 — Diğer sermaye malları', en: 'CG-08 — Other capital goods' } },
         ],
       },
-      { key: 'purchase_year', type: 'numeric', required: true },
-      { key: 'spend_amount', type: 'numeric', required: true },
-      { key: 'currency', type: 'select', required: true, options: [{ value: 'TL' }, { value: 'USD' }, { value: 'EUR' }] },
+      { id: 'purchase_year', type: 'numeric', required: true },
+      { id: 'spend_amount', type: 'numeric', required: true },
+      { id: 'currency', type: 'select', required: true, options: [{ value: 'TL' }, { value: 'USD' }, { value: 'EUR' }] },
     ],
     systemMessages: {
       year_mismatch: {
@@ -3355,7 +3355,7 @@ export const CARBONIQ_QUESTIONS = [
     placeholder: { tr: 'Tür: Ofis binası | Alan: 350 m² | Beyan: Hayır', en: 'Type: Office building | Area: 350 m² | Declaration: No' },
     fields: [
       {
-        key: 'asset_type',
+        id: 'asset_type',
         type: 'select',
         required: true,
         options: [
@@ -3366,9 +3366,9 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'KV-05', label: { tr: 'KV-05 — Kiralık veri merkezi/co-location', en: 'KV-05 — Leased data centre/co-location' } },
         ],
       },
-      { key: 'area_m2', type: 'numeric', required: true },
-      { key: 'owner_declaration', type: 'boolean', required: true },
-      { key: 'declaration_kwh', type: 'numeric', required: false, conditionalOn: 'owner_declaration' },
+      { id: 'area_m2', type: 'numeric', required: true },
+      { id: 'owner_declaration', type: 'boolean', required: true },
+      { id: 'declaration_kwh', type: 'numeric', required: false, conditionalOn: 'owner_declaration' },
     ],
     next: 'K3C9-0',
   },
@@ -3473,7 +3473,7 @@ export const CARBONIQ_QUESTIONS = [
     placeholder: { tr: 'Ürün: Elektrikli ısıtıcı | Satış: 1.200 adet | Ömür: 10 yıl', en: 'Product: Electric heater | Sales: 1,200 units | Lifetime: 10 years' },
     fields: [
       {
-        key: 'product_type',
+        id: 'product_type',
         type: 'select',
         required: true,
         options: [
@@ -3484,10 +3484,10 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'P-05', label: { tr: 'P-05 — Diğer kullanımda enerji tüketen ürünler', en: 'P-05 — Other products consuming energy during use' } },
         ],
       },
-      { key: 'sales_volume', type: 'numeric', required: true },
-      { key: 'sales_unit', type: 'select', required: true, options: [{ value: 'units' }, { value: 'kg' }, { value: 'tonnes' }, { value: 'litres' }] },
-      { key: 'use_lifetime_years', type: 'numeric', required: false },
-      { key: 'lca_available', type: 'boolean', required: false },
+      { id: 'sales_volume', type: 'numeric', required: true },
+      { id: 'sales_unit', type: 'select', required: true, options: [{ value: 'units' }, { value: 'kg' }, { value: 'tonnes' }, { value: 'litres' }] },
+      { id: 'use_lifetime_years', type: 'numeric', required: false },
+      { id: 'lca_available', type: 'boolean', required: false },
     ],
     next: 'K3C12-0',
   },
@@ -3616,7 +3616,7 @@ export const CARBONIQ_QUESTIONS = [
     placeholder: { tr: 'Sınıf: Hisse senedi | Tutar: 5M TL | Şirket değeri: 50M TL', en: 'Class: Equity | Amount: 5M TL | Company value: 50M TL' },
     fields: [
       {
-        key: 'asset_class',
+        id: 'asset_class',
         type: 'select',
         required: true,
         options: [
@@ -3629,11 +3629,11 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'VA-07', label: { tr: 'VA-07 — Özel sermaye', en: 'VA-07 — Private equity' } },
         ],
       },
-      { key: 'investment_amount', type: 'numeric', required: true },
-      { key: 'company_value', type: 'numeric', required: true },
-      { key: 'company_debt', type: 'numeric', required: false },
-      { key: 'ghg_report_available', type: 'boolean', required: true },
-      { key: 'company_emissions_tco2e', type: 'numeric', required: false, conditionalOn: 'ghg_report_available' },
+      { id: 'investment_amount', type: 'numeric', required: true },
+      { id: 'company_value', type: 'numeric', required: true },
+      { id: 'company_debt', type: 'numeric', required: false },
+      { id: 'ghg_report_available', type: 'boolean', required: true },
+      { id: 'company_emissions_tco2e', type: 'numeric', required: false, conditionalOn: 'ghg_report_available' },
     ],
     systemMessages: {
       pcaf_calc: {
@@ -4473,8 +4473,16 @@ export function getInitialQuestionId() {
 
 export function getNextQuestionId(question, answer) {
   if (!question) return null;
-  if (question.nextByValue && typeof answer === 'string') {
-    return question.nextByValue[answer] || question.next || null;
+  if (question.nextByValue) {
+    if (typeof answer === 'string') {
+      return question.nextByValue[answer] || question.next || null;
+    }
+    // multi_select returns an array — check if any selected value has a routing entry
+    if (Array.isArray(answer)) {
+      for (const v of answer) {
+        if (question.nextByValue[v] != null) return question.nextByValue[v];
+      }
+    }
   }
   return question.next || null;
 }

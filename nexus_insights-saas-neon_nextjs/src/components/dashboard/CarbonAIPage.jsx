@@ -787,9 +787,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   const openRef = useRef(open);
   useEffect(() => { openRef.current = open; }, [open]);
 
-  // Pre-fill when opened
+  // Pre-fill when opened — skip if a send is already in flight to avoid overwriting the input
   useEffect(() => {
-    if (open && currentQuestion) {
+    if (open && currentQuestion && !sending) {
       const qText = currentQuestion.text?.[lang] || currentQuestion.text?.en || '';
       const pre = tr
         ? `Soru ${currentQuestion.number} hakkında: "${qText}" — `
@@ -799,7 +799,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     }
   // Include the full question object (not just .id) so a language switch that
   // changes question.text while keeping the same id still re-fills the input.
-  }, [open, currentQuestion, lang, tr]);
+  }, [open, currentQuestion, lang, tr]); // `sending` intentionally omitted — we only want to re-trigger on open/question change
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1100,10 +1100,14 @@ function QuestionnaireTab({ language }) {
         setCurrentId(data.current_step);
       }
     } catch {
+      if (!isMounted.current) return;
       setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error. Please try again.');
       setStartLoading(false);
       return;
     }
+
+    // Guard: component may have unmounted during the async call
+    if (!isMounted.current) return;
 
     // Build welcome message using effectiveId — not the stale currentId from the closure
     const firstQ = getQuestionById(effectiveId);
@@ -1283,9 +1287,11 @@ function QuestionnaireTab({ language }) {
         while (nextId) {
           const candidate = getQuestionById(nextId);
           if (!candidate?.conditionalShow) break;
-          const { questionId: csQid, includesValue: csVal } = candidate.conditionalShow;
+          const { questionId: csQid, includesValue: csVal, inValues: csVals } = candidate.conditionalShow;
           const csAnswer = finalAnswers[csQid];
-          const matches = Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal;
+          const matches = csVals
+            ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
+            : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
           if (matches) break;
           nextId = getNextQuestionId(candidate, getInitialValue(candidate));
         }
@@ -1343,9 +1349,11 @@ function QuestionnaireTab({ language }) {
       while (nextId) {
         const candidate = getQuestionById(nextId);
         if (!candidate?.conditionalShow) break;
-        const { questionId: csQid, includesValue: csVal } = candidate.conditionalShow;
+        const { questionId: csQid, includesValue: csVal, inValues: csVals } = candidate.conditionalShow;
         const csAnswer = newAnswers[csQid];
-        const matches = Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal;
+        const matches = csVals
+          ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
+          : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
         if (matches) break;
         nextId = getNextQuestionId(candidate, getInitialValue(candidate));
       }
@@ -1366,7 +1374,12 @@ function QuestionnaireTab({ language }) {
         // Initialize loop state if the next question is a loop question
         if (nextQ?.loopType && nextQ?.loopSource) {
           const sourceAnswer = newAnswers[nextQ.loopSource];
-          const items = Array.isArray(sourceAnswer) ? sourceAnswer : (sourceAnswer ? [sourceAnswer] : []);
+          // Arrays come from multi_select; strings (e.g. free-text facility list) are split by comma/newline
+          const items = Array.isArray(sourceAnswer)
+            ? sourceAnswer
+            : (typeof sourceAnswer === 'string' && sourceAnswer.trim()
+                ? sourceAnswer.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
+                : []);
           const sourceQ = getQuestionById(nextQ.loopSource);
           const itemLabels = items.map(item => {
             const opt = sourceQ?.options?.find(o => o.value === item);
@@ -1678,10 +1691,14 @@ function FreeChatTab({ language }) {
   // adding `input` to its dep array (which would cause it to be recreated on
   // every keystroke, cascading to startNew and handleKeyDown).
   const inputValueRef = useRef('');
+  const scrollTimerRef = useRef(null);
 
   useEffect(() => {
-    if (scrollRef.current)
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
+    scrollTimerRef.current = setTimeout(() => {
+      if (scrollRef.current)
+        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    }, 50);
   }, [messages, sending]);
 
   useEffect(() => {
