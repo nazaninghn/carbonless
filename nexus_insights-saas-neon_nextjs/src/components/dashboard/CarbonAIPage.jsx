@@ -112,6 +112,42 @@ function normalizeAnswerValue(q, raw) {
   return raw ?? '';
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Pure helper: extract the items + itemLabels for a loop question.
+// Returns null if the question is not a loop question.
+// Shared by initLoopOrAdvance (on the forward path) and goBack (on the back path).
+// ─────────────────────────────────────────────────────────────────────────────
+function buildLoopItems(loopQuestionId, currentAnswers, lang) {
+  const q = getQuestionById(loopQuestionId);
+  if (!q?.loopSource) return null;
+  const sourceAnswer = currentAnswers[q.loopSource];
+  let items;
+  if (Array.isArray(sourceAnswer)) {
+    items = sourceAnswer;
+  } else if (typeof sourceAnswer === 'string' && sourceAnswer.trim()) {
+    items = sourceAnswer.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+  } else if (sourceAnswer && typeof sourceAnswer === 'object') {
+    const seen = new Set();
+    items = [];
+    for (const v of Object.values(sourceAnswer)) {
+      const arr = Array.isArray(v) ? v : (v != null ? [v] : []);
+      for (const x of arr) { if (x && !seen.has(x)) { seen.add(x); items.push(x); } }
+    }
+  } else {
+    items = [];
+  }
+  const sourceQ = getQuestionById(q.loopSource);
+  const exclusiveVals = new Set(
+    (sourceQ?.options || []).filter(o => o.exclusive || o.value === 'none').map(o => o.value)
+  );
+  items = items.filter(x => !exclusiveVals.has(x));
+  const itemLabels = items.map(item => {
+    const opt = sourceQ?.options?.find(o => o.value === item);
+    return opt?.label?.[lang] || opt?.label?.en || item;
+  });
+  return { items, itemLabels };
+}
+
 function getInitialValue(q) {
   if (!q) return '';
   if (q.type === 'multi_select') return [];
@@ -354,6 +390,8 @@ function Chip({ label, selected, onClick, multi, disabled }) {
   return (
     <button
       type="button"
+      role={multi ? 'checkbox' : 'radio'}
+      aria-checked={selected}
       onClick={onClick}
       disabled={disabled}
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -362,7 +400,7 @@ function Chip({ label, selected, onClick, multi, disabled }) {
           : 'border-[#302817]/12 bg-white text-[#302817]/70 hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 hover:text-[#302817]'
       }`}
     >
-      {multi && selected && <span className="mr-1">✓</span>}
+      {multi && selected && <span className="mr-1" aria-hidden="true">✓</span>}
       {label}
     </button>
   );
@@ -566,7 +604,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
 
   if (type === 'single_select') {
     return (
-      <div className="flex flex-wrap gap-2">
+      <div role="radiogroup" className="flex flex-wrap gap-2">
         {(options || []).map(opt => (
           <Chip
             key={opt.value}
@@ -598,7 +636,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     };
     return (
       <div className="flex flex-col gap-3 w-full">
-        <div className="flex flex-wrap gap-2">
+        <div role="group" aria-label={tr ? 'Seçenekler' : 'Options'} className="flex flex-wrap gap-2">
           {(options || []).map(opt => (
             <Chip
               key={opt.value}
@@ -1088,6 +1126,10 @@ function QuestionnaireTab({ language }) {
   const isSubmittingRef = useRef(false);
   // Stable message-key counter — avoids Date.now() collisions
   const msgIdRef = useRef(0);
+  // Tracks messages.length at the moment the CURRENT question bubble was shown.
+  // Stored in history entries so goBack() can slice precisely back to that point,
+  // correctly removing all loop-item bubbles regardless of how many there were.
+  const questionMsgLenRef = useRef(0);
   useEffect(() => {
     isMounted.current = true;
     return () => {
@@ -1180,6 +1222,9 @@ function QuestionnaireTab({ language }) {
       welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
     }
     setMessages([welcomeMsg]);
+    // The welcome message embeds Q1 — treat its length (1) as the "question shown" marker
+    // so that goBack() from Q2 correctly slices back to just the welcome message.
+    questionMsgLenRef.current = 1;
     setStarted(true);
     setStartLoading(false);
   }, [currentId, tr, lang]);
@@ -1234,12 +1279,10 @@ function QuestionnaireTab({ language }) {
     let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number}:** ${questionText}`;
     if (helperText) content += `\n\n_${helperText}_`;
     const bubbleType = nextQ?.type === 'info' ? 'info' : 'assistant';
-    setMessages(prev => [...prev, {
-      id: `m-${++msgIdRef.current}`,
-      role: 'assistant',
-      type: bubbleType,
-      content,
-    }]);
+    setMessages(prev => {
+      questionMsgLenRef.current = prev.length + 1; // capture length AFTER this bubble
+      return [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: bubbleType, content }];
+    });
   }, [lang, tr]);
 
   // ── initLoopOrAdvance ──────────────────────────────────────────────────────
@@ -1257,46 +1300,22 @@ function QuestionnaireTab({ language }) {
     if (!nextId) { advanceToQuestion(null); return; }
     const nextQ = getQuestionById(nextId);
     if (nextQ?.loopSource) {
-      const sourceAnswer = currentAnswers[nextQ.loopSource];
-      let items;
-      if (Array.isArray(sourceAnswer)) {
-        items = sourceAnswer;
-      } else if (typeof sourceAnswer === 'string' && sourceAnswer.trim()) {
-        items = sourceAnswer.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
-      } else if (sourceAnswer && typeof sourceAnswer === 'object') {
-        // Collected from a prior per-item loop — flatten all values, deduplicate
-        const seen = new Set();
-        items = [];
-        for (const v of Object.values(sourceAnswer)) {
-          const arr = Array.isArray(v) ? v : (v != null ? [v] : []);
-          for (const x of arr) { if (x && !seen.has(x)) { seen.add(x); items.push(x); } }
-        }
-      } else {
-        items = [];
-      }
-      const sourceQ = getQuestionById(nextQ.loopSource);
-      // Remove exclusive / sentinel options (e.g. value='none') — they signal
-      // "nothing selected" and should never become loop items.
-      const exclusiveVals = new Set(
-        (sourceQ?.options || [])
-          .filter(o => o.exclusive || o.value === 'none')
-          .map(o => o.value)
-      );
-      items = items.filter(x => !exclusiveVals.has(x));
-      const itemLabels = items.map(item => {
-        const opt = sourceQ?.options?.find(o => o.value === item);
-        return opt?.label?.[lang] || opt?.label?.en || item;
-      });
-      if (items.length > 0) {
+      // Delegate item extraction to the shared pure helper (also used by goBack)
+      const built = buildLoopItems(nextId, currentAnswers, lang);
+      if (built && built.items.length > 0) {
+        const { items, itemLabels } = built;
         setLoopState({ questionId: nextId, items, itemLabels, currentIndex: 0, collected: {} });
         setCurrentId(nextId);
         setAnswerValue(getInitialValue(nextQ));
         const firstLabel = itemLabels[0] || items[0];
-        const loopText  = nextQ?.text?.[lang]   || nextQ?.text?.en   || '';
-        const loopHelper = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
+        const loopText   = nextQ?.text?.[lang]   || nextQ?.text?.en   || '';
+        const loopHelper = nextQ?.helper?.[lang]  || nextQ?.helper?.en || '';
         let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
         if (loopHelper) content += `\n\n_${loopHelper}_`;
-        setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }]);
+        setMessages(prev => {
+          questionMsgLenRef.current = prev.length + 1; // capture length AFTER this first-item bubble
+          return [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }];
+        });
         return;
       }
       // No items → skip this loop question and try the next one in the chain
@@ -1384,7 +1403,8 @@ function QuestionnaireTab({ language }) {
       // All items done — save final collected value and advance past loop question
       const finalAnswers = { ...answers, [currentId]: newCollected };
       setAnswers(finalAnswers);
-      setHistory(prev => [...prev, currentId]);
+      // Store msgLen so goBack() can remove ALL loop bubbles (N items × 2 each)
+      setHistory(prev => [...prev, { id: currentId, msgLen: questionMsgLenRef.current }]);
       setLoopState(null);
 
       isSubmittingRef.current = true;
@@ -1434,7 +1454,7 @@ function QuestionnaireTab({ language }) {
     // Save answer
     const newAnswers = { ...answers, [currentId]: value };
     setAnswers(newAnswers);
-    setHistory(prev => [...prev, currentId]);
+    setHistory(prev => [...prev, { id: currentId, msgLen: questionMsgLenRef.current }]);
 
     // Save to backend — lock out further submits until save completes;
     // isSubmittingRef is cleared AFTER setIsTyping(true) to avoid the
@@ -1505,26 +1525,49 @@ function QuestionnaireTab({ language }) {
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
     if (history.length === 0) return;
-    // Cancel any in-flight typing timer — its callback would overwrite the
-    // currentId/answerValue we're about to set and append a stale bubble.
+    // Cancel any in-flight typing timer so its callback can't post stale bubbles
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     isSubmittingRef.current = false;
     setIsTyping(false);
-    // Clear any active loop — going back exits the loop entirely
-    setLoopState(null);
-    const prevId = history[history.length - 1];
+
+    const prevEntry = history[history.length - 1];
+    // History entries are { id, msgLen } objects; guard against legacy string entries
+    const prevId  = typeof prevEntry === 'object' ? prevEntry.id  : prevEntry;
+    const msgLen  = typeof prevEntry === 'object' ? prevEntry.msgLen : null;
     setHistory(prev => prev.slice(0, -1));
     setCurrentId(prevId);
     const prevQ = getQuestionById(prevId);
-    setAnswerValue(normalizeAnswerValue(prevQ, answers[prevId]) ?? getInitialValue(prevQ));
-    // Determine how many messages were added when prevId was answered:
-    //   info type: 1  (no user bubble, just the next question bubble)
-    //   non-info without warning: 2  (user bubble + next question bubble)
-    //   non-info with warning: 3  (user bubble + warning bubble + next question bubble)
-    // getQuestionWarning takes the question OBJECT + single value + lang (not ID, not answers map)
-    const hadWarning = getQuestionWarning && getQuestionWarning(prevQ, answers[prevId], lang);
-    const toRemove = prevQ?.type === 'info' ? 1 : hadWarning ? 3 : 2;
-    setMessages(prev => prev.slice(0, -toRemove));
+
+    // Restore messages to exactly the state when prevId's bubble was first shown.
+    // msgLen = messages.length right after that bubble was added, so slice to msgLen
+    // removes the user's answer, any warning, the next question, and (for loops) all
+    // extra per-item bubbles — in a single reliable cut.
+    if (msgLen != null) {
+      setMessages(prev => prev.slice(0, msgLen));
+      questionMsgLenRef.current = msgLen; // keep ref in sync for any further goBack
+    } else {
+      // Fallback for history entries that predate the msgLen format
+      const hadWarning = getQuestionWarning && getQuestionWarning(prevQ, answers[prevId], lang);
+      const toRemove = prevQ?.type === 'info' ? 1 : hadWarning ? 3 : 2;
+      setMessages(prev => prev.slice(0, -toRemove));
+    }
+
+    if (prevQ?.loopSource) {
+      // Re-enter the loop from item 0 so submitAnswer takes the loop path again.
+      // Clear the old collected answer so the user re-answers all items cleanly.
+      const built = buildLoopItems(prevId, answers, lang);
+      if (built && built.items.length > 0) {
+        const { items, itemLabels } = built;
+        setLoopState({ questionId: prevId, items, itemLabels, currentIndex: 0, collected: {} });
+        setAnswers(prev => { const n = { ...prev }; delete n[prevId]; return n; });
+      } else {
+        setLoopState(null);
+      }
+      setAnswerValue(getInitialValue(prevQ));
+    } else {
+      setLoopState(null);
+      setAnswerValue(normalizeAnswerValue(prevQ, answers[prevId]) ?? getInitialValue(prevQ));
+    }
   }, [history, answers, lang]);
 
   // ── resetFlow ──────────────────────────────────────────────────────────────
@@ -1655,7 +1698,12 @@ function QuestionnaireTab({ language }) {
 
         {/* Chat messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+          <div
+            className="mx-auto flex w-full max-w-2xl flex-col gap-4"
+            aria-live="polite"
+            aria-atomic="false"
+            aria-label={tr ? 'Sohbet geçmişi' : 'Conversation history'}
+          >
             {messages.map((msg) => (
               <ChatBubble key={msg.id} msg={msg} />
             ))}
