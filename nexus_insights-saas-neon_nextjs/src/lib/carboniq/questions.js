@@ -1303,6 +1303,7 @@ export const CARBONIQ_QUESTIONS = [
       yes: '3A-1',
       no: '3B-0',
     },
+    next: '3B-0', // safe fallback for skip-loop (conditionalShow hidden path)
     systemMessages: {
       yes: {
         tr: 'Sabit yanma ekipmanlarınızı katalogdan seçeceğiz. Her ekipman için yakıt türü ve tüketim miktarını soracağız.',
@@ -1953,6 +1954,7 @@ export const CARBONIQ_QUESTIONS = [
       yes: '3C-1',
       no: '3D-0',
     },
+    next: '3D-0', // safe fallback for skip-loop (conditionalShow hidden path)
   },
   {
     id: '3C-1',
@@ -3915,6 +3917,7 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
     nextByValue: { approve_all: '6C-1', review_detail: '6B-0' },
+    next: '6C-1', // safe fallback for skip-loop (conditionalShow hidden path)
   },
 
   // ── Stage 6-C: Exceptions ─────────────────────────────────────────────────
@@ -4101,7 +4104,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'ISO 14064-1 §5.4 identifies structural changes that trigger base year recalculation: mergers/acquisitions, facility opening/closing, outsourcing changes, control methodology changes.',
     },
     options: [
-      { value: 'none', label: { tr: 'Hayır — önemli değişiklik yok', en: 'No — no significant changes' } },
+      { value: 'none', exclusive: true, label: { tr: 'Hayır — önemli değişiklik yok', en: 'No — no significant changes' } },
       { value: 'merger', label: { tr: 'Birleşme veya satın alma', en: 'Merger or acquisition' } },
       { value: 'divestiture', label: { tr: 'Satış veya elden çıkarma (divest)', en: 'Sale or divestiture' } },
       { value: 'facility_open', label: { tr: 'Yeni tesis açıldı', en: 'New facility opened' } },
@@ -4493,16 +4496,29 @@ export function getNextQuestionId(question, answer) {
   if (!question) return null;
   if (question.nextByValue) {
     if (typeof answer === 'string') {
-      return question.nextByValue[answer] || question.next || null;
+      return question.nextByValue[answer] ?? question.next ?? null;
     }
-    // multi_select returns an array — check if any selected value has a routing entry
+    // multi_select returns an array.
+    // Strategy: check exclusive/sentinel values first (they have definitive routing),
+    // then check the remaining selected values.  This prevents the routing from
+    // depending on the arbitrary order items were selected by the user.
     if (Array.isArray(answer)) {
+      const exclusiveOpts = new Set(
+        (question.options || [])
+          .filter(o => o.exclusive || o.value === 'none' || o.value === 'skip')
+          .map(o => o.value)
+      );
+      // First pass: check exclusive/priority values
       for (const v of answer) {
-        if (question.nextByValue[v] != null) return question.nextByValue[v];
+        if (exclusiveOpts.has(v) && question.nextByValue[v] != null) return question.nextByValue[v];
+      }
+      // Second pass: check all other values
+      for (const v of answer) {
+        if (!exclusiveOpts.has(v) && question.nextByValue[v] != null) return question.nextByValue[v];
       }
     }
   }
-  return question.next || null;
+  return question.next ?? null;
 }
 
 export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en') {
@@ -4510,6 +4526,36 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
 
   // Info screens never need validation
   if (question.type === 'info') return { ok: true };
+
+  // compound — validate each sub-field individually
+  if (question.type === 'compound') {
+    const obj = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+    for (const field of (question.fields || [])) {
+      if (field.required === false) continue; // explicitly optional
+      const fv = obj[field.id];
+      const fempty = fv === undefined || fv === null || String(fv).trim() === '';
+      if (fempty) {
+        const flabel = field.label?.[lang] || field.label?.en || field.id;
+        return {
+          ok: false,
+          message: field.validate?.requiredMessage?.[lang]
+            || (lang === 'tr'
+              ? `"${flabel}" alanı zorunludur.`
+              : `"${flabel}" is required.`),
+        };
+      }
+      if (field.maxLength && String(fv).length > field.maxLength) {
+        const flabel = field.label?.[lang] || field.label?.en || field.id;
+        return {
+          ok: false,
+          message: lang === 'tr'
+            ? `"${flabel}" en fazla ${field.maxLength} karakter olabilir.`
+            : `"${flabel}" must be at most ${field.maxLength} characters.`,
+        };
+      }
+    }
+    return { ok: true };
+  }
 
   // country_city requires both fields to be non-empty
   if (question.type === 'country_city') {

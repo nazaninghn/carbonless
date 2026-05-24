@@ -550,6 +550,24 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     );
   }
 
+  // equipment_loop / fuel_loop — loop sub-questions asked per-item.
+  // Render as single_select when the question has options; otherwise fall through to text input.
+  if ((type === 'equipment_loop' || type === 'fuel_loop') && options && options.length > 0) {
+    return (
+      <div role="radiogroup" className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <Chip
+            key={opt.value}
+            label={opt.label?.[lang] || opt.label?.en || opt.value}
+            selected={value === opt.value}
+            onClick={() => { onChange(opt.value); scheduleSubmit(); }}
+            disabled={disabled}
+          />
+        ))}
+      </div>
+    );
+  }
+
   if (type === 'country_city') {
     return (
       <div className="flex flex-col gap-3 w-full max-w-xs">
@@ -1143,15 +1161,16 @@ function QuestionnaireTab({ language }) {
 
   const currentQuestion = getQuestionById(currentId);
 
-  // Auto scroll — debounced to prevent double-fire when messages + isTyping update together
+  // Auto scroll — debounced to prevent double-fire when messages + isTyping update together.
+  // Returns a cleanup so the timer never fires on an unmounted component.
   useEffect(() => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollTimerRef.current = setTimeout(() => {
       scrollTimerRef.current = null;
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-      }
+      if (!isMounted.current || !scrollRef.current) return;
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, 50);
+    return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
   }, [messages, isTyping]);
 
   // Keep a ref so the init effect can read the latest answers without being
@@ -1261,14 +1280,17 @@ function QuestionnaireTab({ language }) {
   const advanceToQuestion = useCallback((nextId) => {
     if (!nextId) {
       setCompleted(true);
-      setMessages(prev => [...prev, {
-        id: `m-${++msgIdRef.current}`,
-        role: 'assistant',
-        type: 'info',
-        content: tr
-          ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
-          : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
-      }]);
+      setMessages(prev => {
+        questionMsgLenRef.current = prev.length + 1; // keep ref in sync for goBack from completion screen
+        return [...prev, {
+          id: `m-${++msgIdRef.current}`,
+          role: 'assistant',
+          type: 'info',
+          content: tr
+            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
+            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
+        }];
+      });
       return;
     }
     const nextQ = getQuestionById(nextId);
@@ -1296,11 +1318,13 @@ function QuestionnaireTab({ language }) {
   //   • String — free-text list, split on comma / newline
   //   • Object — collected from a prior loop { item: answer | answer[] };
   //              values are flattened + deduplicated (e.g. fuel types per equipment)
-  const initLoopOrAdvance = useCallback((nextId, currentAnswers) => {
-    if (!nextId) { advanceToQuestion(null); return; }
-    const nextQ = getQuestionById(nextId);
-    if (nextQ?.loopSource) {
-      // Delegate item extraction to the shared pure helper (also used by goBack)
+  const initLoopOrAdvance = useCallback((startId, currentAnswers) => {
+    // Walk the chain iteratively — avoids stack overflow when multiple consecutive
+    // loop questions all have zero items (e.g. all selections were exclusive 'none').
+    let nextId = startId;
+    while (nextId) {
+      const nextQ = getQuestionById(nextId);
+      if (!nextQ?.loopSource) break; // non-loop question → let advanceToQuestion handle it
       const built = buildLoopItems(nextId, currentAnswers, lang);
       if (built && built.items.length > 0) {
         const { items, itemLabels } = built;
@@ -1313,16 +1337,15 @@ function QuestionnaireTab({ language }) {
         let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
         if (loopHelper) content += `\n\n_${loopHelper}_`;
         setMessages(prev => {
-          questionMsgLenRef.current = prev.length + 1; // capture length AFTER this first-item bubble
+          questionMsgLenRef.current = prev.length + 1; // capture length AFTER first-item bubble
           return [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }];
         });
         return;
       }
-      // No items → skip this loop question and try the next one in the chain
-      // (use initLoopOrAdvance so a run of empty-loop questions all get skipped)
-      initLoopOrAdvance(nextQ.loopNext || null, currentAnswers);
-      return;
+      // No items — advance to the next in the chain and repeat
+      nextId = nextQ.loopNext || null;
     }
+    // Either a non-loop question or the end of an all-empty loop chain
     advanceToQuestion(nextId);
   }, [advanceToQuestion, lang, tr]);
 
@@ -1375,12 +1398,13 @@ function QuestionnaireTab({ language }) {
         setLoopState({ ...loopState, currentIndex: nextIndex, collected: newCollected });
         setAnswerValue(getInitialValue(q));
 
-        // Save collected-so-far to backend
+        // Save collected-so-far to backend — clear mutex AFTER setIsTyping(true)
+        // to eliminate the window where both guards are simultaneously false.
         isSubmittingRef.current = true;
         await saveStepToBackend(currentId, newCollected, reportId);
-        isSubmittingRef.current = false;
 
         setIsTyping(true);
+        isSubmittingRef.current = false;
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => {
           typingTimerRef.current = null;
@@ -1407,15 +1431,16 @@ function QuestionnaireTab({ language }) {
       setHistory(prev => [...prev, { id: currentId, msgLen: questionMsgLenRef.current }]);
       setLoopState(null);
 
+      // Clear mutex AFTER setIsTyping(true) to eliminate mutex gap (same as normal path).
       isSubmittingRef.current = true;
       await saveStepToBackend(currentId, newCollected, reportId);
-      isSubmittingRef.current = false;
 
       const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
       const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value, lang) : [];
       if (newAssumptions.length > 0) setAssumptions(prev => [...prev, ...newAssumptions]);
 
       setIsTyping(true);
+      isSubmittingRef.current = false;
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       typingTimerRef.current = setTimeout(() => {
         typingTimerRef.current = null;
@@ -1424,7 +1449,10 @@ function QuestionnaireTab({ language }) {
         if (warning) {
           setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'warning', content: warning }]);
         }
-        // Advance past loop, skipping any conditionalShow-hidden questions
+        // Advance past loop, skipping any conditionalShow-hidden questions.
+        // Use candidate.next (not getNextQuestionId) for the skip step — getNextQuestionId
+        // with an empty default answer returns null for nextByValue-only questions,
+        // which would falsely terminate the questionnaire.
         let nextId = q.loopNext || null;
         while (nextId) {
           const candidate = getQuestionById(nextId);
@@ -1437,7 +1465,7 @@ function QuestionnaireTab({ language }) {
               ? csAnswer === csEquals
               : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
           if (matches) break;
-          nextId = getNextQuestionId(candidate, getInitialValue(candidate));
+          nextId = candidate.next || candidate.loopNext || null;
         }
         initLoopOrAdvance(nextId, finalAnswers);
       }, TYPING_DELAY_MS);
@@ -1490,7 +1518,9 @@ function QuestionnaireTab({ language }) {
         }]);
       }
 
-      // Compute candidate next question, then skip any conditionalShow-hidden questions
+      // Compute candidate next question, then skip any conditionalShow-hidden questions.
+      // Use candidate.next for skip-advance (not getNextQuestionId) to avoid null
+      // on nextByValue-only questions that have no default answer path.
       let nextId = getNextQuestionId(q, value);
       while (nextId) {
         const candidate = getQuestionById(nextId);
@@ -1503,7 +1533,7 @@ function QuestionnaireTab({ language }) {
             ? csAnswer === csEquals
             : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
         if (matches) break;
-        nextId = getNextQuestionId(candidate, getInitialValue(candidate));
+        nextId = candidate.next || candidate.loopNext || null;
       }
 
       if (!nextId) {
@@ -1588,6 +1618,7 @@ function QuestionnaireTab({ language }) {
     setIsTyping(false);
     setResetConfirm(false);
     helpSessionRef.current = null; // clear help session so next help opens a fresh one
+    setReportId(null);             // prevent stale report ID from leaking into the new session
     const firstQ = getQuestionById(initId);
     setMessages([{
       id: 'reset',
@@ -1596,6 +1627,7 @@ function QuestionnaireTab({ language }) {
         ? `Envanter sıfırlandı. **Soru 1:** ${firstQ?.text?.tr || firstQ?.text?.en}`
         : `Inventory reset. **Question 1:** ${firstQ?.text?.en}`,
     }]);
+    questionMsgLenRef.current = 1; // re-sync ref to the single reset message (Q1 position)
     setAnswerValue(getInitialValue(firstQ));
   }, [tr]);
 
