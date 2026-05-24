@@ -1084,6 +1084,9 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Bu açıklama raporun metodoloji bölümünde kullanılacak. Atlamak isterseniz devam edebilirsiniz.',
       en: 'This description will be used in the methodology section of the report. You may skip if preferred.',
     },
+    validate: {
+      maxLengthMessage: { tr: 'Açıklama en fazla 400 karakter olabilir.', en: 'Description must be at most 400 characters.' },
+    },
     next: '2B-OC2',
   },
   {
@@ -1236,6 +1239,9 @@ export const CARBONIQ_QUESTIONS = [
     helper: {
       tr: 'ISO 14064-1 kapsamında tüm dışlamalar gerekçelendirilmelidir. Dışlama yoksa bu adımı atlayabilirsiniz.',
       en: 'Under ISO 14064-1, all exclusions must be justified. If there are no exclusions, you may skip this step.',
+    },
+    validate: {
+      maxLengthMessage: { tr: 'Gerekçe en fazla 400 karakter olabilir.', en: 'Justification must be at most 400 characters.' },
     },
     next: '2C-3',
   },
@@ -1399,6 +1405,9 @@ export const CARBONIQ_QUESTIONS = [
     helper: {
       tr: 'Ekipmanı mümkün olduğunca spesifik tanımlayın. Bu bilgi sistem yöneticileri tarafından incelenecek. Bu aşamada DEFRA varsayılan EF uygulanacak.',
       en: 'Describe the equipment as specifically as possible. This information will be reviewed by administrators. DEFRA default EF will be applied at this stage.',
+    },
+    validate: {
+      maxLengthMessage: { tr: 'Ekipman açıklaması en fazla 150 karakter olabilir.', en: 'Equipment description must be at most 150 characters.' },
     },
     next: '3A-2',
   },
@@ -2291,6 +2300,9 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Kaynağı kendi ifadenizle yazın. Sistem hangi kategoriye gireceğini belirleyecek ve onayınızı soracak.',
       en: 'Describe the source in your own words. The system will determine which category it belongs to and ask for your confirmation.',
     },
+    validate: {
+      maxLengthMessage: { tr: 'Açıklama en fazla 300 karakter olabilir.', en: 'Description must be at most 300 characters.' },
+    },
     next: '4-GİRİŞ',
   },
 
@@ -3071,6 +3083,7 @@ export const CARBONIQ_QUESTIONS = [
         id: 'category',
         type: 'select',
         required: true,
+        label: { tr: 'Sermaye malı kategorisi', en: 'Capital goods category' },
         options: [
           { value: 'CG-01', label: { tr: 'CG-01 — Bina ve inşaat', en: 'CG-01 — Buildings and construction' } },
           { value: 'CG-02', label: { tr: 'CG-02 — Makine ve üretim ekipmanı', en: 'CG-02 — Machinery and production equipment' } },
@@ -3082,9 +3095,9 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'CG-08', label: { tr: 'CG-08 — Diğer sermaye malları', en: 'CG-08 — Other capital goods' } },
         ],
       },
-      { id: 'purchase_year', type: 'numeric', required: true },
-      { id: 'spend_amount', type: 'numeric', required: true },
-      { id: 'currency', type: 'select', required: true, options: [{ value: 'TL' }, { value: 'USD' }, { value: 'EUR' }] },
+      { id: 'purchase_year', type: 'numeric', required: true, label: { tr: 'Satın alma yılı', en: 'Purchase year' } },
+      { id: 'spend_amount', type: 'numeric', required: true, label: { tr: 'Harcama tutarı', en: 'Spend amount' } },
+      { id: 'currency', type: 'select', required: true, label: { tr: 'Para birimi', en: 'Currency' }, options: [{ value: 'TL' }, { value: 'USD' }, { value: 'EUR' }] },
     ],
     systemMessages: {
       year_mismatch: {
@@ -3392,6 +3405,7 @@ export const CARBONIQ_QUESTIONS = [
         id: 'asset_type',
         type: 'select',
         required: true,
+        label: { tr: 'Kiralık varlık türü', en: 'Leased asset type' },
         options: [
           { value: 'KV-01', label: { tr: 'KV-01 — Kiralık ofis binası', en: 'KV-01 — Leased office building' } },
           { value: 'KV-02', label: { tr: 'KV-02 — Kiralık üretim/fabrika', en: 'KV-02 — Leased production/factory' } },
@@ -3400,9 +3414,9 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'KV-05', label: { tr: 'KV-05 — Kiralık veri merkezi/co-location', en: 'KV-05 — Leased data centre/co-location' } },
         ],
       },
-      { id: 'area_m2', type: 'numeric', required: true },
-      { id: 'owner_declaration', type: 'boolean', required: true },
-      { id: 'declaration_kwh', type: 'numeric', required: false, conditionalOn: 'owner_declaration' },
+      { id: 'area_m2', type: 'numeric', required: true, label: { tr: 'Alan (m²)', en: 'Area (m²)' } },
+      { id: 'owner_declaration', type: 'boolean', required: true, label: { tr: 'Bina sahibi enerji beyanı var mı?', en: 'Building owner energy declaration available?' } },
+      { id: 'declaration_kwh', type: 'numeric', required: false, conditionalOn: 'owner_declaration', label: { tr: 'Beyan edilen tüketim (kWh)', en: 'Declared consumption (kWh)' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C9-0',
@@ -3513,6 +3527,7 @@ export const CARBONIQ_QUESTIONS = [
         id: 'product_type',
         type: 'select',
         required: true,
+        label: { tr: 'Ürün tipi', en: 'Product type' },
         options: [
           { value: 'P-01', label: { tr: 'P-01 — Yakıt ve enerji ürünleri (doğrudan — en yüksek emisyon)', en: 'P-01 — Fuel and energy products (direct — highest emission)' } },
           { value: 'P-02', label: { tr: 'P-02 — Motorlu taşıtlar (kullanım yakıt emisyonu)', en: 'P-02 — Motor vehicles (use-phase fuel emission)' } },
@@ -3521,10 +3536,10 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'P-05', label: { tr: 'P-05 — Diğer kullanımda enerji tüketen ürünler', en: 'P-05 — Other products consuming energy during use' } },
         ],
       },
-      { id: 'sales_volume', type: 'numeric', required: true },
-      { id: 'sales_unit', type: 'select', required: true, options: [{ value: 'units' }, { value: 'kg' }, { value: 'tonnes' }, { value: 'litres' }] },
-      { id: 'use_lifetime_years', type: 'numeric', required: false },
-      { id: 'lca_available', type: 'boolean', required: false },
+      { id: 'sales_volume', type: 'numeric', required: true, label: { tr: 'Satış hacmi', en: 'Sales volume' } },
+      { id: 'sales_unit', type: 'select', required: true, label: { tr: 'Satış birimi', en: 'Sales unit' }, options: [{ value: 'units' }, { value: 'kg' }, { value: 'tonnes' }, { value: 'litres' }] },
+      { id: 'use_lifetime_years', type: 'numeric', required: false, label: { tr: 'Kullanım ömrü (yıl)', en: 'Use lifetime (years)' } },
+      { id: 'lca_available', type: 'boolean', required: false, label: { tr: 'LCA belgesi mevcut mu?', en: 'LCA certificate available?' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C12-0',
@@ -3659,6 +3674,7 @@ export const CARBONIQ_QUESTIONS = [
         id: 'asset_class',
         type: 'select',
         required: true,
+        label: { tr: 'Varlık sınıfı', en: 'Asset class' },
         options: [
           { value: 'VA-01', label: { tr: 'VA-01 — Halka açık hisse senetleri', en: 'VA-01 — Listed equities' } },
           { value: 'VA-02', label: { tr: 'VA-02 — Halka açık tahviller', en: 'VA-02 — Corporate bonds' } },
@@ -3669,11 +3685,11 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'VA-07', label: { tr: 'VA-07 — Özel sermaye', en: 'VA-07 — Private equity' } },
         ],
       },
-      { id: 'investment_amount', type: 'numeric', required: true },
-      { id: 'company_value', type: 'numeric', required: true },
-      { id: 'company_debt', type: 'numeric', required: false },
-      { id: 'ghg_report_available', type: 'boolean', required: true },
-      { id: 'company_emissions_tco2e', type: 'numeric', required: false, conditionalOn: 'ghg_report_available' },
+      { id: 'investment_amount', type: 'numeric', required: true, label: { tr: 'Yatırım tutarı', en: 'Investment amount' } },
+      { id: 'company_value', type: 'numeric', required: true, label: { tr: 'Şirket değeri', en: 'Company value' } },
+      { id: 'company_debt', type: 'numeric', required: false, label: { tr: 'Şirket borcu', en: 'Company debt' } },
+      { id: 'ghg_report_available', type: 'boolean', required: true, label: { tr: 'GHG raporu mevcut mu?', en: 'GHG report available?' } },
+      { id: 'company_emissions_tco2e', type: 'numeric', required: false, conditionalOn: 'ghg_report_available', label: { tr: 'Şirket emisyonları (tCO₂e)', en: 'Company emissions (tCO₂e)' } },
     ],
     systemMessages: {
       pcaf_calc: {
@@ -3885,6 +3901,9 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Gelecek dahil etme planı, hariç tutmaların geçici niteliğini belgeler ve iyileştirme taahhüdünü gösterir.',
       en: 'A future inclusion plan documents the temporary nature of exclusions and demonstrates an improvement commitment.',
     },
+    validate: {
+      maxLengthMessage: { tr: 'Plan açıklaması en fazla 400 karakter olabilir.', en: 'Plan description must be at most 400 characters.' },
+    },
     next: '6A-6',
   },
   // #113
@@ -4050,6 +4069,9 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'İyileştirme taahhüdü, raporunuzu doğrulayacak üçüncü taraf denetçilere olumlu bir sinyal verir.',
       en: 'An improvement commitment sends a positive signal to third-party auditors who will verify your report.',
     },
+    validate: {
+      maxLengthMessage: { tr: 'Taahhüt açıklaması en fazla 400 karakter olabilir.', en: 'Commitment description must be at most 400 characters.' },
+    },
     next: '6D-1',
   },
 
@@ -4106,6 +4128,9 @@ export const CARBONIQ_QUESTIONS = [
     helper: {
       tr: 'ISO 14064-1 §7.3, belirsizlik değerlendirmesi ve sürekli iyileştirme taahhüdünü raporlamanızı teşvik eder.',
       en: 'ISO 14064-1 §7.3 encourages you to report uncertainty assessment and continuous improvement commitments.',
+    },
+    validate: {
+      maxLengthMessage: { tr: 'İyileştirme planı en fazla 600 karakter olabilir.', en: 'Improvement plan must be at most 600 characters.' },
     },
     next: '6F-1',
   },
@@ -4444,6 +4469,9 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Metodoloji kabulü, hesaplamanın temelindeki yaklaşımı (GWP seti, EF kaynağı, hesaplama yöntemi vb.) belgeler.',
       en: 'The methodology assumption documents the underlying approach (GWP set, EF source, calculation method, etc.) of the calculation.',
     },
+    validate: {
+      maxLengthMessage: { tr: 'Metodoloji açıklaması en fazla 400 karakter olabilir.', en: 'Methodology description must be at most 400 characters.' },
+    },
     next: '6B-4',
   },
   // #132
@@ -4469,6 +4497,9 @@ export const CARBONIQ_QUESTIONS = [
     helper: {
       tr: 'Sınır kararı kabulü, hangi varlıkların envanterinize dahil edildiğini veya dışlandığını ve bunların gerekçelerini belgeler.',
       en: 'The boundary decision assumption documents which entities are included in or excluded from your inventory and their justifications.',
+    },
+    validate: {
+      maxLengthMessage: { tr: 'Sınır kararı açıklaması en fazla 400 karakter olabilir.', en: 'Boundary decision description must be at most 400 characters.' },
     },
     next: '6B-5',
   },
