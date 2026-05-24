@@ -2317,9 +2317,6 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Note: Self-generated energy (solar panels, wind turbines, etc.) is outside this scope. Your electric vehicle charging from Stage 3 will also be recorded here.',
       },
     },
-    options: [
-      { value: 'start', label: { tr: 'Başlayalım', en: 'Let\'s Start' } },
-    ],
     next: '4A-0',
   },
   {
@@ -3743,7 +3740,6 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Aşama 6, tüm veri girişi bittikten sonra çalışır. 6 bölümden oluşur: (6A) Hariç tutulan varlıklar · (6B) Kabuller · (6C) İstisnalar · (6D) %5 materyal eşiği · (6E) Belirsizlik analizi · (6F) Baz yıl politikası. Bu aşama raporunuzun ISO 14064-1 uyumunu güvence altına alır.',
       en: 'Stage 6 runs after all data entry is complete. It consists of 6 sections: (6A) Excluded entities · (6B) Assumptions · (6C) Exceptions · (6D) 5% materiality threshold · (6E) Uncertainty analysis · (6F) Base year policy. This stage ensures your report\'s ISO 14064-1 compliance.',
     },
-    options: [{ value: 'start', label: { tr: 'Başlayalım', en: "Let's Start" } }],
     next: '6A-1',
   },
   // ── Stage 6-A: System-Flagged Exclusions ─────────────────────────────────
@@ -4223,7 +4219,6 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Tebrikler! Tüm veri girişi ve uyum kontrolleri tamamlandı. Bu son aşamada: (7C-1) son alan kontrolü yapılacak, (7C-2) raporunuz imzalanacak ve (7A-INFO + 7B-INFO) raporunuz teslim edilecek.',
       en: 'Congratulations! All data entry and compliance checks are complete. In this final stage: (7C-1) a final field check will be performed, (7C-2) your report will be signed, and (7A-INFO + 7B-INFO) your report will be delivered.',
     },
-    options: [{ value: 'start', label: { tr: 'Devam Et', en: 'Continue' } }],
     next: '7C-1',
   },
   // #124
@@ -4320,12 +4315,6 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'ISO 14064-1 uyumlu GHG envanter raporunuz başarıyla oluşturuldu. Raporu indirebilir, dashboard\'da görüntüleyebilir, doğrulama için gönderebilir veya bir sonraki döneme hazırlık başlatabilirsiniz.',
       en: 'Your ISO 14064-1 compliant GHG inventory report has been successfully generated. You can download the report, view it in the dashboard, send it for verification, or start preparing for the next period.',
     },
-    options: [
-      { value: 'download_pdf', label: { tr: 'PDF Raporu İndir', en: 'Download PDF Report' } },
-      { value: 'view_dashboard', label: { tr: 'Dashboard\'da Görüntüle', en: 'View in Dashboard' } },
-      { value: 'send_verification', label: { tr: 'Doğrulama İçin Gönder', en: 'Send for Verification' } },
-      { value: 'next_period', label: { tr: 'Sonraki Döneme Hazırlık', en: 'Prepare for Next Period' } },
-    ],
     next: '7B-INFO',
   },
   // #127
@@ -4373,7 +4362,6 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Bu ekran, sistemin hesaplamalarınızda kullandığı tüm metodolojik kabulleri listeler. Kabuller üç tipte gruplanır: (A) Etki yönü, (B) Metodoloji kabulü, (C) Sınır kararı.',
       en: 'This screen lists all methodological assumptions the system used in your calculations. Assumptions are grouped in three types: (A) Impact direction, (B) Methodology assumption, (C) Boundary decision.',
     },
-    options: [{ value: 'continue', label: { tr: 'İncele', en: 'Review' } }],
     next: '6B-1',
   },
   // #129
@@ -4528,7 +4516,11 @@ export function getNextQuestionId(question, answer) {
   if (!question) return null;
   if (question.nextByValue) {
     if (typeof answer === 'string') {
-      return question.nextByValue[answer] ?? question.next ?? null;
+      // Use `in` (not `?? / != null`) so an explicit null value in nextByValue is
+      // honoured as "terminate the flow" rather than falling through to question.next.
+      // Example: 6B-5 has nextByValue: { confirmed: null } — that null must win.
+      if (answer in question.nextByValue) return question.nextByValue[answer];
+      return question.next ?? null;
     }
     // multi_select returns an array.
     // Strategy: check exclusive/sentinel values first (they have definitive routing),
@@ -4542,11 +4534,11 @@ export function getNextQuestionId(question, answer) {
       );
       // First pass: check exclusive/priority values
       for (const v of answer) {
-        if (exclusiveOpts.has(v) && question.nextByValue[v] != null) return question.nextByValue[v];
+        if (exclusiveOpts.has(v) && v in question.nextByValue) return question.nextByValue[v];
       }
       // Second pass: check all other values
       for (const v of answer) {
-        if (!exclusiveOpts.has(v) && question.nextByValue[v] != null) return question.nextByValue[v];
+        if (!exclusiveOpts.has(v) && v in question.nextByValue) return question.nextByValue[v];
       }
     }
   }

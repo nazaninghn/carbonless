@@ -572,12 +572,17 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
   }
 
   if (type === 'country_city') {
+    // Disable Confirm until both country AND city are filled.
+    // The validator also requires city, so without this guard the user
+    // could tap Confirm with an empty city and see an error bubble instead
+    // of the button simply staying disabled — confusing on mobile.
+    const cityRequired = !value?.city;
     return (
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <CountryCityInput value={value} onChange={onChange} lang={lang} />
         <button
           onClick={onSubmit}
-          disabled={disabled || !value?.country}
+          disabled={disabled || !value?.country || cityRequired}
           className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
@@ -1203,7 +1208,8 @@ function QuestionnaireTab({ language }) {
       const res = await api.startCarbonReport();
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        // No company or other server error
+        // No company or other server error — guard against unmount during the await
+        if (!isMounted.current) return;
         setStartError(
           data.error ||
           (tr
