@@ -1923,7 +1923,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     required: false,
-    conditionalShow: { questionId: 'B1', naceClusters: ['agriculture', 'mining', 'manufacturing', 'energy', 'utilities', 'construction'] },
+    conditionalShow: { questionId: 'B1', inValues: ['NACE_A', 'NACE_B', 'NACE_C', 'NACE_D', 'NACE_E', 'NACE_F'] },
     reportField: 'scope1.process_emissions.exists',
     text: {
       tr: 'Yanma dışı herhangi bir üretim, kimyasal veya biyolojik süreciniz var mı?',
@@ -2386,11 +2386,8 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Tüketim miktarı zorunludur.', en: 'Consumption amount is required.' },
     },
-    nextByValue: {
-      kwh: '4A-2',
-      mwh: '4A-2',
-      tl: '4A-1a',
-    },
+    // nextByValue removed: 4A-1 is text/numeric — the answer is a number string,
+    // never the unit key 'kwh'/'mwh'/'tl'. Route via next; 4A-1a is conditional.
     next: '4A-2',
   },
   {
@@ -4287,8 +4284,9 @@ export const CARBONIQ_QUESTIONS = [
     stage: 7,
     block: '7B',
     isoRef: 'ISO 14064-1 §7.5',
-    type: 'info',
-    required: false,
+    // single_select so user can choose to review assumptions or finish
+    type: 'single_select',
+    required: true,
     text: {
       tr: 'GHG Envanteri Tamamlandı',
       en: 'GHG Inventory Complete',
@@ -4297,8 +4295,11 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Tüm aşamalar başarıyla tamamlandı. GHG envanter süreciniz ISO 14064-1 standardına uygun biçimde yürütüldü. Sistem kabullerinizi gözden geçirmek isterseniz Kabuller Detay ekranına gidebilirsiniz.',
       en: 'All stages have been successfully completed. Your GHG inventory process was conducted in compliance with ISO 14064-1. If you wish to review the system assumptions, you can go to the Assumptions Detail screen.',
     },
-    options: [{ value: 'view_assumptions', label: { tr: 'Kabulleri Gözden Geçir', en: 'Review Assumptions' } }],
-    next: '6B-0',
+    options: [
+      { value: 'view_assumptions', label: { tr: 'Kabulleri Gözden Geçir', en: 'Review Assumptions' } },
+      { value: 'done', label: { tr: 'Tamamlandı — kapat', en: 'Done — close' } },
+    ],
+    nextByValue: { view_assumptions: '6B-0' },
   },
 
   // ── STAGE 6B-DETAILED ─ Assumptions Detail Review ────────────────────────

@@ -134,9 +134,9 @@ function getDisplayValue(q, value, lang = 'en') {
       return opt ? (opt.label?.[lang] || opt.label?.en || v) : v;
     }).join(', ');
   }
-  if (q.type === 'single_select') {
+  if (q.type === 'single_select' || q.type === 'year_select') {
     const opt = q.options?.find(o => o.value === value);
-    return opt ? (opt.label?.[lang] || opt.label?.en || value) : value;
+    return opt ? (opt.label?.[lang] || opt.label?.en || value) : String(value);
   }
   if (q.type === 'compound') {
     if (!value || typeof value !== 'object') return '—';
@@ -426,7 +426,19 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               {field.label?.[lang] || field.label?.en || field.id}
               {field.required && <span className="ml-1 text-red-400">*</span>}
             </label>
-            {field.type === 'single_select' ? (
+            {field.type === 'boolean' ? (
+              <div className="flex gap-2">
+                {[{ value: 'true', label: lang === 'tr' ? 'Evet' : 'Yes' }, { value: 'false', label: lang === 'tr' ? 'Hayır' : 'No' }].map(opt => (
+                  <Chip
+                    key={opt.value}
+                    label={opt.label}
+                    selected={String(fieldVal) === opt.value}
+                    onClick={() => !disabled && setField(opt.value === 'true')}
+                    disabled={disabled}
+                  />
+                ))}
+              </div>
+            ) : field.type === 'select' || field.type === 'single_select' ? (
               <div className="flex flex-wrap gap-2">
                 {(field.options || []).map(opt => (
                   <Chip
@@ -434,6 +446,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
                     label={opt.label?.[lang] || opt.label?.en || opt.value}
                     selected={fieldVal === opt.value}
                     onClick={() => !disabled && setField(opt.value)}
+                    disabled={disabled}
                   />
                 ))}
               </div>
@@ -515,6 +528,23 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
   }
 
   if (type === 'year_select') {
+    // Prefer question.options when defined (gives correct range + custom labels)
+    if (options && options.length > 0) {
+      return (
+        <div className="flex flex-wrap gap-2">
+          {options.map(opt => (
+            <Chip
+              key={opt.value}
+              label={opt.label?.[lang] || opt.label?.en || opt.value}
+              selected={value === opt.value}
+              onClick={() => { onChange(opt.value); scheduleSubmit(); }}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      );
+    }
+    // Fallback: generate range from minYear/maxYear
     const min = minYear || 2010;
     const max = maxYear || new Date().getFullYear();
     const years = [];
@@ -786,6 +816,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   // sendHelp don't dispatch state updates after the drawer has been closed.
   const openRef = useRef(open);
   useEffect(() => { openRef.current = open; }, [open]);
+
+  // Clear conversation when drawer closes so stale messages don't reappear on next open
+  useEffect(() => { if (!open) setMessages([]); }, [open]);
 
   // Pre-fill when opened — skip if a send is already in flight to avoid overwriting the input
   useEffect(() => {
@@ -1699,6 +1732,7 @@ function FreeChatTab({ language }) {
       if (scrollRef.current)
         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, 50);
+    return () => { if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current); };
   }, [messages, sending]);
 
   useEffect(() => {
