@@ -582,9 +582,19 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
 
   if (type === 'multi_select') {
     const vals = Array.isArray(value) ? value : [];
+    // Support exclusive options (e.g. value='none'): selecting one clears all others;
+    // selecting any other option removes the exclusive one automatically.
+    const exclusiveValues = new Set((options || []).filter(o => o.exclusive || o.value === 'none').map(o => o.value));
     const toggle = (v) => {
-      if (vals.includes(v)) onChange(vals.filter(x => x !== v));
-      else onChange([...vals, v]);
+      if (exclusiveValues.has(v)) {
+        // Toggle exclusive option — selecting it clears all other selections
+        onChange(vals.includes(v) ? [] : [v]);
+      } else {
+        // Remove any exclusive options, then toggle the target
+        const withoutExclusive = vals.filter(x => !exclusiveValues.has(x));
+        if (withoutExclusive.includes(v)) onChange(withoutExclusive.filter(x => x !== v));
+        else onChange([...withoutExclusive, v]);
+      }
     };
     return (
       <div className="flex flex-col gap-3 w-full">
@@ -1346,10 +1356,10 @@ function QuestionnaireTab({ language }) {
     setHistory(prev => [...prev, currentId]);
 
     // Save to backend — lock out further submits until save completes;
-    // setIsTyping(true) takes over blocking once the timer fires.
+    // isSubmittingRef is cleared AFTER setIsTyping(true) to avoid the
+    // tiny gap where both guards are false simultaneously.
     isSubmittingRef.current = true;
     await saveStepToBackend(currentId, value, reportId);
-    isSubmittingRef.current = false;
 
     // getQuestionWarning/getTriggeredAssumptions take the question OBJECT + single value + lang
     const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
@@ -1358,8 +1368,10 @@ function QuestionnaireTab({ language }) {
       setAssumptions(prev => [...prev, ...newAssumptions]);
     }
 
-    // Show typing
+    // Show typing — reset mutex only AFTER setIsTyping(true) so there is
+    // never a window where both isSubmitting and isTyping are false.
     setIsTyping(true);
+    isSubmittingRef.current = false;
 
     // Cancel any previous timer that hasn't fired yet
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -1613,7 +1625,7 @@ function QuestionnaireTab({ language }) {
                 </p>
                 <ul className="flex flex-col gap-1">
                   {assumptions.map((a, i) => (
-                    <li key={i} className="text-xs text-blue-800">• {a}</li>
+                    <li key={typeof a === 'object' ? (a.id || i) : a} className="text-xs text-blue-800">• {typeof a === 'object' ? a.text : a}</li>
                   ))}
                 </ul>
               </div>

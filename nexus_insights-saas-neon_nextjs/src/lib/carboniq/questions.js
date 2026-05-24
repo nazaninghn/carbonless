@@ -1407,6 +1407,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'equipment_loop',
     loopSource: '3A-1',
+    loopNext: '3A-3',
     required: true,
     reportField: 'scope1.stationary_combustion.equipment_details',
     text: {
@@ -1434,6 +1435,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'equipment_loop',
     loopSource: '3A-1',
+    loopNext: '3A-4',
     required: false,
     reportField: 'scope1.stationary_combustion.equipment_capacity',
     text: {
@@ -1456,6 +1458,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'multi_select',
     loopSource: '3A-1',
+    loopNext: '3A-5',
     required: true,
     reportField: 'scope1.stationary_combustion.fuel_types',
     text: {
@@ -1494,6 +1497,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'fuel_loop',
     loopSource: '3A-4',
+    loopNext: '3A-6',
     required: true,
     reportField: 'scope1.stationary_combustion.consumption',
     text: {
@@ -1527,6 +1531,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3A-4',
+    loopNext: '3A-EF',
     required: true,
     reportField: 'scope1.stationary_combustion.data_source',
     text: {
@@ -1594,6 +1599,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3A-4',
+    loopNext: '3B-0',
     required: true,
     reportField: 'scope1.stationary_combustion.supplier_ef',
     text: {
@@ -1724,6 +1730,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3B-1',
+    loopNext: '3B-3',
     required: true,
     reportField: 'scope1.mobile_combustion.ownership',
     text: {
@@ -1763,6 +1770,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'equipment_loop',
     loopSource: '3B-1',
+    loopNext: '3B-4',
     required: true,
     reportField: 'scope1.mobile_combustion.vehicle_details',
     text: {
@@ -1790,6 +1798,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3B-1',
+    loopNext: '3B-5',
     required: false,
     reportField: 'scope1.mobile_combustion.euro_standard',
     text: {
@@ -1821,6 +1830,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3B-1',
+    loopNext: '3B-6',
     required: true,
     reportField: 'scope1.mobile_combustion.fuel_type',
     text: {
@@ -1857,6 +1867,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3B-1',
+    loopNext: '3B-EF',
     required: true,
     reportField: 'scope1.mobile_combustion.activity_data',
     text: {
@@ -1895,6 +1906,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3B-1',
+    loopNext: '3C-0',
     required: true,
     reportField: 'scope1.mobile_combustion.supplier_ef',
     text: {
@@ -1995,6 +2007,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'equipment_loop',
     loopSource: '3C-1',
+    loopNext: '3C-EF',
     required: true,
     reportField: 'scope1.process_emissions.production_data',
     text: {
@@ -2027,6 +2040,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3C-1',
+    loopNext: '3D-0',
     required: true,
     reportField: 'scope1.process_emissions.facility_ef',
     text: {
@@ -2108,6 +2122,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'equipment_loop',
     loopSource: '3D-0',
+    loopNext: '3D-4',
     required: true,
     reportField: 'scope1.fugitive.equipment_details',
     text: {
@@ -2155,6 +2170,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'equipment_loop',
     loopSource: '3D-0',
+    loopNext: '3D-EF',
     required: true,
     reportField: 'scope1.fugitive.refill_data',
     text: {
@@ -2188,6 +2204,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3D-0',
+    loopNext: 'TY-1',
     required: true,
     reportField: 'scope1.fugitive.gwp_reference',
     text: {
@@ -2241,7 +2258,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     nextByValue: {
       confirmed: '4-GİRİŞ',
-      edit: 'TY-1',
+      edit: '3A-0',  // routes to Scope 1 start to re-enter data
       add_source: 'TY-2',
     },
   },
