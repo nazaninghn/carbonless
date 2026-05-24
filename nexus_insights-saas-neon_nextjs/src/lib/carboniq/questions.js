@@ -17,22 +17,22 @@ export const CARBONIQ_STAGES = [
   {
     id: 4,
     title: { tr: 'Kapsam 2', en: 'Scope 2' },
-    blocks: ['4A', '4B'],
+    blocks: ['4A', '4B', '4C'],
   },
   {
     id: 5,
     title: { tr: 'Kapsam 3', en: 'Scope 3' },
-    blocks: ['5A'],
+    blocks: ['5A', '5B', '5C', '5D', '5E', '5F', '5G', '5H', '5I', '5J', '5K', '5L', '5M', '5N', '5O', '5P'],
   },
   {
     id: 6,
     title: { tr: 'Hariç Tutmalar ve Kabuller', en: 'Exclusions and Assumptions' },
-    blocks: ['6A', '6B', '6C', '6D', '6E', '6F'],
+    blocks: ['6-GİRİŞ', '6A', '6B', '6C', '6D', '6E', '6F'],
   },
   {
     id: 7,
     title: { tr: 'Rapor Üretimi', en: 'Report Generation' },
-    blocks: ['7A'],
+    blocks: ['7-GİRİŞ', '7A', '7B', '7C'],
   },
 ];
 
@@ -2513,6 +2513,7 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
+    next: '4A-3',
     nextByValue: {
       yes: '4A-2b',
       no: '4A-2c',

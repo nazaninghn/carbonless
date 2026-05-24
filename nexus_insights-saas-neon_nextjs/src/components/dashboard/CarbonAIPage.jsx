@@ -170,7 +170,7 @@ function getDisplayValue(q, value, lang = 'en') {
       return opt ? (opt.label?.[lang] || opt.label?.en || v) : v;
     }).join(', ');
   }
-  if (q.type === 'single_select' || q.type === 'year_select') {
+  if (q.type === 'single_select' || q.type === 'year_select' || q.type === 'equipment_loop' || q.type === 'fuel_loop') {
     const opt = q.options?.find(o => o.value === value);
     return opt ? (opt.label?.[lang] || opt.label?.en || value) : String(value);
   }
@@ -465,7 +465,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               {field.required && <span className="ml-1 text-red-400">*</span>}
             </label>
             {field.type === 'boolean' ? (
-              <div className="flex gap-2">
+              <div role="radiogroup" className="flex gap-2">
                 {[{ value: 'true', label: lang === 'tr' ? 'Evet' : 'Yes' }, { value: 'false', label: lang === 'tr' ? 'Hayır' : 'No' }].map(opt => (
                   <Chip
                     key={opt.value}
@@ -477,7 +477,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
                 ))}
               </div>
             ) : field.type === 'select' || field.type === 'single_select' ? (
-              <div className="flex flex-wrap gap-2">
+              <div role="radiogroup" className="flex flex-wrap gap-2">
                 {(field.options || []).map(opt => (
                   <Chip
                     key={opt.value}
@@ -587,7 +587,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     // Prefer question.options when defined (gives correct range + custom labels)
     if (options && options.length > 0) {
       return (
-        <div className="flex flex-wrap gap-2">
+        <div role="radiogroup" className="flex flex-wrap gap-2">
           {options.map(opt => (
             <Chip
               key={opt.value}
@@ -606,7 +606,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     const years = [];
     for (let y = max; y >= min; y--) years.push(y);
     return (
-      <div className="flex flex-wrap gap-2">
+      <div role="radiogroup" className="flex flex-wrap gap-2">
         {years.map(y => (
           <Chip
             key={y}
