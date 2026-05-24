@@ -209,7 +209,10 @@ function Markdown({ text }) {
     .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal">$1</li>')
     .replace(/\n\n/g, '</p><p class="mt-2">')
     .replace(/\n/g, '<br/>');
-  return <span dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }} />;
+  // Use <div> not <span>: the html string may contain block elements (<p>, <li>)
+  // from paragraph splits and headings. Putting block elements inside an inline
+  // <span> is invalid HTML and causes browsers to close the <span> prematurely.
+  return <div className="prose-content" dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }} />;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1436,7 +1439,7 @@ function QuestionnaireTab({ language }) {
       await saveStepToBackend(currentId, newCollected, reportId);
 
       const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
-      const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value, lang) : [];
+      const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value) : [];
       if (newAssumptions.length > 0) setAssumptions(prev => [...prev, ...newAssumptions]);
 
       setIsTyping(true);
@@ -1490,9 +1493,10 @@ function QuestionnaireTab({ language }) {
     isSubmittingRef.current = true;
     await saveStepToBackend(currentId, value, reportId);
 
-    // getQuestionWarning/getTriggeredAssumptions take the question OBJECT + single value + lang
+    // getQuestionWarning takes (question, value, lang); getTriggeredAssumptions takes (question, value)
+    // — lang is resolved at render time for assumptions so language switches show correct text.
     const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
-    const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value, lang) : [];
+    const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value) : [];
     if (newAssumptions.length > 0) {
       setAssumptions(prev => [...prev, ...newAssumptions]);
     }
@@ -1619,17 +1623,14 @@ function QuestionnaireTab({ language }) {
     setResetConfirm(false);
     helpSessionRef.current = null; // clear help session so next help opens a fresh one
     setReportId(null);             // prevent stale report ID from leaking into the new session
-    const firstQ = getQuestionById(initId);
-    setMessages([{
-      id: 'reset',
-      role: 'assistant',
-      content: tr
-        ? `Envanter sıfırlandı. **Soru 1:** ${firstQ?.text?.tr || firstQ?.text?.en}`
-        : `Inventory reset. **Question 1:** ${firstQ?.text?.en}`,
-    }]);
-    questionMsgLenRef.current = 1; // re-sync ref to the single reset message (Q1 position)
-    setAnswerValue(getInitialValue(firstQ));
-  }, [tr]);
+    setMessages([]);
+    questionMsgLenRef.current = 0;
+    setAnswerValue(getInitialValue(getQuestionById(initId)));
+    // Return to welcome screen — handleStart will create a fresh backend report
+    // and assign a new reportId, so subsequent saves reach the correct session.
+    // Without this, reportId stays null and all post-reset answers are silently discarded.
+    setStarted(false);
+  }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (!started) {
@@ -1755,9 +1756,17 @@ function QuestionnaireTab({ language }) {
                   {tr ? 'ISO 14064-1 Varsayımları' : 'ISO 14064-1 Assumptions'}
                 </p>
                 <ul className="flex flex-col gap-1">
-                  {assumptions.map((a, i) => (
-                    <li key={typeof a === 'object' ? (a.id || i) : a} className="text-xs text-blue-800">• {typeof a === 'object' ? a.text : a}</li>
-                  ))}
+                  {assumptions.map((a, i) => {
+                    // Stable key: use questionId + trigger rather than the missing a.id field
+                    const key = typeof a === 'object'
+                      ? `${a.questionId || ''}_${a.trigger || i}`
+                      : String(a);
+                    // Resolve bilingual text at render time so language switches work
+                    const text = typeof a === 'object'
+                      ? (typeof a.text === 'object' ? (a.text?.[lang] || a.text?.en) : a.text)
+                      : a;
+                    return <li key={key} className="text-xs text-blue-800">• {text}</li>;
+                  })}
                 </ul>
               </div>
             )}

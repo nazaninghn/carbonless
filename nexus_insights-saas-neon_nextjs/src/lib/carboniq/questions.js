@@ -4648,7 +4648,7 @@ export function getQuestionWarning(question, value, lang = 'en') {
   return null;
 }
 
-export function getTriggeredAssumptions(question, value, lang = 'en') {
+export function getTriggeredAssumptions(question, value) {
   if (!question?.assumptions) return [];
   return question.assumptions
     .filter((assumption) => assumption.when?.equals === value)
@@ -4656,7 +4656,9 @@ export function getTriggeredAssumptions(question, value, lang = 'en') {
       questionId: question.id,
       type: assumption.type,
       trigger: assumption.trigger,
-      text: assumption.text?.[lang],
+      // Store full bilingual object so the display layer resolves the right language
+      // at render time — a language switch after submission shows the correct text.
+      text: assumption.text,
       impact: assumption.impact,
     }));
 }
