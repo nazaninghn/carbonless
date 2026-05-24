@@ -14,6 +14,7 @@ import {
   getNextQuestionId,
   getQuestionById,
   getQuestionWarning,
+  getSystemMessage,
   getTriggeredAssumptions,
   validateCarbonIQAnswer,
 } from '@/lib/carboniq/questions';
@@ -458,6 +459,13 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
   return (
     <div className="flex flex-col gap-3 w-full max-w-lg">
       {fields.map(field => {
+        // Hide fields whose conditionalOn toggle is false/unset.
+        // Boolean fields store true/false; check both the boolean and the string 'true'.
+        if (field.conditionalOn) {
+          const condVal = val[field.conditionalOn];
+          const condMet = condVal === true || condVal === 'true';
+          if (!condMet) return null;
+        }
         const fieldVal = val[field.id] ?? '';
         const setField = (v) => onChange({ ...val, [field.id]: v });
         const charLen = field.maxLength ? String(fieldVal).length : null;
@@ -1502,6 +1510,9 @@ function QuestionnaireTab({ language }) {
     // getQuestionWarning takes (question, value, lang); getTriggeredAssumptions takes (question, value)
     // — lang is resolved at render time for assumptions so language switches show correct text.
     const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
+    // getSystemMessage resolves the contextual info message for the selected answer (if any).
+    // These are defined on 50+ questions (systemMessages) but were previously never displayed.
+    const sysMsg = getSystemMessage ? getSystemMessage(q, value, lang) : null;
     const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value) : [];
     if (newAssumptions.length > 0) {
       setAssumptions(prev => [...prev, ...newAssumptions]);
@@ -1525,6 +1536,15 @@ function QuestionnaireTab({ language }) {
           role: 'assistant',
           type: 'warning',
           content: warning,
+        }]);
+      }
+      // Show contextual system message as an info bubble (after any warning, before next question)
+      if (sysMsg) {
+        setMessages(prev => [...prev, {
+          id: `m-${++msgIdRef.current}`,
+          role: 'assistant',
+          type: 'info',
+          content: sysMsg,
         }]);
       }
 

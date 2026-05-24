@@ -4702,6 +4702,52 @@ export function getQuestionWarning(question, value, lang = 'en') {
   return null;
 }
 
+/**
+ * Returns the contextual system message (if any) for a given answer.
+ *
+ * Keys in `question.systemMessages` are option values (for single_select /
+ * year_select) or one of the first selected values (for multi_select).
+ * Returns a resolved string in the correct language, or null.
+ */
+export function getSystemMessage(question, value, lang = 'en') {
+  if (!question?.systemMessages) return null;
+  const msgs = question.systemMessages;
+
+  // Single-select and year_select: key = selected option value
+  if (
+    question.type === 'single_select' ||
+    question.type === 'year_select' ||
+    question.type === 'equipment_loop' ||
+    question.type === 'fuel_loop'
+  ) {
+    const msg = msgs[value];
+    if (!msg) return null;
+    return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+  }
+
+  // Multi-select: show the message for the first matched selected value.
+  // Also checks option.infoKey — some options map to a named key in systemMessages
+  // (e.g. A6 legal_obligation → infoKey: 'legalInfo' → systemMessages.legalInfo).
+  if (question.type === 'multi_select' && Array.isArray(value)) {
+    for (const v of value) {
+      // Direct key match
+      if (msgs[v]) {
+        const msg = msgs[v];
+        return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+      }
+      // infoKey indirection
+      const opt = (question.options || []).find(o => o.value === v);
+      if (opt?.infoKey && msgs[opt.infoKey]) {
+        const msg = msgs[opt.infoKey];
+        return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+      }
+    }
+    return null;
+  }
+
+  return null;
+}
+
 export function getTriggeredAssumptions(question, value) {
   if (!question?.assumptions) return [];
   return question.assumptions
