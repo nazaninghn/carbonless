@@ -1366,7 +1366,24 @@ function QuestionnaireTab({ language }) {
       // No items — advance to the next in the chain and repeat
       nextId = nextQ.loopNext || null;
     }
-    // Either a non-loop question or the end of an all-empty loop chain
+    // Either a non-loop question or the end of an all-empty loop chain.
+    // Apply the same conditionalShow skip logic used in submitAnswer so that a
+    // question reached via loopNext (e.g. 3C-0) is not shown if its condition
+    // isn't met.  Without this, a question like 3C-0 (only for industrial NACE
+    // sectors) could appear when reached through an empty 3B-EF loop.
+    while (nextId) {
+      const candidate = getQuestionById(nextId);
+      if (!candidate?.conditionalShow) break;
+      const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
+      const csAnswer = currentAnswers[csQid];
+      const matches = csVals
+        ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
+        : csEquals !== undefined
+          ? csAnswer === csEquals
+          : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
+      if (matches) break;
+      nextId = candidate.next || candidate.loopNext || null;
+    }
     advanceToQuestion(nextId);
   }, [advanceToQuestion, lang, tr]);
 
@@ -1801,12 +1818,12 @@ function QuestionnaireTab({ language }) {
               </div>
             )}
             {saveSuccess && (
-              <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-700">
+              <div role="status" aria-live="polite" className="rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-700">
                 {tr ? '✓ Kaydedildi' : '✓ Saved'}
               </div>
             )}
             {saveError && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
+              <div role="alert" aria-live="assertive" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
                 {saveError}
               </div>
             )}
@@ -2002,7 +2019,7 @@ function FreeChatTab({ language }) {
       if (!isMountedRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        if (isMountedRef.current) setError(d.error || (tr ? 'Bir hata oluştu.' : 'Something went wrong.'));
+        if (isMountedRef.current) setError(d.error || (trRef.current ? 'Bir hata oluştu.' : 'Something went wrong.'));
       } else {
         const aiMsg = await res.json();
         if (!isMountedRef.current) return;
@@ -2016,20 +2033,20 @@ function FreeChatTab({ language }) {
         }
       }
     } catch {
-      if (isMountedRef.current) setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+      if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
     }
     if (isMountedRef.current) {
       setSending(false);
       inputRef.current?.focus();
     }
-  }, [activeId, sending, tr]); // `input` removed — read via inputValueRef.current
+  }, [activeId, sending]); // `tr` removed — read via trRef.current; `input` removed — read via inputValueRef.current
 
   const startNew = useCallback(async (initialPrompt = '') => {
     try {
       const res = await api.createChatSession();
       if (!isMountedRef.current) return;
       if (!res.ok) {
-        if (isMountedRef.current) setError(tr ? 'Sohbet başlatılamadı.' : 'Failed to start chat.');
+        setError(trRef.current ? 'Sohbet başlatılamadı.' : 'Failed to start chat.');
         return;
       }
       const session = await res.json();
@@ -2045,24 +2062,24 @@ function FreeChatTab({ language }) {
         setTimeout(() => { if (isMountedRef.current) sendMessage(initialPrompt, session.id); }, CHIP_AUTO_SUBMIT_DELAY_MS);
       }
     } catch {
-      if (isMountedRef.current) setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+      if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
     }
-  }, [sendMessage, tr]);
+  }, [sendMessage]); // `tr` removed — read via trRef.current
 
   const deleteSession = useCallback(async (id) => {
     try {
       const res = await api.deleteChatSession(id);
       if (!isMountedRef.current) return;
       if (!res.ok) {
-        setError(tr ? 'Sohbet silinemedi.' : 'Failed to delete chat.');
+        setError(trRef.current ? 'Sohbet silinemedi.' : 'Failed to delete chat.');
         return;
       }
       setSessions(prev => prev.filter(s => s.id !== id));
       if (activeId === id) { setActiveId(null); setMessages([]); }
     } catch {
-      if (isMountedRef.current) setError(tr ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
+      if (isMountedRef.current) setError(trRef.current ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
     }
-  }, [activeId, tr]);
+  }, [activeId]); // `tr` removed — read via trRef.current
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -2156,7 +2173,7 @@ function FreeChatTab({ language }) {
 
         {/* Error banner — shown at all times (session load, message load, send errors) */}
         {error && (
-          <div className="shrink-0 mx-4 mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
+          <div role="alert" aria-live="assertive" className="shrink-0 mx-4 mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
             {error}
           </div>
         )}
