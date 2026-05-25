@@ -1272,6 +1272,8 @@ function QuestionnaireTab({ language }) {
     try {
       const backendData = mapAnswerForBackend(questionId, value);
       const res = await api.submitReportStep(rid_, questionId, backendData);
+      // Guard: component may have unmounted while the save request was in-flight
+      if (!isMounted.current) return false;
       if (!res.ok) {
         setSaveError(tr ? 'Kayıt hatası oluştu.' : 'Save error occurred.');
         setSaveSuccess(false);
@@ -1285,8 +1287,10 @@ function QuestionnaireTab({ language }) {
       }, 2000);
       return true;
     } catch {
-      setSaveError(tr ? 'Bağlantı hatası.' : 'Connection error.');
-      setSaveSuccess(false);
+      if (isMounted.current) {
+        setSaveError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+        setSaveSuccess(false);
+      }
       return false;
     }
   }, [reportId, tr]);
