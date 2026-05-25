@@ -1375,7 +1375,8 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Lütfen en az bir ekipman seçin.', en: 'Please select at least one equipment item.' },
     },
     systemMessages: {
-      EQ_3A_99: {
+      // Key must match the option value exactly (hyphens, not underscores)
+      'EQ-3A-99': {
         tr: 'Ekipman adını ve yakıt türünü giriniz. Bu ekipman incelemeye alınacak ve onaylanırsa standart listeye eklenecek.',
         en: 'Please enter the equipment name and fuel type. This equipment will be reviewed and if approved, added to the standard list.',
       },
@@ -1728,7 +1729,13 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Lütfen en az bir araç tipi seçin.', en: 'Please select at least one vehicle type.' },
     },
     systemMessages: {
-      EQ_3B_20_21: {
+      // Keys must match option values exactly (hyphens). Both aircraft types share
+      // the same guidance: corporate aircraft = Scope 1, employee flights = Scope 3 Cat 6.
+      'EQ-3B-20': {
+        tr: 'Şirkete ait hava taşıtı Kapsam 1\'de raporlanır. Çalışanların iş amaçlı charter dışı uçuşları ise Kapsam 3 Kategori 6\'ya girer. Bu iki kategorinin ayrı tutulması önemli.',
+        en: 'Company-owned aircraft is reported in Scope 1. Employee non-charter business flights fall under Scope 3 Category 6. It is important to keep these two categories separate.',
+      },
+      'EQ-3B-21': {
         tr: 'Şirkete ait hava taşıtı Kapsam 1\'de raporlanır. Çalışanların iş amaçlı charter dışı uçuşları ise Kapsam 3 Kategori 6\'ya girer. Bu iki kategorinin ayrı tutulması önemli.',
         en: 'Company-owned aircraft is reported in Scope 1. Employee non-charter business flights fall under Scope 3 Category 6. It is important to keep these two categories separate.',
       },

@@ -77,7 +77,7 @@ async function request(endpoint, options = {}) {
 // not start a second refresh.
 async function doRefresh() {
   if (!_refreshPromise) {
-    _refreshPromise = fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' })
+    _refreshPromise = fetchWithTimeout('/api/auth/refresh', { method: 'POST', credentials: 'include' })
       .then(async rr => {
         if (!rr.ok) {
           _refreshPromise = null;
