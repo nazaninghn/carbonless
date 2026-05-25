@@ -21,11 +21,15 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     setError('');
     try {
+      // Fix 25D: add 30-second timeout — matches app-wide fetchWithTimeout policy
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30_000);
       const res = await fetch(`${API_BASE}/accounts/password-reset/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
-      });
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timer));
       // Treat both 200 and 404 as "sent" to avoid email enumeration
       if (res.ok || res.status === 404) {
         setSent(true);

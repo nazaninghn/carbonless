@@ -67,6 +67,8 @@ export default function TeamManagement({ language }) {
 
   const handleInvite = useCallback(async () => {
     if (!inviteEmail) return;
+    // Fix 25E: prevent double-invoke — button has disabled={inviting} but guard the fn too
+    if (inviting) return;
     setInviting(true);
     try {
       const res = await api.inviteMember({ email: inviteEmail, role: inviteRole });

@@ -18,7 +18,11 @@ export default function ReviewTab({ language, fetchData }) {
     setLoading(true);
     try {
       const res = await api.getPendingEntries();
-      if (res.ok) setPending(await res.json());
+      if (res.ok) {
+        // Fix 25A: coerce to array — backend may return paginated {results:[],count:0}
+        const data = await res.json().catch(() => []);
+        setPending(Array.isArray(data) ? data : (data.results ?? []));
+      }
       // non-ok (e.g. 403) is silently ignored — pending stays empty
     } catch {
       // Network error: keep existing list; spinner stops

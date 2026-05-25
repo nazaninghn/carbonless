@@ -35,7 +35,9 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js 15 needs unsafe-inline for hydration chunks
+              // Fix 25F: removed 'unsafe-eval' — Next.js 15 only needs unsafe-inline for
+              // hydration chunks, not eval. Keeping eval widens the XSS attack surface.
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
               "img-src 'self' data: blob: https://images.unsplash.com",
               "font-src 'self' data:",

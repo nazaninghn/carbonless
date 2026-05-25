@@ -271,6 +271,13 @@ export default function ReductionTargetsTab({
 
   const handleAdd = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 25B: cross-field validation — target year must be after base year
+    if (parseInt(tgtYear) <= parseInt(baseYear)) {
+      toast.error(tr
+        ? 'Hedef yılı baz yılından sonra olmalıdır.'
+        : 'Target year must be after base year.');
+      return;
+    }
     setSaving(true);
     try {
       const res = await api.createTarget({
@@ -296,6 +303,13 @@ export default function ReductionTargetsTab({
   const handleEditSave = useCallback(async (e) => {
     e.preventDefault();
     if (!editTarget) return;
+    // Fix 25C: same cross-field validation in edit form
+    if (parseInt(editTgtYear) <= parseInt(editBaseYear)) {
+      toast.error(tr
+        ? 'Hedef yılı baz yılından sonra olmalıdır.'
+        : 'Target year must be after base year.');
+      return;
+    }
     setEditSaving(true);
     try {
       const res = await api.updateTarget(editTarget.id, {
