@@ -252,6 +252,8 @@ export default function EmissionsTab({
 
   const handleAdd = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 30A: code-level guard — disabled attr can't stop Enter-key submission mid-flight
+    if (submitting) return;
     setFormError('');
 
     // Client-side file validation
@@ -310,7 +312,7 @@ export default function EmissionsTab({
       toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
     }
     finally { setSubmitting(false); }
-  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, resetAddForm, fetchData, setShowAddForm]);
+  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, submitting, resetAddForm, fetchData, setShowAddForm]);
 
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
@@ -335,6 +337,8 @@ export default function EmissionsTab({
   const handleEdit = useCallback(async (e) => {
     e.preventDefault();
     if (!editing) return;
+    // Fix 30B: code-level guard — prevents stale-state double-submit
+    if (editSaving) return;
     setEditSaving(true);
     try {
       // Fix 24B: coerce empty string to null — Django FK rejects '' but accepts null
@@ -350,7 +354,7 @@ export default function EmissionsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     } finally { setEditSaving(false); }
-  }, [editing, editQty, editDesc, editFacility, tr, fetchData]);
+  }, [editing, editQty, editDesc, editFacility, editSaving, tr, fetchData]);
 
   const openEdit = useCallback((entry) => {
     setEditing(entry);
@@ -361,6 +365,8 @@ export default function EmissionsTab({
 
   const handleCustom = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 30C: code-level guard — prevents stale-state double-submit
+    if (cSaving) return;
     setCSaving(true);
     try {
       const res = await api.createCustomRequest({
@@ -381,7 +387,7 @@ export default function EmissionsTab({
     } finally {
       setCSaving(false);
     }
-  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, tr, fetchData, setShowCustom]);
+  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, cSaving, tr, fetchData, setShowCustom]);
 
   // ── Escape key handlers — one per modal ─────────────────────────────────
   useEffect(() => {
@@ -807,10 +813,10 @@ export default function EmissionsTab({
       {/* ═══════════════════ ADD ENTRY MODAL ═════════════════════════════ */}
       {showAddForm && (
         <div className={OVERLAY}>
-          <div className={`${MODAL} max-w-3xl`}>
+          <div className={`${MODAL} max-w-3xl`} role="dialog" aria-modal="true" aria-labelledby="add-entry-title">
             <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
-                <h2 className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
+                <h2 id="add-entry-title" className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
                 <p className="mt-0.5 text-xs text-[#302817]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
               </div>
               <button onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
@@ -983,9 +989,9 @@ export default function EmissionsTab({
       {/* ═══════════════════ EDIT MODAL ══════════════════════════════════ */}
       {editing && (
         <div className={OVERLAY}>
-          <div className={`${MODAL} max-w-md`}>
+          <div className={`${MODAL} max-w-md`} role="dialog" aria-modal="true" aria-labelledby="edit-entry-title">
             <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
-              <h2 className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
+              <h2 id="edit-entry-title" className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
               <button onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
@@ -1037,10 +1043,10 @@ export default function EmissionsTab({
       {/* ═══════════════════ CUSTOM REQUEST MODAL ════════════════════════ */}
       {showCustom && (
         <div className={OVERLAY}>
-          <div className={`${MODAL} max-w-2xl`}>
+          <div className={`${MODAL} max-w-2xl`} role="dialog" aria-modal="true" aria-labelledby="custom-request-title">
             <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
-                <h2 className="text-base font-bold">{tr ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
+                <h2 id="custom-request-title" className="text-base font-bold">{tr ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
                 <p className="mt-0.5 text-xs text-[#302817]/45">{tr ? 'Listede olmayan kaynak? Admin onaylayacak.' : "Source not in the list? Admin will review."}</p>
               </div>
               <button onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>

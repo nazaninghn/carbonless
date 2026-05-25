@@ -271,6 +271,8 @@ export default function ReductionTargetsTab({
 
   const handleAdd = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 30D: code-level double-submit guard
+    if (saving) return;
     // Fix 25B: cross-field validation — target year must be after base year
     if (parseInt(tgtYear) <= parseInt(baseYear)) {
       toast.error(tr
@@ -298,11 +300,13 @@ export default function ReductionTargetsTab({
     } finally {
       setSaving(false);
     }
-  }, [title, baseYear, tgtYear, baseEmit, reducePct, tr, resetForm, fetchData]);
+  }, [title, baseYear, tgtYear, baseEmit, reducePct, saving, tr, resetForm, fetchData]);
 
   const handleEditSave = useCallback(async (e) => {
     e.preventDefault();
     if (!editTarget) return;
+    // Fix 30E: code-level double-submit guard
+    if (editSaving) return;
     // Fix 25C: same cross-field validation in edit form
     if (parseInt(editTgtYear) <= parseInt(editBaseYear)) {
       toast.error(tr
@@ -330,7 +334,7 @@ export default function ReductionTargetsTab({
     } finally {
       setEditSaving(false);
     }
-  }, [editTarget, editTitle, editBaseYear, editTgtYear, editBaseEmit, editReducePct, tr, fetchData]);
+  }, [editTarget, editTitle, editBaseYear, editTgtYear, editBaseEmit, editReducePct, editSaving, tr, fetchData]);
 
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
@@ -526,12 +530,14 @@ export default function ReductionTargetsTab({
       {/* ═══════════════════ EDIT TARGET MODAL ══════════════════════════ */}
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
-          <div className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl">
-
+          <div
+            role="dialog" aria-modal="true" aria-labelledby="edit-target-title"
+            className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl"
+          >
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
-                <h2 className="text-base font-bold tracking-[-0.02em]">
+                <h2 id="edit-target-title" className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Hedefi Düzenle' : 'Edit Target'}
                 </h2>
                 <p className="mt-0.5 text-xs text-[#302817]/45">
@@ -640,12 +646,14 @@ export default function ReductionTargetsTab({
       {/* ═══════════════════ ADD TARGET MODAL ════════════════════════════ */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
-          <div className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl">
-
+          <div
+            role="dialog" aria-modal="true" aria-labelledby="add-target-title"
+            className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl"
+          >
             {/* Header */}
             <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
-                <h2 className="text-base font-bold tracking-[-0.02em]">
+                <h2 id="add-target-title" className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Yeni Azaltma Hedefi' : 'New Reduction Target'}
                 </h2>
                 <p className="mt-0.5 text-xs text-[#302817]/45">

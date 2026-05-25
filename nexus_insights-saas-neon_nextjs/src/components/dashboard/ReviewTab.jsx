@@ -160,8 +160,11 @@ export default function ReviewTab({ language, fetchData }) {
       {/* Reject Dialog */}
       {rejectId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
-          <div className="w-full max-w-sm rounded-[1.25rem] border border-[#302817]/10 bg-white/95 p-5 shadow-[0_20px_60px_rgba(48,40,23,0.15)] backdrop-blur-2xl">
-            <h3 className="text-sm font-bold text-[#302817]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
+          <div
+            role="dialog" aria-modal="true" aria-labelledby="reject-dialog-title"
+            className="w-full max-w-sm rounded-[1.25rem] border border-[#302817]/10 bg-white/95 p-5 shadow-[0_20px_60px_rgba(48,40,23,0.15)] backdrop-blur-2xl"
+          >
+            <h3 id="reject-dialog-title" className="text-sm font-bold text-[#302817]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
             <textarea
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}

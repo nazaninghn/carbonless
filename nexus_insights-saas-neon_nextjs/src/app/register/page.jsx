@@ -112,6 +112,8 @@ export default function RegisterPage() {
       // ── Step 1: Create account ────────────────────────────────
       let regRes;
       try {
+        const regCtrl = new AbortController();
+        const regTimer = setTimeout(() => regCtrl.abort(), 30_000);
         regRes = await fetch(`${API_BASE_URL}/accounts/register/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -122,7 +124,8 @@ export default function RegisterPage() {
             password2: formData.password2,
             first_name: formData.legalEntityName,
           }),
-        });
+          signal: regCtrl.signal,
+        }).finally(() => clearTimeout(regTimer));
       } catch {
         setError(language === 'tr'
           ? 'Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.'

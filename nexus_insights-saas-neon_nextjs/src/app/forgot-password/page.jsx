@@ -18,6 +18,7 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     setError('');
     try {
@@ -41,7 +42,7 @@ export default function ForgotPasswordPage() {
     } finally {
       setLoading(false);
     }
-  }, [email, tr]);
+  }, [email, tr, loading]);
 
   return (
     <div className="bg-gradient-to-br from-[#F9EFE5]/60 via-white to-[#B4BE6A]/8 text-[#302817] antialiased min-h-screen">
