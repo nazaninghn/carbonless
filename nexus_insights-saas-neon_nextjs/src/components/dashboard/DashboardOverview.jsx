@@ -611,7 +611,7 @@ export default function DashboardOverview({
                 tab: 'settings',
               },
               {
-                done: entries.filter(e => e.proof_document).length > 0,
+                done: entries.some(e => e.proof_document), // Fix 27C: .some() short-circuits; .filter().length allocates a full array
                 tr: 'Kanıt belgesi yükle',
                 en: 'Upload a proof document',
                 tab: 'emissions',

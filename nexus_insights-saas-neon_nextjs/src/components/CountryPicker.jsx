@@ -45,15 +45,16 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
 
   const handleSelect = useCallback((country) => {
     if (multi) {
-      const name = country[lang];
-      const newList = selected.includes(name) ? selected.filter(s => s !== name) : [...selected, name];
+      // Fix 27A/B: store country.code (language-neutral) instead of country[lang]
+      const code = country.code;
+      const newList = selected.includes(code) ? selected.filter(s => s !== code) : [...selected, code];
       onChange(newList.join(', '));
     } else {
-      onChange(country[lang]);
+      onChange(country.code); // store code, not localized name
       setSearch('');
       setOpen(false);
     }
-  }, [multi, selected, lang, onChange]);
+  }, [multi, selected, onChange]); // lang removed — no longer read inside
 
   const handleRemove = useCallback((name) => {
     if (multi) {
@@ -93,10 +94,11 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
       )}
 
       {/* Dropdown */}
-      {open && search.length > 0 && (
+      {open && (
         <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#B4BE6A]/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
           {filtered.slice(0, 15).map(c => {
-            const isSelected = multi ? selected.includes(c[lang]) : singleVal === c[lang];
+            // Fix 27B: compare against c.code — survives language changes mid-session
+            const isSelected = multi ? selected.includes(c.code) : singleVal === c.code;
             return (
               <button
                 key={c.code}
