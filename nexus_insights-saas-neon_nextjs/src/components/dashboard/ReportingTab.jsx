@@ -46,6 +46,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
   );
 
   const handleDownload = useCallback(async (type, lang) => {
+    // Fix 28D: prevent concurrent downloads before React flushes disabled state
+    if (pdfLoading) return;
     setPdfLoading(type + lang);
     setDlError('');
     try {
@@ -78,7 +80,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     } finally {
       setPdfLoading('');
     }
-  }, [selectedYear, tr]);
+  }, [selectedYear, pdfLoading, tr]); // pdfLoading added — read inside guard
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so the GPU-heavy complex view is never rendered to screen on Android tablets.

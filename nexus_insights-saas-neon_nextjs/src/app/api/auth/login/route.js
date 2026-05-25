@@ -10,11 +10,15 @@ export async function POST(request) {
 
   let backendRes;
   try {
+    // Fix 28E: abort after 30 s so a hung Django process never blocks the route
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
     backendRes = await fetch(`${BACKEND}/accounts/login/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timer));
   } catch {
     return NextResponse.json({ error: 'Backend unreachable' }, { status: 502 });
   }

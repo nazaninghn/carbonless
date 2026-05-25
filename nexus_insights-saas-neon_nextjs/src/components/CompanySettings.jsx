@@ -60,6 +60,8 @@ export default function CompanySettings({ language }) {
   /* ─── CREATE ─── */
   const handleCreate = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 28B: prevent double-submit before React flushes the disabled state
+    if (saving) return;
     setError(''); setSuccess('');
     if (!form.legal_entity_name?.trim()) {
       setError(tr ? 'Şirket adı zorunludur' : 'Company name is required');
@@ -97,10 +99,12 @@ export default function CompanySettings({ language }) {
     } finally {
       setSaving(false);
     }
-  }, [form, tr, toast]);
+  }, [form, saving, tr, toast]); // saving added — read inside guard
 
   /* ─── SAVE EDIT ─── */
   const handleSave = useCallback(async () => {
+    // Fix 28B: prevent double-submit before React flushes the disabled state
+    if (saving) return;
     setError(''); setSuccess('');
     if (!form.legal_entity_name?.trim()) {
       setError(tr ? 'Şirket adı zorunludur' : 'Company name is required');
@@ -136,7 +140,7 @@ export default function CompanySettings({ language }) {
     } finally {
       setSaving(false);
     }
-  }, [form, tr, toast]);
+  }, [form, saving, tr, toast]); // saving added — read inside guard
 
   const field = (key) => form[key] || '';
   const set   = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));

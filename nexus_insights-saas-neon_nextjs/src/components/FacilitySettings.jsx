@@ -51,6 +51,8 @@ export default function FacilitySettings({ language }) {
 
   const handleAdd = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 28C: prevent double-submit before React flushes the disabled state
+    if (saving) return;
     setFormError('');
     setSuccessMsg('');
 
@@ -105,7 +107,7 @@ export default function FacilitySettings({ language }) {
     } finally {
       setSaving(false);
     }
-  }, [name, city, country, facilityType, tr, toast, fetchFacilities, resetForm]);
+  }, [name, city, country, facilityType, saving, tr, toast, fetchFacilities, resetForm]); // saving added
 
   /* ─── Loading ─── */
   if (loading) {

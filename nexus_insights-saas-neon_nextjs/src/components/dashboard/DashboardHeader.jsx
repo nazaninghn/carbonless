@@ -69,7 +69,9 @@ export default function DashboardHeader({
     try {
       const res = await api.getNotifications();
       if (res.ok) {
-        setNotifications(await res.json());
+        // Fix 28A: coerce to array — backend may return {results:[], count:0}
+        const d = await res.json().catch(() => []);
+        setNotifications(Array.isArray(d) ? d : (d.results ?? []));
         notifFetchedAt.current = Date.now();
       }
     } catch {
