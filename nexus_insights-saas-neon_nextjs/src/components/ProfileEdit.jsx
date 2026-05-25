@@ -26,6 +26,8 @@ export default function ProfileEdit({ language, user, onUpdate }) {
 
   const handleSave = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 26B: prevent double-submit if button fires twice before state updates
+    if (saving) return;
     setSaving(true);
     setMsg('');
     setError('');
@@ -57,7 +59,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
     } finally {
       setSaving(false);
     }
-  }, [firstName, lastName, phone, department, tr, toast, onUpdate]);
+  }, [firstName, lastName, phone, department, saving, tr, toast, onUpdate]);
 
   return (
     <form

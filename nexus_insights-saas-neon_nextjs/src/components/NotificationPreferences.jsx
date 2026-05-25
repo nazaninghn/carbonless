@@ -19,6 +19,8 @@ export default function NotificationPreferences({ language, user }) {
   const toast = useToast();
 
   const handleSave = useCallback(async () => {
+    // Fix 26C: prevent double-invoke on rapid click before state updates
+    if (saving) return;
     setSaving(true);
     try {
       const res = await api.updateProfile({ notify_approvals: approvals, notify_system: system });
@@ -32,7 +34,7 @@ export default function NotificationPreferences({ language, user }) {
     } finally {
       setSaving(false);
     }
-  }, [approvals, system, tr, toast]);
+  }, [approvals, system, saving, tr, toast]);
 
   return (
     <div className="space-y-3 max-w-md">

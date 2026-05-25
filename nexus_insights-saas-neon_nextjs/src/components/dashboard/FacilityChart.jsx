@@ -16,7 +16,11 @@ export default function FacilityChart({ language, selectedYear, compact }) {
       setLoading(true);
       try {
         const res = await api.getByFacility(selectedYear);
-        if (res.ok && !cancelled) setData(await res.json());
+        if (res.ok && !cancelled) {
+          // Fix 26A: coerce to array — backend may return paginated {results:[],count:0}
+          const d = await res.json().catch(() => []);
+          setData(Array.isArray(d) ? d : (d.results ?? []));
+        }
       } catch {}
       finally { if (!cancelled) setLoading(false); }
     })();

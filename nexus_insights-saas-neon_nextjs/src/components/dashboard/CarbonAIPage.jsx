@@ -1959,8 +1959,11 @@ function FreeChatTab({ language }) {
       setLoadingSessions(true);
       try {
         const res = await api.getChatSessions();
-        if (!cancelled && res.ok) setSessions(await res.json());
-        else if (!cancelled && !res.ok) setError(trRef.current ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
+        if (!cancelled && res.ok) {
+          // Fix 26E: coerce to array — backend may return paginated {results:[],count:0}
+          const d = await res.json().catch(() => []);
+          setSessions(Array.isArray(d) ? d : (d.results ?? []));
+        } else if (!cancelled && !res.ok) setError(trRef.current ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
       } catch {
         if (!cancelled) setError(trRef.current ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
       }

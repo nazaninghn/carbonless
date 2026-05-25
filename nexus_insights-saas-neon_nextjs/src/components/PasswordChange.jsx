@@ -14,6 +14,8 @@ export default function PasswordChange({ language }) {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    // Fix 26D: prevent double-submit before React flushes the disabled state
+    if (loading) return;
     setMsg(''); setError('');
     if (newPw !== confirm) {
       setError(tr ? 'Yeni şifreler eşleşmiyor' : 'New passwords do not match');
@@ -40,7 +42,7 @@ export default function PasswordChange({ language }) {
     } finally {
       setLoading(false);
     }
-  }, [oldPw, newPw, confirm, tr]);
+  }, [oldPw, newPw, confirm, loading, tr]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3 max-w-md">
