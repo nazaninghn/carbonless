@@ -143,7 +143,9 @@ export const CARBONIQ_QUESTIONS = [
       },
     },
     systemMessages: {
-      infoOtherCountry: {
+      // Key matches the 'OTHER' option value — fires only when user selects a country
+      // outside TR/GB/DE/US, where the IPCC_AR6 fallback may be less familiar.
+      OTHER: {
         tr: 'Bilgi: Emisyon faktörü veritabanı önerimiz seçtiğiniz ülkeye göre belirlendi. İsterseniz D1 adımında değiştirebilirsiniz.',
         en: 'Info: Our emission factor database suggestion was selected based on your country. You can change it later in D1.',
       },
@@ -2210,7 +2212,9 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Dolum miktarı veya kapasite en az biri zorunludur.', en: 'At least one of refill amount or capacity is required.' },
     },
     systemMessages: {
-      service_reminder: {
+      // 'selected' sentinel: fires whenever the user reaches this equipment loop question.
+      // Reminds them where to find the refill quantity on their service invoice.
+      selected: {
         tr: 'Servis faturanızda "yüklenen gaz miktarı" veya "şarj edilen gaz" yazıyor. Bu değeri direkt kullanabilirsiniz.',
         en: 'Your service invoice shows "gas charged" or "gas loaded". You can use this value directly.',
       },
@@ -4733,6 +4737,16 @@ export function getSystemMessage(question, value, lang = 'en') {
     question.type === 'fuel_loop'
   ) {
     const msg = msgs[value] ?? (value != null && value !== '' ? msgs['selected'] : undefined);
+    if (!msg) return null;
+    return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+  }
+
+  // Country/city: key = selected country code (e.g. 'TR', 'GB', 'OTHER').
+  // Sentinel 'selected' fires for any non-empty country selection.
+  if (question.type === 'country_city') {
+    const countryCode = value?.country;
+    if (!countryCode) return null;
+    const msg = msgs[countryCode] ?? msgs['selected'] ?? null;
     if (!msg) return null;
     return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
   }
