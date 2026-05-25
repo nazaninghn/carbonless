@@ -1,13 +1,16 @@
 'use client';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function PrivacyPage() {
+  const { language } = useLanguage();
+  const tr = language === 'tr';
   return (
     <div className="min-h-screen bg-[#FDFCFA] px-4 py-10 sm:px-6">
       <div className="mx-auto max-w-3xl">
         <Link href="/" className="mb-8 inline-flex items-center gap-2 text-sm font-bold text-[#302817]/50 transition hover:text-[#302817]">
-          <ArrowLeft className="h-4 w-4" /> Back to Home
+          <ArrowLeft className="h-4 w-4" /> {tr ? 'Ana Sayfaya Dön' : 'Back to Home'}
         </Link>
 
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white/80 p-6 shadow-[0_8px_30px_rgba(48,40,23,0.06)] backdrop-blur-xl sm:p-10">

@@ -99,7 +99,12 @@ export default function Header() {
       
       {/* Mobile Menu Panel */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-white z-50 lg:hidden h-[100vh]">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={language === 'tr' ? 'Gezinme menüsü' : 'Navigation menu'}
+          className="fixed inset-0 bg-white z-50 lg:hidden h-[100vh]"
+        >
           <div className="flex flex-col h-full">
             {/* Mobile Menu Header */}
             <div className="flex items-center justify-between h-16 lg:h-20 px-6 border-b border-black/[0.04]">
