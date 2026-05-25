@@ -1,3 +1,4 @@
+// @ts-check
 'use client';
 import { useEffect, useCallback, useReducer, useRef } from 'react';
 import { api } from '@/lib/utils/api';

@@ -7,7 +7,7 @@ import { useLayoutEffect, useEffect } from 'react';
  * Use this whenever you need layout-synchronous side effects that must not
  * flash a wrong state for even one frame (e.g. Android-detection, language init).
  */
-const useIsomorphicLayoutEffect =
+const useIsomorphicLayoutEffect: typeof useLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export default useIsomorphicLayoutEffect;

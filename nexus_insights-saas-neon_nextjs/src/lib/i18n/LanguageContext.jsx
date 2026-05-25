@@ -40,7 +40,8 @@ export function LanguageProvider({ children }) {
 
   // `translations` is a module-level import — same reference for the lifetime of the page.
   // `t` only changes when `language` changes, so this lookup is already stable.
-  const t = translations[language] ?? translations['tr'];
+  // Fallback to 'en' — the app's default language (not 'tr', which was the old default).
+  const t = translations[language] ?? translations['en'];
 
   // Memoize context value so every useLanguage() consumer isn't forced to re-render
   // on unrelated LanguageProvider re-renders (e.g. during initial layout effects).

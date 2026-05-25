@@ -1,6 +1,12 @@
-﻿const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+﻿// @ts-check
+// Incremental TypeScript adoption: JSDoc types enable full IDE intellisense and
+// tsc --checkJs validation without requiring a full .ts rewrite.
+
+/** @type {string} */
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 // Session cookie for Next.js middleware routing (first-party, not auth)
+/** @returns {void} */
 export function markSessionActive() {
   if (typeof document === 'undefined') return;
   const secure = location.protocol === 'https:' ? '; Secure' : '';
@@ -12,9 +18,12 @@ export function clearSessionCookie() {
 }
 
 // Access token (memory + localStorage)
+/** @type {string | null} */
 let _token = null;
+/** @type {Promise<{ok: boolean, access: string | null}> | null} */
 let _refreshPromise = null;
 
+/** @returns {string | null} */
 function getToken() {
   if (_token) return _token;
   if (typeof window !== 'undefined') {
@@ -23,6 +32,7 @@ function getToken() {
   return _token;
 }
 
+/** @param {string | null} t */
 function setToken(t) {
   _token = t;
   if (typeof window !== 'undefined') {
@@ -33,13 +43,24 @@ function setToken(t) {
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
+/**
+ * fetch() with a hard 30 s abort timeout.
+ * @param {string} url
+ * @param {RequestInit} [opts]
+ * @returns {Promise<Response>}
+ */
 function fetchWithTimeout(url, opts = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-// Authenticated fetch
+/**
+ * Authenticated fetch — auto-attaches Bearer token + retries on 401 via doRefresh().
+ * @param {string} endpoint  API path relative to API_BASE (e.g. '/accounts/profile/')
+ * @param {RequestInit} [options]
+ * @returns {Promise<Response>}
+ */
 async function request(endpoint, options = {}) {
   const token = getToken();
   const headers = {

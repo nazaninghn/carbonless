@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Globe2, Leaf } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 const copy = {
   en: {
@@ -31,47 +32,30 @@ const copy = {
 };
 
 export default function Home() {
-  const [lang, setLang] = useState('en');
+  // Fix: use the global LanguageContext instead of a private localStorage read.
+  // Previously this component maintained its own lang state that could drift from
+  // the rest of the app when the user changed language on another page.
+  const { language: lang, changeLanguage } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
   const langMenuRef = useRef(null);
 
   // Close language dropdown on click-outside or Escape
   useEffect(() => {
     if (!showLangMenu) return;
-    const onKey = (e) => { if (e.key === 'Escape') setShowLangMenu(false); };
-    const onClickOutside = (e) => {
+    const onKey   = (e) => { if (e.key === 'Escape') setShowLangMenu(false); };
+    const onClick = (e) => {
       if (langMenuRef.current && !langMenuRef.current.contains(e.target))
         setShowLangMenu(false);
     };
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onClickOutside);
+    document.addEventListener('keydown',   onKey);
+    document.addEventListener('mousedown', onClick);
     return () => {
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('mousedown', onClickOutside);
+      document.removeEventListener('keydown',   onKey);
+      document.removeEventListener('mousedown', onClick);
     };
   }, [showLangMenu]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('language');
-    const explicit = localStorage.getItem('language_explicit');
-    // Only honour saved language if the user explicitly chose it.
-    // Stale 'tr' values from the old default are ignored.
-    if ((saved === 'tr' || saved === 'en') && explicit === '1') {
-      setLang(saved);
-    } else {
-      // No explicit preference — default to English
-      localStorage.setItem('language', 'en');
-      localStorage.removeItem('language_explicit');
-    }
-  }, []);
-
-  const changeLang = (next) => {
-    setLang(next);
-    localStorage.setItem('language', next);
-    localStorage.setItem('language_explicit', '1'); // user actively chose
-  };
-
-  const t = copy[lang];
+  const t = copy[lang] ?? copy['en'];
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-white text-[#302817]">
@@ -87,10 +71,10 @@ export default function Home() {
             </button>
             {showLangMenu && (
               <div className="absolute right-0 top-full z-50 mt-2 w-36 overflow-hidden rounded-xl border border-[#302817]/10 bg-white/95 shadow-[0_8px_24px_rgba(48,40,23,0.12)] backdrop-blur-2xl">
-                <button onClick={() => { changeLang('en'); setShowLangMenu(false); }} className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] ${lang === 'en' ? 'text-[#95A847]' : 'text-[#302817]/70'}`}>
+                <button onClick={() => { changeLanguage('en'); setShowLangMenu(false); }} className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] ${lang === 'en' ? 'text-[#95A847]' : 'text-[#302817]/70'}`}>
                   🇬🇧 English {lang === 'en' && '✓'}
                 </button>
-                <button onClick={() => { changeLang('tr'); setShowLangMenu(false); }} className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] ${lang === 'tr' ? 'text-[#95A847]' : 'text-[#302817]/70'}`}>
+                <button onClick={() => { changeLanguage('tr'); setShowLangMenu(false); }} className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] ${lang === 'tr' ? 'text-[#95A847]' : 'text-[#302817]/70'}`}>
                   🇹🇷 Türkçe {lang === 'tr' && '✓'}
                 </button>
               </div>

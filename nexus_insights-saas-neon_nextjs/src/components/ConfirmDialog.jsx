@@ -14,7 +14,12 @@ export default function ConfirmDialog({ open, onConfirm, onCancel, title, messag
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/15 p-4 backdrop-blur-md">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/15 p-4 backdrop-blur-md"
+    >
       <div className="w-full max-w-sm animate-in rounded-[1.5rem] border border-[#302817]/10 bg-white/92 p-6 shadow-[0_20px_60px_rgba(48,40,23,0.15)] backdrop-blur-2xl">
         {/* Icon */}
         <div className="mb-4 flex justify-center">
@@ -25,7 +30,7 @@ export default function ConfirmDialog({ open, onConfirm, onCancel, title, messag
 
         {/* Content */}
         <div className="text-center">
-          <h3 className="text-lg font-bold tracking-[-0.02em] text-[#302817]">{title}</h3>
+          <h3 id="confirm-dialog-title" className="text-lg font-bold tracking-[-0.02em] text-[#302817]">{title}</h3>
           <p className="mt-2 text-sm leading-6 text-[#302817]/55">{message}</p>
         </div>
 
