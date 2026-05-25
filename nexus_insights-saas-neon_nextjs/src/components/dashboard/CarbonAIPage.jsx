@@ -1949,6 +1949,9 @@ function FreeChatTab({ language }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
+    // [tr] is intentionally excluded — messages are language-independent.
+    // trRef.current gives the current language for error messages without
+    // re-triggering a fetch on every TR↔EN switch (same pattern as loadSessions).
     if (!activeId) { setMessages([]); return; }
     let cancelled = false;
     setLoadingMessages(true);
@@ -1960,10 +1963,10 @@ function FreeChatTab({ language }) {
           const data = await res.json();
           if (!cancelled) setMessages((data.messages || []).map((m, i) => ({ id: m.id ?? `hist-${i}`, ...m })));
         } else if (!cancelled) {
-          setError(tr ? 'Mesajlar yüklenemedi.' : 'Could not load messages.');
+          setError(trRef.current ? 'Mesajlar yüklenemedi.' : 'Could not load messages.');
         }
       } catch {
-        if (!cancelled) setError(tr ? 'Mesajlar yüklenemedi.' : 'Could not load messages.');
+        if (!cancelled) setError(trRef.current ? 'Mesajlar yüklenemedi.' : 'Could not load messages.');
       }
       if (!cancelled) {
         setLoadingMessages(false);
@@ -1971,7 +1974,7 @@ function FreeChatTab({ language }) {
       }
     })();
     return () => { cancelled = true; }; // cleanup: ignore response if activeId changed
-  }, [activeId, tr]);
+  }, [activeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // sendMessage declared BEFORE startNew so that startNew's dep array [sendMessage]
   // references an already-initialised variable (avoids TDZ / stale-undefined dep).
