@@ -84,6 +84,8 @@ export default function SettingsTab({ language, user, fetchData }) {
 
   const handleDelete = useCallback(async () => {
     if (!deletePassword) return;
+    // Fix 24F: prevent double-submit when Enter key fires while deletion is in progress
+    if (deleting) return;
     setDeleting(true);
     setDeleteError('');
     try {
@@ -100,7 +102,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       setDeleteError(tr ? 'Bağlantı hatası' : 'Connection error');
       setDeleting(false);
     }
-  }, [deletePassword, tr]);
+  }, [deletePassword, deleting, tr]);
 
   return (
     <div className="space-y-3 text-[#302817]">

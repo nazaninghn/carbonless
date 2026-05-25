@@ -156,8 +156,9 @@ export const api = {
   createEntryWithFile: async (formData) => {
     // FormData uploads cannot use request() (which sets Content-Type: application/json),
     // so we handle the 401 token-refresh path manually here.
+    // Fix 24C: use fetchWithTimeout() on both paths so hung uploads don't stall forever.
     const token = getToken();
-    const res = await fetch(`${API_BASE}/emissions/entries/`, {
+    const res = await fetchWithTimeout(`${API_BASE}/emissions/entries/`, {
       method: 'POST',
       credentials: 'include',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -166,7 +167,7 @@ export const api = {
     if (res.status !== 401) return res;
     const refreshResult = await doRefresh();
     if (!refreshResult?.ok) return new Response(null, { status: 401 });
-    return fetch(`${API_BASE}/emissions/entries/`, {
+    return fetchWithTimeout(`${API_BASE}/emissions/entries/`, {
       method: 'POST',
       credentials: 'include',
       headers: { Authorization: `Bearer ${refreshResult.access}` },

@@ -95,7 +95,8 @@ export default function RegisterPage() {
     return true;
   };
 
-  const goToSection = (target) => { setError(''); if (target > currentSection) { if (currentSection === 1 && !validateSection1()) return; if (currentSection === 2 && !validateSection2()) return; } setCurrentSection(target); };
+  // Fix 24D: prevent section navigation while the form is submitting
+  const goToSection = (target) => { if (loading) return; setError(''); if (target > currentSection) { if (currentSection === 1 && !validateSection1()) return; if (currentSection === 2 && !validateSection2()) return; } setCurrentSection(target); };
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault(); setError('');

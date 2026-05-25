@@ -266,6 +266,16 @@ export default function EmissionsTab({
       }
     }
 
+    // Fix 24E: client-side guard — catch missing factor/quantity before hitting the API
+    if (!selFactor) {
+      setFormError(tr ? 'Lütfen emisyon kaynağı seçin.' : 'Please select an emission source.');
+      return;
+    }
+    if (!quantity || parseFloat(quantity) <= 0) {
+      setFormError(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       let res;
@@ -280,9 +290,11 @@ export default function EmissionsTab({
         fd.append('proof_document', file);
         res = await api.createEntryWithFile(fd);
       } else {
+        // Fix 24A: coerce empty string to null — Django FK rejects '' but accepts null
         res = await api.createEntry({
           emission_factor: parseInt(selFactor), year: selectedYear,
-          month: parseInt(month), quantity: parseFloat(quantity), description: desc, facility,
+          month: parseInt(month), quantity: parseFloat(quantity), description: desc,
+          facility: facility || null,
         });
       }
       if (res.ok) {
@@ -325,8 +337,9 @@ export default function EmissionsTab({
     if (!editing) return;
     setEditSaving(true);
     try {
+      // Fix 24B: coerce empty string to null — Django FK rejects '' but accepts null
       const res = await api.updateEntry(editing.id, {
-        quantity: editQty, description: editDesc, facility: editFacility,
+        quantity: editQty, description: editDesc, facility: editFacility || null,
       });
       if (res.ok) {
         setEditing(null); fetchData();
