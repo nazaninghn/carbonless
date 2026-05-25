@@ -4271,7 +4271,7 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
-    nextByValue: { all_complete: '7C-2', fix_missing: '7C-1' },
+    nextByValue: { all_complete: '7C-2', fix_missing: '7-GİRİŞ' },
   },
   // #125
   {

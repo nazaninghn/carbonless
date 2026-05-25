@@ -1894,6 +1894,12 @@ function FreeChatTab({ language }) {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
 
+  // Ref mirror of tr — lets the session-load effect read the current language
+  // without being in its dependency array (which would re-trigger the fetch on
+  // every language switch even though sessions are language-independent).
+  const trRef = useRef(tr);
+  useEffect(() => { trRef.current = tr; }, [tr]);
+
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
   // Stable message-key counter — avoids Date.now() collisions
@@ -1923,20 +1929,24 @@ function FreeChatTab({ language }) {
   }, [messages, sending]);
 
   useEffect(() => {
+    // Sessions are language-independent — load only once on mount.
+    // [tr] is NOT in the dep array to prevent a spurious API re-fetch + loading-spinner
+    // flash on every language switch. trRef.current is read inside the callback so
+    // error messages still resolve in the language that was active when the error fired.
     let cancelled = false;
     (async () => {
       setLoadingSessions(true);
       try {
         const res = await api.getChatSessions();
         if (!cancelled && res.ok) setSessions(await res.json());
-        else if (!cancelled && !res.ok) setError(tr ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
+        else if (!cancelled && !res.ok) setError(trRef.current ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
       } catch {
-        if (!cancelled) setError(tr ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
+        if (!cancelled) setError(trRef.current ? 'Sohbetler yüklenemedi.' : 'Could not load chats.');
       }
       if (!cancelled) setLoadingSessions(false);
     })();
     return () => { cancelled = true; };
-  }, [tr]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!activeId) { setMessages([]); return; }
