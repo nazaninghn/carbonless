@@ -36,11 +36,10 @@ jobs:
         # checkJs:false in tsconfig means only .ts/.tsx + @ts-check files are checked.
         # Zero errors expected after Round 28 migration.
 
-      - name: ESLint — next lint
+      - name: ESLint
         run: npm run lint
-        env:
-          # next lint statically analyses imports; API_URL prevents "undefined" warnings
-          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+        # Direct ESLint CLI (eslint src/ --ext .js,.jsx,.ts,.tsx)
+        # No env vars needed — no Next.js bundler involved at lint time.
 
   # ── Job 2: Next.js build ───────────────────────────────────────────────────
   # Catches broken imports, missing env vars, and page-level compile errors
