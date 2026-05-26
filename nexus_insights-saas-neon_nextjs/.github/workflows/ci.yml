@@ -1,0 +1,74 @@
+# ─── Carbonless CI ───────────────────────────────────────────────────────────
+# Runs on every push to main and on every pull request targeting main.
+# Three fast gates: type-check → lint → build.
+# All three must pass before a PR can be merged.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Job 1: TypeScript + ESLint ─────────────────────────────────────────────
+  typecheck-and-lint:
+    name: Type-check & Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20 (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'                  # caches ~/.npm — speeds up reinstalls
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline    # reproducible, uses package-lock.json
+
+      - name: TypeScript — tsc --noEmit
+        run: npx tsc --noEmit
+        # checkJs:false in tsconfig means only .ts/.tsx + @ts-check files are checked.
+        # Zero errors expected after Round 28 migration.
+
+      - name: ESLint — next lint
+        run: npm run lint
+        env:
+          # next lint statically analyses imports; API_URL prevents "undefined" warnings
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+
+  # ── Job 2: Next.js build ───────────────────────────────────────────────────
+  # Catches broken imports, missing env vars, and page-level compile errors
+  # that tsc alone won't find (e.g. invalid JSX, bad Tailwind class names in
+  # dynamic expressions that cause PostCSS failures).
+  build:
+    name: Next.js Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: typecheck-and-lint        # only build if type-check + lint passed
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20 (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Build
+        run: npm run build
+        env:
+          # Dummy value keeps api.js happy at build time; no real requests are made
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api
+          # Tell Next.js this is a CI environment (disables telemetry)
+          NEXT_TELEMETRY_DISABLED: '1'

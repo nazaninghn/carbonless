@@ -928,7 +928,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     }
   // Include the full question object (not just .id) so a language switch that
   // changes question.text while keeping the same id still re-fills the input.
-  }, [open, currentQuestion, lang, tr]); // `sending` intentionally omitted — we only want to re-trigger on open/question change
+  // `sending` intentionally omitted — only re-trigger on open/question change, not while sending.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currentQuestion, lang, tr]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -1197,12 +1199,12 @@ function QuestionnaireTab({ language }) {
   // Init answer value when the QUESTION changes (navigation / goBack).
   // Deliberately excludes `answers` from the dep array — the ref above is used
   // instead to avoid re-running on every keystroke / submission.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (currentQuestion) {
       const existing = answersRef.current[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]); // only run when the question changes
 
   // ── handleStart ────────────────────────────────────────────────────────────

@@ -327,7 +327,9 @@ export default function DashboardOverview({
   const s1         = summary?.scope1_tonne ?? 0;
   const s2         = summary?.scope2_tonne ?? 0;
   const s3         = summary?.scope3_tonne ?? 0;
-  const monthly    = summary?.monthly ?? [];
+  // Memoized so the array reference is stable — prevents false "dep changed every
+  // render" warnings in the useMemo hooks below that depend on monthly.
+  const monthly    = useMemo(() => summary?.monthly ?? [], [summary?.monthly]);
 
   // Derived: average monthly (only months with data) — memoized so the filter/reduce
   // only re-runs when monthly data changes, not on every local state update.

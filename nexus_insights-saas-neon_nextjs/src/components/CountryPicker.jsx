@@ -28,7 +28,12 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
   }, []);
 
   const lang = language === 'tr' ? 'tr' : 'en';
-  const selected = multi ? (value || '').split(',').map(s => s.trim()).filter(Boolean) : [];
+  // Memoized so the array reference stays stable across renders — avoids false
+  // "new dep on every render" warnings in the handleSelect/handleRemove callbacks.
+  const selected = useMemo(
+    () => multi ? (value || '').split(',').map(s => s.trim()).filter(Boolean) : [],
+    [multi, value],
+  );
   const singleVal = !multi ? value : '';
 
   const filtered = useMemo(() => {

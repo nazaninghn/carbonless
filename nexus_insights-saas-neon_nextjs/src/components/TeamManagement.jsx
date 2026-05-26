@@ -86,7 +86,7 @@ export default function TeamManagement({ language }) {
     } finally {
       setInviting(false);
     }
-  }, [inviteEmail, inviteRole, tr, toast]);
+  }, [inviteEmail, inviteRole, inviting, tr, toast]);
 
   const handleToggleActive = useCallback(async (m) => {
     setUpdating(m.id);

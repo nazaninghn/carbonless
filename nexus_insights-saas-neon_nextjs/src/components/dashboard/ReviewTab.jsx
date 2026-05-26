@@ -56,7 +56,7 @@ export default function ReviewTab({ language, fetchData }) {
     } finally {
       setProcessing(null);
     }
-  }, [tr, fetchPending, fetchData]);
+  }, [tr, toast, fetchPending, fetchData]);
 
   const handleReject = useCallback(async () => {
     if (!rejectId) return;
@@ -76,7 +76,7 @@ export default function ReviewTab({ language, fetchData }) {
     } finally {
       setProcessing(null);
     }
-  }, [rejectId, rejectReason, tr, fetchPending, fetchData]);
+  }, [rejectId, rejectReason, tr, toast, fetchPending, fetchData]);
 
   return (
     <div className="space-y-3 text-[#302817]">

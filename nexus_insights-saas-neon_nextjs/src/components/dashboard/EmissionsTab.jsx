@@ -312,7 +312,7 @@ export default function EmissionsTab({
       toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
     }
     finally { setSubmitting(false); }
-  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, submitting, resetAddForm, fetchData, setShowAddForm]);
+  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, submitting, toast, resetAddForm, fetchData, setShowAddForm]);
 
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
@@ -332,7 +332,7 @@ export default function EmissionsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     }
-  }, [deleteConfirm, tr, fetchData]);
+  }, [deleteConfirm, tr, toast, fetchData]);
 
   const handleEdit = useCallback(async (e) => {
     e.preventDefault();
@@ -354,7 +354,7 @@ export default function EmissionsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     } finally { setEditSaving(false); }
-  }, [editing, editQty, editDesc, editFacility, editSaving, tr, fetchData]);
+  }, [editing, editQty, editDesc, editFacility, editSaving, tr, toast, fetchData]);
 
   const openEdit = useCallback((entry) => {
     setEditing(entry);
@@ -387,7 +387,7 @@ export default function EmissionsTab({
     } finally {
       setCSaving(false);
     }
-  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, cSaving, tr, fetchData, setShowCustom]);
+  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, cSaving, tr, toast, fetchData, setShowCustom]);
 
   // ── Escape key handlers — one per modal ─────────────────────────────────
   useEffect(() => {

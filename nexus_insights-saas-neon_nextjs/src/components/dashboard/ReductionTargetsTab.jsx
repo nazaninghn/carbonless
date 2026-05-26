@@ -300,7 +300,7 @@ export default function ReductionTargetsTab({
     } finally {
       setSaving(false);
     }
-  }, [title, baseYear, tgtYear, baseEmit, reducePct, saving, tr, resetForm, fetchData]);
+  }, [title, baseYear, tgtYear, baseEmit, reducePct, saving, tr, toast, resetForm, fetchData]);
 
   const handleEditSave = useCallback(async (e) => {
     e.preventDefault();
@@ -334,7 +334,7 @@ export default function ReductionTargetsTab({
     } finally {
       setEditSaving(false);
     }
-  }, [editTarget, editTitle, editBaseYear, editTgtYear, editBaseEmit, editReducePct, editSaving, tr, fetchData]);
+  }, [editTarget, editTitle, editBaseYear, editTgtYear, editBaseEmit, editReducePct, editSaving, tr, toast, fetchData]);
 
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
@@ -354,7 +354,7 @@ export default function ReductionTargetsTab({
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     }
-  }, [deleteConfirm, tr, fetchData]);
+  }, [deleteConfirm, tr, toast, fetchData]);
 
   // ── Summary KPIs ─────────────────────────────────────────────────────────
   // Single useMemo: one pass to count statuses + one reduce for avg reduction.

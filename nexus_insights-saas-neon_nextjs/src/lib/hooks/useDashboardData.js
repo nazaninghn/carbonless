@@ -119,6 +119,7 @@ export function useDashboardData(selectedYear) {
     fetchData();
     // Incrementing the generation on cleanup means any response still in-flight
     // from this render cycle will be ignored once the effect re-runs or unmounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => { fetchGen.current++; };
   }, [fetchData]);
 

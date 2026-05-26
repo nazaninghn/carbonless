@@ -21,7 +21,7 @@ export default function TermsPage() {
           <div className="mt-8 space-y-6 text-sm leading-7 text-[#302817]/70">
             <section>
               <h2 className="mb-2 text-base font-bold text-[#302817]">1. Acceptance of Terms</h2>
-              <p>By accessing and using the Carbonless platform ("Service"), you agree to be bound by these Terms of Use. If you do not agree to these terms, please do not use the Service.</p>
+              <p>By accessing and using the Carbonless platform (&quot;Service&quot;), you agree to be bound by these Terms of Use. If you do not agree to these terms, please do not use the Service.</p>
             </section>
 
             <section>

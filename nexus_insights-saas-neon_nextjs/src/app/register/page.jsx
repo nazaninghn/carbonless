@@ -86,14 +86,14 @@ export default function RegisterPage() {
     return true;
   };
 
-  const validateSection3 = () => {
+  const validateSection3 = useCallback(() => {
     const missing = [];
     if (!formData.targetISO14064Verification) missing.push('ISO 14064-1');
     if (!formData.has3rdPartyAuditPlan) missing.push(tr ? '3. taraf denetim' : '3rd party audit');
     if (formData.isForFinancing !== 'yes' && formData.isDueToExportPressure !== 'yes' && formData.isForGroupReporting !== 'yes') missing.push(tr ? 'Amaç' : 'Purpose');
     if (missing.length > 0) { setError((tr ? 'Lütfen şu alanları doldurun: ' : 'Please fill in: ') + missing.join(', ')); return false; }
     return true;
-  };
+  }, [formData, tr]);
 
   // Fix 24D: prevent section navigation while the form is submitting
   const goToSection = (target) => { if (loading) return; setError(''); if (target > currentSection) { if (currentSection === 1 && !validateSection1()) return; if (currentSection === 2 && !validateSection2()) return; } setCurrentSection(target); };
@@ -210,7 +210,7 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
-  }, [formData, tr, router]);
+  }, [formData, language, tr, router, validateSection3]);
 
   const steps = [
     { id: 1, icon: Building2, title: language === 'tr' ? 'Kurumsal Bilgiler' : 'Corporate Info', subtitle: language === 'tr' ? 'Hesap ve şirket profili' : 'Account and company profile' },
