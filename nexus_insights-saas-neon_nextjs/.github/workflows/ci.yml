@@ -1,7 +1,7 @@
 # ─── Carbonless CI ───────────────────────────────────────────────────────────
 # Runs on every push to main and on every pull request targeting main.
-# Three fast gates: type-check → lint → build.
-# All three must pass before a PR can be merged.
+# Four gates: type-check → lint → build → e2e smoke tests.
+# All four must pass before a PR can be merged.
 
 name: CI
 
@@ -71,3 +71,62 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:8000/api
           # Tell Next.js this is a CI environment (disables telemetry)
           NEXT_TELEMETRY_DISABLED: '1'
+
+      # Upload the compiled .next/ output so the e2e job can start the server
+      # without rebuilding from scratch (saves ~2-3 minutes per run).
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            .next/
+            public/
+          retention-days: 1
+
+  # ── Job 3: Playwright E2E smoke tests ─────────────────────────────────────
+  # Starts the pre-built Next.js app with `next start`, then runs the smoke
+  # suite against it.  All Django API calls are mocked by page.route() inside
+  # the test files — no real backend is required.
+  e2e:
+    name: E2E Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: build                   # only run after build passes
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20 (LTS)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+
+      - name: Install Playwright browsers (Chromium only)
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E smoke tests
+        # playwright.config.js webServer: CI ? 'npm start' : 'npm run dev'
+        # → Playwright starts `next start` against the .next/ artifact above.
+        # All Django API calls are mocked by page.route() — no real backend needed.
+        run: npx playwright test
+        env:
+          NEXT_PUBLIC_API_URL:     http://localhost:8000/api
+          NEXT_TELEMETRY_DISABLED: '1'
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
