@@ -213,7 +213,9 @@ function Markdown({ text }) {
   // Use <div> not <span>: the html string may contain block elements (<p>, <li>)
   // from paragraph splits and headings. Putting block elements inside an inline
   // <span> is invalid HTML and causes browsers to close the <span> prematurely.
-  return <div className="prose-content" dangerouslySetInnerHTML={{ __html: `<p>${html}</p>` }} />;
+  // Do NOT wrap in <p>: list items (<li>) inside <p> is invalid HTML — the browser
+  // implicitly closes the <p> before each <li>, producing a broken DOM.
+  return <div className="prose-content" dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -975,9 +977,12 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       }
     } catch {
       if (openRef.current) setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+    } finally {
+      // Always reset — even if the drawer was closed mid-flight — so the send
+      // button is not permanently stuck in a spinner on the next open.
+      setSending(false);
+      if (openRef.current) inputRef.current?.focus();
     }
-    setSending(false);
-    if (openRef.current) inputRef.current?.focus();
   }, [input, sending, tr, helpSessionRef]);
 
   if (!open) return null;
@@ -1934,6 +1939,10 @@ function FreeChatTab({ language }) {
   const scrollTimerRef = useRef(null);
   // isMounted guard — prevents state updates after component unmounts from async callbacks
   const isMountedRef = useRef(true);
+  // Prevents concurrent "New chat" calls from creating duplicate sessions
+  const creatingSessionRef = useRef(false);
+  // Tracks per-session in-flight deletes so double-clicks don't send duplicate DELETEs
+  const deletingIdsRef = useRef(/** @type {Set<string|number>} */ (new Set()));
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -2047,6 +2056,9 @@ function FreeChatTab({ language }) {
   }, [activeId, sending]); // `tr` removed — read via trRef.current; `input` removed — read via inputValueRef.current
 
   const startNew = useCallback(async (initialPrompt = '') => {
+    // Prevent concurrent "New chat" clicks from creating duplicate sessions
+    if (creatingSessionRef.current) return;
+    creatingSessionRef.current = true;
     try {
       const res = await api.createChatSession();
       if (!isMountedRef.current) return;
@@ -2068,10 +2080,15 @@ function FreeChatTab({ language }) {
       }
     } catch {
       if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
+    } finally {
+      creatingSessionRef.current = false;
     }
   }, [sendMessage]); // `tr` removed — read via trRef.current
 
   const deleteSession = useCallback(async (id) => {
+    // Guard: ignore double-clicks / rapid re-submits for the same session id
+    if (deletingIdsRef.current.has(id)) return;
+    deletingIdsRef.current.add(id);
     try {
       const res = await api.deleteChatSession(id);
       if (!isMountedRef.current) return;
@@ -2083,6 +2100,8 @@ function FreeChatTab({ language }) {
       if (activeId === id) { setActiveId(null); setMessages([]); }
     } catch {
       if (isMountedRef.current) setError(trRef.current ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
+    } finally {
+      deletingIdsRef.current.delete(id);
     }
   }, [activeId]); // `tr` removed — read via trRef.current
 
