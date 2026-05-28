@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ClipboardList, AlertTriangle, RotateCcw, X,
@@ -193,10 +193,14 @@ function getDisplayValue(q, value, lang = 'en') {
 // Shared: Markdown renderer
 // Safety: input is HTML-escaped before any regex substitution, so injected
 // content cannot contain raw HTML tags. The only elements we emit are
-// hard-coded tag strings (strong, em, code, p, li, br) — no href/src
+// hard-coded tag strings (strong, em, code, p, ul, ol, li, br) — no href/src
 // attributes are produced, so javascript: URI injection is not possible.
+//
+// Wrapped in memo: the message list re-renders on every keystroke because
+// `sending` state lives in the same component. memo() ensures the 12-regex
+// chain only re-runs when the `text` prop actually changes.
 // ─────────────────────────────────────────────────────────────────────────────
-function Markdown({ text }) {
+const Markdown = memo(function Markdown({ text }) {
   const html = (text || '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -206,17 +210,22 @@ function Markdown({ text }) {
     .replace(/^### (.+)$/gm, '<p class="mt-3 mb-1 font-bold text-[#302817]">$1</p>')
     .replace(/^## (.+)$/gm, '<p class="mt-4 mb-1 text-base font-bold text-[#302817]">$1</p>')
     .replace(/^# (.+)$/gm, '<p class="mt-4 mb-1 text-lg font-bold text-[#302817]">$1</p>')
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
-    .replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal">$1</li>')
-    .replace(/\n\n/g, '</p><p class="mt-2">')
+    // Wrap consecutive unordered list lines in <ul> before paragraph splitting
+    // so list items never end up inside a <p> (block-in-inline = invalid HTML).
+    .replace(/((?:^- .+$\n?)+)/gm,
+      m => `<ul class="ml-4 my-1 list-disc space-y-0.5">${m.replace(/^- (.+)$/gm, '<li>$1</li>')}</ul>`)
+    // Wrap consecutive ordered list lines in <ol>
+    .replace(/((?:^\d+\. .+$\n?)+)/gm,
+      m => `<ol class="ml-4 my-1 list-decimal space-y-0.5">${m.replace(/^\d+\. (.+)$/gm, '<li>$1</li>')}</ol>`)
+    // Use <div> blocks so that <ul>/<ol> children are valid (block inside block).
+    // Using <p> here would make <ul>/<ol> inside <p> — the browser auto-closes
+    // the <p> before each list, splitting paragraphs and breaking layout.
+    .replace(/\n\n/g, '</div><div class="mt-2">')
     .replace(/\n/g, '<br/>');
-  // Use <div> not <span>: the html string may contain block elements (<p>, <li>)
-  // from paragraph splits and headings. Putting block elements inside an inline
-  // <span> is invalid HTML and causes browsers to close the <span> prematurely.
-  // Do NOT wrap in <p>: list items (<li>) inside <p> is invalid HTML — the browser
-  // implicitly closes the <p> before each <li>, producing a broken DOM.
-  return <div className="prose-content" dangerouslySetInnerHTML={{ __html: html }} />;
-}
+  // Outer <div> wrapper ensures plain-text responses (no \n\n) still have a
+  // block container, and multi-paragraph responses open/close correctly.
+  return <div className="prose-content" dangerouslySetInnerHTML={{ __html: `<div>${html}</div>` }} />;
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared: Typing dots
@@ -2048,10 +2057,13 @@ function FreeChatTab({ language }) {
       }
     } catch {
       if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
-    }
-    if (isMountedRef.current) {
-      setSending(false);
-      inputRef.current?.focus();
+    } finally {
+      // Mirror the sendHelp pattern: always reset sending so the button is never
+      // permanently stuck in spinner state if an early return skips this path.
+      if (isMountedRef.current) {
+        setSending(false);
+        inputRef.current?.focus();
+      }
     }
   }, [activeId, sending]); // `tr` removed — read via trRef.current; `input` removed — read via inputValueRef.current
 
