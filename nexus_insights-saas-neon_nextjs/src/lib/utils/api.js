@@ -129,7 +129,9 @@ async function doRefresh() {
 export const api = {
   login: async (credential, password) => {
     const c = typeof credential === 'string' ? credential.trim() : credential;
-    const res = await fetch('/api/auth/login', {
+    // Use fetchWithTimeout (30 s) so a hung login proxy does not permanently
+    // freeze the submit button in the loading state.
+    const res = await fetchWithTimeout('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       // Send both fields so the backend can match by username OR email
@@ -146,7 +148,9 @@ export const api = {
   logout: async () => {
     const token = getToken();
     try {
-      await fetch('/api/auth/logout', {
+      // fetchWithTimeout ensures a hung logout endpoint cannot prevent
+      // setToken(null) / clearSessionCookie() / the redirect from running.
+      await fetchWithTimeout('/api/auth/logout', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });

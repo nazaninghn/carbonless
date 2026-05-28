@@ -4709,7 +4709,10 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
 
 export function getQuestionWarning(question, value, lang = 'en') {
   if (!question?.warning?.when) return null;
-  if (question.warning.when.equals === value) return question.warning.text?.[lang] || null;
+  const eq = question.warning.when.equals;
+  // multi_select answers are arrays — check inclusion, not reference equality.
+  const matches = Array.isArray(value) ? value.includes(eq) : eq === value;
+  if (matches) return question.warning.text?.[lang] || null;
   return null;
 }
 
@@ -4777,7 +4780,13 @@ export function getSystemMessage(question, value, lang = 'en') {
 export function getTriggeredAssumptions(question, value) {
   if (!question?.assumptions) return [];
   return question.assumptions
-    .filter((assumption) => assumption.when?.equals === value)
+    .filter((assumption) => {
+      const eq = assumption.when?.equals;
+      if (eq === undefined) return false;
+      // multi_select answers are arrays — check inclusion, not reference equality,
+      // so assumptions fire correctly when the trigger value is one of many selections.
+      return Array.isArray(value) ? value.includes(eq) : eq === value;
+    })
     .map((assumption) => ({
       questionId: question.id,
       type: assumption.type,

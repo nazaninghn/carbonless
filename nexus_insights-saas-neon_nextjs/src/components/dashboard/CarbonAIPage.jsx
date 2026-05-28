@@ -1174,6 +1174,10 @@ function QuestionnaireTab({ language }) {
   // Synchronous mutex — prevents a second submitAnswer call from passing the
   // isTyping guard during the await saveStepToBackend network window.
   const isSubmittingRef = useRef(false);
+  // Prevents a rapid double-click on "Start / Continue Inventory" from firing
+  // two concurrent POST /questionnaire/start/ requests, which would create
+  // duplicate reports on the backend.
+  const startingRef = useRef(false);
   // Stable message-key counter — avoids Date.now() collisions
   const msgIdRef = useRef(0);
   // Tracks messages.length at the moment the CURRENT question bubble was shown.
@@ -1223,6 +1227,11 @@ function QuestionnaireTab({ language }) {
 
   // ── handleStart ────────────────────────────────────────────────────────────
   const handleStart = useCallback(async () => {
+    // Ref guard: the Start button is disabled while loading (startLoading state),
+    // but React state updates are async — a rapid double-click can fire two
+    // concurrent requests before the first re-render disables the button.
+    if (startingRef.current) return;
+    startingRef.current = true;
     setStartLoading(true);
     setStartError('');
     // Capture the effective starting question ID before any async setState calls
@@ -1240,7 +1249,6 @@ function QuestionnaireTab({ language }) {
             ? 'Rapor başlatılamadı. Lütfen önce Ayarlar bölümünden bir şirket oluşturun.'
             : 'Could not start report. Please create a company first in Settings.')
         );
-        setStartLoading(false);
         return;
       }
       // Fix: backend returns report_id (not id)
@@ -1250,35 +1258,38 @@ function QuestionnaireTab({ language }) {
         effectiveId = data.current_step;
         setCurrentId(data.current_step);
       }
+
+      // Guard: component may have unmounted during the async call
+      if (!isMounted.current) return;
+
+      // Build welcome message using effectiveId — not the stale currentId from the closure
+      const firstQ = getQuestionById(effectiveId);
+      const isResume = effectiveId !== currentId;
+      const welcomeMsg = {
+        id: 'welcome',
+        role: 'assistant',
+        content: tr
+          ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size ${TOTAL_QUESTIONS} soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n${isResume ? `**Kaldığınız yer — Soru ${firstQ?.number}:**` : '**Soru 1:**'} ${firstQ?.text?.tr || firstQ?.text?.en}`
+          : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you ${TOTAL_QUESTIONS} questions. You can go back at any time.\n\n${isResume ? `**Resuming — Question ${firstQ?.number}:**` : '**Question 1:**'} ${firstQ?.text?.en}`,
+      };
+      if (firstQ?.helper) {
+        welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
+      }
+      setMessages([welcomeMsg]);
+      // The welcome message embeds Q1 — treat its length (1) as the "question shown" marker
+      // so that goBack() from Q2 correctly slices back to just the welcome message.
+      questionMsgLenRef.current = 1;
+      setStarted(true);
     } catch {
       if (!isMounted.current) return;
       setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error. Please try again.');
-      setStartLoading(false);
-      return;
+    } finally {
+      // Single exit point — replaces three scattered setStartLoading(false) calls.
+      if (isMounted.current) {
+        setStartLoading(false);
+        startingRef.current = false;
+      }
     }
-
-    // Guard: component may have unmounted during the async call
-    if (!isMounted.current) return;
-
-    // Build welcome message using effectiveId — not the stale currentId from the closure
-    const firstQ = getQuestionById(effectiveId);
-    const isResume = effectiveId !== currentId;
-    const welcomeMsg = {
-      id: 'welcome',
-      role: 'assistant',
-      content: tr
-        ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size ${TOTAL_QUESTIONS} soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n${isResume ? `**Kaldığınız yer — Soru ${firstQ?.number}:**` : '**Soru 1:**'} ${firstQ?.text?.tr || firstQ?.text?.en}`
-        : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you ${TOTAL_QUESTIONS} questions. You can go back at any time.\n\n${isResume ? `**Resuming — Question ${firstQ?.number}:**` : '**Question 1:**'} ${firstQ?.text?.en}`,
-    };
-    if (firstQ?.helper) {
-      welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
-    }
-    setMessages([welcomeMsg]);
-    // The welcome message embeds Q1 — treat its length (1) as the "question shown" marker
-    // so that goBack() from Q2 correctly slices back to just the welcome message.
-    questionMsgLenRef.current = 1;
-    setStarted(true);
-    setStartLoading(false);
   }, [currentId, tr, lang]);
 
   // ── saveStepToBackend ──────────────────────────────────────────────────────
@@ -1926,6 +1937,9 @@ function FreeChatTab({ language }) {
   // On mobile starts closed; desktop opens automatically
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState('');
+  // Mirrors creatingSessionRef so the "New Chat" buttons can be disabled while
+  // the createChatSession request is in-flight (refs don't trigger re-renders).
+  const [creatingSession, setCreatingSession] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
@@ -2068,9 +2082,11 @@ function FreeChatTab({ language }) {
   }, [activeId, sending]); // `tr` removed — read via trRef.current; `input` removed — read via inputValueRef.current
 
   const startNew = useCallback(async (initialPrompt = '') => {
-    // Prevent concurrent "New chat" clicks from creating duplicate sessions
+    // Prevent concurrent "New chat" clicks from creating duplicate sessions.
+    // Ref provides the synchronous guard; state drives the disabled prop on the button.
     if (creatingSessionRef.current) return;
     creatingSessionRef.current = true;
+    setCreatingSession(true);
     try {
       const res = await api.createChatSession();
       if (!isMountedRef.current) return;
@@ -2094,6 +2110,7 @@ function FreeChatTab({ language }) {
       if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
     } finally {
       creatingSessionRef.current = false;
+      if (isMountedRef.current) setCreatingSession(false);
     }
   }, [sendMessage]); // `tr` removed — read via trRef.current
 
@@ -2144,10 +2161,13 @@ function FreeChatTab({ language }) {
           </span>
           <button
             onClick={() => startNew()}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#302817] text-white shadow-sm transition hover:bg-black"
+            disabled={creatingSession}
+            className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
             title={tr ? 'Yeni sohbet' : 'New chat'}
           >
-            <Plus className="h-3.5 w-3.5" />
+            {creatingSession
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Plus className="h-3.5 w-3.5" />}
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
@@ -2199,9 +2219,12 @@ function FreeChatTab({ language }) {
           {!activeId && (
             <button
               onClick={() => startNew()}
-              className="ml-auto flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-black"
+              disabled={creatingSession}
+              className="ml-auto flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Plus className="h-3 w-3" />
+              {creatingSession
+                ? <Loader2 className="h-3 w-3 animate-spin" />
+                : <Plus className="h-3 w-3" />}
               {tr ? 'Yeni' : 'New'}
             </button>
           )}
