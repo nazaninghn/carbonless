@@ -30,8 +30,17 @@ export async function POST(request) {
     return response;
   }
 
-  const data = await backendRes.json();
-  const { access, refresh: newRefresh } = data;
+  // Protect against non-JSON 200 responses (deploys, proxy rewrites, etc.).
+  // An unprotected .json() throw here would leave the stale refresh cookie in
+  // place and trap the user in an infinite refresh loop with a 500 error.
+  const data = await backendRes.json().catch(() => null);
+  const { access, refresh: newRefresh } = data ?? {};
+
+  if (!access) {
+    const r = NextResponse.json({ error: 'Unexpected response from auth server' }, { status: 502 });
+    r.cookies.delete('_carbonless_refresh');
+    return r;
+  }
 
   const response = NextResponse.json({ access }, { status: 200 });
   if (newRefresh) {

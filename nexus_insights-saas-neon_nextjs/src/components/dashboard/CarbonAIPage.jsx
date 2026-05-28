@@ -981,6 +981,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
           const aiMsg = await res.json();
           setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
         } else {
+          // 404/410 means the session was deleted (e.g. from the FreeChatTab session
+          // list). Null the ref so the next send creates a fresh session automatically.
+          if (res.status === 404 || res.status === 410) helpSessionRef.current = null;
           setHelpError(tr ? 'Yanıt alınamadı. Lütfen tekrar deneyin.' : 'Could not get a response. Please try again.');
         }
       }
@@ -1500,8 +1503,10 @@ function QuestionnaireTab({ language }) {
       isSubmittingRef.current = true;
       await saveStepToBackend(currentId, newCollected, reportId);
 
-      const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
-      const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, value) : [];
+      // Use newCollected (the full { item: answer } map) not value (last item only) —
+      // warnings and assumptions on loop questions are keyed to the aggregate answer.
+      const warning = getQuestionWarning ? getQuestionWarning(q, newCollected, lang) : null;
+      const newAssumptions = getTriggeredAssumptions ? getTriggeredAssumptions(q, newCollected) : [];
       if (newAssumptions.length > 0) setAssumptions(prev => [...prev, ...newAssumptions]);
 
       setIsTyping(true);

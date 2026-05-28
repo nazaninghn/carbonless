@@ -31,8 +31,15 @@ export async function POST(request) {
     );
   }
 
-  const data = await backendRes.json();
-  const { access, refresh } = data;
+  const data = await backendRes.json().catch(() => null);
+  const { access, refresh } = data ?? {};
+
+  // Guard: a misconfigured backend can return HTTP 200 without tokens.
+  // Writing `undefined` to the cookie would store the literal string "undefined"
+  // and every subsequent authenticated request would fail silently.
+  if (!access || !refresh) {
+    return NextResponse.json({ error: 'Unexpected response from auth server' }, { status: 502 });
+  }
 
   const response = NextResponse.json({ access }, { status: 200 });
   response.cookies.set('_carbonless_refresh', refresh, {
