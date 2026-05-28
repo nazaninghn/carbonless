@@ -1463,7 +1463,10 @@ function QuestionnaireTab({ language }) {
       if (nextIndex < items.length) {
         // More items to ask — stay on same question, advance index
         const nextLabel = itemLabels[nextIndex] || items[nextIndex] || `#${nextIndex + 1}`;
-        setLoopState({ ...loopState, currentIndex: nextIndex, collected: newCollected });
+        // Functional updater: spreads the latest state after the async saveStepToBackend
+        // await rather than the closure-captured value, guarding against any future
+        // concurrent mutation even though isSubmittingRef currently prevents it.
+        setLoopState(prev => prev ? { ...prev, currentIndex: nextIndex, collected: newCollected } : null);
         setAnswerValue(getInitialValue(q));
 
         // Save collected-so-far to backend — clear mutex AFTER setIsTyping(true)

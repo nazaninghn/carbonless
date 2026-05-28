@@ -15,9 +15,12 @@ export function middleware(request: NextRequest) {
   if (pathname.startsWith('/dashboard')) {
     const hasSession = request.cookies.has('carbonless_auth');
     if (!hasSession) {
-      const loginUrl = new URL('/login', request.url);
-      loginUrl.searchParams.set('reason', 'session_expired');
-      return NextResponse.redirect(loginUrl);
+      // Plain redirect — no ?reason=session_expired here because this fires for
+      // ALL unauthenticated visits (first-time users, bookmarks, shared links)
+      // and would show a misleading "Your session has expired" banner.
+      // Real token expiry is detected by doRefresh() in api.js which redirects
+      // to /login?reason=session_expired explicitly after a failed refresh.
+      return NextResponse.redirect(new URL('/login', request.url));
     }
   }
 

@@ -136,8 +136,7 @@ export default function RegisterPage() {
       if (!regRes.ok) {
         const d = await regRes.json().catch(() => ({}));
         setError(Object.values(d).flat().join(', ') || (language === 'tr' ? 'Kayıt hatası' : 'Registration error'));
-        setLoading(false);
-        return;
+        return; // outer finally calls setLoading(false)
       }
 
       // ── Step 2: Login via proxy (sets localStorage token + session cookie) ──
