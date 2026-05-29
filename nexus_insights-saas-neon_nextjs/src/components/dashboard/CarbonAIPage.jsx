@@ -2070,11 +2070,14 @@ function FreeChatTab({ language }) {
         if (!isMountedRef.current) return;
         setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
         if (aiMsg.session_title) {
-          setSessions(prev => prev.map(s =>
+          // Fix #45: after updating the session title / timestamp, re-sort descending by
+          // updated_at so the active chat bubbles up to the top of the sidebar list,
+          // matching the server-side ORDER BY -updated_at on next page load.
+          setSessions(prev => [...prev.map(s =>
             s.id === sessionId
               ? { ...s, title: aiMsg.session_title, updated_at: new Date().toISOString(), message_count: (s.message_count || 0) + 2 }
               : s
-          ));
+          )].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
         }
       }
     } catch {
@@ -2327,6 +2330,11 @@ function FreeChatTab({ language }) {
 export default function CarbonAIPage({ language = 'en' }) {
   const tr = language === 'tr';
   const [activeTab, setActiveTab] = useState('questionnaire');
+  // Fix #44: track whether the Chat tab has ever been opened so we can lazy-mount
+  // FreeChatTab on first visit and then KEEP it mounted on subsequent tab switches.
+  // Switching tabs no longer unmounts the inactive component, preserving questionnaire
+  // state (messages, answers, history, loopState) across tab switches.
+  const [chatMounted, setChatMounted] = useState(false);
 
   return (
     <div className="flex h-[calc(100svh-190px)] min-h-[520px] flex-col overflow-hidden rounded-[28px] border border-[#302817]/8 bg-white shadow-[0_10px_40px_rgba(48,40,23,0.06)] sm:h-[calc(100svh-150px)] lg:h-[calc(100vh-120px)]">
@@ -2345,7 +2353,7 @@ export default function CarbonAIPage({ language = 'en' }) {
           {tr ? 'Envanter' : 'Questionnaire'}
         </button>
         <button
-          onClick={() => setActiveTab('chat')}
+          onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
           className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition ${
             activeTab === 'chat'
               ? 'bg-[#302817] text-white shadow-sm'
@@ -2357,12 +2365,15 @@ export default function CarbonAIPage({ language = 'en' }) {
         </button>
       </div>
 
-      {/* Tab content */}
+      {/* Tab content — both stay mounted once visited so in-progress state is preserved */}
       <div className="flex flex-1 min-h-0 flex-col">
-        {activeTab === 'questionnaire' ? (
+        <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'questionnaire' ? 'hidden' : ''}`}>
           <QuestionnaireTab language={language} />
-        ) : (
-          <FreeChatTab language={language} />
+        </div>
+        {chatMounted && (
+          <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`}>
+            <FreeChatTab language={language} />
+          </div>
         )}
       </div>
     </div>
