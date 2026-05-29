@@ -104,7 +104,8 @@ class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def emission_summary(request):
     """Get emission summary for a given year, enriched with questionnaire profile"""
-    year = request.query_params.get('year', 2026)
+    # Fix #63: was hardcoded to 2026 — use current year as the dynamic default
+    year = request.query_params.get('year', datetime.now().year)
     company = get_current_company(request.user)
     entries = EmissionEntry.objects.filter(company=company, year=year) if company else EmissionEntry.objects.none()
 
@@ -243,7 +244,7 @@ def countries_view(request):
 @permission_classes([IsAuthenticated])
 def generate_report_view(request):
     """Generate ISO 14064-1 PDF report"""
-    year = int(request.query_params.get('year', 2026))
+    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
     lang = request.query_params.get('lang', 'tr')
 
     try:
@@ -307,8 +308,10 @@ def bulk_import_view(request):
 @permission_classes([IsAuthenticated])
 def comparison_view(request):
     """Compare emissions between two years."""
-    year1 = int(request.query_params.get('year1', 2025))
-    year2 = int(request.query_params.get('year2', 2026))
+    # Fix #63: use dynamic current year instead of hardcoded 2026
+    _cur = datetime.now().year
+    year1 = int(request.query_params.get('year1', _cur - 1))
+    year2 = int(request.query_params.get('year2', _cur))
 
     # Fix #37: Resolve company once — the old closure called get_current_company()
     # on every get_year_data() invocation (twice per request = 2 membership queries).
@@ -344,7 +347,7 @@ import csv
 @permission_classes([IsAuthenticated])
 def export_csv_view(request):
     """Export emission entries as CSV"""
-    year = int(request.query_params.get('year', 2026))
+    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
     company = get_current_company(request.user)
     # Fix #56: Added 'facility' to select_related \u2014 the old query only joined
     # emission_factor.  Writing e.facility in the loop (a ForeignKey) triggered
@@ -432,7 +435,15 @@ def api_docs_view(request):
 def export_all_view(request):
     """Export all user data as JSON (backup)"""
     company = get_current_company(request.user)
-    entries = EmissionEntry.objects.filter(company=company).select_related('emission_factor') if company else EmissionEntry.objects.none()
+    # Fix #65: EmissionEntrySerializer now includes facility_name (source='facility.name').
+    # Without 'facility' in select_related, every entry that has a facility FK triggers
+    # an extra SQL query inside the serializer — classic N+1.
+    entries = (
+        EmissionEntry.objects
+        .filter(company=company)
+        .select_related('emission_factor', 'facility')
+        if company else EmissionEntry.objects.none()
+    )
     targets = ReductionTarget.objects.filter(company=company) if company else ReductionTarget.objects.none()
     custom = CustomEmissionRequest.objects.filter(company=company) if company else CustomEmissionRequest.objects.none()
 
@@ -499,7 +510,7 @@ def by_facility_view(request):
     if not company:
         return Response([])
 
-    year = int(request.query_params.get('year', 2026))
+    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
     data = (
         EmissionEntry.objects
         .filter(company=company, year=year, facility__isnull=False)
@@ -535,7 +546,7 @@ def pending_entries_view(request):
 def export_excel_view(request):
     """Export emission entries as Excel (xlsx)"""
     from openpyxl import Workbook
-    year = int(request.query_params.get('year', 2026))
+    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
     company = get_current_company(request.user)
     # Fix #59: Added 'facility' to select_related — same N+1 pattern as Bug #56
     # (export_csv_view). Only emission_factor was pre-fetched; accessing e.facility

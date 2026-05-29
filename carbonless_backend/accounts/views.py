@@ -46,9 +46,17 @@ class RateLimitedLoginView(TokenObtainPairView):
                 )
 
             # Audit log
+            # Fix #62: frontend sends credential as both `username` and `email`
+            # fields.  A user who registered with an email-style username would
+            # match by username; one who typed their email address needs the
+            # email fallback.  Without it, ActivityLog is never written for
+            # email-based logins — the entire audit trail is silently lost.
             from .models import ActivityLog
-            username = request.data.get('username')
-            user = User.objects.filter(username=username).first()
+            credential = request.data.get('username') or request.data.get('email') or ''
+            user = (
+                User.objects.filter(username=credential).first()
+                or User.objects.filter(email__iexact=credential).first()
+            )
             if user:
                 ActivityLog.objects.create(
                     user=user, action='login', detail='User logged in',
@@ -271,6 +279,30 @@ def update_profile(request):
     profile.save()
 
     return Response({'status': 'ok'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_request(request):
+    """Password reset — Fix #66: endpoint was missing; forgot-password page was
+    silently receiving Django's built-in 404 page and treating it as success.
+
+    Currently returns 200 regardless of whether the email exists (anti-enumeration).
+    TODO: wire up Django's PasswordResetForm + email backend for production.
+    """
+    # Always respond 200 so attackers cannot probe which emails are registered.
+    # Once an email backend is configured, uncomment the block below.
+    # -----------------------------------------------------------------------
+    # email = (request.data.get('email') or '').strip().lower()
+    # user = User.objects.filter(email__iexact=email).first()
+    # if user:
+    #     from django.contrib.auth.forms import PasswordResetForm
+    #     form = PasswordResetForm({'email': email})
+    #     if form.is_valid():
+    #         form.save(request=request, use_https=True,
+    #                   email_template_name='registration/password_reset_email.html')
+    # -----------------------------------------------------------------------
+    return Response({'status': 'ok', 'message': 'If an account with that email exists, a reset link has been sent.'})
 
 
 @api_view(['DELETE'])

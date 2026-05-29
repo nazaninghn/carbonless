@@ -1,5 +1,10 @@
 from django.urls import path
-from .views import RegisterView, UserProfileView, RateLimitedLoginView, CookieTokenRefreshView, notification_list, mark_notifications_read, unread_count, change_password, logout_view, update_profile, delete_account
+from .views import (
+    RegisterView, UserProfileView, RateLimitedLoginView, CookieTokenRefreshView,
+    notification_list, mark_notifications_read, unread_count,
+    change_password, logout_view, update_profile, delete_account,
+    password_reset_request,  # Fix #66
+)
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -13,4 +18,6 @@ urlpatterns = [
     path('notifications/', notification_list, name='notification_list'),
     path('notifications/read/', mark_notifications_read, name='notifications_read'),
     path('notifications/unread-count/', unread_count, name='notifications_unread'),
+    # Fix #66: forgot-password page POSTs here; endpoint was missing → silent failure
+    path('password-reset/', password_reset_request, name='password_reset_request'),
 ]

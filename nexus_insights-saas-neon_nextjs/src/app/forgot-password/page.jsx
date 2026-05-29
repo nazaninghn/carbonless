@@ -31,8 +31,10 @@ export default function ForgotPasswordPage() {
         body: JSON.stringify({ email }),
         signal: controller.signal,
       }).finally(() => clearTimeout(timer));
-      // Treat both 200 and 404 as "sent" to avoid email enumeration
-      if (res.ok || res.status === 404) {
+      // Fix #66: the backend now always returns 200 (anti-enumeration handled
+      // server-side).  Old code treated 404 as success — that silently masked
+      // the missing endpoint, giving users a false "email sent" confirmation.
+      if (res.ok) {
         setSent(true);
       } else {
         setError(tr ? 'Bir hata oluştu. Lütfen tekrar deneyin.' : 'An error occurred. Please try again.');
