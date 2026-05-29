@@ -24,6 +24,11 @@ import {
 const TYPING_DELAY_MS = 900;       // simulated AI "thinking" animation duration
 const CHIP_AUTO_SUBMIT_DELAY_MS = 80; // lets React flush state before sendMessage reads it
 
+// Fix #87: module-level constant mirrors the backend MAX_MESSAGE_LENGTH=4000 so
+// handleKeyDown can reference it without adding `input` to its dependency array,
+// and the char-limit IIFE no longer re-declares it on every render.
+const CHAT_CHAR_LIMIT = 4000;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // City data
 // ─────────────────────────────────────────────────────────────────────────────
@@ -928,11 +933,22 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   // sendHelp don't dispatch state updates after the drawer has been closed.
   const openRef = useRef(open);
   useEffect(() => { openRef.current = open; }, [open]);
+  // Fix #89: isMountedRef guards against state updates after resetFlow() unmounts
+  // the drawer while a sendHelp fetch is still in flight.  openRef guards the
+  // "is the drawer visible" question; isMountedRef guards the "is the component
+  // still mounted" question — both checks are needed.
+  const isMountedRef = useRef(true);
+  useEffect(() => { isMountedRef.current = true; return () => { isMountedRef.current = false; }; }, []);
 
   // Clear conversation when drawer closes so stale messages don't reappear on next open
   useEffect(() => { if (!open) setMessages([]); }, [open]);
 
-  // Pre-fill when opened — skip if a send is already in flight to avoid overwriting the input
+  // Pre-fill when the drawer opens — skip if a send is already in flight.
+  // Fix #88: `currentQuestion` removed from deps so advancing to the next question
+  // while the drawer is open does NOT overwrite text the user has already started
+  // typing.  The pre-fill only fires on a fresh open (open: false → true).
+  // `sending` intentionally omitted — only re-trigger on open/language change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (open && currentQuestion && !sending) {
       const qText = currentQuestion.text?.[lang] || currentQuestion.text?.en || '';
@@ -942,11 +958,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       setInput(pre);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  // Include the full question object (not just .id) so a language switch that
-  // changes question.text while keeping the same id still re-fills the input.
-  // `sending` intentionally omitted — only re-trigger on open/question change, not while sending.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, currentQuestion, lang, tr]);
+  }, [open, lang, tr]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -987,7 +999,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
     try {
       const res = await api.sendChatMessage(helpSessionRef.current, content);
-      if (openRef.current) {
+      // Fix #89: guard with isMountedRef AND openRef so we never setState on an
+      // unmounted component (resetFlow path) or on a closed drawer (onClose path).
+      if (isMountedRef.current && openRef.current) {
         if (res.ok) {
           const aiMsg = await res.json();
           setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
@@ -999,12 +1013,12 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
         }
       }
     } catch {
-      if (openRef.current) setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+      if (isMountedRef.current && openRef.current) setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     } finally {
       // Always reset — even if the drawer was closed mid-flight — so the send
       // button is not permanently stuck in a spinner on the next open.
-      setSending(false);
-      if (openRef.current) inputRef.current?.focus();
+      if (isMountedRef.current) setSending(false);
+      if (isMountedRef.current && openRef.current) inputRef.current?.focus();
     }
   }, [input, sending, tr, helpSessionRef]);
 
@@ -2165,6 +2179,10 @@ function FreeChatTab({ language }) {
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
+      // Fix #86: block Enter when the message is over the character limit — the
+      // send button is already disabled via `charOver`, but the keyboard path
+      // bypassed that check and sent a request that the backend rejects with 400.
+      if (inputValueRef.current.length > CHAT_CHAR_LIMIT) return;
       // Fix #83: when no session is open, Enter should start a new chat (same as
       // the send button's onClick), instead of silently calling sendMessage which
       // immediately returns because sessionId is null. The textarea placeholder
@@ -2316,9 +2334,10 @@ function FreeChatTab({ language }) {
 
         <div className="shrink-0 border-t border-[#302817]/6 px-4 py-3 sm:px-6">
           {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
-              see a warning before they hit a 400 error, not after. */}
+              see a warning before they hit a 400 error, not after.
+              Fix #87: CHAT_CHAR_LIMIT is now a module-level constant (see top of file)
+              so it is not re-declared on every render cycle. */}
           {(() => {
-            const CHAT_CHAR_LIMIT = 4000;
             const charCount = input.length;
             const charOver  = charCount > CHAT_CHAR_LIMIT;
             const charWarn  = charCount >= Math.floor(CHAT_CHAR_LIMIT * 0.8); // 3200+

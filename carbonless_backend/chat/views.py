@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from django.db.models import Count
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -48,7 +48,11 @@ def _get_user_emission_context(user):
         if not company:
             return ''
 
-        year = datetime.now().year
+        # Fix #84: datetime.now() is naïve (no tzinfo) and returns local server time,
+        # which diverges from UTC on non-UTC servers and breaks year boundaries at
+        # midnight.  datetime.now(timezone.utc) is always correct regardless of the
+        # server's TZ setting.
+        year = datetime.now(timezone.utc).year
         entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
         # Fix #71 (query 1 of 2): combined total + count in one aggregate instead of
         # separate aggregate(Sum) + .count() — saves one DB round-trip per AI message.
@@ -241,7 +245,10 @@ def session_detail(request, session_id):
 
     if request.method == 'DELETE':
         session.delete()
-        return Response({'status': 'ok'})
+        # Fix #85: DELETE must return 204 No Content — returning 200 with a JSON body
+        # is non-standard (RFC 9110 §9.3.5) and causes some HTTP clients/caches to
+        # treat the response body as a stale resource representation.
+        return Response(status=204)
 
     return Response(_session_to_dict(session, include_messages=True))
 
