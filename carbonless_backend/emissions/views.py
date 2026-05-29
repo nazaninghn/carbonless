@@ -145,14 +145,20 @@ def emission_summary(request):
         company=company, year=year, status='pending'
     ).count() if company else 0
 
-    # Add custom approved to scope totals
-    for cr in custom_approved:
-        if cr.scope == 'scope1':
-            scope1 += float(cr.calculated_co2e_kg)
-        elif cr.scope == 'scope2':
-            scope2 += float(cr.calculated_co2e_kg)
+    # Fix #38: Replace Python loop (loaded all custom rows into memory) with a
+    # single SQL GROUP BY so the scope breakdown is computed in the database.
+    custom_scope_qs = (
+        custom_approved.values('scope')
+        .annotate(t=Sum('calculated_co2e_kg'))
+    )
+    for row in custom_scope_qs:
+        val = float(row['t'] or 0)
+        if row['scope'] == 'scope1':
+            scope1 += val
+        elif row['scope'] == 'scope2':
+            scope2 += val
         else:
-            scope3 += float(cr.calculated_co2e_kg)
+            scope3 += val
     total += custom_total
 
     return Response({
@@ -190,9 +196,17 @@ def calculate_view(request):
     if activity_data is None:
         return Response({'error': 'activity_data required'}, status=400)
 
-    activity_data = float(activity_data)
+    # Fix #41: Unguarded float()/int() raised ValueError/TypeError on non-numeric
+    # input (e.g. "abc", null) producing an unhandled 500.  Now returns 400.
+    try:
+        activity_data = float(activity_data)
+    except (TypeError, ValueError):
+        return Response({'error': 'activity_data must be a valid number'}, status=400)
     if year is not None:
-        year = int(year)
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            return Response({'error': 'year must be a valid integer'}, status=400)
 
     # Method 1: by factor_id (dashboard form)
     if factor_id:

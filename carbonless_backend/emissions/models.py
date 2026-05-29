@@ -151,6 +151,13 @@ class EmissionEntry(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        # Fix #39: clean() defines file-size and extension validators but Django's
+        # ORM save() never calls it automatically — uploads bypassed all validation.
+        # We call it here so rules are enforced regardless of how the model is saved
+        # (DRF serializer, admin, management command, etc.).
+        if self.proof_document:
+            self.clean()
+
         self.calculated_co2e_kg = self.quantity * self.emission_factor.factor_kg_co2e
         # Snapshot factor on first save
         if not self.factor_value_snapshot:

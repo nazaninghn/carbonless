@@ -50,6 +50,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    # Fix #42: token_blacklist MUST be installed for BLACKLIST_AFTER_ROTATION=True
+    # to have any effect.  Without it, old refresh tokens are never invalidated
+    # after rotation — a stolen refresh token stays valid indefinitely.
+    # Run `python manage.py migrate` after adding this app.
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'accounts',
     'companies',

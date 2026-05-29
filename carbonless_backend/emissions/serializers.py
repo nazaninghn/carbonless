@@ -23,15 +23,23 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmissionEntry
+        # Fix #40: Added status, approved_at, rejected_reason so clients can see
+        # whether an entry is pending/approved/rejected without a separate request.
+        # These fields are read-only — the approval workflow uses approve_entry_view.
         fields = [
             'id', 'emission_factor', 'emission_factor_name',
             'emission_factor_name_tr', 'scope', 'category', 'unit',
             'country', 'year', 'month', 'quantity',
             'calculated_co2e_kg', 'calculated_co2e_tonne',
             'factor_year_used', 'source_dataset',
-            'description', 'facility', 'created_at', 'updated_at'
+            'description', 'facility',
+            'status', 'approved_at', 'rejected_reason',
+            'created_at', 'updated_at',
         ]
-        read_only_fields = ['calculated_co2e_kg', 'created_at', 'updated_at']
+        read_only_fields = [
+            'calculated_co2e_kg', 'status', 'approved_at', 'rejected_reason',
+            'created_at', 'updated_at',
+        ]
 
 
 class ReductionTargetSerializer(serializers.ModelSerializer):

@@ -69,13 +69,20 @@ def _get_user_emission_context(user):
             kg = float(c['total'])
             cat_lines.append(f'  - {scope} / {cat}: {kg/1000:.3f} tCO2e')
 
-        # Monthly breakdown
-        monthly = []
+        # Fix #43: Replace 12 per-month aggregate queries with a single GROUP BY
+        # (same pattern as Bug #33 fixed in emission_summary).
         month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        for m in range(1, 13):
-            kg = float(entries.filter(month=m).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-            if kg > 0:
-                monthly.append(f'  {month_names[m-1]}: {kg/1000:.3f} tCO2e')
+        monthly_qs = (
+            entries.values('month')
+            .annotate(t=Sum('calculated_co2e_kg'))
+            .order_by('month')
+        )
+        monthly_map = {row['month']: float(row['t'] or 0) for row in monthly_qs}
+        monthly = [
+            f'  {month_names[m-1]}: {monthly_map[m]/1000:.3f} tCO2e'
+            for m in range(1, 13)
+            if monthly_map.get(m, 0) > 0
+        ]
 
         lines = [
             '',
