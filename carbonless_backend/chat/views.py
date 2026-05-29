@@ -155,7 +155,10 @@ def _call_groq(messages_history, user_context=''):
     """Call Groq API with conversation history and optional user data context."""
     client = _get_groq_client()
     if not client:
-        return None, 'GROQ_API_KEY not configured'
+        # Fix #97: never expose internal config details (missing API key) to the
+        # client — log server-side only and return a generic message.
+        logger.error('GROQ_API_KEY not set or Groq client failed to initialise')
+        return None, 'AI service not available.'
 
     system_prompt = BASE_SYSTEM_PROMPT + user_context
 
@@ -279,6 +282,13 @@ def send_message(request, session_id):
             {'error': f'Message too long (max {MAX_MESSAGE_LENGTH} characters).'},
             status=400,
         )
+
+    # Fix #102: verify the AI client is available BEFORE writing the user message
+    # to the DB.  Without this check, a missing GROQ_API_KEY would save the user
+    # message and then immediately return 502, leaving an orphaned message in the
+    # session that reappears on every reload with no corresponding AI response.
+    if _get_groq_client() is None:
+        return Response({'error': 'AI service not available.'}, status=503)
 
     # Save user message
     ChatMessage.objects.create(session=session, role='user', content=content)

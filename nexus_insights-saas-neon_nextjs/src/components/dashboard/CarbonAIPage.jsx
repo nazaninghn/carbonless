@@ -712,7 +712,14 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     const fields = question.fields || [];
     const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     const requiredFields = fields.filter(f => f.required !== false);
+    // Fix #100: skip fields whose conditionalOn condition is not met — they are
+    // hidden by CompoundInput and have no value, so they must not block the button.
+    // Previously, a hidden required field could permanently disable Confirm.
     const allRequiredFilled = requiredFields.every(f => {
+      if (f.conditionalOn) {
+        const condVal = compoundVal[f.conditionalOn];
+        if (condVal !== true && condVal !== 'true') return true; // hidden — treat as satisfied
+      }
       const v = compoundVal[f.id];
       return v !== undefined && v !== null && String(v).trim() !== '';
     });
@@ -968,7 +975,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 
   const sendHelp = useCallback(async () => {
     const content = input.trim();
-    if (!content || sending) return;
+    // Fix #99: reject oversized messages — the backend enforces MAX_MESSAGE_LENGTH=4000
+    // and would return a 400, but the drawer has no visible warning for that path.
+    if (!content || sending || input.length > CHAT_CHAR_LIMIT) return;
 
     // Ensure we have a help session — guarded by helpSessionCreatingRef so that
     // two rapid sends (before the first re-render disables the button) don't both
@@ -1083,30 +1092,59 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 
         {/* Input */}
         <div className="shrink-0 border-t border-[#302817]/6 p-3">
-          <div className="flex gap-2 rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-3 py-2 focus-within:border-[#B4BE6A]/40 focus-within:ring-2 focus-within:ring-[#B4BE6A]/15 transition">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendHelp(); } }}
-              onInput={e => {
-                // Fix #70: auto-resize to match content (matches FreeChatTab textarea pattern)
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-              }}
-              rows={2}
-              className="flex-1 resize-none bg-transparent text-[12.5px] text-[#302817] outline-none placeholder:text-[#302817]/30"
-              placeholder={tr ? 'Sorunuzu yazın…' : 'Ask your question…'}
-              style={{ scrollbarWidth: 'none' }}
-            />
-            <button
-              onClick={sendHelp}
-              disabled={!input.trim() || sending}
-              className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#302817] text-white transition hover:bg-black disabled:opacity-30"
-            >
-              {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-            </button>
-          </div>
+          {/* Fix #98+#99: aria-label for accessibility; char limit mirrors backend
+              MAX_MESSAGE_LENGTH so users see a warning instead of a cryptic 400. */}
+          {(() => {
+            const helpCharOver = input.length > CHAT_CHAR_LIMIT;
+            const helpCharWarn = input.length >= Math.floor(CHAT_CHAR_LIMIT * 0.8);
+            return (
+              <>
+                <div className={`flex gap-2 rounded-2xl border bg-[#FAFAF8] px-3 py-2 focus-within:ring-2 transition ${
+                  helpCharOver
+                    ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
+                    : 'border-[#302817]/10 focus-within:border-[#B4BE6A]/40 focus-within:ring-[#B4BE6A]/15'
+                }`}>
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        // Fix #99: block Enter when over char limit (same guard as FreeChatTab)
+                        if (input.length > CHAT_CHAR_LIMIT) return;
+                        sendHelp();
+                      }
+                    }}
+                    onInput={e => {
+                      // Fix #70: auto-resize to match content (matches FreeChatTab textarea pattern)
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                    rows={2}
+                    // Fix #98: aria-label provides accessible name for screen readers
+                    // (placeholder alone disappears once the user starts typing)
+                    aria-label={tr ? 'AI yardım sorusu' : 'AI help question'}
+                    className="flex-1 resize-none bg-transparent text-[12.5px] text-[#302817] outline-none placeholder:text-[#302817]/30"
+                    placeholder={tr ? 'Sorunuzu yazın…' : 'Ask your question…'}
+                    style={{ scrollbarWidth: 'none' }}
+                  />
+                  <button
+                    onClick={sendHelp}
+                    disabled={!input.trim() || sending || helpCharOver}
+                    className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#302817] text-white transition hover:bg-black disabled:opacity-30"
+                  >
+                    {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                  </button>
+                </div>
+                {helpCharWarn && (
+                  <p className={`mt-1 text-right text-[10px] font-semibold tabular-nums ${helpCharOver ? 'text-red-500' : 'text-amber-500'}`}>
+                    {input.length}/{CHAT_CHAR_LIMIT}
+                  </p>
+                )}
+              </>
+            );
+          })()}
           {/* Fix #92: add role="alert" so screen readers announce the error; add
               dismiss button for consistency with the FreeChatTab error banner. */}
           {helpError && (
@@ -2017,6 +2055,14 @@ function FreeChatTab({ language }) {
   const isMountedRef = useRef(true);
   // Prevents concurrent "New chat" calls from creating duplicate sessions
   const creatingSessionRef = useRef(false);
+  // Fix #101: ref mirror of `sending` — lets sendMessage guard against concurrent
+  // sends synchronously (same tick) without adding `sending` to its dep array.
+  // With `sending` in the dep array, sendMessage/startNew/handleKeyDown were all
+  // recreated on every send-start and send-end, causing 3 unnecessary re-memoizations
+  // per round-trip.  The ref guard is also MORE correct than state: it blocks in the
+  // same event-loop tick, eliminating the TOCTOU window where two rapid clicks both
+  // see sending===false before the first re-render.
+  const sendingRef = useRef(false);
   // Tracks per-session in-flight deletes so double-clicks don't send duplicate DELETEs
   const deletingIdsRef = useRef(/** @type {Set<string|number>} */ (new Set()));
   useEffect(() => {
@@ -2102,10 +2148,13 @@ function FreeChatTab({ language }) {
     // recreated on every keystroke, causing unnecessary re-renders.
     const content = (text || inputValueRef.current).trim();
     const sessionId = sid || activeId;
-    if (!content || !sessionId || sending) return;
+    // Fix #101: use sendingRef (synchronous, same-tick) instead of `sending` state
+    // so the guard fires immediately without waiting for a re-render.
+    if (!content || !sessionId || sendingRef.current) return;
 
     setInput('');
     inputValueRef.current = '';
+    sendingRef.current = true;
     setSending(true);
     setError('');
     setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
@@ -2136,12 +2185,14 @@ function FreeChatTab({ language }) {
     } finally {
       // Mirror the sendHelp pattern: always reset sending so the button is never
       // permanently stuck in spinner state if an early return skips this path.
+      // Fix #101: reset sendingRef unconditionally (ref is not tied to mount state).
+      sendingRef.current = false;
       if (isMountedRef.current) {
         setSending(false);
         inputRef.current?.focus();
       }
     }
-  }, [activeId, sending]); // `tr` removed — read via trRef.current; `input` removed — read via inputValueRef.current
+  }, [activeId]); // Fix #101: `sending` removed — read via sendingRef.current; `tr` and `input` also read via refs
 
   const startNew = useCallback(async (initialPrompt = '') => {
     // Prevent concurrent "New chat" clicks from creating duplicate sessions.
