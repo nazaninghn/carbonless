@@ -168,7 +168,24 @@ def change_password(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
-    """Logout — clear HttpOnly cookies"""
+    """Logout — blacklist refresh token and clear HttpOnly cookies.
+
+    Fix #55: Previously only the cookies were deleted, leaving the refresh
+    token valid in the JWT blacklist store for up to 7 days.  A captured
+    refresh token could therefore be used to obtain new access tokens even
+    after the user had logged out.  Now we blacklist it explicitly so the
+    simplejwt blacklist app rejects any future use of that token.
+    """
+    refresh_token = request.COOKIES.get('refresh_token') or request.data.get('refresh')
+    if refresh_token:
+        try:
+            from rest_framework_simplejwt.tokens import RefreshToken
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+        except Exception:
+            # Expired or already blacklisted — still safe to clear the cookies
+            pass
+
     response = Response({'status': 'ok', 'message': 'Logged out'})
     response.delete_cookie('access_token', path='/')
     response.delete_cookie('refresh_token', path='/')
