@@ -6,6 +6,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
 
+# Fix #75: module-level singleton so we don't reconstruct the Groq HTTP client
+# (and its internal connection pool) on every single chat message.
+# Re-initialises automatically if GROQ_API_KEY changes at runtime.
+_groq_client_cache = None
+_groq_client_key_cache = None
+
+# Fix #72: hard cap on user message length sent to the Groq API.
+# Prevents runaway token spend and HTTP 413 errors from the upstream model.
+MAX_MESSAGE_LENGTH = 4000
+
 BASE_SYSTEM_PROMPT = """You are CarbonIQ, an expert AI assistant specialized in carbon accounting,
 greenhouse gas (GHG) reporting, and sustainability. You help companies measure, report, and reduce
 their carbon footprint following ISO 14064-1 standards and GHG Protocol.
@@ -118,14 +128,20 @@ def _get_user_emission_context(user):
 
 
 def _get_groq_client():
+    # Fix #75: reuse the same client instance across requests so the underlying
+    # HTTP connection pool is shared.  Re-creates if the API key changes.
+    global _groq_client_cache, _groq_client_key_cache
     api_key = os.environ.get('GROQ_API_KEY')
     if not api_key:
         return None
-    try:
-        from groq import Groq
-        return Groq(api_key=api_key)
-    except Exception:
-        return None
+    if _groq_client_cache is None or _groq_client_key_cache != api_key:
+        try:
+            from groq import Groq
+            _groq_client_cache = Groq(api_key=api_key)
+            _groq_client_key_cache = api_key
+        except Exception:
+            return None
+    return _groq_client_cache
 
 
 def _call_groq(messages_history, user_context=''):
@@ -141,11 +157,14 @@ def _call_groq(messages_history, user_context=''):
         groq_messages.append({'role': msg['role'], 'content': msg['content']})
 
     try:
+        # Fix #73: 30-second timeout prevents the Django worker thread from blocking
+        # indefinitely when Groq is slow or unreachable.
         response = client.chat.completions.create(
             model='llama-3.3-70b-versatile',
             messages=groq_messages,
             temperature=0.7,
             max_tokens=1500,
+            timeout=30,
         )
         return response.choices[0].message.content, None
     except Exception as e:
@@ -229,6 +248,13 @@ def send_message(request, session_id):
     content = (request.data.get('content') or '').strip()
     if not content:
         return Response({'error': 'content is required'}, status=400)
+    # Fix #72: reject payloads that would blow up the Groq token budget or
+    # trip the upstream 413 / context-length limit.
+    if len(content) > MAX_MESSAGE_LENGTH:
+        return Response(
+            {'error': f'Message too long (max {MAX_MESSAGE_LENGTH} characters).'},
+            status=400,
+        )
 
     # Save user message
     ChatMessage.objects.create(session=session, role='user', content=content)
@@ -242,9 +268,11 @@ def send_message(request, session_id):
         for m in reversed(list(recent))
     ]
 
-    # Auto-title: use first user message (truncated)
+    # Auto-title: use first user message — strip newlines/extra whitespace so
+    # multi-line openers don't embed literal \n characters in the sidebar title.
+    # Fix #74: content[:80].replace('\n',' ') normalises whitespace before storing.
     if session.title == 'New Chat' and len(history) == 1:
-        session.title = content[:80]
+        session.title = ' '.join(content[:80].split()).strip() or 'New Chat'
         session.save(update_fields=['title'])
 
     # Fetch user's real emission data to give AI full context

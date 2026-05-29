@@ -10,6 +10,11 @@ class ChatSession(models.Model):
 
     class Meta:
         ordering = ['-updated_at']
+        indexes = [
+            # Fix #76: covers list_sessions → filter(user=…).order_by('-updated_at')
+            # Without this, every sidebar load is a full-table scan on large deployments.
+            models.Index(fields=['user', '-updated_at'], name='chat_session_user_updated_idx'),
+        ]
 
     def __str__(self):
         return f"{self.user.username} — {self.title}"
@@ -25,6 +30,11 @@ class ChatMessage(models.Model):
 
     class Meta:
         ordering = ['created_at']
+        indexes = [
+            # Fix #76: covers send_message → messages.order_by('-created_at')[:20]
+            # and session_detail → messages.all() (uses ASC ordering, same index reversed).
+            models.Index(fields=['session', '-created_at'], name='chat_msg_session_created_idx'),
+        ]
 
     def __str__(self):
         return f"[{self.role}] {self.content[:60]}"

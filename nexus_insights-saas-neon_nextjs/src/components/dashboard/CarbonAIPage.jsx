@@ -919,6 +919,11 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
   // Monotonically-incrementing counter for stable message keys — avoids the
   // Date.now() collision risk when two messages land in the same millisecond.
   const msgIdRef = useRef(0);
+  // Fix #77: synchronous mutex — prevents two rapid Enter/click events from both
+  // seeing helpSessionRef.current===null and each creating a duplicate session.
+  // React state (sending) only blocks after a re-render; this ref blocks
+  // immediately in the same event-loop tick.
+  const helpSessionCreatingRef = useRef(false);
   // Tracks whether the drawer is currently open so async continuations in
   // sendHelp don't dispatch state updates after the drawer has been closed.
   const openRef = useRef(open);
@@ -953,8 +958,12 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     const content = input.trim();
     if (!content || sending) return;
 
-    // Ensure we have a help session
+    // Ensure we have a help session — guarded by helpSessionCreatingRef so that
+    // two rapid sends (before the first re-render disables the button) don't both
+    // see helpSessionRef.current===null and race to create duplicate sessions.
     if (!helpSessionRef.current) {
+      if (helpSessionCreatingRef.current) return; // already creating — drop the duplicate
+      helpSessionCreatingRef.current = true;
       try {
         const res = await api.createChatSession(tr ? 'Envanter Yardımı' : 'Questionnaire Help');
         if (res.ok) {
@@ -967,6 +976,8 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       } catch {
         setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
         return;
+      } finally {
+        helpSessionCreatingRef.current = false;
       }
     }
 
