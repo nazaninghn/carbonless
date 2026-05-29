@@ -99,7 +99,10 @@ class ActivityLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     def __str__(self):
-        return f"{self.user.username}: {self.action} at {self.created_at}"
+        # Fix #53: user is SET_NULL — accessing .username on None raises
+        # AttributeError in Django admin and any str(log) call after deletion.
+        username = self.user.username if self.user else '(deleted)'
+        return f"{username}: {self.action} at {self.created_at}"
 
     class Meta:
         ordering = ['-created_at']

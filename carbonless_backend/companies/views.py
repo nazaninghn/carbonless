@@ -81,6 +81,22 @@ class CompanyMembershipUpdateView(generics.UpdateAPIView):
             return CompanyMembership.objects.none()
         return CompanyMembership.objects.filter(company=company)
 
+    def perform_update(self, serializer):
+        # Fix #54: Prevent privilege escalation via membership role changes.
+        # Without this guard, any admin can PATCH role='owner' on any membership
+        # — including their own — or demote the actual owner to data_entry.
+        # Rules enforced:
+        #   1. The new role must not be 'owner' (owner is granted only at company creation).
+        #   2. The target membership must not already hold the 'owner' role.
+        new_role = serializer.validated_data.get('role', serializer.instance.role)
+        if new_role == 'owner':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("The 'owner' role cannot be assigned via this endpoint.")
+        if serializer.instance.role == 'owner':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("The owner's membership cannot be modified.")
+        serializer.save()
+
 
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
