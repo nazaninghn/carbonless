@@ -346,7 +346,17 @@ def export_csv_view(request):
     """Export emission entries as CSV"""
     year = int(request.query_params.get('year', 2026))
     company = get_current_company(request.user)
-    entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor') if company else EmissionEntry.objects.none()
+    # Fix #56: Added 'facility' to select_related \u2014 the old query only joined
+    # emission_factor.  Writing e.facility in the loop (a ForeignKey) triggered
+    # one extra SQL query per entry that had a facility set (classic N+1).
+    # Also fixed the CSV value: use e.facility.name (or '') instead of the ORM
+    # object, which printed the ugly __str__ representation.
+    entries = (
+        EmissionEntry.objects
+        .filter(company=company, year=year)
+        .select_related('emission_factor', 'facility')
+        if company else EmissionEntry.objects.none()
+    )
 
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = f'attachment; filename="emissions_{year}.csv"'
@@ -363,7 +373,7 @@ def export_csv_view(request):
             ef.name, ef.scope, ef.category, e.month,
             float(e.quantity), ef.unit, float(ef.factor_kg_co2e),
             float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
-            e.facility, e.description, ef.reference,
+            e.facility.name if e.facility_id else '', e.description, ef.reference,
         ])
 
     return response

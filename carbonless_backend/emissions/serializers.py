@@ -20,24 +20,34 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     calculated_co2e_tonne = serializers.DecimalField(
         max_digits=16, decimal_places=4, read_only=True
     )
+    # Fix #58: facility_name was missing — frontend uses entry.facility_name to
+    # display the facility label in the entries table and cards.  Without this
+    # field, the facility badge was always hidden even when a facility was linked.
+    facility_name = serializers.CharField(
+        source='facility.name', read_only=True, allow_null=True, default=None
+    )
 
     class Meta:
         model = EmissionEntry
         # Fix #40: Added status, approved_at, rejected_reason so clients can see
         # whether an entry is pending/approved/rejected without a separate request.
         # These fields are read-only — the approval workflow uses approve_entry_view.
+        # Fix #57: Added proof_document so the frontend paperclip icon and the
+        # "Upload a proof document" getting-started step work correctly.
         fields = [
             'id', 'emission_factor', 'emission_factor_name',
             'emission_factor_name_tr', 'scope', 'category', 'unit',
             'country', 'year', 'month', 'quantity',
             'calculated_co2e_kg', 'calculated_co2e_tonne',
             'factor_year_used', 'source_dataset',
-            'description', 'facility',
+            'description', 'facility', 'facility_name',
+            'proof_document',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'calculated_co2e_kg', 'status', 'approved_at', 'rejected_reason',
+            'calculated_co2e_kg', 'facility_name', 'proof_document',
+            'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at',
         ]
 
