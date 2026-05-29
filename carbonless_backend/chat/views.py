@@ -315,7 +315,9 @@ def send_message(request, session_id):
     # Call Groq
     ai_text, error = _call_groq(history, user_context)
     if error:
-        return Response({'error': f'AI error: {error}'}, status=502)
+        # Fix #107: _call_groq already returns a user-friendly message; wrapping
+        # it in "AI error: ..." created an awkward double-prefix in the UI.
+        return Response({'error': error}, status=502)
 
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=ai_text)

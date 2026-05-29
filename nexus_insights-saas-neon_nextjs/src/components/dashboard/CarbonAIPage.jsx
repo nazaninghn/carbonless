@@ -252,7 +252,9 @@ function TypingDots() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Free-chat: Bubble
 // ─────────────────────────────────────────────────────────────────────────────
-function Bubble({ role, content }) {
+// Fix #104: memo() prevents re-rendering every bubble in the list when only
+// the latest message or sending state changes at the FreeChatTab level.
+const Bubble = memo(function Bubble({ role, content }) {
   const isUser = role === 'user';
   return (
     <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
@@ -272,18 +274,24 @@ function Bubble({ role, content }) {
       </div>
     </div>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Free-chat: Session list item
 // ─────────────────────────────────────────────────────────────────────────────
-function SessionItem({ session, active, onClick, onDelete, tr }) {
+// Fix #105: memo() avoids re-rendering every session tile when only the active
+// session changes.  The inline `() => setActiveId(s.id)` arrow in the parent
+// previously created a new function reference on every render, defeating memo.
+// The prop is renamed `onSelect` and receives `setActiveId` directly so the
+// stable setter reference is passed through — the tile itself calls
+// `onSelect(session.id)` which is referentially stable.
+const SessionItem = memo(function SessionItem({ session, active, onSelect, onDelete, tr }) {
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={onClick}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
+      onClick={() => onSelect(session.id)}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(session.id); } }}
       className={`group relative w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
         active
           ? 'bg-[#302817]/8 text-[#302817]'
@@ -345,7 +353,9 @@ function EmptyState({ onNew, tr }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: ChatBubble
 // ─────────────────────────────────────────────────────────────────────────────
-function ChatBubble({ msg }) {
+// Fix #106: memo() prevents re-rendering the full message history on every
+// keystroke in the questionnaire input field.
+const ChatBubble = memo(function ChatBubble({ msg }) {
   const base = 'rounded-[22px] px-4 py-3 text-[13.5px] leading-[1.65] max-w-[85%] sm:max-w-[75%]';
   if (msg.role === 'user') {
     return (
@@ -401,7 +411,7 @@ function ChatBubble({ msg }) {
       </div>
     </div>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Chip
@@ -991,10 +1001,15 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
           const sess = await res.json();
           helpSessionRef.current = sess.id;
         } else {
+          // Fix #103: guard state updates — component may have unmounted or drawer
+          // may have been closed while the session-creation request was in-flight.
+          if (!isMountedRef.current || !openRef.current) return;
           setHelpError(tr ? 'Oturum başlatılamadı. Lütfen tekrar deneyin.' : 'Could not start session. Please try again.');
           return;
         }
       } catch {
+        // Fix #103: same guard for the network-error path.
+        if (!isMountedRef.current || !openRef.current) return;
         setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
         return;
       } finally {
@@ -1002,6 +1017,9 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
       }
     }
 
+    // Fix #103: guard before the post-session-creation state batch — component
+    // may have unmounted or drawer closed while createChatSession was awaited.
+    if (!isMountedRef.current || !openRef.current) return;
     setInput('');
     setSending(true);
     setHelpError('');
@@ -2315,7 +2333,7 @@ function FreeChatTab({ language }) {
                 key={s.id}
                 session={s}
                 active={s.id === activeId}
-                onClick={() => setActiveId(s.id)}
+                onSelect={setActiveId}
                 onDelete={deleteSession}
                 tr={tr}
               />
