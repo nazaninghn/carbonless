@@ -11,6 +11,7 @@ import {
   Shield,
   ChevronRight,
 } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
@@ -30,6 +31,9 @@ const TABS = [
 ];
 
 export default function SettingsTab({ language, user, fetchData }) {
+  // Fix #67: use LanguageContext so language change is instant (no reload),
+  // preserving CarbonAIPage questionnaire state across the tab switch.
+  const { changeLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState('profile');
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -220,21 +224,24 @@ export default function SettingsTab({ language, user, fetchData }) {
               <div className="mt-4 border-t border-[#302817]/10 pt-4">
                 <h4 className="mb-2 text-xs font-bold text-[#302817]">{tr ? 'Dil Tercihi' : 'Language Preference'}</h4>
                 <div className="flex gap-2">
+                  {/* Fix #67: use changeLanguage() from LanguageContext instead of
+                      localStorage + window.location.reload(), which was destroying
+                      the CarbonAIPage questionnaire state on every language switch. */}
                   <button
-                    onClick={() => { try { localStorage.setItem('language', 'en'); localStorage.setItem('language_explicit', '1'); window.location.reload(); } catch {} }}
+                    onClick={() => changeLanguage('en')}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇬🇧 English
                   </button>
                   <button
-                    onClick={() => { try { localStorage.setItem('language', 'tr'); localStorage.setItem('language_explicit', '1'); window.location.reload(); } catch {} }}
+                    onClick={() => changeLanguage('tr')}
                     className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇹🇷 Türkçe
                   </button>
                 </div>
                 <p className="mt-2 text-[10px] font-semibold text-[#302817]/35">
-                  {tr ? 'Dil değiştirmek sayfayı yeniden yükler.' : 'Switching language reloads the page.'}
+                  {tr ? 'Dil tercihi anlık olarak uygulanır.' : 'Language preference applies instantly.'}
                 </p>
               </div>
             </Panel>
