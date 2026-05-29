@@ -4,6 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.db.models import Sum
 from django.http import HttpResponse
+from django.utils import timezone
 from datetime import datetime
 from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissionRequest
 from .serializers import (
@@ -278,6 +279,8 @@ def bulk_import_view(request):
     for i, item in enumerate(data):
         try:
             factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
+            # Fix #48: facility is a ForeignKey — passing an empty string raised
+            # ValueError on every row.  Use facility_id and coerce '' / None to None.
             entry = EmissionEntry(
                 user=request.user,
                 company=company,
@@ -286,7 +289,7 @@ def bulk_import_view(request):
                 month=item.get('month', 1),
                 quantity=item['quantity'],
                 description=item.get('description', ''),
-                facility=item.get('facility', ''),
+                facility_id=item.get('facility') or None,
             )
             entry.save()
             created += 1
@@ -426,7 +429,9 @@ def export_all_view(request):
     from emissions.serializers import EmissionEntrySerializer, ReductionTargetSerializer, CustomEmissionRequestSerializer
     return Response({
         'user': request.user.username,
-        'exported_at': str(datetime.now()) if True else '',
+        # Fix #51: Removed dead-code `if True else ''` pattern; use timezone.now()
+        # so the exported_at timestamp is timezone-aware (consistent with USE_TZ=True).
+        'exported_at': str(timezone.now()),
         'entries': EmissionEntrySerializer(entries, many=True).data,
         'targets': ReductionTargetSerializer(targets, many=True).data,
         'custom_requests': CustomEmissionRequestSerializer(custom, many=True).data,
@@ -460,7 +465,10 @@ def approve_entry_view(request, pk):
     if action == 'approve':
         entry.status = 'approved'
         entry.approved_by = request.user
-        entry.approved_at = datetime.now()
+        # Fix #50: django.utils.timezone.now() returns a timezone-aware datetime.
+        # datetime.now() is naive — with USE_TZ=True Django raises RuntimeWarning
+        # and may store an incorrect timestamp.
+        entry.approved_at = timezone.now()
         entry.save()
         return Response({'status': 'approved'})
     elif action == 'reject':

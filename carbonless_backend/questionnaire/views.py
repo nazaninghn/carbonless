@@ -276,7 +276,13 @@ class ReportListView(APIView):
     def get(self, request):
         from companies.utils import get_current_company
         company = get_current_company(request.user)
-        reports = CarbonReport.objects.filter(created_by=request.user).select_related('company')
+        # Fix #49: company was fetched but never used in the queryset — wasted DB
+        # query AND the filter returned reports from ALL companies the user ever
+        # created reports for.  Now scoped to the active company, matching every
+        # other company-aware view in the codebase.
+        if not company:
+            return Response({'reports': []})
+        reports = CarbonReport.objects.filter(company=company, created_by=request.user).select_related('company')
         data = [{
             'report_id': r.id,
             'company': r.company.legal_entity_name,
