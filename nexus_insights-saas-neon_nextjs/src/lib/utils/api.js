@@ -150,9 +150,12 @@ export const api = {
     try {
       // fetchWithTimeout ensures a hung logout endpoint cannot prevent
       // setToken(null) / clearSessionCookie() / the redirect from running.
+      // Fix #60: credentials:'include' sends the HttpOnly refresh_token cookie so
+      // the backend blacklists it (Fix #55).  Without it the blacklist never fires.
       await fetchWithTimeout('/api/auth/logout', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
+        credentials: 'include',
       });
     } catch {}
     setToken(null);

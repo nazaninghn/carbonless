@@ -224,10 +224,13 @@ def send_message(request, session_id):
     # Save user message
     ChatMessage.objects.create(session=session, role='user', content=content)
 
-    # Build history for Groq
+    # Fix #61: Limit the DB query to the last 20 messages so we never load an
+    # unbounded message history into Python.  _call_groq already slices [-20:]
+    # but that still triggered a full table scan for long sessions.
+    recent = session.messages.order_by('-created_at')[:20]
     history = [
         {'role': m.role, 'content': m.content}
-        for m in session.messages.all()
+        for m in reversed(list(recent))
     ]
 
     # Auto-title: use first user message (truncated)
