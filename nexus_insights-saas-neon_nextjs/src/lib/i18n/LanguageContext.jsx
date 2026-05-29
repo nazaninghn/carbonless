@@ -29,6 +29,13 @@ export function LanguageProvider({ children }) {
     }
   }, []);
 
+  // Fix 24: Keep html[lang] in sync with current language for screen readers.
+  // layout.jsx has lang="en" hardcoded (server render) — this effect updates it
+  // client-side on mount and on every language switch, satisfying WCAG 3.1.1 (Level A).
+  useIsomorphicLayoutEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const changeLanguage = useCallback((lang) => {
     if (lang !== 'tr' && lang !== 'en') return;
     setLanguage(lang);
