@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from django.db.models import Count
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -136,12 +137,20 @@ def _call_groq(messages_history, user_context=''):
 
 
 def _session_to_dict(session, include_messages=False):
+    # Fix #26: list_sessions now annotates message_count directly on the queryset
+    # so we avoid loading every message just to call .count().  For detail views
+    # (include_messages=True) the messages relation is still fetched lazily — that
+    # is fine because session_detail is a single-row lookup and we need the
+    # message bodies anyway.
+    count = getattr(session, 'message_count', None)
+    if count is None:
+        count = session.messages.count()
     data = {
         'id': session.id,
         'title': session.title,
         'created_at': session.created_at,
         'updated_at': session.updated_at,
-        'message_count': session.messages.count(),
+        'message_count': count,
     }
     if include_messages:
         data['messages'] = [
@@ -155,7 +164,15 @@ def _session_to_dict(session, include_messages=False):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_sessions(request):
-    sessions = ChatSession.objects.filter(user=request.user).prefetch_related('messages')
+    # Fix #26: annotate() computes the count in a single SQL query instead of
+    # issuing a separate COUNT(*) per session via prefetch_related('messages').
+    # The old prefetch loaded *all* message rows into Python just for .count().
+    sessions = (
+        ChatSession.objects
+        .filter(user=request.user)
+        .annotate(message_count=Count('messages'))
+        .order_by('-updated_at')
+    )
     return Response([_session_to_dict(s) for s in sessions])
 
 

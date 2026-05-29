@@ -232,21 +232,26 @@ def update_profile(request):
         user.last_name = request.data['last_name']
     user.save()
 
+    # Fix #29: Replaced bare `except Exception: pass` which silently swallowed
+    # any DB error on profile.save().  Now we only handle the expected case
+    # (UserProfile not yet created) and let real errors surface as 500s so they
+    # appear in logs and Sentry rather than returning a fake 200 OK.
     try:
         profile = user.profile
-        if 'department' in request.data:
-            profile.department = request.data['department']
-        if 'phone' in request.data:
-            profile.phone = request.data['phone']
-        if 'language_preference' in request.data:
-            profile.language_preference = request.data['language_preference']
-        if 'notify_approvals' in request.data:
-            profile.notify_approvals = request.data['notify_approvals']
-        if 'notify_system' in request.data:
-            profile.notify_system = request.data['notify_system']
-        profile.save()
-    except Exception:
-        pass
+    except UserProfile.DoesNotExist:
+        profile = UserProfile.objects.create(user=user, role='data_entry')
+
+    if 'department' in request.data:
+        profile.department = request.data['department']
+    if 'phone' in request.data:
+        profile.phone = request.data['phone']
+    if 'language_preference' in request.data:
+        profile.language_preference = request.data['language_preference']
+    if 'notify_approvals' in request.data:
+        profile.notify_approvals = request.data['notify_approvals']
+    if 'notify_system' in request.data:
+        profile.notify_system = request.data['notify_system']
+    profile.save()
 
     return Response({'status': 'ok'})
 

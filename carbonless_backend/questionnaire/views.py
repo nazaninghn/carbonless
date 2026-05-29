@@ -3,6 +3,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+
+# Fix #28: Keep in sync with the frontend questions.js question count.
+# The previous value (96) was stale — questions.js defines 133 questions.
+# Centralising the constant here makes future updates a one-line change.
+TOTAL_QUESTIONS = 133
 from django.utils import timezone
 from companies.models import CompanyMembership
 from .models import CarbonReport, ReportStep, QuestionnaireSession
@@ -258,8 +263,8 @@ class ReportStatusView(APIView):
             'completed_steps': completed_steps,
             'progress': {
                 'completed': len(completed_steps),
-                'total': 96,  # total questions in the chatbot flow
-                'percent': round(len(completed_steps) / 96 * 100)
+                'total': TOTAL_QUESTIONS,
+                'percent': round(len(completed_steps) / TOTAL_QUESTIONS * 100)
             }
         })
 

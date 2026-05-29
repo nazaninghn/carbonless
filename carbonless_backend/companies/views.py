@@ -99,6 +99,18 @@ def invite_member(request):
     role = request.data.get('role', 'data_entry')
     if not email:
         return Response({'error': 'email required'}, status=400)
+
+    # Fix #27: Validate role — 'owner' must never be assignable via an invite.
+    # Without this check any API caller could POST role='owner' and gain full
+    # control over the company account.  Owner is only granted by perform_create
+    # in CompanyCreateView when the user creates the company.
+    ALLOWED_INVITE_ROLES = {'admin', 'manager', 'data_entry', 'auditor'}
+    if role not in ALLOWED_INVITE_ROLES:
+        return Response(
+            {'error': f"Invalid role '{role}'. Allowed values: {', '.join(sorted(ALLOWED_INVITE_ROLES))}"},
+            status=400,
+        )
+
     invite, created = CompanyInvite.objects.get_or_create(
         company=company, email=email.strip().lower(),
         defaults={'role': role, 'invited_by': request.user}

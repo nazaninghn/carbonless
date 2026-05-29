@@ -78,9 +78,18 @@ class ActivityLog(models.Model):
         ('report_generated', 'Report Generated'),
         ('password_changed', 'Password Changed'),
         ('login', 'Login'),
+        # Fix #25: 'account_deleted' was used in delete_account view but missing from choices
+        ('account_deleted', 'Account Deleted'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activity_logs')
+    # Fix #25: SET_NULL so audit logs survive user deletion.
+    # CASCADE was silently deleting the entire audit trail the moment user.delete()
+    # was called — the log entry created just before the delete was wiped too.
+    user = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='activity_logs',
+    )
     action = models.CharField(max_length=30, choices=ACTION_CHOICES, db_index=True)
     detail = models.TextField(blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
