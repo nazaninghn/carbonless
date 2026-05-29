@@ -188,9 +188,15 @@ def _session_to_dict(session, include_messages=False):
         'message_count': count,
     }
     if include_messages:
+        # Fix #80: cap at the 100 most-recent messages — loading every message in a
+        # long session would send a huge JSON blob and make the browser render
+        # hundreds of Bubble/Markdown components at once, freezing the UI.
+        # Fetch DESC so the DB index is used, then reverse for chronological display.
+        msgs = list(session.messages.order_by('-created_at')[:100])
+        msgs.reverse()
         data['messages'] = [
             {'id': m.id, 'role': m.role, 'content': m.content, 'created_at': m.created_at}
-            for m in session.messages.all()
+            for m in msgs
         ]
     return data
 
@@ -202,11 +208,13 @@ def list_sessions(request):
     # Fix #26: annotate() computes the count in a single SQL query instead of
     # issuing a separate COUNT(*) per session via prefetch_related('messages').
     # The old prefetch loaded *all* message rows into Python just for .count().
+    # Fix #78: cap at the 50 most-recent sessions — returning every session a
+    # user ever created would cause unbounded memory use and a bloated sidebar.
     sessions = (
         ChatSession.objects
         .filter(user=request.user)
         .annotate(message_count=Count('messages'))
-        .order_by('-updated_at')
+        .order_by('-updated_at')[:50]
     )
     return Response([_session_to_dict(s) for s in sessions])
 
@@ -215,7 +223,9 @@ def list_sessions(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_session(request):
-    title = request.data.get('title', 'New Chat')
+    # Fix #79: strip + truncate to model max_length (200) so an overlong client
+    # payload doesn't hit the DB and raise an unhandled DataError → 500.
+    title = (request.data.get('title') or 'New Chat').strip()[:200] or 'New Chat'
     session = ChatSession.objects.create(user=request.user, title=title)
     return Response(_session_to_dict(session), status=201)
 

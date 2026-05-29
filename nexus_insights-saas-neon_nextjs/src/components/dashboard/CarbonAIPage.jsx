@@ -2163,8 +2163,16 @@ function FreeChatTab({ language }) {
   }, [activeId]); // `tr` removed — read via trRef.current
 
   const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-  }, [sendMessage]);
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      // Fix #83: when no session is open, Enter should start a new chat (same as
+      // the send button's onClick), instead of silently calling sendMessage which
+      // immediately returns because sessionId is null. The textarea placeholder
+      // now also hints at this behaviour ("Press Enter… to start chatting").
+      if (!activeId) startNew(inputValueRef.current);
+      else sendMessage();
+    }
+  }, [activeId, sendMessage, startNew]);
 
   const activeSession = useMemo(() => sessions.find(s => s.id === activeId), [sessions, activeId]);
 
@@ -2259,9 +2267,17 @@ function FreeChatTab({ language }) {
         </header>
 
         {/* Error banner — shown at all times (session load, message load, send errors) */}
+        {/* Fix #81: added dismiss × so users aren't stuck staring at a stale error. */}
         {error && (
-          <div role="alert" aria-live="assertive" className="shrink-0 mx-4 mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
-            {error}
+          <div role="alert" aria-live="assertive" className="shrink-0 mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
+            <span className="flex-1">{error}</span>
+            <button
+              onClick={() => setError('')}
+              aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'}
+              className="shrink-0 text-red-400 transition hover:text-red-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
         )}
 
@@ -2299,44 +2315,67 @@ function FreeChatTab({ language }) {
         </div>
 
         <div className="shrink-0 border-t border-[#302817]/6 px-4 py-3 sm:px-6">
-          <div className="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-[22px] border border-[#302817]/10 bg-white px-4 py-3 shadow-[0_4px_20px_rgba(48,40,23,0.05)] focus-within:border-[#B4BE6A]/50 focus-within:ring-4 focus-within:ring-[#B4BE6A]/12 transition">
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
-              onKeyDown={handleKeyDown}
-              disabled={!activeId && !sending}
-              placeholder={
-                !activeId
-                  ? (tr ? 'Yeni sohbet başlatmak için tıklayın ↑' : 'Click "New" to start chatting')
-                  : (tr ? 'Mesajınızı yazın… (Enter gönderir)' : 'Type a message… (Enter to send)')
-              }
-              rows={1}
-              className="min-h-[24px] max-h-[120px] flex-1 resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30 disabled:cursor-not-allowed"
-              style={{ scrollbarWidth: 'none' }}
-              onInput={e => {
-                e.target.style.height = 'auto';
-                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-              }}
-            />
-            <button
-              onClick={() => {
-                if (!activeId) startNew(input);
-                else sendMessage();
-              }}
-              disabled={!input.trim() || sending || creatingSession}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              {/* Fix #68: also disable + spin during session creation (creatingSession),
-                  not just while AI is replying (sending). Matches sidebar/header buttons. */}
-              {(sending || creatingSession)
-                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                : <Send className="h-3.5 w-3.5" />}
-            </button>
-          </div>
-          <p className="mt-2 text-center text-[10px] text-[#302817]/25">
-            {tr ? 'CarbonIQ yanılabilir. Önemli kararlar için uzmanla doğrulayın.' : 'CarbonIQ may make errors. Verify critical decisions with an expert.'}
-          </p>
+          {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
+              see a warning before they hit a 400 error, not after. */}
+          {(() => {
+            const CHAT_CHAR_LIMIT = 4000;
+            const charCount = input.length;
+            const charOver  = charCount > CHAT_CHAR_LIMIT;
+            const charWarn  = charCount >= Math.floor(CHAT_CHAR_LIMIT * 0.8); // 3200+
+            return (
+              <>
+                <div className={`mx-auto flex w-full max-w-3xl items-end gap-2 rounded-[22px] border bg-white px-4 py-3 shadow-[0_4px_20px_rgba(48,40,23,0.05)] focus-within:ring-4 transition ${
+                  charOver
+                    ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
+                    : 'border-[#302817]/10 focus-within:border-[#B4BE6A]/50 focus-within:ring-[#B4BE6A]/12'
+                }`}>
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
+                    onKeyDown={handleKeyDown}
+                    disabled={!activeId && !sending}
+                    placeholder={
+                      !activeId
+                        ? (tr ? 'Yeni sohbet başlatmak için Enter\'a basın' : 'Press Enter or click ↑ to start chatting')
+                        : (tr ? 'Mesajınızı yazın… (Enter gönderir)' : 'Type a message… (Enter to send)')
+                    }
+                    rows={1}
+                    className="min-h-[24px] max-h-[120px] flex-1 resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30 disabled:cursor-not-allowed"
+                    style={{ scrollbarWidth: 'none' }}
+                    onInput={e => {
+                      e.target.style.height = 'auto';
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      if (!activeId) startNew(input);
+                      else sendMessage();
+                    }}
+                    disabled={!input.trim() || sending || creatingSession || charOver}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    {/* Fix #68: also disable + spin during session creation (creatingSession),
+                        not just while AI is replying (sending). Matches sidebar/header buttons. */}
+                    {(sending || creatingSession)
+                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      : <Send className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
+                <div className="mt-1.5 mx-auto flex w-full max-w-3xl items-center justify-between px-1">
+                  <p className="text-[10px] text-[#302817]/25">
+                    {tr ? 'CarbonIQ yanılabilir. Önemli kararlar için uzmanla doğrulayın.' : 'CarbonIQ may make errors. Verify critical decisions with an expert.'}
+                  </p>
+                  {charWarn && (
+                    <span className={`text-[10px] font-semibold tabular-nums ${charOver ? 'text-red-500' : 'text-amber-500'}`}>
+                      {charCount}/{CHAT_CHAR_LIMIT}
+                    </span>
+                  )}
+                </div>
+              </>
+            );
+          })()}
         </div>
       </div>
     </div>
