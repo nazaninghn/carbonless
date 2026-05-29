@@ -83,19 +83,45 @@ class CompanyMembership(models.Model):
 
 
 import uuid
+from django.utils import timezone
+import datetime
 
 class CompanyInvite(models.Model):
     """Invite a user to join a company"""
+    INVITE_TTL_DAYS = 7  # invites expire after 7 days
+
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='invites')
     email = models.EmailField()
     role = models.CharField(max_length=20, choices=CompanyMembership.ROLE_CHOICES, default='data_entry')
     token = models.UUIDField(default=uuid.uuid4, unique=True)
-    invited_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    # Fix #31: SET_NULL so invite tokens in recipients' inboxes don't become
+    # "Invalid invite" after the inviting user deletes their account.
+    invited_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='sent_invites',
+    )
     accepted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    # Fix #30: Invites now expire after INVITE_TTL_DAYS days.
+    # Defaulting to None allows existing rows to keep working without a forced
+    # migration value — accept_invite treats None as "no expiry" for back-compat.
+    expires_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ('company', 'email')
+
+    def save(self, *args, **kwargs):
+        # Auto-set expiry on first save (new invites only)
+        if not self.pk and self.expires_at is None:
+            self.expires_at = timezone.now() + datetime.timedelta(days=self.INVITE_TTL_DAYS)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        if self.expires_at is None:
+            return False  # legacy rows without expiry — treated as still valid
+        return timezone.now() > self.expires_at
 
     def __str__(self):
         return f"Invite {self.email} to {self.company} as {self.role}"

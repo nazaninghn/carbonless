@@ -126,7 +126,12 @@ def accept_invite(request):
     try:
         invite = CompanyInvite.objects.get(token=token, accepted=False)
     except CompanyInvite.DoesNotExist:
-        return Response({'error': 'Invalid or expired invite'}, status=404)
+        return Response({'error': 'Invalid or already used invite'}, status=404)
+
+    # Fix #30: Reject expired invites (is_expired handles legacy None rows safely)
+    if invite.is_expired:
+        return Response({'error': 'This invite has expired. Please request a new one.'}, status=410)
+
     CompanyMembership.objects.get_or_create(
         company=invite.company, user=request.user,
         defaults={'role': invite.role, 'invited_by': invite.invited_by}

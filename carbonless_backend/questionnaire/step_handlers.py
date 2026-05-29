@@ -469,12 +469,15 @@ def handle_D3(report, data):
         'financial_control': 'Financial Control',
         'equity_share': 'Equity Share',
     }
+    # Fix #35: Use .get() instead of direct key lookup — serializer validation
+    # should already reject unknown values, but a direct labels[approach] raises
+    # KeyError for any unexpected value that slips through.
     return {
         'next_step': 'D4',
         'message': f"Boundary: {approach}",
         'warnings': [],
         'bot_messages': [
-            f"✅ Boundary approach: **{labels[approach]}**.",
+            f"✅ Boundary approach: **{labels.get(approach, approach)}**.",
             "How would you like to determine the scope of your Scope 3 reporting?\n\n"
             "Options: **materiality** *(recommended — faster)* / **full** *(all 15 categories)*"
         ]

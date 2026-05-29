@@ -112,10 +112,15 @@ def emission_summary(request):
     scope2 = float(entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     scope3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
 
-    monthly = []
-    for m in range(1, 13):
-        month_total = entries.filter(month=m).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
-        monthly.append({'month': m, 'total_kg': float(month_total)})
+    # Fix #33: Replace 12 sequential per-month aggregate queries with a single
+    # GROUP BY — one SQL query instead of twelve.
+    monthly_qs = (
+        entries.values('month')
+        .annotate(t=Sum('calculated_co2e_kg'))
+        .order_by('month')
+    )
+    monthly_map = {row['month']: float(row['t'] or 0) for row in monthly_qs}
+    monthly = [{'month': m, 'total_kg': monthly_map.get(m, 0.0)} for m in range(1, 13)]
 
     categories = entries.values('emission_factor__category').annotate(
         total_kg=Sum('calculated_co2e_kg')
@@ -249,6 +254,11 @@ def bulk_import_view(request):
     if not isinstance(data, list):
         return Response({'error': 'Expected a list of entries'}, status=400)
 
+    # Fix #36: Resolve company once outside the loop.
+    # The old code called get_current_company(request.user) on every iteration —
+    # that's N membership DB queries for N imported rows.
+    company = get_current_company(request.user)
+
     created = 0
     errors = []
     for i, item in enumerate(data):
@@ -256,7 +266,7 @@ def bulk_import_view(request):
             factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
             entry = EmissionEntry(
                 user=request.user,
-                company=get_current_company(request.user),
+                company=company,
                 emission_factor=factor,
                 year=item.get('year', 2026),
                 month=item.get('month', 1),
@@ -283,8 +293,12 @@ def comparison_view(request):
     year1 = int(request.query_params.get('year1', 2025))
     year2 = int(request.query_params.get('year2', 2026))
 
+    # Fix #37: Resolve company once — the old closure called get_current_company()
+    # on every get_year_data() invocation (twice per request = 2 membership queries).
+    _company = get_current_company(request.user)
+
     def get_year_data(y):
-        company = get_current_company(request.user)
+        company = _company
         qs = EmissionEntry.objects.filter(company=company, year=y) if company else EmissionEntry.objects.none()
         total = qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s1 = qs.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
@@ -413,6 +427,15 @@ def approve_entry_view(request, pk):
     company = get_current_company(request.user)
     if not company:
         return Response({'error': 'No company'}, status=403)
+
+    # Fix #34: Enforce manager/admin role — previously any company member
+    # (including data_entry and auditor) could approve entries via this endpoint.
+    APPROVER_ROLES = {'owner', 'admin', 'manager'}
+    membership = request.user.company_memberships.filter(
+        company=company, is_active=True
+    ).first()
+    if not membership or membership.role not in APPROVER_ROLES:
+        return Response({'error': 'Only managers and admins can approve entries'}, status=403)
 
     try:
         entry = EmissionEntry.objects.get(pk=pk, company=company)
