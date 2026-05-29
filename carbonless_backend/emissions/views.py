@@ -537,7 +537,17 @@ def export_excel_view(request):
     from openpyxl import Workbook
     year = int(request.query_params.get('year', 2026))
     company = get_current_company(request.user)
-    entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor') if company else EmissionEntry.objects.none()
+    # Fix #59: Added 'facility' to select_related — same N+1 pattern as Bug #56
+    # (export_csv_view). Only emission_factor was pre-fetched; accessing e.facility
+    # inside the loop fired one extra SQL query per entry that had a facility set.
+    # Also replaced str(e.facility) (Django __str__) with e.facility.name so the
+    # Excel cell contains the plain facility name, consistent with the CSV export.
+    entries = (
+        EmissionEntry.objects
+        .filter(company=company, year=year)
+        .select_related('emission_factor', 'facility')
+        if company else EmissionEntry.objects.none()
+    )
 
     wb = Workbook()
     ws = wb.active
@@ -548,7 +558,7 @@ def export_excel_view(request):
         ef = e.emission_factor
         ws.append([ef.name, ef.scope, ef.category, e.month, float(e.quantity), ef.unit,
                    float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg)/1000,
-                   str(e.facility) if e.facility else '', e.description])
+                   e.facility.name if e.facility_id else '', e.description])
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="emissions_{year}.xlsx"'
