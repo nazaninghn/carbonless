@@ -40,21 +40,30 @@ def _get_user_emission_context(user):
 
         year = datetime.now().year
         entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
-        total_kg = float(entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        # Fix #71 (query 1 of 2): combined total + count in one aggregate instead of
+        # separate aggregate(Sum) + .count() — saves one DB round-trip per AI message.
+        agg = entries.aggregate(t=Sum('calculated_co2e_kg'), count=Count('id'))
+        total_kg = float(agg['t'] or 0)
+        entry_count = agg['count'] or 0
 
         if total_kg == 0:
             # Try previous year
             year -= 1
             entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
-            total_kg = float(entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+            agg = entries.aggregate(t=Sum('calculated_co2e_kg'), count=Count('id'))
+            total_kg = float(agg['t'] or 0)
+            entry_count = agg['count'] or 0
 
         if total_kg == 0:
             return f'\n\nDATA CONTEXT:\nCompany: {company.legal_entity_name}\nNo emission entries recorded yet.'
 
-        s1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-        s2 = float(entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-        s3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-        entry_count = entries.count()
+        # Fix #71 (query 2 of 2): single GROUP BY for all three scope totals instead of
+        # three separate aggregate() calls (scope1, scope2, scope3 → was 3 queries, now 1).
+        scope_agg = entries.values('emission_factor__scope').annotate(t=Sum('calculated_co2e_kg'))
+        scope_map = {row['emission_factor__scope']: float(row['t'] or 0) for row in scope_agg}
+        s1 = scope_map.get('scope1', 0.0)
+        s2 = scope_map.get('scope2', 0.0)
+        s3 = scope_map.get('scope3', 0.0)
 
         # Category breakdown
         cats = (

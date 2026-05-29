@@ -238,8 +238,6 @@ export const api = {
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   listReports: () => request('/questionnaire/'),
 
-  aiChat: (data) => request('/questionnaire/ai/chat/', { method: 'POST', body: JSON.stringify(data) }),
-
   // Chat sessions
   getChatSessions: () => request('/chat/sessions/'),
   createChatSession: (title = 'New Chat') => request('/chat/sessions/new/', { method: 'POST', body: JSON.stringify({ title }) }),

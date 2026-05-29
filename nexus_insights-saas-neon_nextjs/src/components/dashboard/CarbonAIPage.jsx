@@ -1064,6 +1064,11 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendHelp(); } }}
+              onInput={e => {
+                // Fix #70: auto-resize to match content (matches FreeChatTab textarea pattern)
+                e.target.style.height = 'auto';
+                e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+              }}
               rows={2}
               className="flex-1 resize-none bg-transparent text-[12.5px] text-[#302817] outline-none placeholder:text-[#302817]/30"
               placeholder={tr ? 'Sorunuzu yazın…' : 'Ask your question…'}
@@ -2020,6 +2025,7 @@ function FreeChatTab({ language }) {
     // re-triggering a fetch on every TR↔EN switch (same pattern as loadSessions).
     if (!activeId) { setMessages([]); return; }
     let cancelled = false;
+    setError('');          // Fix #69: clear stale error from previous session
     setLoadingMessages(true);
     (async () => {
       try {
@@ -2307,10 +2313,12 @@ function FreeChatTab({ language }) {
                 if (!activeId) startNew(input);
                 else sendMessage();
               }}
-              disabled={!input.trim() || sending}
+              disabled={!input.trim() || sending || creatingSession}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              {sending
+              {/* Fix #68: also disable + spin during session creation (creatingSession),
+                  not just while AI is replying (sending). Matches sidebar/header buttons. */}
+              {(sending || creatingSession)
                 ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 : <Send className="h-3.5 w-3.5" />}
             </button>
