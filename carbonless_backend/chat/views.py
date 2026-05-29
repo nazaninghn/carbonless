@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timezone
 from django.db.models import Count
@@ -5,6 +6,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
+
+logger = logging.getLogger(__name__)
 
 # Fix #75: module-level singleton so we don't reconstruct the Groq HTTP client
 # (and its internal connection pool) on every single chat message.
@@ -172,7 +175,11 @@ def _call_groq(messages_history, user_context=''):
         )
         return response.choices[0].message.content, None
     except Exception as e:
-        return None, str(e)
+        # Fix #96: log the raw exception server-side for debugging, but return a
+        # generic string to the caller so internal details (SDK error messages,
+        # rate-limit headers, potential stack info) are never sent to the browser.
+        logger.error('Groq API error: %s', e, exc_info=True)
+        return None, 'AI service temporarily unavailable. Please try again.'
 
 
 def _session_to_dict(session, include_messages=False):

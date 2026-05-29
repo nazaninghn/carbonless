@@ -1107,8 +1107,23 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
               {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
             </button>
           </div>
+          {/* Fix #92: add role="alert" so screen readers announce the error; add
+              dismiss button for consistency with the FreeChatTab error banner. */}
           {helpError && (
-            <p className="mt-1.5 text-[11px] font-semibold text-red-500">{helpError}</p>
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mt-1.5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5"
+            >
+              <span className="flex-1 text-[11px] font-semibold text-red-500">{helpError}</span>
+              <button
+                onClick={() => setHelpError('')}
+                aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'}
+                className="shrink-0 text-red-400 transition hover:text-red-600"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -2012,13 +2027,18 @@ function FreeChatTab({ language }) {
     };
   }, []);
 
+  // Fix #93: mirror the QuestionnaireTab scroll pattern — null the ref inside
+  // the callback (so stale non-null is never left after it fires), check
+  // isMountedRef before calling scrollTo, and null in cleanup (was just clearing
+  // without nulling, leaving a dangling non-null value in the ref).
   useEffect(() => {
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollTimerRef.current = setTimeout(() => {
-      if (scrollRef.current)
-        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      scrollTimerRef.current = null;
+      if (!isMountedRef.current || !scrollRef.current) return;
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, 50);
-    return () => { if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current); };
+    return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
   }, [messages, sending]);
 
   useEffect(() => {
@@ -2167,11 +2187,16 @@ function FreeChatTab({ language }) {
         setError(trRef.current ? 'Sohbet silinemedi.' : 'Failed to delete chat.');
         return;
       }
+      // Fix #90: guard all state updates with isMountedRef — the user could navigate
+      // away while the DELETE is in-flight, causing "Can't perform a React state update
+      // on an unmounted component" warnings without this check.
+      if (!isMountedRef.current) return;
       setSessions(prev => prev.filter(s => s.id !== id));
       if (activeId === id) { setActiveId(null); setMessages([]); }
     } catch {
       if (isMountedRef.current) setError(trRef.current ? 'Sohbet silinemedi. Lütfen tekrar deneyin.' : 'Failed to delete chat. Please try again.');
     } finally {
+      // Always clean up the in-flight guard regardless of mount state
       deletingIdsRef.current.delete(id);
     }
   }, [activeId]); // `tr` removed — read via trRef.current
@@ -2353,7 +2378,11 @@ function FreeChatTab({ language }) {
                     value={input}
                     onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
                     onKeyDown={handleKeyDown}
-                    disabled={!activeId && !sending}
+                    // Fix #91: was `disabled={!activeId && !sending}` which prevented typing
+                    // before a session existed, making the "Press Enter to start chatting"
+                    // placeholder a lie — users could not type a custom first message.
+                    // Now only locked during active network operations (sending / creatingSession).
+                    disabled={sending || creatingSession}
                     placeholder={
                       !activeId
                         ? (tr ? 'Yeni sohbet başlatmak için Enter\'a basın' : 'Press Enter or click ↑ to start chatting')
