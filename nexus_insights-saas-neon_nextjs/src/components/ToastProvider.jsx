@@ -129,7 +129,13 @@ function Toast({ id, type, message, duration, onDismiss }) {
           className="h-full rounded-full"
           style={{
             backgroundColor: bar,
-            animation: paused ? 'none' : `toastProg ${duration}ms linear forwards`,
+            // animationPlayState pauses the bar in-place on hover so it resumes from
+            // the same position when the mouse leaves. The previous approach toggled
+            // animation between 'none' and the full keyframe string, which caused the
+            // bar to restart from 0% every time the user un-hovered — a visual glitch
+            // where the bar appeared full again even though dismiss was imminent.
+            animation: `toastProg ${duration}ms linear forwards`,
+            animationPlayState: paused ? 'paused' : 'running',
           }}
         />
       </div>

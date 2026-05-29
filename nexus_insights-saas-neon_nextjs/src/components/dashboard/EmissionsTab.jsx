@@ -231,6 +231,18 @@ export default function EmissionsTab({
     [filtered],
   );
 
+  // Month pill counts — single O(n) pass over entries.
+  // Previously 12 inline .filter() calls inside render (one per month pill), which ran
+  // entries.length × 12 comparisons on every render including every search keystroke.
+  const monthCountMap = useMemo(() => {
+    const map = {};
+    for (const e of entries) {
+      const m = parseInt(e.month);
+      if (m >= 1 && m <= 12) map[m] = (map[m] || 0) + 1;
+    }
+    return map;
+  }, [entries]);
+
   // KPI counts + kg totals — single O(n) pass replaces 6 separate filter/reduce calls
   const countAll = entries.length;
   const { countS1, countS2, countS3, s1kg, s2kg, s3kg, totKg } = useMemo(() => {
@@ -527,7 +539,7 @@ export default function EmissionsTab({
           </button>
           {months.map((m, i) => {
             const mo = i + 1;
-            const count = entries.filter(e => parseInt(e.month) === mo).length;
+            const count = monthCountMap[mo] || 0;
             if (count === 0) return null;
             return (
               <button
