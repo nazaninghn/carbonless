@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import OnboardingTour from '@/components/OnboardingTour';
@@ -37,6 +37,14 @@ export default function DashboardPage() {
   // Add Entry form (showAddForm shared with DashboardOverview)
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('turkey');
+
+  // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
+  // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
+  // visibility is controlled via CSS hidden — identical to the inner-tab fix (#44).
+  const [aiCarbonMounted, setAiCarbonMounted] = useState(false);
+  useEffect(() => {
+    if (activeTab === 'ai_carbon') setAiCarbonMounted(true);
+  }, [activeTab]);
 
   const handleLogout = useCallback(() => {
     api.logout();
@@ -151,11 +159,15 @@ export default function DashboardPage() {
           )}
 
           {/* ===== AI CARBON TAB ===== */}
-          {activeTab === 'ai_carbon' && (
-            <ErrorBoundary language={language}>
-              <CarbonAIPage language={language} />
-            </ErrorBoundary>
-          )}
+          {/* Fix #46: always-mounted once visited; CSS hidden keeps questionnaire
+              state alive across outer dashboard tab switches. */}
+          <div className={activeTab !== 'ai_carbon' ? 'hidden' : ''}>
+            {aiCarbonMounted && (
+              <ErrorBoundary language={language}>
+                <CarbonAIPage language={language} />
+              </ErrorBoundary>
+            )}
+          </div>
           </div>
         </main>
       </div>

@@ -111,7 +111,10 @@ def invite_member(request):
             status=400,
         )
 
-    invite, created = CompanyInvite.objects.get_or_create(
+    # Fix #47: update_or_create replaces get_or_create so that re-inviting an
+    # existing unaccepted invite properly refreshes the role and invited_by
+    # fields instead of silently keeping stale values.
+    invite, created = CompanyInvite.objects.update_or_create(
         company=company, email=email.strip().lower(),
         defaults={'role': role, 'invited_by': request.user}
     )
