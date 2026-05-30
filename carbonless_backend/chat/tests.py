@@ -34,7 +34,8 @@ class ChatSessionTests(TestCase):
     def test_delete_session(self):
         session = ChatSession.objects.create(user=self.user, title='Delete Me')
         res = self.client.delete(f'/api/chat/sessions/{session.id}/')
-        self.assertEqual(res.status_code, 200)
+        # Fix #85 changed the DELETE response to 204 No Content (RFC 9110 §9.3.5).
+        self.assertEqual(res.status_code, 204)
         self.assertFalse(ChatSession.objects.filter(id=session.id).exists())
 
     def test_session_isolation(self):

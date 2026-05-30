@@ -311,7 +311,7 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
       </button>
     </div>
   );
-}
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Free-chat: Empty state
