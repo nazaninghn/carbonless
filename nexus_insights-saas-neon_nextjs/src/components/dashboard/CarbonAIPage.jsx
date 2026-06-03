@@ -1687,6 +1687,13 @@ function QuestionnaireTab({ language }) {
       // The welcome message embeds Q1 — treat its length (1) as the "question shown" marker
       // so that goBack() from Q2 correctly slices back to just the welcome message.
       questionMsgLenRef.current = 1;
+      // Explicitly reset answer value and validation error for the effective question.
+      // If the user was already at effectiveId (e.g. navigated away without resetting),
+      // setCurrentId('A3') above is a no-op → useEffect([currentId]) never fires →
+      // stale answerValue and validationError from the previous attempt would persist.
+      // Resetting here guarantees a clean form regardless of whether currentId changed.
+      setAnswerValue(getInitialValue(firstQ));
+      setValidationError('');
       setStarted(true);
     } catch {
       if (!isMounted.current) return;
@@ -2290,7 +2297,7 @@ function QuestionnaireTab({ language }) {
                 <AnswerInput
                   question={currentQuestion}
                   value={answerValue}
-                  onChange={setAnswerValue}
+                  onChange={v => { setAnswerValue(v); setValidationError(''); }}
                   onSubmit={submitAnswer}
                   lang={lang}
                   disabled={isTyping}
