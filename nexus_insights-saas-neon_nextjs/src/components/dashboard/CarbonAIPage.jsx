@@ -1627,10 +1627,16 @@ function QuestionnaireTab({ language, isVisible = true }) {
   // Init answer value when the QUESTION changes (navigation / goBack).
   // Deliberately excludes `answers` from the dep array — the ref above is used
   // instead to avoid re-running on every keystroke / submission.
+  // Fix #62: also clear validationError here — the existing [answerValue] effect
+  // is not enough when the restored value is the same object reference (e.g. the
+  // user already filled country+city, navigated away, came back — React sees no
+  // reference change so the [answerValue] effect never fires and the stale error
+  // from the previous Confirm click would persist indefinitely.
   useEffect(() => {
     if (currentQuestion) {
       const existing = answersRef.current[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
+      setValidationError(''); // always clear stale inline error when question changes
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]); // only run when the question changes
@@ -2359,8 +2365,12 @@ function QuestionnaireTab({ language, isVisible = true }) {
                       : undefined
                   }
                 />
-                {/* Inline validation error — clears as soon as answer changes */}
-                {validationError && (
+                {/* Inline validation error — only shows when the stored message exists
+                    AND the current answer is still actually invalid.  This prevents
+                    stale errors from flashing for one render cycle after isVisible /
+                    currentId effects clear the state flag, or persisting in the rare
+                    case where effects fire out of order (e.g. after a fast tab switch). */}
+                {validationError && currentQuestion && !validateCarbonIQAnswer(currentQuestion, answerValue, answers, lang).ok && (
                   <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
                     <span className="shrink-0">⚠</span>
                     <span>{validationError}</span>
