@@ -557,10 +557,10 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               <input
                 className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
                 type="text"
-                inputMode={field.subtype === 'numeric' ? 'numeric' : 'text'}
+                inputMode={field.type === 'numeric' || field.subtype === 'numeric' ? 'decimal' : 'text'}
                 value={fieldVal}
                 onChange={e => setField(e.target.value)}
-                placeholder={field.placeholder?.[lang] || field.placeholder?.en || ''}
+                placeholder={field.placeholder?.[lang] || field.placeholder?.en || (field.type === 'numeric' ? (lang === 'tr' ? 'Sayı girin' : 'Enter a number') : '')}
                 disabled={disabled}
                 maxLength={field.maxLength}
               />
@@ -1518,7 +1518,6 @@ function QuestionnaireTab({ language }) {
   const [reportId, setReportId] = useState(null);
   const [completed, setCompleted] = useState(false);
   const [assumptions, setAssumptions] = useState([]);
-  const [saveError, setSaveError] = useState(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
@@ -1703,11 +1702,9 @@ function QuestionnaireTab({ language }) {
       // Guard: component may have unmounted while the save request was in-flight
       if (!isMounted.current) return false;
       if (!res.ok) {
-        setSaveError(tr ? 'Kayıt hatası oluştu.' : 'Save error occurred.');
         setSaveSuccess(false);
         return false;
       }
-      setSaveError(null);
       setSaveSuccess(true);
       if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
       saveSuccessTimerRef.current = setTimeout(() => {
@@ -1715,13 +1712,10 @@ function QuestionnaireTab({ language }) {
       }, 2000);
       return true;
     } catch {
-      if (isMounted.current) {
-        setSaveError(tr ? 'Bağlantı hatası.' : 'Connection error.');
-        setSaveSuccess(false);
-      }
+      if (isMounted.current) setSaveSuccess(false);
       return false;
     }
-  }, [reportId, tr]);
+  }, [reportId]);
 
   // ── advanceToQuestion ──────────────────────────────────────────────────────
   // Shared helper: navigate to nextId and post its question bubble.
@@ -2107,7 +2101,6 @@ function QuestionnaireTab({ language }) {
     setHistory([]);
     setCompleted(false);
     setAssumptions([]);
-    setSaveError(null);
     setSaveSuccess(false);
     setLoopState(null);
     setIsTyping(false);
@@ -2270,11 +2263,6 @@ function QuestionnaireTab({ language }) {
             {saveSuccess && (
               <div role="status" aria-live="polite" className="rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-700">
                 {tr ? '✓ Kaydedildi' : '✓ Saved'}
-              </div>
-            )}
-            {saveError && (
-              <div role="alert" aria-live="assertive" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs font-semibold text-amber-700">
-                {saveError}
               </div>
             )}
           </div>

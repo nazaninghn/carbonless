@@ -4946,6 +4946,12 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     const obj = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     for (const field of (question.fields || [])) {
       if (field.required === false) continue; // explicitly optional
+      // Skip fields whose conditionalOn toggle is false/unset — they are hidden in the UI
+      // and cannot be filled by the user, so they must not fail validation.
+      if (field.conditionalOn) {
+        const condVal = obj[field.conditionalOn];
+        if (condVal !== true && condVal !== 'true') continue;
+      }
       const fv = obj[field.id];
       const fempty = fv === undefined || fv === null || String(fv).trim() === '';
       if (fempty) {
