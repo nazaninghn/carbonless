@@ -1732,8 +1732,11 @@ function QuestionnaireTab({ language }) {
     if (!nextId) {
       setCompleted(true);
       setMessages(prev => {
-        questionMsgLenRef.current = prev.length + 1; // keep ref in sync for goBack from completion screen
-        return [...prev, {
+        // Strip stale type:'error' bubbles left over from old validation paths
+        // so they never accumulate between questions.
+        const filtered = prev.filter(m => m.type !== 'error');
+        questionMsgLenRef.current = filtered.length + 1; // keep ref in sync for goBack from completion screen
+        return [...filtered, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'info',
@@ -1757,8 +1760,11 @@ function QuestionnaireTab({ language }) {
     if (helperText) content += `\n\n_${helperText}_`;
     const bubbleType = isInfo ? 'info' : 'assistant';
     setMessages(prev => {
-      questionMsgLenRef.current = prev.length + 1; // capture length AFTER this bubble
-      return [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: bubbleType, content }];
+      // Strip stale type:'error' bubbles so old validation errors vanish
+      // the moment the user successfully answers a question.
+      const filtered = prev.filter(m => m.type !== 'error');
+      questionMsgLenRef.current = filtered.length + 1; // capture length AFTER this bubble
+      return [...filtered, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: bubbleType, content }];
     });
   }, [lang, tr]);
 
