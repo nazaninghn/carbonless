@@ -2579,12 +2579,62 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Scope 1 complete! We are now moving to Scope 2 — purchased energy emissions.',
       },
     },
+    // showSummaryTable: true causes the questionnaire UI to render
+    // the Scope1SummaryTable component above the answer chips for this question.
+    showSummaryTable: true,
     nextByValue: {
       confirmed: '4-GİRİŞ',
-      edit: '3A-0',  // routes to Scope 1 start to re-enter data
+      edit: 'TY-edit',   // section picker — user chooses which block to revisit
       add_source: 'TY-2',
     },
   },
+
+  {
+    id: 'TY-edit',
+    number: '63b',
+    stage: 3,
+    block: '3D',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'section_picker',
+    required: true,
+    text: {
+      tr: 'Hangi Kapsam 1 bölümünü düzenlemek istiyorsunuz?',
+      en: 'Which Scope 1 section would you like to edit?',
+    },
+    helper: {
+      tr: 'Seçtiğiniz bölümün ilk sorusuna yönlendirileceksiniz. Yalnızca o bölümü güncelleyip Kapsam 1 özet ekranına dönebilirsiniz.',
+      en: 'You will be taken to the first question of the selected section. Update just that section and return to the Scope 1 summary.',
+    },
+    options: [
+      {
+        value: '3A-0',
+        label: { tr: '3A — Sabit Yanma', en: '3A — Stationary Combustion' },
+        description: { tr: 'Kazan, jeneratör, fırın ve sabit yakma ekipmanları', en: 'Boilers, generators, furnaces and stationary combustion equipment' },
+      },
+      {
+        value: '3B-0',
+        label: { tr: '3B — Mobil Yanma', en: '3B — Mobile Combustion' },
+        description: { tr: 'Şirkete ait araçlar ve iş makineleri', en: 'Company-owned vehicles and machinery' },
+      },
+      {
+        value: '3C-0',
+        label: { tr: '3C — Proses Emisyonları', en: '3C — Process Emissions' },
+        description: { tr: 'Kimyasal, biyolojik ve endüstriyel prosesler', en: 'Chemical, biological and industrial processes' },
+      },
+      {
+        value: '3D-0',
+        label: { tr: '3D — Kaçak Emisyonlar', en: '3D — Fugitive Emissions' },
+        description: { tr: 'Soğutma sistemleri ve gaz sızıntıları', en: 'Cooling systems and gas leaks' },
+      },
+    ],
+    nextByValue: {
+      '3A-0': '3A-0',
+      '3B-0': '3B-0',
+      '3C-0': '3C-0',
+      '3D-0': '3D-0',
+    },
+  },
+
   {
     id: 'TY-2',
     number: 64,

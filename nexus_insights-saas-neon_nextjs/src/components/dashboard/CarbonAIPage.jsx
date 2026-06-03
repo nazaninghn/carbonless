@@ -576,6 +576,122 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Questionnaire: Scope1SummaryTable
+// Rendered inline in the chat area when TY-1 (Q63) is the current question.
+// Reads the Stage-3 answers and summarises them in a compact 4-row table.
+// ─────────────────────────────────────────────────────────────────────────────
+function Scope1SummaryTable({ answers, lang, tr }) {
+  // Resolve an option label from a question's options array
+  const optLabel = (qId, value) => {
+    const q = getQuestionById(qId);
+    if (!q?.options) return value;
+    const opt = q.options.find(o => o.value === value);
+    if (!opt) return value;
+    const raw = opt.label?.[lang] || opt.label?.en || value;
+    // Strip the leading code prefix "EQ-3A-01 — " so we show the readable name only
+    const parts = raw.split(' — ');
+    return parts.length > 1 ? parts.slice(1).join(' — ') : raw;
+  };
+
+  // Format multi-select answer (array of codes) → comma-separated readable names
+  const fmtList = (qId, arr) => {
+    if (!Array.isArray(arr) || arr.length === 0) return null;
+    return arr.filter(v => v !== 'none').map(v => optLabel(qId, v)).join(', ') || null;
+  };
+
+  // Format fuel-consumption loop answer { fuel_key: 'amount unit' } → "Doğalgaz: 15 000 m³ · ..."
+  const FUEL_LABELS = {
+    tr: { natural_gas: 'Doğalgaz', fuel_oil: 'Fuel oil', diesel: 'Motorin', lpg: 'LPG', coal: 'Kömür', biomass: 'Biyokütle', other_fossil: 'Diğer yakıt' },
+    en: { natural_gas: 'Natural gas', fuel_oil: 'Fuel oil', diesel: 'Diesel', lpg: 'LPG', coal: 'Coal', biomass: 'Biomass', other_fossil: 'Other fuel' },
+  };
+  const fmtFuel = (loopObj) => {
+    if (!loopObj || typeof loopObj !== 'object' || Array.isArray(loopObj)) return null;
+    const lbl = FUEL_LABELS[lang] || FUEL_LABELS.en;
+    const entries = Object.entries(loopObj).filter(([, v]) => v);
+    if (entries.length === 0) return null;
+    return entries.map(([k, v]) => `${lbl[k] || k}: ${v}`).join(' · ');
+  };
+
+  const sections = [
+    {
+      id: '3A',
+      label: tr ? 'Sabit Yanma' : 'Stationary Combustion',
+      skipped: answers['3A-0'] === 'no',
+      items: fmtList('3A-1', answers['3A-1']),
+      extra: fmtFuel(answers['3A-5']),
+    },
+    {
+      id: '3B',
+      label: tr ? 'Mobil Yanma' : 'Mobile Combustion',
+      skipped: answers['3B-0'] === 'no',
+      items: fmtList('3B-1', answers['3B-1']),
+      extra: null,
+    },
+    {
+      id: '3C',
+      label: tr ? 'Proses Emisyonları' : 'Process Emissions',
+      skipped: answers['3C-0'] === 'no',
+      items: fmtList('3C-1', answers['3C-1']),
+      extra: null,
+    },
+    {
+      id: '3D',
+      label: tr ? 'Kaçak Emisyonlar' : 'Fugitive Emissions',
+      skipped: Array.isArray(answers['3D-0']) && answers['3D-0'].every(v => v === 'none'),
+      items: fmtList('3D-0', answers['3D-0']),
+      extra: null,
+    },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-[#95A847]/30 bg-[#F6FAF0] overflow-hidden text-[#302817]">
+      {/* Header */}
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#95A847]/15 border-b border-[#95A847]/20">
+        <ClipboardList className="h-3.5 w-3.5 text-[#75863B] shrink-0" />
+        <span className="text-[11px] font-bold text-[#75863B] uppercase tracking-wider">
+          {tr ? 'Kapsam 1 Özeti' : 'Scope 1 Summary'}
+        </span>
+      </div>
+      {/* Rows */}
+      <div className="divide-y divide-[#302817]/6">
+        {sections.map(s => (
+          <div key={s.id} className="flex items-start gap-3 px-4 py-2.5">
+            {/* Block badge */}
+            <span className="shrink-0 mt-0.5 rounded-md bg-[#302817]/8 px-1.5 py-0.5 text-[10px] font-bold text-[#302817]/50 leading-tight">
+              {s.id}
+            </span>
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <span className="text-[12px] font-semibold text-[#302817]/80">{s.label}</span>
+              {s.skipped ? (
+                <span className="ml-2 text-[11px] text-[#302817]/35 italic">
+                  {tr ? 'yok' : 'none'}
+                </span>
+              ) : s.items ? (
+                <div className="mt-0.5">
+                  <p className="text-[11px] text-[#302817]/60 leading-relaxed">{s.items}</p>
+                  {s.extra && (
+                    <p className="text-[11px] text-[#75863B] mt-0.5 leading-relaxed font-medium">{s.extra}</p>
+                  )}
+                </div>
+              ) : (
+                <span className="ml-2 text-[11px] text-[#302817]/30 italic">
+                  {tr ? 'veri girilmedi' : 'no data entered'}
+                </span>
+              )}
+            </div>
+            {/* Status dot */}
+            <span className={`shrink-0 mt-1 h-2 w-2 rounded-full ${
+              s.skipped ? 'bg-[#302817]/15' : s.items ? 'bg-[#95A847]' : 'bg-amber-400'
+            }`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: AnswerInput
 // currentLoopItem — for fuel_loop / equipment_loop questions whose `units` is
 // an object keyed by item value (e.g. { natural_gas: ['m³','kWh'], ... }).
@@ -778,6 +894,41 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
+      </div>
+    );
+  }
+
+  // section_picker — large tappable cards for choosing which Scope 1 block to re-enter.
+  // Auto-submits on click (same CHIP_AUTO_SUBMIT_DELAY_MS pattern as single_select chips)
+  // so the user just taps once and is taken directly to that section's first question.
+  if (type === 'section_picker') {
+    return (
+      <div className="flex flex-col gap-2 w-full max-w-sm">
+        {(options || []).map(opt => (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
+            className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
+              value === opt.value
+                ? 'border-[#95A847]/50 bg-[#95A847]/8 shadow-sm'
+                : 'border-[#302817]/10 bg-white hover:border-[#302817]/20 hover:bg-[#F8F8F5]'
+            }`}
+          >
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-bold text-[#302817] leading-tight">
+                {opt.label?.[lang] || opt.label?.en || opt.value}
+              </div>
+              {opt.description && (
+                <div className="text-[11px] text-[#302817]/50 mt-0.5 leading-relaxed">
+                  {opt.description?.[lang] || opt.description?.en}
+                </div>
+              )}
+            </div>
+            <span className="shrink-0 text-[#302817]/25 text-base leading-none">›</span>
+          </button>
+        ))}
       </div>
     );
   }
@@ -2073,6 +2224,12 @@ function QuestionnaireTab({ language }) {
             {messages.map((msg) => (
               <ChatBubble key={msg.id} msg={msg} />
             ))}
+            {/* Scope 1 summary table — shown inline when TY-1 (Q63) is current.
+                Rendered as a live component so it always reflects the latest answers
+                and switches language instantly without needing a re-ask. */}
+            {currentQuestion?.showSummaryTable && !isTyping && !completed && (
+              <Scope1SummaryTable answers={answers} lang={lang} tr={tr} />
+            )}
             {isTyping && (
               <div className="flex gap-2.5">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
