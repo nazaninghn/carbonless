@@ -194,9 +194,9 @@ function getDisplayValue(q, value, lang = 'en') {
       return opt ? (opt.label?.[lang] || opt.label?.en || v) : v;
     }).join(', ');
   }
-  if (q.type === 'single_select' || q.type === 'year_select' || q.type === 'equipment_loop' || q.type === 'fuel_loop') {
+  if (q.type === 'single_select' || q.type === 'year_select' || q.type === 'equipment_loop' || q.type === 'fuel_loop' || q.type === 'section_picker') {
     const opt = q.options?.find(o => o.value === value);
-    return opt ? (opt.label?.[lang] || opt.label?.en || value) : String(value);
+    return opt ? (opt.label?.[lang] || opt.label?.en || String(value)) : String(value);
   }
   if (q.type === 'compound') {
     if (!value || typeof value !== 'object') return '—';
@@ -2009,19 +2009,26 @@ function QuestionnaireTab({ language }) {
       // Compute candidate next question, then skip any conditionalShow-hidden questions.
       // Use candidate.next for skip-advance (not getNextQuestionId) to avoid null
       // on nextByValue-only questions that have no default answer path.
+      //
+      // EXCEPTION — section_picker: the user explicitly chose a destination, so we
+      // must NOT apply the conditionalShow skip-loop. 3C-0 has conditionalShow for
+      // NACE sectors; without this bypass a non-industrial user picking "3C" would
+      // be silently redirected to 3D-0 instead of the section they selected.
       let nextId = getNextQuestionId(q, value);
-      while (nextId) {
-        const candidate = getQuestionById(nextId);
-        if (!candidate?.conditionalShow) break;
-        const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
-        const csAnswer = newAnswers[csQid];
-        const matches = csVals
-          ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
-          : csEquals !== undefined
-            ? csAnswer === csEquals
-            : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
-        if (matches) break;
-        nextId = candidate.next || candidate.loopNext || null;
+      if (q.type !== 'section_picker') {
+        while (nextId) {
+          const candidate = getQuestionById(nextId);
+          if (!candidate?.conditionalShow) break;
+          const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
+          const csAnswer = newAnswers[csQid];
+          const matches = csVals
+            ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
+            : csEquals !== undefined
+              ? csAnswer === csEquals
+              : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
+          if (matches) break;
+          nextId = candidate.next || candidate.loopNext || null;
+        }
       }
 
       if (!nextId) {
