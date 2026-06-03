@@ -154,6 +154,24 @@ function buildLoopItems(loopQuestionId, currentAnswers, lang) {
   return { items, itemLabels };
 }
 
+// ── stripDocLabels ────────────────────────────────────────────────────────────
+// Strips internal documentation annotations from question text before display.
+// These come from the DOCX source file and serve the document author, not users.
+//
+// Removes:
+//   1. Leading [Bracket labels] — e.g. "[Tesis N] ", "[OC1 = Evet] ", "[Ekipman adı] — "
+//      Applied repeatedly so "[A] — [B] text" → "text"
+//   2. Trailing auto-fill notes — e.g. " (B4'ten otomatik gelir)", " (auto-filled from 2A-5)"
+function stripDocLabels(text) {
+  if (!text) return text;
+  let result = text;
+  const leadingBracket = /^\[[^\]]+\]\s*(?:—\s*)?/;
+  let prev;
+  do { prev = result; result = result.replace(leadingBracket, ''); } while (result !== prev);
+  result = result.replace(/\s*\([^)]*(?:'ten\s+otomatik|auto-filled from)[^)]*\)\s*$/, '');
+  return result.trim();
+}
+
 function getInitialValue(q) {
   if (!q) return '';
   if (q.type === 'multi_select') return [];
@@ -1452,11 +1470,15 @@ function QuestionnaireTab({ language }) {
     const nextQ = getQuestionById(nextId);
     setCurrentId(nextId);
     setAnswerValue(getInitialValue(nextQ));
-    let questionText = nextQ?.text?.[lang] || nextQ?.text?.en || '';
-    let helperText = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
-    let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number}:** ${questionText}`;
+    const questionText = stripDocLabels(nextQ?.text?.[lang] || nextQ?.text?.en || '');
+    const helperText = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
+    // Info screens are transitional — no question number prefix
+    const isInfo = nextQ?.type === 'info';
+    let content = isInfo
+      ? questionText
+      : `**${tr ? 'Soru' : 'Question'} ${nextQ?.number}:** ${questionText}`;
     if (helperText) content += `\n\n_${helperText}_`;
-    const bubbleType = nextQ?.type === 'info' ? 'info' : 'assistant';
+    const bubbleType = isInfo ? 'info' : 'assistant';
     setMessages(prev => {
       questionMsgLenRef.current = prev.length + 1; // capture length AFTER this bubble
       return [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: bubbleType, content }];
@@ -1488,7 +1510,7 @@ function QuestionnaireTab({ language }) {
         setCurrentId(nextId);
         setAnswerValue(getInitialValue(nextQ));
         const firstLabel = itemLabels[0] || items[0];
-        const loopText   = nextQ?.text?.[lang]   || nextQ?.text?.en   || '';
+        const loopText   = stripDocLabels(nextQ?.text?.[lang]   || nextQ?.text?.en   || '');
         const loopHelper = nextQ?.helper?.[lang]  || nextQ?.helper?.en || '';
         let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
         if (loopHelper) content += `\n\n_${loopHelper}_`;
@@ -1586,7 +1608,7 @@ function QuestionnaireTab({ language }) {
           typingTimerRef.current = null;
           if (!isMounted.current) return;
           setIsTyping(false);
-          const loopText = q?.text?.[lang] || q?.text?.en || '';
+          const loopText = stripDocLabels(q?.text?.[lang] || q?.text?.en || '');
           const loopHelper = q?.helper?.[lang] || q?.helper?.en || '';
           let content = `**${tr ? 'Soru' : 'Question'} ${q?.number} — ${nextLabel}:** ${loopText}`;
           if (loopHelper) content += `\n\n_${loopHelper}_`;
