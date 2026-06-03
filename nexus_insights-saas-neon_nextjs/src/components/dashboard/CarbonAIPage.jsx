@@ -566,9 +566,13 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
   const chipTimerRef = useRef(null);
   // Cancel any pending submit timer when this component unmounts (e.g. tab switch)
   useEffect(() => () => { if (chipTimerRef.current !== null) clearTimeout(chipTimerRef.current); }, []);
-  const scheduleSubmit = () => {
+  // Fix #108: pass the clicked value directly to onSubmit so submitAnswer receives
+  // it as overrideValue — eliminating the React async-state race where answerValue
+  // hasn't re-rendered yet when the 80 ms timer fires (first click → stale empty
+  // value → validation error; second click → state flushed → works).
+  const scheduleSubmit = (val) => {
     if (chipTimerRef.current !== null) clearTimeout(chipTimerRef.current);
-    chipTimerRef.current = setTimeout(() => { chipTimerRef.current = null; onSubmit(); }, CHIP_AUTO_SUBMIT_DELAY_MS);
+    chipTimerRef.current = setTimeout(() => { chipTimerRef.current = null; onSubmit(val); }, CHIP_AUTO_SUBMIT_DELAY_MS);
   };
 
   if (!question) return null;
@@ -597,7 +601,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={opt.value}
             label={opt.label?.[lang] || opt.label?.en || opt.value}
             selected={value === opt.value}
-            onClick={() => { onChange(opt.value); scheduleSubmit(); }}
+            onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
             disabled={disabled}
           />
         ))}
@@ -635,7 +639,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
               key={opt.value}
               label={opt.label?.[lang] || opt.label?.en || opt.value}
               selected={value === opt.value}
-              onClick={() => { onChange(opt.value); scheduleSubmit(); }}
+              onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
               disabled={disabled}
             />
           ))}
@@ -654,7 +658,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={y}
             label={String(y)}
             selected={value === String(y)}
-            onClick={() => { onChange(String(y)); scheduleSubmit(); }}
+            onClick={() => { const v = String(y); onChange(v); scheduleSubmit(v); }}
             disabled={disabled}
           />
         ))}
@@ -670,7 +674,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
             key={opt.value}
             label={opt.label?.[lang] || opt.label?.en || opt.value}
             selected={value === opt.value}
-            onClick={() => { onChange(opt.value); scheduleSubmit(); }}
+            onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
             disabled={disabled}
           />
         ))}
@@ -1975,7 +1979,7 @@ function QuestionnaireTab({ language }) {
                   question={currentQuestion}
                   value={answerValue}
                   onChange={setAnswerValue}
-                  onSubmit={() => submitAnswer()}
+                  onSubmit={submitAnswer}
                   lang={lang}
                   disabled={isTyping}
                 />
