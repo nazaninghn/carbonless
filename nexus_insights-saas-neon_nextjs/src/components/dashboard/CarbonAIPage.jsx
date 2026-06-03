@@ -1519,6 +1519,9 @@ function QuestionnaireTab({ language }) {
   const [completed, setCompleted] = useState(false);
   const [assumptions, setAssumptions] = useState([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  // Validation error shown inline below the input — clears when the answer changes.
+  // NOT stored in messages so old errors don't confuse users who fix their answer.
+  const [validationError, setValidationError] = useState('');
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
   // On mobile sidebar starts closed; desktop starts open
@@ -1560,6 +1563,11 @@ function QuestionnaireTab({ language }) {
   }, []);
 
   const currentQuestion = getQuestionById(currentId);
+
+  // Clear inline validation error whenever the user changes their answer.
+  // This prevents stale "please fill in X" messages from lingering after
+  // the user has already corrected the field.
+  useEffect(() => { setValidationError(''); }, [answerValue]);
 
   // Auto scroll — debounced to prevent double-fire when messages + isTyping update together.
   // Returns a cleanup so the timer never fires on an unmounted component.
@@ -1826,14 +1834,12 @@ function QuestionnaireTab({ language }) {
     if (q.type !== 'info') {
       const err = validateCarbonIQAnswer(q, value, answers, lang);
       if (!err.ok) {
-        setMessages(prev => [...prev, {
-          id: `m-${++msgIdRef.current}`,
-          role: 'assistant',
-          type: 'error',
-          content: err.message || (lang === 'tr' ? 'Geçersiz yanıt.' : 'Invalid answer.'),
-        }]);
+        // Show inline — NOT as a chat bubble so old errors don't confuse users
+        // who have already fixed their answer (e.g. country_city after filling both fields).
+        setValidationError(err.message || (lang === 'tr' ? 'Geçersiz yanıt.' : 'Invalid answer.'));
         return;
       }
+      setValidationError(''); // clear any previous inline error on successful validation
     }
 
     // ── Loop handling ──────────────────────────────────────────────────────────
@@ -2048,6 +2054,7 @@ function QuestionnaireTab({ language }) {
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     isSubmittingRef.current = false;
     setIsTyping(false);
+    setValidationError('');
 
     const prevEntry = history[history.length - 1];
     // History entries are { id, msgLen } objects; guard against legacy string entries
@@ -2102,6 +2109,7 @@ function QuestionnaireTab({ language }) {
     setCompleted(false);
     setAssumptions([]);
     setSaveSuccess(false);
+    setValidationError('');
     setLoopState(null);
     setIsTyping(false);
     setResetConfirm(false);
@@ -2286,6 +2294,13 @@ function QuestionnaireTab({ language }) {
                       : undefined
                   }
                 />
+                {/* Inline validation error — clears as soon as answer changes */}
+                {validationError && (
+                  <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+                    <span className="shrink-0">⚠</span>
+                    <span>{validationError}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] text-[#302817]/25">
                     {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
