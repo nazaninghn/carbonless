@@ -9,6 +9,7 @@ import {
 import { api } from '@/lib/utils/api';
 import {
   CARBONIQ_STAGES,
+  CARBONIQ_QUESTIONS,
   TOTAL_QUESTIONS,
   getInitialQuestionId,
   getNextQuestionId,
@@ -1143,6 +1144,105 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Block summary helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function getBlockId(q) {
+  if (!q) return null;
+  if (q.stage === 1) return `S1-${q.block}`;
+  return `S${q.stage}-${q.block}`;
+}
+
+const BLOCK_LABELS = {
+  'S1-A': { tr: 'Blok A — İdari Bilgiler', en: 'Block A — Administrative Info' },
+  'S1-B': { tr: 'Blok B — Faaliyet Profili', en: 'Block B — Activity Profile' },
+  'S1-C': { tr: 'Blok C — Yapısal Bilgiler', en: 'Block C — Structural Info' },
+  'S1-D': { tr: 'Blok D — Raporlama Tercihleri', en: 'Block D — Reporting Preferences' },
+};
+
+function getBlockLabel(blockId, stageId) {
+  if (BLOCK_LABELS[blockId]) return BLOCK_LABELS[blockId];
+  const stage = CARBONIQ_STAGES.find(s => s.id === stageId);
+  const name = stage ? (stage.title.tr || stage.title.en) : `Aşama ${stageId}`;
+  return { tr: `${name} — Özet`, en: `${name} — Summary` };
+}
+
+function getBlockAnsweredQuestions(blockId, answers) {
+  return CARBONIQ_QUESTIONS.filter(
+    q => getBlockId(q) === blockId && q.id in answers && q.type !== 'info',
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Questionnaire: BlockSummaryTable
+// Shown at the end of each block so the user can review & edit before proceeding.
+// ─────────────────────────────────────────────────────────────────────────────
+function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit, onContinue }) {
+  const tr = lang === 'tr';
+  const label = getBlockLabel(blockId, stageId);
+  return (
+    <div className="rounded-2xl border border-[#B4BE6A]/40 bg-[#FAFAF8] px-4 py-4 w-full">
+      <div className="mb-2 flex items-center gap-2">
+        <CheckCircle2 className="h-4 w-4 text-[#95A847]" />
+        <span className="text-sm font-bold text-[#302817]">
+          {label[lang] || label.en} — {tr ? 'Tamamlandı' : 'Complete'}
+        </span>
+      </div>
+      <p className="mb-3 text-xs text-[#302817]/55">
+        {tr
+          ? 'Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa ✏ butonunu kullanın.'
+          : 'Your answers for this section are below. Use ✏ to edit any answer before continuing.'}
+      </p>
+      <div className="overflow-x-auto rounded-xl border border-[#302817]/8 mb-4">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="border-b border-[#302817]/8 bg-[#302817]/3">
+              <th className="px-3 py-2 text-left font-semibold text-[#302817]/50">#</th>
+              <th className="px-3 py-2 text-left font-semibold text-[#302817]/50">
+                {tr ? 'Soru' : 'Question'}
+              </th>
+              <th className="px-3 py-2 text-left font-semibold text-[#302817]/50">
+                {tr ? 'Yanıt' : 'Answer'}
+              </th>
+              <th className="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {questions.map((q, idx) => {
+              const answer = answers[q.id];
+              const displayVal = getDisplayValue(q, answer, lang);
+              const qText = stripDocLabels(q.text?.[lang] || q.text?.en || q.id);
+              return (
+                <tr key={q.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#302817]/2'}>
+                  <td className="px-3 py-2 font-mono text-[10px] text-[#302817]/35">{q.number}</td>
+                  <td className="px-3 py-2 text-[#302817]/65 max-w-[180px] leading-snug">{qText}</td>
+                  <td className="px-3 py-2 font-semibold text-[#302817] max-w-[160px] leading-snug">{displayVal}</td>
+                  <td className="px-3 py-2 text-right">
+                    <button
+                      onClick={() => onEdit(q.id)}
+                      className="rounded-lg border border-[#302817]/12 px-2 py-1 text-[10px] font-bold text-[#302817]/50 transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/8 hover:text-[#302817]"
+                    >
+                      ✏ {tr ? 'Düzenle' : 'Edit'}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex justify-end">
+        <button
+          onClick={onContinue}
+          className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black"
+        >
+          {tr ? 'Devam Et →' : 'Continue →'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Progress Sidebar
 // ─────────────────────────────────────────────────────────────────────────────
 function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
@@ -1571,6 +1671,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
   const [showValidationError, setShowValidationError] = useState(false);
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
+  // blockSummaryState: shown at block/stage transitions; null when not active
+  const [blockSummaryState, setBlockSummaryState] = useState(null);
   // On mobile sidebar starts closed; desktop starts open
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -2035,7 +2137,21 @@ function QuestionnaireTab({ language, isVisible = true }) {
           if (matches) break;
           nextId = candidate.next || candidate.loopNext || null;
         }
-        initLoopOrAdvance(nextId, finalAnswers);
+        const currLoopBlockId = getBlockId(q);
+        const nextLoopBlockId = getBlockId(getQuestionById(nextId));
+        if (nextId && nextLoopBlockId && currLoopBlockId && currLoopBlockId !== nextLoopBlockId) {
+          setBlockSummaryState({ blockId: currLoopBlockId, stageId: q.stage, nextId });
+          setMessages(prev => [...prev, {
+            id: `m-${++msgIdRef.current}`,
+            role: 'assistant',
+            type: 'info',
+            content: tr
+              ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa ✏ butonunu, devam etmek için **Devam Et** butonunu kullanın.`
+              : `This section is complete! Review your answers below. Use ✏ to edit or click **Continue** to proceed.`,
+          }]);
+        } else {
+          initLoopOrAdvance(nextId, finalAnswers);
+        }
       }, TYPING_DELAY_MS);
       return;
     }
@@ -2135,13 +2251,30 @@ function QuestionnaireTab({ language, isVisible = true }) {
             : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
         }]);
       } else {
-        initLoopOrAdvance(nextId, newAnswers);
+        // Show a block-level summary table when crossing a block/stage boundary
+        const currBlockId = getBlockId(q);
+        const nextQ = getQuestionById(nextId);
+        const nextBlockId = getBlockId(nextQ);
+        if (nextBlockId && currBlockId && currBlockId !== nextBlockId) {
+          setBlockSummaryState({ blockId: currBlockId, stageId: q.stage, nextId });
+          setMessages(prev => [...prev, {
+            id: `m-${++msgIdRef.current}`,
+            role: 'assistant',
+            type: 'info',
+            content: tr
+              ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa ✏ butonunu, devam etmek için **Devam Et** butonunu kullanın.`
+              : `This section is complete! Review your answers below. Use ✏ to edit or click **Continue** to proceed.`,
+          }]);
+        } else {
+          initLoopOrAdvance(nextId, newAnswers);
+        }
       }
     }, TYPING_DELAY_MS);
   }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance]);
 
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
+    if (blockSummaryState) { setBlockSummaryState(null); return; }
     if (history.length === 0) return;
     // Cancel any in-flight typing timer so its callback can't post stale bubbles
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
@@ -2188,7 +2321,49 @@ function QuestionnaireTab({ language, isVisible = true }) {
       setLoopState(null);
       setAnswerValue(normalizeAnswerValue(prevQ, answers[prevId]) ?? getInitialValue(prevQ));
     }
-  }, [history, answers, lang]);
+  }, [history, answers, lang, blockSummaryState]);
+
+  // ── jumpToQuestion ─────────────────────────────────────────────────────────
+  // Called when the user clicks "Edit" in a BlockSummaryTable row.
+  // Restores the conversation to the state just before that question was answered.
+  const jumpToQuestion = useCallback((qId) => {
+    const histIdx = history.findIndex(h => (typeof h === 'object' ? h.id : h) === qId);
+    if (histIdx === -1) return;
+    const entry = history[histIdx];
+    const msgLen = typeof entry === 'object' ? entry.msgLen : null;
+
+    if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
+    isSubmittingRef.current = false;
+    setIsTyping(false);
+    setBlockSummaryState(null);
+    setHistory(history.slice(0, histIdx));
+    setCurrentId(qId);
+    setLoopState(null);
+    setValidationError('');
+    setShowValidationError(false);
+
+    if (msgLen != null) {
+      setMessages(prev => prev.slice(0, msgLen));
+      questionMsgLenRef.current = msgLen;
+    }
+    const prevQ = getQuestionById(qId);
+    setAnswerValue(normalizeAnswerValue(prevQ, answers[qId]) ?? getInitialValue(prevQ));
+  }, [history, answers]);
+
+  // ── proceedFromSummary ─────────────────────────────────────────────────────
+  const proceedFromSummary = useCallback(() => {
+    if (!blockSummaryState) return;
+    const { nextId } = blockSummaryState;
+    setBlockSummaryState(null);
+    setIsTyping(true);
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      typingTimerRef.current = null;
+      if (!isMounted.current) return;
+      setIsTyping(false);
+      initLoopOrAdvance(nextId, answers);
+    }, TYPING_DELAY_MS);
+  }, [blockSummaryState, answers, initLoopOrAdvance]);
 
   // ── resetFlow ──────────────────────────────────────────────────────────────
   const resetFlow = useCallback(() => {
@@ -2207,6 +2382,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
     setValidationError('');
     setShowValidationError(false);
     setLoopState(null);
+    setBlockSummaryState(null);
     setIsTyping(false);
     setResetConfirm(false);
     helpSessionRef.current = null; // clear help session so next help opens a fresh one
@@ -2334,6 +2510,18 @@ function QuestionnaireTab({ language, isVisible = true }) {
             {currentQuestion?.showSummaryTable && !isTyping && !completed && (
               <Scope1SummaryTable answers={answers} lang={lang} tr={tr} />
             )}
+            {/* Block summary table — shown at block/stage transitions for review & edit */}
+            {blockSummaryState && !isTyping && (
+              <BlockSummaryTable
+                blockId={blockSummaryState.blockId}
+                stageId={blockSummaryState.stageId}
+                questions={getBlockAnsweredQuestions(blockSummaryState.blockId, answers)}
+                answers={answers}
+                lang={lang}
+                onEdit={jumpToQuestion}
+                onContinue={proceedFromSummary}
+              />
+            )}
             {isTyping && (
               <div className="flex gap-2.5">
                 <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
@@ -2379,7 +2567,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
         </div>
 
         {/* Input bar */}
-        {!completed && (
+        {!completed && !blockSummaryState && (
           <div className="shrink-0 border-t border-[#302817]/6 px-4 py-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
               <div className="flex flex-col gap-2">
