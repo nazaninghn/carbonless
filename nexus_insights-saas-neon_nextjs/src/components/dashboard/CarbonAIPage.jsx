@@ -101,7 +101,13 @@ function mapAnswerForBackend(questionId, value) {
     case 'A3': return { country: value?.country || '', city: value?.city || '' };
     case 'A4': { const y = parseInt(value, 10); return { reporting_year: Number.isNaN(y) ? null : y }; }
     case 'A5': return { prepared_by: value };
-    case 'A6': return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip') : [] };
+    case 'A6': {
+      const purposeMap = {
+        'internal_strategy': 'internal', 'legal_obligation': 'legal',
+        'voluntary_disclosure': 'voluntary', 'customer_request': 'client', 'skip': 'skip',
+      };
+      return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip').map(v => purposeMap[v] || v) : [] };
+    }
     case 'A7': return { has_previous_report: value === 'yes' };
     case 'A7a': { const y = parseInt(value, 10); return { baseline_year: Number.isNaN(y) ? null : y }; }
 
@@ -796,7 +802,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   if (type === 'info') {
     return (
       <button
-        onClick={onSubmit}
+        onClick={() => onSubmit()}
         disabled={disabled}
         className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
       >
@@ -926,7 +932,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           ))}
         </div>
         <button
-          onClick={onSubmit}
+          onClick={() => onSubmit()}
           disabled={disabled || vals.length === 0}
           className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
@@ -996,7 +1002,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           disabled={disabled}
         />
         <button
-          onClick={onSubmit}
+          onClick={() => onSubmit()}
           disabled={disabled || !allRequiredFilled}
           className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
@@ -1040,7 +1046,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           </span>
         )}
         <button
-          onClick={onSubmit}
+          onClick={() => onSubmit()}
           disabled={disabled || (mlRequired && mlEmpty)}
           className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
@@ -1828,6 +1834,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
     const nextQ = getQuestionById(nextId);
     setCurrentId(nextId);
     setAnswerValue(getInitialValue(nextQ));
+    setSaveError('');
     const questionText = stripDocLabels(nextQ?.text?.[lang] || nextQ?.text?.en || '');
     const helperText = nextQ?.helper?.[lang] || nextQ?.helper?.en || '';
     // Info screens are transitional — no question number prefix
