@@ -1351,6 +1351,42 @@ function QuestionnaireTab({ language }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]); // only run when the question changes
 
+  // ── Language switch — re-show current pending question in the new language ──
+  // When the user switches language mid-questionnaire, the existing chat bubbles
+  // are static strings in the old language. This effect detects the switch and
+  // appends a fresh bubble for the currently pending question in the new language,
+  // so the user immediately sees what they need to answer without waiting for the
+  // next natural question advance.
+  //
+  // Guards: only fires after questionnaire has started and hasn't completed,
+  // and only when the question is actually waiting (not while isTyping).
+  const prevLangRef = useRef(language);
+  useEffect(() => {
+    if (prevLangRef.current === language) return;
+    prevLangRef.current = language;
+    if (!started || completed || isTyping) return;
+    const q = getQuestionById(currentId);
+    if (!q) return;
+    const newTr = language === 'tr';
+    if (loopState && loopState.questionId === currentId) {
+      const { currentIndex, items, itemLabels } = loopState;
+      const itemLabel = itemLabels[currentIndex] || items[currentIndex] || `#${currentIndex + 1}`;
+      const loopText = stripDocLabels(q.text?.[language] || q.text?.en || '');
+      const loopHelper = q.helper?.[language] || q.helper?.en || '';
+      let content = `**${newTr ? 'Soru' : 'Question'} ${q.number} — ${itemLabel}:** ${loopText}`;
+      if (loopHelper) content += `\n\n_${loopHelper}_`;
+      setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content }]);
+    } else {
+      const questionText = stripDocLabels(q.text?.[language] || q.text?.en || '');
+      const helperText = q.helper?.[language] || q.helper?.en || '';
+      const isInfo = q.type === 'info';
+      let content = isInfo ? questionText : `**${newTr ? 'Soru' : 'Question'} ${q.number}:** ${questionText}`;
+      if (helperText) content += `\n\n_${helperText}_`;
+      setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: isInfo ? 'info' : 'assistant', content }]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language]); // only language — not currentId/loopState, those use their own effects
+
   // ── handleStart ────────────────────────────────────────────────────────────
   const handleStart = useCallback(async () => {
     // Ref guard: the Start button is disabled while loading (startLoading state),

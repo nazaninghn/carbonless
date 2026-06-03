@@ -1073,16 +1073,16 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: 'D3', includesValue: 'equity_share' },
     reportField: 'org_boundary.subsidiaries[N].equity_pct',
     text: {
-      tr: '[Her bağlı şirket] Bu bağlı şirketteki hisse oranınız nedir? (%)',
-      en: '[Each subsidiary] What is your equity share in this subsidiary? (%)',
+      tr: 'Bu bağlı şirketteki hisse oranınız nedir? (%)',
+      en: 'What is your equity share in this subsidiary? (%)',
     },
     placeholder: {
       tr: 'Örn: 60',
       en: 'e.g. 60',
     },
     helper: {
-      tr: 'Hisse Payı yaklaşımı seçildiğinde emisyonlar bu oran kullanılarak orantılı hesaplanır. Yalnızca hisse oranı yaklaşımı seçildiyse bu soru geçerlidir.',
-      en: 'When the Equity Share approach is selected, emissions are calculated proportionally using this percentage. Only applicable if the equity share approach was selected.',
+      tr: 'Hisse Payı yaklaşımında, bir bağlı şirketteki emisyonlar sahip olduğunuz hisse oranıyla orantılı olarak raporunuza dahil edilir. Örneğin %60 hisseniz varsa o şirketin toplam emisyonlarının %60\'ı sizin envanterinizde görünür.\n\nBu bilgiyi şirketin ana sözleşmesinden veya hissedarlık tescil belgelerinden bulabilirsiniz.\n\nYalnızca D3 sorusunda "Hisse Payı (Equity Share)" yaklaşımını seçtiyseniz bu soru aktif olur.',
+      en: 'Under the Equity Share approach, a subsidiary\'s emissions are included in your inventory proportional to your ownership stake. For example, if you own 60% of a subsidiary, 60% of its total emissions appear in your inventory.\n\nYou can find this figure in the company\'s articles of association or shareholder registry documents.\n\nThis question is only active if you selected "Equity Share" as your consolidation approach in question D3.',
     },
     validate: {
       minValue: 0,
