@@ -833,7 +833,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <CountryCityInput value={value} onChange={onChange} lang={lang} />
         <button
-          onClick={onSubmit}
+          onClick={() => onSubmit(value)}
           disabled={disabled || !value?.country || cityRequired}
           className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
@@ -1557,9 +1557,12 @@ function QuestionnaireTab({ language, isVisible = true }) {
   const [completed, setCompleted] = useState(false);
   const [assumptions, setAssumptions] = useState([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  // Validation error shown inline below the input — clears when the answer changes.
-  // NOT stored in messages so old errors don't confuse users who fix their answer.
+  const [saveError, setSaveError] = useState('');
+  // validationError: the message from the last failed submit attempt.
+  // showValidationError: true after the first failed Confirm click; reset when question changes.
+  // Together they show the error only after submit AND only while the answer is still invalid.
   const [validationError, setValidationError] = useState('');
+  const [showValidationError, setShowValidationError] = useState(false);
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
   // On mobile sidebar starts closed; desktop starts open
@@ -1605,7 +1608,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
   // Clear inline validation error whenever the user changes their answer.
   // This prevents stale "please fill in X" messages from lingering after
   // the user has already corrected the field.
-  useEffect(() => { setValidationError(''); }, [answerValue]);
+  useEffect(() => { setValidationError(''); setShowValidationError(false); }, [answerValue]);
 
   // Auto scroll — debounced to prevent double-fire when messages + isTyping update together.
   // Returns a cleanup so the timer never fires on an unmounted component.
@@ -1636,7 +1639,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
     if (currentQuestion) {
       const existing = answersRef.current[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
-      setValidationError(''); // always clear stale inline error when question changes
+      setValidationError('');
+      setShowValidationError(false); // always clear stale inline error when question changes
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]); // only run when the question changes
@@ -1651,7 +1655,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
   // Clearing unconditionally on isVisible=true is safe: if the form is still
   // invalid when the user next clicks Confirm, the error is re-shown then.
   useEffect(() => {
-    if (isVisible) setValidationError('');
+    if (isVisible) { setValidationError(''); setShowValidationError(false); }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isVisible]);
 
@@ -1752,6 +1756,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
       // Resetting here guarantees a clean form regardless of whether currentId changed.
       setAnswerValue(getInitialValue(firstQ));
       setValidationError('');
+      setShowValidationError(false);
+      setSaveError('');
       setStarted(true);
     } catch {
       if (!isMounted.current) return;
@@ -1776,19 +1782,26 @@ function QuestionnaireTab({ language, isVisible = true }) {
       if (!isMounted.current) return false;
       if (!res.ok) {
         setSaveSuccess(false);
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData?.error || errData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
+        if (isMounted.current) setSaveError(msg);
         return false;
       }
+      setSaveError('');
       setSaveSuccess(true);
       if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
       saveSuccessTimerRef.current = setTimeout(() => {
         if (isMounted.current) setSaveSuccess(false);
       }, 2000);
       return true;
-    } catch {
-      if (isMounted.current) setSaveSuccess(false);
+    } catch (e) {
+      if (isMounted.current) {
+        setSaveSuccess(false);
+        setSaveError(lang === 'tr' ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
+      }
       return false;
     }
-  }, [reportId]);
+  }, [reportId, lang]);
 
   // ── advanceToQuestion ──────────────────────────────────────────────────────
   // Shared helper: navigate to nextId and post its question bubble.
@@ -1908,9 +1921,11 @@ function QuestionnaireTab({ language, isVisible = true }) {
         // Show inline — NOT as a chat bubble so old errors don't confuse users
         // who have already fixed their answer (e.g. country_city after filling both fields).
         setValidationError(err.message || (lang === 'tr' ? 'Geçersiz yanıt.' : 'Invalid answer.'));
+        setShowValidationError(true);
         return;
       }
       setValidationError(''); // clear any previous inline error on successful validation
+      setShowValidationError(false);
     }
 
     // ── Loop handling ──────────────────────────────────────────────────────────
@@ -2126,6 +2141,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
     isSubmittingRef.current = false;
     setIsTyping(false);
     setValidationError('');
+    setShowValidationError(false);
 
     const prevEntry = history[history.length - 1];
     // History entries are { id, msgLen } objects; guard against legacy string entries
@@ -2180,7 +2196,9 @@ function QuestionnaireTab({ language, isVisible = true }) {
     setCompleted(false);
     setAssumptions([]);
     setSaveSuccess(false);
+    setSaveError('');
     setValidationError('');
+    setShowValidationError(false);
     setLoopState(null);
     setIsTyping(false);
     setResetConfirm(false);
@@ -2344,6 +2362,12 @@ function QuestionnaireTab({ language, isVisible = true }) {
                 {tr ? '✓ Kaydedildi' : '✓ Saved'}
               </div>
             )}
+            {saveError && (
+              <div role="alert" aria-live="assertive" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700 flex items-center gap-2">
+                <span className="shrink-0">⚠</span>
+                <span>{saveError}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -2355,7 +2379,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
                 <AnswerInput
                   question={currentQuestion}
                   value={answerValue}
-                  onChange={v => { setAnswerValue(v); setValidationError(''); }}
+                  onChange={v => { setAnswerValue(v); setValidationError(''); setShowValidationError(false); }}
                   onSubmit={submitAnswer}
                   lang={lang}
                   disabled={isTyping}
@@ -2365,12 +2389,11 @@ function QuestionnaireTab({ language, isVisible = true }) {
                       : undefined
                   }
                 />
-                {/* Inline validation error — only shows when the stored message exists
-                    AND the current answer is still actually invalid.  This prevents
-                    stale errors from flashing for one render cycle after isVisible /
-                    currentId effects clear the state flag, or persisting in the rare
-                    case where effects fire out of order (e.g. after a fast tab switch). */}
-                {validationError && currentQuestion && !validateCarbonIQAnswer(currentQuestion, answerValue, answers, lang).ok && (
+                {/* Inline validation error — only shows after a failed Confirm attempt
+                    AND while the current answer is still actually invalid.
+                    showValidationError resets when answerValue changes or question/tab switches,
+                    so the error disappears as soon as the user fills the field correctly. */}
+                {showValidationError && validationError && currentQuestion && !validateCarbonIQAnswer(currentQuestion, answerValue, answers, lang).ok && (
                   <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
                     <span className="shrink-0">⚠</span>
                     <span>{validationError}</span>
