@@ -194,7 +194,10 @@ function buildLoopItems(loopQuestionId, currentAnswers, lang) {
   items = items.filter(x => !exclusiveVals.has(x));
   const itemLabels = items.map(item => {
     const opt = sourceQ?.options?.find(o => o.value === item);
-    return opt?.label?.[lang] || opt?.label?.en || item;
+    const raw = opt?.label?.[lang] || opt?.label?.en || item;
+    // Strip leading equipment/item code like "EQ-3B-13 — " so only the readable name is shown
+    const dashIdx = raw.indexOf(' — ');
+    return dashIdx !== -1 ? raw.slice(dashIdx + 3) : raw;
   });
   return { items, itemLabels };
 }
