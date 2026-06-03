@@ -577,8 +577,10 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: AnswerInput
+// currentLoopItem — for fuel_loop / equipment_loop questions whose `units` is
+// an object keyed by item value (e.g. { natural_gas: ['m³','kWh'], ... }).
 // ─────────────────────────────────────────────────────────────────────────────
-function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
+function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, currentLoopItem }) {
   const tr = lang === 'tr';
   // Guard against duplicate auto-submits from rapid double-taps on chip options
   const chipTimerRef = useRef(null);
@@ -592,6 +594,46 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     if (chipTimerRef.current !== null) clearTimeout(chipTimerRef.current);
     chipTimerRef.current = setTimeout(() => { chipTimerRef.current = null; onSubmit(val); }, CHIP_AUTO_SUBMIT_DELAY_MS);
   };
+
+  // ── Unit-aware numeric input state ──────────────────────────────────────────
+  // Resolve the unit list for the current question + loop item.
+  // question.units can be:
+  //   • string[]  — one list for all items (e.g. ['kWh','MWh'])
+  //   • object    — keyed by fuel/item type (e.g. { natural_gas: ['m³','kWh'] })
+  const rawUnits = question?.units;
+  const unitList = rawUnits
+    ? (Array.isArray(rawUnits) ? rawUnits : (currentLoopItem ? (rawUnits[currentLoopItem] || []) : []))
+    : [];
+
+  // Parse stored "amount unit" string back into parts when value has a space-separated unit.
+  const parseStored = (v) => {
+    if (!v || typeof v !== 'string') return { amount: v || '', unit: '' };
+    const parts = v.split(' ');
+    if (parts.length >= 2) {
+      const potentialUnit = parts[parts.length - 1];
+      if (unitList.includes(potentialUnit)) {
+        return { amount: parts.slice(0, -1).join(' '), unit: potentialUnit };
+      }
+    }
+    return { amount: v, unit: '' };
+  };
+
+  const initialParsed = parseStored(value);
+  const [selectedUnit, setSelectedUnit] = useState(() => initialParsed.unit || unitList[0] || '');
+
+  // Reset unit selection when question changes or when the loop item changes (different fuel = different units).
+  const prevQuestionIdRef = useRef(question?.id);
+  const prevLoopItemRef = useRef(currentLoopItem);
+  useEffect(() => {
+    const qChanged = prevQuestionIdRef.current !== question?.id;
+    const itemChanged = prevLoopItemRef.current !== currentLoopItem;
+    if (qChanged || itemChanged) {
+      prevQuestionIdRef.current = question?.id;
+      prevLoopItemRef.current = currentLoopItem;
+      setSelectedUnit(unitList[0] || '');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [question?.id, currentLoopItem]); // intentionally exclude unitList (derived)
 
   if (!question) return null;
 
@@ -819,34 +861,80 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled }) {
     );
   }
 
-  // text / numeric / single-line
+  // text / numeric / single-line — with optional unit selector
   const isRequired = question.required !== false;
   const maxLen = question.maxLength;
-  const charCount = String(value || '').length;
-  const isEmpty = !String(value || '').trim();
+  // '%' is a display-only suffix — don't bake it into the stored value because
+  // it breaks numeric comparisons (Number("60 %") → NaN). All other units ARE
+  // part of the stored value so the backend knows the measurement scale.
+  const shouldCombineUnit = unitList.length > 0 && selectedUnit && selectedUnit !== '%';
+  // Extract amount portion from a stored "amount unit" string (e.g. "15000 m³" → "15000")
+  const amountStr = shouldCombineUnit ? parseStored(value).amount : (value || '');
+  const charCount = String(amountStr).length;
+  const isEmpty = !String(amountStr).trim();
+  // Final value to submit: "15000 m³" for physical units, or just the number for %
+  const buildSubmitValue = () => shouldCombineUnit ? `${amountStr} ${selectedUnit}` : amountStr;
+
   return (
-    <div className="flex flex-col gap-1 w-full max-w-sm">
+    <div className="flex flex-col gap-2 w-full max-w-sm">
       <div className="flex gap-2 items-center">
         <input
           className="flex-1 rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
           type="text"
           inputMode={subtype === 'numeric' ? 'numeric' : 'text'}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(); } }}
+          value={amountStr}
+          onChange={e => onChange(
+            shouldCombineUnit ? `${e.target.value} ${selectedUnit}` : e.target.value
+          )}
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); onSubmit(buildSubmitValue()); }
+          }}
           placeholder={placeholder?.[lang] || placeholder?.en || ''}
           disabled={disabled}
           autoFocus
           maxLength={maxLen}
         />
+        {/* Fixed unit label when there's only one option (e.g. "%" or "litre") */}
+        {unitList.length === 1 && (
+          <span className="shrink-0 rounded-xl border border-[#302817]/12 bg-[#F8F8F5] px-3 py-2.5 text-sm font-semibold text-[#302817]/60">
+            {unitList[0]}
+          </span>
+        )}
         <button
-          onClick={onSubmit}
+          onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-40"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
       </div>
+      {/* Unit selector chips — shown when 2+ unit options exist */}
+      {unitList.length >= 2 && (
+        <div className="flex flex-wrap items-center gap-1.5 pl-1">
+          <span className="text-[11px] text-[#302817]/40 font-medium">
+            {tr ? 'Birim:' : 'Unit:'}
+          </span>
+          {unitList.map(u => (
+            <button
+              key={u}
+              type="button"
+              disabled={disabled}
+              onClick={() => {
+                setSelectedUnit(u);
+                // Keep parent value in sync immediately when unit changes
+                if (amountStr) onChange(`${amountStr} ${u}`);
+              }}
+              className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                selectedUnit === u
+                  ? 'border-[#95A847]/50 bg-[#95A847]/12 text-[#75863B]'
+                  : 'border-[#302817]/10 bg-white text-[#302817]/55 hover:border-[#302817]/20 hover:bg-[#F8F8F5]'
+              }`}
+            >
+              {u}
+            </button>
+          ))}
+        </div>
+      )}
       {maxLen && (
         <span className="text-right text-[10px] text-[#302817]/35 pr-12">{charCount}/{maxLen}</span>
       )}
@@ -2040,6 +2128,11 @@ function QuestionnaireTab({ language }) {
                   onSubmit={submitAnswer}
                   lang={lang}
                   disabled={isTyping}
+                  currentLoopItem={
+                    loopState && loopState.questionId === currentId
+                      ? loopState.items[loopState.currentIndex]
+                      : undefined
+                  }
                 />
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] text-[#302817]/25">
