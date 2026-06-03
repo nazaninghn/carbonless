@@ -1539,7 +1539,7 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Main Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function QuestionnaireTab({ language }) {
+function QuestionnaireTab({ language, isVisible = true }) {
   const tr = language === 'tr';
   const lang = language;
 
@@ -1634,6 +1634,20 @@ function QuestionnaireTab({ language }) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]); // only run when the question changes
+
+  // Fix #61: Clear stale validationError when the outer dashboard tab makes
+  // this component visible again.  QuestionnaireTab is kept alive via CSS
+  // hidden (Fix #46) so all state — including a red "Please enter…" banner
+  // from a previous Confirm click — persists across tab switches.
+  // Because the user may have already corrected the answer before navigating
+  // away, `onChange` never fires on re-visit, leaving the error banner showing
+  // even though Turkey + İstanbul are both filled.
+  // Clearing unconditionally on isVisible=true is safe: if the form is still
+  // invalid when the user next clicks Confirm, the error is re-shown then.
+  useEffect(() => {
+    if (isVisible) setValidationError('');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible]);
 
   // ── Language switch — re-show current pending question in the new language ──
   // When the user switches language mid-questionnaire, the existing chat bubbles
@@ -2875,7 +2889,7 @@ function FreeChatTab({ language }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main export: CarbonAIPage (dual-tab)
 // ─────────────────────────────────────────────────────────────────────────────
-export default function CarbonAIPage({ language = 'en' }) {
+export default function CarbonAIPage({ language = 'en', isVisible = true }) {
   const tr = language === 'tr';
   const [activeTab, setActiveTab] = useState('questionnaire');
   // Fix #44: track whether the Chat tab has ever been opened so we can lazy-mount
@@ -2916,7 +2930,7 @@ export default function CarbonAIPage({ language = 'en' }) {
       {/* Tab content — both stay mounted once visited so in-progress state is preserved */}
       <div className="flex flex-1 min-h-0 flex-col">
         <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'questionnaire' ? 'hidden' : ''}`}>
-          <QuestionnaireTab language={language} />
+          <QuestionnaireTab language={language} isVisible={isVisible} />
         </div>
         {chatMounted && (
           <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`}>

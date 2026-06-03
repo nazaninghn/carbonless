@@ -164,7 +164,7 @@ export default function DashboardPage() {
           <div className={activeTab !== 'ai_carbon' ? 'hidden' : ''}>
             {aiCarbonMounted && (
               <ErrorBoundary language={language}>
-                <CarbonAIPage language={language} />
+                <CarbonAIPage language={language} isVisible={activeTab === 'ai_carbon'} />
               </ErrorBoundary>
             )}
           </div>
