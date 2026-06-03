@@ -104,6 +104,44 @@ function mapAnswerForBackend(questionId, value) {
     case 'A6': return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip') : [] };
     case 'A7': return { has_previous_report: value === 'yes' };
     case 'A7a': { const y = parseInt(value, 10); return { baseline_year: Number.isNaN(y) ? null : y }; }
+
+    // ── Phase 1 continuation (B / C / D) ──────────────────────────────────────
+    // B1: options are 'NACE_A', 'NACE_B', … — strip the prefix so handle_B1's
+    // nace_code[0] cluster detection ('A'→agriculture, 'C'→manufacturing, etc.) works.
+    case 'B1': {
+      const raw = typeof value === 'string' ? value : '';
+      return { nace_code: raw.replace(/^NACE_/, ''), nace_label: '' };
+    }
+    case 'B2': return { activity_description: value || '' };
+    // B3: frontend option values use underscores ('1_50'); backend serializer expects
+    // hyphens/plus ('1-50', '5000+').
+    case 'B3': {
+      const bandMap = {
+        '1_50': '1-50', '51_250': '51-250', '251_1000': '251-1000',
+        '1001_5000': '1001-5000', '5000_plus': '5000+',
+      };
+      return { employee_band: bandMap[value] || value };
+    }
+    // B4: text/numeric input — coerce string to integer for the serializer.
+    case 'B4': { const n = parseInt(value, 10); return { number_of_facilities: Number.isNaN(n) ? 1 : n }; }
+    case 'B5': return { facility_types: Array.isArray(value) ? value : [] };
+    // B6: frontend uses snake_case values; backend serializer expects its own format.
+    case 'B6': {
+      const revenueMap = {
+        'under_1m': '<1M', '1m_10m': '1-10M', '10m_100m': '10-100M',
+        '100m_1b': '100M-1B', 'over_1b': '1B+',
+      };
+      return { revenue_band: revenueMap[value] || value };
+    }
+    // C1/C2/C3: options are 'yes'/'no'; DRF BooleanField only accepts true/false.
+    case 'C1': return { has_subsidiaries: value === 'yes' };
+    case 'C2': return { has_international: value === 'yes' };
+    case 'C3': return { has_jv_franchise: value === 'yes' };
+    // D1/D3/D4: option values already match serializer choices.
+    case 'D1': return { ef_database: value };
+    case 'D3': return { boundary_approach: value };
+    case 'D4': return { scope3_approach: value };
+
     default: return { answer: value };
   }
 }

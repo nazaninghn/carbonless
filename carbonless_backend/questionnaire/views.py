@@ -162,8 +162,17 @@ class SubmitStepView(APIView):
         if not step:
             return Response({'error': 'step is required'}, status=400)
 
-        # Steps with strict serializer validation + DB side-effects (A1-A7a)
-        STRICT_STEPS = {'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a'}
+        # Steps with strict serializer validation + DB side-effects.
+        # Fix #60b: B1-D4 were missing — their handlers were never called, so
+        # company fields (nace_code, employees, facilities, revenue, etc.) and
+        # report fields (ef_database, boundary_approach, scope3_approach) were
+        # never persisted.  Adding them here routes their saves through the
+        # serializer → handle_step() path, matching A1-A7a behaviour.
+        STRICT_STEPS = {
+            'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+            'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+            'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+        }
 
         if step in STRICT_STEPS and step in STEP_SERIALIZERS:
             serializer = STEP_SERIALIZERS[step](data=data)

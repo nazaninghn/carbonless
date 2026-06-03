@@ -48,7 +48,7 @@ def handle_step(report, step, data):
 def handle_A1(report, data):
     company = report.company
     company.legal_entity_name = data['legal_name']
-    company.save()
+    company.save(update_fields=['legal_entity_name'])
     return {
         'next_step': 'A2',
         'message': f"Company \"{data['legal_name']}\" saved.",
@@ -79,7 +79,7 @@ def handle_A2(report, data):
             ]
         }
     report.company.tax_number = tax_id
-    report.company.save()
+    report.company.save(update_fields=['tax_number'])
     return {
         'next_step': 'A3',
         'message': 'Tax ID saved.',
@@ -95,7 +95,7 @@ def handle_A3(report, data):
     country = data['country'].strip()
     city = data.get('city', '')
     report.company.country_of_headquarters = country
-    report.company.save()
+    report.company.save(update_fields=['country_of_headquarters'])
 
     country_upper = country.upper()
     suggested_ef = EF_MAP.get(country_upper, 'IPCC_AR6')
@@ -241,7 +241,9 @@ def handle_B1(report, data):
     nace_code = data['nace_code']
     nace_label = data.get('nace_label', '')
     report.company.nace_code = nace_code
-    report.company.save()
+    report.company.save(update_fields=['nace_code'])
+    # nace_code arrives as a single letter ('A', 'C', 'SU', …) — the frontend
+    # strips the 'NACE_' prefix before sending so nace_code[0] is the actual letter.
     nace_letter = nace_code[0].upper() if nace_code else 'G'
     cluster = NACE_CLUSTER.get(nace_letter, 'service')
     bot_messages = [f"✅ Sector: **{nace_label or nace_code}** saved."]
@@ -270,7 +272,7 @@ def handle_B1(report, data):
 
 def handle_B2(report, data):
     report.company.main_activity_description = data['activity_description']
-    report.company.save()
+    report.company.save(update_fields=['main_activity_description'])
     return {
         'next_step': 'B3',
         'message': 'Activity description saved.',
@@ -286,7 +288,7 @@ def handle_B2(report, data):
 def handle_B3(report, data):
     band = data['employee_band']
     report.company.number_of_employees = band
-    report.company.save()
+    report.company.save(update_fields=['number_of_employees'])
     bot_messages = [f"✅ Employee count: **{band}**."]
     if band in ['1001-5000', '5000+']:
         bot_messages.append(
@@ -304,7 +306,7 @@ def handle_B3(report, data):
 def handle_B4(report, data):
     count = data['number_of_facilities']
     report.company.number_of_facilities = count
-    report.company.save()
+    report.company.save(update_fields=['number_of_facilities'])
     bot_messages = [f"✅ Number of facilities: **{count}**."]
     if count >= 11:
         bot_messages.append(
@@ -348,7 +350,7 @@ def handle_B5(report, data):
 def handle_B6(report, data):
     band = data['revenue_band']
     report.company.annual_turnover_range = band
-    report.company.save()
+    report.company.save(update_fields=['annual_turnover_range'])
     bot_messages = []
     if band == 'skip':
         bot_messages.append(
@@ -372,7 +374,7 @@ def handle_C1(report, data):
     has_sub = data['has_subsidiaries']
     report.has_subsidiaries = has_sub
     report.company.number_of_subsidiaries = 1 if has_sub else 0
-    report.company.save()
+    report.company.save(update_fields=['number_of_subsidiaries'])
     report.save()
     bot_messages = []
     if has_sub:
@@ -392,7 +394,7 @@ def handle_C2(report, data):
     has_intl = data['has_international']
     report.has_international = has_intl
     report.company.has_overseas_operations = has_intl
-    report.company.save()
+    report.company.save(update_fields=['has_overseas_operations'])
     report.save()
     bot_messages = []
     if has_intl:
