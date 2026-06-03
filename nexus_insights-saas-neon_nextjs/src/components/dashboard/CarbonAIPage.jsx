@@ -163,14 +163,28 @@ function normalizeAnswerValue(q, raw) {
   return raw ?? '';
 }
 
-// Strip leading code prefixes from option labels, e.g. "EQ-3B-13 — Bulldozer" → "Bulldozer"
+// Clean option labels for user-facing display:
+// 1. Strip leading code prefixes like "EQ-3B-13 — ", "SC-01 — "
+// 2. Strip routing arrows like " → Scope 1", " → Kapsam 2 (Kategori 13)"
+// 3. Strip internal overlap warnings like " (⚠ Cat.4 overlap check)"
+// 4. Strip NACE codes in parens like " (NACE C23)"
 function stripOptionCode(text) {
   if (!text) return text;
-  const dashIdx = text.indexOf(' — ');
-  if (dashIdx === -1) return text;
-  const prefix = text.slice(0, dashIdx);
-  if (/^[A-Z0-9][A-Z0-9-]*$/.test(prefix)) return text.slice(dashIdx + 3);
-  return text;
+  let result = text;
+  // 1. Leading code prefix: all-caps/digits/hyphens before " — "
+  const dashIdx = result.indexOf(' — ');
+  if (dashIdx !== -1) {
+    const prefix = result.slice(0, dashIdx);
+    if (/^[A-Z0-9][A-Z0-9-]*$/.test(prefix)) result = result.slice(dashIdx + 3);
+  }
+  // 2. Routing arrow suffix " → ..." (catches Scope/Kapsam/Aktarılır etc.)
+  const arrowIdx = result.indexOf(' →');
+  if (arrowIdx !== -1) result = result.slice(0, arrowIdx);
+  // 3. Internal overlap warning "(⚠ ...)"
+  result = result.replace(/\s*\(⚠[^)]*\)/g, '');
+  // 4. NACE code in parens "(NACE ...)"
+  result = result.replace(/\s*\(NACE[^)]*\)/g, '');
+  return result.trim();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1993,7 +2007,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
         const firstLabel = itemLabels[0] || items[0];
         const loopText   = stripDocLabels(nextQ?.text?.[lang]   || nextQ?.text?.en   || '');
         const loopHelper = nextQ?.helper?.[lang]  || nextQ?.helper?.en || '';
-        let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number} — ${firstLabel}:** ${loopText}`;
+        let content = `**${tr ? 'Soru' : 'Question'} ${nextQ?.number}** _(${firstLabel})_\n\n${loopText}`;
         if (loopHelper) content += `\n\n_${loopHelper}_`;
         setMessages(prev => {
           questionMsgLenRef.current = prev.length + 1; // capture length AFTER first-item bubble
@@ -2062,7 +2076,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
           role: 'user',
-          content: `[${itemLabel}] ${displayVal}`,
+          content: `${itemLabel}: ${displayVal}`,
         }]);
       }
 
@@ -2091,7 +2105,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
           setIsTyping(false);
           const loopText = stripDocLabels(q?.text?.[lang] || q?.text?.en || '');
           const loopHelper = q?.helper?.[lang] || q?.helper?.en || '';
-          let content = `**${tr ? 'Soru' : 'Question'} ${q?.number} — ${nextLabel}:** ${loopText}`;
+          let content = `**${tr ? 'Soru' : 'Question'} ${q?.number}** _(${nextLabel})_\n\n${loopText}`;
           if (loopHelper) content += `\n\n_${loopHelper}_`;
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,
