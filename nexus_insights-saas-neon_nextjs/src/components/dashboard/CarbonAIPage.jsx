@@ -163,6 +163,16 @@ function normalizeAnswerValue(q, raw) {
   return raw ?? '';
 }
 
+// Strip leading code prefixes from option labels, e.g. "EQ-3B-13 — Bulldozer" → "Bulldozer"
+function stripOptionCode(text) {
+  if (!text) return text;
+  const dashIdx = text.indexOf(' — ');
+  if (dashIdx === -1) return text;
+  const prefix = text.slice(0, dashIdx);
+  if (/^[A-Z0-9][A-Z0-9-]*$/.test(prefix)) return text.slice(dashIdx + 3);
+  return text;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure helper: extract the items + itemLabels for a loop question.
 // Returns null if the question is not a loop question.
@@ -195,9 +205,7 @@ function buildLoopItems(loopQuestionId, currentAnswers, lang) {
   const itemLabels = items.map(item => {
     const opt = sourceQ?.options?.find(o => o.value === item);
     const raw = opt?.label?.[lang] || opt?.label?.en || item;
-    // Strip leading equipment/item code like "EQ-3B-13 — " so only the readable name is shown
-    const dashIdx = raw.indexOf(' — ');
-    return dashIdx !== -1 ? raw.slice(dashIdx + 3) : raw;
+    return stripOptionCode(raw);
   });
   return { items, itemLabels };
 }
@@ -239,12 +247,12 @@ function getDisplayValue(q, value, lang = 'en') {
     if (!Array.isArray(value) || value.length === 0) return '—';
     return value.map(v => {
       const opt = q.options?.find(o => o.value === v);
-      return opt ? (opt.label?.[lang] || opt.label?.en || v) : v;
+      return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || v) : v;
     }).join(', ');
   }
   if (q.type === 'single_select' || q.type === 'year_select' || q.type === 'equipment_loop' || q.type === 'fuel_loop' || q.type === 'section_picker') {
     const opt = q.options?.find(o => o.value === value);
-    return opt ? (opt.label?.[lang] || opt.label?.en || String(value)) : String(value);
+    return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || String(value)) : String(value);
   }
   if (q.type === 'compound') {
     if (!value || typeof value !== 'object') return '—';
@@ -584,7 +592,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
                 {(field.options || []).map(opt => (
                   <Chip
                     key={opt.value}
-                    label={opt.label?.[lang] || opt.label?.en || opt.value}
+                    label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
                     selected={fieldVal === opt.value}
                     onClick={() => !disabled && setField(opt.value)}
                     disabled={disabled}
@@ -823,7 +831,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         {options.map(opt => (
           <Chip
             key={opt.value}
-            label={opt.label?.[lang] || opt.label?.en || opt.value}
+            label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
             selected={value === opt.value}
             onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
             disabled={disabled}
@@ -861,7 +869,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           {options.map(opt => (
             <Chip
               key={opt.value}
-              label={opt.label?.[lang] || opt.label?.en || opt.value}
+              label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
               selected={value === opt.value}
               onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
               disabled={disabled}
@@ -896,7 +904,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         {(options || []).map(opt => (
           <Chip
             key={opt.value}
-            label={opt.label?.[lang] || opt.label?.en || opt.value}
+            label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
             selected={value === opt.value}
             onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
             disabled={disabled}
@@ -928,7 +936,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           {(options || []).map(opt => (
             <Chip
               key={opt.value}
-              label={opt.label?.[lang] || opt.label?.en || opt.value}
+              label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
               selected={vals.includes(opt.value)}
               onClick={() => toggle(opt.value)}
               multi
@@ -966,7 +974,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           >
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-bold text-[#302817] leading-tight">
-                {opt.label?.[lang] || opt.label?.en || opt.value}
+                {stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
               </div>
               {opt.description && (
                 <div className="text-[11px] text-[#302817]/50 mt-0.5 leading-relaxed">
