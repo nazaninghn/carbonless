@@ -89,7 +89,7 @@ export async function rejectSuggestion(suggestionId) {
 export const REQUIRED_FIELDS = {
   '3A': ['rf.3a.fuel_type', 'rf.3a.consumption', 'rf.3a.unit'],
   '4A': ['rf.4a.consumption_kwh', 'rf.4a.supplier'],
-  'K4': ['rf.k4.transport_mode', 'rf.k4.distance_km'],
+  'K4': ['rf.k4.shipments', 'rf.k4.total_emission_kgco2e'],
 };
 
 /**

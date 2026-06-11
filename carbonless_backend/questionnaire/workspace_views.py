@@ -76,10 +76,12 @@ FIELD_HUMAN_LABELS = {
     'rf.4a.emission_factor':        'Scope 2 / 4A — Emission factor (kgCO2e/kWh)',
     'rf.4a.emission_factor_source': 'Scope 2 / 4A — Emission factor source',
     # K4 — Upstream Transport
-    'rf.k4.transport_mode':         'Scope 3 / K4 — Transport mode',
-    'rf.k4.distance_km':            'Scope 3 / K4 — Distance (km)',
-    'rf.k4.cargo_tonnes':           'Scope 3 / K4 — Cargo (tonnes)',
-    'rf.k4.tkm':                    'Scope 3 / K4 — Tonne-km',
+    'rf.k4.entry_method':           'Scope 3 / K4 — Data entry method',
+    'rf.k4.shipments':              'Scope 3 / K4 — Shipment records',
+    'rf.k4.total_tkm':              'Scope 3 / K4 — Total tonne-km',
+    'rf.k4.total_emission_kgco2e':  'Scope 3 / K4 — Total emission (kgCO2e)',
+    'rf.k4.data_source':            'Scope 3 / K4 — Data source',
+    'rf.k4.ef_source':              'Scope 3 / K4 — Emission factor source',
 }
 
 
@@ -135,12 +137,14 @@ CATEGORY_SCHEMAS = {
         ],
     },
     'K4': {
-        'label': 'Upstream Transport',
+        'label': 'Upstream Transport (Scope 3 Cat.4)',
         'fields': [
-            {'field_id': 'rf.k4.transport_mode',  'label': 'Transport mode',   'type': 'string'},
-            {'field_id': 'rf.k4.distance_km',     'label': 'Distance (km)',    'type': 'number'},
-            {'field_id': 'rf.k4.cargo_tonnes',    'label': 'Cargo (tonnes)',   'type': 'number'},
-            {'field_id': 'rf.k4.tkm',             'label': 'tonne-km',         'type': 'number'},
+            {'field_id': 'rf.k4.entry_method',           'label': 'Data entry method',            'type': 'string'},
+            {'field_id': 'rf.k4.shipments',              'label': 'Shipment records',             'type': 'array'},
+            {'field_id': 'rf.k4.total_tkm',              'label': 'Total tonne-km',               'type': 'number'},
+            {'field_id': 'rf.k4.total_emission_kgco2e',  'label': 'Total emission (kgCO2e)',      'type': 'number'},
+            {'field_id': 'rf.k4.data_source',            'label': 'Data source',                  'type': 'string'},
+            {'field_id': 'rf.k4.ef_source',              'label': 'Emission factor source',       'type': 'string'},
         ],
     },
 }
