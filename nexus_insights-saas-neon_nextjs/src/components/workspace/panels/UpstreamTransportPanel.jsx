@@ -155,8 +155,9 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
 
   // Current (unsaved) shipment being composed
   const [draft, setDraft] = useState({ ...EMPTY_SHIPMENT });
-  const [saving,  setSaving]  = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [saveError,  setSaveError]  = useState('');
 
   // Sync when fieldValues update
   useEffect(() => {
@@ -218,6 +219,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
 
     setSaving(true);
     setSaved(false);
+    setSaveError('');
     try {
       await saveReportFields(reportId, [
         { field_id: 'rf.k4.entry_method',          value: entryMethod },
@@ -231,8 +233,11 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
       setSaved(true);
       if (onSaved) onSaved(['rf.k4.shipments','rf.k4.total_tkm','rf.k4.total_emission_kgco2e']);
       setTimeout(() => setSaved(false), 3000);
-    } catch { /* silent */ }
-    finally { setSaving(false); }
+    } catch {
+      setSaveError(tr ? 'Kaydetme başarısız. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -387,6 +392,13 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
           </div>
         );
       })()}
+
+      {/* Save error */}
+      {saveError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 font-medium">
+          {saveError}
+        </div>
+      )}
 
       {/* Save button */}
       <button

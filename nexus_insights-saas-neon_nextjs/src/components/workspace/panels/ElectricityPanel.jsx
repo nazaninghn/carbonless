@@ -53,8 +53,9 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
   const [emissionFactor,        setEmissionFactor]      = useState(fieldValues['rf.4a.emission_factor']        || '');
   const [emissionFactorSource,  setEmissionFactorSource]= useState(fieldValues['rf.4a.emission_factor_source'] || '');
   const [gridPreset,            setGridPreset]          = useState('');
-  const [saving,  setSaving]  = useState(false);
-  const [saved,   setSaved]   = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [saveError,  setSaveError]  = useState('');
 
   // Sync when fieldValues update (after AI confirm)
   useEffect(() => {
@@ -92,6 +93,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
     if (!reportId || !consumptionKwh) return;
     setSaving(true);
     setSaved(false);
+    setSaveError('');
     try {
       const toNum = (v) => {
         const n = parseFloat(String(v).replace(',', '.'));
@@ -115,7 +117,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
       ]);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      // silent retry
+      setSaveError(tr ? 'Kaydetme başarısız. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -287,6 +289,13 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
           {emissionFactorSource && (
             <p className="text-[10px] text-[#302817]/35 mt-0.5">{emissionFactorSource}</p>
           )}
+        </div>
+      )}
+
+      {/* Save error */}
+      {saveError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 font-medium">
+          {saveError}
         </div>
       )}
 

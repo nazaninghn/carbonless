@@ -101,6 +101,8 @@ export function getCategoryStatus(categoryId, fieldValues) {
   if (required.length === 0) return 'missing';
   const filled = required.filter(fid => {
     const v = fieldValues[fid];
+    // Empty arrays count as unfilled (e.g. rf.k4.shipments = [])
+    if (Array.isArray(v)) return v.length > 0;
     return v !== undefined && v !== null && v !== '';
   });
   if (filled.length === 0) return 'missing';

@@ -158,26 +158,107 @@ EXISTING REPORT DATA (do NOT re-extract these unless the user explicitly updates
 FIELD SCHEMAS (extract only from these categories):
 {schemas}
 
-Reply with ONLY valid JSON in this format (no markdown, no explanation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NUMBER NORMALISATION (apply before extracting any value)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Turkish uses period as thousand separator and comma as decimal:
+    15.000  → 15000   (integer, NOT 15.0)
+    1.500,5 → 1500.5
+• English comma = thousand separator:  15,000 → 15000
+• k / K suffix = ×1000:   15k → 15000,  18K → 18000
+• M suffix   = ×1000000:  1.5M → 1500000
+• Always store numbers as plain integers or floats, never strings.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+UNIT SYNONYMS & CONVERSIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Electricity (4A) — ALWAYS store in kWh:
+  MWh → multiply by 1000      (18 MWh  → 18000)
+  GWh → multiply by 1000000
+
+Gas volume:
+  m³ / m3 / cubic meter / cubic metre / metreküp → use unit "m3"
+  GJ, kWh also accepted as-is
+
+Fuel oil / diesel:  litre / liter / lt / L → use unit "litre"
+LPG:                kg or litre accepted
+
+Transport distance: km / kilometre / kilometer → km
+Transport weight:   ton / tonne / t → tonnes (store as cargo_t)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FUEL TYPE MAPPING (→ rf.3a.fuel_type value)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+natural_gas : doğalgaz, natural gas, NG, methane, metan, gaz
+diesel      : motorin, dizel, diesel, gasoil, HSD
+fuel_oil    : fuel oil, mazot, ağır yakıt, HFO, kalorifer yakıtı
+lpg         : LPG, likit petrol gazı, bütan, propan, autogas
+coal        : kömür, coal, taşkömür, linyit (lignite)
+biomass     : biyokütle, biomass, odun, wood, tarımsal atık
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TRANSPORT MODE MAPPING (→ rf.k4.entry_method + shipment mode)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Road (karayolu, TIR, tır, kamyon, truck, lorry, HGV) → use entry_method "shipment_detail"
+Rail (tren, demir yolu, ray, train, freight rail)    → note mode as rail
+Sea  (deniz, gemi, konteyner, ship, vessel, bulk)    → note mode as sea
+Air  (hava kargo, uçak, air freight, air cargo)      → note mode as air
+
+For K4 extraction, compute tonne-km when possible:
+  cargo_tonnes × distance_km = total_tkm → store in rf.k4.total_tkm
+
+If user gives total tonne-km directly ("54000 tonne-km by road"):
+  → store directly in rf.k4.total_tkm
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXTRACTION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Extract quantities regardless of grammatical voice (active OR passive).
+   "taşındı" / "was shipped" = same as "taşıdık" / "we shipped".
+2. If message mentions TWO fuels (3A) or TWO categories, create ONE suggestion
+   for the highest-confidence extraction. Mention the other in "reply".
+3. For 4A with renewable deduction: if user says "X kWh aldık, Y kWh sahada ürettik"
+   → consumption_kwh = X, renewable_on_site = Y.
+4. Never invent data. Only extract what the user explicitly stated.
+5. Only include fields with confidence > 0.5.
+6. "reply" must be in the same language as the user's message (Turkish → Turkish, English → English).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FEW-SHOT EXAMPLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+User: "15.000 m³ doğalgaz kullandık."
+→ fuel_type="natural_gas", consumption=15000 (NOT 15.0), unit="m3"
+
+User: "18 MWh elektrik tükettik."
+→ consumption_kwh=18000 (converted from MWh)
+
+User: "15k m3 natural gas."
+→ consumption=15000 (k expanded)
+
+User: "45 ton malı 1200 km TIR ile taşıdık."
+→ entry_method="shipment_detail", total_tkm=54000 (45×1200)
+
+User: "Total upstream: 54,000 tonne-km by road."
+→ total_tkm=54000 (direct statement, no cargo/distance split needed)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT (ONLY valid JSON, no markdown, no explanation)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {{
-  "reply": "A short friendly message to the user (1-2 sentences, same language as user).",
+  "reply": "Short friendly response (1-2 sentences, same language as user).",
   "suggestions": [
     {{
       "category": "3A",
       "confidence": 0.85,
       "fields": [
         {{"field_id": "rf.3a.fuel_type", "label": "Fuel type", "value": "natural_gas", "confidence": 0.9}},
-        {{"field_id": "rf.3a.consumption", "label": "Consumption", "value": 15000, "unit": "m3", "confidence": 0.82}}
+        {{"field_id": "rf.3a.consumption", "label": "Consumption", "value": 15000, "unit": "m3", "confidence": 0.92}}
       ]
     }}
   ]
 }}
 
-Rules:
-- suggestions list can be empty [] if nothing extractable is found.
-- Only include fields you are confident about (confidence > 0.5).
-- Keep "reply" conversational and in the same language the user wrote in.
-- Do NOT invent data. Only extract from the user message.
+If nothing extractable: suggestions = []
 """
 
 

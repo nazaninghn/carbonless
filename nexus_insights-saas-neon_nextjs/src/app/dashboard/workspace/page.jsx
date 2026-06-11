@@ -297,6 +297,7 @@ export default function WorkspacePage() {
   const [mode,         setMode]         = useState('dashboard');
   const [sidebarOpen,  setSidebarOpen]  = useState(false);
   const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
 
   // Load active report
   useEffect(() => {
@@ -327,7 +328,11 @@ export default function WorkspacePage() {
 
   useEffect(() => { loadFields(); }, [loadFields]);
 
-  const handleFieldsSaved = useCallback(() => loadFields(), [loadFields]);
+  const handleFieldsSaved = useCallback(async () => {
+    setRefreshing(true);
+    await loadFields();
+    setRefreshing(false);
+  }, [loadFields]);
 
   const completedCount = Object.values(statuses).filter(s => s === 'complete').length;
   const totalCount     = CATEGORIES.length;
@@ -425,6 +430,33 @@ export default function WorkspacePage() {
           <div className="flex flex-1 flex-col overflow-y-auto min-w-0">
             {mode === 'dashboard' ? (
               <div className="p-5 flex flex-col gap-5">
+
+                {/* Empty state banner — shown when no data exists yet */}
+                {Object.keys(fieldValues).length === 0 && (
+                  <div className="rounded-2xl border border-[#B4BE6A]/35 bg-[#B4BE6A]/6 px-5 py-4 flex items-start gap-3">
+                    <div className="mt-0.5 h-8 w-8 shrink-0 flex items-center justify-center rounded-xl bg-[#B4BE6A]/20 text-[#75863B]">
+                      <MessageSquare className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-[#302817]">
+                        {tr ? 'Henüz aktivite verisi yok' : 'No activity data yet'}
+                      </p>
+                      <p className="text-[12px] text-[#302817]/55 mt-0.5 leading-relaxed">
+                        {tr
+                          ? 'AI Asistan ile başlayın veya aşağıdan bir kategori seçin. Örnek: "Geçen yıl 15.000 m³ doğalgaz kullandık."'
+                          : 'Start with the AI Assistant or select a category below. Example: "We used 15,000 m³ natural gas last year."'}
+                      </p>
+                      <button
+                        onClick={() => setMode('chat')}
+                        className="mt-2.5 flex items-center gap-1.5 rounded-full bg-[#302817] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-black"
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        {tr ? 'AI Asistan\'ı Aç' : 'Open AI Assistant'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Category cards */}
                 <div>
                   <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#302817]/35">
@@ -444,36 +476,74 @@ export default function WorkspacePage() {
                   </div>
                 </div>
 
-                {/* Overall summary */}
+                {/* Overall summary — clean scope breakdown */}
                 {Object.keys(fieldValues).length > 0 && (() => {
                   const totalKg = CATEGORIES.reduce((sum, cat) => {
                     const kg = estimateEmissionKg(cat.id, fieldValues);
                     return sum + (kg || 0);
                   }, 0);
+                  const hasAnyEstimate = CATEGORIES.some(cat => estimateEmissionKg(cat.id, fieldValues) !== null);
                   return (
                     <div className="rounded-2xl border border-[#302817]/8 bg-white p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#302817]/35">
-                          {tr ? 'Toplam Tahmini Emisyon' : 'Total Estimated Emission'}
-                        </p>
-                        <span className="text-[10px] text-[#302817]/30">DEFRA 2023 / GLEC v3</span>
-                      </div>
-                      {totalKg > 0 && (
-                        <p className="text-2xl font-bold text-[#302817] mb-3">
-                          {totalKg >= 1000
-                            ? `${(totalKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })} tCO₂e`
-                            : `${totalKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kgCO₂e`}
-                        </p>
-                      )}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        {Object.entries(fieldValues).map(([k, v]) => (
-                          <div key={k} className="rounded-xl border border-[#302817]/6 bg-[#FAFAF8] px-3 py-2">
-                            <p className="text-[9.5px] text-[#302817]/35 font-mono truncate">{k.replace('rf.', '')}</p>
-                            <p className="text-xs font-bold text-[#302817] truncate">
-                              {Array.isArray(v) ? `${v.length} entries` : String(v)}
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#302817]/35">
+                            {tr ? 'Toplam Tahmini Emisyon' : 'Total Estimated Emission'}
+                          </p>
+                          <p className="text-[10px] text-[#302817]/25 mt-0.5">DEFRA 2023 · IEA 2023 · GLEC v3</p>
+                        </div>
+                        {hasAnyEstimate && totalKg > 0 && (
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-[#302817]">
+                              {totalKg >= 1000
+                                ? `${(totalKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} tCO₂e`
+                                : `${totalKg.toLocaleString(undefined, { maximumFractionDigits: 0 })} kgCO₂e`}
+                            </p>
+                            <p className="text-[10px] text-[#302817]/30 mt-0.5">
+                              {tr ? 'Tüm kapsamlar' : 'All scopes combined'}
                             </p>
                           </div>
-                        ))}
+                        )}
+                      </div>
+
+                      {/* Per-scope rows */}
+                      <div className="divide-y divide-[#302817]/5">
+                        {CATEGORIES.map(cat => {
+                          const catKg     = estimateEmissionKg(cat.id, fieldValues);
+                          const catStatus = statuses[cat.id] || 'missing';
+                          if (catStatus === 'missing') return null;
+                          const Icon = cat.icon;
+                          return (
+                            <button
+                              key={cat.id}
+                              onClick={() => setSelectedCat(cat.id)}
+                              className="w-full flex items-center justify-between py-2.5 first:pt-0 last:pb-0 group hover:bg-[#302817]/2 rounded-xl px-2 -mx-2 transition"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${cat.bg}`}>
+                                  <Icon className={`h-3.5 w-3.5 ${cat.color}`} />
+                                </div>
+                                <div className="text-left">
+                                  <p className="text-[12px] font-semibold text-[#302817]">{cat.label[lang] || cat.label.en}</p>
+                                  <p className="text-[10px] text-[#302817]/40">{cat.desc[lang] || cat.desc.en}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2.5 shrink-0">
+                                <StatusPill status={catStatus} lang={lang} />
+                                {catKg !== null ? (
+                                  <span className="text-sm font-bold text-[#75863B] min-w-[90px] text-right">
+                                    {formatEmission(catKg)}
+                                  </span>
+                                ) : (
+                                  <span className="text-xs text-[#302817]/25 min-w-[90px] text-right">
+                                    {tr ? 'Tahmin yok' : 'No estimate'}
+                                  </span>
+                                )}
+                                <ChevronRight className="h-3.5 w-3.5 text-[#302817]/20 group-hover:text-[#302817]/50 transition" />
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -496,9 +566,17 @@ export default function WorkspacePage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#302817]/40">
                 {tr ? 'Veri Girişi' : 'Data Entry'}
               </p>
-              {selectedCat && (
-                <span className="text-[10px] font-bold text-[#302817]/30">{selectedCat}</span>
-              )}
+              <div className="flex items-center gap-2">
+                {refreshing && (
+                  <span className="flex items-center gap-1 text-[9px] font-bold text-[#75863B] animate-pulse">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#95A847]" />
+                    {tr ? 'Güncelleniyor' : 'Updating'}
+                  </span>
+                )}
+                {selectedCat && (
+                  <span className="text-[10px] font-bold text-[#302817]/30">{selectedCat}</span>
+                )}
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <DataEntryPanel

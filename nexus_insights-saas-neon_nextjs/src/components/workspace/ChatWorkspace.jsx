@@ -82,8 +82,17 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
           role: 'suggestion',
           suggestion: data.suggestion,
         }]);
+      } else {
+        // No structured fields extracted — show a soft prompt hint
+        setMessages(prev => [...prev, {
+          id: `hint-${Date.now()}`,
+          role: 'hint',
+          content: tr
+            ? 'İpucu: Sayısal veri paylaşırsanız (örn: "15.000 m³ doğalgaz", "18.000 kWh") otomatik çıkarım yapabilirim.'
+            : 'Tip: Share specific quantities and units (e.g., "15,000 m³ natural gas", "18,000 kWh") and I'll extract structured fields for you.',
+        }]);
       }
-    } catch (e) {
+    } catch {
       setError(tr ? 'AI isteği başarısız oldu. Lütfen tekrar deneyin.' : 'AI request failed. Please try again.');
     } finally {
       setSending(false);
@@ -150,6 +159,16 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
             return (
               <div key={msg.id} className="rounded-2xl border border-[#302817]/8 bg-[#302817]/3 px-4 py-3 text-xs text-[#302817]/40 line-through">
                 {tr ? 'Reddedildi' : 'Rejected'} — {msg.suggestion?.category}
+              </div>
+            );
+          }
+          if (msg.role === 'hint') {
+            return (
+              <div key={msg.id} className="flex items-start gap-2 rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/6 px-4 py-2.5">
+                <span className="text-[10px] font-bold text-[#75863B] uppercase tracking-wider shrink-0 mt-0.5">
+                  {tr ? 'İpucu' : 'Tip'}
+                </span>
+                <span className="text-[12px] text-[#302817]/60 leading-relaxed">{msg.content}</span>
               </div>
             );
           }

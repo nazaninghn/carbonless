@@ -50,8 +50,9 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
   const [consumption, setConsumption] = useState(fieldValues['rf.3a.consumption'] || '');
   const [unit, setUnit] = useState(fieldValues['rf.3a.unit'] || '');
   const [facility, setFacility] = useState(fieldValues['rf.3a.facility'] || '');
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [saved,      setSaved]      = useState(false);
+  const [saveError,  setSaveError]  = useState('');
 
   // Sync when fieldValues change (e.g. after AI suggestion confirmed)
   useEffect(() => {
@@ -81,6 +82,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
     if (!reportId || !fuelType || !consumption) return;
     setSaving(true);
     setSaved(false);
+    setSaveError('');
     try {
       await saveReportFields(reportId, [
         { field_id: 'rf.3a.fuel_type',   value: fuelType },
@@ -92,7 +94,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
       if (onSaved) onSaved(['rf.3a.fuel_type', 'rf.3a.consumption', 'rf.3a.unit', 'rf.3a.facility']);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      // Error handled silently; user can retry
+      setSaveError(tr ? 'Kaydetme başarısız. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -181,6 +183,13 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
               ? `${(emissionKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} tCO₂e`
               : `${emissionKg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kgCO₂e`}
           </p>
+        </div>
+      )}
+
+      {/* Save error */}
+      {saveError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 font-medium">
+          {saveError}
         </div>
       )}
 
