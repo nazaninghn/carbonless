@@ -60,13 +60,46 @@ def _fields_map(report):
     return values, meta
 
 
+FIELD_HUMAN_LABELS = {
+    'rf.3a.fuel_type':        'Scope 1 / 3A — Fuel type',
+    'rf.3a.consumption':      'Scope 1 / 3A — Consumption',
+    'rf.3a.unit':             'Scope 1 / 3A — Unit',
+    'rf.3a.facility':         'Scope 1 / 3A — Facility',
+    'rf.4a.consumption_kwh':  'Scope 2 / 4A — Electricity (kWh)',
+    'rf.4a.supplier':         'Scope 2 / 4A — Supplier',
+    'rf.4a.renewable_pct':    'Scope 2 / 4A — Renewable %',
+    'rf.k4.transport_mode':   'Scope 3 / K4 — Transport mode',
+    'rf.k4.distance_km':      'Scope 3 / K4 — Distance (km)',
+    'rf.k4.cargo_tonnes':     'Scope 3 / K4 — Cargo (tonnes)',
+    'rf.k4.tkm':              'Scope 3 / K4 — Tonne-km',
+}
+
+
 def _context_summary(report):
-    """Build a compact text summary of existing ReportFields for the AI prompt."""
+    """Build a human-readable summary of existing ReportFields for the AI prompt."""
     values, _ = _fields_map(report)
     if not values:
         return 'No data entered yet.'
-    lines = [f'- {k}: {v}' for k, v in list(values.items())[:40]]
+    lines = [
+        f'- {FIELD_HUMAN_LABELS.get(k, k)}: {v}'
+        for k, v in list(values.items())[:40]
+    ]
     return '\n'.join(lines)
+
+
+def _coerce_value(new_val, original_val):
+    """
+    If the original field value was a number (int/float) but the edited value
+    arrived as a string (from an HTML input), coerce it back to a number.
+    This prevents '16000' (str) being stored instead of 16000 (int).
+    """
+    if isinstance(original_val, (int, float)) and isinstance(new_val, str):
+        stripped = new_val.strip().replace(',', '.')
+        try:
+            return int(stripped) if '.' not in stripped else float(stripped)
+        except (ValueError, TypeError):
+            pass
+    return new_val
 
 
 # ── Category → field_id schema (MVP: 3A, 4A, K4) ─────────────────────────
@@ -289,8 +322,12 @@ class SuggestionConfirmView(APIView):
         if edited_fields:
             # Merge: override only the fields the user edited
             edited_map = {f['field_id']: f for f in edited_fields if 'field_id' in f}
+            original_val_map = {f['field_id']: f.get('value') for f in fields_to_save}
             fields_to_save = [
-                {**f, 'value': edited_map[f['field_id']]['value']}
+                {**f, 'value': _coerce_value(
+                    edited_map[f['field_id']]['value'],
+                    original_val_map.get(f['field_id']),
+                )}
                 if f['field_id'] in edited_map else f
                 for f in fields_to_save
             ]

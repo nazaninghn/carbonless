@@ -2,9 +2,10 @@
 import { useState, useCallback } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
-  ClipboardCheck, Bot, ChevronRight, MoreHorizontal,
+  ClipboardCheck, Bot, ChevronRight, MoreHorizontal, Layers,
 } from 'lucide-react';
 import Image from 'next/image';
+import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -95,6 +96,23 @@ export default function DashboardSidebar({
               );
             })}
           </nav>
+
+          {/* Workspace link (separate page) */}
+          <div className="px-3 pb-3">
+            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#B4BE6A]">
+              {tr ? 'Araçlar' : 'Tools'}
+            </p>
+            <Link
+              href="/dashboard/workspace"
+              className="group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-[#302817]/65 transition hover:bg-[#B4BE6A]/8 hover:text-[#302817]"
+            >
+              <Layers className="h-[18px] w-[18px] shrink-0 text-[#B4BE6A]" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+                {tr ? 'Çalışma Alanı' : 'Workspace'}
+              </span>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-40" />
+            </Link>
+          </div>
 
           {/* User footer */}
           <div className="border-t border-[#302817]/6 p-3">

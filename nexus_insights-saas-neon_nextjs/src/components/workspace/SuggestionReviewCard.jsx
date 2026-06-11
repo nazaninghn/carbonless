@@ -81,6 +81,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
                   <td className="px-3 py-2">
                     {editing ? (
                       <input
+                        type={typeof f.value === 'number' ? 'number' : 'text'}
                         className="w-full rounded-lg border border-[#302817]/15 bg-white px-2 py-1 text-xs text-[#302817] outline-none focus:border-[#B4BE6A]/50"
                         defaultValue={f.value}
                         onChange={e => setEditedValues(prev => ({ ...prev, [f.field_id]: e.target.value }))}
