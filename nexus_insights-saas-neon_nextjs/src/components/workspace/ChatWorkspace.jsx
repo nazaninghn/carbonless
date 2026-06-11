@@ -89,7 +89,7 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
           role: 'hint',
           content: tr
             ? 'İpucu: Sayısal veri paylaşırsanız (örn: "15.000 m³ doğalgaz", "18.000 kWh") otomatik çıkarım yapabilirim.'
-            : 'Tip: Share specific quantities and units (e.g., "15,000 m³ natural gas", "18,000 kWh") and I'll extract structured fields for you.',
+            : "Tip: Share specific quantities and units (e.g., \"15,000 m³ natural gas\", \"18,000 kWh\") and I'll extract structured fields for you.",
         }]);
       }
     } catch {
