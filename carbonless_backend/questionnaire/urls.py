@@ -11,6 +11,13 @@ from .views import (
     reset_session,
     get_profile,
 )
+from .workspace_views import (
+    ReportFieldMapView,
+    ReportFieldBulkUpsertView,
+    WorkspaceChatView,
+    SuggestionConfirmView,
+    SuggestionRejectView,
+)
 
 urlpatterns = [
     # New CarbonIQ API
@@ -18,6 +25,10 @@ urlpatterns = [
     path('start/', StartReportView.as_view()),
     path('<int:report_id>/', ReportStatusView.as_view()),
     path('<int:report_id>/step/', SubmitStepView.as_view()),
+
+    # Workspace: ReportField data layer
+    path('report-fields/map/', ReportFieldMapView.as_view()),
+    path('report-fields/bulk-upsert/', ReportFieldBulkUpsertView.as_view()),
 
     # Legacy (keep for existing chatbot)
     path('legacy/start/', start_session, name='questionnaire-start'),

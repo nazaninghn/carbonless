@@ -139,3 +139,70 @@ class QuestionnaireSession(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Session {self.pk}"
+
+
+# ── Workspace: shared data layer ──────────────────────────────────────────────
+
+class ReportField(models.Model):
+    """
+    Single source of truth for every structured data point in a report.
+    Both the Chatbot and the Dashboard read/write via this model.
+    """
+    class Source(models.TextChoices):
+        CHATBOT   = 'chatbot',   'Chatbot'
+        DASHBOARD = 'dashboard', 'Dashboard'
+        EXCEL     = 'excel',     'Excel Import'
+        PREFILL   = 'prefill',   'Pre-fill'
+
+    report      = models.ForeignKey(CarbonReport, on_delete=models.CASCADE,
+                                    related_name='report_fields')
+    field_id    = models.CharField(max_length=100)          # e.g. "rf.3a.consumption"
+    value       = models.JSONField()                        # string | number | list | dict
+    source      = models.CharField(max_length=20, choices=Source.choices,
+                                   default=Source.DASHBOARD)
+    confidence  = models.FloatField(null=True, blank=True)  # 0.0–1.0, set by AI
+    updated_by  = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                    null=True, blank=True, related_name='+')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['report', 'field_id']
+        ordering = ['field_id']
+        indexes = [
+            models.Index(fields=['report', 'field_id'], name='rf_report_field_idx'),
+        ]
+
+    def __str__(self):
+        return f"[{self.report_id}] {self.field_id} = {self.value}"
+
+
+class PendingSuggestion(models.Model):
+    """
+    AI-generated field suggestions waiting for user confirmation.
+    AI MUST NOT write directly to ReportField — it creates a PendingSuggestion first.
+    """
+    class Status(models.TextChoices):
+        PENDING   = 'pending',   'Pending'
+        CONFIRMED = 'confirmed', 'Confirmed'
+        REJECTED  = 'rejected',  'Rejected'
+        EDITED    = 'edited',    'Confirmed with Edits'
+
+    report      = models.ForeignKey(CarbonReport, on_delete=models.CASCADE,
+                                    related_name='suggestions')
+    message_id  = models.CharField(max_length=100, blank=True)  # optional chat ref
+    category    = models.CharField(max_length=20)               # e.g. "3A"
+    fields      = models.JSONField()                            # list of {field_id, label, value, unit?, confidence}
+    status      = models.CharField(max_length=20, choices=Status.choices,
+                                   default=Status.PENDING)
+    confidence  = models.FloatField(null=True, blank=True)
+    created_by  = models.ForeignKey(User, on_delete=models.SET_NULL,
+                                    null=True, blank=True, related_name='+')
+    created_at  = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Suggestion [{self.category}] {self.status} — report {self.report_id}"
