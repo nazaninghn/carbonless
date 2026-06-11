@@ -61,17 +61,25 @@ def _fields_map(report):
 
 
 FIELD_HUMAN_LABELS = {
-    'rf.3a.fuel_type':        'Scope 1 / 3A — Fuel type',
-    'rf.3a.consumption':      'Scope 1 / 3A — Consumption',
-    'rf.3a.unit':             'Scope 1 / 3A — Unit',
-    'rf.3a.facility':         'Scope 1 / 3A — Facility',
-    'rf.4a.consumption_kwh':  'Scope 2 / 4A — Electricity (kWh)',
-    'rf.4a.supplier':         'Scope 2 / 4A — Supplier',
-    'rf.4a.renewable_pct':    'Scope 2 / 4A — Renewable %',
-    'rf.k4.transport_mode':   'Scope 3 / K4 — Transport mode',
-    'rf.k4.distance_km':      'Scope 3 / K4 — Distance (km)',
-    'rf.k4.cargo_tonnes':     'Scope 3 / K4 — Cargo (tonnes)',
-    'rf.k4.tkm':              'Scope 3 / K4 — Tonne-km',
+    # 3A — Stationary Combustion
+    'rf.3a.fuel_type':              'Scope 1 / 3A — Fuel type',
+    'rf.3a.consumption':            'Scope 1 / 3A — Consumption',
+    'rf.3a.unit':                   'Scope 1 / 3A — Unit',
+    'rf.3a.facility':               'Scope 1 / 3A — Facility',
+    # 4A — Purchased Electricity
+    'rf.4a.facility':               'Scope 2 / 4A — Facility',
+    'rf.4a.consumption_kwh':        'Scope 2 / 4A — Electricity consumed (kWh)',
+    'rf.4a.period':                 'Scope 2 / 4A — Reporting period',
+    'rf.4a.data_source':            'Scope 2 / 4A — Data source',
+    'rf.4a.supplier':               'Scope 2 / 4A — Electricity supplier',
+    'rf.4a.renewable_on_site':      'Scope 2 / 4A — On-site renewable generation (kWh)',
+    'rf.4a.emission_factor':        'Scope 2 / 4A — Emission factor (kgCO2e/kWh)',
+    'rf.4a.emission_factor_source': 'Scope 2 / 4A — Emission factor source',
+    # K4 — Upstream Transport
+    'rf.k4.transport_mode':         'Scope 3 / K4 — Transport mode',
+    'rf.k4.distance_km':            'Scope 3 / K4 — Distance (km)',
+    'rf.k4.cargo_tonnes':           'Scope 3 / K4 — Cargo (tonnes)',
+    'rf.k4.tkm':                    'Scope 3 / K4 — Tonne-km',
 }
 
 
@@ -114,11 +122,16 @@ CATEGORY_SCHEMAS = {
         ],
     },
     '4A': {
-        'label': 'Electricity',
+        'label': 'Purchased Electricity (Scope 2)',
         'fields': [
-            {'field_id': 'rf.4a.consumption_kwh', 'label': 'Electricity (kWh)', 'type': 'number'},
-            {'field_id': 'rf.4a.supplier',        'label': 'Supplier',          'type': 'string'},
-            {'field_id': 'rf.4a.renewable_pct',   'label': 'Renewable %',       'type': 'number'},
+            {'field_id': 'rf.4a.facility',               'label': 'Facility',                    'type': 'string'},
+            {'field_id': 'rf.4a.consumption_kwh',        'label': 'Electricity consumed (kWh)',  'type': 'number'},
+            {'field_id': 'rf.4a.period',                 'label': 'Reporting period',            'type': 'string'},
+            {'field_id': 'rf.4a.data_source',            'label': 'Data source',                 'type': 'string'},
+            {'field_id': 'rf.4a.supplier',               'label': 'Electricity supplier',        'type': 'string'},
+            {'field_id': 'rf.4a.renewable_on_site',      'label': 'On-site renewable (kWh)',     'type': 'number'},
+            {'field_id': 'rf.4a.emission_factor',        'label': 'Emission factor (kgCO2e/kWh)', 'type': 'number'},
+            {'field_id': 'rf.4a.emission_factor_source', 'label': 'Emission factor source',      'type': 'string'},
         ],
     },
     'K4': {

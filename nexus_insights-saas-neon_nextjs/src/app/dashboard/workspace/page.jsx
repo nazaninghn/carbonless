@@ -7,6 +7,7 @@ import {
 import { getReportFields, getCategoryStatus } from '@/lib/workspace/api';
 import { ChatWorkspace } from '@/components/workspace/ChatWorkspace';
 import { StationaryCombustionPanel } from '@/components/workspace/panels/StationaryCombustionPanel';
+import { ElectricityPanel } from '@/components/workspace/panels/ElectricityPanel';
 import { api } from '@/lib/utils/api';
 
 // ── Status badge ─────────────────────────────────────────────────────────────
@@ -176,6 +177,16 @@ function DataEntryPanel({ categoryId, reportId, fieldValues, lang, onSaved }) {
   if (categoryId === '3A') {
     return (
       <StationaryCombustionPanel
+        reportId={reportId}
+        fieldValues={fieldValues}
+        lang={lang}
+        onSaved={onSaved}
+      />
+    );
+  }
+  if (categoryId === '4A') {
+    return (
+      <ElectricityPanel
         reportId={reportId}
         fieldValues={fieldValues}
         lang={lang}
