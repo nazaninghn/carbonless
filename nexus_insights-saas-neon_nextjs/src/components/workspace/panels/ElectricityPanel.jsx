@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Save, CheckCircle2, Loader2, Zap } from 'lucide-react';
+import { CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
 
 // Location-based grid emission factors (kgCO2e/kWh) — IEA 2023
@@ -15,30 +15,42 @@ const GRID_FACTORS = [
 ];
 
 const DATA_SOURCE_OPTIONS = [
-  { value: 'invoice',       label: { tr: 'Fatura',             en: 'Invoice'           } },
-  { value: 'meter_reading', label: { tr: 'Sayaç okuma',        en: 'Meter reading'     } },
-  { value: 'estimate',      label: { tr: 'Tahmin',             en: 'Estimate'          } },
-  { value: 'utility_report',label: { tr: 'Tedarikçi raporu',   en: 'Utility report'    } },
+  { value: 'invoice',        label: { tr: 'Fatura',             en: 'Invoice'           } },
+  { value: 'meter_reading',  label: { tr: 'Sayaç okuma',        en: 'Meter reading'     } },
+  { value: 'estimate',       label: { tr: 'Tahmin',             en: 'Estimate'          } },
+  { value: 'utility_report', label: { tr: 'Tedarikçi raporu',   en: 'Utility report'    } },
 ];
 
-function FieldRow({ label, hint, children }) {
+const INPUT_CLS =
+  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
+  'placeholder:text-[#302817]/25 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+const SELECT_CLS =
+  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
+  'focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+
+function SectionDivider({ children }) {
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-semibold text-[#302817]/60">
+    <div className="flex items-center gap-2">
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#302817]/35 shrink-0">
+        {children}
+      </span>
+      <div className="flex-1 h-px bg-[#302817]/8" />
+    </div>
+  );
+}
+
+function FieldRow({ label, hint, required, children }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-[11px] font-semibold text-[#302817]/55">
         {label}
-        {hint && <span className="ml-1 font-normal text-[#302817]/35">({hint})</span>}
+        {required && <span className="ml-0.5 text-yellow-500">*</span>}
+        {hint && <span className="ml-1 font-normal text-[#302817]/30">({hint})</span>}
       </label>
       {children}
     </div>
   );
 }
-
-const INPUT_CLS =
-  'w-full rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20';
-const SELECT_CLS =
-  'w-full rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20';
 
 export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSaved }) {
   const tr = lang === 'tr';
@@ -129,105 +141,102 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
     <div className="flex flex-col gap-4">
 
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-yellow-100 text-yellow-500">
-          <Zap className="h-4 w-4" />
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-yellow-50">
+          <Zap className="h-4.5 w-4.5 text-yellow-500" />
         </div>
         <div>
-          <p className="text-sm font-bold text-[#302817]">
-            {tr ? 'Satın Alınan Elektrik — 4A' : 'Purchased Electricity — 4A'}
+          <p className="text-[13px] font-bold text-[#302817]">
+            {tr ? 'Satın Alınan Elektrik' : 'Purchased Electricity'}
           </p>
-          <p className="text-[11px] text-[#302817]/45">
-            {tr ? 'Kapsam 2 · ISO 14064-1 §5.3' : 'Scope 2 · ISO 14064-1 §5.3'}
+          <p className="text-[10px] text-[#302817]/40">
+            {tr ? 'Kapsam 2 · 4A · ISO 14064-1 §5.3' : 'Scope 2 · 4A · ISO 14064-1 §5.3'}
           </p>
         </div>
       </div>
 
-      {/* Facility */}
-      <FieldRow label={tr ? 'Tesis / Yer' : 'Facility / Location'} hint={tr ? 'isteğe bağlı' : 'optional'}>
-        <input
-          type="text"
-          className={INPUT_CLS}
-          placeholder={tr ? 'Örn: Merkez Ofis, Fabrika A' : 'e.g. Head Office, Plant A'}
-          value={facility}
-          onChange={e => setFacility(e.target.value)}
-        />
-      </FieldRow>
+      {/* Tesis ve Tüketim */}
+      <div className="flex flex-col gap-3">
+        <SectionDivider>{tr ? 'Tesis ve Tüketim' : 'Facility & Consumption'}</SectionDivider>
 
-      {/* Consumption */}
-      <FieldRow label={tr ? 'Tüketim (kWh) *' : 'Consumption (kWh) *'}>
-        <input
-          type="number"
-          min="0"
-          className={INPUT_CLS}
-          placeholder={tr ? 'Örn: 18000' : 'e.g. 18000'}
-          value={consumptionKwh}
-          onChange={e => setConsumptionKwh(e.target.value)}
-        />
-      </FieldRow>
+        <FieldRow label={tr ? 'Tesis / Yer' : 'Facility / Location'} hint={tr ? 'isteğe bağlı' : 'optional'}>
+          <input
+            type="text"
+            className={INPUT_CLS}
+            placeholder={tr ? 'Örn: Merkez Ofis, Fabrika A' : 'e.g. Head Office, Plant A'}
+            value={facility}
+            onChange={e => setFacility(e.target.value)}
+          />
+        </FieldRow>
 
-      {/* Period + Data source */}
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <FieldRow label={tr ? 'Dönem' : 'Period'} hint={tr ? 'isteğe bağlı' : 'optional'}>
-            <input
-              type="text"
-              className={INPUT_CLS}
-              placeholder={tr ? 'Örn: 2023' : 'e.g. 2023'}
-              value={period}
-              onChange={e => setPeriod(e.target.value)}
-            />
-          </FieldRow>
+        <FieldRow label={tr ? 'Tüketim (kWh)' : 'Consumption (kWh)'} required>
+          <input
+            type="number"
+            min="0"
+            className={INPUT_CLS}
+            placeholder={tr ? 'Örn: 18000' : 'e.g. 18000'}
+            value={consumptionKwh}
+            onChange={e => setConsumptionKwh(e.target.value)}
+          />
+        </FieldRow>
+
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <FieldRow label={tr ? 'Dönem' : 'Period'} hint={tr ? 'isteğe bağlı' : 'optional'}>
+              <input
+                type="text"
+                className={INPUT_CLS}
+                placeholder={tr ? 'Örn: 2023' : 'e.g. 2023'}
+                value={period}
+                onChange={e => setPeriod(e.target.value)}
+              />
+            </FieldRow>
+          </div>
+          <div className="flex-1">
+            <FieldRow label={tr ? 'Veri kaynağı' : 'Data source'} hint={tr ? 'isteğe bağlı' : 'optional'}>
+              <select
+                className={SELECT_CLS}
+                value={dataSource}
+                onChange={e => setDataSource(e.target.value)}
+              >
+                <option value="">{tr ? '— Seçin —' : '— Select —'}</option>
+                {DATA_SOURCE_OPTIONS.map(o => (
+                  <option key={o.value} value={o.value}>{o.label[lang] || o.label.en}</option>
+                ))}
+              </select>
+            </FieldRow>
+          </div>
         </div>
-        <div className="flex-1">
-          <FieldRow label={tr ? 'Veri kaynağı' : 'Data source'} hint={tr ? 'isteğe bağlı' : 'optional'}>
-            <select
-              className={SELECT_CLS}
-              value={dataSource}
-              onChange={e => setDataSource(e.target.value)}
-            >
-              <option value="">{tr ? '— Seçin —' : '— Select —'}</option>
-              {DATA_SOURCE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>{o.label[lang] || o.label.en}</option>
-              ))}
-            </select>
-          </FieldRow>
-        </div>
+
+        <FieldRow label={tr ? 'Tedarikçi' : 'Supplier'} hint={tr ? 'isteğe bağlı' : 'optional'}>
+          <input
+            type="text"
+            className={INPUT_CLS}
+            placeholder={tr ? 'Örn: TEDAŞ, Enerjisa' : 'e.g. TEDAS, Enerjisa'}
+            value={supplier}
+            onChange={e => setSupplier(e.target.value)}
+          />
+        </FieldRow>
+
+        <FieldRow
+          label={tr ? 'Sahada yenilenebilir üretim (kWh)' : 'On-site renewable generation (kWh)'}
+          hint={tr ? 'isteğe bağlı' : 'optional'}
+        >
+          <input
+            type="number"
+            min="0"
+            className={INPUT_CLS}
+            placeholder={tr ? 'Örn: 2000' : 'e.g. 2000'}
+            value={renewableOnSite}
+            onChange={e => setRenewableOnSite(e.target.value)}
+          />
+        </FieldRow>
       </div>
 
-      {/* Supplier */}
-      <FieldRow label={tr ? 'Tedarikçi' : 'Supplier'} hint={tr ? 'isteğe bağlı' : 'optional'}>
-        <input
-          type="text"
-          className={INPUT_CLS}
-          placeholder={tr ? 'Örn: TEDAŞ, Enerjisa' : 'e.g. TEDAS, Enerjisa'}
-          value={supplier}
-          onChange={e => setSupplier(e.target.value)}
-        />
-      </FieldRow>
+      {/* Emisyon Faktörü */}
+      <div className="flex flex-col gap-3">
+        <SectionDivider>{tr ? 'Emisyon Faktörü' : 'Emission Factor'}</SectionDivider>
 
-      {/* On-site renewable */}
-      <FieldRow
-        label={tr ? 'Sahada yenilenebilir üretim (kWh)' : 'On-site renewable generation (kWh)'}
-        hint={tr ? 'isteğe bağlı — net tüketimden düşülür' : 'optional — deducted from net consumption'}
-      >
-        <input
-          type="number"
-          min="0"
-          className={INPUT_CLS}
-          placeholder={tr ? 'Örn: 2000' : 'e.g. 2000'}
-          value={renewableOnSite}
-          onChange={e => setRenewableOnSite(e.target.value)}
-        />
-      </FieldRow>
-
-      {/* Emission factor section */}
-      <div className="rounded-xl border border-[#302817]/8 bg-[#302817]/2 p-3 flex flex-col gap-3">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[#302817]/50">
-          {tr ? 'Emisyon Faktörü' : 'Emission Factor'}
-        </p>
-
-        {/* Grid preset picker */}
         <FieldRow label={tr ? 'Izgara ön ayarı' : 'Grid preset'} hint={tr ? 'isteğe bağlı' : 'optional'}>
           <select
             className={SELECT_CLS}
@@ -266,26 +275,49 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
             </FieldRow>
           </div>
         </div>
+
+        {/* EF box — shown when factor is set */}
+        {emissionFactor && parseFloat(emissionFactor) > 0 && (
+          <div className="flex overflow-hidden rounded-xl border border-[#302817]/8">
+            <div className="w-[3px] shrink-0 bg-[#75863B]" />
+            <div className="flex-1 bg-[#F8F7F2] px-3 py-2.5">
+              <p className="text-[9.5px] text-[#302817]/40 mb-0.5">
+                {emissionFactorSource || (tr ? 'Özel faktör' : 'Custom factor')}
+              </p>
+              <p className="text-[13px] font-bold text-[#302817]">
+                {parseFloat(emissionFactor).toFixed(3)} kgCO₂e/kWh
+              </p>
+              <p className="text-[10px] text-[#75863B] mt-0.5">
+                {tr ? 'Location-based · IEA 2023' : 'Location-based · IEA 2023'}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Emission estimate */}
       {emissionKg !== null && (
-        <div className="rounded-xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 px-3 py-2.5">
-          <p className="text-[11px] font-semibold text-[#75863B] uppercase tracking-wider mb-0.5">
+        <div className="rounded-xl bg-gradient-to-br from-[#95A847]/8 to-[#B4BE6A]/4 border border-[#B4BE6A]/20 px-4 py-3">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#75863B] mb-1">
             {tr ? 'Tahmini Kapsam 2 Emisyonu' : 'Estimated Scope 2 Emission'}
           </p>
           {renewableOnSite && parseFloat(renewableOnSite) > 0 && (
             <p className="text-[10px] text-[#302817]/40 mb-0.5">
               {tr
-                ? `Net tüketim: ${Math.max(parseFloat(consumptionKwh) - parseFloat(renewableOnSite), 0).toLocaleString()} kWh (sahada üretim düşüldü)`
-                : `Net consumption: ${Math.max(parseFloat(consumptionKwh) - parseFloat(renewableOnSite), 0).toLocaleString()} kWh (after on-site generation)`}
+                ? `Net: ${Math.max(parseFloat(consumptionKwh) - parseFloat(renewableOnSite), 0).toLocaleString()} kWh (sahada üretim düşüldü)`
+                : `Net: ${Math.max(parseFloat(consumptionKwh) - parseFloat(renewableOnSite), 0).toLocaleString()} kWh (after on-site generation)`}
             </p>
           )}
-          <p className="text-xl font-bold text-[#302817]">
-            {emissionKg >= 1000
-              ? `${(emissionKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} tCO₂e`
-              : `${emissionKg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kgCO₂e`}
-          </p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-bold text-[#302817]">
+              {emissionKg >= 1000
+                ? (emissionKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                : emissionKg.toLocaleString(undefined, { maximumFractionDigits: 1 })}
+            </span>
+            <span className="text-xs font-semibold text-[#75863B]">
+              {emissionKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
+            </span>
+          </div>
           {emissionFactorSource && (
             <p className="text-[10px] text-[#302817]/35 mt-0.5">{emissionFactorSource}</p>
           )}
@@ -303,12 +335,16 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
       <button
         onClick={handleSave}
         disabled={!canSave || saving}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#302817] py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+        className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
+          saved
+            ? 'bg-[#95A847]/15 border border-[#95A847]/30 text-[#527A1A]'
+            : 'bg-[#302817] text-white hover:bg-black disabled:opacity-35'
+        }`}
       >
         {saving ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : saved ? (
-          <><CheckCircle2 className="h-4 w-4 text-[#B4BE6A]" /> {tr ? 'Kaydedildi' : 'Saved'}</>
+          <><CheckCircle2 className="h-4 w-4" /> {tr ? '✓ Kaydedildi' : '✓ Saved'}</>
         ) : (
           <>{tr ? 'Kaydet' : 'Save'}</>
         )}

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Bot, Send, Loader2 } from 'lucide-react';
+import { Sparkles, Send, Loader2 } from 'lucide-react';
 import { sendWorkspaceChatMessage, confirmSuggestion, rejectSuggestion } from '@/lib/workspace/api';
 import { SuggestionReviewCard } from './SuggestionReviewCard';
 
@@ -23,15 +23,15 @@ function ChatBubble({ msg }) {
   return (
     <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isUser && (
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
-          <Bot className="h-4 w-4" />
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817] text-[#B4BE6A]">
+          <Sparkles className="h-3.5 w-3.5" />
         </div>
       )}
       <div
-        className={`max-w-[85%] rounded-[20px] px-4 py-3 text-[13.5px] leading-[1.65] ${
+        className={`max-w-[85%] rounded-[18px] px-4 py-2.5 text-[13px] leading-[1.65] ${
           isUser
             ? 'rounded-tr-sm bg-[#302817] text-white'
-            : 'rounded-tl-sm border border-[#302817]/6 bg-white text-[#302817] shadow-sm'
+            : 'rounded-tl-sm border border-[#302817]/8 bg-white text-[#302817] shadow-sm'
         }`}
       >
         {msg.content}
@@ -48,7 +48,7 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
       role: 'assistant',
       content: tr
         ? 'Merhaba! Ben CarbonIQ Workspace asistanınızım. Emisyon verilerinizi paylaşın, ben yapılandırılmış alanlara dönüştüreyim. Örneğin: "Geçen yıl 15.000 m³ doğalgaz kullandık."'
-        : 'Hi! I\'m your CarbonIQ Workspace assistant. Share your emission data and I\'ll extract structured fields for you. Try: "We used 15,000 m³ natural gas last year."',
+        : "Hi! I'm your CarbonIQ Workspace assistant. Share your emission data and I'll extract structured fields for you. Try: \"We used 15,000 m³ natural gas last year.\"",
     },
   ]);
   const [input, setInput] = useState('');
@@ -83,7 +83,6 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
           suggestion: data.suggestion,
         }]);
       } else {
-        // No structured fields extracted — show a soft prompt hint
         setMessages(prev => [...prev, {
           id: `hint-${Date.now()}`,
           role: 'hint',
@@ -102,7 +101,6 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
   const handleConfirm = useCallback(async (suggestionId, editedFields) => {
     try {
       const result = await confirmSuggestion(suggestionId, editedFields);
-      // Replace suggestion card with success message
       setMessages(prev => prev.map(m =>
         m.suggestion?.id === suggestionId
           ? { ...m, role: 'confirmed', suggestion: { ...m.suggestion, status: 'confirmed' } }
@@ -133,9 +131,28 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
   }, [addMsg, tr]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-[#FAFAF8]">
+      {/* AI mode header strip */}
+      <div className="shrink-0 flex items-center gap-2.5 px-4 py-2.5 border-b border-[#302817]/6 bg-white">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#302817]">
+          <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[11px] font-bold text-[#302817]">
+            {tr ? 'AI Veri Asistanı' : 'AI Data Assistant'}
+          </p>
+          <p className="text-[9.5px] text-[#302817]/40">
+            {tr ? 'Verilerinizi paylaşın, yapılandırılmış alanlara dönüştüreyim' : 'Share your data and I\'ll extract structured fields'}
+          </p>
+        </div>
+        <span className="flex items-center gap-1 text-[9.5px] font-bold text-[#75863B] bg-[#95A847]/10 border border-[#95A847]/20 px-2 py-1 rounded-full">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#95A847] animate-pulse" />
+          {tr ? 'Çevrimiçi' : 'Online'}
+        </span>
+      </div>
+
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
         {messages.map(msg => {
           if (msg.role === 'suggestion') {
             return (
@@ -150,25 +167,29 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
           }
           if (msg.role === 'confirmed') {
             return (
-              <div key={msg.id} className="rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-semibold text-green-700">
-                ✓ {tr ? 'Onaylandı' : 'Confirmed'} — {msg.suggestion?.category}
+              <div key={msg.id} className="flex items-center gap-2 rounded-2xl border border-[#95A847]/20 bg-[#95A847]/8 px-4 py-3">
+                <span className="text-[#527A1A] text-xs">✓</span>
+                <div>
+                  <p className="text-xs font-bold text-[#527A1A]">{tr ? 'Onaylandı' : 'Confirmed'}</p>
+                  <p className="text-[10px] text-[#302817]/45">{msg.suggestion?.category}</p>
+                </div>
               </div>
             );
           }
           if (msg.role === 'rejected') {
             return (
-              <div key={msg.id} className="rounded-2xl border border-[#302817]/8 bg-[#302817]/3 px-4 py-3 text-xs text-[#302817]/40 line-through">
+              <div key={msg.id} className="rounded-2xl border border-[#302817]/8 bg-[#302817]/3 px-4 py-2.5 text-xs text-[#302817]/35 line-through">
                 {tr ? 'Reddedildi' : 'Rejected'} — {msg.suggestion?.category}
               </div>
             );
           }
           if (msg.role === 'hint') {
             return (
-              <div key={msg.id} className="flex items-start gap-2 rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/6 px-4 py-2.5">
-                <span className="text-[10px] font-bold text-[#75863B] uppercase tracking-wider shrink-0 mt-0.5">
+              <div key={msg.id} className="flex items-start gap-2.5 rounded-2xl border border-[#B4BE6A]/25 bg-[#B4BE6A]/6 px-4 py-2.5">
+                <span className="text-[9.5px] font-bold text-[#75863B] uppercase tracking-wider shrink-0 mt-0.5">
                   {tr ? 'İpucu' : 'Tip'}
                 </span>
-                <span className="text-[12px] text-[#302817]/60 leading-relaxed">{msg.content}</span>
+                <span className="text-[12px] text-[#302817]/55 leading-relaxed">{msg.content}</span>
               </div>
             );
           }
@@ -176,10 +197,10 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
         })}
         {sending && (
           <div className="flex gap-2.5">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
-              <Bot className="h-4 w-4" />
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817] text-[#B4BE6A]">
+              <Sparkles className="h-3.5 w-3.5" />
             </div>
-            <div className="rounded-[20px] rounded-tl-sm border border-[#302817]/6 bg-white px-4 py-3 shadow-sm">
+            <div className="rounded-[18px] rounded-tl-sm border border-[#302817]/8 bg-white px-4 py-3 shadow-sm">
               <TypingDots />
             </div>
           </div>
@@ -192,10 +213,10 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
       </div>
 
       {/* Input */}
-      <div className="shrink-0 border-t border-[#302817]/6 px-4 py-3">
+      <div className="shrink-0 border-t border-[#302817]/6 bg-white px-4 py-3">
         <div className="flex items-end gap-2">
           <textarea
-            className="flex-1 resize-none rounded-2xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20 min-h-[44px] max-h-[120px]"
+            className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[120px] transition-colors"
             placeholder={tr ? 'Emisyon verisi paylaşın…' : 'Share emission data…'}
             value={input}
             rows={1}
@@ -208,7 +229,7 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed }) {
           <button
             onClick={send}
             disabled={!input.trim() || sending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35"
           >
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </button>
