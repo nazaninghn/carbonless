@@ -266,6 +266,10 @@ export function getBenchmarkContext(type, amount, lang) {
       return isTr
         ? `📊 _Kıyaslama: Yüksek elektrik tüketimi — büyük tesis veya enerji yoğun operasyon (tipik ofis: ${b.avg.toLocaleString()} kWh). LED + akıllı HVAC tasarruf potansiyeli var._`
         : `📊 _Benchmark: High electricity consumption — large facility or energy-intensive operation (typical office: ${b.avg.toLocaleString()} kWh). LED + smart HVAC can reduce this._`;
+    } else {
+      return isTr
+        ? `📊 _Kıyaslama: Tipik Türk ofis binası aralığında (${b.low.toLocaleString()}–${b.high.toLocaleString()} kWh). Normal tüketim profili._`
+        : `📊 _Benchmark: Within typical Turkish office range (${b.low.toLocaleString()}–${b.high.toLocaleString()} kWh). Normal consumption profile._`;
     }
   }
 
