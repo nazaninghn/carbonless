@@ -121,12 +121,16 @@ const EMPTY_SHIPMENT = { mode: 'road_hgv_full', cargo_t: '', distance_km: '' };
 export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en', onSaved, isPreview = false }) {
   const tr = lang === 'tr';
 
-  const [entryMethod, setEntryMethod] = useState(fieldValues['rf.k4.entry_method'] || 'shipment_detail');
-  const [dataSource,  setDataSource]  = useState(fieldValues['rf.k4.data_source']   || '');
-  const [shipments,   setShipments]   = useState(() => {
+  const [entryMethod,   setEntryMethod]   = useState(fieldValues['rf.k4.entry_method'] || 'shipment_detail');
+  const [dataSource,    setDataSource]    = useState(fieldValues['rf.k4.data_source']   || '');
+  const [shipments,     setShipments]     = useState(() => {
     const stored = fieldValues['rf.k4.shipments'];
     return Array.isArray(stored) && stored.length > 0 ? stored : [];
   });
+  // Direct total for glec_report / invoice entry methods (no shipment detail available)
+  const [directTotalKg, setDirectTotalKg] = useState(
+    fieldValues['rf.k4.total_emission_kgco2e'] ? String(fieldValues['rf.k4.total_emission_kgco2e']) : ''
+  );
 
   const [draft, setDraft] = useState({ ...EMPTY_SHIPMENT });
   const [saving,     setSaving]     = useState(false);
@@ -139,6 +143,8 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
     setDataSource( fieldValues['rf.k4.data_source']   || '');
     const stored = fieldValues['rf.k4.shipments'];
     if (Array.isArray(stored) && stored.length > 0) setShipments(stored);
+    if (fieldValues['rf.k4.total_emission_kgco2e'])
+      setDirectTotalKg(String(fieldValues['rf.k4.total_emission_kgco2e']));
   }, [fieldValues]);
 
   const draftMode   = getModeData(draft.mode);
@@ -170,7 +176,10 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
     return acc;
   }, { tkm: 0, kgco2e: 0 });
 
-  const canSave = shipments.length > 0 || (canAddDraft && entryMethod !== 'shipment_detail');
+  const parsedDirectKg = parseFloat(String(directTotalKg).replace(',', '.'));
+  const canSave = shipments.length > 0
+    || canAddDraft
+    || (entryMethod !== 'shipment_detail' && !isNaN(parsedDirectKg) && parsedDirectKg > 0);
 
   const handleSave = async () => {
     if (!reportId) return;
@@ -188,10 +197,13 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
     }
 
     const finalTkm = finalShipments.reduce((s, r) => s + (r.tkm || 0), 0);
-    const finalKg  = finalShipments.reduce((s, r) => {
-      const m = getModeData(r.mode);
-      return s + (r.tkm && m ? r.tkm * m.ef : 0);
-    }, 0);
+    // For non-shipment-detail methods, use the directly entered total emission
+    const finalKg  = entryMethod !== 'shipment_detail' && parsedDirectKg > 0
+      ? parsedDirectKg
+      : finalShipments.reduce((s, r) => {
+          const m = getModeData(r.mode);
+          return s + (r.tkm && m ? r.tkm * m.ef : 0);
+        }, 0);
 
     setSaving(true);
     setSaved(false);
@@ -247,6 +259,39 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
           ))}
         </select>
       </div>
+
+      {/* Direct total input for GLEC report / invoice methods */}
+      {entryMethod !== 'shipment_detail' && (
+        <div className="flex flex-col gap-3">
+          <SectionDivider>{tr ? 'Toplam Emisyon Girişi' : 'Direct Total Emission'}</SectionDivider>
+          <p className="text-[10.5px] text-[#302817]/45 leading-relaxed">
+            {tr
+              ? 'GLEC raporu veya faturanızdan toplam emisyon değerini girin (kgCO₂e).'
+              : 'Enter the total emission from your GLEC report or invoice (kgCO₂e).'}
+          </p>
+          <FieldRow label={tr ? 'Toplam Emisyon (kgCO₂e)' : 'Total Emission (kgCO₂e)'}>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              className={INPUT_CLS}
+              placeholder={tr ? 'Örn: 3316' : 'e.g. 3316'}
+              value={directTotalKg}
+              onChange={e => setDirectTotalKg(e.target.value)}
+            />
+          </FieldRow>
+          {!isNaN(parsedDirectKg) && parsedDirectKg > 0 && (
+            <div className="flex items-center justify-between rounded-xl bg-[#302817]/4 border border-[#302817]/8 px-3 py-2.5">
+              <span className="text-xs text-[#302817]/50">{tr ? 'Girilecek değer' : 'Value to save'}</span>
+              <span className="text-sm font-bold text-[#302817]">
+                {parsedDirectKg >= 1000
+                  ? `${(parsedDirectKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} tCO₂e`
+                  : `${parsedDirectKg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kgCO₂e`}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {entryMethod === 'shipment_detail' && (
         <>

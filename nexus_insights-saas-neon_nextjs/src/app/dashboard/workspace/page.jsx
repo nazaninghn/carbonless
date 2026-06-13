@@ -96,7 +96,7 @@ function fmt(kg) {
 }
 
 /* ─── Panel slide-over ────────────────────────────────────────────────────── */
-function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onSaved, onStartReport, startingReport }) {
+function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onSaved, onStartReport, startingReport, startReportErr }) {
   const tr = lang === 'tr';
   const isPreview = reportId === 'preview-001';
   const [active, setActive] = useState('3A');
@@ -139,6 +139,9 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
                 className="text-[10px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-3 py-1 transition disabled:opacity-60">
                 {startingReport ? (tr ? 'Oluşturuluyor…' : 'Creating…') : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
               </button>
+              {startReportErr && (
+                <p className="text-[9.5px] text-red-600 font-semibold mt-1.5">{startReportErr}</p>
+              )}
             </div>
           </div>
         )}
@@ -549,6 +552,7 @@ export default function WorkspacePage() {
           onSaved={handleFieldsSaved}
           onStartReport={handleStartReport}
           startingReport={startingReport}
+          startReportErr={startReportErr}
         />
       </div>
     </>

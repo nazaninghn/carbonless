@@ -728,7 +728,9 @@ export function ChatWorkspace({
             role: 'suggestion',
             suggestion: data.suggestion,
           }]);
-        } else {
+        } else if (!data.reply) {
+          // Only show extraction hint when backend returned NEITHER a reply nor a suggestion.
+          // Avoid showing it after every Q&A response which would be noisy.
           addMsg('hint', tr
             ? 'İpucu: Sayısal veri paylaşırsanız (örn: "15.000 m³ doğalgaz") otomatik çıkarım yapabilirim.'
             : "Tip: Share specific quantities (e.g., \"15,000 m³ natural gas\") for automatic extraction.");
