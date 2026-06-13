@@ -94,8 +94,9 @@ function fmt(kg) {
 }
 
 /* ─── Panel slide-over ────────────────────────────────────────────────────── */
-function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onSaved }) {
+function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onSaved, onStartReport, startingReport }) {
   const tr = lang === 'tr';
+  const isPreview = reportId === 'preview-001';
   const [active, setActive] = useState('3A');
   return (
     <>
@@ -109,15 +110,39 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
             </div>
             <div>
               <p className="text-[13px] font-bold text-[#302817]">{tr ? 'Veri Girişi Paneli' : 'Data Entry Panel'}</p>
-              <p className="text-[10px] text-[#302817]/40">ISO 14064-1 · Scope 1 / 2 / 3</p>
+              <p className="text-[10px] text-[#302817]/40">ISO 14064-1 · Scope 1 / 2 / 3
+                {isPreview && <span className="ml-1 text-amber-500 font-bold">· {tr ? 'Önizleme' : 'Preview'}</span>}
+              </p>
             </div>
           </div>
           <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#302817]/5 text-[#302817]/40 hover:text-[#302817] transition">
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* Preview mode warning inside panel */}
+        {isPreview && (
+          <div className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex items-start gap-2.5">
+            <span className="text-[13px] shrink-0">👁</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10.5px] font-bold text-amber-700 mb-0.5">
+                {tr ? 'Önizleme Modu — Kaydetme Devre Dışı' : 'Preview Mode — Saving Disabled'}
+              </p>
+              <p className="text-[9.5px] text-amber-600/80 leading-relaxed mb-2">
+                {tr
+                  ? 'Paneli görüntüleyebilirsiniz, ancak gerçek rapora kaydetmek için bir rapor başlatmanız gerekir.'
+                  : 'You can view the panel, but you need to start a real report to save data.'}
+              </p>
+              <button onClick={onStartReport} disabled={startingReport}
+                className="text-[10px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-3 py-1 transition disabled:opacity-60">
+                {startingReport ? (tr ? 'Oluşturuluyor…' : 'Creating…') : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* tabs */}
-        <div className="flex gap-1.5 px-4 py-3 border-b border-[#302817]/6 bg-[#FAFAF8]">
+        <div className="flex gap-1.5 px-4 py-3 border-b border-[#302817]/6 bg-[#FAFAF8] mt-2">
           {CATEGORIES.map(cat => {
             const Icon = cat.icon;
             const em = estimateKg(cat.id, fieldValues);
@@ -132,12 +157,12 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
             );
           })}
         </div>
-        {/* content */}
+        {/* content — panels receive isPreview so they can disable their save buttons */}
         <div className="flex-1 overflow-y-auto p-5">
-          {active === '3A' && <StationaryCombustionPanel reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />}
-          {active === '4A' && <ElectricityPanel          reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />}
-          {active === 'K4' && <UpstreamTransportPanel    reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />}
-          {active === 'K5' && <BusinessTravelPanel       reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />}
+          {active === '3A' && <StationaryCombustionPanel reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} isPreview={isPreview} />}
+          {active === '4A' && <ElectricityPanel          reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} isPreview={isPreview} />}
+          {active === 'K4' && <UpstreamTransportPanel    reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} isPreview={isPreview} />}
+          {active === 'K5' && <BusinessTravelPanel       reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} isPreview={isPreview} />}
         </div>
       </div>
     </>
@@ -146,14 +171,17 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
 export default function WorkspacePage() {
-  const [lang] = useState('tr');
+  const [lang, setLang] = useState('tr');
   const tr = lang === 'tr';
 
-  const [reportId,    setReportId]    = useState(null);
-  const [fieldValues, setFieldValues] = useState({});
-  const [statuses,    setStatuses]    = useState({});
-  const [panelOpen,   setPanelOpen]   = useState(false);
-  const [loading,     setLoading]     = useState(true);
+  const [reportId,      setReportId]      = useState(null);
+  const [fieldValues,   setFieldValues]   = useState({});
+  const [statuses,      setStatuses]      = useState({});
+  const [panelOpen,     setPanelOpen]     = useState(false);
+  const [loading,       setLoading]       = useState(true);
+  const [startingReport,setStartingReport]= useState(false);
+
+  const isPreviewMode = reportId === 'preview-001';
 
   /* Load report ── on failure/missing → fall back to preview so chatbot always shows */
   useEffect(() => {
@@ -182,15 +210,24 @@ export default function WorkspacePage() {
 
     (async () => {
       try {
-        const res = await api('/questionnaire/');
+        // api is an object — use its method, not api() as a function
+        const res = await api.listReports();
         if (res.ok) {
           const data = await res.json();
           const reports = data.reports || [];
           if (reports.length > 0) {
             setReportId(reports[0].report_id);
           } else {
-            /* No report yet — show chatbot in onboarding/preview mode */
+            /* No report yet — preview mode; restore any locally-saved data */
             setReportId('preview-001');
+            try {
+              const saved = localStorage.getItem('ciq_preview_fields');
+              if (saved) {
+                const vals = JSON.parse(saved);
+                setFieldValues(vals);
+                const s = {}; CATEGORIES.forEach(c => { s[c.id] = getCategoryStatus(c.id, vals); }); setStatuses(s);
+              }
+            } catch {}
           }
         } else {
           setReportId('preview-001');
@@ -221,8 +258,29 @@ export default function WorkspacePage() {
       const u = { ...prev };
       fields.forEach(f => { u[f.field_id] = f.value; });
       const s = {}; CATEGORIES.forEach(c => { s[c.id] = getCategoryStatus(c.id, u); }); setStatuses(s);
+      // Persist so data survives page refresh
+      try { localStorage.setItem('ciq_preview_fields', JSON.stringify(u)); } catch {}
       return u;
     });
+  }, []);
+
+  /* Start a real report (promotes user out of preview mode) */
+  const handleStartReport = useCallback(async () => {
+    setStartingReport(true);
+    try {
+      const res = await api.startCarbonReport();
+      if (res.ok) {
+        const data = await res.json();
+        const newId = data.report_id || data.id;
+        if (newId) {
+          localStorage.removeItem('ciq_preview_fields');
+          setReportId(newId);
+          setFieldValues({});
+          setStatuses({});
+        }
+      }
+    } catch {}
+    setStartingReport(false);
   }, []);
 
   const completedCount = Object.values(statuses).filter(s => s === 'complete').length;
@@ -273,6 +331,35 @@ export default function WorkspacePage() {
               <span className="text-[14px] font-bold text-[#302817]/70 group-hover:text-[#302817] transition tracking-tight">Carbonless</span>
             </a>
           </div>
+
+          {/* ── Preview mode banner ── */}
+          {isPreviewMode && (
+            <div className="relative z-10 mx-4 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400/20 text-[10px]">👁</span>
+                <span className="text-[10.5px] font-bold text-amber-700">
+                  {tr ? 'Önizleme Modu' : 'Preview Mode'}
+                </span>
+                <span className="ml-auto text-[9px] text-amber-500/70 font-semibold">
+                  {tr ? 'Veriler tarayıcıda' : 'Data local only'}
+                </span>
+              </div>
+              <p className="text-[9.5px] text-amber-600/80 leading-relaxed">
+                {tr
+                  ? 'Chatbot çalışıyor ancak veriler sunucuya kaydedilmiyor. Gerçek rapor başlatın.'
+                  : 'Chatbot works but data is not saved to server. Start a real report.'}
+              </p>
+              <button
+                onClick={handleStartReport}
+                disabled={startingReport}
+                className="flex items-center justify-center gap-1.5 rounded-full bg-amber-500 py-1.5 text-[10.5px] font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
+              >
+                {startingReport
+                  ? (tr ? 'Oluşturuluyor…' : 'Creating…')
+                  : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
+              </button>
+            </div>
+          )}
 
           {/* ── Animated globe ── */}
           <div className="relative z-10 flex items-center justify-center px-4 pt-4 pb-1">
@@ -393,11 +480,32 @@ export default function WorkspacePage() {
             </div>
           </header>
 
+          {/* Mobile emission summary strip (only on mobile when data exists) */}
+          {hasData && (
+            <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-2 bg-[#F5F4EF] border-b border-[#302817]/6">
+              <span className="text-[9.5px] font-bold uppercase tracking-widest text-[#302817]/35">
+                {tr ? 'Toplam' : 'Total'}
+              </span>
+              <span className="text-[12px] font-bold text-[#527A1A]">{fmt(grandKg)}</span>
+              <div className="flex-1 h-1.5 rounded-full bg-[#302817]/8 overflow-hidden">
+                <div className="h-full rounded-full bg-gradient-to-r from-[#B4BE6A] to-[#95A847]"
+                  style={{ width: `${Math.round((completedCount / totalCount) * 100)}%` }} />
+              </div>
+              <span className="text-[9.5px] font-semibold text-[#75863B]">{completedCount}/{totalCount}</span>
+              {isPreviewMode && (
+                <span className="text-[8.5px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">
+                  {tr ? 'Önizleme' : 'Preview'}
+                </span>
+              )}
+            </div>
+          )}
+
           {/* Chatbot — full remaining height */}
           <div className="flex-1 min-h-0">
             <ChatWorkspace
               reportId={reportId}
               lang={lang}
+              onLangChange={setLang}
               onFieldsConfirmed={handleFieldsSaved}
               isPreview={reportId === 'preview-001'}
               onPreviewFields={handlePreviewFields}
@@ -415,6 +523,8 @@ export default function WorkspacePage() {
           statuses={statuses}
           lang={lang}
           onSaved={handleFieldsSaved}
+          onStartReport={handleStartReport}
+          startingReport={startingReport}
         />
       </div>
     </>

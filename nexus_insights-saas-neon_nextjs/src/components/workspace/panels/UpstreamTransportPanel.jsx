@@ -118,7 +118,7 @@ function ShipmentRow({ s, index, lang, onRemove }) {
 
 const EMPTY_SHIPMENT = { mode: 'road_hgv_full', cargo_t: '', distance_km: '' };
 
-export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en', onSaved }) {
+export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en', onSaved, isPreview = false }) {
   const tr = lang === 'tr';
 
   const [entryMethod, setEntryMethod] = useState(fieldValues['rf.k4.entry_method'] || 'shipment_detail');
@@ -174,6 +174,10 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
 
   const handleSave = async () => {
     if (!reportId) return;
+    if (isPreview) {
+      setSaveError(tr ? 'Önizleme modunda kaydedilemez. Gerçek rapor başlatın.' : 'Cannot save in preview mode. Start a real report.');
+      return;
+    }
     let finalShipments = shipments;
     if (canAddDraft && entryMethod === 'shipment_detail') {
       finalShipments = [...shipments, {

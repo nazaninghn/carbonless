@@ -65,7 +65,7 @@ function FieldRow({ label, hint, required, children }) {
   );
 }
 
-export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = 'en', onSaved }) {
+export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = 'en', onSaved, isPreview = false }) {
   const tr = lang === 'tr';
 
   const [fuelType, setFuelType] = useState(fieldValues['rf.3a.fuel_type'] || '');
@@ -102,6 +102,11 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
 
   const handleSave = async () => {
     if (!reportId || !fuelType || !consumption) return;
+    if (isPreview) {
+      // Preview mode — cannot save to backend; panel drawer shows CTA to start real report
+      setSaveError(tr ? 'Önizleme modunda kaydedilemez. Gerçek rapor başlatın.' : 'Cannot save in preview mode. Start a real report.');
+      return;
+    }
     setSaving(true);
     setSaved(false);
     setSaveError('');

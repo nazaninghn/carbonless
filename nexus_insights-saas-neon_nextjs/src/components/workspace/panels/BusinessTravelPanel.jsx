@@ -79,7 +79,7 @@ function FieldRow({ label, hint, required, children }) {
 }
 
 // ── Panel component ───────────────────────────────────────────────────────────
-export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', onSaved }) {
+export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', onSaved, isPreview = false }) {
   const tr = lang === 'tr';
 
   // Air travel: pkm per mode
@@ -119,6 +119,10 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
 
   const handleSave = async () => {
     if (!reportId || !hasData) return;
+    if (isPreview) {
+      setSaveError(tr ? 'Önizleme modunda kaydedilemez. Gerçek rapor başlatın.' : 'Cannot save in preview mode. Start a real report.');
+      return;
+    }
     setSaving(true);
     setSaved(false);
     setSaveError('');

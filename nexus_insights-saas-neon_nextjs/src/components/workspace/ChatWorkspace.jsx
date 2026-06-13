@@ -458,13 +458,18 @@ function ChatBubble({ msg }) {
 export function ChatWorkspace({
   reportId,
   lang = 'en',
+  onLangChange,
   onFieldsConfirmed,
   isPreview = false,
   onPreviewFields,
   fieldValues = {},
 }) {
-  // ── Language state (local — user can toggle) ─────────────────────────────────
-  const [activeLang, setActiveLang] = useState(lang || 'en');
+  // ── Language state (local — user can toggle; also notifies parent) ────────────
+  const [activeLang, setActiveLangRaw] = useState(lang || 'en');
+  const setActiveLang = useCallback((l) => {
+    setActiveLangRaw(l);
+    if (onLangChange) onLangChange(l);
+  }, [onLangChange]);
   const tr = activeLang === 'tr';
 
   // ── Mode: 'free' | 'guided' ──────────────────────────────────────────────────

@@ -52,7 +52,7 @@ function FieldRow({ label, hint, required, children }) {
   );
 }
 
-export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSaved }) {
+export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSaved, isPreview = false }) {
   const tr = lang === 'tr';
 
   // ── Field state ──────────────────────────────────────────────────
@@ -103,6 +103,10 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
   // ── Save ─────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!reportId || !consumptionKwh) return;
+    if (isPreview) {
+      setSaveError(tr ? 'Önizleme modunda kaydedilemez. Gerçek rapor başlatın.' : 'Cannot save in preview mode. Start a real report.');
+      return;
+    }
     setSaving(true);
     setSaved(false);
     setSaveError('');
