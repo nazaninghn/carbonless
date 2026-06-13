@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import {
-  LayoutDashboard, Sparkles, Flame, Zap, Truck, ChevronRight,
+  LayoutDashboard, Sparkles, Flame, Zap, Truck, Briefcase, ChevronRight,
   CheckCircle2, Clock, AlertCircle, Minus, Globe, Menu, X, ArrowLeft, Leaf,
 } from 'lucide-react';
 import { getReportFields, getCategoryStatus, REQUIRED_FIELDS } from '@/lib/workspace/api';
@@ -9,6 +9,7 @@ import { ChatWorkspace } from '@/components/workspace/ChatWorkspace';
 import { StationaryCombustionPanel } from '@/components/workspace/panels/StationaryCombustionPanel';
 import { ElectricityPanel } from '@/components/workspace/panels/ElectricityPanel';
 import { UpstreamTransportPanel } from '@/components/workspace/panels/UpstreamTransportPanel';
+import { BusinessTravelPanel } from '@/components/workspace/panels/BusinessTravelPanel';
 import { api } from '@/lib/utils/api';
 
 // ── Status config ─────────────────────────────────────────────────────────────
@@ -59,15 +60,23 @@ const CATEGORIES = [
     icon: Truck,
     color: 'text-sky-500', bg: 'bg-sky-50', bar: 'bg-sky-400',
     scopeBadge: 'bg-sky-50 text-sky-600 border-sky-100',
-    label: { tr: 'Upstream Taşıma',  en: 'Upstream Transport' },
+    label: { tr: 'Upstream Taşıma',    en: 'Upstream Transport' },
     desc:  { tr: 'Lojistik ve taşıma', en: 'Logistics & freight' },
+  },
+  {
+    id: 'K5', scope: 3,
+    icon: Briefcase,
+    color: 'text-violet-500', bg: 'bg-violet-50', bar: 'bg-violet-400',
+    scopeBadge: 'bg-violet-50 text-violet-600 border-violet-100',
+    label: { tr: 'İş Seyahati',        en: 'Business Travel' },
+    desc:  { tr: 'Hava, kara ve tren', en: 'Air, road & rail' },
   },
 ];
 
 const SCOPE_GROUPS = [
   { id: 1, label: { tr: 'Kapsam 1', en: 'Scope 1' }, cats: ['3A'] },
   { id: 2, label: { tr: 'Kapsam 2', en: 'Scope 2' }, cats: ['4A'] },
-  { id: 3, label: { tr: 'Kapsam 3', en: 'Scope 3' }, cats: ['K4'] },
+  { id: 3, label: { tr: 'Kapsam 3', en: 'Scope 3' }, cats: ['K4', 'K5'] },
 ];
 
 // ── Emission estimate helpers ─────────────────────────────────────────────────
@@ -95,6 +104,22 @@ function estimateEmissionKg(catId, vals) {
   if (catId === 'K4') {
     const kg = parseFloat(vals['rf.k4.total_emission_kgco2e']);
     if (!isNaN(kg)) return kg;
+  }
+  if (catId === 'K5') {
+    const direct = parseFloat(vals['rf.k5.total_emission_kgco2e']);
+    if (!isNaN(direct) && direct > 0) return direct;
+    // Fallback: compute from individual distance fields
+    let total = 0, hasData = false;
+    const addKm = (key, ef) => {
+      const v = parseFloat(vals[key]);
+      if (!isNaN(v) && v > 0) { total += v * ef; hasData = true; }
+    };
+    addKm('rf.k5.air_domestic_pkm',    0.264);
+    addKm('rf.k5.air_short_haul_pkm',  0.153);
+    addKm('rf.k5.air_long_haul_pkm',   0.195);
+    addKm('rf.k5.rail_pkm',            0.035);
+    addKm('rf.k5.car_km',              0.149);
+    return hasData ? total : null;
   }
   return null;
 }
@@ -335,6 +360,7 @@ function DataEntryPanel({ categoryId, reportId, fieldValues, lang, onSaved }) {
   if (categoryId === '3A') return <StationaryCombustionPanel reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />;
   if (categoryId === '4A') return <ElectricityPanel          reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />;
   if (categoryId === 'K4') return <UpstreamTransportPanel    reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />;
+  if (categoryId === 'K5') return <BusinessTravelPanel       reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} />;
   const cat = CATEGORIES.find(c => c.id === categoryId);
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-6 gap-3">
@@ -372,10 +398,17 @@ export default function WorkspacePage() {
     if (isPreview) {
       if (!isEmpty) {
         const pf = {
+          // Scope 1 — Stationary Combustion
           'rf.3a.fuel_type': 'natural_gas', 'rf.3a.consumption': 15000, 'rf.3a.unit': 'm³', 'rf.3a.facility': 'Merkez Ofis',
+          // Scope 2 — Electricity (18000 kWh × 0.439 = 7902 kg ≈ 7.9 tCO₂e)
           'rf.4a.consumption_kwh': 18000, 'rf.4a.grid_region': 'turkey_teias', 'rf.4a.supplier': 'TEDAŞ', 'rf.4a.emission_factor': 0.439,
+          // Scope 3 — Upstream Transport (45t × 1200km × 0.0614 ≈ 3312 kg)
           'rf.k4.shipments': [{ mode: 'road_hgv_gt34t_full', weight_t: 45, distance_km: 1200 }],
           'rf.k4.total_emission_kgco2e': 3312,
+          // Scope 3 — Business Travel (5000 dom + 12000 short + 18000 long + 4000 rail ≈ 6806 kg)
+          'rf.k5.air_domestic_pkm': 5000, 'rf.k5.air_short_haul_pkm': 12000,
+          'rf.k5.air_long_haul_pkm': 18000, 'rf.k5.rail_pkm': 4000,
+          'rf.k5.total_emission_kgco2e': 6806,
         };
         setReportId('preview-001');
         setFieldValues(pf);
@@ -420,6 +453,18 @@ export default function WorkspacePage() {
     await loadFields();
     setRefreshing(false);
   }, [loadFields]);
+
+  // Preview mode: AI suggestions save locally (no backend needed)
+  const handlePreviewFieldsSaved = useCallback((extractedFields) => {
+    setFieldValues(prev => {
+      const updated = { ...prev };
+      extractedFields.forEach(f => { updated[f.field_id] = f.value; });
+      const s = {};
+      CATEGORIES.forEach(cat => { s[cat.id] = getCategoryStatus(cat.id, updated); });
+      setStatuses(s);
+      return updated;
+    });
+  }, []);
 
   const completedCount = Object.values(statuses).filter(s => s === 'complete').length;
   const totalCount     = CATEGORIES.length;
@@ -787,6 +832,8 @@ export default function WorkspacePage() {
                   reportId={reportId}
                   lang={lang}
                   onFieldsConfirmed={handleFieldsSaved}
+                  isPreview={reportId === 'preview-001'}
+                  onPreviewFields={handlePreviewFieldsSaved}
                 />
               </div>
             )}

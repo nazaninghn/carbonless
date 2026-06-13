@@ -24,6 +24,7 @@ const CATEGORY_LABELS = {
   '3A': { tr: 'Sabit Yanma — Kapsam 1',         en: 'Stationary Combustion — Scope 1' },
   '4A': { tr: 'Satın Alınan Elektrik — Kapsam 2', en: 'Purchased Electricity — Scope 2' },
   'K4': { tr: 'Upstream Taşımacılık — Kapsam 3',  en: 'Upstream Transport — Scope 3'    },
+  'K5': { tr: 'İş Seyahati — Kapsam 3',           en: 'Business Travel — Scope 3'       },
 };
 
 export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = 'en' }) {
