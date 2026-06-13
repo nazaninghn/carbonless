@@ -88,8 +88,10 @@ export async function rejectSuggestion(suggestionId) {
 /** Required field IDs per category for status computation */
 export const REQUIRED_FIELDS = {
   '3A': ['rf.3a.fuel_type', 'rf.3a.consumption', 'rf.3a.unit'],
-  '4A': ['rf.4a.consumption_kwh', 'rf.4a.supplier'],
-  'K4': ['rf.k4.shipments', 'rf.k4.total_emission_kgco2e'],
+  // supplier is optional — only consumption_kwh is strictly required
+  '4A': ['rf.4a.consumption_kwh'],
+  // shipments detail is optional — total emission is the canonical required field
+  'K4': ['rf.k4.total_emission_kgco2e'],
   'K5': ['rf.k5.total_emission_kgco2e'],
 };
 

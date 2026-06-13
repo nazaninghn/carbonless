@@ -94,7 +94,9 @@ function extractEmissions(text) {
 
   if (/doğal\s*gaz|natural\s*gas|m³|m3\b|gaz\s*(tüketi|kullan|yaktık)|gaz\b.*\d/i.test(t)) {
     const unitRaw = /\bkwh\b/i.test(t) ? 'kwh' : /\bgj\b/i.test(t) ? 'gj' : /\bmcf\b/i.test(t) ? 'mcf' : 'm³';
-    const displayUnit = unitRaw === 'm³' ? 'm³' : unitRaw.toUpperCase();
+    // Use canonical casing so estimateKg() can look them up in DEFRA_EF
+    const UNIT_DISPLAY = { 'm³': 'm³', kwh: 'kWh', gj: 'GJ', mcf: 'MCF' };
+    const displayUnit = UNIT_DISPLAY[unitRaw] || unitRaw.toUpperCase();
     const amount = nums.find(n => n > 10) || 15000;
     const ef = EF.natural_gas[unitRaw] || EF.natural_gas['m³'];
     results.push({

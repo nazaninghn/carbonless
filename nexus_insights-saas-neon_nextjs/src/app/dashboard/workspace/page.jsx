@@ -57,10 +57,12 @@ const SCOPE_GROUPS = [
 ];
 
 const DEFRA_EF = {
-  natural_gas: { 'm³': 2.02, m3: 2.02, kWh: 0.183, GJ: 50.77 },
+  // Both 'kWh' and 'KWH' accepted (chatbot may save uppercase variant)
+  natural_gas: { 'm³': 2.02, m3: 2.02, kWh: 0.183, KWH: 0.183, GJ: 50.77, MCF: 57.17 },
   fuel_oil:    { litre: 2.52, kg: 2.96, GJ: 74.07  },
   diesel:      { litre: 2.54, GJ: 68.08             },
   lpg:         { litre: 1.51, kg: 2.94, GJ: 59.65  },
+  coal:        { kg: 2.42, tonne: 2420, GJ: 88.34   },
 };
 
 function estimateKg(catId, vals) {
@@ -180,6 +182,7 @@ export default function WorkspacePage() {
   const [panelOpen,     setPanelOpen]     = useState(false);
   const [loading,       setLoading]       = useState(true);
   const [startingReport,setStartingReport]= useState(false);
+  const [startReportErr,setStartReportErr]= useState('');
 
   const isPreviewMode = reportId === 'preview-001';
 
@@ -214,9 +217,20 @@ export default function WorkspacePage() {
         const res = await api.listReports();
         if (res.ok) {
           const data = await res.json();
-          const reports = data.reports || [];
+          // Backend may return { reports: [...] } or [...] or { results: [...] }
+          const reports = Array.isArray(data) ? data
+            : Array.isArray(data.reports) ? data.reports
+            : Array.isArray(data.results) ? data.results
+            : [];
           if (reports.length > 0) {
-            setReportId(reports[0].report_id);
+            // Support both report_id and id field names
+            const firstId = reports[0].report_id ?? reports[0].id ?? null;
+            if (firstId) {
+              setReportId(String(firstId));
+            } else {
+              // Report exists but has no recognisable ID — fall back to preview
+              setReportId('preview-001');
+            }
           } else {
             /* No report yet — preview mode; restore any locally-saved data */
             setReportId('preview-001');
@@ -267,21 +281,28 @@ export default function WorkspacePage() {
   /* Start a real report (promotes user out of preview mode) */
   const handleStartReport = useCallback(async () => {
     setStartingReport(true);
+    setStartReportErr('');
     try {
       const res = await api.startCarbonReport();
       if (res.ok) {
         const data = await res.json();
-        const newId = data.report_id || data.id;
+        const newId = data.report_id ?? data.id ?? null;
         if (newId) {
           localStorage.removeItem('ciq_preview_fields');
-          setReportId(newId);
+          setReportId(String(newId));
           setFieldValues({});
           setStatuses({});
+        } else {
+          setStartReportErr(lang === 'tr' ? 'Rapor ID alınamadı.' : 'Could not get report ID.');
         }
+      } else {
+        setStartReportErr(lang === 'tr' ? 'Rapor oluşturulamadı. Tekrar deneyin.' : 'Failed to create report. Try again.');
       }
-    } catch {}
+    } catch {
+      setStartReportErr(lang === 'tr' ? 'Bağlantı hatası. Tekrar deneyin.' : 'Connection error. Try again.');
+    }
     setStartingReport(false);
-  }, []);
+  }, [lang]);
 
   const completedCount = Object.values(statuses).filter(s => s === 'complete').length;
   const totalCount     = CATEGORIES.length;
@@ -358,6 +379,9 @@ export default function WorkspacePage() {
                   ? (tr ? 'Oluşturuluyor…' : 'Creating…')
                   : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
               </button>
+              {startReportErr && (
+                <p className="text-[9.5px] text-red-600 font-semibold mt-0.5">{startReportErr}</p>
+              )}
             </div>
           )}
 

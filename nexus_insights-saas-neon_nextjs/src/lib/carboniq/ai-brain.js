@@ -21,7 +21,10 @@ const EF_ELEC = 0.439; // IEA 2023 Turkey
 function _calcScope1(vals) {
   const fuel = vals['rf.3a.fuel_type'];
   const amt  = parseFloat(vals['rf.3a.consumption']);
-  const unit = (vals['rf.3a.unit'] || 'm³').replace(/m\^3/i, 'm³');
+  // Normalise unit: accept common variants regardless of case
+  const rawUnit = (vals['rf.3a.unit'] || 'm³').replace(/m\^3/i, 'm³');
+  const UNIT_NORM = { 'kwh': 'kWh', 'KWH': 'kWh', 'gj': 'GJ', 'mcf': 'MCF' };
+  const unit = UNIT_NORM[rawUnit] || rawUnit;
   if (!fuel || isNaN(amt) || amt <= 0) return 0;
   const efMap = EF_CALC[fuel] || {};
   const ef = efMap[unit] || efMap['m³'] || efMap['litre'] || 0;
@@ -348,11 +351,11 @@ export function buildStatusReport(fieldValues, lang) {
       : `📊 **Inventory Status — Not Started Yet**\n\nNo emission data has been entered yet.\n\n**Quick start options:**\n→ 📋 **Guided Mode** — Complete 133 questions step by step\n→ 💬 **Free Mode** — Write directly: "We used 15,000 m³ natural gas"\n\n**Documents you need to gather:**\n→ Natural gas invoices (m³/year)\n→ Electricity invoices (kWh/year)\n→ Freight data (tonnes × km)\n→ Business travel records (pkm)`;
   }
 
-  // Calculate totals
+  // Calculate totals — each scope is independent
   const scope1Kg = has3A ? _calcScope1(fieldValues) : 0;
   const scope2Kg = has4A ? _calcScope2(fieldValues) : 0;
-  const scope3K4 = has3A || has4A ? (parseFloat(fieldValues['rf.k4.total_emission_kgco2e']) || 0) : 0;
-  const scope3K5 = has3A || has4A ? (parseFloat(fieldValues['rf.k5.total_emission_kgco2e']) || 0) : 0;
+  const scope3K4 = hasK4 ? (parseFloat(fieldValues['rf.k4.total_emission_kgco2e']) || 0) : 0;
+  const scope3K5 = hasK5 ? (parseFloat(fieldValues['rf.k5.total_emission_kgco2e']) || 0) : 0;
   const grandTotalKg = scope1Kg + scope2Kg + scope3K4 + scope3K5;
 
   const pct = Math.round((completedCount / 4) * 100);

@@ -293,8 +293,13 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                     style={{ width: `${totalKg > 0 ? Math.round((b.km * b.ef / totalKg) * 100) : 0}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-semibold text-violet-600 w-14 text-right shrink-0">
-                  {(b.km * b.ef / 1000).toFixed(2)} t
+                <span className="text-[10px] font-semibold text-violet-600 w-16 text-right shrink-0">
+                  {(() => {
+                    const kg = b.km * b.ef;
+                    return kg >= 1000
+                      ? `${(kg / 1000).toFixed(2)} t`
+                      : `${kg.toFixed(0)} kg`;
+                  })()}
                 </span>
               </div>
             ))}

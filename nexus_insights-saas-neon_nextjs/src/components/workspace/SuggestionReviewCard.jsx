@@ -118,8 +118,16 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
                 <input
                   type={typeof f.value === 'number' ? 'number' : 'text'}
                   className="w-full rounded-lg border border-[#302817]/12 bg-white px-2 py-1 text-xs text-[#302817] outline-none focus:border-[#B4BE6A]/50 focus:ring-1 focus:ring-[#B4BE6A]/20"
-                  defaultValue={f.value}
-                  onChange={e => setEditedValues(prev => ({ ...prev, [f.field_id]: e.target.value }))}
+                  // Controlled value so it resets correctly on toggle
+                  value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : f.value}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    // Preserve numeric type so backend receives numbers, not strings
+                    const val = typeof f.value === 'number'
+                      ? (raw === '' ? '' : (parseFloat(raw) ?? raw))
+                      : raw;
+                    setEditedValues(prev => ({ ...prev, [f.field_id]: val }));
+                  }}
                 />
               ) : (
                 <p className="text-sm font-bold text-[#302817]">
