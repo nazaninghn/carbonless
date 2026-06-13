@@ -200,7 +200,7 @@ export default function RegisterPage() {
         try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
       }
 
-      router.push('/dashboard');
+      router.push('/dashboard/workspace');
 
     } catch (err) {
       setError(tr
