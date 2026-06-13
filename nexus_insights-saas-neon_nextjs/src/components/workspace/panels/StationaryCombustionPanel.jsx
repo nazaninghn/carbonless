@@ -29,7 +29,7 @@ const EMISSION_FACTORS = {
   fuel_oil:    { litre: 2.52, kg: 2.96,   GJ: 74.07 },
   diesel:      { litre: 2.54, GJ: 68.08 },
   lpg:         { litre: 1.51, kg: 2.94,   GJ: 59.65 },
-  coal:        { tonne: 2360, kg: 2.36,   GJ: 88.34 },
+  coal:        { tonne: 2420, kg: 2.42,   GJ: 88.34 },
   biomass:     { tonne: 390,  GJ: 10.23 },
   other:       { GJ: 56, kWh: 0.2, tonne: 500 },
 };

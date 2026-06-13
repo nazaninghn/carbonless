@@ -279,9 +279,11 @@ function fmtKg(kg) {
 }
 
 function buildReply(results, inputText, lang, fieldValues) {
-  const autoLang = detectLang(inputText);
-  const useTr    = lang === 'tr' || autoLang === 'tr';
-  const L        = useTr ? 'tr' : 'en';
+  // Respect the explicit language toggle the user chose in the UI.
+  // Auto-detection is intentionally NOT used here: common words like "ton",
+  // "kwh", "lpg" appear in both TR and EN and caused false TR responses.
+  const useTr = lang === 'tr';
+  const L     = useTr ? 'tr' : 'en';
 
   if (results.length === 0) {
     return {
@@ -1075,12 +1077,17 @@ export function ChatWorkspace({
               </div>
             )}
 
-            {/* TEXT / NUMERIC / COMPOUND → textarea */}
-            {['text', 'compound'].includes(currentQuestion.type) && (
+            {/* TEXT / NUMERIC / COMPOUND / LOOP TYPES → textarea
+                Also serves as catch-all fallback for any unknown future type
+                so guided mode never gets fully stuck with no input. */}
+            {(
+              ['text', 'compound'].includes(currentQuestion.type) ||
+              !['info', 'single_select', 'year_select', 'multi_select', 'country_city'].includes(currentQuestion.type)
+            ) && (
               <div className="flex items-end gap-2">
                 <textarea
                   className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed"
-                  placeholder={currentQuestion.placeholder?.[activeLang] || currentQuestion.placeholder?.en || ''}
+                  placeholder={currentQuestion.placeholder?.[activeLang] || currentQuestion.placeholder?.en || (tr ? 'Yanıtınızı yazın…' : 'Type your answer…')}
                   value={pendingAnswer}
                   rows={1}
                   onChange={e => { setPendingAnswer(e.target.value); setGuidedError(''); }}

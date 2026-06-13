@@ -6,7 +6,7 @@ import { saveReportFields } from '@/lib/workspace/api';
 // Location-based grid emission factors (kgCO2e/kWh) — IEA 2023
 const GRID_FACTORS = [
   { value: '',        label: { tr: '— Seçin —',        en: '— Select —'        }, factor: null },
-  { value: 'turkey',  label: { tr: 'Türkiye (TEİAŞ)',   en: 'Turkey (TEİAŞ)'   }, factor: 0.437 },
+  { value: 'turkey',  label: { tr: 'Türkiye (TEİAŞ)',   en: 'Turkey (TEİAŞ)'   }, factor: 0.439 },
   { value: 'eu_avg',  label: { tr: 'AB Ortalaması',     en: 'EU Average'        }, factor: 0.276 },
   { value: 'germany', label: { tr: 'Almanya',           en: 'Germany'           }, factor: 0.380 },
   { value: 'uk',      label: { tr: 'İngiltere',         en: 'UK'                }, factor: 0.207 },

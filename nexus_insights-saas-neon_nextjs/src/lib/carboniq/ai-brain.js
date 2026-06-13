@@ -11,10 +11,14 @@
 // EMISSION FACTORS  (mirrors ChatWorkspace — used for status calculation)
 // ═══════════════════════════════════════════════════════════════════════════════
 const EF_CALC = {
-  natural_gas: { 'm³': 2.02, m3: 2.02, kwh: 0.183, kWh: 0.183, gj: 50.77, GJ: 50.77, mcf: 57.17 },
-  diesel:      { litre: 2.54, liter: 2.54, l: 2.54, kg: 2.68, ton: 2680 },
-  lpg:         { litre: 1.51, liter: 1.51, kg: 2.94, ton: 2940 },
-  fuel_oil:    { litre: 2.52, kg: 2.96, ton: 2960 },
+  natural_gas: { 'm³': 2.02, m3: 2.02, kwh: 0.183, kWh: 0.183, gj: 50.77, GJ: 50.77, mcf: 57.17, MCF: 57.17 },
+  diesel:      { litre: 2.54, liter: 2.54, l: 2.54, kg: 2.68, ton: 2680, tonne: 2680 },
+  lpg:         { litre: 1.51, liter: 1.51, kg: 2.94, ton: 2940, tonne: 2940 },
+  fuel_oil:    { litre: 2.52, kg: 2.96, ton: 2960, tonne: 2960, GJ: 74.07 },
+  // DEFRA 2023 — mixed coal / industrial coal
+  coal:        { kg: 2.42, ton: 2420, tonne: 2420, GJ: 88.34 },
+  // DEFRA 2023 — biomass (oven dry wood)
+  biomass:     { kg: 0.39, ton: 390, tonne: 390, GJ: 10.23 },
 };
 const EF_ELEC = 0.439; // IEA 2023 Turkey
 
