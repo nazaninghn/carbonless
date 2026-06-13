@@ -38,8 +38,9 @@ function _calcScope1(vals) {
 function _calcScope2(vals) {
   const kwh = parseFloat(vals['rf.4a.consumption_kwh']);
   const ef  = parseFloat(vals['rf.4a.emission_factor']) || EF_ELEC;
+  const ren = parseFloat(vals['rf.4a.renewable_on_site']) || 0;
   if (isNaN(kwh) || kwh <= 0) return 0;
-  return Math.round(kwh * ef);
+  return Math.round(Math.max(kwh - ren, 0) * ef);
 }
 
 function _fmtKg(kg) {

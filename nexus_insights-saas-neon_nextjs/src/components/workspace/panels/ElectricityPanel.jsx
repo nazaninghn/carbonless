@@ -261,7 +261,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
                 min="0"
                 step="0.001"
                 className={INPUT_CLS}
-                placeholder="0.437"
+                placeholder="0.439"
                 value={emissionFactor}
                 onChange={e => { setEmissionFactor(e.target.value); setGridPreset('custom'); }}
               />
@@ -292,7 +292,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
                 {parseFloat(emissionFactor).toFixed(3)} kgCO₂e/kWh
               </p>
               <p className="text-[10px] text-[#75863B] mt-0.5">
-                {tr ? 'Location-based · IEA 2023' : 'Location-based · IEA 2023'}
+                {tr ? 'Lokasyon bazlı · IEA 2023' : 'Location-based · IEA 2023'}
               </p>
             </div>
           </div>
