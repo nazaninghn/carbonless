@@ -2,7 +2,7 @@
  * Workspace API helpers — ReportField data layer + AI suggestion flow.
  * All functions use the existing `api` util for auth + base URL.
  */
-import { api } from '@/lib/utils/api';
+import { request as api } from '@/lib/utils/api';
 
 // ── ReportField ─────────────────────────────────────────────────────────────
 

@@ -4,6 +4,14 @@ import { Sparkles, Send, Loader2, CheckCircle2, Info, TrendingUp } from 'lucide-
 import { sendWorkspaceChatMessage, confirmSuggestion, rejectSuggestion } from '@/lib/workspace/api';
 import { SuggestionReviewCard } from './SuggestionReviewCard';
 import {
+  detectIntent,
+  searchKB,
+  buildStatusReport,
+  buildFallback,
+  buildOnboarding,
+  getBenchmarkContext,
+} from '@/lib/carboniq/ai-brain';
+import {
   getQuestionById,
   getInitialQuestionId,
   getNextQuestionId,
@@ -674,14 +682,32 @@ export function ChatWorkspace({
       if (isPreview) {
         await new Promise(r => setTimeout(r, 650 + Math.random() * 550));
         const results = extractEmissions(text);
-        const { reply, suggestion } = buildReply(results, text, activeLang, fieldValues);
-        addMsg('assistant', reply);
-        if (suggestion) {
-          setMessages(prev => [...prev, {
-            id: `s-${suggestion.id}`,
-            role: 'suggestion',
-            suggestion,
-          }]);
+
+        if (results.length > 0) {
+          // ── Emission data detected: calculate + enrich with benchmark ─────────
+          const { reply, suggestion } = buildReply(results, text, activeLang, fieldValues);
+          const benchmark = getBenchmarkContext(results[0].type, results[0].amount, activeLang);
+          addMsg('assistant', benchmark ? `${reply}\n\n---\n\n${benchmark}` : reply);
+          if (suggestion) {
+            setMessages(prev => [...prev, {
+              id: `s-${suggestion.id}`,
+              role: 'suggestion',
+              suggestion,
+            }]);
+          }
+        } else {
+          // ── No emission data: route by intent (ai-brain intelligence) ─────────
+          const intent = detectIntent(text);
+          let smartReply;
+          if (intent === 'STATUS') {
+            smartReply = buildStatusReport(fieldValues, activeLang);
+          } else if (intent === 'GUIDANCE') {
+            smartReply = buildOnboarding(activeLang);
+          } else {
+            // QUESTION / BENCHMARK / UNKNOWN — search KB first, then fallback
+            smartReply = searchKB(text, activeLang) || buildFallback(activeLang);
+          }
+          addMsg('assistant', smartReply);
         }
       } else {
         if (!reportId) return;

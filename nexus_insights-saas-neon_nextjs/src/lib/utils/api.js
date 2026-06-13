@@ -245,3 +245,10 @@ export const api = {
   deleteChatSession: (id) => request(`/chat/sessions/${id}/`, { method: 'DELETE' }),
   sendChatMessage: (sessionId, content) => request(`/chat/sessions/${sessionId}/message/`, { method: 'POST', body: JSON.stringify({ content }) }),
 };
+
+/**
+ * Low-level authenticated fetch — exported so workspace/ai helpers can call
+ * arbitrary endpoints without duplicating the auth + refresh logic.
+ * Usage: import { request } from '@/lib/utils/api'
+ */
+export { request };
