@@ -240,72 +240,77 @@ function ScopeSidebar({ selectedCat, onSelect, statuses, fieldValues, lang, open
 
 // ── Category Card ─────────────────────────────────────────────────────────────
 function CategoryCard({ cat, status, fieldValues, onClick, lang }) {
-  const Icon   = cat.icon;
-  const emKg   = estimateEmissionKg(cat.id, fieldValues);
-  const emText = formatEmission(emKg);
+  const Icon        = cat.icon;
+  const emKg        = estimateEmissionKg(cat.id, fieldValues);
+  const emText      = formatEmission(emKg);
+  const isComplete  = status === 'complete';
+  const isProgress  = status === 'in_progress';
 
   return (
     <button
       onClick={onClick}
       className={`
-        group relative flex flex-col gap-3 rounded-2xl border bg-white p-4 text-left
-        shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5
-        ${status === 'complete'
-          ? 'border-[#95A847]/20'
-          : status === 'in_progress'
-            ? 'border-amber-300/30'
-            : 'border-[#302817]/8 hover:border-[#B4BE6A]/30'}
+        group relative flex flex-col rounded-2xl border bg-white text-left
+        shadow-sm transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden
+        ${isComplete ? 'border-[#95A847]/25'
+          : isProgress ? 'border-amber-300/40'
+          : 'border-[#302817]/8 hover:border-[#B4BE6A]/35'}
       `}
     >
-      {/* Status top bar */}
-      <div className={`absolute top-0 inset-x-4 h-[2px] rounded-b-full transition-all ${
-        status === 'complete'    ? 'bg-[#95A847]/50'
-        : status === 'in_progress' ? 'bg-amber-400/40'
-        : 'bg-transparent group-hover:bg-[#B4BE6A]/25'
+      {/* Full-width accent strip at top */}
+      <div className={`h-[3px] w-full shrink-0 transition-all ${
+        isComplete  ? 'bg-gradient-to-r from-[#75863B] to-[#B4BE6A]'
+        : isProgress ? 'bg-gradient-to-r from-amber-400 to-amber-300'
+        : 'bg-[#302817]/5 group-hover:bg-[#B4BE6A]/30'
       }`} />
 
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2.5">
-          <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${cat.bg}`}>
-            <Icon className={`h-4.5 w-4.5 ${cat.color}`} />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className={`text-[9.5px] font-bold uppercase tracking-wide border px-1.5 py-[1px] rounded-md ${cat.scopeBadge}`}>
-                {lang === 'tr' ? `Kapsam ${cat.scope}` : `Scope ${cat.scope}`}
-              </span>
-              <span className="text-[9px] font-mono font-bold text-[#302817]/25">{cat.id}</span>
+      <div className="flex flex-col gap-3.5 p-4 flex-1">
+        {/* Header: icon + scope badge + status pill */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${cat.bg}`}>
+              <Icon className={`h-5 w-5 ${cat.color}`} />
             </div>
+            <span className={`text-[9.5px] font-bold uppercase tracking-wide border px-2 py-0.5 rounded-full ${cat.scopeBadge}`}>
+              {lang === 'tr' ? `Kapsam ${cat.scope}` : `Scope ${cat.scope}`}
+            </span>
           </div>
+          <StatusPill status={status} lang={lang} />
         </div>
-        <StatusDot status={status} />
-      </div>
 
-      {/* Label + description */}
-      <div className="flex-1">
-        <p className="text-[13.5px] font-bold text-[#302817] leading-snug">
-          {cat.label[lang] || cat.label.en}
-        </p>
-        <p className="mt-0.5 text-[11px] text-[#302817]/40 leading-relaxed">
-          {cat.desc[lang] || cat.desc.en}
-        </p>
-      </div>
+        {/* Title + description */}
+        <div className="flex-1">
+          <p className="text-[14px] font-bold text-[#302817] leading-tight">
+            {cat.label[lang] || cat.label.en}
+          </p>
+          <p className="mt-1 text-[11px] text-[#302817]/40 leading-relaxed">
+            {cat.desc[lang] || cat.desc.en}
+          </p>
+        </div>
 
-      {/* Emission or CTA */}
-      {emText ? (
-        <div className="flex items-center justify-between rounded-xl bg-gradient-to-r from-[#95A847]/8 to-[#B4BE6A]/4 border border-[#B4BE6A]/20 px-3 py-2">
-          <span className="text-[10px] text-[#302817]/40">
-            {lang === 'tr' ? 'Tahmini emisyon' : 'Est. emission'}
-          </span>
-          <span className="text-xs font-bold text-[#75863B]">{emText}</span>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1 text-[11px] font-semibold text-[#302817]/30 group-hover:text-[#302817]/55 transition">
-          <span>{lang === 'tr' ? 'Veri girişi yap' : 'Enter data'}</span>
-          <ChevronRight className="h-3 w-3" />
-        </div>
-      )}
+        {/* Emission figure or CTA */}
+        {emText ? (
+          <div className={`rounded-xl px-3 py-2.5 border ${
+            isComplete
+              ? 'bg-gradient-to-r from-[#95A847]/8 to-[#B4BE6A]/5 border-[#B4BE6A]/20'
+              : 'bg-gradient-to-r from-amber-50/80 to-orange-50/40 border-amber-200/30'
+          }`}>
+            <p className="text-[9.5px] uppercase tracking-wide text-[#302817]/35">
+              {lang === 'tr' ? 'Tahmini emisyon' : 'Est. emission'}
+            </p>
+            <p className={`text-[15px] font-bold mt-0.5 ${isComplete ? 'text-[#527A1A]' : 'text-amber-700'}`}>
+              {emText}
+            </p>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl border border-dashed border-[#302817]/12 px-3 py-2.5 group-hover:border-[#B4BE6A]/40 group-hover:bg-[#B4BE6A]/4 transition">
+            <span className="text-[11px] text-[#302817]/35 group-hover:text-[#302817]/55 transition">
+              {lang === 'tr' ? 'Veri girişi yapın' : 'Enter activity data'}
+            </span>
+            <ChevronRight className="h-3.5 w-3.5 text-[#302817]/25 group-hover:text-[#75863B] transition" />
+          </div>
+        )}
+      </div>
     </button>
   );
 }
@@ -358,8 +363,31 @@ export default function WorkspacePage() {
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
 
-  // Load active report
+  // Load active report (or use preview mock data)
   useEffect(() => {
+    const sp     = new URLSearchParams(window.location.search);
+    const isPreview = sp.get('preview') === '1';
+    const isEmpty   = sp.get('empty')   === '1';
+
+    if (isPreview) {
+      if (!isEmpty) {
+        const pf = {
+          'rf.3a.fuel_type': 'natural_gas', 'rf.3a.consumption': 15000, 'rf.3a.unit': 'm³', 'rf.3a.facility': 'Merkez Ofis',
+          'rf.4a.consumption_kwh': 18000, 'rf.4a.grid_region': 'turkey_teias', 'rf.4a.supplier': 'TEDAŞ', 'rf.4a.emission_factor': 0.439,
+          'rf.k4.shipments': [{ mode: 'road_hgv_gt34t_full', weight_t: 45, distance_km: 1200 }],
+          'rf.k4.total_emission_kgco2e': 3312,
+        };
+        setReportId('preview-001');
+        setFieldValues(pf);
+        const s = {};
+        CATEGORIES.forEach(cat => { s[cat.id] = getCategoryStatus(cat.id, pf); });
+        setStatuses(s);
+      } else {
+        setReportId('preview-001'); // still show workspace with onboarding when empty
+      }
+      setLoading(false);
+      return;
+    }
     (async () => {
       try {
         const res = await api('/questionnaire/');
@@ -374,7 +402,7 @@ export default function WorkspacePage() {
   }, []);
 
   const loadFields = useCallback(async () => {
-    if (!reportId) return;
+    if (!reportId || reportId === 'preview-001') return; // preview uses static mock data
     try {
       const data = await getReportFields(reportId);
       const vals = data.values || {};
@@ -511,28 +539,82 @@ export default function WorkspacePage() {
             {mode === 'dashboard' ? (
               <div className="p-5 flex flex-col gap-5">
 
-                {/* Empty state banner */}
+                {/* Onboarding welcome — shown when no data entered yet */}
                 {Object.keys(fieldValues).length === 0 && (
-                  <div className="rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/6 px-5 py-4 flex items-start gap-3">
-                    <div className="mt-0.5 h-9 w-9 shrink-0 flex items-center justify-center rounded-xl bg-[#75863B]/10 text-[#75863B]">
-                      <Sparkles className="h-4 w-4" />
+                  <div className="rounded-2xl border border-[#B4BE6A]/20 bg-gradient-to-br from-white to-[#F5F4EF] p-6 shadow-sm">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#302817] shadow-md">
+                        <Leaf className="h-5 w-5 text-[#B4BE6A]" />
+                      </div>
+                      <div>
+                        <h2 className="text-[15px] font-bold text-[#302817]">
+                          {tr ? 'CarbonIQ Workspace\'e Hoş Geldiniz' : 'Welcome to CarbonIQ Workspace'}
+                        </h2>
+                        <p className="text-[11px] text-[#302817]/40 mt-0.5">
+                          ISO 14064-1 · GHG Protokolü · DEFRA 2023
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-bold text-[#302817]">
-                        {tr ? 'Henüz aktivite verisi yok' : 'No activity data yet'}
-                      </p>
-                      <p className="text-[12px] text-[#302817]/55 mt-0.5 leading-relaxed max-w-lg">
-                        {tr
-                          ? 'AI Asistan ile başlayın veya aşağıdan bir kategori seçin. Örnek: "Geçen yıl 15.000 m³ doğalgaz kullandık."'
-                          : 'Start with the AI Assistant or select a category below. Example: "We used 15,000 m³ natural gas last year."'}
-                      </p>
+                    {/* 3 action cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* AI */}
                       <button
                         onClick={() => setMode('chat')}
-                        className="mt-2.5 flex items-center gap-1.5 rounded-full bg-[#302817] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-black"
+                        className="group flex flex-col gap-3 rounded-xl bg-[#302817] p-4 text-left hover:bg-[#1a1408] transition shadow-sm"
                       >
-                        <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
-                        {tr ? 'AI Asistan\'ı Aç' : 'Open AI Assistant'}
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10">
+                          <Sparkles className="h-4 w-4 text-[#B4BE6A]" />
+                        </div>
+                        <div>
+                          <p className="text-[12.5px] font-bold text-white leading-tight">
+                            {tr ? 'AI Asistan ile Başla' : 'Start with AI Assistant'}
+                          </p>
+                          <p className="text-[10.5px] text-white/45 mt-1 leading-relaxed">
+                            {tr ? 'Verilerinizi doğal dilde paylaşın' : 'Share data in natural language'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-bold text-[#B4BE6A] group-hover:gap-2 transition-all">
+                          {tr ? 'Hemen Başla' : 'Get Started'} <ChevronRight className="h-3 w-3" />
+                        </div>
                       </button>
+                      {/* Select category */}
+                      <button
+                        onClick={() => setSelectedCat('3A')}
+                        className="group flex flex-col gap-3 rounded-xl border border-[#302817]/8 bg-white p-4 text-left hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/4 transition shadow-sm"
+                      >
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-50">
+                          <Flame className="h-4 w-4 text-orange-500" />
+                        </div>
+                        <div>
+                          <p className="text-[12.5px] font-bold text-[#302817] leading-tight">
+                            {tr ? 'Kategori Seçerek Başla' : 'Select a Category'}
+                          </p>
+                          <p className="text-[10.5px] text-[#302817]/40 mt-1 leading-relaxed">
+                            {tr ? 'Kapsam 1, 2 veya 3 veri girişi yapın' : 'Enter Scope 1, 2 or 3 data'}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-[10px] font-semibold text-[#302817]/35 group-hover:text-[#75863B] transition">
+                          {tr ? 'Formu Aç' : 'Open Form'} <ChevronRight className="h-3 w-3" />
+                        </div>
+                      </button>
+                      {/* Import — coming soon */}
+                      <div className="flex flex-col gap-3 rounded-xl border border-dashed border-[#302817]/10 bg-[#302817]/2 p-4 opacity-55">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#302817]/6">
+                          <Globe className="h-4 w-4 text-[#302817]/40" />
+                        </div>
+                        <div>
+                          <p className="text-[12.5px] font-bold text-[#302817]/60 leading-tight">
+                            {tr ? 'Veri İçe Aktar' : 'Import Data'}
+                          </p>
+                          <p className="text-[10.5px] text-[#302817]/30 mt-1 leading-relaxed">
+                            {tr ? 'Excel / CSV dosyası yükleyin' : 'Upload Excel or CSV file'}
+                          </p>
+                        </div>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/30">
+                          {tr ? 'Yakında' : 'Coming Soon'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -559,14 +641,24 @@ export default function WorkspacePage() {
                   </div>
                 </div>
 
-                {/* Summary — only shown when data exists */}
+                {/* Executive Summary — scope breakdown + total */}
                 {Object.keys(fieldValues).length > 0 && (() => {
-                  const totalKg = CATEGORIES.reduce((sum, cat) => {
-                    const kg = estimateEmissionKg(cat.id, fieldValues);
-                    return sum + (kg || 0);
-                  }, 0);
-                  const hasAnyEstimate = CATEGORIES.some(cat => estimateEmissionKg(cat.id, fieldValues) !== null);
-                  if (!hasAnyEstimate) return null;
+                  // Compute per-scope totals
+                  const scopeTotals = SCOPE_GROUPS.map(group => {
+                    const cats = CATEGORIES.filter(c => group.cats.includes(c.id));
+                    const totalKg = cats.reduce((sum, cat) => {
+                      const kg = estimateEmissionKg(cat.id, fieldValues);
+                      return sum + (kg || 0);
+                    }, 0);
+                    const hasData = cats.some(cat => estimateEmissionKg(cat.id, fieldValues) !== null);
+                    return { ...group, totalKg, hasData };
+                  });
+                  const grandTotalKg = scopeTotals.reduce((sum, s) => sum + s.totalKg, 0);
+                  if (!scopeTotals.some(s => s.hasData)) return null;
+
+                  const fmtTco2 = kg =>
+                    (kg / 1000).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+                  const scopeAccents = ['text-orange-300', 'text-yellow-300', 'text-sky-300'];
 
                   return (
                     <div>
@@ -577,65 +669,102 @@ export default function WorkspacePage() {
                         <div className="flex-1 h-px bg-[#302817]/6" />
                       </div>
                       <div className="rounded-2xl overflow-hidden border border-[#302817]/10 shadow-sm">
-                        {/* Dark hero */}
-                        <div className="relative px-5 py-5 bg-[#302817] overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-br from-transparent to-[#1a1408]/50 pointer-events-none" />
-                          <div className="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-[#95A847]/15 to-transparent pointer-events-none" />
-                          <p className="relative text-[9.5px] font-bold uppercase tracking-[0.15em] text-white/40 mb-2">
-                            {tr ? 'Toplam Tahmini Emisyon' : 'Total Estimated Emission'}
-                          </p>
-                          <div className="relative flex items-baseline gap-2">
-                            <span className="text-3xl font-bold tracking-tight text-white">
-                              {totalKg >= 1000
-                                ? (totalKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })
-                                : totalKg.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                            </span>
-                            <span className="text-sm font-semibold text-[#B4BE6A]">
-                              {totalKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
-                            </span>
+
+                        {/* ── Executive hero: total + scope breakdown ── */}
+                        <div className="relative bg-[#302817] px-6 py-6 overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-[#1a1408]/60 pointer-events-none" />
+                          <div className="absolute right-0 top-0 h-full w-2/5 bg-gradient-to-l from-[#95A847]/10 to-transparent pointer-events-none" />
+
+                          <div className="relative flex flex-wrap items-end gap-6 lg:gap-10">
+                            {/* Grand total */}
+                            <div>
+                              <p className="text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/30 mb-2">
+                                {tr ? 'Toplam Tahmini Emisyon' : 'Total Estimated Emissions'}
+                              </p>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-5xl font-bold tracking-tight text-white leading-none">
+                                  {fmtTco2(grandTotalKg)}
+                                </span>
+                                <span className="text-lg font-semibold text-[#B4BE6A] pb-1">tCO₂e</span>
+                              </div>
+                              <p className="text-[10px] text-white/25 mt-2">
+                                DEFRA 2023 · IEA 2023 · GLEC v3
+                              </p>
+                            </div>
+
+                            {/* Vertical divider */}
+                            <div className="hidden lg:block h-16 w-px bg-white/8 self-center" />
+
+                            {/* Scope 1 / Scope 2 / Scope 3 tiles */}
+                            <div className="flex gap-6 lg:gap-10">
+                              {scopeTotals.map((scope, i) => (
+                                <div key={scope.id} className="text-center">
+                                  <p className="text-[8.5px] font-bold uppercase tracking-[0.14em] text-white/30 mb-2">
+                                    {scope.label[lang] || scope.label.en}
+                                  </p>
+                                  {scope.hasData ? (
+                                    <>
+                                      <p className={`text-[22px] font-bold leading-none ${scopeAccents[i]}`}>
+                                        {fmtTco2(scope.totalKg)}
+                                      </p>
+                                      <p className="text-[9px] text-white/25 mt-1">tCO₂e</p>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <p className="text-[22px] font-bold leading-none text-white/18">—</p>
+                                      <p className="text-[9px] text-white/20 mt-1">{tr ? 'Veri yok' : 'No data'}</p>
+                                    </>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <p className="relative text-[10px] text-white/30 mt-1.5">
-                            DEFRA 2023 · IEA 2023 · GLEC v3 · {tr ? 'Tüm kapsamlar' : 'All scopes'}
-                          </p>
                         </div>
 
-                        {/* Per-category rows */}
+                        {/* ── Per-category breakdown rows ── */}
                         <div className="bg-white divide-y divide-[#302817]/5">
                           {CATEGORIES.map(cat => {
                             const catKg     = estimateEmissionKg(cat.id, fieldValues);
                             const catStatus = statuses[cat.id] || 'missing';
                             if (catStatus === 'missing') return null;
                             const Icon = cat.icon;
-                            const pctOfTotal = totalKg > 0 && catKg ? Math.round((catKg / totalKg) * 100) : 0;
+                            const pct = grandTotalKg > 0 && catKg
+                              ? Math.round((catKg / grandTotalKg) * 100)
+                              : 0;
 
                             return (
                               <button
                                 key={cat.id}
                                 onClick={() => setSelectedCat(cat.id)}
-                                className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#302817]/2 transition group"
+                                className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-[#302817]/2 transition group"
                               >
                                 <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${cat.bg}`}>
                                   <Icon className={`h-4 w-4 ${cat.color}`} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center justify-between mb-0.5">
-                                    <span className="text-[12px] font-semibold text-[#302817]">
-                                      {cat.label[lang] || cat.label.en}
-                                    </span>
-                                    <span className="text-xs font-bold text-[#75863B] shrink-0 ml-2">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[12px] font-semibold text-[#302817]">
+                                        {cat.label[lang] || cat.label.en}
+                                      </span>
+                                      <span className={`text-[8.5px] font-bold uppercase border px-1.5 py-[1px] rounded-full ${cat.scopeBadge}`}>
+                                        {lang === 'tr' ? `K.${cat.scope}` : `S${cat.scope}`}
+                                      </span>
+                                    </div>
+                                    <span className="text-[12px] font-bold text-[#75863B] shrink-0 ml-2">
                                       {catKg !== null ? formatEmission(catKg) : '—'}
                                     </span>
                                   </div>
-                                  {catKg !== null && totalKg > 0 && (
+                                  {catKg !== null && grandTotalKg > 0 && (
                                     <div className="flex items-center gap-2">
-                                      <div className="flex-1 h-1 rounded-full bg-[#302817]/8 overflow-hidden">
+                                      <div className="flex-1 h-1.5 rounded-full bg-[#302817]/6 overflow-hidden">
                                         <div
                                           className={`h-full rounded-full ${cat.bar} transition-all duration-700`}
-                                          style={{ width: `${pctOfTotal}%` }}
+                                          style={{ width: `${pct}%` }}
                                         />
                                       </div>
-                                      <span className="text-[9px] text-[#302817]/30 shrink-0 w-6 text-right">
-                                        {pctOfTotal}%
+                                      <span className="text-[9px] font-semibold text-[#302817]/30 shrink-0 w-7 text-right">
+                                        {pct}%
                                       </span>
                                     </div>
                                   )}
@@ -700,3 +829,4 @@ export default function WorkspacePage() {
     </div>
   );
 }
+
