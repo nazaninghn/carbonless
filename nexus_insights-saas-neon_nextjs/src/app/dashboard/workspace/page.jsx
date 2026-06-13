@@ -401,6 +401,7 @@ export default function WorkspacePage() {
               onFieldsConfirmed={handleFieldsSaved}
               isPreview={reportId === 'preview-001'}
               onPreviewFields={handlePreviewFields}
+              fieldValues={fieldValues}
             />
           </div>
         </div>
