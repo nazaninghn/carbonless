@@ -358,7 +358,7 @@ export default function WorkspacePage() {
   const [fieldValues,  setFieldValues]  = useState({});
   const [statuses,     setStatuses]     = useState({});
   const [selectedCat,  setSelectedCat]  = useState('3A');
-  const [mode,         setMode]         = useState('dashboard');
+  const [mode,         setMode]         = useState('chat');      // chat-first: AI is the primary UX
   const [sidebarOpen,  setSidebarOpen]  = useState(false);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
