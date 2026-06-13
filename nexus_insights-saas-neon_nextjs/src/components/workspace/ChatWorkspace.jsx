@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Sparkles, Send, Loader2 } from 'lucide-react';
 import { sendWorkspaceChatMessage, confirmSuggestion, rejectSuggestion } from '@/lib/workspace/api';
 import { SuggestionReviewCard } from './SuggestionReviewCard';
@@ -317,6 +318,76 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed, isPrev
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
+
+        {/* ── Welcome hero — shown only before conversation starts ── */}
+        {messages.length === 1 && messages[0].id === 'welcome' && (
+          <div className="flex flex-col items-center text-center gap-5 pt-2 pb-4">
+            {/* Carbon hero image */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent to-[#FAFAF8] z-10" />
+              <Image
+                src="/carbon-hero.png"
+                alt="CarbonIQ AI"
+                width={280}
+                height={210}
+                className="rounded-2xl object-contain drop-shadow-xl"
+                priority
+              />
+            </div>
+
+            {/* Headline */}
+            <div className="space-y-1.5 -mt-2">
+              <h2 className="text-[17px] font-bold tracking-tight text-[#302817]">
+                {tr ? 'Emisyon verilerinizi konuşun' : 'Talk your emissions'}
+              </h2>
+              <p className="text-[11.5px] text-[#302817]/45 max-w-[260px] leading-relaxed mx-auto">
+                {tr
+                  ? 'Verilerinizi doğal dilde paylaşın — AI değerleri çıkarsın, siz onaylayın.'
+                  : 'Share data in plain language — AI extracts values, you approve.'}
+              </p>
+            </div>
+
+            {/* Quick-start chips */}
+            <div className="flex flex-wrap justify-center gap-2 max-w-xs">
+              {[
+                {
+                  label: tr ? '⚡ 18.000 kWh elektrik' : '⚡ 18,000 kWh electricity',
+                  text:  tr ? '18.000 kWh elektrik tükettik' : 'We consumed 18,000 kWh electricity',
+                },
+                {
+                  label: tr ? '🔥 15.000 m³ doğalgaz' : '🔥 15,000 m³ natural gas',
+                  text:  tr ? '15.000 m³ doğalgaz kullandık' : 'We used 15,000 m³ natural gas',
+                },
+                {
+                  label: tr ? '✈️ 12.000 pkm iş seyahati' : '✈️ 12,000 pkm business travel',
+                  text:  tr ? '12.000 pkm kısa mesafe iş seyahati yaptık' : 'We had 12,000 pkm short-haul business travel',
+                },
+                {
+                  label: tr ? '🚛 45 ton × 1200 km nakliye' : '🚛 45 t × 1,200 km freight',
+                  text:  tr ? '45 ton yük 1200 km karayoluyla taşındı' : '45 tonnes shipped 1,200 km by road',
+                },
+              ].map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={() => setInput(chip.text)}
+                  className="rounded-full border border-[#302817]/10 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#302817]/55 shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 hover:text-[#302817]"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 w-full max-w-xs">
+              <div className="flex-1 h-px bg-[#302817]/8" />
+              <span className="text-[9.5px] font-bold uppercase tracking-widest text-[#302817]/25">
+                {tr ? 'veya kendiniz yazın' : 'or type your own'}
+              </span>
+              <div className="flex-1 h-px bg-[#302817]/8" />
+            </div>
+          </div>
+        )}
+
         {messages.map(msg => {
           if (msg.role === 'suggestion') {
             return (
