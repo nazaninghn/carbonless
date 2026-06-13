@@ -1,6 +1,5 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { Sparkles, Send, Loader2 } from 'lucide-react';
 import { sendWorkspaceChatMessage, confirmSuggestion, rejectSuggestion } from '@/lib/workspace/api';
 import { SuggestionReviewCard } from './SuggestionReviewCard';
@@ -319,36 +318,10 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed, isPrev
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
 
-        {/* ── Welcome hero — shown only before conversation starts ── */}
+        {/* ── Quick-start chips — shown only before conversation starts ── */}
         {messages.length === 1 && messages[0].id === 'welcome' && (
-          <div className="flex flex-col items-center text-center gap-5 pt-2 pb-4">
-            {/* Carbon hero image */}
-            <div className="relative">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent to-[#FAFAF8] z-10" />
-              <Image
-                src="/carbon-hero.png"
-                alt="CarbonIQ AI"
-                width={280}
-                height={210}
-                className="rounded-2xl object-contain drop-shadow-xl"
-                priority
-              />
-            </div>
-
-            {/* Headline */}
-            <div className="space-y-1.5 -mt-2">
-              <h2 className="text-[17px] font-bold tracking-tight text-[#302817]">
-                {tr ? 'Emisyon verilerinizi konuşun' : 'Talk your emissions'}
-              </h2>
-              <p className="text-[11.5px] text-[#302817]/45 max-w-[260px] leading-relaxed mx-auto">
-                {tr
-                  ? 'Verilerinizi doğal dilde paylaşın — AI değerleri çıkarsın, siz onaylayın.'
-                  : 'Share data in plain language — AI extracts values, you approve.'}
-              </p>
-            </div>
-
-            {/* Quick-start chips */}
-            <div className="flex flex-wrap justify-center gap-2 max-w-xs">
+          <div className="flex flex-col items-center text-center gap-3 pt-3 pb-2">
+            <div className="flex flex-wrap justify-center gap-2">
               {[
                 {
                   label: tr ? '⚡ 18.000 kWh elektrik' : '⚡ 18,000 kWh electricity',
@@ -376,11 +349,9 @@ export function ChatWorkspace({ reportId, lang = 'en', onFieldsConfirmed, isPrev
                 </button>
               ))}
             </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 w-full max-w-xs">
+            <div className="flex items-center gap-3 w-full max-w-xs mt-1">
               <div className="flex-1 h-px bg-[#302817]/8" />
-              <span className="text-[9.5px] font-bold uppercase tracking-widest text-[#302817]/25">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
                 {tr ? 'veya kendiniz yazın' : 'or type your own'}
               </span>
               <div className="flex-1 h-px bg-[#302817]/8" />
