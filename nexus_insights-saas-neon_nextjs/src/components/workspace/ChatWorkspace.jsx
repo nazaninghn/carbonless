@@ -288,59 +288,57 @@ function buildReply(results, inputText, lang, fieldValues) {
   if (results.length === 0) {
     return {
       reply: useTr
-        ? '🤔 Emisyon verisi tespit edemedim. Şu formatlarda paylaşabilirsiniz:\n\n' +
-          '**Kapsam 1 (Yakıt):**\n→ "15.000 m³ doğalgaz kullandık"\n→ "5.000 litre dizel yaktık"\n\n' +
-          '**Kapsam 2 (Elektrik):**\n→ "18.000 kWh şebeke elektriği aldık"\n\n' +
-          '**Kapsam 3 (Seyahat / Nakliye):**\n→ "12.000 pkm kısa mesafe uçuş"\n→ "45 ton × 1.200 km karayolu nakliyesi"'
-        : "🤔 I couldn't extract emission data. Try these formats:\n\n" +
-          "**Scope 1 (Fuel):**\n→ \"We used 15,000 m³ natural gas\"\n→ \"We burned 5,000 litres diesel\"\n\n" +
-          "**Scope 2 (Electricity):**\n→ \"We purchased 18,000 kWh electricity\"\n\n" +
-          "**Scope 3 (Travel / Freight):**\n→ \"12,000 pkm short-haul business flights\"\n→ \"45 tonnes × 1,200 km road freight\"",
+        ? '🤔 Emisyon verisi bulamadım. Şu şekilde yazabilirsiniz:\n\n🔥 _"15.000 m³ doğalgaz kullandık"_\n⚡ _"18.000 kWh elektrik tükettik"_\n✈️ _"12.000 pkm kısa mesafe iş seyahati"_\n🚛 _"45 ton yük 1.200 km karayoluyla taşındı"_\n\nBirim ve miktar içeren her mesajı anlayabilirim!'
+        : "🤔 I couldn't find emission data in your message. Try writing:\n\n🔥 _\"We used 15,000 m³ natural gas\"_\n⚡ _\"We consumed 18,000 kWh electricity\"_\n✈️ _\"12,000 pkm short-haul business flights\"_\n🚛 _\"45 tonnes of freight, 1,200 km by road\"_\n\nAny message with a quantity and unit works!",
       suggestion: null,
     };
   }
 
-  const r       = results[0];
+  const r        = results[0];
   const catLabel = SCOPE_LABEL[r.category]?.[L] || r.category;
-  const source  = EF_SOURCE[r.type] || 'DEFRA 2023';
-  const emText  = fmtKg(r.emKg);
+  const source   = EF_SOURCE[r.type] || 'DEFRA 2023';
+  const emText   = fmtKg(r.emKg);
 
+  // Clean calculation line
   let calcLine;
   if (r.tonnes && r.km) {
     calcLine = useTr
-      ? `${r.tonnes.toLocaleString()} ton × ${r.km.toLocaleString()} km = ${r.amount.toLocaleString()} tkm × ${r.ef} kgCO₂e/tkm = **${emText}**`
-      : `${r.tonnes.toLocaleString()} t × ${r.km.toLocaleString()} km = ${r.amount.toLocaleString()} tkm × ${r.ef} kgCO₂e/tkm = **${emText}**`;
+      ? `${r.tonnes.toLocaleString()} ton × ${r.km.toLocaleString()} km = ${r.amount.toLocaleString()} tkm × ${r.ef} = **${emText}**`
+      : `${r.tonnes.toLocaleString()} t × ${r.km.toLocaleString()} km = ${r.amount.toLocaleString()} tkm × ${r.ef} = **${emText}**`;
   } else {
     calcLine = `${r.amount.toLocaleString()} ${r.unit} × ${r.ef} kgCO₂e/${r.unit} = **${emText}**`;
   }
 
+  // Smart contextual follow-up
   const has3A = !!fieldValues['rf.3a.consumption'];
   const has4A = !!fieldValues['rf.4a.consumption_kwh'];
   const hasK4 = !!fieldValues['rf.k4.total_emission_kgco2e'];
   const hasK5 = !!fieldValues['rf.k5.total_emission_kgco2e'];
+  const doneCount = [has3A, has4A, hasK4, hasK5].filter(Boolean).length;
 
   let followUp = '';
   if (r.category === '3A' && !has4A) {
     followUp = useTr
-      ? '\n\n💡 **Sıradaki adım:** Elektrik tüketiminizi (kWh) paylaşırsanız Kapsam 2\'yi de tamamlarız.'
-      : '\n\n💡 **Next step:** Share your electricity consumption (kWh) to complete Scope 2.';
+      ? '\n\n💡 Sırada: Elektrik faturanızdan kWh verinizi paylaşın → Kapsam 2 tamamlanır.'
+      : '\n\n💡 Next: Share your electricity bill (kWh) → Scope 2 done.';
   } else if (r.category === '4A' && !has3A) {
     followUp = useTr
-      ? '\n\n💡 **İpucu:** Yakıt tüketiminizi de (doğalgaz, dizel…) eklerseniz Kapsam 1 tamamlanır.'
-      : '\n\n💡 **Tip:** Add your fuel consumption (natural gas, diesel…) to complete Scope 1.';
-  } else if (r.category === '4A' && !hasK4 && !hasK5) {
+      ? '\n\n💡 Sırada: Yakıt tüketiminizi paylaşın (doğalgaz, dizel…) → Kapsam 1 tamamlanır.'
+      : '\n\n💡 Next: Share your fuel consumption (natural gas, diesel…) → Scope 1 done.';
+  } else if ((r.category === '3A' || r.category === '4A') && has3A && has4A && !hasK4 && !hasK5) {
     followUp = useTr
-      ? '\n\n💡 **Sıradaki adım:** Kapsam 3 için nakliye veya iş seyahati verisi var mı?'
-      : '\n\n💡 **Next step:** Any Scope 3 data — freight shipments or business travel?';
+      ? '\n\n💡 Kapsam 1 ve 2 tamam! Nakliye veya iş seyahati veriniz var mı?'
+      : '\n\n💡 Scope 1 & 2 done! Do you have freight or business travel data?';
   } else if ((r.category === 'K4' || r.category === 'K5') && has3A && has4A) {
-    followUp = useTr
-      ? '\n\n🎉 Tüm kapsamları kapsamanıza çok yaklaştınız!'
-      : '\n\n🎉 You\'re close to covering all scopes!';
+    const newCount = doneCount + 1;
+    followUp = newCount >= 4
+      ? (useTr ? '\n\n🎉 Tüm kapsamlar tamamlandı! Raporunuzu oluşturabilirsiniz.' : '\n\n🎉 All scopes complete! You can now generate your report.')
+      : (useTr ? `\n\n✅ ${newCount}/4 kategori tamamlandı. Devam edelim!` : `\n\n✅ ${newCount}/4 categories done. Let's keep going!`);
   }
 
   const reply = useTr
-    ? `✅ Tespit edildi: **${catLabel}**\n\n📐 Hesaplama (${source}):\n${calcLine}${followUp}`
-    : `✅ Detected: **${catLabel}**\n\n📐 Calculation (${source}):\n${calcLine}${followUp}`;
+    ? `✅ **${catLabel}** tespit edildi!\n\n📐 _${source}_\n${calcLine}${followUp}\n\nAşağıdaki kartı onaylayın veya düzenleyin:`
+    : `✅ **${catLabel}** detected!\n\n📐 _${source}_\n${calcLine}${followUp}\n\nReview the card below and save when ready:`;
 
   return {
     reply,
@@ -349,6 +347,7 @@ function buildReply(results, inputText, lang, fieldValues) {
       category: r.category,
       confidence: r.confidence,
       fields: r.fields,
+      emKg: r.emKg,
       _localFields: r._localFields,
     },
   };
@@ -402,37 +401,46 @@ function formatQuestionMsg(question, lang) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function TypingDots() {
   return (
-    <div className="flex items-end gap-1 px-1 py-1">
+    <div className="flex items-center gap-1.5 px-1 py-1.5">
       {[0, 1, 2].map(i => (
-        <span key={i} className="h-2 w-2 rounded-full bg-[#B4BE6A] animate-bounce"
-          style={{ animationDelay: `${i * 0.18}s` }} />
+        <span
+          key={i}
+          className="h-[7px] w-[7px] rounded-full bg-[#B4BE6A]"
+          style={{
+            animation: 'ciq-dot 1.4s ease-in-out infinite',
+            animationDelay: `${i * 0.22}s`,
+          }}
+        />
       ))}
+      <style>{`@keyframes ciq-dot{0%,60%,100%{opacity:.2;transform:scale(.75)}30%{opacity:1;transform:scale(1)}}`}</style>
     </div>
   );
 }
 
 function RichText({ text }) {
   if (!text) return null;
+
+  function renderInline(raw) {
+    const RE = /(\*\*[^*\n]+\*\*|`[^`\n]+`|_[^_\n]{1,80}_)/g;
+    return raw.split(RE).map((p, i) => {
+      if (p.startsWith('**') && p.endsWith('**'))
+        return <strong key={i}>{p.slice(2, -2)}</strong>;
+      if (p.startsWith('`') && p.endsWith('`') && p.length > 2)
+        return <code key={i} className="rounded bg-[#302817]/8 px-1 py-px font-mono text-[10.5px]">{p.slice(1, -1)}</code>;
+      if (p.startsWith('_') && p.endsWith('_') && p.length > 2)
+        return <span key={i} className="opacity-60">{p.slice(1, -1)}</span>;
+      return p;
+    });
+  }
+
   return (
-    <>
-      {text.split('\n').map((line, li) => {
-        const parts = line.split(/(\*\*[^*]+\*\*)/g);
-        return (
-          <span key={li}>
-            {parts.map((p, pi) =>
-              p.startsWith('**') && p.endsWith('**')
-                ? <strong key={pi}>{p.slice(2, -2)}</strong>
-                : p.startsWith('_') && p.endsWith('_') && p.length > 2
-                  ? <em key={pi}>{p.slice(1, -1)}</em>
-                  : p.startsWith('`') && p.endsWith('`') && p.length > 2
-                    ? <code key={pi} className="rounded bg-[#302817]/8 px-1 text-[11px]">{p.slice(1, -1)}</code>
-                    : p
-            )}
-            {li < text.split('\n').length - 1 && <br />}
-          </span>
-        );
+    <div className="text-[13px] leading-[1.75]">
+      {text.split('\n').map((line, i) => {
+        if (line.trim() === '---') return <hr key={i} className="border-[#302817]/10 my-2" />;
+        if (!line.trim())          return <div key={i} className="h-2" />;
+        return <div key={i}>{renderInline(line)}</div>;
       })}
-    </>
+    </div>
   );
 }
 
@@ -445,15 +453,51 @@ function ChatBubble({ msg }) {
           <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
         </div>
       )}
-      <div className={`max-w-[86%] rounded-[18px] px-4 py-2.5 text-[13px] leading-[1.7] ${
+      <div className={`max-w-[86%] rounded-[18px] px-4 py-2.5 ${
         isUser
-          ? 'rounded-tr-sm bg-[#302817] text-white'
+          ? 'rounded-tr-sm bg-[#302817] text-white text-[13px] leading-[1.7]'
           : 'rounded-tl-sm border border-[#302817]/8 bg-white text-[#302817] shadow-sm'
       }`}>
-        <RichText text={msg.content} />
+        {isUser ? msg.content : <RichText text={msg.content} />}
       </div>
     </div>
   );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POST-CONFIRM MESSAGE BUILDER
+// ═══════════════════════════════════════════════════════════════════════════════
+function buildConfirmMsg(category, fieldValues, tr) {
+  const done = {
+    has3A: !!fieldValues['rf.3a.consumption']         || category === '3A',
+    has4A: !!fieldValues['rf.4a.consumption_kwh']     || category === '4A',
+    hasK4: !!fieldValues['rf.k4.total_emission_kgco2e'] || category === 'K4',
+    hasK5: !!fieldValues['rf.k5.total_emission_kgco2e'] || category === 'K5',
+  };
+  const doneCount  = Object.values(done).filter(Boolean).length;
+  const savedLabel = {
+    '3A': tr ? 'Kapsam 1 — Sabit Yanma'   : 'Scope 1 — Stationary Combustion',
+    '4A': tr ? 'Kapsam 2 — Elektrik'       : 'Scope 2 — Electricity',
+    'K4': tr ? 'Kapsam 3 — Nakliye'        : 'Scope 3 — Freight',
+    'K5': tr ? 'Kapsam 3 — İş Seyahati'   : 'Scope 3 — Business Travel',
+  }[category] || category;
+
+  if (doneCount >= 4) {
+    return tr
+      ? `🎉 **${savedLabel}** kaydedildi! **Tüm kapsamlar tamamlandı (4/4).**\n\nKontrol Paneli\'nden karbon envanteri raporunuzu artık oluşturabilirsiniz.`
+      : `🎉 **${savedLabel}** saved! **All scopes complete (4/4).**\n\nYou can now generate your carbon inventory report from the Dashboard.`;
+  }
+
+  const missing = [
+    !done.has3A && (tr ? '🔥 Kapsam 1' : '🔥 Scope 1'),
+    !done.has4A && (tr ? '⚡ Kapsam 2' : '⚡ Scope 2'),
+    !done.hasK4 && (tr ? '🚛 Kapsam 3 Nakliye' : '🚛 Scope 3 Freight'),
+    !done.hasK5 && (tr ? '✈️ Kapsam 3 Seyahat' : '✈️ Scope 3 Travel'),
+  ].filter(Boolean);
+
+  return tr
+    ? `✅ **${savedLabel}** rapora kaydedildi! (${doneCount}/4 tamamlandı)\n\n**Eksik:** ${missing.join(' · ')}\n\nDevam etmek için bir sonraki kategoriyi paylaşın.`
+    : `✅ **${savedLabel}** saved to report! (${doneCount}/4 complete)\n\n**Remaining:** ${missing.join(' · ')}\n\nShare the next category to keep going.`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -488,17 +532,20 @@ export function ChatWorkspace({
   const [guidedError,    setGuidedError]    = useState('');
 
   // Current question derived
-  const currentQuestion = currentQId ? getQuestionById(currentQId) : null;
-  const currentStage    = currentQuestion
+  const currentQuestion    = currentQId ? getQuestionById(currentQId) : null;
+  const currentStage       = currentQuestion
     ? CARBONIQ_STAGES.find(s => s.id === currentQuestion.stage)
     : null;
+  const currentStageIndex  = currentQuestion
+    ? CARBONIQ_STAGES.findIndex(s => s.id === currentQuestion.stage)
+    : -1;
 
   // ── Welcome message builder ──────────────────────────────────────────────────
   const buildWelcome = useCallback((l) => {
     const isTr = l === 'tr';
     return isTr
-      ? 'Merhaba! Ben **CarbonIQ AI Asistanınım** 🌿\n\nISO 14064-1 çerçevesinde karbon envanterinizi birlikte oluşturalım.\n\n→ **Serbest Mod:** Emisyon verilerini doğal dilde yazın, otomatik hesaplayayım.\n→ **📋 Rehberli Mod:** 133 soruyu adım adım, branching mantığıyla tamamlayın.'
-      : "Hello! I'm your **CarbonIQ AI Assistant** 🌿\n\nLet's build your ISO 14064-1 carbon inventory together.\n\n→ **Free Mode:** Share emission data in natural language — I'll calculate automatically.\n→ **📋 Guided Mode:** Walk through all 133 questions step by step with smart branching.";
+      ? '👋 Merhaba! Ben **CarbonIQ**, ISO 14064-1 karbon envanter asistanınım.\n\nSize şunları yapabilirim:\n\n🔥 **Kapsam 1** — "15.000 m³ doğalgaz kullandık" yazın, hesaplayayım\n⚡ **Kapsam 2** — "18.000 kWh elektrik tükettik" → anında CO₂e\n✈️ **Kapsam 3** — Nakliye ve iş seyahati verilerinizi alayım\n\n📊 "Ne eksik?" veya "Durum nedir?" diye sorabilirsiniz.\n📋 **Rehberli Mod** ile 133 soruyu birlikte tamamlayabiliriz.\n\nHazır olduğunuzda verilerinizi paylaşın — ben de hemen hesaplayayım! 👇'
+      : "👋 Hi! I'm **CarbonIQ**, your ISO 14064-1 carbon inventory assistant.\n\nHere's what I can do:\n\n🔥 **Scope 1** — Tell me \"We used 15,000 m³ natural gas\" and I'll calculate it\n⚡ **Scope 2** — \"We consumed 18,000 kWh electricity\" → instant CO₂e\n✈️ **Scope 3** — Share your freight and business travel data\n\n📊 Ask \"What's missing?\" or \"Show my status\" anytime.\n📋 Use **Guided Mode** to walk through all 133 questions together.\n\nJust share your data below and I'll handle the rest! 👇";
   }, []);
 
   const [messages, setMessages] = useState(() => [
@@ -598,6 +645,16 @@ export function ChatWorkspace({
     // Process next step
     processGuidedAnswer(question, rawAnswer, newAnswers);
   }, [currentQuestion, guidedAnswers, currentQId, activeLang, tr, addMsg, processGuidedAnswer]);
+
+  // ── Guided: skip optional question ──────────────────────────────────────────
+  const handleSkip = useCallback(() => {
+    const question = currentQuestion;
+    if (!question || question.required) return;
+    addMsg('user', tr ? '⏭️ Atlandı' : '⏭️ Skipped');
+    const newAnswers = { ...guidedAnswers, [currentQId]: '__skipped__' };
+    setGuidedAnswers(newAnswers);
+    processGuidedAnswer(question, '__skipped__', newAnswers);
+  }, [currentQuestion, guidedAnswers, currentQId, tr, addMsg, processGuidedAnswer]);
 
   // ── Guided: info-type continue ───────────────────────────────────────────────
   const handleInfoContinue = useCallback(() => {
@@ -754,32 +811,29 @@ export function ChatWorkspace({
             : Object.entries(msg.suggestion._localFields).map(([field_id, value]) => ({ field_id, value }));
           if (onPreviewFields) onPreviewFields(fields);
         }
+        const category = messages.find(m => m.suggestion?.id === suggestionId)?.suggestion?.category;
         setMessages(prev => prev.map(m =>
           m.suggestion?.id === suggestionId
             ? { ...m, role: 'confirmed', suggestion: { ...m.suggestion, status: 'confirmed' } }
             : m
         ));
-        addMsg('assistant', tr
-          ? '✅ Veriler rapora kaydedildi! Sol panelde özet güncellendi.\n\nBaşka kategori eklemek ister misiniz?'
-          : '✅ Data saved to your report! The left panel summary has been updated.\n\nWould you like to add another category?');
+        addMsg('assistant', buildConfirmMsg(category, fieldValues, tr));
         if (onFieldsConfirmed) onFieldsConfirmed([]);
       } else {
         const result = await confirmSuggestion(suggestionId, editedFields);
+        const category = messages.find(m => m.suggestion?.id === suggestionId)?.suggestion?.category;
         setMessages(prev => prev.map(m =>
           m.suggestion?.id === suggestionId
             ? { ...m, role: 'confirmed', suggestion: { ...m.suggestion, status: 'confirmed' } }
             : m
         ));
-        const n = result.saved_fields?.length || 0;
-        addMsg('assistant', tr
-          ? `✅ ${n} alan veritabanına kaydedildi! Rapor güncellendi.\n\nBaşka emisyon verisi eklemek ister misiniz?`
-          : `✅ ${n} field(s) saved to database! Report updated.\n\nWould you like to add more emission data?`);
+        addMsg('assistant', buildConfirmMsg(category, fieldValues, tr));
         if (onFieldsConfirmed) onFieldsConfirmed(result.saved_fields || []);
       }
     } catch {
       setError(tr ? 'Kaydetme başarısız. Tekrar deneyin.' : 'Save failed. Please try again.');
     }
-  }, [addMsg, tr, isPreview, messages, onPreviewFields, onFieldsConfirmed]);
+  }, [addMsg, tr, isPreview, messages, onPreviewFields, onFieldsConfirmed, fieldValues]);
 
   // ── Suggestion reject ────────────────────────────────────────────────────────
   const handleReject = useCallback(async (suggestionId) => {
@@ -797,15 +851,16 @@ export function ChatWorkspace({
   }, [addMsg, tr, isPreview]);
 
   // ── Quick-start chips (free mode) ────────────────────────────────────────────
-  const CHIPS = [
-    { label: tr ? '🔥 15.000 m³ doğalgaz'        : '🔥 15,000 m³ natural gas',
-      text:  tr ? '15.000 m³ doğalgaz kullandık'  : 'We used 15,000 m³ natural gas'                      },
-    { label: tr ? '⚡ 18.000 kWh elektrik'         : '⚡ 18,000 kWh electricity',
-      text:  tr ? '18.000 kWh elektrik tükettik'  : 'We consumed 18,000 kWh electricity'                  },
-    { label: tr ? '✈️ 12.000 pkm iş seyahati'      : '✈️ 12,000 pkm flights',
-      text:  tr ? '12.000 pkm kısa mesafe iş seyahati uçuşu yaptık' : 'We had 12,000 pkm short-haul business travel flights' },
-    { label: tr ? '🚛 45 ton × 1200 km nakliye'    : '🚛 45 t × 1,200 km freight',
-      text:  tr ? '45 ton yük 1200 km karayoluyla taşındı'           : '45 tonnes of freight shipped 1,200 km by road'       },
+  const CHIPS = tr ? [
+    { emoji: '🔥', scope: 'Kapsam 1', title: 'Sabit Yanma',    example: '15.000 m³ doğalgaz',   text: '15.000 m³ doğalgaz kullandık' },
+    { emoji: '⚡', scope: 'Kapsam 2', title: 'Elektrik',        example: '18.000 kWh',            text: '18.000 kWh elektrik tükettik' },
+    { emoji: '✈️', scope: 'Kapsam 3', title: 'İş Seyahati',    example: '12.000 pkm kısa hat',  text: '12.000 pkm kısa mesafe iş seyahati uçuşu yaptık' },
+    { emoji: '🚛', scope: 'Kapsam 3', title: 'Nakliye',         example: '45 ton × 1.200 km',    text: '45 ton yük 1200 km karayoluyla taşındı' },
+  ] : [
+    { emoji: '🔥', scope: 'Scope 1', title: 'Stationary',       example: '15,000 m³ natural gas', text: 'We used 15,000 m³ natural gas' },
+    { emoji: '⚡', scope: 'Scope 2', title: 'Electricity',       example: '18,000 kWh',            text: 'We consumed 18,000 kWh electricity' },
+    { emoji: '✈️', scope: 'Scope 3', title: 'Business Travel',  example: '12,000 pkm flights',    text: 'We had 12,000 pkm short-haul business travel flights' },
+    { emoji: '🚛', scope: 'Scope 3', title: 'Freight',           example: '45 t × 1,200 km',      text: '45 tonnes of freight shipped 1,200 km by road' },
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -882,10 +937,22 @@ export function ChatWorkspace({
       {mode === 'guided' && currentQuestion && (
         <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-[#F0F3E0]/60 to-[#F9F8F4] border-b border-[#B4BE6A]/20">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-bold text-[#75863B] truncate mr-2 max-w-[70%]">
-              {currentStage?.title?.[activeLang] || currentStage?.title?.en || ''}
-            </span>
-            <span className="text-[10px] font-semibold text-[#302817]/40 shrink-0">
+            <div className="min-w-0 flex-1 mr-2">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[#75863B]/60">
+                {tr
+                  ? `Aşama ${currentStageIndex + 1} / ${CARBONIQ_STAGES.length}`
+                  : `Stage ${currentStageIndex + 1} of ${CARBONIQ_STAGES.length}`}
+                {!currentQuestion.required && (
+                  <span className="ml-1.5 normal-case font-semibold text-[#302817]/30">
+                    · {tr ? 'İsteğe bağlı' : 'Optional'}
+                  </span>
+                )}
+              </p>
+              <p className="text-[10.5px] font-bold text-[#75863B] truncate">
+                {currentStage?.title?.[activeLang] || currentStage?.title?.en || ''}
+              </p>
+            </div>
+            <span className="text-[10px] font-semibold text-[#302817]/40 shrink-0 tabular-nums">
               {currentQuestion.number} / {TOTAL_QUESTIONS}
             </span>
           </div>
@@ -903,19 +970,28 @@ export function ChatWorkspace({
 
         {/* Quick-start chips (free mode only, before conversation begins) */}
         {mode === 'free' && messages.length === 1 && messages[0].id === 'welcome' && (
-          <div className="flex flex-col items-center gap-2.5 pt-2 pb-1">
-            <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-col items-center gap-2.5 pt-1 pb-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
+              {tr ? 'Hızlı Örnek Seç' : 'Quick Start Example'}
+            </p>
+            <div className="grid grid-cols-2 gap-1.5 w-full max-w-xs">
               {CHIPS.map((chip, i) => (
-                <button key={i} onClick={() => setInput(chip.text)}
-                  className="rounded-full border border-[#302817]/10 bg-white px-3.5 py-1.5 text-[11px] font-semibold text-[#302817]/55 shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 hover:text-[#302817]">
-                  {chip.label}
+                <button
+                  key={i}
+                  onClick={() => setInput(chip.text)}
+                  className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
+                >
+                  <span className="text-[16px] leading-none">{chip.emoji}</span>
+                  <p className="text-[9px] font-bold text-[#302817]/35 mt-1.5 uppercase tracking-wide">{chip.scope}</p>
+                  <p className="text-[11px] font-bold text-[#302817] leading-tight">{chip.title}</p>
+                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5 font-mono">{chip.example}</p>
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-3 w-full max-w-sm">
+            <div className="flex items-center gap-3 w-full max-w-xs">
               <div className="flex-1 h-px bg-[#302817]/8" />
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/20">
-                {tr ? 'veya kendiniz yazın' : 'or type below'}
+                {tr ? 'veya kendiniz yazın' : 'or type your own data'}
               </span>
               <div className="flex-1 h-px bg-[#302817]/8" />
             </div>
@@ -1105,13 +1181,23 @@ export function ChatWorkspace({
               </div>
             )}
 
-            {/* Footer: ISO ref for current question */}
-            <div className="flex items-center gap-1.5 pl-1">
-              <TrendingUp className="h-3 w-3 text-[#75863B]/40" />
-              <p className="text-[9.5px] text-[#302817]/28">
-                {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}/${TOTAL_QUESTIONS}` : `Question ${currentQuestion.number}/${TOTAL_QUESTIONS}`}
-                {currentQuestion.required ? (tr ? ' · Zorunlu' : ' · Required') : (tr ? ' · İsteğe bağlı' : ' · Optional')}
-              </p>
+            {/* Footer: ISO ref + skip button */}
+            <div className="flex items-center justify-between gap-2 pl-1">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <TrendingUp className="h-3 w-3 text-[#75863B]/40 shrink-0" />
+                <p className="text-[9.5px] text-[#302817]/28 truncate">
+                  {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}/${TOTAL_QUESTIONS}` : `Question ${currentQuestion.number}/${TOTAL_QUESTIONS}`}
+                  {currentQuestion.required ? (tr ? ' · Zorunlu' : ' · Required') : (tr ? ' · İsteğe bağlı' : ' · Optional')}
+                </p>
+              </div>
+              {!currentQuestion.required && currentQuestion.type !== 'info' && (
+                <button
+                  onClick={handleSkip}
+                  className="shrink-0 text-[9.5px] font-semibold text-[#302817]/30 hover:text-[#302817]/55 transition flex items-center gap-0.5 whitespace-nowrap"
+                >
+                  {tr ? 'Atla' : 'Skip'} →
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -1123,8 +1209,8 @@ export function ChatWorkspace({
               <textarea
                 className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed"
                 placeholder={tr
-                  ? 'Emisyon verinizi paylaşın… (TR veya EN yazabilirsiniz)'
-                  : 'Share your emission data… (write in TR or EN)'}
+                  ? 'Örn: "15.000 m³ doğalgaz kullandık" veya "18.000 kWh elektrik tükettik"'
+                  : 'E.g. "We used 15,000 m³ natural gas" or "18,000 kWh electricity consumed"'}
                 value={input}
                 rows={1}
                 onChange={e => setInput(e.target.value)}

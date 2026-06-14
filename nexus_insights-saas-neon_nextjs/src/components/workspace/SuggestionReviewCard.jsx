@@ -1,46 +1,140 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, X, Edit3, Loader2, Sparkles } from 'lucide-react';
+import { CheckCircle2, X, Edit3, Loader2, Flame, Zap, Truck, Plane, ChevronDown, ChevronUp } from 'lucide-react';
 
-const CONFIDENCE_COLOR = (c) => {
-  if (c >= 0.85) return 'text-[#527A1A]';
-  if (c >= 0.65) return 'text-amber-600';
-  return 'text-red-500';
+// ── Category meta ──────────────────────────────────────────────────────────────
+const CAT_META = {
+  '3A': {
+    icon: Flame,
+    color: 'text-orange-500',
+    bg: 'bg-orange-50',
+    border: 'border-orange-200/60',
+    accent: '#f97316',
+    label: { tr: 'Kapsam 1 — Sabit Yanma', en: 'Scope 1 — Stationary Combustion' },
+    scope: { tr: 'Kapsam 1', en: 'Scope 1' },
+  },
+  '4A': {
+    icon: Zap,
+    color: 'text-yellow-500',
+    bg: 'bg-yellow-50',
+    border: 'border-yellow-200/60',
+    accent: '#eab308',
+    label: { tr: 'Kapsam 2 — Elektrik', en: 'Scope 2 — Electricity' },
+    scope: { tr: 'Kapsam 2', en: 'Scope 2' },
+  },
+  'K4': {
+    icon: Truck,
+    color: 'text-sky-500',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200/60',
+    accent: '#0ea5e9',
+    label: { tr: 'Kapsam 3 — Taşımacılık', en: 'Scope 3 — Transport' },
+    scope: { tr: 'Kapsam 3', en: 'Scope 3' },
+  },
+  'K5': {
+    icon: Plane,
+    color: 'text-violet-500',
+    bg: 'bg-violet-50',
+    border: 'border-violet-200/60',
+    accent: '#8b5cf6',
+    label: { tr: 'Kapsam 3 — İş Seyahati', en: 'Scope 3 — Business Travel' },
+    scope: { tr: 'Kapsam 3', en: 'Scope 3' },
+  },
 };
 
-const CONFIDENCE_BG = (c) => {
-  if (c >= 0.85) return 'bg-[#95A847]/10 border-[#95A847]/25 text-[#527A1A]';
-  if (c >= 0.65) return 'bg-amber-50 border-amber-200 text-amber-700';
-  return 'bg-red-50 border-red-200 text-red-600';
+// Format kg to readable string
+function fmtEmission(kg) {
+  if (!kg || kg <= 0) return { value: '0', unit: 'kgCO₂e', tonnes: null };
+  if (kg >= 1000) {
+    return {
+      value: (kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+      unit: 'tCO₂e',
+      tonnes: null,
+    };
+  }
+  return {
+    value: Math.round(kg).toLocaleString(),
+    unit: 'kgCO₂e',
+    tonnes: kg >= 100 ? `≈ ${(kg / 1000).toFixed(3)} t` : null,
+  };
+}
+
+// Friendly label per field_id
+const FIELD_LABELS = {
+  'rf.3a.fuel_type':              { tr: 'Yakıt türü',            en: 'Fuel type'           },
+  'rf.3a.consumption':            { tr: 'Tüketim miktarı',       en: 'Consumption'         },
+  'rf.3a.unit':                   { tr: 'Birim',                 en: 'Unit'                },
+  'rf.4a.consumption_kwh':        { tr: 'Elektrik tüketimi',     en: 'Electricity'         },
+  'rf.4a.emission_factor':        { tr: 'Emisyon faktörü',       en: 'Emission factor'     },
+  'rf.4a.supplier':               { tr: 'Tedarikçi',             en: 'Supplier'            },
+  'rf.k4.total_emission_kgco2e':  { tr: 'Toplam emisyon',        en: 'Total emission'      },
+  'rf.k5.air_domestic_pkm':       { tr: 'İç hat uçuş',          en: 'Domestic flight'     },
+  'rf.k5.air_short_haul_pkm':     { tr: 'Kısa mesafe uçuş',     en: 'Short-haul flight'   },
+  'rf.k5.air_long_haul_pkm':      { tr: 'Uzun mesafe uçuş',     en: 'Long-haul flight'    },
+  'rf.k5.rail_pkm':               { tr: 'Tren seyahati',         en: 'Rail travel'         },
+  'rf.k5.total_emission_kgco2e':  { tr: 'Toplam emisyon',        en: 'Total emission'      },
 };
 
-const CONFIDENCE_BAR = (c) => {
-  if (c >= 0.85) return 'bg-[#95A847]';
-  if (c >= 0.65) return 'bg-amber-400';
-  return 'bg-red-400';
-};
+function getLabel(fieldId, fallback, lang) {
+  const entry = FIELD_LABELS[fieldId];
+  if (!entry) return fallback || fieldId;
+  return entry[lang] || entry.en || fallback;
+}
 
-const CATEGORY_LABELS = {
-  '3A': { tr: 'Sabit Yanma — Kapsam 1',         en: 'Stationary Combustion — Scope 1' },
-  '4A': { tr: 'Satın Alınan Elektrik — Kapsam 2', en: 'Purchased Electricity — Scope 2' },
-  'K4': { tr: 'Upstream Taşımacılık — Kapsam 3',  en: 'Upstream Transport — Scope 3'    },
-  'K5': { tr: 'İş Seyahati — Kapsam 3',           en: 'Business Travel — Scope 3'       },
-};
+// Format a field value for display
+function displayValue(f, lang) {
+  if (Array.isArray(f.value)) return `${f.value.length} ${lang === 'tr' ? 'kayıt' : 'record(s)'}`;
+  if (f.value === undefined || f.value === null) return '—';
+  if (f.field_id === 'rf.3a.fuel_type') {
+    const names = {
+      natural_gas: { tr: 'Doğalgaz', en: 'Natural Gas' },
+      diesel: { tr: 'Motorin', en: 'Diesel' },
+      lpg: { tr: 'LPG', en: 'LPG' },
+      fuel_oil: { tr: 'Fuel Oil', en: 'Fuel Oil' },
+      coal: { tr: 'Kömür', en: 'Coal' },
+      biomass: { tr: 'Biyokütle', en: 'Biomass' },
+    };
+    return names[f.value]?.[lang] || names[f.value]?.en || String(f.value);
+  }
+  if (f.field_id === 'rf.4a.supplier') return String(f.value);
+  if (typeof f.value === 'number') {
+    return f.unit
+      ? `${f.value.toLocaleString()} ${f.unit}`
+      : f.value.toLocaleString();
+  }
+  return String(f.value);
+}
 
 export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = 'en' }) {
   const tr = lang === 'tr';
   const [editing,      setEditing]      = useState(false);
   const [editedValues, setEditedValues] = useState({});
+  const [showDetails,  setShowDetails]  = useState(false);
   const [loading,      setLoading]      = useState(false);
   const [action,       setAction]       = useState('');
 
   if (!suggestion) return null;
 
   const fields     = suggestion.fields || [];
-  const confidence = suggestion.confidence;
-  const catLabel   = CATEGORY_LABELS[suggestion.category]?.[lang]
-                     || CATEGORY_LABELS[suggestion.category]?.en
-                     || suggestion.category;
+  const confidence = suggestion.confidence ?? 0;
+  const meta       = CAT_META[suggestion.category] || CAT_META['3A'];
+  const CatIcon    = meta.icon;
+
+  // Find the primary emission value from fields
+  const emissionField = fields.find(f =>
+    f.field_id?.includes('total_emission') ||
+    f.field_id?.includes('kgco2e') ||
+    f.unit === 'kgCO₂e'
+  );
+  // Fallback: calculate from consumption × ef if no emission field
+  const emKg = emissionField?.value
+    || suggestion.emKg
+    || 0;
+  const { value: emValue, unit: emUnit, tonnes } = fmtEmission(emKg);
+
+  // Fields to show in detail view (exclude the total emission, show it in hero)
+  const detailFields = fields.filter(f => !f.field_id?.includes('total_emission') && !f.field_id?.includes('kgco2e'));
+  const hasDetails = detailFields.length > 0;
 
   const handleConfirm = async () => {
     setLoading(true);
@@ -65,123 +159,142 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
   };
 
   return (
-    <div className="rounded-2xl border border-[#302817]/10 bg-white overflow-hidden relative shadow-sm">
+    <div className={`rounded-2xl border bg-white overflow-hidden shadow-sm ${meta.border}`}>
       {/* Loading overlay */}
       {loading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/85 backdrop-blur-sm">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-5 w-5 animate-spin text-[#75863B]" />
             <span className="text-[11px] font-semibold text-[#302817]/60">
               {action === 'confirming'
-                ? (tr ? 'Kaydediliyor…' : 'Saving…')
-                : (tr ? 'Reddediliyor…' : 'Rejecting…')}
+                ? (tr ? 'Rapora kaydediliyor…' : 'Saving to report…')
+                : (tr ? 'İptal ediliyor…' : 'Cancelling…')}
             </span>
           </div>
         </div>
       )}
 
-      {/* Header */}
-      <div className="px-4 py-3 bg-[#302817] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#B4BE6A]/20">
-            <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-white/80">
-              {tr ? 'AI Önerisi' : 'AI Suggestion'}
-            </p>
-            <p className="text-[10px] text-white/40 mt-0.5 truncate">{catLabel}</p>
-          </div>
+      {/* ── Scope badge + category ── */}
+      <div className={`flex items-center gap-2.5 px-4 pt-3.5 pb-2`}>
+        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${meta.bg}`}>
+          <CatIcon className={`h-3.5 w-3.5 ${meta.color}`} />
         </div>
-        {/* Overall confidence badge */}
-        {confidence != null && (
-          <span className={`shrink-0 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold ${CONFIDENCE_BG(confidence)}`}>
-            <span className={`h-1.5 w-1.5 rounded-full ${CONFIDENCE_BAR(confidence)}`} />
-            {Math.round(confidence * 100)}% {tr ? 'güven' : 'conf.'}
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold text-[#302817]/80 truncate">
+            {meta.label[lang] || meta.label.en}
+          </p>
+          <p className="text-[9.5px] text-[#302817]/35">
+            {tr ? 'AI tarafından çıkarıldı' : 'Extracted by AI'}
+            {' · '}
+            <span className={confidence >= 0.85 ? 'text-[#527A1A] font-semibold' : confidence >= 0.65 ? 'text-amber-600 font-semibold' : 'text-red-500 font-semibold'}>
+              {Math.round(confidence * 100)}% {tr ? 'güven' : 'confidence'}
+            </span>
+          </p>
+        </div>
+      </div>
+
+      {/* ── Hero emission number ── */}
+      <div className={`mx-3 mb-3 rounded-xl ${meta.bg} border ${meta.border} px-4 py-3 text-center`}>
+        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 mb-1">
+          {tr ? 'Hesaplanan Emisyon' : 'Calculated Emission'}
+        </p>
+        <div className="flex items-baseline justify-center gap-1.5">
+          <span className="text-[32px] font-black text-[#302817] leading-none tabular-nums">
+            {emValue}
           </span>
+          <span className={`text-[14px] font-bold ${meta.color}`}>{emUnit}</span>
+        </div>
+        {tonnes && (
+          <p className="text-[10px] text-[#302817]/35 mt-0.5">{tonnes}</p>
         )}
       </div>
 
-      {/* Fields */}
-      <div className="px-4 py-3 flex flex-col gap-2">
-        {fields.map((f, i) => (
-          <div
-            key={f.field_id}
-            className="flex items-start gap-3 rounded-xl bg-[#FAFAF8] border border-[#302817]/6 px-3 py-2.5"
+      {/* ── Detail fields (collapsible) ── */}
+      {hasDetails && (
+        <div className="px-3 mb-2">
+          <button
+            onClick={() => setShowDetails(v => !v)}
+            className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#302817]/4 transition text-[10.5px] font-semibold text-[#302817]/45"
           >
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-[#302817]/45 uppercase tracking-wide mb-1">
-                {f.label || f.field_id}
-                {f.unit && <span className="ml-1 normal-case font-normal">({f.unit})</span>}
-              </p>
-              {editing ? (
-                <input
-                  type={typeof f.value === 'number' ? 'number' : 'text'}
-                  className="w-full rounded-lg border border-[#302817]/12 bg-white px-2 py-1 text-xs text-[#302817] outline-none focus:border-[#B4BE6A]/50 focus:ring-1 focus:ring-[#B4BE6A]/20"
-                  // Controlled value so it resets correctly on toggle
-                  value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : f.value}
-                  onChange={e => {
-                    const raw = e.target.value;
-                    // Preserve numeric type so backend receives numbers, not strings
-                    const val = typeof f.value === 'number'
-                      ? (raw === '' ? '' : (parseFloat(raw) ?? raw))
-                      : raw;
-                    setEditedValues(prev => ({ ...prev, [f.field_id]: val }));
-                  }}
-                />
-              ) : (
-                <p className="text-sm font-bold text-[#302817]">
-                  {Array.isArray(f.value)
-                    ? `${f.value.length} ${tr ? 'kayıt' : 'record(s)'}`
-                    : f.value !== undefined && f.value !== null
-                      ? String(f.value)
-                      : '—'}
-                </p>
-              )}
-            </div>
-            {/* Per-field confidence */}
-            {f.confidence != null && (
-              <div className="shrink-0 flex flex-col items-end gap-1 pt-0.5">
-                <span className={`text-[10px] font-bold ${CONFIDENCE_COLOR(f.confidence)}`}>
-                  {Math.round(f.confidence * 100)}%
-                </span>
-                <div className="w-8 h-1 rounded-full bg-[#302817]/8 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${CONFIDENCE_BAR(f.confidence)}`}
-                    style={{ width: `${Math.round(f.confidence * 100)}%` }}
-                  />
+            <span>{tr ? 'Kaynak veriler' : 'Source data'}</span>
+            {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </button>
+
+          {showDetails && (
+            <div className="mt-1 flex flex-col gap-1.5 pb-1">
+              {(editing ? fields : detailFields).map((f) => (
+                <div
+                  key={f.field_id}
+                  className="flex items-center justify-between gap-2 rounded-lg bg-[#FAFAF8] border border-[#302817]/6 px-3 py-2"
+                >
+                  <span className="text-[10px] text-[#302817]/45 shrink-0">
+                    {getLabel(f.field_id, f.label, lang)}
+                  </span>
+                  {editing ? (
+                    <input
+                      type={typeof f.value === 'number' ? 'number' : 'text'}
+                      className="flex-1 min-w-0 text-right rounded-md border border-[#302817]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#302817] outline-none focus:border-[#B4BE6A]/60 focus:ring-1 focus:ring-[#B4BE6A]/20 max-w-[120px] ml-auto"
+                      value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : f.value}
+                      onChange={e => {
+                        const raw = e.target.value;
+                        const val = typeof f.value === 'number'
+                          ? (raw === '' ? '' : (!isNaN(parseFloat(raw)) ? parseFloat(raw) : raw))
+                          : raw;
+                        setEditedValues(prev => ({ ...prev, [f.field_id]: val }));
+                      }}
+                    />
+                  ) : (
+                    <span className="text-[11px] font-bold text-[#302817]">
+                      {displayValue(f, lang)}
+                    </span>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Source citation ── */}
+      <div className="mx-3 mb-3 flex items-center gap-1.5">
+        <div className="h-px flex-1 bg-[#302817]/6" />
+        <span className="text-[9px] text-[#302817]/25 font-semibold">
+          DEFRA 2023 / IEA 2023 / GLEC v3
+        </span>
+        <div className="h-px flex-1 bg-[#302817]/6" />
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-2 px-4 pb-4">
+      {/* ── Action buttons ── */}
+      <div className="flex items-center gap-2 px-3 pb-3.5">
         <button
           onClick={handleConfirm}
           disabled={loading}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-black active:scale-[0.98] disabled:opacity-40"
         >
-          <CheckCircle2 className="h-3.5 w-3.5" />
-          {tr ? 'Onayla & Kaydet' : 'Confirm & Save'}
+          <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+          {tr ? 'Rapora Kaydet' : 'Save to Report'}
         </button>
+
         <button
-          onClick={() => { setEditing(e => !e); setEditedValues({}); }}
+          onClick={() => {
+            setEditing(e => !e);
+            setShowDetails(true);
+            setEditedValues({});
+          }}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-full border border-[#302817]/12 px-3 py-2 text-xs font-bold text-[#302817]/55 transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/8 hover:text-[#302817] disabled:opacity-40"
+          className="flex items-center gap-1 rounded-xl border border-[#302817]/10 px-3 py-2.5 text-[11px] font-bold text-[#302817]/50 transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/8 hover:text-[#302817] disabled:opacity-40"
         >
-          <Edit3 className="h-3.5 w-3.5" />
+          <Edit3 className="h-3 w-3" />
           {editing ? (tr ? 'Bitti' : 'Done') : (tr ? 'Düzenle' : 'Edit')}
         </button>
+
         <button
           onClick={handleReject}
           disabled={loading}
-          className="flex items-center gap-1.5 rounded-full border border-[#302817]/10 px-3 py-2 text-xs font-bold text-[#302817]/35 transition hover:border-red-200 hover:bg-red-50 hover:text-red-400 disabled:opacity-40"
+          className="flex items-center justify-center h-10 w-10 rounded-xl border border-[#302817]/8 text-[#302817]/25 transition hover:border-red-200 hover:bg-red-50 hover:text-red-400 disabled:opacity-40"
+          title={tr ? 'Reddet' : 'Dismiss'}
         >
           <X className="h-3.5 w-3.5" />
-          {tr ? 'Reddet' : 'Reject'}
         </button>
       </div>
     </div>
