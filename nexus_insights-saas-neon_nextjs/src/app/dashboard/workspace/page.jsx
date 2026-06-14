@@ -40,6 +40,9 @@ const ANIM_STYLES = `
 .glow-pulse   { animation: glowPulse  5.5s ease-in-out infinite; }
 .data-ring    { animation: dataRing   9s   linear     infinite; }
 .fade-up      { animation: fadeUp     0.5s ease-out   both; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-float, .glow-pulse, .data-ring { animation: none !important; }
+}
 `;
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */

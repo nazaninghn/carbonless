@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, Send, Loader2, CheckCircle2, Info, TrendingUp, FileText } from 'lucide-react';
+import { Sparkles, Send, Loader2, CheckCircle2, Info, TrendingUp, FileText, X } from 'lucide-react';
 import { sendWorkspaceChatMessage, confirmSuggestion, rejectSuggestion } from '@/lib/workspace/api';
 import { SuggestionReviewCard } from './SuggestionReviewCard';
 import {
@@ -596,8 +596,8 @@ export function ChatWorkspace({
   const buildWelcome = useCallback((l) => {
     const isTr = l === 'tr';
     return isTr
-      ? '👋 Merhaba! Ben **CarbonIQ**, ISO 14064-1 karbon envanter asistanınım.\n\nSize şunları yapabilirim:\n\n🔥 **Kapsam 1** — "15.000 m³ doğalgaz kullandık" yazın, hesaplayayım\n⚡ **Kapsam 2** — "18.000 kWh elektrik tükettik" → anında CO₂e\n✈️ **Kapsam 3** — Nakliye ve iş seyahati verilerinizi alayım\n\n📊 "Ne eksik?" veya "Durum nedir?" diye sorabilirsiniz.\n📋 **Rehberli Mod** ile 133 soruyu birlikte tamamlayabiliriz.\n\nHazır olduğunuzda verilerinizi paylaşın — ben de hemen hesaplayayım! 👇'
-      : "👋 Hi! I'm **CarbonIQ**, your ISO 14064-1 carbon inventory assistant.\n\nHere's what I can do:\n\n🔥 **Scope 1** — Tell me \"We used 15,000 m³ natural gas\" and I'll calculate it\n⚡ **Scope 2** — \"We consumed 18,000 kWh electricity\" → instant CO₂e\n✈️ **Scope 3** — Share your freight and business travel data\n\n📊 Ask \"What's missing?\" or \"Show my status\" anytime.\n📋 Use **Guided Mode** to walk through all 133 questions together.\n\nJust share your data below and I'll handle the rest! 👇";
+      ? '👋 Merhaba! Ben **CarbonIQ**, ISO 14064-1 karbon envanter asistanınım.\n\nEmisyon verinizi yazın — hesaplayıp rapora kaydedeceğim. 📋 **Rehberli Mod** ile 133 soruyu adım adım da tamamlayabiliriz.\n\nAşağıdan bir örnek seçin veya kendiniz yazın 👇'
+      : "👋 Hi! I'm **CarbonIQ**, your ISO 14064-1 carbon inventory assistant.\n\nShare your emission data and I'll calculate and save it instantly. Use 📋 **Guided Mode** to walk through all 133 questions step by step.\n\nPick a quick example below or type your own 👇";
   }, []);
 
   const [messages, setMessages] = useState(() => [
@@ -620,7 +620,12 @@ export function ChatWorkspace({
   }, [activeLang, buildWelcome]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    const el = scrollRef.current;
+    if (!el) return;
+    // Only auto-scroll when user is already near the bottom (≤ 120px away).
+    // Avoids interrupting a user who deliberately scrolled up to re-read a message.
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+    if (isNearBottom) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, sending]);
 
   const addMsg = useCallback((role, content, extra = {}) => {
@@ -1017,6 +1022,19 @@ export function ChatWorkspace({
               style={{ width: `${(currentQuestion.number / TOTAL_QUESTIONS) * 100}%` }}
             />
           </div>
+          {/* Stage dots — 7 segments, one per stage */}
+          <div className="flex gap-[3px] mt-1.5">
+            {CARBONIQ_STAGES.map((stage, i) => (
+              <div
+                key={stage.id}
+                title={stage.title?.[activeLang] || stage.title?.en}
+                className={`flex-1 h-[3px] rounded-full transition-all duration-500 ${
+                  i < currentStageIndex   ? 'bg-[#95A847]' :
+                  i === currentStageIndex ? 'bg-[#B4BE6A]' : 'bg-[#302817]/10'
+                }`}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -1124,7 +1142,12 @@ export function ChatWorkspace({
           </div>
         )}
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">{error}</div>
+          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError('')} className="shrink-0 hover:text-red-800 transition" aria-label="Dismiss error">
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -1288,13 +1311,14 @@ export function ChatWorkspace({
           <>
             <div className="flex items-end gap-2">
               <textarea
-                className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed"
+                className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder={tr
                   ? 'Örn: "15.000 m³ doğalgaz kullandık" veya "18.000 kWh elektrik tükettik"'
                   : 'E.g. "We used 15,000 m³ natural gas" or "18,000 kWh electricity consumed"'}
                 value={input}
                 rows={1}
-                onChange={e => setInput(e.target.value)}
+                disabled={sending}
+                onChange={e => { setInput(e.target.value); if (error) setError(''); }}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                 maxLength={4000}
               />

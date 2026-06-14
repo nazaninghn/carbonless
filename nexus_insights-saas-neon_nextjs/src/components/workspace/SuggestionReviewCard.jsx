@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle2, X, Edit3, Loader2, Flame, Zap, Truck, Plane, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle2, X, Edit3, Loader2, Flame, Zap, Truck, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 
 // ── Category meta ──────────────────────────────────────────────────────────────
 const CAT_META = {
@@ -32,7 +32,7 @@ const CAT_META = {
     scope: { tr: 'Kapsam 3', en: 'Scope 3' },
   },
   'K5': {
-    icon: Plane,
+    icon: Briefcase,
     color: 'text-violet-500',
     bg: 'bg-violet-50',
     border: 'border-violet-200/60',
@@ -190,6 +190,16 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
               {Math.round(confidence * 100)}% {tr ? 'güven' : 'confidence'}
             </span>
           </p>
+          {/* Confidence bar */}
+          <div className="mt-1 h-[3px] w-full rounded-full bg-[#302817]/6 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                confidence >= 0.85 ? 'bg-[#75863B]' :
+                confidence >= 0.65 ? 'bg-amber-400' : 'bg-red-400'
+              }`}
+              style={{ width: `${Math.round(confidence * 100)}%` }}
+            />
+          </div>
         </div>
       </div>
 
@@ -214,7 +224,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <div className="px-3 mb-2">
           <button
             onClick={() => setShowDetails(v => !v)}
-            className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#302817]/4 transition text-[10.5px] font-semibold text-[#302817]/45"
+            className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#302817]/6 transition text-[10.5px] font-semibold text-[#302817]/45"
           >
             <span>{tr ? 'Kaynak veriler' : 'Source data'}</span>
             {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
