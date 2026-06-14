@@ -159,7 +159,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
   };
 
   return (
-    <div className={`rounded-2xl border bg-white overflow-hidden shadow-sm ${meta.border}`}>
+    <div className={`relative rounded-2xl border bg-white overflow-hidden shadow-sm ${meta.border}`}>
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm">
@@ -277,9 +277,9 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
 
         <button
           onClick={() => {
+            if (!editing) setEditedValues({});  // only reset when STARTING edit (not on Done)
             setEditing(e => !e);
             setShowDetails(true);
-            setEditedValues({});
           }}
           disabled={loading}
           className="flex items-center gap-1 rounded-xl border border-[#302817]/10 px-3 py-2.5 text-[11px] font-bold text-[#302817]/50 transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/8 hover:text-[#302817] disabled:opacity-40"
@@ -291,8 +291,9 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <button
           onClick={handleReject}
           disabled={loading}
-          className="flex items-center justify-center h-10 w-10 rounded-xl border border-[#302817]/8 text-[#302817]/25 transition hover:border-red-200 hover:bg-red-50 hover:text-red-400 disabled:opacity-40"
+          className="flex items-center justify-center h-10 w-10 rounded-xl border border-[#302817]/8 text-[#302817]/25 transition hover:border-red-200 hover:bg-red-50 hover:text-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
           title={tr ? 'Reddet' : 'Dismiss'}
+          aria-label={tr ? 'Reddet' : 'Dismiss'}
         >
           <X className="h-3.5 w-3.5" />
         </button>

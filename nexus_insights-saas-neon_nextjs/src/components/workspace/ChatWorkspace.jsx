@@ -59,15 +59,6 @@ const EF_SOURCE = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// LANGUAGE DETECTION
-// ═══════════════════════════════════════════════════════════════════════════════
-const TR_RE = /\b(kullandık|tükettik|aldık|yaptık|seyahat|doğalgaz|doğal\s*gaz|elektrik|yakıt|litre|litr[ei]|metre\s*küp|ton\b|yıl|geçen|fabrika|ofis|şirket|kamyon|uçuş|uçak|tren|araç|firma|aylık|günlük|yıllık|kapsam|emisyon|birim|sarfiyat|tüketim|satın|nakliye|taşıma|sevkiyat|kargo|gaz\b|mazot|dizel|lpg|enerji\b|kwh|mwh)\b/i;
-
-function detectLang(text) {
-  return TR_RE.test(text) ? 'tr' : 'en';
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // SMART NUMBER EXTRACTION
 // ═══════════════════════════════════════════════════════════════════════════════
 function extractNums(text) {
@@ -421,7 +412,7 @@ function RichText({ text }) {
   if (!text) return null;
 
   function renderInline(raw) {
-    const RE = /(\*\*[^*\n]+\*\*|`[^`\n]+`|_[^_\n]{1,80}_)/g;
+    const RE = /(\*\*[^*\n]+\*\*|`[^`\n]+`|_[^_\n]{1,200}_)/g;
     return raw.split(RE).map((p, i) => {
       if (p.startsWith('**') && p.endsWith('**'))
         return <strong key={i}>{p.slice(2, -2)}</strong>;
@@ -438,6 +429,13 @@ function RichText({ text }) {
       {text.split('\n').map((line, i) => {
         if (line.trim() === '---') return <hr key={i} className="border-[#302817]/10 my-2" />;
         if (!line.trim())          return <div key={i} className="h-2" />;
+        // Arrow-prefixed guidance lines (→ text)
+        if (line.startsWith('→ ')) return (
+          <div key={i} className="flex items-start gap-1.5">
+            <span className="text-[#75863B] font-bold shrink-0 select-none">→</span>
+            <span>{renderInline(line.slice(2))}</span>
+          </div>
+        );
         return <div key={i}>{renderInline(line)}</div>;
       })}
     </div>
@@ -517,6 +515,15 @@ export function ChatWorkspace({
   const setActiveLang = useCallback((l) => {
     setActiveLangRaw(l);
     if (onLangChange) onLangChange(l);
+    // Insert a divider when switching language mid-conversation
+    setMessages(prev => {
+      if (prev.length <= 1) return prev;  // just welcome message — silently rewrite it
+      return [...prev, {
+        id: `lang-${Date.now()}`,
+        role: 'mode-switch',
+        label: l === 'tr' ? '🌐 Türkçe\'ye geçildi' : '🌐 Switched to English',
+      }];
+    });
   }, [onLangChange]);
   const tr = activeLang === 'tr';
 
@@ -626,7 +633,10 @@ export function ChatWorkspace({
     const question = currentQuestion;
     if (!question) return;
 
-    const validation = validateCarbonIQAnswer(question, rawAnswer, guidedAnswers, activeLang);
+    // Always trim string answers so whitespace-only never reaches the chat
+    const answer = typeof rawAnswer === 'string' ? rawAnswer.trim() : rawAnswer;
+
+    const validation = validateCarbonIQAnswer(question, answer, guidedAnswers, activeLang);
     if (!validation.ok) {
       setGuidedError(validation.message || (tr ? 'Lütfen geçerli bir yanıt girin.' : 'Please enter a valid answer.'));
       return;
@@ -635,15 +645,15 @@ export function ChatWorkspace({
     setGuidedError('');
 
     // Show user's answer in chat
-    const displayLabel = getAnswerLabel(question, rawAnswer, activeLang);
-    addMsg('user', displayLabel || String(rawAnswer));
+    const displayLabel = getAnswerLabel(question, answer, activeLang);
+    addMsg('user', displayLabel || String(answer));
 
     // Store
-    const newAnswers = { ...guidedAnswers, [currentQId]: rawAnswer };
+    const newAnswers = { ...guidedAnswers, [currentQId]: answer };
     setGuidedAnswers(newAnswers);
 
     // Process next step
-    processGuidedAnswer(question, rawAnswer, newAnswers);
+    processGuidedAnswer(question, answer, newAnswers);
   }, [currentQuestion, guidedAnswers, currentQId, activeLang, tr, addMsg, processGuidedAnswer]);
 
   // ── Guided: skip optional question ──────────────────────────────────────────
@@ -735,9 +745,9 @@ export function ChatWorkspace({
     );
   }, [activeLang, addMsg]);
 
-  // ── Free mode send ───────────────────────────────────────────────────────────
-  const send = useCallback(async () => {
-    const text = input.trim();
+  // ── Free mode send (overrideText lets chips send directly without typing) ────
+  const send = useCallback(async (overrideText) => {
+    const text = overrideText !== undefined ? String(overrideText).trim() : input.trim();
     if (!text || sending) return;
     setInput('');
     setError('');
@@ -968,8 +978,8 @@ export function ChatWorkspace({
       {/* ── Messages ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
 
-        {/* Quick-start chips (free mode only, before conversation begins) */}
-        {mode === 'free' && messages.length === 1 && messages[0].id === 'welcome' && (
+        {/* Quick-start chips — visible until user submits first emission data */}
+        {mode === 'free' && !messages.some(m => ['suggestion', 'confirmed', 'rejected'].includes(m.role)) && (
           <div className="flex flex-col items-center gap-2.5 pt-1 pb-1">
             <p className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
               {tr ? 'Hızlı Örnek Seç' : 'Quick Start Example'}
@@ -978,7 +988,7 @@ export function ChatWorkspace({
               {CHIPS.map((chip, i) => (
                 <button
                   key={i}
-                  onClick={() => setInput(chip.text)}
+                  onClick={() => send(chip.text)}
                   className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
                 >
                   <span className="text-[16px] leading-none">{chip.emoji}</span>
@@ -1016,11 +1026,17 @@ export function ChatWorkspace({
             );
           }
           if (msg.role === 'confirmed') {
+            const catLabel = ({
+              '3A': tr ? 'Kapsam 1 — Sabit Yanma'  : 'Scope 1 — Stationary Combustion',
+              '4A': tr ? 'Kapsam 2 — Elektrik'      : 'Scope 2 — Electricity',
+              'K4': tr ? 'Kapsam 3 — Nakliye'       : 'Scope 3 — Freight',
+              'K5': tr ? 'Kapsam 3 — İş Seyahati'  : 'Scope 3 — Business Travel',
+            })[msg.suggestion?.category] || msg.suggestion?.category;
             return (
               <div key={msg.id} className="flex items-center gap-3 rounded-2xl border border-[#95A847]/25 bg-[#95A847]/8 px-4 py-3 shadow-sm">
                 <CheckCircle2 className="h-5 w-5 text-[#527A1A] shrink-0" />
                 <div>
-                  <p className="text-[12px] font-bold text-[#527A1A]">{tr ? 'Kaydedildi' : 'Saved'} — {msg.suggestion?.category}</p>
+                  <p className="text-[12px] font-bold text-[#527A1A]">{tr ? 'Kaydedildi' : 'Saved'} — {catLabel}</p>
                   <p className="text-[10px] text-[#302817]/40 mt-0.5">{tr ? 'Veriler rapora işlendi' : 'Data written to report'}</p>
                 </div>
               </div>
@@ -1169,13 +1185,25 @@ export function ChatWorkspace({
                   value={pendingAnswer}
                   rows={1}
                   onChange={e => { setPendingAnswer(e.target.value); setGuidedError(''); }}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitGuidedAnswer(pendingAnswer); } }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      const t = pendingAnswer.trim();
+                      if (!t) { if (!currentQuestion.required) handleSkip(); return; }
+                      submitGuidedAnswer(t);
+                    }
+                  }}
                   maxLength={currentQuestion.maxLength || 500}
                 />
                 <button
-                  onClick={() => submitGuidedAnswer(pendingAnswer)}
+                  onClick={() => {
+                    const t = pendingAnswer.trim();
+                    if (!t) { if (!currentQuestion.required) handleSkip(); return; }
+                    submitGuidedAnswer(t);
+                  }}
                   disabled={!pendingAnswer.trim() && currentQuestion.required}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35 active:scale-95">
+                  aria-label={tr ? 'Gönder' : 'Send'}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1218,7 +1246,8 @@ export function ChatWorkspace({
                 maxLength={4000}
               />
               <button onClick={send} disabled={!input.trim() || sending}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35 active:scale-95">
+                aria-label={tr ? 'Gönder' : 'Send'}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               </button>
             </div>
