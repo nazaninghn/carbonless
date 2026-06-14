@@ -44,10 +44,10 @@ const ANIM_STYLES = `
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: '3A', scope: 1, icon: Flame,    color: 'text-orange-500', bg: 'bg-orange-50',  panelBg: 'bg-orange-500', label: { tr: 'Sabit Yanma',    en: 'Stationary Combustion' }, desc: { tr: 'Yakıt tüketimi',     en: 'Fuel combustion'    } },
-  { id: '4A', scope: 2, icon: Zap,      color: 'text-yellow-600', bg: 'bg-yellow-50',  panelBg: 'bg-yellow-500', label: { tr: 'Elektrik',        en: 'Purchased Electricity' }, desc: { tr: 'Satın alınan el.', en: 'Grid electricity'   } },
-  { id: 'K4', scope: 3, icon: Truck,    color: 'text-sky-500',    bg: 'bg-sky-50',     panelBg: 'bg-sky-500',    label: { tr: 'Upstream Taşıma', en: 'Upstream Transport'    }, desc: { tr: 'Lojistik',          en: 'Freight & logistics'} },
-  { id: 'K5', scope: 3, icon: Briefcase,color: 'text-violet-500', bg: 'bg-violet-50',  panelBg: 'bg-violet-500', label: { tr: 'İş Seyahati',    en: 'Business Travel'       }, desc: { tr: 'Hava & kara',       en: 'Air, road & rail'  } },
+  { id: '3A', tab: 'S1',   scope: 1, icon: Flame,    color: 'text-orange-500', bg: 'bg-orange-50',  panelBg: 'bg-orange-500', label: { tr: 'Sabit Yanma',    en: 'Stationary Combustion' }, desc: { tr: 'Yakıt tüketimi',     en: 'Fuel combustion'    } },
+  { id: '4A', tab: 'S2',   scope: 2, icon: Zap,      color: 'text-yellow-600', bg: 'bg-yellow-50',  panelBg: 'bg-yellow-500', label: { tr: 'Elektrik',        en: 'Purchased Electricity' }, desc: { tr: 'Satın alınan el.', en: 'Grid electricity'   } },
+  { id: 'K4', tab: 'S3a',  scope: 3, icon: Truck,    color: 'text-sky-500',    bg: 'bg-sky-50',     panelBg: 'bg-sky-500',    label: { tr: 'Upstream Taşıma', en: 'Upstream Transport'    }, desc: { tr: 'Lojistik',          en: 'Freight & logistics'} },
+  { id: 'K5', tab: 'S3b',  scope: 3, icon: Briefcase,color: 'text-violet-500', bg: 'bg-violet-50',  panelBg: 'bg-violet-500', label: { tr: 'İş Seyahati',    en: 'Business Travel'       }, desc: { tr: 'Hava & kara',       en: 'Air, road & rail'  } },
 ];
 
 const SCOPE_GROUPS = [
@@ -117,32 +117,22 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#302817]/5 text-[#302817]/40 hover:text-[#302817] transition">
+          <button onClick={onClose} aria-label={tr ? 'Kapat' : 'Close panel'} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#302817]/5 text-[#302817]/40 hover:text-[#302817] transition">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Preview mode warning inside panel */}
+        {/* Preview mode warning inside panel — compact strip */}
         {isPreview && (
-          <div className="mx-4 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex items-start gap-2.5">
-            <span className="text-[13px] shrink-0">👁</span>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10.5px] font-bold text-amber-700 mb-0.5">
-                {tr ? 'Önizleme Modu — Kaydetme Devre Dışı' : 'Preview Mode — Saving Disabled'}
-              </p>
-              <p className="text-[9.5px] text-amber-600/80 leading-relaxed mb-2">
-                {tr
-                  ? 'Paneli görüntüleyebilirsiniz, ancak gerçek rapora kaydetmek için bir rapor başlatmanız gerekir.'
-                  : 'You can view the panel, but you need to start a real report to save data.'}
-              </p>
-              <button onClick={onStartReport} disabled={startingReport}
-                className="text-[10px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-3 py-1 transition disabled:opacity-60">
-                {startingReport ? (tr ? 'Oluşturuluyor…' : 'Creating…') : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
-              </button>
-              {startReportErr && (
-                <p className="text-[9.5px] text-red-600 font-semibold mt-1.5">{startReportErr}</p>
-              )}
-            </div>
+          <div className="mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2.5">
+            <span className="text-[11px] shrink-0">👁</span>
+            <p className="flex-1 min-w-0 text-[9.5px] font-semibold text-amber-700 truncate">
+              {tr ? 'Önizleme — kaydetme devre dışı' : 'Preview — saving disabled'}
+            </p>
+            <button onClick={onStartReport} disabled={startingReport}
+              className="shrink-0 text-[9.5px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-2.5 py-1 transition disabled:opacity-60 whitespace-nowrap">
+              {startingReport ? '…' : (tr ? '🚀 Başlat' : '🚀 Start')}
+            </button>
           </div>
         )}
 
@@ -151,12 +141,20 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
           {CATEGORIES.map(cat => {
             const Icon = cat.icon;
             const em = estimateKg(cat.id, fieldValues);
+            const st = statuses[cat.id] || 'missing';
             const isA = active === cat.id;
             return (
               <button key={cat.id} onClick={() => setActive(cat.id)}
                 className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 transition ${isA ? 'bg-[#302817] shadow-sm' : 'hover:bg-[#302817]/5'}`}>
-                <Icon className={`h-4 w-4 ${isA ? 'text-[#B4BE6A]' : cat.color}`} />
-                <span className={`text-[8.5px] font-bold ${isA ? 'text-white' : 'text-[#302817]/40'}`}>{cat.id}</span>
+                <div className="relative">
+                  <Icon className={`h-4 w-4 ${isA ? 'text-[#B4BE6A]' : cat.color}`} />
+                  {/* status dot */}
+                  <span className={`absolute -top-0.5 -right-1 h-2 w-2 rounded-full border border-white ${
+                    st === 'complete'    ? 'bg-[#75863B]' :
+                    st === 'in_progress' ? 'bg-amber-400' : 'bg-[#302817]/20'
+                  }`} />
+                </div>
+                <span className={`text-[8.5px] font-bold tracking-wide ${isA ? 'text-white' : 'text-[#302817]/40'}`}>{cat.tab}</span>
                 {em !== null && <span className={`text-[7.5px] font-bold ${isA ? 'text-[#B4BE6A]/80' : 'text-[#75863B]/60'}`}>{fmt(em)}</span>}
               </button>
             );
@@ -421,50 +419,75 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          {/* ── Emission summary (only when data exists) ── */}
-          <div className="relative z-10 mx-4 mt-1 flex-1">
-            {hasData ? (
-              <div className="rounded-2xl border border-[#302817]/8 bg-[#F5F4EF] p-3.5 space-y-2.5">
-                {/* Grand total */}
+          {/* ── Category status cards + scope totals ── */}
+          <div className="relative z-10 mx-4 mt-1 flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto">
+            {/* Per-category status — always visible */}
+            <div className="space-y-1.5">
+              {CATEGORIES.map(cat => {
+                const Icon  = cat.icon;
+                const st    = statuses[cat.id] || 'missing';
+                const em    = estimateKg(cat.id, fieldValues);
+                const done  = st === 'complete';
+                const part  = st === 'in_progress';
+                return (
+                  <div key={cat.id} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 border transition-all duration-300 ${
+                    done ? 'bg-[#95A847]/8 border-[#95A847]/20' :
+                    part ? 'bg-amber-50/80 border-amber-200/60' :
+                           'bg-white border-[#302817]/6'
+                  }`}>
+                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${cat.bg}`}>
+                      <Icon className={`h-3 w-3 ${cat.color}`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-[#302817]/65 truncate">{cat.label[lang]}</p>
+                      {em !== null
+                        ? <p className="text-[9px] font-semibold text-[#75863B] tabular-nums">{fmt(em)}</p>
+                        : <p className="text-[9px] text-[#302817]/22">{tr ? 'Henüz veri yok' : 'No data yet'}</p>
+                      }
+                    </div>
+                    {done && <CheckCircle2 className="h-3.5 w-3.5 text-[#527A1A] shrink-0" />}
+                    {part && <Clock        className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                    {!done && !part && <Minus className="h-3.5 w-3.5 text-[#302817]/15 shrink-0" />}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Scope breakdown bars — only when data exists */}
+            {hasData && (
+              <div className="rounded-2xl border border-[#302817]/8 bg-[#F5F4EF] px-3.5 py-3 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[9.5px] font-bold uppercase tracking-widest text-[#302817]/35">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/35">
                     {tr ? 'Toplam Emisyon' : 'Total Emission'}
                   </span>
-                  <span className="text-[13px] font-bold text-[#527A1A]">{fmt(grandKg)}</span>
+                  <span className="text-[13px] font-bold text-[#527A1A] tabular-nums">{fmt(grandKg)}</span>
                 </div>
-                {/* Scope rows */}
-                {scopeTotals.map(scope => (
+                {scopeTotals.filter(s => s.hasData).map(scope => (
                   <div key={scope.id}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[10px] font-semibold text-[#302817]/50">{scope.label[lang] || scope.label.en}</span>
-                      {scope.hasData && <span className="text-[10px] font-bold text-[#75863B]">{fmt(scope.kg)}</span>}
+                      <span className="text-[9.5px] font-semibold text-[#302817]/45">{scope.label[lang] || scope.label.en}</span>
+                      <span className="text-[9.5px] font-bold text-[#75863B] tabular-nums">{fmt(scope.kg)}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-[#302817]/8 overflow-hidden">
                       <div className={`h-full rounded-full ${scope.color} transition-all duration-700`} style={{ width: `${scope.pct}%` }} />
                     </div>
                   </div>
                 ))}
-                {/* Progress */}
-                <div className="flex items-center justify-between pt-1 border-t border-[#302817]/6">
-                  <span className="text-[9px] text-[#302817]/35">{completedCount}/{totalCount} {tr ? 'tamamlandı' : 'complete'}</span>
-                  <span className="text-[9px] font-bold text-[#75863B]">{Math.round((completedCount / totalCount) * 100)}%</span>
-                </div>
-              </div>
-            ) : (
-              /* Onboarding hint when no data */
-              <div className="rounded-2xl border border-dashed border-[#B4BE6A]/30 bg-[#B4BE6A]/5 p-4 text-center space-y-2">
-                <Sparkles className="h-5 w-5 text-[#B4BE6A] mx-auto" />
-                <p className="text-[11px] font-semibold text-[#302817]/50 leading-relaxed">
-                  {tr
-                    ? 'Sağdaki chatbot ile emisyon verilerinizi paylaşın.'
-                    : 'Share your emission data with the chatbot on the right.'}
-                </p>
               </div>
             )}
           </div>
 
           {/* ── Bottom actions ── */}
           <div className="relative z-10 px-4 pb-5 pt-4 space-y-2">
+            {/* Generate Report CTA — only when all scopes are complete */}
+            {completedCount === totalCount && completedCount > 0 && (
+              <a href="/dashboard"
+                className="flex w-full items-center gap-2.5 rounded-xl border border-[#527A1A]/30 bg-gradient-to-r from-[#527A1A] to-[#75863B] px-4 py-2.5 text-[12px] font-bold text-white shadow-md hover:shadow-lg transition-all hover:brightness-110">
+                <Sparkles className="h-3.5 w-3.5 text-white/80 shrink-0" />
+                {tr ? 'Raporu Oluştur' : 'Generate Report'}
+                <ChevronRight className="h-3.5 w-3.5 ml-auto text-white/60" />
+              </a>
+            )}
             {/* Panel button */}
             <button
               onClick={() => setPanelOpen(true)}
@@ -498,7 +521,7 @@ export default function WorkspacePage() {
                 className="flex items-center gap-1.5 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/60 transition hover:bg-[#302817]/8"
               >
                 <LayoutDashboard className="h-3.5 w-3.5" />
-                {tr ? 'Panel' : 'Panel'}
+                {tr ? 'Veri Paneli' : 'Data Panel'}
               </button>
               <a href="/dashboard"
                 className="flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">

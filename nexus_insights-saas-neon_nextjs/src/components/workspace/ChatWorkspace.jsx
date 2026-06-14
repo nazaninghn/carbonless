@@ -424,19 +424,64 @@ function RichText({ text }) {
     });
   }
 
+  // Group lines into normal lines and table blocks
+  const lines = text.split('\n');
+  const segments = [];
+  let idx = 0;
+  while (idx < lines.length) {
+    if (lines[idx].trim().startsWith('|')) {
+      const tbl = [];
+      while (idx < lines.length && lines[idx].trim().startsWith('|')) { tbl.push(lines[idx]); idx++; }
+      segments.push({ type: 'table', lines: tbl });
+    } else {
+      segments.push({ type: 'line', text: lines[idx] });
+      idx++;
+    }
+  }
+
   return (
     <div className="text-[13px] leading-[1.75]">
-      {text.split('\n').map((line, i) => {
-        if (line.trim() === '---') return <hr key={i} className="border-[#302817]/10 my-2" />;
-        if (!line.trim())          return <div key={i} className="h-2" />;
-        // Arrow-prefixed guidance lines (→ text)
+      {segments.map((seg, si) => {
+        if (seg.type === 'table') {
+          const rows = seg.lines
+            .filter(l => !/^\s*\|[-:\s|]+\|\s*$/.test(l))  // strip separator rows
+            .map(l => l.split('|').slice(1, -1).map(c => c.trim()));
+          if (!rows.length) return null;
+          return (
+            <table key={si} className="w-full border-collapse text-[11px] my-2 rounded-lg overflow-hidden">
+              <thead>
+                <tr>
+                  {rows[0].map((cell, ci) => (
+                    <th key={ci} className="border border-[#302817]/10 bg-[#302817]/6 px-2.5 py-1.5 text-left font-bold text-[#302817]/60">
+                      {renderInline(cell)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(1).map((row, ri) => (
+                  <tr key={ri} className={ri % 2 === 1 ? 'bg-[#302817]/[0.02]' : ''}>
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="border border-[#302817]/10 px-2.5 py-1.5 text-[#302817]/65">
+                        {renderInline(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          );
+        }
+        const line = seg.text;
+        if (line.trim() === '---') return <hr key={si} className="border-[#302817]/10 my-2" />;
+        if (!line.trim())          return <div key={si} className="h-2" />;
         if (line.startsWith('→ ')) return (
-          <div key={i} className="flex items-start gap-1.5">
+          <div key={si} className="flex items-start gap-1.5">
             <span className="text-[#75863B] font-bold shrink-0 select-none">→</span>
             <span>{renderInline(line.slice(2))}</span>
           </div>
         );
-        return <div key={i}>{renderInline(line)}</div>;
+        return <div key={si}>{renderInline(line)}</div>;
       })}
     </div>
   );
