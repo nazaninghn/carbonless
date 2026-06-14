@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import {
   LayoutDashboard, Flame, Zap, Truck, Briefcase,
-  CheckCircle2, Clock, AlertCircle, Minus, ArrowLeft,
+  CheckCircle2, Clock, Minus, ArrowLeft,
   ChevronRight, X, Sparkles,
 } from 'lucide-react';
 import { getReportFields, getCategoryStatus } from '@/lib/workspace/api';
@@ -126,9 +126,14 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
         {isPreview && (
           <div className="mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2.5">
             <span className="text-[11px] shrink-0">👁</span>
-            <p className="flex-1 min-w-0 text-[9.5px] font-semibold text-amber-700 truncate">
-              {tr ? 'Önizleme — kaydetme devre dışı' : 'Preview — saving disabled'}
-            </p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[9.5px] font-semibold text-amber-700 truncate">
+                {tr ? 'Önizleme — kaydetme devre dışı' : 'Preview — saving disabled'}
+              </p>
+              {startReportErr && (
+                <p className="text-[9px] font-semibold text-red-600 truncate mt-0.5">{startReportErr}</p>
+              )}
+            </div>
             <button onClick={onStartReport} disabled={startingReport}
               className="shrink-0 text-[9.5px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-2.5 py-1 transition disabled:opacity-60 whitespace-nowrap">
               {startingReport ? '…' : (tr ? '🚀 Başlat' : '🚀 Start')}
@@ -439,7 +444,10 @@ export default function WorkspacePage() {
                       <Icon className={`h-3 w-3 ${cat.color}`} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] font-bold text-[#302817]/65 truncate">{cat.label[lang]}</p>
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <p className="text-[10px] font-bold text-[#302817]/65 truncate">{cat.label[lang]}</p>
+                        <span className={`shrink-0 text-[7px] font-black rounded px-1 py-px leading-none ${cat.bg} ${cat.color}`}>{cat.tab}</span>
+                      </div>
                       {em !== null
                         ? <p className="text-[9px] font-semibold text-[#75863B] tabular-nums">{fmt(em)}</p>
                         : <p className="text-[9px] text-[#302817]/22">{tr ? 'Henüz veri yok' : 'No data yet'}</p>
@@ -461,6 +469,23 @@ export default function WorkspacePage() {
                     {tr ? 'Toplam Emisyon' : 'Total Emission'}
                   </span>
                   <span className="text-[13px] font-bold text-[#527A1A] tabular-nums">{fmt(grandKg)}</span>
+                </div>
+                {/* Progress pips */}
+                <div className="flex items-center justify-between">
+                  <span className="text-[8.5px] font-semibold text-[#302817]/30">
+                    {completedCount}/{totalCount} {tr ? 'tamamlandı' : 'complete'}
+                  </span>
+                  <div className="flex gap-1">
+                    {CATEGORIES.map(cat => {
+                      const st = statuses[cat.id] || 'missing';
+                      return (
+                        <span key={cat.id} title={cat.tab} className={`h-1 w-5 rounded-full transition-colors duration-500 ${
+                          st === 'complete'    ? 'bg-[#75863B]' :
+                          st === 'in_progress' ? 'bg-amber-400' : 'bg-[#302817]/15'
+                        }`} />
+                      );
+                    })}
+                  </div>
                 </div>
                 {scopeTotals.filter(s => s.hasData).map(scope => (
                   <div key={scope.id}>
@@ -524,6 +549,7 @@ export default function WorkspacePage() {
                 {tr ? 'Veri Paneli' : 'Data Panel'}
               </button>
               <a href="/dashboard"
+                aria-label={tr ? 'Kontrol Paneline Dön' : 'Back to Dashboard'}
                 className="flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">
                 <ArrowLeft className="h-3.5 w-3.5" />
               </a>

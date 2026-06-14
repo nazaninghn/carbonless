@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, Send, Loader2, CheckCircle2, Info, TrendingUp } from 'lucide-react';
+import { Sparkles, Send, Loader2, CheckCircle2, Info, TrendingUp, FileText } from 'lucide-react';
 import { sendWorkspaceChatMessage, confirmSuggestion, rejectSuggestion } from '@/lib/workspace/api';
 import { SuggestionReviewCard } from './SuggestionReviewCard';
 import {
@@ -1057,7 +1057,7 @@ export function ChatWorkspace({
         {messages.map(msg => {
           if (msg.role === 'mode-switch') {
             return (
-              <div key={msg.id} className="flex items-center gap-3 py-1">
+              <div key={msg.id} className="flex items-center gap-3 py-2">
                 <div className="flex-1 h-px bg-[#B4BE6A]/25" />
                 <span className="text-[9.5px] font-bold text-[#75863B]/60 shrink-0 px-1">{msg.label}</span>
                 <div className="flex-1 h-px bg-[#B4BE6A]/25" />
@@ -1088,9 +1088,17 @@ export function ChatWorkspace({
             );
           }
           if (msg.role === 'rejected') {
+            const rejCatLabel = ({
+              '3A': tr ? 'Kapsam 1 — Sabit Yanma'  : 'Scope 1 — Stationary Combustion',
+              '4A': tr ? 'Kapsam 2 — Elektrik'      : 'Scope 2 — Electricity',
+              'K4': tr ? 'Kapsam 3 — Nakliye'       : 'Scope 3 — Freight',
+              'K5': tr ? 'Kapsam 3 — İş Seyahati'  : 'Scope 3 — Business Travel',
+            })[msg.suggestion?.category] || msg.suggestion?.category;
             return (
-              <div key={msg.id} className="rounded-2xl border border-[#302817]/8 bg-[#302817]/3 px-4 py-2 text-[11.5px] text-[#302817]/35 line-through">
-                {tr ? 'Reddedildi' : 'Rejected'} — {msg.suggestion?.category}
+              <div key={msg.id} className="flex items-center gap-2.5 rounded-2xl border border-[#302817]/6 bg-[#302817]/[0.025] px-4 py-2.5">
+                <span className="text-[13px] shrink-0 opacity-40">↩️</span>
+                <p className="text-[11.5px] text-[#302817]/30 line-through truncate">{rejCatLabel}</p>
+                <span className="ml-auto text-[9.5px] font-semibold text-[#302817]/25 shrink-0">{tr ? 'Reddedildi' : 'Dismissed'}</span>
               </div>
             );
           }
@@ -1257,7 +1265,7 @@ export function ChatWorkspace({
             {/* Footer: ISO ref + skip button */}
             <div className="flex items-center justify-between gap-2 pl-1">
               <div className="flex items-center gap-1.5 min-w-0">
-                <TrendingUp className="h-3 w-3 text-[#75863B]/40 shrink-0" />
+                <FileText className="h-3 w-3 text-[#75863B]/40 shrink-0" />
                 <p className="text-[9.5px] text-[#302817]/28 truncate">
                   {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}/${TOTAL_QUESTIONS}` : `Question ${currentQuestion.number}/${TOTAL_QUESTIONS}`}
                   {currentQuestion.required ? (tr ? ' · Zorunlu' : ' · Required') : (tr ? ' · İsteğe bağlı' : ' · Optional')}
