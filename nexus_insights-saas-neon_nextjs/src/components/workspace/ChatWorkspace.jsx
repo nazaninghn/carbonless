@@ -771,8 +771,8 @@ export function ChatWorkspace({
 
     // Intro
     addMsg('assistant', lang === 'tr'
-      ? `ISO 14064-1 soru akışını başlatıyorum.\n\n**Aşama 1: ${sName}** — şirket bilgilerini topluyoruz. Her soruyu yanıtladıktan sonra otomatik ilerleyeceğiz.\n\n💡 Dilediğiniz zaman üstteki **"💬 Serbest"** butonu ile serbest moda dönebilirsiniz.`
-      : `Starting the ISO 14064-1 questionnaire.\n\n**Stage 1: ${sName}** — collecting company information. We'll advance automatically after each answer.\n\n💡 You can switch back to **"💬 Free"** mode at any time using the button above.`
+      ? `ISO 14064-1 soru akışını başlatıyorum.\n\n**Aşama 1: ${sName}** — şirket bilgilerini topluyoruz. Her soruyu yanıtladıktan sonra otomatik ilerleyeceğiz.\n\n💡 Dilediğiniz zaman üstteki **"💬 Sohbet"** butonu ile sohbet moduna dönebilirsiniz.`
+      : `Starting the ISO 14064-1 questionnaire.\n\n**Stage 1: ${sName}** — collecting company information. We'll advance automatically after each answer.\n\n💡 You can switch back to **"💬 Chat"** mode at any time using the button above.`
     );
 
     // First question (slight delay for smooth UX)
@@ -787,11 +787,11 @@ export function ChatWorkspace({
     setMessages(prev => [...prev, {
       id: `mode-switch-${Date.now()}`,
       role: 'mode-switch',
-      label: activeLang === 'tr' ? '💬 Serbest Moda Geçildi' : '💬 Switched to Free Mode',
+      label: activeLang === 'tr' ? '💬 Sohbet Moduna Geçildi' : '💬 Switched to Chat Mode',
     }]);
     addMsg('assistant', activeLang === 'tr'
-      ? 'Serbest moda geçildi. Emisyon verilerini doğal dilde paylaşabilirsiniz.'
-      : 'Switched to free mode. Share your emission data in natural language.'
+      ? 'Sohbet moduna geçildi. Emisyon verilerini doğal dilde paylaşabilirsiniz.'
+      : 'Switched to chat mode. Share your emission data in natural language.'
     );
   }, [activeLang, addMsg]);
 
@@ -854,7 +854,22 @@ export function ChatWorkspace({
         }
       }
     } catch {
-      setError(tr ? 'AI isteği başarısız. Tekrar deneyin.' : 'AI request failed. Please try again.');
+      // Graceful fallback: try local emission extraction before showing an error
+      const results = extractEmissions(text);
+      if (results.length > 0) {
+        const { reply, suggestion } = buildReply(results, text, activeLang, fieldValues);
+        const benchmark = getBenchmarkContext(results[0].type, results[0].amount, activeLang);
+        addMsg('assistant', benchmark ? `${reply}\n\n---\n\n${benchmark}` : reply);
+        if (suggestion) {
+          setMessages(prev => [...prev, {
+            id: `s-${suggestion.id}`,
+            role: 'suggestion',
+            suggestion: { ...suggestion, _fallback: true },
+          }]);
+        }
+      } else {
+        setError(tr ? 'AI isteği başarısız. Tekrar deneyin.' : 'AI request failed. Please try again.');
+      }
     } finally {
       setSending(false);
     }
@@ -863,15 +878,18 @@ export function ChatWorkspace({
   // ── Suggestion confirm ───────────────────────────────────────────────────────
   const handleConfirm = useCallback(async (suggestionId, editedFields) => {
     try {
-      if (isPreview) {
-        const msg = messages.find(m => m.suggestion?.id === suggestionId);
+      const msg = messages.find(m => m.suggestion?.id === suggestionId);
+      const isFallback = msg?.suggestion?._fallback;
+
+      if (isPreview || isFallback) {
+        // Preview mode OR backend-failed fallback: save locally, no API call
         if (msg?.suggestion?._localFields) {
           const fields = editedFields
             ? editedFields
             : Object.entries(msg.suggestion._localFields).map(([field_id, value]) => ({ field_id, value }));
           if (onPreviewFields) onPreviewFields(fields);
         }
-        const category = messages.find(m => m.suggestion?.id === suggestionId)?.suggestion?.category;
+        const category = msg?.suggestion?.category;
         setMessages(prev => prev.map(m =>
           m.suggestion?.id === suggestionId
             ? { ...m, role: 'confirmed', suggestion: { ...m.suggestion, status: 'confirmed' } }
@@ -951,7 +969,7 @@ export function ChatWorkspace({
                 ? 'bg-[#302817] text-white cursor-default'
                 : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
             }`}>
-            💬 {tr ? 'Serbest' : 'Free'}
+            💬 {tr ? 'Sohbet' : 'Chat'}
           </button>
           <button
             onClick={() => mode === 'free' ? startGuidedMode() : null}
