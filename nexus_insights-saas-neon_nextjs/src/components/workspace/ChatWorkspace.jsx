@@ -948,7 +948,7 @@ export function ChatWorkspace({
             onClick={() => mode === 'guided' ? switchToFreeMode() : null}
             className={`px-2.5 py-[5px] transition-all ${
               mode === 'free'
-                ? 'bg-[#302817] text-white'
+                ? 'bg-[#302817] text-white cursor-default'
                 : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
             }`}>
             💬 {tr ? 'Serbest' : 'Free'}
@@ -957,7 +957,7 @@ export function ChatWorkspace({
             onClick={() => mode === 'free' ? startGuidedMode() : null}
             className={`px-2.5 py-[5px] transition-all ${
               mode === 'guided'
-                ? 'bg-[#302817] text-white'
+                ? 'bg-[#302817] text-white cursor-default'
                 : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
             }`}>
             📋 {tr ? 'Rehber' : 'Guide'}
@@ -988,7 +988,7 @@ export function ChatWorkspace({
 
         {/* Online indicator */}
         <span className="shrink-0 hidden sm:flex items-center gap-1 text-[9.5px] font-bold text-[#75863B] bg-[#95A847]/10 border border-[#95A847]/20 px-2 py-1 rounded-full">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#95A847] animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-[#95A847] motion-safe:animate-pulse" />
           {tr ? 'Çevrimiçi' : 'Online'}
         </span>
       </div>
@@ -1041,37 +1041,7 @@ export function ChatWorkspace({
       {/* ── Messages ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
 
-        {/* Quick-start chips — visible until user submits first emission data */}
-        {mode === 'free' && !messages.some(m => ['suggestion', 'confirmed', 'rejected'].includes(m.role)) && (
-          <div className="flex flex-col items-center gap-2.5 pt-1 pb-1">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
-              {tr ? 'Hızlı Örnek Seç' : 'Quick Start Example'}
-            </p>
-            <div className="grid grid-cols-2 gap-1.5 w-full max-w-xs">
-              {CHIPS.map((chip, i) => (
-                <button
-                  key={i}
-                  onClick={() => send(chip.text)}
-                  className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
-                >
-                  <span className="text-[16px] leading-none">{chip.emoji}</span>
-                  <p className="text-[9px] font-bold text-[#302817]/35 mt-1.5 uppercase tracking-wide">{chip.scope}</p>
-                  <p className="text-[11px] font-bold text-[#302817] leading-tight">{chip.title}</p>
-                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5 font-mono">{chip.example}</p>
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 w-full max-w-xs">
-              <div className="flex-1 h-px bg-[#302817]/8" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/20">
-                {tr ? 'veya kendiniz yazın' : 'or type your own data'}
-              </span>
-              <div className="flex-1 h-px bg-[#302817]/8" />
-            </div>
-          </div>
-        )}
-
-        {/* Message list */}
+        {/* Message list — welcome message always renders first */}
         {messages.map(msg => {
           if (msg.role === 'mode-switch') {
             return (
@@ -1095,13 +1065,24 @@ export function ChatWorkspace({
               'K4': tr ? 'Kapsam 3 — Nakliye'       : 'Scope 3 — Freight',
               'K5': tr ? 'Kapsam 3 — İş Seyahati'  : 'Scope 3 — Business Travel',
             })[msg.suggestion?.category] || msg.suggestion?.category;
+            const emKg = msg.suggestion?.emKg;
+            const emFmt = emKg
+              ? (emKg >= 1000
+                  ? `${(emKg / 1000).toFixed(2)} tCO₂e`
+                  : `${Math.round(emKg).toLocaleString()} kgCO₂e`)
+              : null;
             return (
               <div key={msg.id} className="flex items-center gap-3 rounded-2xl border border-[#95A847]/25 bg-[#95A847]/8 px-4 py-3 shadow-sm">
                 <CheckCircle2 className="h-5 w-5 text-[#527A1A] shrink-0" />
-                <div>
-                  <p className="text-[12px] font-bold text-[#527A1A]">{tr ? 'Kaydedildi' : 'Saved'} — {catLabel}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-bold text-[#527A1A] truncate">{tr ? 'Kaydedildi' : 'Saved'} — {catLabel}</p>
                   <p className="text-[10px] text-[#302817]/40 mt-0.5">{tr ? 'Veriler rapora işlendi' : 'Data written to report'}</p>
                 </div>
+                {emFmt && (
+                  <span className="shrink-0 text-[11px] font-bold text-[#527A1A] tabular-nums bg-[#95A847]/12 rounded-lg px-2 py-1">
+                    {emFmt}
+                  </span>
+                )}
               </div>
             );
           }
@@ -1131,6 +1112,36 @@ export function ChatWorkspace({
           return <ChatBubble key={msg.id} msg={msg} />;
         })}
 
+        {/* Quick-start chips — AFTER welcome message, before typing indicator */}
+        {mode === 'free' && !messages.some(m => ['suggestion', 'confirmed', 'rejected'].includes(m.role)) && (
+          <div className="flex flex-col items-center gap-2.5 pt-1 pb-1">
+            <p className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
+              {tr ? 'Hızlı Örnek Seç' : 'Quick Start Example'}
+            </p>
+            <div className="grid grid-cols-2 gap-1.5 w-full max-w-sm">
+              {CHIPS.map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={() => send(chip.text)}
+                  className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
+                >
+                  <span className="text-[16px] leading-none">{chip.emoji}</span>
+                  <p className="text-[9px] font-bold text-[#302817]/35 mt-1.5 uppercase tracking-wide">{chip.scope}</p>
+                  <p className="text-[11px] font-bold text-[#302817] leading-tight">{chip.title}</p>
+                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5 font-mono">{chip.example}</p>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-3 w-full max-w-sm">
+              <div className="flex-1 h-px bg-[#302817]/8" />
+              <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/20">
+                {tr ? 'veya kendiniz yazın' : 'or type your own data'}
+              </span>
+              <div className="flex-1 h-px bg-[#302817]/8" />
+            </div>
+          </div>
+        )}
+
         {sending && (
           <div className="flex gap-2.5">
             <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817]">
@@ -1159,8 +1170,11 @@ export function ChatWorkspace({
           <div className="flex flex-col gap-2">
             {/* Validation error */}
             {guidedError && (
-              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
-                {guidedError}
+              <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+                <span className="flex-1">{guidedError}</span>
+                <button onClick={() => setGuidedError('')} className="shrink-0 hover:text-red-800 transition" aria-label={tr ? 'Kapat' : 'Dismiss'}>
+                  <X className="h-3 w-3" />
+                </button>
               </div>
             )}
 
