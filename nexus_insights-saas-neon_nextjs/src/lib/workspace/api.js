@@ -47,7 +47,11 @@ export async function sendWorkspaceChatMessage(reportId, message) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ report: reportId, message }),
   });
-  if (!res.ok) throw new Error('AI request failed');
+  if (!res.ok) {
+    const err = new Error('AI request failed');
+    err.status = res.status;
+    throw err;
+  }
   return res.json();
 }
 

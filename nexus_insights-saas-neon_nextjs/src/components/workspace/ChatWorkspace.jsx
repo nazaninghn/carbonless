@@ -853,7 +853,7 @@ export function ChatWorkspace({
             : "Tip: Share specific quantities (e.g., \"15,000 m³ natural gas\") for automatic extraction.");
         }
       }
-    } catch {
+    } catch (err) {
       // Graceful fallback: try local emission extraction before showing an error
       const results = extractEmissions(text);
       if (results.length > 0) {
@@ -867,6 +867,10 @@ export function ChatWorkspace({
             suggestion: { ...suggestion, _fallback: true },
           }]);
         }
+      } else if (err?.status === 502 || err?.status === 503) {
+        setError(tr
+          ? '⏳ Sunucu başlatılıyor... 30 saniye bekleyip tekrar deneyin.'
+          : '⏳ Server is starting up. Wait 30 seconds and try again.');
       } else {
         setError(tr ? 'AI isteği başarısız. Tekrar deneyin.' : 'AI request failed. Please try again.');
       }
