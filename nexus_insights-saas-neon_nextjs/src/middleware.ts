@@ -28,7 +28,7 @@ export function middleware(request: NextRequest) {
   if (pathname === '/login' || pathname === '/register') {
     const hasSession = request.cookies.has('carbonless_auth');
     if (hasSession) {
-      return NextResponse.redirect(new URL('/dashboard/workspace', request.url));
+      return NextResponse.redirect(new URL('/dashboard/select', request.url));
     }
   }
 
