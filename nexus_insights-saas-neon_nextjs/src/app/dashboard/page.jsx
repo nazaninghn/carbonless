@@ -26,6 +26,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [modeSelectionDone, setModeSelectionDone] = useState(() => {
+    try { return !!localStorage.getItem('carbonless_mode_selected'); } catch { return false; }
+  });
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -55,12 +58,12 @@ export default function DashboardPage() {
   }, []);
 
   const handleModeSelect = useCallback((mode) => {
+    setModeSelectionDone(true);
     if (mode === 'guided') {
-      // Mark tour as seen so it doesn't overlay on workspace
       try { localStorage.setItem('carbonless_tour_seen', 'true'); } catch {}
       router.push('/dashboard/workspace');
     }
-    // 'expert' → stay on dashboard, tour will show naturally
+    // 'expert' → stay on dashboard, tour shows after this
   }, [router]);
 
   return (
@@ -210,11 +213,11 @@ export default function DashboardPage() {
         setShowAddForm={setShowAddForm}
       />
 
-      {/* Mode Selection — first-visit only, appears before onboarding tour */}
+      {/* Mode Selection — first-visit only, blocks everything behind it */}
       <ModeSelectionModal language={language} onComplete={handleModeSelect} />
 
-      {/* Onboarding Tour */}
-      <OnboardingTour language={language} />
+      {/* Onboarding Tour — only mounts after mode selection is done */}
+      {modeSelectionDone && <OnboardingTour language={language} />}
     </div>
     </ToastProvider>
   );
