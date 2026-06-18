@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, LayoutGrid, ArrowRight, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 
-const STORAGE_KEY = 'carbonless_mode_selected';
+// Session key — cleared when the browser tab/session closes, so shows on every login
+const SESSION_KEY = 'carbonless_mode_chosen';
 
 export default function ModeSelectionModal({ language, onComplete }) {
   const tr = language === 'tr';
@@ -12,12 +13,12 @@ export default function ModeSelectionModal({ language, onComplete }) {
 
   useEffect(() => {
     try {
-      if (!localStorage.getItem(STORAGE_KEY)) setShow(true);
+      if (!sessionStorage.getItem(SESSION_KEY)) setShow(true);
     } catch {}
   }, []);
 
   const finish = useCallback(() => {
-    try { localStorage.setItem(STORAGE_KEY, selected); } catch {}
+    try { sessionStorage.setItem(SESSION_KEY, selected); } catch {}
     setShow(false);
     onComplete?.(selected);
   }, [selected, onComplete]);

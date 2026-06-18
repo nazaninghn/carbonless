@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [modeSelectionDone, setModeSelectionDone] = useState(() => {
-    try { return !!localStorage.getItem('carbonless_mode_selected'); } catch { return false; }
+    try { return !!sessionStorage.getItem('carbonless_mode_chosen'); } catch { return false; }
   });
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
