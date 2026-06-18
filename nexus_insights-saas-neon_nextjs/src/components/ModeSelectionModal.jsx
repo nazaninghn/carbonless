@@ -3,22 +3,12 @@ import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, LayoutGrid, ArrowRight, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 
-// Session key — cleared when the browser tab/session closes, so shows on every login
-const SESSION_KEY = 'carbonless_mode_chosen';
-
 export default function ModeSelectionModal({ language, onComplete }) {
   const tr = language === 'tr';
-  const [show,     setShow]     = useState(false);
+  const [show,     setShow]     = useState(true);
   const [selected, setSelected] = useState('expert');
 
-  useEffect(() => {
-    try {
-      if (!sessionStorage.getItem(SESSION_KEY)) setShow(true);
-    } catch {}
-  }, []);
-
   const finish = useCallback(() => {
-    try { sessionStorage.setItem(SESSION_KEY, selected); } catch {}
     setShow(false);
     onComplete?.(selected);
   }, [selected, onComplete]);

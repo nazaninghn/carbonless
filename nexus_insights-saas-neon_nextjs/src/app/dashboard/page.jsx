@@ -26,9 +26,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [modeSelectionDone, setModeSelectionDone] = useState(() => {
-    try { return !!sessionStorage.getItem('carbonless_mode_chosen'); } catch { return false; }
-  });
+  const [modeSelectionDone, setModeSelectionDone] = useState(false);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
