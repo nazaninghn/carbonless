@@ -1,30 +1,32 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-/**
- * Edge middleware — protects /dashboard routes.
- *
- * We check for the `carbonless_auth` flag cookie which the frontend sets after
- * a successful login. Actual JWT auth is enforced by the backend on every API
- * request; this middleware only handles the routing layer so unauthenticated
- * users are redirected immediately without loading the dashboard bundle.
- */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/dashboard')) {
-    const hasSession = request.cookies.has('carbonless_auth');
+    const hasSession  = request.cookies.has('carbonless_auth');
+
+    // Not logged in → send to login
     if (!hasSession) {
-      // Plain redirect — no ?reason=session_expired here because this fires for
-      // ALL unauthenticated visits (first-time users, bookmarks, shared links)
-      // and would show a misleading "Your session has expired" banner.
-      // Real token expiry is detected by doRefresh() in api.js which redirects
-      // to /login?reason=session_expired explicitly after a failed refresh.
       return NextResponse.redirect(new URL('/login', request.url));
+    }
+
+    // /dashboard/select and /dashboard/workspace are always allowed through
+    const isSelectPage    = pathname === '/dashboard/select';
+    const isWorkspacePage = pathname.startsWith('/dashboard/workspace');
+    if (isSelectPage || isWorkspacePage) {
+      return NextResponse.next();
+    }
+
+    // All other /dashboard/* routes: if no mode cookie → select page first
+    const modeChosen = request.cookies.has('carbonless_mode_chosen');
+    if (!modeChosen) {
+      return NextResponse.redirect(new URL('/dashboard/select', request.url));
     }
   }
 
-  // Redirect logged-in users away from /login and /register
+  // Redirect logged-in users away from /login and /register → select page
   if (pathname === '/login' || pathname === '/register') {
     const hasSession = request.cookies.has('carbonless_auth');
     if (hasSession) {

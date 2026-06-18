@@ -7,6 +7,8 @@ export default function SelectModePage() {
   const [selected, setSelected] = useState('expert');
 
   function go() {
+    // Session cookie — cleared when browser closes, so mode selection shows again next login
+    document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
     if (selected === 'guided') {
       try { localStorage.setItem('carbonless_tour_seen', 'true'); } catch {}
       window.location.href = '/dashboard/workspace';
