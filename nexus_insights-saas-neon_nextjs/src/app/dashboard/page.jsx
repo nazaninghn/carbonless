@@ -4,7 +4,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import OnboardingTour from '@/components/OnboardingTour';
-import ModeSelectionModal from '@/components/ModeSelectionModal';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import CommandPalette from '@/components/dashboard/CommandPalette';
@@ -24,7 +23,6 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [modeSelected, setModeSelected] = useState(false);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -52,20 +50,6 @@ export default function DashboardPage() {
   const handleLogout = useCallback(() => {
     api.logout();
   }, []);
-
-  const handleModeSelect = useCallback((mode) => {
-    if (mode === 'guided') {
-      try { localStorage.setItem('carbonless_tour_seen', 'true'); } catch {}
-      window.location.href = '/dashboard/workspace';
-    } else {
-      setModeSelected(true);
-    }
-  }, []);
-
-  // Show mode selection full-screen before rendering anything else
-  if (!modeSelected) {
-    return <ModeSelectionModal language={language} onComplete={handleModeSelect} />;
-  }
 
   return (
     <ToastProvider>
