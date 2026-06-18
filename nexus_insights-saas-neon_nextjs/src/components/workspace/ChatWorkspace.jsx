@@ -596,8 +596,8 @@ export function ChatWorkspace({
   const buildWelcome = useCallback((l) => {
     const isTr = l === 'tr';
     return isTr
-      ? '👋 Merhaba! Ben **CarbonIQ**, ISO 14064-1 karbon envanter asistanınım.\n\nEmisyon verinizi yazın — hesaplayıp rapora kaydedeceğim. 📋 **Rehberli Mod** ile 133 soruyu adım adım da tamamlayabiliriz.\n\nAşağıdan bir örnek seçin veya kendiniz yazın 👇'
-      : "👋 Hi! I'm **CarbonIQ**, your ISO 14064-1 carbon inventory assistant.\n\nShare your emission data and I'll calculate and save it instantly. Use 📋 **Guided Mode** to walk through all 133 questions step by step.\n\nPick a quick example below or type your own 👇";
+      ? '👋 Merhaba! 😊 Karbon emisyonlarınızı birlikte hesaplayalım.\n\nEnerji faturalarınızı, araç kullanımınızı veya uçuşlarınızı bana anlatın — gerisini ben halledeyim. İster adım adım rehberli, ister doğrudan sorarak ilerleyebilirsiniz.\n\nBir örnek seçin ya da istediğinizi yazın 👇'
+      : "👋 Hi there! 😊 Let's track your carbon footprint together.\n\nTell me about your energy bills, vehicle use, or business trips — I'll handle the math. You can go step by step or just ask me anything.\n\nPick an example below or type your own 👇";
   }, []);
 
   const [messages, setMessages] = useState(() => [
@@ -956,7 +956,7 @@ export function ChatWorkspace({
             {tr ? 'CarbonIQ AI Asistanı' : 'CarbonIQ AI Assistant'}
           </p>
           <p className="text-[9px] text-[#302817]/30 truncate">
-            ISO 14064-1 · DEFRA 2023 · IEA 2023 · GLEC v3
+            {tr ? 'Karbon asistanınız' : 'Your carbon assistant'}
           </p>
         </div>
 
@@ -1134,7 +1134,7 @@ export function ChatWorkspace({
         {mode === 'free' && !messages.some(m => ['suggestion', 'confirmed', 'rejected'].includes(m.role)) && (
           <div className="flex flex-col items-center gap-2.5 pt-1 pb-1">
             <p className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
-              {tr ? 'Hızlı Örnek Seç' : 'Quick Start Example'}
+              {tr ? 'Ne hakkında konuşalım?' : 'What would you like to track?'}
             </p>
             <div className="grid grid-cols-2 gap-1.5 w-full max-w-sm">
               {CHIPS.map((chip, i) => (
@@ -1144,16 +1144,15 @@ export function ChatWorkspace({
                   className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
                 >
                   <span className="text-[16px] leading-none">{chip.emoji}</span>
-                  <p className="text-[9px] font-bold text-[#302817]/35 mt-1.5 uppercase tracking-wide">{chip.scope}</p>
-                  <p className="text-[11px] font-bold text-[#302817] leading-tight">{chip.title}</p>
-                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5 font-mono">{chip.example}</p>
+                  <p className="text-[11px] font-bold text-[#302817] leading-tight mt-1.5">{chip.title}</p>
+                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5">{chip.example}</p>
                 </button>
               ))}
             </div>
             <div className="flex items-center gap-3 w-full max-w-sm">
               <div className="flex-1 h-px bg-[#302817]/8" />
               <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/20">
-                {tr ? 'veya kendiniz yazın' : 'or type your own data'}
+                {tr ? 'veya istediğinizi yazın' : 'or just type anything'}
               </span>
               <div className="flex-1 h-px bg-[#302817]/8" />
             </div>
@@ -1345,8 +1344,8 @@ export function ChatWorkspace({
               <textarea
                 className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder={tr
-                  ? 'Örn: "15.000 m³ doğalgaz kullandık" veya "18.000 kWh elektrik tükettik"'
-                  : 'E.g. "We used 15,000 m³ natural gas" or "18,000 kWh electricity consumed"'}
+                  ? 'Mesaj yaz...'
+                  : 'Type a message...'}
                 value={input}
                 rows={1}
                 disabled={sending}
@@ -1364,8 +1363,8 @@ export function ChatWorkspace({
               <TrendingUp className="h-3 w-3 text-[#75863B]/50" />
               <p className="text-[9.5px] text-[#302817]/30">
                 {tr
-                  ? 'DEFRA 2023 · IEA 2023 · GLEC v3 faktörleri kullanılır · Onaylamadan kaydedilmez'
-                  : 'Uses DEFRA 2023 · IEA 2023 · GLEC v3 factors · Nothing saves without your approval'}
+                  ? 'Verileriniz güvende — onaylamadan hiçbir şey kaydedilmez'
+                  : 'Your data is safe — nothing saves without your approval'}
               </p>
             </div>
           </>
