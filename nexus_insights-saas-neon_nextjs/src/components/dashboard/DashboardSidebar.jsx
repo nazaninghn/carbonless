@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
-  ClipboardCheck, Bot, ChevronRight, MoreHorizontal, Layers,
+  ClipboardCheck, Bot, ChevronRight, MoreHorizontal, Layers, BarChart2,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,16 +10,17 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: 'dashboard', icon: LayoutDashboard, tr: 'Kontrol Paneli', en: 'Dashboard',   trS: 'Panel',   enS: 'Home'     },
-  { key: 'emissions', icon: Leaf,            tr: 'Emisyon Yönetimi', en: 'Emissions',  trS: 'Emisyon', enS: 'Emissions' },
-  { key: 'ai_carbon', icon: Bot,             tr: 'AI Carbon',       en: 'AI Carbon',  trS: 'AI',      enS: 'AI'        },
-  { key: 'reduction', icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',  trS: 'Hedefler', enS: 'Targets'  },
-  { key: 'reporting', icon: FileText,        tr: 'Raporlama',       en: 'Reports',    trS: 'Rapor',   enS: 'Reports'   },
-  { key: 'review',    icon: ClipboardCheck,  tr: 'Onay Bekleyenler', en: 'Review',    trS: 'Onay',    enS: 'Review'    },
-  { key: 'settings',  icon: Settings,        tr: 'Ayarlar',         en: 'Settings',   trS: 'Ayarlar', enS: 'Settings'  },
+  { key: 'dashboard',  icon: LayoutDashboard, tr: 'Kontrol Paneli',    en: 'Dashboard',   trS: 'Panel',    enS: 'Home'      },
+  { key: 'emissions',  icon: Leaf,            tr: 'Emisyon Yönetimi',  en: 'Emissions',   trS: 'Emisyon',  enS: 'Emissions' },
+  { key: 'ai_carbon',  icon: Bot,             tr: 'AI Carbon',         en: 'AI Carbon',   trS: 'AI',       enS: 'AI'        },
+  { key: 'reduction',  icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',     trS: 'Hedefler', enS: 'Targets'   },
+  { key: 'reporting',  icon: FileText,        tr: 'Raporlama',         en: 'Reports',     trS: 'Rapor',    enS: 'Reports'   },
+  { key: 'benchmark',  icon: BarChart2,       tr: 'Benchmark',         en: 'Benchmark',   trS: 'Benchmark',enS: 'Benchmark' },
+  { key: 'review',     icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',      trS: 'Onay',     enS: 'Review'    },
+  { key: 'settings',   icon: Settings,        tr: 'Ayarlar',           en: 'Settings',    trS: 'Ayarlar',  enS: 'Settings'  },
 ];
 
-// Bottom nav shows the 5 most-used tabs; Settings & Review live in the slide-out
+// Bottom nav shows the 5 most-used tabs; others live in the slide-out
 const BOTTOM_NAV_KEYS = ['dashboard', 'emissions', 'ai_carbon', 'reduction', 'reporting'];
 const BOTTOM_ITEMS = NAV_ITEMS.filter(i => BOTTOM_NAV_KEYS.includes(i.key));
 

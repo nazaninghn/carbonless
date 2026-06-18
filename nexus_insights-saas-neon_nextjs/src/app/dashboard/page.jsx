@@ -15,6 +15,7 @@ import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
+import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
 
@@ -158,13 +159,30 @@ export default function DashboardPage() {
             </ErrorBoundary>
           )}
 
+          {/* ===== BENCHMARK TAB ===== */}
+          {activeTab === 'benchmark' && (
+            <ErrorBoundary language={language}>
+              <BenchmarkTab
+                language={language}
+                summary={summary}
+                questionnaireProfile={questionnaireProfile}
+              />
+            </ErrorBoundary>
+          )}
+
           {/* ===== AI CARBON TAB ===== */}
           {/* Fix #46: always-mounted once visited; CSS hidden keeps questionnaire
               state alive across outer dashboard tab switches. */}
           <div className={activeTab !== 'ai_carbon' ? 'hidden' : ''}>
             {aiCarbonMounted && (
               <ErrorBoundary language={language}>
-                <CarbonAIPage language={language} isVisible={activeTab === 'ai_carbon'} />
+                <CarbonAIPage
+                  language={language}
+                  isVisible={activeTab === 'ai_carbon'}
+                  summary={summary}
+                  entries={entries}
+                  targets={targets}
+                />
               </ErrorBoundary>
             )}
           </div>

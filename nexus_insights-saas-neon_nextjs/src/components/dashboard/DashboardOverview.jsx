@@ -4,18 +4,19 @@ import { useMemo, useState, useEffect } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 import {
   AlertCircle,
+  AlertTriangle,
   Bot,
   CheckCircle2,
+  ChevronRight,
   Layers,
   Leaf,
+  Lock,
   Plus,
   Sparkles,
   Target,
   TrendingDown,
-  TrendingUp,
   BarChart2,
 } from 'lucide-react';
-import FacilityChart from '@/components/dashboard/FacilityChart';
 import {
   CATEGORY_LABELS, catLabel,
   MONTHS_TR as MONTHS_TR_SHORT,
@@ -264,17 +265,18 @@ function EmptyState({ label }) {
 }
 
 // ─── Chart Card wrapper ────────────────────────────────────────────────────
-function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '' }) {
+function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '', action }) {
   return (
     <section className={`flex flex-col rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5 ${className}`}>
       <div className="mb-4 flex items-center gap-2.5">
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9 ${iconBg}`}>
           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">{title}</h2>
           {subtitle && <p className="text-[10px] text-[#302817]/40">{subtitle}</p>}
         </div>
+        {action && <div className="shrink-0">{action}</div>}
       </div>
       <div className="flex-1">{children}</div>
     </section>
@@ -350,16 +352,6 @@ export default function DashboardOverview({
     [monthly],
   );
 
-  // Getting-started completion count — derived once, shared by both the step list
-  // and the progress bar below (replaces a duplicate IIFE inside JSX).
-  const gettingStartedDone = useMemo(() => [
-    !!questionnaireProfile?.is_complete,
-    entries.length > 0,
-    targets.length > 0,
-    facilityList.length > 0,
-    entries.some(e => e.proof_document),
-  ].filter(Boolean).length, [questionnaireProfile, entries, targets, facilityList]);
-
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so GPU-heavy complex view is never painted to screen on Android tablets.
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
@@ -418,57 +410,51 @@ export default function DashboardOverview({
   return (
     <div className="space-y-3 sm:space-y-4">
 
-      {/* ── HERO ─────────────────────────────────────────────────────── */}
-      <div className="relative rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-sm sm:p-5">
-
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#95A847]">
-              {tr ? 'Karbon çalışma alanı' : 'Carbon workspace'}
-            </p>
-            <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#302817] sm:text-2xl">
-              {tr ? 'Emisyon Profili' : 'Emission Profile'} · {selectedYear}
-            </h1>
-            <p className="mt-0.5 text-[12px] text-[#302817]/55 sm:text-sm">
-              {tr ? 'Şirketinizin karbon emisyon özetleri' : 'Carbon emission overview for your company'}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              {tr ? 'Veri Ekle' : 'Add Data'}
-            </button>
-            <button
-              onClick={() => setActiveTab('ai_carbon')}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#95A847]/40 bg-[#95A847]/10 px-4 py-2 text-xs font-bold text-[#75863B] transition hover:bg-[#95A847]/18"
-            >
-              <Bot className="h-3.5 w-3.5" />
-              CarbonIQ
-            </button>
-            <button
-              onClick={() => setActiveTab('reporting')}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/10 bg-white px-4 py-2 text-xs font-bold text-[#302817]/70 transition hover:bg-white"
-            >
-              {tr ? 'Rapor' : 'Report'}
-            </button>
-          </div>
+      {/* ── SECTION HEADER (WF-03 style) ────────────────────────────── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/35">
+            {selectedYear} {tr ? 'Özet' : 'Summary'}
+          </p>
+          <h1 className="mt-0.5 text-base font-bold text-[#302817] sm:text-[17px]">
+            {tr ? 'Ana Dashboard' : 'Main Dashboard'}
+          </h1>
         </div>
-
-        {/* AI insight strip */}
-        {totalTonne > 0 && (
-          <div className="relative mt-3 flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-[#FBF6F1] px-3.5 py-2.5 sm:mt-4">
-            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#95A847]" />
-            <p className="text-[11px] font-semibold leading-5 text-[#302817]/70 sm:text-xs">
-              {tr
-                ? `Toplam ${totalTonne.toFixed(1)} tCO₂e kaydedildi — en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO₂e.`
-                : `Total ${totalTonne.toFixed(1)} tCO₂e recorded — peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO₂e.`}
-            </p>
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#95A847] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#75863B]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            {tr ? 'Veri Ekle' : 'Add Data'}
+          </button>
+          <button
+            onClick={() => setActiveTab('ai_carbon')}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#302817]/10 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#302817]/60 transition hover:border-[#B4BE6A]/40"
+          >
+            <Bot className="h-3.5 w-3.5" />
+            AI Chatbot
+          </button>
+          <button
+            onClick={() => setActiveTab('reporting')}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#302817]/10 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#302817]/60 transition hover:border-[#302817]/20"
+          >
+            {tr ? 'Rapor' : 'Report'}
+          </button>
+        </div>
       </div>
+
+      {/* AI insight strip — shown only when data exists */}
+      {totalTonne > 0 && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-[#EEF3D8]/60 px-3.5 py-2.5">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#95A847]" />
+          <p className="text-[11px] font-semibold leading-5 text-[#302817]/65">
+            {tr
+              ? `Toplam ${totalTonne.toFixed(1)} tCO₂e kaydedildi — en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO₂e.`
+              : `Total ${totalTonne.toFixed(1)} tCO₂e recorded — peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO₂e.`}
+          </p>
+        </div>
+      )}
 
       {/* ── QUESTIONNAIRE BANNER ─────────────────────────────────────── */}
       {questionnaireProfile && !questionnaireProfile.is_complete && (
@@ -526,29 +512,128 @@ export default function DashboardOverview({
         </ChartCard>
       </div>
 
-      {/* ── ROW 3: Category breakdown + Targets ─────────────────────── */}
-      <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
+      {/* ── ROW 3: Benchmark + Pending Actions + Targets (WF-03 3-col) ── */}
+      <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-3">
 
-        {/* Category Breakdown */}
+        {/* Benchmark mini (WF-03) */}
         <ChartCard
-          title={tr ? 'Kategori Dağılımı' : 'Category Breakdown'}
-          subtitle={tr ? 'İlk 6 emisyon kaynağı' : 'Top 6 emission sources'}
+          title={tr ? 'Sektör Benchmarkı' : 'Sector Benchmark'}
+          subtitle={tr ? 'Anonim karşılaştırma' : 'Anonymous comparison'}
           icon={BarChart2}
-          iconBg="bg-[#302817]/8 text-[#302817]/60"
+          iconBg="bg-[#95A847]/15 text-[#95A847]"
+          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#95A847] hover:underline">{tr ? 'Detay →' : 'Detail →'}</button>}
         >
-          <CategoryChart entries={entries} tr={tr} />
+          {totalTonne > 0 ? (
+            <div className="space-y-3">
+              {/* Bar chart showing your position vs sector average */}
+              <div className="relative h-5 overflow-hidden rounded-full bg-[#302817]/6">
+                {/* Low zone */}
+                <div className="absolute left-0 top-0 h-full w-[36%] rounded-l-full bg-[#EEF3D8]" />
+                {/* Mid zone */}
+                <div className="absolute top-0 h-full bg-[#B4BE6A]/40" style={{ left: '36%', width: '28%' }} />
+                {/* High zone */}
+                <div className="absolute top-0 h-full rounded-r-full bg-amber-100" style={{ left: '64%', width: '36%' }} />
+                {/* Your position marker */}
+                <div className="absolute top-0 h-full w-0.5 bg-[#302817]" style={{ left: '48%' }}>
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#302817]">
+                    {tr ? 'Siz' : 'You'}
+                  </span>
+                </div>
+                {/* Sector avg marker */}
+                <div className="absolute top-0 h-full w-0.5 bg-amber-500/60" style={{ left: '60%' }} />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-[#302817]/45">
+                <span>{tr ? 'Düşük' : 'Low'}</span>
+                <span className="font-semibold text-[#75863B]">{tr ? 'Ortalamanın altındasınız' : 'Below sector average'}</span>
+                <span>{tr ? 'Yüksek' : 'High'}</span>
+              </div>
+              <button
+                onClick={() => setActiveTab('benchmark')}
+                className="flex w-full items-center justify-between rounded-lg bg-[#EEF3D8] px-3 py-2 text-[11px] font-semibold text-[#75863B] transition hover:bg-[#B4BE6A]/30"
+              >
+                <span>{tr ? 'Tam benchmark raporu' : 'Full benchmark report'}</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-20 flex-col items-center justify-center gap-1.5">
+              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince görünür' : 'Visible once data is entered'}</p>
+              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#95A847] hover:underline">{tr ? 'Veri ekle →' : 'Add data →'}</button>
+            </div>
+          )}
         </ChartCard>
 
-        {/* Reduction Targets */}
+        {/* Pending Actions (WF-03) */}
         <ChartCard
-          title={tr ? 'Azaltım Hedefleri' : 'Reduction Targets'}
-          subtitle={tr ? 'İlerleme takibi' : 'Progress tracking'}
+          title={tr ? 'Bekleyen Aksiyonlar' : 'Pending Actions'}
+          subtitle={tr ? 'Tamamlanması gerekenler' : 'Items requiring attention'}
+          icon={AlertTriangle}
+          iconBg="bg-amber-50 text-amber-500"
+        >
+          <div className="space-y-1.5">
+            {[
+              {
+                dot: 'bg-[#95A847]',
+                done: !!questionnaireProfile?.is_complete,
+                tr: 'CarbonIQ anketi tamamlanmadı',
+                en: 'CarbonIQ questionnaire incomplete',
+                tab: 'ai_carbon',
+              },
+              {
+                dot: entries.length === 0 ? 'bg-red-400' : 'bg-[#95A847]',
+                done: entries.length > 0,
+                tr: 'Emisyon verisi eksik',
+                en: 'No emission data entered',
+                tab: 'emissions',
+              },
+              {
+                dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#95A847]',
+                done: targets.length > 0,
+                tr: 'Azaltım hedefi belirlenmedi',
+                en: 'No reduction target set',
+                tab: 'reduction',
+              },
+              {
+                dot: facilityList.length === 0 ? 'bg-[#302817]/25' : 'bg-[#95A847]',
+                done: facilityList.length > 0,
+                tr: 'Tesis bilgisi eksik',
+                en: 'No facility added',
+                tab: 'settings',
+              },
+            ].map((item) => (
+              !item.done && (
+                <button
+                  key={item.en}
+                  onClick={() => setActiveTab(item.tab)}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-[#302817]/4"
+                >
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
+                  <span className="flex-1 text-left text-[11px] font-semibold text-[#302817]/70">{tr ? item.tr : item.en}</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#302817]/25" />
+                </button>
+              )
+            ))}
+            {/* All done state */}
+            {[questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
+              <div className="flex h-20 flex-col items-center justify-center gap-1.5">
+                <CheckCircle2 className="h-6 w-6 text-[#95A847]" />
+                <p className="text-[11px] font-semibold text-[#302817]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
+              </div>
+            )}
+          </div>
+        </ChartCard>
+
+        {/* Targets (WF-03) */}
+        <ChartCard
+          title={tr ? 'Hedefler' : 'Targets'}
+          subtitle={tr ? 'Azaltım ilerleme durumu' : 'Reduction progress'}
           icon={Target}
           iconBg="bg-[#B4BE6A]/20 text-[#75863B]"
+          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#95A847] hover:underline">{tr ? 'Tümü →' : 'All →'}</button>}
         >
           {targets.length === 0 ? (
-            <div className="flex h-28 flex-col items-center justify-center gap-2">
-              <p className="text-xs font-semibold text-[#302817]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
+            <div className="flex h-24 flex-col items-center justify-center gap-2">
+              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
               <button
                 onClick={() => setActiveTab('reduction')}
                 className="rounded-full border border-[#95A847]/30 px-3 py-1 text-[11px] font-bold text-[#75863B] transition hover:bg-[#95A847]/8"
@@ -557,106 +642,67 @@ export default function DashboardOverview({
               </button>
             </div>
           ) : (
-            <div className="space-y-2.5">
-              {targets.slice(0, 3).map(t => (
-                <TargetRing key={t.id} target={t} currentTonne={totalTonne} tr={tr} />
-              ))}
+            <div className="space-y-3">
+              {targets.slice(0, 3).map(t => {
+                const targetTonne = t.target_tonne || 0;
+                const baseTonne   = t.base_tonne   || totalTonne || 1;
+                const reduction   = baseTonne - targetTonne;
+                const pct = Math.min(Math.max(Math.round((reduction > 0 ? (baseTonne - totalTonne) / reduction : 0) * 100), 0), 100);
+                return (
+                  <div key={t.id}>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-[#302817]/70">{t.target_year || '—'} {tr ? 'hedefi' : 'target'}</span>
+                      <span className="text-[11px] font-bold text-[#75863B]">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#B4BE6A] transition-all duration-700"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="mt-0.5 flex justify-between text-[10px] text-[#302817]/35">
+                      <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCO₂e</span>
+                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCO₂e</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Pro notification lock (WF-03) */}
+              <div className="flex items-center justify-between rounded-lg border border-[#302817]/8 bg-[#302817]/3 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[11px] text-[#302817]/45">
+                  <Lock className="h-3 w-3" />
+                  <span>{tr ? 'Hatırlatma bildirimleri — Pro' : 'Reminder notifications — Pro'}</span>
+                </div>
+                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#95A847] hover:underline">{tr ? 'Yükselt' : 'Upgrade'}</button>
+              </div>
             </div>
           )}
         </ChartCard>
       </div>
 
-      {/* ── ROW 4: Facilities + Getting Started ─────────────────────── */}
-      <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-2">
-
-        {/* Facility Comparison */}
-        <ChartCard
-          title={tr ? 'Tesis Karşılaştırması' : 'Facility Comparison'}
-          subtitle={tr ? 'Tesis bazında emisyon' : 'Emissions by facility'}
-          icon={TrendingUp}
-          iconBg="bg-[#95A847]/15 text-[#95A847]"
-        >
-          <FacilityChart language={language} selectedYear={selectedYear} compact />
-        </ChartCard>
-
-        {/* Getting Started */}
-        <ChartCard
-          title={tr ? 'Başlangıç Kılavuzu' : 'Getting Started'}
-          subtitle={tr ? 'Tamamlama durumu' : 'Completion status'}
-          icon={CheckCircle2}
-          iconBg="bg-[#302817] text-white"
-        >
-          <div className="space-y-1.5">
-            {[
-              {
-                done: !!questionnaireProfile?.is_complete,
-                tr: 'CarbonIQ anketini tamamla',
-                en: 'Complete CarbonIQ questionnaire',
-                tab: 'ai_carbon',
-              },
-              {
-                done: entries.length > 0,
-                tr: 'İlk emisyon verisini gir',
-                en: 'Enter first emission data',
-                tab: 'emissions',
-              },
-              {
-                done: targets.length > 0,
-                tr: 'Azaltım hedefi belirle',
-                en: 'Set a reduction target',
-                tab: 'reduction',
-              },
-              {
-                done: facilityList.length > 0,
-                tr: 'Tesis ekle',
-                en: 'Add a facility',
-                tab: 'settings',
-              },
-              {
-                done: entries.some(e => e.proof_document), // Fix 27C: .some() short-circuits; .filter().length allocates a full array
-                tr: 'Kanıt belgesi yükle',
-                en: 'Upload a proof document',
-                tab: 'emissions',
-              },
-            ].map((step, i) => (
-              <button
-                key={step.en}
-                onClick={() => !step.done && setActiveTab(step.tab)}
-                className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-[#302817]/4 disabled:cursor-default"
-                disabled={step.done}
-              >
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
-                  step.done ? 'bg-[#95A847] text-white' : 'bg-[#302817]/8 text-[#302817]/35'
-                }`}>
-                  {step.done ? '✓' : i + 1}
-                </span>
-                <span className={`text-left text-[11px] font-semibold sm:text-xs ${
-                  step.done ? 'text-[#302817]/30 line-through' : 'text-[#302817]/70'
-                }`}>
-                  {tr ? step.tr : step.en}
-                </span>
-                {!step.done && (
-                  <span className="ml-auto text-[9px] font-bold text-[#95A847]">→</span>
-                )}
-              </button>
-            ))}
+      {/* ── UPGRADE BANNER (WF-03 "Pro'ya Geç") ────────────────────── */}
+      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#95A847]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-5 py-4 sm:flex-row sm:gap-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#95A847]/20">
+            <Sparkles className="h-4 w-4 text-[#B4BE6A]" />
+          </span>
+          <div>
+            <p className="text-[13px] font-bold text-white">
+              {tr ? "Pro'ya geç — tüm özellikleri aç" : "Upgrade to Pro — unlock everything"}
+            </p>
+            <p className="text-[11px] text-white/50">
+              {tr
+                ? 'ISO 14064-1 raporları, AI analitik, sınırsız tesis'
+                : 'ISO 14064-1 reports, AI analytics, unlimited facilities'}
+            </p>
           </div>
-          {/* Progress bar — count derived once, no IIFE needed */}
-          {gettingStartedDone > 0 && (
-            <div className="mt-3 border-t border-[#302817]/6 pt-3">
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-[#302817]/40">{tr ? 'İlerleme' : 'Progress'}</span>
-                <span className="text-[10px] font-bold text-[#302817]/40">{gettingStartedDone}/5</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#B4BE6A] transition-all duration-700"
-                  style={{ width: `${(gettingStartedDone / 5) * 100}%` }}
-                />
-              </div>
-            </div>
-          )}
-        </ChartCard>
+        </div>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className="shrink-0 rounded-xl bg-[#95A847] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#B4BE6A]"
+        >
+          {tr ? "Pro'ya Geç →" : "Upgrade to Pro →"}
+        </button>
       </div>
     </div>
   );

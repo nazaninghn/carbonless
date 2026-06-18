@@ -2673,8 +2673,12 @@ function QuestionnaireTab({ language, isVisible = true }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Free Chat Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function FreeChatTab({ language }) {
+function FreeChatTab({ language, summary, entries, targets }) {
   const tr = language === 'tr';
+  const totalTonne = summary?.total_tonne || 0;
+  const s1 = summary?.scope1_tonne || 0;
+  const s2 = summary?.scope2_tonne || 0;
+  const s3 = summary?.scope3_tonne || 0;
 
   const [sessions, setSessions] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -3033,6 +3037,20 @@ function FreeChatTab({ language }) {
           </div>
         )}
 
+        {/* Emission data context strip (carbon brain data-awareness) */}
+        {totalTonne > 0 && (
+          <div className="shrink-0 border-b border-[#302817]/6 bg-[#EEF3D8]/50 px-4 py-2">
+            <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#302817]/35">{tr ? 'Mevcut Veriler' : 'Your Data'}</span>
+              <span className="text-[11px] font-bold text-[#302817]/70">{tr ? 'Toplam' : 'Total'}: <span className="text-[#75863B]">{totalTonne.toFixed(1)} tCO₂e</span></span>
+              {s1 > 0 && <span className="text-[11px] text-[#302817]/50">K1: {s1.toFixed(1)}</span>}
+              {s2 > 0 && <span className="text-[11px] text-[#302817]/50">K2: {s2.toFixed(1)}</span>}
+              {s3 > 0 && <span className="text-[11px] text-[#302817]/50">K3: {s3.toFixed(1)}</span>}
+              {entries?.length > 0 && <span className="text-[11px] text-[#302817]/40">{entries.length} {tr ? 'kayıt' : 'entries'}</span>}
+            </div>
+          </div>
+        )}
+
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
@@ -3142,7 +3160,7 @@ function FreeChatTab({ language }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main export: CarbonAIPage (dual-tab)
 // ─────────────────────────────────────────────────────────────────────────────
-export default function CarbonAIPage({ language = 'en', isVisible = true }) {
+export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets }) {
   const tr = language === 'tr';
   const [activeTab, setActiveTab] = useState('questionnaire');
   // Fix #44: track whether the Chat tab has ever been opened so we can lazy-mount
@@ -3187,7 +3205,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true }) {
         </div>
         {chatMounted && (
           <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`}>
-            <FreeChatTab language={language} />
+            <FreeChatTab language={language} summary={summary} entries={entries} targets={targets} />
           </div>
         )}
       </div>

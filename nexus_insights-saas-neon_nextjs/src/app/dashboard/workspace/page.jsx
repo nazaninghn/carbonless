@@ -3,8 +3,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import {
   LayoutDashboard, Flame, Zap, Truck, Briefcase,
-  CheckCircle2, Clock, Minus, ArrowLeft,
-  ChevronRight, X, Sparkles,
+  CheckCircle2, Clock, ArrowLeft,
+  ChevronRight, X, Sparkles, MessageSquare, BarChart3,
 } from 'lucide-react';
 import { getReportFields, getCategoryStatus } from '@/lib/workspace/api';
 import { ChatWorkspace } from '@/components/workspace/ChatWorkspace';
@@ -14,7 +14,7 @@ import { UpstreamTransportPanel } from '@/components/workspace/panels/UpstreamTr
 import { BusinessTravelPanel } from '@/components/workspace/panels/BusinessTravelPanel';
 import { api } from '@/lib/utils/api';
 
-/* ─── CSS animations (injected once) ─────────────────────────────────────── */
+/* ─── CSS animations ──────────────────────────────────────────────────────── */
 const ANIM_STYLES = `
 @keyframes heroFloat {
   0%,100% { transform: translateY(0px) rotate(-1deg) scale(1);
@@ -47,20 +47,19 @@ const ANIM_STYLES = `
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */
 const CATEGORIES = [
-  { id: '3A', tab: 'S1',   scope: 1, icon: Flame,    color: 'text-orange-500', bg: 'bg-orange-50',  panelBg: 'bg-orange-500', label: { tr: 'Sabit Yanma',    en: 'Stationary Combustion' }, desc: { tr: 'Yakıt tüketimi',     en: 'Fuel combustion'    } },
-  { id: '4A', tab: 'S2',   scope: 2, icon: Zap,      color: 'text-yellow-600', bg: 'bg-yellow-50',  panelBg: 'bg-yellow-500', label: { tr: 'Elektrik',        en: 'Purchased Electricity' }, desc: { tr: 'Satın alınan el.', en: 'Grid electricity'   } },
-  { id: 'K4', tab: 'S3a',  scope: 3, icon: Truck,    color: 'text-sky-500',    bg: 'bg-sky-50',     panelBg: 'bg-sky-500',    label: { tr: 'Upstream Taşıma', en: 'Upstream Transport'    }, desc: { tr: 'Lojistik',          en: 'Freight & logistics'} },
-  { id: 'K5', tab: 'S3b',  scope: 3, icon: Briefcase,color: 'text-violet-500', bg: 'bg-violet-50',  panelBg: 'bg-violet-500', label: { tr: 'İş Seyahati',    en: 'Business Travel'       }, desc: { tr: 'Hava & kara',       en: 'Air, road & rail'  } },
+  { id: '3A', tab: 'S1',  scope: 1, icon: Flame,     color: 'text-orange-500', bg: 'bg-orange-50',  ring: 'ring-orange-200', panelBg: 'bg-orange-500', label: { tr: 'Sabit Yanma',    en: 'Stationary Combustion' }, desc: { tr: 'Yakıt tüketimi',      en: 'Fuel combustion'     } },
+  { id: '4A', tab: 'S2',  scope: 2, icon: Zap,       color: 'text-yellow-600', bg: 'bg-yellow-50',  ring: 'ring-yellow-200', panelBg: 'bg-yellow-500', label: { tr: 'Elektrik',        en: 'Purchased Electricity' }, desc: { tr: 'Satın alınan el.',    en: 'Grid electricity'    } },
+  { id: 'K4', tab: 'S3a', scope: 3, icon: Truck,     color: 'text-sky-500',    bg: 'bg-sky-50',     ring: 'ring-sky-200',    panelBg: 'bg-sky-500',    label: { tr: 'Upstream Taşıma', en: 'Upstream Transport'    }, desc: { tr: 'Lojistik & kargo',   en: 'Freight & logistics' } },
+  { id: 'K5', tab: 'S3b', scope: 3, icon: Briefcase, color: 'text-violet-500', bg: 'bg-violet-50',  ring: 'ring-violet-200', panelBg: 'bg-violet-500', label: { tr: 'İş Seyahati',    en: 'Business Travel'       }, desc: { tr: 'Hava & kara & ray',  en: 'Air, road & rail'   } },
 ];
 
 const SCOPE_GROUPS = [
-  { id: 1, label: { tr: 'Kapsam 1', en: 'Scope 1' }, cats: ['3A'], color: 'bg-orange-400' },
-  { id: 2, label: { tr: 'Kapsam 2', en: 'Scope 2' }, cats: ['4A'], color: 'bg-yellow-400' },
-  { id: 3, label: { tr: 'Kapsam 3', en: 'Scope 3' }, cats: ['K4', 'K5'], color: 'bg-sky-400' },
+  { id: 1, label: { tr: 'Kapsam 1 — Doğrudan', en: 'Scope 1 — Direct' },           cats: ['3A'], color: 'bg-orange-400',  text: 'text-orange-600' },
+  { id: 2, label: { tr: 'Kapsam 2 — Enerji',   en: 'Scope 2 — Energy' },            cats: ['4A'], color: 'bg-yellow-400',  text: 'text-yellow-700' },
+  { id: 3, label: { tr: 'Kapsam 3 — Dolaylı',  en: 'Scope 3 — Indirect' },          cats: ['K4','K5'], color: 'bg-sky-400', text: 'text-sky-600' },
 ];
 
 const DEFRA_EF = {
-  // Both 'kWh' and 'KWH' accepted (chatbot may save uppercase variant)
   natural_gas: { 'm³': 2.02, m3: 2.02, kWh: 0.183, KWH: 0.183, GJ: 50.77, MCF: 57.17 },
   fuel_oil:    { litre: 2.52, kg: 2.96, GJ: 74.07  },
   diesel:      { litre: 2.54, GJ: 68.08             },
@@ -98,34 +97,214 @@ function fmt(kg) {
   return kg >= 1000 ? `${(kg / 1000).toFixed(2)} tCO₂e` : `${Math.round(kg)} kgCO₂e`;
 }
 
+/* ─── Mode toggle ─────────────────────────────────────────────────────────── */
+function ModeToggle({ mode, onChange, lang }) {
+  const tr = lang === 'tr';
+  return (
+    <div className="flex items-center gap-1 p-1 rounded-2xl bg-[#302817]/6 border border-[#302817]/8">
+      <button
+        onClick={() => onChange('chat')}
+        className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all duration-200 ${
+          mode === 'chat'
+            ? 'bg-[#302817] text-white shadow-sm'
+            : 'text-[#302817]/50 hover:text-[#302817]/80 hover:bg-[#302817]/5'
+        }`}
+      >
+        <MessageSquare className="h-3.5 w-3.5 shrink-0" />
+        <span>{tr ? 'Rehberli' : 'Guided'}</span>
+      </button>
+      <button
+        onClick={() => onChange('expert')}
+        className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all duration-200 ${
+          mode === 'expert'
+            ? 'bg-[#302817] text-white shadow-sm'
+            : 'text-[#302817]/50 hover:text-[#302817]/80 hover:bg-[#302817]/5'
+        }`}
+      >
+        <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+        <span>{tr ? 'Uzman' : 'Expert'}</span>
+      </button>
+    </div>
+  );
+}
+
+/* ─── Category card (expert mode — WF-04 compact) ────────────────────────── */
+function CategoryCard({ cat, lang, status, emission, onClick }) {
+  const Icon = cat.icon;
+  const st = status || 'missing';
+  const tr = lang === 'tr';
+
+  const dotColor = st === 'complete' ? 'bg-[#75863B]' : st === 'in_progress' ? 'bg-amber-400' : 'bg-[#302817]/18';
+  const cardBg   = st === 'complete'
+    ? 'bg-[#75863B]/6 border-[#75863B]/25 hover:border-[#75863B]/40'
+    : st === 'in_progress'
+    ? 'bg-amber-50 border-amber-200 hover:border-amber-300'
+    : 'bg-white border-[#302817]/10 hover:border-[#302817]/20';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full text-left rounded-xl border p-3 transition-all duration-200 hover:shadow-sm group ${cardBg}`}
+    >
+      {/* Icon + status dot */}
+      <div className="flex items-center justify-between mb-2">
+        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${cat.bg}`}>
+          <Icon className={`h-4 w-4 ${cat.color}`} />
+        </div>
+        <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+      </div>
+
+      {/* Label */}
+      <p className="text-[12px] font-bold text-[#302817] leading-tight">{cat.label[lang]}</p>
+      <p className="text-[10px] text-[#302817]/40 mt-0.5 leading-snug">{cat.desc[lang]}</p>
+
+      {/* Emission */}
+      <div className="mt-2">
+        {emission !== null
+          ? <span className="text-[12px] font-extrabold text-[#527A1A] tabular-nums">{fmt(emission)}</span>
+          : <span className="text-[10px] text-[#302817]/25 italic">{tr ? 'Veri yok' : 'No data'}</span>
+        }
+      </div>
+    </button>
+  );
+}
+
+/* ─── Expert view ─────────────────────────────────────────────────────────── */
+function ExpertView({ lang, fieldValues, statuses, onCategoryClick }) {
+  const tr = lang === 'tr';
+  const grandKg = CATEGORIES.reduce((sum, c) => sum + (estimateKg(c.id, fieldValues) || 0), 0);
+  const completedCount = Object.values(statuses).filter(s => s === 'complete').length;
+  const totalCount = CATEGORIES.length;
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-6 fade-up">
+
+        {/* Hero total — only when data exists */}
+        {grandKg > 0 ? (
+          <div className="rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-gradient-to-br from-[#302817] to-[#527A1A] p-5 text-white">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
+                {tr ? 'Toplam Karbon Ayak İzi' : 'Total Carbon Footprint'}
+              </p>
+              <p className="text-[32px] font-extrabold tabular-nums leading-none">{fmt(grandKg)}</p>
+              <p className="text-[10.5px] text-white/45 mt-1">
+                ISO 14064-1 · {tr ? 'Tahmini değer · DEFRA 2023' : 'Estimated · DEFRA 2023'}
+              </p>
+            </div>
+            {/* Progress bar */}
+            <div className="bg-[#302817]/90 px-5 py-2.5 flex items-center gap-3">
+              <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#B4BE6A] to-[#75863B] transition-all duration-700"
+                  style={{ width: `${Math.round((completedCount / totalCount) * 100)}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-bold text-white/50 shrink-0">
+                {completedCount}/{totalCount} {tr ? 'kategori' : 'categories'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          /* Empty state hint */
+          <div className="rounded-2xl border-2 border-dashed border-[#302817]/12 bg-[#302817]/3 px-5 py-6 text-center">
+            <BarChart3 className="h-8 w-8 text-[#302817]/20 mx-auto mb-2" />
+            <p className="text-[13px] font-bold text-[#302817]/40">
+              {tr ? 'Veri girişi yapılmadı' : 'No data entered yet'}
+            </p>
+            <p className="text-[11px] text-[#302817]/28 mt-1 leading-relaxed">
+              {tr
+                ? 'Aşağıdaki kategorilere tıklayarak veri girişi yapabilir ya da\nRehberli moda geçerek AI\'ya anlatabilirsiniz.'
+                : 'Click any category below to enter data manually,\nor switch to Guided mode to talk to the AI.'}
+            </p>
+          </div>
+        )}
+
+        {/* All categories — flat 4-col grid (WF-04) */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#302817]/30 mb-3 px-0.5">
+            {tr ? 'Emisyon Kategorileri' : 'Emission Categories'}
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {CATEGORIES.map(cat => (
+              <CategoryCard
+                key={cat.id}
+                cat={cat}
+                lang={lang}
+                status={statuses[cat.id]}
+                emission={estimateKg(cat.id, fieldValues)}
+                onClick={() => onCategoryClick(cat.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Bottom tip */}
+        <div className="rounded-xl border border-[#302817]/8 bg-[#302817]/3 px-4 py-3 flex items-start gap-2.5">
+          <span className="text-base shrink-0 mt-px">💡</span>
+          <p className="text-[11px] text-[#302817]/45 leading-relaxed">
+            {tr
+              ? 'Her kategoriye tıklayın ve sağdan açılan panele veri girin. Rehberli modda ise AI ile konuşarak veri aktarabilirsiniz.'
+              : 'Click each category to open the data entry panel on the right. In Guided mode, you can share data by talking to the AI.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Panel slide-over ────────────────────────────────────────────────────── */
-function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onSaved, onStartReport, startingReport, startReportErr }) {
+function PanelDrawer({
+  open, onClose, reportId, fieldValues, statuses, lang, onSaved,
+  onStartReport, startingReport, startReportErr, openToCategory,
+}) {
   const tr = lang === 'tr';
   const isPreview = reportId === 'preview-001';
-  const [active, setActive] = useState('3A');
+  const [active, setActive] = useState(openToCategory || '3A');
+
+  /* Sync to the category that was clicked */
+  useEffect(() => {
+    if (open && openToCategory) setActive(openToCategory);
+  }, [open, openToCategory]);
+
   return (
     <>
-      {open && <div className="fixed inset-0 z-40 bg-[#302817]/40 backdrop-blur-sm" onClick={onClose} />}
-      <div className={`fixed right-0 top-0 bottom-0 z-50 w-full max-w-[460px] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}>
-        {/* header */}
+      {open && (
+        <div className="fixed inset-0 z-40 bg-[#302817]/40 backdrop-blur-sm" onClick={onClose} />
+      )}
+      <div
+        className={`fixed right-0 top-0 bottom-0 z-50 w-full max-w-[460px] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}
+      >
+        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#302817]/8">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#302817]">
               <LayoutDashboard className="h-3.5 w-3.5 text-[#B4BE6A]" />
             </div>
             <div>
-              <p className="text-[13px] font-bold text-[#302817]">{tr ? 'Veri Girişi Paneli' : 'Data Entry Panel'}</p>
-              <p className="text-[10px] text-[#302817]/40">ISO 14064-1 · Scope 1 / 2 / 3
-                {isPreview && <span className="ml-1 text-amber-500 font-bold">· {tr ? 'Önizleme' : 'Preview'}</span>}
+              <p className="text-[13px] font-bold text-[#302817]">
+                {tr ? 'Veri Girişi Paneli' : 'Data Entry Panel'}
+              </p>
+              <p className="text-[10px] text-[#302817]/40">
+                ISO 14064-1 · Scope 1 / 2 / 3
+                {isPreview && (
+                  <span className="ml-1 text-amber-500 font-bold">
+                    · {tr ? 'Önizleme' : 'Preview'}
+                  </span>
+                )}
               </p>
             </div>
           </div>
-          <button onClick={onClose} aria-label={tr ? 'Kapat' : 'Close panel'} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#302817]/5 text-[#302817]/40 hover:text-[#302817] transition">
+          <button
+            onClick={onClose}
+            aria-label={tr ? 'Kapat' : 'Close panel'}
+            className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#302817]/5 text-[#302817]/40 hover:text-[#302817] transition"
+          >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Preview mode warning inside panel — compact strip */}
+        {/* Preview mode warning */}
         {isPreview && (
           <div className="mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 flex items-center gap-2.5">
             <span className="text-[11px] shrink-0">👁</span>
@@ -137,14 +316,17 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
                 <p className="text-[9px] font-semibold text-red-600 truncate mt-0.5">{startReportErr}</p>
               )}
             </div>
-            <button onClick={onStartReport} disabled={startingReport}
-              className="shrink-0 text-[9.5px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-2.5 py-1 transition disabled:opacity-60 whitespace-nowrap">
+            <button
+              onClick={onStartReport}
+              disabled={startingReport}
+              className="shrink-0 text-[9.5px] font-bold text-amber-700 bg-amber-200 hover:bg-amber-300 rounded-full px-2.5 py-1 transition disabled:opacity-60 whitespace-nowrap"
+            >
               {startingReport ? '…' : (tr ? '🚀 Başlat' : '🚀 Start')}
             </button>
           </div>
         )}
 
-        {/* tabs */}
+        {/* Category tabs */}
         <div className="flex gap-1.5 px-4 py-3 border-b border-[#302817]/6 bg-[#FAFAF8] mt-2">
           {CATEGORIES.map(cat => {
             const Icon = cat.icon;
@@ -152,23 +334,34 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
             const st = statuses[cat.id] || 'missing';
             const isA = active === cat.id;
             return (
-              <button key={cat.id} onClick={() => setActive(cat.id)}
-                className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 transition ${isA ? 'bg-[#302817] shadow-sm' : 'hover:bg-[#302817]/5'}`}>
+              <button
+                key={cat.id}
+                onClick={() => setActive(cat.id)}
+                className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 transition ${
+                  isA ? 'bg-[#302817] shadow-sm' : 'hover:bg-[#302817]/5'
+                }`}
+              >
                 <div className="relative">
                   <Icon className={`h-4 w-4 ${isA ? 'text-[#B4BE6A]' : cat.color}`} />
-                  {/* status dot */}
                   <span className={`absolute -top-0.5 -right-1 h-2 w-2 rounded-full border border-white ${
                     st === 'complete'    ? 'bg-[#75863B]' :
                     st === 'in_progress' ? 'bg-amber-400' : 'bg-[#302817]/20'
                   }`} />
                 </div>
-                <span className={`text-[8.5px] font-bold tracking-wide ${isA ? 'text-white' : 'text-[#302817]/40'}`}>{cat.tab}</span>
-                {em !== null && <span className={`text-[7.5px] font-bold ${isA ? 'text-[#B4BE6A]/80' : 'text-[#75863B]/60'}`}>{fmt(em)}</span>}
+                <span className={`text-[8.5px] font-bold tracking-wide ${isA ? 'text-white' : 'text-[#302817]/40'}`}>
+                  {cat.tab}
+                </span>
+                {em !== null && (
+                  <span className={`text-[7.5px] font-bold ${isA ? 'text-[#B4BE6A]/80' : 'text-[#75863B]/60'}`}>
+                    {fmt(em)}
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
-        {/* content — panels receive isPreview so they can disable their save buttons */}
+
+        {/* Panel content */}
         <div className="flex-1 overflow-y-auto p-5">
           {active === '3A' && <StationaryCombustionPanel reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} isPreview={isPreview} />}
           {active === '4A' && <ElectricityPanel          reportId={reportId} fieldValues={fieldValues} lang={lang} onSaved={onSaved} isPreview={isPreview} />}
@@ -182,20 +375,25 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
 export default function WorkspacePage() {
-  const [lang, setLang] = useState('tr');
+  const [lang,          setLang]          = useState('tr');
   const tr = lang === 'tr';
 
+  /* Data */
   const [reportId,      setReportId]      = useState(null);
   const [fieldValues,   setFieldValues]   = useState({});
   const [statuses,      setStatuses]      = useState({});
-  const [panelOpen,     setPanelOpen]     = useState(false);
   const [loading,       setLoading]       = useState(true);
+
+  /* UI */
+  const [workspaceMode, setWorkspaceMode] = useState('chat');   // 'chat' | 'expert'
+  const [panelOpen,     setPanelOpen]     = useState(false);
+  const [openCategory,  setOpenCategory]  = useState('3A');     // which tab opens in drawer
   const [startingReport,setStartingReport]= useState(false);
   const [startReportErr,setStartReportErr]= useState('');
 
   const isPreviewMode = reportId === 'preview-001';
 
-  /* Load report ── on failure/missing → fall back to preview so chatbot always shows */
+  /* ── Load report ── */
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     const isPreview = sp.get('preview') === '1';
@@ -222,26 +420,21 @@ export default function WorkspacePage() {
 
     (async () => {
       try {
-        // api is an object — use its method, not api() as a function
         const res = await api.listReports();
         if (res.ok) {
           const data = await res.json();
-          // Backend may return { reports: [...] } or [...] or { results: [...] }
           const reports = Array.isArray(data) ? data
             : Array.isArray(data.reports) ? data.reports
             : Array.isArray(data.results) ? data.results
             : [];
           if (reports.length > 0) {
-            // Support both report_id and id field names
             const firstId = reports[0].report_id ?? reports[0].id ?? null;
             if (firstId) {
               setReportId(String(firstId));
             } else {
-              // Report exists but has no recognisable ID — fall back to preview
               setReportId('preview-001');
             }
           } else {
-            /* No report yet — preview mode; restore any locally-saved data */
             setReportId('preview-001');
             try {
               const saved = localStorage.getItem('ciq_preview_fields');
@@ -281,13 +474,11 @@ export default function WorkspacePage() {
       const u = { ...prev };
       fields.forEach(f => { u[f.field_id] = f.value; });
       const s = {}; CATEGORIES.forEach(c => { s[c.id] = getCategoryStatus(c.id, u); }); setStatuses(s);
-      // Persist so data survives page refresh
       try { localStorage.setItem('ciq_preview_fields', JSON.stringify(u)); } catch {}
       return u;
     });
   }, []);
 
-  /* Start a real report (promotes user out of preview mode) */
   const handleStartReport = useCallback(async () => {
     setStartingReport(true);
     setStartReportErr('');
@@ -313,6 +504,13 @@ export default function WorkspacePage() {
     setStartingReport(false);
   }, [lang]);
 
+  /* Open drawer to a specific category (expert mode) */
+  const handleCategoryClick = useCallback((catId) => {
+    setOpenCategory(catId);
+    setPanelOpen(true);
+  }, []);
+
+  /* Derived */
   const completedCount = Object.values(statuses).filter(s => s === 'complete').length;
   const totalCount     = CATEGORIES.length;
   const grandKg        = CATEGORIES.reduce((sum, c) => sum + (estimateKg(c.id, fieldValues) || 0), 0);
@@ -344,13 +542,12 @@ export default function WorkspacePage() {
       <style>{ANIM_STYLES}</style>
       <div className="flex h-screen overflow-hidden font-sans bg-[#F9F8F4]">
 
-        {/* ═══ LEFT HERO PANEL ═══════════════════════════════════════════════ */}
+        {/* ═══ LEFT SIDEBAR ══════════════════════════════════════════════════ */}
         <aside className="hidden lg:flex w-[300px] xl:w-[330px] shrink-0 flex-col bg-white border-r border-[#302817]/8 relative overflow-hidden">
 
-          {/* Subtle dot texture */}
+          {/* Dot texture */}
           <div className="pointer-events-none absolute inset-0"
             style={{ backgroundImage: 'radial-gradient(circle, rgba(48,40,23,0.04) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-
           {/* Top gradient accent */}
           <div className="pointer-events-none absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#75863B] via-[#B4BE6A] to-[#95A847]" />
 
@@ -362,17 +559,13 @@ export default function WorkspacePage() {
             </a>
           </div>
 
-          {/* ── Preview mode banner ── */}
+          {/* Preview mode banner */}
           {isPreviewMode && (
             <div className="relative z-10 mx-4 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400/20 text-[10px]">👁</span>
-                <span className="text-[10.5px] font-bold text-amber-700">
-                  {tr ? 'Önizleme Modu' : 'Preview Mode'}
-                </span>
-                <span className="ml-auto text-[9px] text-amber-500/70 font-semibold">
-                  {tr ? 'Veriler tarayıcıda' : 'Data local only'}
-                </span>
+                <span className="text-[10.5px] font-bold text-amber-700">{tr ? 'Önizleme Modu' : 'Preview Mode'}</span>
+                <span className="ml-auto text-[9px] text-amber-500/70 font-semibold">{tr ? 'Veriler tarayıcıda' : 'Data local only'}</span>
               </div>
               <p className="text-[9.5px] text-amber-600/80 leading-relaxed">
                 {tr
@@ -384,30 +577,26 @@ export default function WorkspacePage() {
                 disabled={startingReport}
                 className="flex items-center justify-center gap-1.5 rounded-full bg-amber-500 py-1.5 text-[10.5px] font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
               >
-                {startingReport
-                  ? (tr ? 'Oluşturuluyor…' : 'Creating…')
-                  : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
+                {startingReport ? (tr ? 'Oluşturuluyor…' : 'Creating…') : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
               </button>
-              {startReportErr && (
-                <p className="text-[9.5px] text-red-600 font-semibold mt-0.5">{startReportErr}</p>
-              )}
+              {startReportErr && <p className="text-[9.5px] text-red-600 font-semibold mt-0.5">{startReportErr}</p>}
             </div>
           )}
 
-          {/* ── Animated globe ── */}
-          <div className="relative z-10 flex items-center justify-center px-4 pt-4 pb-1">
-            {/* Glow behind globe */}
-            <div className="glow-pulse absolute h-44 w-44 rounded-full bg-[#B4BE6A]/15 blur-2xl" />
-            {/* Extra ring when has data */}
-            {hasData && (
-              <svg className="data-ring absolute h-56 w-56 opacity-30" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="90" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="12 8" />
-              </svg>
-            )}
-            <div className="hero-float relative">
-              <Image src="/carbon-hero.png" alt="Carbon AI" width={230} height={172} className="w-full object-contain" priority />
+          {/* Animated globe — only in chat mode */}
+          {workspaceMode === 'chat' && (
+            <div className="relative z-10 flex items-center justify-center px-4 pt-4 pb-1">
+              <div className="glow-pulse absolute h-44 w-44 rounded-full bg-[#B4BE6A]/15 blur-2xl" />
+              {hasData && (
+                <svg className="data-ring absolute h-56 w-56 opacity-30" viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="90" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="12 8" />
+                </svg>
+              )}
+              <div className="hero-float relative">
+                <Image src="/carbon-hero.png" alt="Carbon AI" width={230} height={172} className="w-full object-contain" priority />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Headline */}
           <div className="relative z-10 px-5 pb-3 text-center">
@@ -419,7 +608,6 @@ export default function WorkspacePage() {
             <p className="mt-1.5 text-[10.5px] text-[#302817]/40 leading-relaxed">
               {tr ? 'Verilerinizi konuşun — AI çıkarsın, siz onaylayın.' : 'Talk your data — AI extracts, you approve.'}
             </p>
-            {/* Standard badges */}
             <div className="mt-2.5 flex items-center justify-center gap-1.5 flex-wrap">
               {['ISO 14064-1', 'DEFRA 2023', 'GHG Protocol'].map(b => (
                 <span key={b} className="rounded-full border border-[#302817]/10 bg-[#302817]/4 px-2 py-0.5 text-[8.5px] font-bold text-[#302817]/45">{b}</span>
@@ -427,22 +615,25 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          {/* ── Category status cards + scope totals ── */}
+          {/* Category status list */}
           <div className="relative z-10 mx-4 mt-1 flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto">
-            {/* Per-category status — always visible */}
             <div className="space-y-1.5">
               {CATEGORIES.map(cat => {
-                const Icon  = cat.icon;
-                const st    = statuses[cat.id] || 'missing';
-                const em    = estimateKg(cat.id, fieldValues);
-                const done  = st === 'complete';
-                const part  = st === 'in_progress';
+                const Icon = cat.icon;
+                const st   = statuses[cat.id] || 'missing';
+                const em   = estimateKg(cat.id, fieldValues);
+                const done = st === 'complete';
+                const part = st === 'in_progress';
                 return (
-                  <div key={cat.id} className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 border transition-all duration-300 ${
-                    done ? 'bg-[#95A847]/8 border-[#95A847]/20' :
-                    part ? 'bg-amber-50/80 border-amber-200/60' :
-                           'bg-white border-[#302817]/6'
-                  }`}>
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 border transition-all duration-300 text-left hover:shadow-sm ${
+                      done ? 'bg-[#95A847]/8 border-[#95A847]/20 hover:bg-[#95A847]/12' :
+                      part ? 'bg-amber-50/80 border-amber-200/60 hover:bg-amber-50' :
+                             'bg-white border-[#302817]/6 hover:bg-[#302817]/3'
+                    }`}
+                  >
                     <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${cat.bg}`}>
                       <Icon className={`h-3 w-3 ${cat.color}`} />
                     </div>
@@ -458,13 +649,13 @@ export default function WorkspacePage() {
                     </div>
                     {done && <CheckCircle2 className="h-3.5 w-3.5 text-[#527A1A] shrink-0" />}
                     {part && <Clock        className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                    {!done && !part && <Minus className="h-3.5 w-3.5 text-[#302817]/15 shrink-0" />}
-                  </div>
+                    {!done && !part && <ChevronRight className="h-3.5 w-3.5 text-[#302817]/15 shrink-0" />}
+                  </button>
                 );
               })}
             </div>
 
-            {/* Scope breakdown bars — only when data exists */}
+            {/* Scope breakdown */}
             {hasData && (
               <div className="rounded-2xl border border-[#302817]/8 bg-[#F5F4EF] px-3.5 py-3 space-y-2">
                 <div className="flex items-center justify-between">
@@ -473,7 +664,6 @@ export default function WorkspacePage() {
                   </span>
                   <span className="text-[13px] font-bold text-[#527A1A] tabular-nums">{fmt(grandKg)}</span>
                 </div>
-                {/* Progress pips */}
                 <div className="flex items-center justify-between">
                   <span className="text-[8.5px] font-semibold text-[#302817]/30">
                     {completedCount}/{totalCount} {tr ? 'tamamlandı' : 'complete'}
@@ -493,7 +683,7 @@ export default function WorkspacePage() {
                 {scopeTotals.filter(s => s.hasData).map(scope => (
                   <div key={scope.id}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9.5px] font-semibold text-[#302817]/45">{scope.label[lang] || scope.label.en}</span>
+                      <span className="text-[9.5px] font-semibold text-[#302817]/45">{scope.label[lang]}</span>
                       <span className="text-[9.5px] font-bold text-[#75863B] tabular-nums">{fmt(scope.kg)}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-[#302817]/8 overflow-hidden">
@@ -505,9 +695,8 @@ export default function WorkspacePage() {
             )}
           </div>
 
-          {/* ── Bottom actions ── */}
+          {/* Bottom actions */}
           <div className="relative z-10 px-4 pb-5 pt-4 space-y-2">
-            {/* Generate Report CTA — only when all scopes are complete */}
             {completedCount === totalCount && completedCount > 0 && (
               <a href="/dashboard"
                 className="flex w-full items-center gap-2.5 rounded-xl border border-[#527A1A]/30 bg-gradient-to-r from-[#527A1A] to-[#75863B] px-4 py-2.5 text-[12px] font-bold text-white shadow-md hover:shadow-lg transition-all hover:brightness-110">
@@ -516,16 +705,6 @@ export default function WorkspacePage() {
                 <ChevronRight className="h-3.5 w-3.5 ml-auto text-white/60" />
               </a>
             )}
-            {/* Panel button */}
-            <button
-              onClick={() => setPanelOpen(true)}
-              className="flex w-full items-center gap-2.5 rounded-xl border border-[#302817]/10 bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white transition hover:bg-[#1a1408] shadow-sm"
-            >
-              <LayoutDashboard className="h-4 w-4 text-[#B4BE6A]" />
-              {tr ? 'Panel Görünümü' : 'Panel View'}
-              <ChevronRight className="h-3.5 w-3.5 ml-auto text-white/40" />
-            </button>
-            {/* Back link */}
             <a href="/dashboard"
               className="flex items-center gap-2 px-4 py-2 text-[11px] font-semibold text-[#302817]/35 transition hover:text-[#302817]/70 rounded-xl hover:bg-[#302817]/4">
               <ArrowLeft className="h-3.5 w-3.5" />
@@ -534,32 +713,42 @@ export default function WorkspacePage() {
           </div>
         </aside>
 
-        {/* ═══ RIGHT — CHATBOT ════════════════════════════════════════════════ */}
+        {/* ═══ RIGHT — MAIN CONTENT ══════════════════════════════════════════ */}
         <div className="flex flex-1 flex-col min-w-0">
 
-          {/* Mobile topbar */}
-          <header className="lg:hidden flex items-center justify-between gap-3 px-4 py-3 border-b border-[#302817]/8 bg-white">
-            <a href="/dashboard" className="flex items-center gap-2">
+          {/* ── Top bar: logo (mobile) + mode toggle + panel button ── */}
+          <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#302817]/8 bg-white shrink-0">
+            {/* Logo — mobile only */}
+            <a href="/dashboard" className="lg:hidden flex items-center gap-2">
               <Image src="/carbonless.png" alt="Carbonless" width={30} height={30} className="h-7 w-7" />
               <span className="text-[13px] font-bold text-[#302817]/70">Carbonless</span>
             </a>
+
+            {/* Mode toggle — centred on desktop, left-pushed on mobile */}
+            <div className="flex-1 lg:flex-none flex justify-center lg:justify-start">
+              <ModeToggle mode={workspaceMode} onChange={setWorkspaceMode} lang={lang} />
+            </div>
+
+            {/* Right actions */}
             <div className="flex items-center gap-2">
+              {/* Panel button — always visible */}
               <button
                 onClick={() => setPanelOpen(true)}
                 className="flex items-center gap-1.5 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/60 transition hover:bg-[#302817]/8"
               >
                 <LayoutDashboard className="h-3.5 w-3.5" />
-                {tr ? 'Veri Paneli' : 'Data Panel'}
+                <span className="hidden sm:inline">{tr ? 'Veri Paneli' : 'Data Panel'}</span>
               </button>
+              {/* Back — mobile only */}
               <a href="/dashboard"
                 aria-label={tr ? 'Kontrol Paneline Dön' : 'Back to Dashboard'}
-                className="flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">
+                className="lg:hidden flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">
                 <ArrowLeft className="h-3.5 w-3.5" />
               </a>
             </div>
           </header>
 
-          {/* Mobile emission summary strip (only on mobile when data exists) */}
+          {/* Mobile emission summary strip */}
           {hasData && (
             <div className="lg:hidden shrink-0 flex items-center gap-3 px-4 py-2 bg-[#F5F4EF] border-b border-[#302817]/6">
               <span className="text-[9.5px] font-bold uppercase tracking-widest text-[#302817]/35">
@@ -579,21 +768,32 @@ export default function WorkspacePage() {
             </div>
           )}
 
-          {/* Chatbot — full remaining height */}
-          <div className="flex-1 min-h-0">
-            <ChatWorkspace
-              reportId={reportId}
-              lang={lang}
-              onLangChange={setLang}
-              onFieldsConfirmed={handleFieldsSaved}
-              isPreview={reportId === 'preview-001'}
-              onPreviewFields={handlePreviewFields}
-              fieldValues={fieldValues}
-            />
+          {/* ── Content area ── */}
+          <div className="flex-1 min-h-0 flex flex-col">
+            {workspaceMode === 'chat' ? (
+              /* Rehberli mod — AI chatbot (133 questions, full logic intact) */
+              <ChatWorkspace
+                reportId={reportId}
+                lang={lang}
+                onLangChange={setLang}
+                onFieldsConfirmed={handleFieldsSaved}
+                isPreview={reportId === 'preview-001'}
+                onPreviewFields={handlePreviewFields}
+                fieldValues={fieldValues}
+              />
+            ) : (
+              /* Uzman mod — category cards */
+              <ExpertView
+                lang={lang}
+                fieldValues={fieldValues}
+                statuses={statuses}
+                onCategoryClick={handleCategoryClick}
+              />
+            )}
           </div>
         </div>
 
-        {/* ═══ PANEL DRAWER ═══════════════════════════════════════════════════ */}
+        {/* ═══ PANEL DRAWER ════════════════════════════════════════════════ */}
         <PanelDrawer
           open={panelOpen}
           onClose={() => setPanelOpen(false)}
@@ -605,6 +805,7 @@ export default function WorkspacePage() {
           onStartReport={handleStartReport}
           startingReport={startingReport}
           startReportErr={startReportErr}
+          openToCategory={openCategory}
         />
       </div>
     </>
