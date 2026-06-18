@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import OnboardingTour from '@/components/OnboardingTour';
+import ModeSelectionModal from '@/components/ModeSelectionModal';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import CommandPalette from '@/components/dashboard/CommandPalette';
@@ -18,9 +19,11 @@ import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
 import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
@@ -50,6 +53,15 @@ export default function DashboardPage() {
   const handleLogout = useCallback(() => {
     api.logout();
   }, []);
+
+  const handleModeSelect = useCallback((mode) => {
+    if (mode === 'guided') {
+      // Mark tour as seen so it doesn't overlay on workspace
+      try { localStorage.setItem('carbonless_tour_seen', 'true'); } catch {}
+      router.push('/dashboard/workspace');
+    }
+    // 'expert' → stay on dashboard, tour will show naturally
+  }, [router]);
 
   return (
     <ToastProvider>
@@ -197,6 +209,9 @@ export default function DashboardPage() {
         entries={entries}
         setShowAddForm={setShowAddForm}
       />
+
+      {/* Mode Selection — first-visit only, appears before onboarding tour */}
+      <ModeSelectionModal language={language} onComplete={handleModeSelect} />
 
       {/* Onboarding Tour */}
       <OnboardingTour language={language} />
