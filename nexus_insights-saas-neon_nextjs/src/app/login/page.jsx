@@ -34,7 +34,7 @@ function LoginContent() {
       const res = await api.login(email, password);
       if (res.ok) {
         markSessionActive();
-        router.push('/dashboard/workspace');
+        router.push('/dashboard');
       } else {
         const data = await res.json().catch(() => ({}));
         if (res.status >= 500) {
