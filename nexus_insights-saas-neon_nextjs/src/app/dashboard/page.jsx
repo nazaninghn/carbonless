@@ -19,14 +19,12 @@ import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
 import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
-import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
   const { t, language } = useLanguage();
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [modeSelectionDone, setModeSelectionDone] = useState(false);
+  const [modeSelected, setModeSelected] = useState(false);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -56,13 +54,18 @@ export default function DashboardPage() {
   }, []);
 
   const handleModeSelect = useCallback((mode) => {
-    setModeSelectionDone(true);
     if (mode === 'guided') {
       try { localStorage.setItem('carbonless_tour_seen', 'true'); } catch {}
-      router.push('/dashboard/workspace');
+      window.location.href = '/dashboard/workspace';
+    } else {
+      setModeSelected(true);
     }
-    // 'expert' → stay on dashboard, tour shows after this
-  }, [router]);
+  }, []);
+
+  // Show mode selection full-screen before rendering anything else
+  if (!modeSelected) {
+    return <ModeSelectionModal language={language} onComplete={handleModeSelect} />;
+  }
 
   return (
     <ToastProvider>
@@ -211,11 +214,8 @@ export default function DashboardPage() {
         setShowAddForm={setShowAddForm}
       />
 
-      {/* Mode Selection — first-visit only, blocks everything behind it */}
-      <ModeSelectionModal language={language} onComplete={handleModeSelect} />
-
-      {/* Onboarding Tour — only mounts after mode selection is done */}
-      {modeSelectionDone && <OnboardingTour language={language} />}
+      {/* Onboarding Tour */}
+      <OnboardingTour language={language} />
     </div>
     </ToastProvider>
   );
