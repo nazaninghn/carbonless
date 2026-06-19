@@ -107,9 +107,9 @@ function displayValue(f, lang) {
 
 export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = 'en' }) {
   const tr = lang === 'tr';
-  const [editing,      setEditing]      = useState(false);
+  const [editing,      setEditing]      = useState(true);
   const [editedValues, setEditedValues] = useState({});
-  const [showDetails,  setShowDetails]  = useState(false);
+  const [showDetails,  setShowDetails]  = useState(true);
   const [loading,      setLoading]      = useState(false);
   const [action,       setAction]       = useState('');
 
@@ -126,11 +126,12 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
     f.field_id?.includes('kgco2e') ||
     f.unit === 'kgCO₂e'
   );
-  // Fallback: calculate from consumption × ef if no emission field
-  const emKg = emissionField?.value
-    || suggestion.emKg
-    || 0;
-  const { value: emValue, unit: emUnit, tonnes } = fmtEmission(emKg);
+  // Use user-entered value only — start empty so the user types their own number
+  const emittedFieldId = emissionField?.field_id;
+  const userEmVal = emittedFieldId ? editedValues[emittedFieldId] : undefined;
+  const hasUserEmission = userEmVal !== undefined && userEmVal !== '';
+  const emKg = hasUserEmission ? Number(userEmVal) : null;
+  const { value: emValue, unit: emUnit, tonnes } = emKg !== null ? fmtEmission(emKg) : { value: '—', unit: '', tonnes: null };
 
   // Fields to show in detail view (exclude the total emission, show it in hero)
   const detailFields = fields.filter(f => !f.field_id?.includes('total_emission') && !f.field_id?.includes('kgco2e'));
@@ -208,12 +209,18 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 mb-1">
           {tr ? 'Hesaplanan Emisyon' : 'Calculated Emission'}
         </p>
-        <div className="flex items-baseline justify-center gap-1.5">
-          <span className="text-[32px] font-black text-[#302817] leading-none tabular-nums">
-            {emValue}
-          </span>
-          <span className={`text-[14px] font-bold ${meta.color}`}>{emUnit}</span>
-        </div>
+        {emKg === null ? (
+          <p className="text-[13px] text-[#302817]/30 py-1">
+            {tr ? 'Değerleri girin, toplam hesaplanacak' : 'Enter values to calculate total'}
+          </p>
+        ) : (
+          <div className="flex items-baseline justify-center gap-1.5">
+            <span className="text-[32px] font-black text-[#302817] leading-none tabular-nums">
+              {emValue}
+            </span>
+            <span className={`text-[14px] font-bold ${meta.color}`}>{emUnit}</span>
+          </div>
+        )}
         {tonnes && (
           <p className="text-[10px] text-[#302817]/35 mt-0.5">{tonnes}</p>
         )}
@@ -243,8 +250,9 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
                   {editing ? (
                     <input
                       type={typeof f.value === 'number' ? 'number' : 'text'}
-                      className="flex-1 min-w-0 text-right rounded-md border border-[#302817]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#302817] outline-none focus:border-[#B4BE6A]/60 focus:ring-1 focus:ring-[#B4BE6A]/20 max-w-[120px] ml-auto"
-                      value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : f.value}
+                      placeholder={typeof f.value === 'number' ? '0' : '…'}
+                      className="flex-1 min-w-0 text-right rounded-md border border-[#302817]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#302817] outline-none focus:border-[#B4BE6A]/60 focus:ring-1 focus:ring-[#B4BE6A]/20 max-w-[120px] ml-auto placeholder:text-[#302817]/20"
+                      value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : ''}
                       onChange={e => {
                         const raw = e.target.value;
                         const val = typeof f.value === 'number'

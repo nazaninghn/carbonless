@@ -263,6 +263,26 @@ const SCOPE_LABEL = {
   'K5': { tr: 'Kapsam 3 — İş Seyahati',           en: 'Scope 3 — Business Travel'         },
 };
 
+// When user clicks a quick-start chip, bot asks for their own data (no pre-filled numbers)
+const CHIP_PROMPTS = {
+  stationary: {
+    tr: "🔥 **Kapsam 1 — Sabit Yanma**\n\nHangi yakıtı kullandınız ve ne kadar tükettiniz?\n\n→ _Örnek: '15.000 m³ doğalgaz kullandık'_\n→ _Örnek: '5.000 litre dizel yaktık'_\n\nSiz ne kadar kullandınız?",
+    en: "🔥 **Scope 1 — Stationary Combustion**\n\nWhich fuel did you use and how much?\n\n→ _Example: 'We used 15,000 m³ natural gas'_\n→ _Example: 'We burned 5,000 litres of diesel'_\n\nWhat was your consumption?",
+  },
+  electricity: {
+    tr: "⚡ **Kapsam 2 — Elektrik Tüketimi**\n\nYıllık elektrik tüketiminiz ne kadar?\n\n→ _Örnek: '18.000 kWh tükettik'_\n→ _Örnek: 'Yıllık 150 MWh'_\n\nSizin tüketiminiz kaç kWh?",
+    en: "⚡ **Scope 2 — Electricity**\n\nHow much electricity did you consume this year?\n\n→ _Example: 'We consumed 18,000 kWh'_\n→ _Example: 'Annual usage: 150 MWh'_\n\nWhat was your consumption?",
+  },
+  travel: {
+    tr: "✈️ **Kapsam 3 — İş Seyahati**\n\nUçuş veya tren seyahatlerinizi paylaşın.\n\n→ _Örnek: '8.000 pkm kısa mesafe uçuş yaptık'_\n→ _Örnek: '3.000 km tren seyahati'_\n\nSizin toplam yolculuğunuz ne kadar?",
+    en: "✈️ **Scope 3 — Business Travel**\n\nShare your flight or rail travel data.\n\n→ _Example: 'We flew 8,000 pkm short-haul'_\n→ _Example: '3,000 km by rail'_\n\nWhat was your total travel distance?",
+  },
+  freight: {
+    tr: "🚛 **Kapsam 3 — Nakliye**\n\nYük taşıma verilerinizi paylaşın.\n\n→ _Örnek: '30 ton yük 800 km karayoluyla taşındı'_\n→ _Örnek: '2.000 tkm denizyolu'_\n\nSizin taşınan yük ve mesafe ne kadar?",
+    en: "🚛 **Scope 3 — Freight**\n\nShare your freight transport data.\n\n→ _Example: '30 tonnes shipped 800 km by road'_\n→ _Example: '2,000 tkm sea freight'_\n\nWhat was your cargo weight and distance?",
+  },
+};
+
 function fmtKg(kg) {
   return kg >= 1000
     ? `${(kg / 1000).toFixed(2)} tCO₂e`
@@ -932,17 +952,24 @@ export function ChatWorkspace({
     }
   }, [addMsg, tr, isPreview]);
 
+  // ── Chip click: ask for user's own data (no pre-filled numbers) ─────────────
+  const handleChipClick = useCallback((chip) => {
+    const L = activeLang === 'tr' ? 'tr' : 'en';
+    addMsg('user', `${chip.emoji} ${chip.title}`);
+    setTimeout(() => addMsg('assistant', CHIP_PROMPTS[chip.cat][L]), 380);
+  }, [activeLang, addMsg]);
+
   // ── Quick-start chips (free mode) ────────────────────────────────────────────
   const CHIPS = tr ? [
-    { emoji: '🔥', scope: 'Kapsam 1', title: 'Sabit Yanma',    example: '15.000 m³ doğalgaz',   text: '15.000 m³ doğalgaz kullandık' },
-    { emoji: '⚡', scope: 'Kapsam 2', title: 'Elektrik',        example: '18.000 kWh',            text: '18.000 kWh elektrik tükettik' },
-    { emoji: '✈️', scope: 'Kapsam 3', title: 'İş Seyahati',    example: '12.000 pkm kısa hat',  text: '12.000 pkm kısa mesafe iş seyahati uçuşu yaptık' },
-    { emoji: '🚛', scope: 'Kapsam 3', title: 'Nakliye',         example: '45 ton × 1.200 km',    text: '45 ton yük 1200 km karayoluyla taşındı' },
+    { emoji: '🔥', title: 'Sabit Yanma',   hint: 'Doğalgaz, dizel, LPG…', cat: 'stationary'  },
+    { emoji: '⚡', title: 'Elektrik',       hint: 'kWh veya MWh tutarı',   cat: 'electricity' },
+    { emoji: '✈️', title: 'İş Seyahati',  hint: 'Uçuş, tren, araç…',      cat: 'travel'      },
+    { emoji: '🚛', title: 'Nakliye',        hint: 'Ton × km veya tkm',      cat: 'freight'     },
   ] : [
-    { emoji: '🔥', scope: 'Scope 1', title: 'Stationary',       example: '15,000 m³ natural gas', text: 'We used 15,000 m³ natural gas' },
-    { emoji: '⚡', scope: 'Scope 2', title: 'Electricity',       example: '18,000 kWh',            text: 'We consumed 18,000 kWh electricity' },
-    { emoji: '✈️', scope: 'Scope 3', title: 'Business Travel',  example: '12,000 pkm flights',    text: 'We had 12,000 pkm short-haul business travel flights' },
-    { emoji: '🚛', scope: 'Scope 3', title: 'Freight',           example: '45 t × 1,200 km',      text: '45 tonnes of freight shipped 1,200 km by road' },
+    { emoji: '🔥', title: 'Stationary',     hint: 'Gas, diesel, LPG…',     cat: 'stationary'  },
+    { emoji: '⚡', title: 'Electricity',    hint: 'kWh or MWh amount',      cat: 'electricity' },
+    { emoji: '✈️', title: 'Business Travel',hint: 'Flights, rail, car…',   cat: 'travel'      },
+    { emoji: '🚛', title: 'Freight',         hint: 'Tonnes × km or tkm',    cat: 'freight'     },
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1144,12 +1171,12 @@ export function ChatWorkspace({
               {CHIPS.map((chip, i) => (
                 <button
                   key={i}
-                  onClick={() => send(chip.text)}
+                  onClick={() => handleChipClick(chip)}
                   className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
                 >
                   <span className="text-[16px] leading-none">{chip.emoji}</span>
                   <p className="text-[11px] font-bold text-[#302817] leading-tight mt-1.5">{chip.title}</p>
-                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5">{chip.example}</p>
+                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5">{chip.hint}</p>
                 </button>
               ))}
             </div>
