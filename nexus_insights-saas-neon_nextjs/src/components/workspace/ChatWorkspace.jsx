@@ -703,16 +703,16 @@ function RichText({ text }) {
 function ChatBubble({ msg }) {
   const isUser = msg.role === 'user';
   return (
-    <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+    <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isUser && (
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817]">
-          <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
+        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
+          <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
         </div>
       )}
-      <div className={`max-w-[86%] rounded-[18px] px-4 py-2.5 ${
+      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
         isUser
           ? 'rounded-tr-sm bg-[#302817] text-white text-[13px] leading-[1.7]'
-          : 'rounded-tl-sm border border-[#302817]/8 bg-white text-[#302817] shadow-sm'
+          : 'rounded-tl-sm border border-[#302817]/8 bg-white text-[#302817]'
       }`}>
         {isUser ? msg.content : <RichText text={msg.content} />}
       </div>
@@ -813,8 +813,8 @@ export function ChatWorkspace({
   const buildWelcome = useCallback((l) => {
     const isTr = l === 'tr';
     return isTr
-      ? '👋 Merhaba! 😊 Karbon emisyonlarınızı birlikte hesaplayalım.\n\nEnerji faturalarınızı, araç kullanımınızı veya uçuşlarınızı bana anlatın — gerisini ben halledeyim. İster adım adım rehberli, ister doğrudan sorarak ilerleyebilirsiniz.\n\nBir örnek seçin ya da istediğinizi yazın 👇'
-      : "👋 Hi there! 😊 Let's track your carbon footprint together.\n\nTell me about your energy bills, vehicle use, or business trips — I'll handle the math. You can go step by step or just ask me anything.\n\nPick an example below or type your own 👇";
+      ? 'Karbon envanterinizi birlikte oluşturalım.\n\nAşağıdan bir kategori seçin ya da tüketim verinizi doğrudan yazın.'
+      : "Let's build your carbon inventory.\n\nPick a category below or type your consumption data directly.";
   }, []);
 
   const [messages, setMessages] = useState(() => [
@@ -1231,15 +1231,15 @@ export function ChatWorkspace({
 
   // ── Quick-start chips (free mode) ────────────────────────────────────────────
   const CHIPS = tr ? [
-    { emoji: '🔥', title: 'Sabit Yanma',   hint: 'Doğalgaz, dizel, LPG…', cat: 'stationary'  },
-    { emoji: '⚡', title: 'Elektrik',       hint: 'kWh veya MWh tutarı',   cat: 'electricity' },
-    { emoji: '✈️', title: 'İş Seyahati',  hint: 'Uçuş, tren, araç…',      cat: 'travel'      },
-    { emoji: '🚛', title: 'Nakliye',        hint: 'Ton × km veya tkm',      cat: 'freight'     },
+    { emoji: '🔥', title: 'Sabit Yanma',  hint: 'Doğalgaz, dizel, LPG…', cat: 'stationary',  scope: 'Kapsam 1', dot: 'bg-orange-400' },
+    { emoji: '⚡', title: 'Elektrik',      hint: 'kWh veya MWh tutarı',   cat: 'electricity', scope: 'Kapsam 2', dot: 'bg-yellow-400' },
+    { emoji: '✈️', title: 'İş Seyahati', hint: 'Uçuş, tren, araç…',      cat: 'travel',      scope: 'Kapsam 3', dot: 'bg-violet-400' },
+    { emoji: '🚛', title: 'Nakliye',       hint: 'Ton × km veya tkm',      cat: 'freight',     scope: 'Kapsam 3', dot: 'bg-sky-400'    },
   ] : [
-    { emoji: '🔥', title: 'Stationary',     hint: 'Gas, diesel, LPG…',     cat: 'stationary'  },
-    { emoji: '⚡', title: 'Electricity',    hint: 'kWh or MWh amount',      cat: 'electricity' },
-    { emoji: '✈️', title: 'Business Travel',hint: 'Flights, rail, car…',   cat: 'travel'      },
-    { emoji: '🚛', title: 'Freight',         hint: 'Tonnes × km or tkm',    cat: 'freight'     },
+    { emoji: '🔥', title: 'Combustion',    hint: 'Gas, diesel, LPG…',     cat: 'stationary',  scope: 'Scope 1', dot: 'bg-orange-400' },
+    { emoji: '⚡', title: 'Electricity',   hint: 'kWh or MWh',            cat: 'electricity', scope: 'Scope 2', dot: 'bg-yellow-400' },
+    { emoji: '✈️', title: 'Business Travel',hint: 'Flights, rail, car…', cat: 'travel',      scope: 'Scope 3', dot: 'bg-violet-400' },
+    { emoji: '🚛', title: 'Freight',        hint: 'Tonnes × km',          cat: 'freight',     scope: 'Scope 3', dot: 'bg-sky-400'    },
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1247,69 +1247,60 @@ export function ChatWorkspace({
     <div className="flex flex-col h-full bg-[#FAFAF8]">
 
       {/* ── Header ── */}
-      <div className="shrink-0 flex items-center gap-2 px-4 py-2.5 border-b border-[#302817]/6 bg-white">
-        {/* Icon + title */}
-        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#302817] shrink-0">
-          <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
+      <div className="shrink-0 flex items-center gap-2.5 px-4 py-2 border-b border-[#302817]/8 bg-white">
+        {/* Icon */}
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#302817] shrink-0">
+          <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[11.5px] font-bold text-[#302817] truncate">
-            {tr ? 'CarbonIQ AI Asistanı' : 'CarbonIQ AI Assistant'}
-          </p>
-          <p className="text-[9px] text-[#302817]/30 truncate">
-            {tr ? 'Karbon asistanınız' : 'Your carbon assistant'}
-          </p>
+        {/* Title + online dot */}
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <p className="text-[12px] font-bold text-[#302817]">CarbonIQ</p>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#95A847] shrink-0 motion-safe:animate-pulse" />
         </div>
 
         {/* ── Mode toggle ── */}
-        <div className="flex items-center rounded-full border border-[#302817]/12 overflow-hidden shrink-0 text-[10px] font-bold">
+        <div className="flex items-center rounded-lg border border-[#302817]/10 overflow-hidden shrink-0 text-[10px] font-bold">
           <button
             onClick={() => mode === 'guided' ? switchToFreeMode() : null}
-            className={`px-2.5 py-[5px] transition-all ${
+            className={`px-2.5 py-1.5 transition-all ${
               mode === 'free'
                 ? 'bg-[#302817] text-white cursor-default'
-                : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
+                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
-            💬 {tr ? 'Sohbet' : 'Chat'}
+            {tr ? 'Sohbet' : 'Chat'}
           </button>
           <button
             onClick={() => mode === 'free' ? startGuidedMode() : null}
-            className={`px-2.5 py-[5px] transition-all ${
+            className={`px-2.5 py-1.5 transition-all ${
               mode === 'guided'
                 ? 'bg-[#302817] text-white cursor-default'
-                : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
+                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
-            📋 {tr ? 'Anket' : 'Questionnaire'}
+            {tr ? 'Anket' : 'Questions'}
           </button>
         </div>
 
         {/* ── TR / EN toggle ── */}
-        <div className="flex items-center rounded-full border border-[#302817]/12 overflow-hidden shrink-0 text-[10px] font-bold">
+        <div className="flex items-center rounded-lg border border-[#302817]/10 overflow-hidden shrink-0 text-[10px] font-bold">
           <button
             onClick={() => setActiveLang('tr')}
-            className={`px-2.5 py-[5px] transition-all ${
+            className={`px-2 py-1.5 transition-all ${
               activeLang === 'tr'
                 ? 'bg-[#302817] text-white'
-                : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
+                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
             TR
           </button>
           <button
             onClick={() => setActiveLang('en')}
-            className={`px-2.5 py-[5px] transition-all ${
+            className={`px-2 py-1.5 transition-all ${
               activeLang === 'en'
                 ? 'bg-[#302817] text-white'
-                : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
+                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
             EN
           </button>
         </div>
-
-        {/* Online indicator */}
-        <span className="shrink-0 hidden sm:flex items-center gap-1 text-[9.5px] font-bold text-[#75863B] bg-[#95A847]/10 border border-[#95A847]/20 px-2 py-1 rounded-full">
-          <span className="h-1.5 w-1.5 rounded-full bg-[#95A847] motion-safe:animate-pulse" />
-          {tr ? 'Çevrimiçi' : 'Online'}
-        </span>
       </div>
 
       {/* ── Guided progress bar ── */}
@@ -1433,39 +1424,37 @@ export function ChatWorkspace({
 
         {/* Quick-start chips — AFTER welcome message, before typing indicator */}
         {mode === 'free' && !messages.some(m => ['suggestion', 'confirmed', 'rejected'].includes(m.role)) && (
-          <div className="flex flex-col items-center gap-2.5 pt-1 pb-1">
-            <p className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
-              {tr ? 'Ne hakkında konuşalım?' : 'What would you like to track?'}
-            </p>
-            <div className="grid grid-cols-2 gap-1.5 w-full max-w-sm">
+          <div className="flex flex-col gap-2 pt-1 pb-1">
+            <div className="grid grid-cols-2 gap-1.5 w-full">
               {CHIPS.map((chip, i) => (
                 <button
                   key={i}
                   onClick={() => handleChipClick(chip)}
-                  className="rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-left shadow-sm transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 active:scale-[0.97]"
+                  className="rounded-xl border border-[#302817]/8 bg-white px-3 py-3 text-left transition hover:border-[#B4BE6A]/50 hover:bg-[#F0F3E0] active:scale-[0.97]"
                 >
-                  <span className="text-[16px] leading-none">{chip.emoji}</span>
-                  <p className="text-[11px] font-bold text-[#302817] leading-tight mt-1.5">{chip.title}</p>
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${chip.dot}`} />
+                    <span className="text-[9px] font-bold uppercase tracking-wide text-[#302817]/30">{chip.scope}</span>
+                  </div>
+                  <p className="text-[11.5px] font-bold text-[#302817] leading-tight">{chip.emoji} {chip.title}</p>
                   <p className="text-[9.5px] text-[#302817]/35 mt-0.5">{chip.hint}</p>
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-3 w-full max-w-sm">
+            <div className="flex items-center gap-3 w-full">
               <div className="flex-1 h-px bg-[#302817]/8" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/20">
-                {tr ? 'veya istediğinizi yazın' : 'or just type anything'}
-              </span>
+              <span className="text-[9px] text-[#302817]/25">{tr ? 'veya yazın' : 'or type anything'}</span>
               <div className="flex-1 h-px bg-[#302817]/8" />
             </div>
           </div>
         )}
 
         {sending && (
-          <div className="flex gap-2.5">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817]">
-              <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
+          <div className="flex gap-2">
+            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
+              <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
             </div>
-            <div className="rounded-[18px] rounded-tl-sm border border-[#302817]/8 bg-white px-4 py-3 shadow-sm">
+            <div className="rounded-2xl rounded-tl-sm border border-[#302817]/8 bg-white px-4 py-3">
               <TypingDots />
             </div>
           </div>
@@ -1645,8 +1634,8 @@ export function ChatWorkspace({
               <textarea
                 className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder={tr
-                  ? 'Mesaj yaz...'
-                  : 'Type a message...'}
+                  ? 'Örn: 12.000 kWh elektrik kullandık…'
+                  : 'e.g. We used 12,000 kWh electricity…'}
                 value={input}
                 rows={1}
                 disabled={sending}
