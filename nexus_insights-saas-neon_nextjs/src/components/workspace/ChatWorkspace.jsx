@@ -1279,7 +1279,7 @@ export function ChatWorkspace({
                 ? 'bg-[#302817] text-white cursor-default'
                 : 'text-[#302817]/45 hover:text-[#302817] hover:bg-[#302817]/5'
             }`}>
-            📋 {tr ? 'Rehber' : 'Guide'}
+            📋 {tr ? 'Anket' : 'Questionnaire'}
           </button>
         </div>
 
