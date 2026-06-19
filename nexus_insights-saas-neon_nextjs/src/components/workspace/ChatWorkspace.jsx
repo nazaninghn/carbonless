@@ -283,6 +283,199 @@ const CHIP_PROMPTS = {
   },
 };
 
+// ─── MULTI-TURN CONVERSATION FLOWS ────────────────────────────────────────────
+// Each chip click starts a guided conversation: bot asks step-by-step questions,
+// user types their own numbers, bot calculates only from user-provided data.
+
+const FUEL_NAME = {
+  natural_gas: { tr: 'Doğalgaz',  en: 'Natural gas' },
+  diesel:      { tr: 'Dizel',     en: 'Diesel'       },
+  lpg:         { tr: 'LPG',       en: 'LPG'          },
+  fuel_oil:    { tr: 'Fuel Oil',  en: 'Fuel oil'     },
+  coal:        { tr: 'Kömür',     en: 'Coal'         },
+};
+const FUEL_DEFAULT_UNIT = { natural_gas: 'm³', diesel: 'litre', lpg: 'litre', fuel_oil: 'litre', coal: 'kg' };
+
+const CONV_FLOWS = {
+  stationary: {
+    steps: [
+      {
+        id: 'fuel_type',
+        q: { tr: 'Hangi yakıtı kullanıyorsunuz?\n\n→ **Doğalgaz** · **Dizel** · **LPG** · **Fuel Oil** · **Kömür**', en: 'Which fuel do you use?\n\n→ **Natural gas** · **Diesel** · **LPG** · **Fuel oil** · **Coal**' },
+        parse(t) {
+          if (/doğal\s*gaz|natural.?gas|gaz\b/i.test(t)) return { fuel_type: 'natural_gas' };
+          if (/dizel|diesel|mazot\b/i.test(t)) return { fuel_type: 'diesel' };
+          if (/lpg|sıvılaştırılmış/i.test(t)) return { fuel_type: 'lpg' };
+          if (/fuel.?oil|kalorifer.?yakıt|mazut\b/i.test(t)) return { fuel_type: 'fuel_oil' };
+          if (/kömür|coal/i.test(t)) return { fuel_type: 'coal' };
+          return null;
+        },
+        nextQ(d, isTr) {
+          const name = FUEL_NAME[d.fuel_type][isTr ? 'tr' : 'en'];
+          const unit = FUEL_DEFAULT_UNIT[d.fuel_type];
+          return isTr
+            ? `${name} seçildi. 👍\n\nYıllık ne kadar kullandınız? Miktar ve birim yazın.\n\n→ _Örnek: "5.000 ${unit}"_`
+            : `${name} selected. 👍\n\nHow much did you use annually? Write quantity and unit.\n\n→ _Example: "5,000 ${unit}"_`;
+        },
+        failQ: { tr: 'Yakıt türünü anlayamadım. Lütfen şunlardan birini yazın:\n**Doğalgaz** · **Dizel** · **LPG** · **Fuel Oil** · **Kömür**', en: "I couldn't identify the fuel. Please write one of:\n**Natural gas** · **Diesel** · **LPG** · **Fuel oil** · **Coal**" },
+      },
+      {
+        id: 'amount',
+        parse(t, data) {
+          const nums = extractNums(t);
+          if (!nums.length) return null;
+          const unit = /\bton\b/i.test(t) ? 'ton' : /\bkg\b/i.test(t) ? 'kg'
+            : /litre|liter|\bl\b/i.test(t) ? 'litre'
+            : /\bgj\b/i.test(t) ? 'GJ' : FUEL_DEFAULT_UNIT[data.fuel_type];
+          return { amount: nums[0], unit };
+        },
+        failQ: { tr: 'Miktarı anlayamadım. Lütfen bir sayı ve birim yazın.\n_Örnek: "15.000 m³" veya "5.000 litre"_', en: "I couldn't find the quantity. Write a number with unit.\n_Example: \"15,000 m³\" or \"5,000 litres\"_" },
+      },
+    ],
+    finish(data) {
+      const ef = EF[data.fuel_type]?.[data.unit] ?? EF[data.fuel_type]?.['litre'] ?? EF[data.fuel_type]?.['m³'] ?? 2.02;
+      const emKg = Math.round(data.amount * ef);
+      return {
+        category: '3A', confidence: 0.95, emKg,
+        fields: [
+          { field_id: 'rf.3a.fuel_type',   value: data.fuel_type, label: 'Fuel type'   },
+          { field_id: 'rf.3a.consumption', value: data.amount,    unit: data.unit, label: 'Consumption' },
+          { field_id: 'rf.3a.unit',        value: data.unit,      label: 'Unit'         },
+        ],
+        _localFields: { 'rf.3a.fuel_type': data.fuel_type, 'rf.3a.consumption': data.amount, 'rf.3a.unit': data.unit },
+      };
+    },
+  },
+
+  electricity: {
+    steps: [
+      {
+        id: 'kwh',
+        q: { tr: 'Yıllık elektrik tüketiminiz ne kadar?\n\n→ kWh veya MWh olarak yazın.', en: 'How much electricity did you consume this year?\n\n→ Write in kWh or MWh.' },
+        parse(t) {
+          const nums = extractNums(t);
+          if (!nums.length) return null;
+          const isMwh = /mwh/i.test(t);
+          return { kwh: isMwh ? nums[0] * 1000 : nums[0] };
+        },
+        failQ: { tr: 'Bir sayı bulamadım. kWh veya MWh olarak yazın.\n_Örnek: "18.000 kWh"_', en: "I couldn't find a number. Write in kWh or MWh.\n_Example: \"18,000 kWh\"_" },
+      },
+    ],
+    finish(data) {
+      const ef = EF.electricity.kwh;
+      const emKg = Math.round(data.kwh * ef);
+      return {
+        category: '4A', confidence: 0.94, emKg,
+        fields: [
+          { field_id: 'rf.4a.consumption_kwh',      value: data.kwh, unit: 'kWh',        label: 'Consumption'    },
+          { field_id: 'rf.4a.emission_factor',       value: 0.439,    unit: 'kgCO₂e/kWh', label: 'Emission factor' },
+          { field_id: 'rf.4a.total_emission_kgco2e', value: emKg,     unit: 'kgCO₂e',     label: 'Total emission'  },
+        ],
+        _localFields: { 'rf.4a.consumption_kwh': data.kwh, 'rf.4a.emission_factor': 0.439 },
+      };
+    },
+  },
+
+  travel: {
+    steps: [
+      {
+        id: 'ttype',
+        q: { tr: 'Ne tür seyahat?\n\n→ **İç hat uçuş** · **Kısa mesafe uçuş** · **Uzun mesafe uçuş** · **Tren** · **Araç**', en: 'What type of travel?\n\n→ **Domestic flight** · **Short-haul** · **Long-haul** · **Train** · **Car**' },
+        parse(t) {
+          if (/iç\s*hat|domestic|yurt\s*içi/i.test(t)) return { ttype: 'flight_domestic',   fieldKey: 'rf.k5.air_domestic_pkm'   };
+          if (/uzun\s*mesafe|long.?haul|transatlant/i.test(t)) return { ttype: 'flight_long_haul', fieldKey: 'rf.k5.air_long_haul_pkm'  };
+          if (/kısa\s*mesafe|short.?haul/i.test(t)) return { ttype: 'flight_short_haul', fieldKey: 'rf.k5.air_short_haul_pkm' };
+          if (/uçuş|uçak|flight|hava/i.test(t))    return { ttype: 'flight_short_haul', fieldKey: 'rf.k5.air_short_haul_pkm' };
+          if (/tren|rail|demiryolu/i.test(t))       return { ttype: 'rail_travel',        fieldKey: 'rf.k5.rail_pkm'           };
+          if (/araç|araba|car\b/i.test(t))          return { ttype: 'car_rental',         fieldKey: 'rf.k5.car_km'             };
+          return null;
+        },
+        nextQ(d, isTr) {
+          const labels = { flight_domestic:{tr:'İç hat uçuş',en:'Domestic flight'}, flight_short_haul:{tr:'Kısa mesafe uçuş',en:'Short-haul'}, flight_long_haul:{tr:'Uzun mesafe uçuş',en:'Long-haul'}, rail_travel:{tr:'Tren',en:'Train'}, car_rental:{tr:'Araç',en:'Car'} };
+          const label = labels[d.ttype]?.[isTr ? 'tr' : 'en'] || d.ttype;
+          return isTr
+            ? `${label} seçildi. 👍\n\nToplam yolculuk mesafeniz ne kadar? (pkm veya km)\n\n→ _Örnek: "8.000 pkm"_`
+            : `${label} selected. 👍\n\nTotal travel distance? (in pkm or km)\n\n→ _Example: "8,000 pkm"_`;
+        },
+        failQ: { tr: 'Seyahat türünü anlayamadım.\n**İç hat** · **Kısa mesafe** · **Uzun mesafe** · **Tren** · **Araç**', en: "I couldn't identify the travel type.\n**Domestic** · **Short-haul** · **Long-haul** · **Train** · **Car**" },
+      },
+      {
+        id: 'distance',
+        parse(t) { const n = extractNums(t); return n.length ? { distance: n[0] } : null; },
+        failQ: { tr: 'Mesafeyi bulamadım. Bir sayı yazın.\n_Örnek: "8.000 pkm"_', en: "I couldn't find the distance. Write a number.\n_Example: \"8,000 pkm\"_" },
+      },
+    ],
+    finish(data) {
+      const ef = EF[data.ttype]?.pkm ?? EF[data.ttype]?.km ?? 0.153;
+      const emKg = Math.round(data.distance * ef);
+      return {
+        category: 'K5', confidence: 0.90, emKg,
+        fields: [
+          { field_id: data.fieldKey,                  value: data.distance, unit: 'pkm',     label: 'Distance'      },
+          { field_id: 'rf.k5.total_emission_kgco2e',  value: emKg,          unit: 'kgCO₂e',  label: 'Total emission' },
+        ],
+        _localFields: { [data.fieldKey]: data.distance, 'rf.k5.total_emission_kgco2e': emKg },
+      };
+    },
+  },
+
+  freight: {
+    steps: [
+      {
+        id: 'mode',
+        q: { tr: 'Hangi taşıma modu?\n\n→ **Karayolu** · **Denizyolu** · **Havayolu** · **Demiryolu**', en: 'Which transport mode?\n\n→ **Road** · **Sea** · **Air** · **Rail**' },
+        parse(t) {
+          if (/deniz|sea\b|gemi|vessel/i.test(t)) return { mode: 'sea_bulk'    };
+          if (/hava|air.?freight/i.test(t))       return { mode: 'air_freight'  };
+          if (/demir|rail.?freight/i.test(t))     return { mode: 'rail_freight' };
+          if (/hafif|lgv/i.test(t))               return { mode: 'road_lgv'    };
+          return { mode: 'road_hgv' }; // default: road
+        },
+        nextQ(d, isTr) {
+          const labels = { sea_bulk:{tr:'Denizyolu',en:'Sea'}, air_freight:{tr:'Havayolu',en:'Air'}, rail_freight:{tr:'Demiryolu',en:'Rail'}, road_lgv:{tr:'Hafif araç',en:'Light vehicle'}, road_hgv:{tr:'Karayolu',en:'Road'} };
+          const label = labels[d.mode]?.[isTr ? 'tr' : 'en'] || d.mode;
+          return isTr ? `${label} seçildi. 👍\n\nKaç ton yük taşındı?` : `${label} selected. 👍\n\nHow many tonnes of freight?`;
+        },
+        failQ: { tr: '', en: '' },
+      },
+      {
+        id: 'tonnes',
+        parse(t) { const n = extractNums(t); return n.length ? { tonnes: n[0] } : null; },
+        nextQ(d, isTr) {
+          return isTr
+            ? `${d.tonnes.toLocaleString()} ton. Taşıma mesafesi ne kadar? (km)`
+            : `${d.tonnes.toLocaleString()} tonnes. Transport distance? (in km)`;
+        },
+        failQ: { tr: 'Ton miktarını anlayamadım. Bir sayı yazın.\n_Örnek: "45 ton"_', en: "I couldn't find the tonnage. Write a number.\n_Example: \"45 tonnes\"_" },
+      },
+      {
+        id: 'km',
+        parse(t) { const n = extractNums(t); return n.length ? { km: n[0] } : null; },
+        failQ: { tr: 'Mesafeyi anlayamadım. km cinsinden yazın.\n_Örnek: "1.200 km"_', en: "I couldn't find the distance. Write in km.\n_Example: \"1,200 km\"_" },
+      },
+    ],
+    finish(data) {
+      const ef = EF[data.mode]?.tkm ?? 0.0614;
+      const tkm = data.tonnes * data.km;
+      const emKg = Math.round(tkm * ef);
+      return {
+        category: 'K4', confidence: 0.88, emKg,
+        fields: [{ field_id: 'rf.k4.total_emission_kgco2e', value: emKg, unit: 'kgCO₂e', label: 'Total emission' }],
+        _localFields: { 'rf.k4.total_emission_kgco2e': emKg },
+      };
+    },
+  },
+};
+
+function detectCategoryIntent(text) {
+  const t = text;
+  if (/doğal\s*gaz|diesel|dizel|lpg\b|kömür|coal|fuel.?oil|yakıt|combustion|yanma|sabit/i.test(t)) return 'stationary';
+  if (/elektrik|electricity|kwh|mwh\b|enerji|grid/i.test(t) && !/uçuş|flight/i.test(t)) return 'electricity';
+  if (/uçuş|uçak|flight|iş\s*seyahat|business.?travel|tren\b|rail\b|pkm/i.test(t) && !/nakliye|freight|kargo/i.test(t)) return 'travel';
+  if (/nakliye|freight|kargo|cargo|taşıma|kamyon|tır\b|lorry|truck|tkm|ton.?km/i.test(t)) return 'freight';
+  return null;
+}
+
 function fmtKg(kg) {
   return kg >= 1000
     ? `${(kg / 1000).toFixed(2)} tCO₂e`
@@ -595,6 +788,10 @@ export function ChatWorkspace({
   // ── Mode: 'free' | 'guided' ──────────────────────────────────────────────────
   const [mode, setMode] = useState('free');
 
+  // ── Emission conversation state (multi-turn guided data collection) ───────────
+  // { cat: 'stationary'|'electricity'|'travel'|'freight', step: number, data: {} }
+  const [emConv, setEmConv] = useState(null);
+
   // ── Guided questionnaire state ───────────────────────────────────────────────
   const [currentQId,     setCurrentQId]     = useState(null);
   const [guidedAnswers,  setGuidedAnswers]  = useState({});
@@ -815,7 +1012,7 @@ export function ChatWorkspace({
     );
   }, [activeLang, addMsg]);
 
-  // ── Free mode send (overrideText lets chips send directly without typing) ────
+  // ── Free mode send ────────────────────────────────────────────────────────────
   const send = useCallback(async (overrideText) => {
     const text = overrideText !== undefined ? String(overrideText).trim() : input.trim();
     if (!text || sending) return;
@@ -826,6 +1023,13 @@ export function ChatWorkspace({
 
     try {
       if (isPreview) {
+        // ── If in multi-turn conversation, let the conversation handler process ──
+        if (emConv) {
+          await new Promise(r => setTimeout(r, 300 + Math.random() * 200));
+          handleConvAnswer(text);
+          return;
+        }
+
         await new Promise(r => setTimeout(r, 650 + Math.random() * 550));
         const results = extractEmissions(text);
 
@@ -842,18 +1046,25 @@ export function ChatWorkspace({
             }]);
           }
         } else {
-          // ── No emission data: route by intent (ai-brain intelligence) ─────────
-          const intent = detectIntent(text);
-          let smartReply;
-          if (intent === 'STATUS') {
-            smartReply = buildStatusReport(fieldValues, activeLang);
-          } else if (intent === 'GUIDANCE') {
-            smartReply = buildOnboarding(activeLang);
+          // ── No emission data: try to detect category intent → start conversation
+          const cat = detectCategoryIntent(text);
+          if (cat) {
+            const L = activeLang === 'tr' ? 'tr' : 'en';
+            setEmConv({ cat, step: 0, data: {} });
+            addMsg('assistant', CONV_FLOWS[cat].steps[0].q[L]);
           } else {
-            // QUESTION / BENCHMARK / UNKNOWN — search KB first, then fallback
-            smartReply = searchKB(text, activeLang) || buildFallback(activeLang);
+            // ── Generic intent routing (status / guidance / KB) ────────────────
+            const intent = detectIntent(text);
+            let smartReply;
+            if (intent === 'STATUS') {
+              smartReply = buildStatusReport(fieldValues, activeLang);
+            } else if (intent === 'GUIDANCE') {
+              smartReply = buildOnboarding(activeLang);
+            } else {
+              smartReply = searchKB(text, activeLang) || buildFallback(activeLang);
+            }
+            addMsg('assistant', smartReply);
           }
-          addMsg('assistant', smartReply);
         }
       } else {
         if (!reportId) return;
@@ -897,7 +1108,7 @@ export function ChatWorkspace({
     } finally {
       setSending(false);
     }
-  }, [input, sending, reportId, addMsg, tr, isPreview, fieldValues, activeLang]);
+  }, [input, sending, reportId, addMsg, tr, isPreview, fieldValues, activeLang, emConv, handleConvAnswer]);
 
   // ── Suggestion confirm ───────────────────────────────────────────────────────
   const handleConfirm = useCallback(async (suggestionId, editedFields) => {
@@ -952,11 +1163,70 @@ export function ChatWorkspace({
     }
   }, [addMsg, tr, isPreview]);
 
-  // ── Chip click: ask for user's own data (no pre-filled numbers) ─────────────
+  // ── Conversation answer handler (preview mode multi-turn) ───────────────────
+  const handleConvAnswer = useCallback((text) => {
+    if (!emConv) return false;
+    const { cat, step, data } = emConv;
+    const L = activeLang === 'tr' ? 'tr' : 'en';
+    const isTr = L === 'tr';
+    const flow = CONV_FLOWS[cat];
+    if (!flow) { setEmConv(null); return false; }
+
+    const currentStep = flow.steps[step];
+    if (!currentStep) { setEmConv(null); return false; }
+
+    const parsed = currentStep.parse(text, data);
+
+    if (!parsed) {
+      const failMsg = currentStep.failQ[L] || (isTr ? 'Anlayamadım, tekrar deneyin.' : "I didn't understand, please try again.");
+      if (failMsg) setTimeout(() => addMsg('assistant', failMsg), 300);
+      return true;
+    }
+
+    const newData = { ...data, ...parsed };
+    const isLastStep = step >= flow.steps.length - 1;
+
+    if (isLastStep) {
+      setEmConv(null);
+      try {
+        const result = flow.finish(newData);
+        const catLabel = SCOPE_LABEL[result.category]?.[L] || result.category;
+        const emText = fmtKg(result.emKg);
+        const replyText = isTr
+          ? `✅ **${catLabel}** hesaplandı!\n\nSizin verilerinizden toplam: **${emText}**\n\nAşağıdaki kartı kontrol edip kaydedin:`
+          : `✅ **${catLabel}** calculated!\n\nFrom your data: **${emText}**\n\nCheck the card below and save:`;
+        setTimeout(() => {
+          addMsg('assistant', replyText);
+          const suggestion = {
+            id: `conv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            category: result.category,
+            confidence: result.confidence,
+            fields: result.fields,
+            emKg: result.emKg,
+            _localFields: result._localFields,
+          };
+          setMessages(prev => [...prev, { id: `s-${suggestion.id}`, role: 'suggestion', suggestion }]);
+        }, 350);
+      } catch {
+        addMsg('assistant', isTr ? 'Hesaplama hatası. Tekrar deneyin.' : 'Calculation error. Please try again.');
+      }
+    } else {
+      setEmConv({ cat, step: step + 1, data: newData });
+      const nextMsg = currentStep.nextQ ? currentStep.nextQ(parsed, isTr) : flow.steps[step + 1].q?.[L] || '';
+      setTimeout(() => addMsg('assistant', nextMsg), 350);
+    }
+    return true;
+  }, [emConv, activeLang, addMsg, setMessages]);
+
+  // ── Chip click: start conversation (no pre-filled numbers) ───────────────────
   const handleChipClick = useCallback((chip) => {
     const L = activeLang === 'tr' ? 'tr' : 'en';
     addMsg('user', `${chip.emoji} ${chip.title}`);
-    setTimeout(() => addMsg('assistant', CHIP_PROMPTS[chip.cat][L]), 380);
+    // Start conversation state so subsequent messages are handled step-by-step
+    setEmConv({ cat: chip.cat, step: 0, data: {} });
+    // First question comes from the flow (not CHIP_PROMPTS) for consistency
+    const firstQ = CONV_FLOWS[chip.cat]?.steps[0]?.q?.[L] || CHIP_PROMPTS[chip.cat][L];
+    setTimeout(() => addMsg('assistant', firstQ), 380);
   }, [activeLang, addMsg]);
 
   // ── Quick-start chips (free mode) ────────────────────────────────────────────
