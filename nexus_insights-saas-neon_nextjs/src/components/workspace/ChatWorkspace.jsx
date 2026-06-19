@@ -1108,7 +1108,7 @@ export function ChatWorkspace({
     } finally {
       setSending(false);
     }
-  }, [input, sending, reportId, addMsg, tr, isPreview, fieldValues, activeLang, emConv, handleConvAnswer]);
+  }, [input, sending, reportId, addMsg, tr, isPreview, fieldValues, activeLang, emConv]);
 
   // ── Suggestion confirm ───────────────────────────────────────────────────────
   const handleConfirm = useCallback(async (suggestionId, editedFields) => {
