@@ -344,21 +344,22 @@ function TypingDots() {
 // the latest message or sending state changes at the FreeChatTab level.
 const Bubble = memo(function Bubble({ role, content }) {
   const isUser = role === 'user';
-  return (
-    <div className={`flex gap-2.5 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-      {!isUser && (
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
-          <Bot className="h-4 w-4" />
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[82%] sm:max-w-[72%] rounded-[20px] rounded-tr-sm bg-[#302817] px-4 py-3 text-[13.5px] leading-[1.65] text-white">
+          {content}
         </div>
-      )}
-      <div
-        className={`max-w-[82%] rounded-[20px] px-4 py-3 text-[13.5px] leading-[1.65] sm:max-w-[72%] ${
-          isUser
-            ? 'rounded-tr-sm bg-[#302817] text-white'
-            : 'rounded-tl-sm border border-[#302817]/6 bg-white text-[#302817] shadow-[0_2px_12px_rgba(48,40,23,0.05)]'
-        }`}
-      >
-        {isUser ? content : <Markdown text={content} />}
+      </div>
+    );
+  }
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
+        <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+      </div>
+      <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#302817]">
+        <Markdown text={content} />
       </div>
     </div>
   );
@@ -402,40 +403,85 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Free-chat: Empty state
+// Free-chat: Welcome hero (shown when no session is selected)
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyState({ onNew, tr }) {
-  const prompts = tr
-    ? ['Scope 1, 2, 3 emisyonları nasıl hesaplarım?', 'ISO 14064-1 sınır belirleme nasıl yapılır?', 'Karbon azaltma hedefi nasıl oluştururum?', 'Emisyon faktörü nedir?']
-    : ['How do I calculate Scope 1, 2 & 3 emissions?', 'What is the ISO 14064-1 boundary approach?', 'How do I set a science-based reduction target?', 'What are common emission factors?'];
+  const cards = tr ? [
+    { icon: '📊', title: 'Emisyon hesaplama',    q: 'Scope 1, 2 ve 3 emisyonları nasıl hesaplanır?' },
+    { icon: '🎯', title: 'Hedef belirleme',       q: 'Bilimsel tabanlı karbon azaltma hedefi nasıl kurulur?' },
+    { icon: '📋', title: 'ISO 14064-1',           q: 'ISO 14064-1\'e göre organizasyon sınırı nasıl belirlenir?' },
+    { icon: '🌱', title: 'Azaltma stratejisi',    q: 'Şirketim için en etkili emisyon azaltma stratejileri neler?' },
+  ] : [
+    { icon: '📊', title: 'Calculate emissions',  q: 'How do I calculate Scope 1, 2 and 3 emissions?' },
+    { icon: '🎯', title: 'Set targets',           q: 'How do I set a science-based carbon reduction target?' },
+    { icon: '📋', title: 'ISO 14064-1',           q: 'How do I determine organizational boundaries per ISO 14064-1?' },
+    { icon: '🌱', title: 'Reduction strategy',   q: 'What are the most effective emission reduction strategies for my company?' },
+  ];
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-10 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#95A847]/15 to-[#B4BE6A]/10">
-        <Sparkles className="h-7 w-7 text-[#95A847]" />
-      </div>
-      <div>
-        <h2 className="text-lg font-bold tracking-tight text-[#302817]">
-          {tr ? 'CarbonIQ Asistanı' : 'CarbonIQ Assistant'}
-        </h2>
-        <p className="mt-1.5 text-sm text-[#302817]/50">
-          {tr
-            ? 'ISO 14064-1 ve karbon muhasebesi konusunda uzman AI asistanı.'
-            : 'Expert AI for carbon accounting & ISO 14064-1 reporting.'}
+    <div className="flex flex-1 flex-col items-center justify-center gap-7 px-6 py-6 text-center">
+      {/* Hero logo */}
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#302817]">
+            <Sparkles className="h-6 w-6 text-[#B4BE6A]" />
+          </div>
+          <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-[#95A847] border-2 border-white" />
+        </div>
+        <div>
+          <p className="text-[26px] font-black text-[#302817] tracking-tight">CarbonIQ</p>
+          <p className="text-[11px] text-[#302817]/35 mt-0.5 font-semibold uppercase tracking-widest">
+            ISO 14064-1 · GHG Protocol
+          </p>
+        </div>
+        <p className="text-[15px] font-semibold text-[#302817]/65 max-w-xs">
+          {tr ? 'Bugün size nasıl yardımcı olabilirim?' : 'What can I help you with today?'}
         </p>
       </div>
-      <div className="grid w-full max-w-sm gap-2">
-        {prompts.map(p => (
+      {/* Prompt cards 2×2 */}
+      <div className="grid grid-cols-2 gap-2.5 w-full max-w-md">
+        {cards.map((c, i) => (
           <button
-            key={p}
-            onClick={() => onNew(p)}
-            className="rounded-2xl border border-[#302817]/8 bg-white px-4 py-3 text-left text-xs font-semibold text-[#302817]/65 shadow-sm transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/5 hover:text-[#302817]"
+            key={i}
+            onClick={() => onNew(c.q)}
+            className="rounded-2xl border border-[#302817]/8 bg-white px-3.5 py-3.5 text-left transition hover:border-[#B4BE6A]/50 hover:bg-[#F0F3E0] active:scale-[0.97]"
           >
-            {p}
+            <span className="text-xl leading-none">{c.icon}</span>
+            <p className="mt-2 text-[12px] font-bold text-[#302817] leading-tight">{c.title}</p>
+            <p className="text-[10px] text-[#302817]/38 mt-1 leading-snug">{c.q}</p>
           </button>
         ))}
       </div>
+      <p className="text-[10px] text-[#302817]/25">
+        {tr ? 'veya aşağıya yazın' : 'or type anything below'}
+      </p>
     </div>
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Free-chat: Date-group sessions for sidebar
+// ─────────────────────────────────────────────────────────────────────────────
+function groupSessionsByDate(sessions, tr) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yest  = new Date(today); yest.setDate(yest.getDate() - 1);
+  const week  = new Date(today); week.setDate(week.getDate() - 7);
+  const groups = [
+    { key: 'today',     label: tr ? 'Bugün'       : 'Today',       items: [] },
+    { key: 'yesterday', label: tr ? 'Dün'          : 'Yesterday',   items: [] },
+    { key: 'week',      label: tr ? 'Son 7 gün'   : 'Last 7 days', items: [] },
+    { key: 'older',     label: tr ? 'Daha önce'   : 'Older',       items: [] },
+  ];
+  sessions.forEach(s => {
+    if (!s.updated_at) { groups[3].items.push(s); return; }
+    const d = new Date(s.updated_at);
+    const day = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (day >= today)  groups[0].items.push(s);
+    else if (day >= yest) groups[1].items.push(s);
+    else if (d   >= week) groups[2].items.push(s);
+    else                  groups[3].items.push(s);
+  });
+  return groups.filter(g => g.items.length > 0);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2873,13 +2919,19 @@ function FreeChatTab({ language, summary, entries, targets }) {
       if (!isMountedRef.current) return;
       setSessions(prev => [session, ...prev]);
       setActiveId(session.id);
-      setMessages([]);
       setError('');
       if (initialPrompt) {
+        setMessages([]);
         // Tiny delay lets React flush the state above (activeId, messages) before
         // sendMessage reads them. sendMessage is stable (no input dep), so it is
         // safe to omit from this dep array.
         setTimeout(() => { if (isMountedRef.current) sendMessage(initialPrompt, session.id); }, CHIP_AUTO_SUBMIT_DELAY_MS);
+      } else {
+        // Inject a local welcome greeting — shown immediately, not persisted to API.
+        const welcome = trRef.current
+          ? `Merhaba! Ben **CarbonIQ** — karbon muhasebesi ve sera gazı raporlaması konusunda uzman AI asistanınızım.\n\nISO 14064-1 uyumlu envanter oluşturma, Kapsam 1/2/3 hesaplamaları, emisyon faktörü seçimi ve azaltma hedefleri gibi konularda size yardımcı olabilirim.\n\nBugün nasıl bir konuda destek almak istersiniz?`
+          : `Hello! I'm **CarbonIQ** — your AI assistant specialized in carbon accounting and greenhouse gas reporting.\n\nI can help with ISO 14064-1 inventory creation, Scope 1/2/3 calculations, emission factor selection, reduction targets, and more.\n\nWhat would you like to work on today?`;
+        setMessages([{ id: `welcome-${session.id}`, role: 'assistant', content: welcome }]);
       }
     } catch {
       if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
@@ -2962,25 +3014,32 @@ function FreeChatTab({ language, summary, entries, targets }) {
               : <Plus className="h-3.5 w-3.5" />}
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
+        <div className="flex-1 overflow-y-auto p-2">
           {loadingSessions ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-4 w-4 animate-spin text-[#302817]/30" />
             </div>
           ) : sessions.length === 0 ? (
-            <p className="px-3 py-4 text-center text-[11px] text-[#302817]/35">
-              {tr ? 'Henüz sohbet yok' : 'No chats yet'}
+            <p className="px-3 py-6 text-center text-[11px] text-[#302817]/30 leading-relaxed">
+              {tr ? 'Henüz sohbet yok.\nAşağıdan yeni sohbet başlatın.' : 'No chats yet.\nStart a new conversation below.'}
             </p>
           ) : (
-            sessions.map(s => (
-              <SessionItem
-                key={s.id}
-                session={s}
-                active={s.id === activeId}
-                onSelect={setActiveId}
-                onDelete={deleteSession}
-                tr={tr}
-              />
+            groupSessionsByDate(sessions, tr).map(group => (
+              <div key={group.key} className="mb-2">
+                <p className="px-3 pb-1 pt-2 text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
+                  {group.label}
+                </p>
+                {group.items.map(s => (
+                  <SessionItem
+                    key={s.id}
+                    session={s}
+                    active={s.id === activeId}
+                    onSelect={setActiveId}
+                    onDelete={deleteSession}
+                    tr={tr}
+                  />
+                ))}
+              </div>
             ))
           )}
         </div>
@@ -3059,11 +3118,16 @@ function FreeChatTab({ language, summary, entries, targets }) {
               <Loader2 className="h-6 w-6 animate-spin text-[#302817]/30" />
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3">
-              <Bot className="h-10 w-10 text-[#302817]/15" />
-              <p className="text-sm text-[#302817]/40">
-                {tr ? 'Sorunuzu yazın...' : 'Ask your first question…'}
-              </p>
+            <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#302817]">
+                <Sparkles className="h-5 w-5 text-[#B4BE6A]" />
+              </div>
+              <div>
+                <p className="text-[14px] font-bold text-[#302817]/60">CarbonIQ</p>
+                <p className="text-[12px] text-[#302817]/35 mt-1">
+                  {tr ? 'Sorunuzu yazın, yanıtlayayım.' : 'Type your question below.'}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
@@ -3071,11 +3135,11 @@ function FreeChatTab({ language, summary, entries, targets }) {
                 <Bubble key={msg.id} role={msg.role} content={msg.content} />
               ))}
               {sending && (
-                <div className="flex gap-2.5">
-                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
-                    <Bot className="h-4 w-4" />
+                <div className="flex gap-3">
+                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
+                    <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
                   </div>
-                  <div className="rounded-[20px] rounded-tl-sm border border-[#302817]/6 bg-white px-4 py-3 shadow-[0_2px_12px_rgba(48,40,23,0.05)]">
+                  <div className="py-1">
                     <TypingDots />
                   </div>
                 </div>
