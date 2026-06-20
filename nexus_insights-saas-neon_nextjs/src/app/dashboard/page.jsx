@@ -19,6 +19,64 @@ import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
 
+// ── Preview data bridge ────────────────────────────────────────────────────────
+// When the user has entered data via the chatbot (workspace preview mode) but has
+// no real backend report yet, we compute scope totals from localStorage so the
+// main dashboard reflects chatbot-entered data instead of showing blank.
+const _WS_EF = {
+  natural_gas: { 'm³':2.02, m3:2.02, kWh:0.183, GJ:50.77, MCF:57.17 },
+  diesel:      { litre:2.54, GJ:68.08 },
+  lpg:         { litre:1.51, kg:2.94, GJ:59.65 },
+  fuel_oil:    { litre:2.52, kg:2.96, GJ:74.07 },
+  coal:        { kg:2.42, tonne:2420, GJ:88.34 },
+};
+
+function _computeLocalSummary(v) {
+  const efS1 = _WS_EF[v['rf.3a.fuel_type']]?.[v['rf.3a.unit']];
+  const s1Kg = efS1 ? (parseFloat(v['rf.3a.consumption']) || 0) * efS1 : 0;
+  const kWh  = parseFloat(v['rf.4a.consumption_kwh']);
+  const ef2  = parseFloat(v['rf.4a.emission_factor']);
+  const s2Kg = !isNaN(kWh) && !isNaN(ef2) ? kWh * ef2 : 0;
+  const k4Kg = parseFloat(v['rf.k4.total_emission_kgco2e']) || 0;
+  const k5Kg = parseFloat(v['rf.k5.total_emission_kgco2e']) || 0;
+  const s3Kg = k4Kg + k5Kg;
+  const safe = x => (isNaN(x) ? 0 : x);
+  const totalKg = safe(s1Kg) + safe(s2Kg) + safe(s3Kg);
+  if (totalKg <= 0) return null;
+  return {
+    total_tonne:   totalKg / 1000,
+    scope1_tonne:  safe(s1Kg) / 1000,
+    scope2_tonne:  safe(s2Kg) / 1000,
+    scope3_tonne:  safe(s3Kg) / 1000,
+    monthly: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total_kg: 0 })),
+    _isLocalPreview: true,
+  };
+}
+
+function PreviewBanner({ tr }) {
+  return (
+    <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+      <span className="text-base shrink-0">👁</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12px] font-bold text-amber-800">
+          {tr ? 'Önizleme verisi gösteriliyor' : 'Showing chatbot preview data'}
+        </p>
+        <p className="text-[10.5px] text-amber-600/80 mt-0.5">
+          {tr
+            ? 'Chatbot\'ta girdiğiniz veriler — sunucuya henüz kaydedilmedi.'
+            : 'Data you entered in the chatbot — not yet saved to the server.'}
+        </p>
+      </div>
+      <a
+        href="/dashboard/workspace"
+        className="shrink-0 rounded-lg bg-[#302817] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#527A1A] transition whitespace-nowrap"
+      >
+        {tr ? 'Çalışma Alanı →' : 'Workspace →'}
+      </a>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { t, language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -34,6 +92,20 @@ export default function DashboardPage() {
 
   // loading = true only on first render; subsequent fetches use `refreshing`
   // so the page never flashes/flickers on refresh
+
+  // Sync chatbot preview data → dashboard when no real backend data exists
+  const [localSummary, setLocalSummary] = useState(null);
+  useEffect(() => {
+    if (loading) return;
+    if (summary) { setLocalSummary(null); return; }
+    try {
+      const raw = localStorage.getItem('ciq_preview_fields');
+      if (!raw) return;
+      setLocalSummary(_computeLocalSummary(JSON.parse(raw)));
+    } catch {}
+  }, [loading, summary]);
+  const effectiveSummary = summary || localSummary;
+  const isPreviewMode = !summary && !!localSummary;
 
   // Add Entry form (showAddForm shared with DashboardOverview)
   const [showAddForm, setShowAddForm] = useState(false);
@@ -92,10 +164,11 @@ export default function DashboardPage() {
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
             <ErrorBoundary language={language}>
+              {isPreviewMode && <PreviewBanner tr={language === 'tr'} />}
               <DashboardOverview
                 language={language}
                 selectedYear={selectedYear}
-                summary={summary}
+                summary={effectiveSummary}
                 entries={entries}
                 targets={targets}
                 facilityList={facilityList}
@@ -139,7 +212,7 @@ export default function DashboardPage() {
               <ReductionTargetsTab
                 language={language}
                 targets={targets}
-                summary={summary}
+                summary={effectiveSummary}
                 fetchData={fetchData}
               />
             </ErrorBoundary>
@@ -148,7 +221,7 @@ export default function DashboardPage() {
           {/* ===== REPORTING TAB ===== */}
           {activeTab === 'reporting' && (
             <ErrorBoundary language={language}>
-              <ReportingTab language={language} selectedYear={selectedYear} summary={summary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
+              <ReportingTab language={language} selectedYear={selectedYear} summary={effectiveSummary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
             </ErrorBoundary>
           )}
 
@@ -164,7 +237,7 @@ export default function DashboardPage() {
             <ErrorBoundary language={language}>
               <BenchmarkTab
                 language={language}
-                summary={summary}
+                summary={effectiveSummary}
                 questionnaireProfile={questionnaireProfile}
               />
             </ErrorBoundary>
@@ -179,7 +252,7 @@ export default function DashboardPage() {
                 <CarbonAIPage
                   language={language}
                   isVisible={activeTab === 'ai_carbon'}
-                  summary={summary}
+                  summary={effectiveSummary}
                   entries={entries}
                   targets={targets}
                 />

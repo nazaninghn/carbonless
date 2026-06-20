@@ -108,10 +108,20 @@ function displayValue(f, lang) {
 export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = 'en' }) {
   const tr = lang === 'tr';
   const [editing,      setEditing]      = useState(true);
-  const [editedValues, setEditedValues] = useState({});
+  // Conv-flow and fallback suggestions already have values from the conversation — pre-fill them.
+  // AI-backend suggestions start empty so the user reviews before saving.
+  const [editedValues, setEditedValues] = useState(() => {
+    if (!suggestion?._localFields) return {};
+    const init = {};
+    (suggestion.fields || []).forEach(f => {
+      if (f.value !== undefined && f.value !== null) init[f.field_id] = f.value;
+    });
+    return init;
+  });
   const [showDetails,  setShowDetails]  = useState(true);
   const [loading,      setLoading]      = useState(false);
   const [action,       setAction]       = useState('');
+  const isConvFlow = !!suggestion?._localFields;
 
   if (!suggestion) return null;
 
@@ -126,11 +136,11 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
     f.field_id?.includes('kgco2e') ||
     f.unit === 'kgCO₂e'
   );
-  // Use user-entered value only — start empty so the user types their own number
+  // Prefer user-edited value; fall back to AI/conv-flow computed emKg
   const emittedFieldId = emissionField?.field_id;
   const userEmVal = emittedFieldId ? editedValues[emittedFieldId] : undefined;
   const hasUserEmission = userEmVal !== undefined && userEmVal !== '';
-  const emKg = hasUserEmission ? Number(userEmVal) : null;
+  const emKg = hasUserEmission ? Number(userEmVal) : (suggestion.emKg ?? null);
   const { value: emValue, unit: emUnit, tonnes } = emKg !== null ? fmtEmission(emKg) : { value: '—', unit: '', tonnes: null };
 
   // Fields to show in detail view (exclude the total emission, show it in hero)
@@ -185,7 +195,9 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
             {meta.label[lang] || meta.label.en}
           </p>
           <p className="text-[9.5px] text-[#302817]/35">
-            {tr ? 'AI tarafından çıkarıldı' : 'Extracted by AI'}
+            {isConvFlow
+              ? (tr ? 'Sohbetten toplanan veri' : 'Collected from conversation')
+              : (tr ? 'AI tarafından çıkarıldı' : 'Extracted by AI')}
             {' · '}
             <span className={confidence >= 0.85 ? 'text-[#527A1A] font-semibold' : confidence >= 0.65 ? 'text-amber-600 font-semibold' : 'text-red-500 font-semibold'}>
               {Math.round(confidence * 100)}% {tr ? 'güven' : 'confidence'}

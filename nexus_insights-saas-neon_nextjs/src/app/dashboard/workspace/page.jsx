@@ -468,7 +468,21 @@ export default function WorkspacePage() {
 
   useEffect(() => { loadFields(); }, [loadFields]);
 
-  const handleFieldsSaved   = useCallback(async () => { await loadFields(); }, [loadFields]);
+  const handleFieldsSaved = useCallback(async () => {
+    if (reportId === 'preview-001') {
+      // In preview mode loadFields() is a no-op; reload from localStorage instead
+      try {
+        const raw = localStorage.getItem('ciq_preview_fields');
+        if (raw) {
+          const vals = JSON.parse(raw);
+          setFieldValues(vals);
+          const s = {}; CATEGORIES.forEach(c => { s[c.id] = getCategoryStatus(c.id, vals); }); setStatuses(s);
+        }
+      } catch {}
+      return;
+    }
+    await loadFields();
+  }, [loadFields, reportId]);
   const handlePreviewFields = useCallback((fields) => {
     setFieldValues(prev => {
       const u = { ...prev };
