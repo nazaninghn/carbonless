@@ -702,19 +702,22 @@ function RichText({ text }) {
 
 function ChatBubble({ msg }) {
   const isUser = msg.role === 'user';
-  return (
-    <div className={`flex gap-2 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-      {!isUser && (
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
-          <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#302817] px-4 py-2.5 text-white text-[13px] leading-[1.7]">
+          {msg.content}
         </div>
-      )}
-      <div className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 ${
-        isUser
-          ? 'rounded-tr-sm bg-[#302817] text-white text-[13px] leading-[1.7]'
-          : 'rounded-tl-sm border border-[#302817]/8 bg-white text-[#302817]'
-      }`}>
-        {isUser ? msg.content : <RichText text={msg.content} />}
+      </div>
+    );
+  }
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#302817]">
+        <Sparkles className="h-2.5 w-2.5 text-[#B4BE6A]" />
+      </div>
+      <div className="flex-1 min-w-0 text-[#302817]">
+        <RichText text={msg.content} />
       </div>
     </div>
   );
@@ -1229,6 +1232,33 @@ export function ChatWorkspace({
     setTimeout(() => addMsg('assistant', firstQ), 380);
   }, [activeLang, addMsg]);
 
+  // ── Quick reply: click an inline option chip (fuel, travel type, freight mode) ─
+  const handleQuickReply = useCallback((value) => {
+    addMsg('user', value);
+    if (emConv) setTimeout(() => handleConvAnswer(value), 350);
+  }, [addMsg, emConv, handleConvAnswer]);
+
+  // ── Inline quick reply options based on current conversation step ─────────────
+  const quickReplies = (() => {
+    if (!emConv) return null;
+    if (emConv.cat === 'stationary' && emConv.step === 0) {
+      return tr
+        ? [{l:'🔥 Doğalgaz', v:'doğalgaz'}, {l:'⛽ Dizel', v:'dizel'}, {l:'🔵 LPG', v:'lpg'}, {l:'🛢️ Fuel Oil', v:'fuel oil'}, {l:'⚫ Kömür', v:'kömür'}]
+        : [{l:'🔥 Natural gas', v:'natural gas'}, {l:'⛽ Diesel', v:'diesel'}, {l:'🔵 LPG', v:'lpg'}, {l:'🛢️ Fuel oil', v:'fuel oil'}, {l:'⚫ Coal', v:'coal'}];
+    }
+    if (emConv.cat === 'travel' && emConv.step === 0) {
+      return tr
+        ? [{l:'🛫 İç Hat', v:'iç hat'}, {l:'✈️ Kısa Mesafe', v:'kısa mesafe'}, {l:'✈️ Uzun Mesafe', v:'uzun mesafe'}, {l:'🚂 Tren', v:'tren'}, {l:'🚗 Araç', v:'araç'}]
+        : [{l:'🛫 Domestic', v:'domestic'}, {l:'✈️ Short-haul', v:'short-haul'}, {l:'✈️ Long-haul', v:'long-haul'}, {l:'🚂 Train', v:'train'}, {l:'🚗 Car', v:'car'}];
+    }
+    if (emConv.cat === 'freight' && emConv.step === 0) {
+      return tr
+        ? [{l:'🚛 Karayolu', v:'karayolu'}, {l:'🚢 Denizyolu', v:'deniz'}, {l:'✈️ Havayolu', v:'hava'}, {l:'🚂 Demiryolu', v:'demiryolu'}]
+        : [{l:'🚛 Road', v:'road'}, {l:'🚢 Sea', v:'sea'}, {l:'✈️ Air', v:'air'}, {l:'🚂 Rail', v:'rail'}];
+    }
+    return null;
+  })();
+
   // ── Quick-start chips (free mode) ────────────────────────────────────────────
   const CHIPS = tr ? [
     { emoji: '🔥', title: 'Sabit Yanma',  hint: 'Doğalgaz, dizel, LPG…', cat: 'stationary',  scope: 'Kapsam 1', dot: 'bg-orange-400' },
@@ -1349,10 +1379,41 @@ export function ChatWorkspace({
       )}
 
       {/* ── Messages ── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3.5">
+      <div ref={scrollRef} className={`flex-1 overflow-y-auto ${messages.length === 1 && messages[0]?.id === 'welcome' ? 'flex flex-col justify-center px-4' : 'px-4 py-5 space-y-5'}`}>
 
-        {/* Message list — welcome message always renders first */}
         {messages.map(msg => {
+          if (msg.id === 'welcome') {
+            if (messages.length > 1) return null;
+            return (
+              <div key={msg.id} className="flex flex-col items-center gap-7 py-10 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#302817]">
+                    <Sparkles className="h-5 w-5 text-[#B4BE6A]" />
+                  </div>
+                  <div>
+                    <p className="text-[22px] font-black text-[#302817] tracking-tight">CarbonIQ</p>
+                    <p className="text-[11px] text-[#302817]/35 mt-1.5">
+                      {tr ? 'Karbon envanterinizin AI asistanı' : 'AI assistant for your carbon inventory'}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 w-full">
+                  {CHIPS.map((chip, i) => (
+                    <button key={i} onClick={() => handleChipClick(chip)}
+                      className="rounded-2xl border border-[#302817]/8 bg-white px-4 py-4 text-left transition hover:border-[#B4BE6A]/60 hover:bg-[#F0F3E0] active:scale-[0.97]">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <span className={`h-1.5 w-1.5 rounded-full ${chip.dot}`} />
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-[#302817]/30">{chip.scope}</span>
+                      </div>
+                      <p className="text-[12.5px] font-bold text-[#302817]">{chip.emoji} {chip.title}</p>
+                      <p className="text-[10px] text-[#302817]/35 mt-1">{chip.hint}</p>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[10px] text-[#302817]/25">{tr ? 'veya aşağıya yazın' : 'or type anything below'}</p>
+              </div>
+            );
+          }
           if (msg.role === 'mode-switch') {
             return (
               <div key={msg.id} className="flex items-center gap-3 py-2">
@@ -1422,39 +1483,12 @@ export function ChatWorkspace({
           return <ChatBubble key={msg.id} msg={msg} />;
         })}
 
-        {/* Quick-start chips — AFTER welcome message, before typing indicator */}
-        {mode === 'free' && !messages.some(m => ['suggestion', 'confirmed', 'rejected'].includes(m.role)) && (
-          <div className="flex flex-col gap-2 pt-1 pb-1">
-            <div className="grid grid-cols-2 gap-1.5 w-full">
-              {CHIPS.map((chip, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleChipClick(chip)}
-                  className="rounded-xl border border-[#302817]/8 bg-white px-3 py-3 text-left transition hover:border-[#B4BE6A]/50 hover:bg-[#F0F3E0] active:scale-[0.97]"
-                >
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${chip.dot}`} />
-                    <span className="text-[9px] font-bold uppercase tracking-wide text-[#302817]/30">{chip.scope}</span>
-                  </div>
-                  <p className="text-[11.5px] font-bold text-[#302817] leading-tight">{chip.emoji} {chip.title}</p>
-                  <p className="text-[9.5px] text-[#302817]/35 mt-0.5">{chip.hint}</p>
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center gap-3 w-full">
-              <div className="flex-1 h-px bg-[#302817]/8" />
-              <span className="text-[9px] text-[#302817]/25">{tr ? 'veya yazın' : 'or type anything'}</span>
-              <div className="flex-1 h-px bg-[#302817]/8" />
-            </div>
-          </div>
-        )}
-
         {sending && (
-          <div className="flex gap-2">
-            <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
-              <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+          <div className="flex gap-3">
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#302817]">
+              <Sparkles className="h-2.5 w-2.5 text-[#B4BE6A]" />
             </div>
-            <div className="rounded-2xl rounded-tl-sm border border-[#302817]/8 bg-white px-4 py-3">
+            <div className="pt-0.5">
               <TypingDots />
             </div>
           </div>
@@ -1630,6 +1664,17 @@ export function ChatWorkspace({
         {/* ── FREE MODE (or guided finished) input ── */}
         {(mode === 'free' || (mode === 'guided' && !currentQuestion)) && (
           <>
+            {/* Inline quick reply chips */}
+            {quickReplies && (
+              <div className="flex flex-wrap gap-1.5 pb-2">
+                {quickReplies.map((qr, i) => (
+                  <button key={i} onClick={() => handleQuickReply(qr.v)}
+                    className="rounded-xl border border-[#302817]/10 bg-[#F0F3E0] px-3 py-1.5 text-[11px] font-semibold text-[#302817] transition hover:border-[#B4BE6A]/70 hover:bg-[#E5EBD0] active:scale-[0.97]">
+                    {qr.l}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <textarea
                 className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
