@@ -2720,7 +2720,9 @@ function QuestionnaireTab({ language, isVisible = true }) {
 // Free Chat Tab
 // ─────────────────────────────────────────────────────────────────────────────
 function FreeChatTab({ language, summary, entries, targets }) {
-  const tr = language === 'tr';
+  // Local language toggle — EN / TR, initialized from app-level language prop
+  const [activeLang, setActiveLang] = useState(language || 'tr');
+  const tr = activeLang === 'tr';
   const totalTonne = summary?.total_tonne || 0;
   const s1 = summary?.scope1_tonne || 0;
   const s2 = summary?.scope2_tonne || 0;
@@ -2747,8 +2749,8 @@ function FreeChatTab({ language, summary, entries, targets }) {
   // Ref mirror of tr — lets the session-load effect read the current language
   // without being in its dependency array (which would re-trigger the fetch on
   // every language switch even though sessions are language-independent).
-  const trRef = useRef(tr);
-  useEffect(() => { trRef.current = tr; }, [tr]);
+  const trRef = useRef(activeLang === 'tr');
+  useEffect(() => { trRef.current = activeLang === 'tr'; }, [activeLang]);
 
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
@@ -3056,22 +3058,38 @@ function FreeChatTab({ language, summary, entries, targets }) {
               ? <ChevronLeft className="h-4 w-4" />
               : <MessageSquare className="h-4 w-4" />}
           </button>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10">
-            <Bot className="h-4 w-4 text-[#75863B]" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817]">
+            <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-[#302817]">
+            <p className="truncate text-[13px] font-bold text-[#302817]">
               {activeSession ? activeSession.title : 'CarbonIQ'}
             </p>
-            <p className="text-[11px] font-semibold text-[#302817]/40">
+            <p className="text-[10px] font-semibold text-[#302817]/35">
               {tr ? 'ISO 14064-1 · Karbon uzmanı AI' : 'ISO 14064-1 · Carbon expert AI'}
             </p>
+          </div>
+          {/* Language toggle — EN / TR */}
+          <div className="flex items-center shrink-0 gap-0.5 rounded-lg border border-[#302817]/10 bg-[#302817]/5 p-0.5">
+            {['tr', 'en'].map(l => (
+              <button
+                key={l}
+                onClick={() => setActiveLang(l)}
+                className={`rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
+                  activeLang === l
+                    ? 'bg-[#302817] text-white shadow-sm'
+                    : 'text-[#302817]/45 hover:text-[#302817]'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
           </div>
           {!activeId && (
             <button
               onClick={() => startNew()}
               disabled={creatingSession}
-              className="ml-auto flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 rounded-lg border border-[#302817]/10 bg-white px-3 py-1.5 text-[11px] font-bold text-[#302817] transition hover:bg-[#302817] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {creatingSession
                 ? <Loader2 className="h-3 w-3 animate-spin" />
