@@ -3322,12 +3322,13 @@ function FreeChatTab({ language, summary, entries, targets }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets }) {
   const tr = language === 'tr';
-  const [activeTab, setActiveTab] = useState('questionnaire');
+  const [activeTab, setActiveTab] = useState('chat');
   // Fix #44: track whether the Chat tab has ever been opened so we can lazy-mount
   // FreeChatTab on first visit and then KEEP it mounted on subsequent tab switches.
   // Switching tabs no longer unmounts the inactive component, preserving questionnaire
   // state (messages, answers, history, loopState) across tab switches.
-  const [chatMounted, setChatMounted] = useState(false);
+  // Default tab is now 'chat' (with session history), so chatMounted starts true.
+  const [chatMounted, setChatMounted] = useState(true);
 
   return (
     <>
