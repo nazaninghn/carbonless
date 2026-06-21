@@ -356,23 +356,21 @@ function TypingDots() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Free-chat: Bubble
 // ─────────────────────────────────────────────────────────────────────────────
-// Fix #104: memo() prevents re-rendering every bubble in the list when only
-// the latest message or sending state changes at the FreeChatTab level.
 const Bubble = memo(function Bubble({ role, content }) {
   const isUser = role === 'user';
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[82%] sm:max-w-[72%] rounded-[20px] rounded-tr-sm bg-[#75863B] px-4 py-3 text-[13.5px] leading-[1.65] text-white shadow-sm">
+        <div className="max-w-[80%] sm:max-w-[70%] rounded-2xl rounded-br-sm bg-[#5E7A2E] px-4 py-3 text-[13.5px] leading-[1.65] text-white/95">
           {content}
         </div>
       </div>
     );
   }
   return (
-    <div className="flex gap-3">
-      <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
-        <span className="block h-2 w-2 rounded-full bg-white/80" />
+    <div className="flex gap-3 max-w-[88%]">
+      <div className="mt-1 h-6 w-6 shrink-0 rounded-xl bg-[#75863B] flex items-center justify-center shadow-sm">
+        <Sparkles className="h-3 w-3 text-white/90" />
       </div>
       <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#302817]">
         <Markdown text={content} />
@@ -419,81 +417,61 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Free-chat: Welcome hero (shown when no session is selected)
+// Free-chat: Introduction screen (shown when no session is selected)
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyState({ onNew, tr }) {
-  const starters = tr ? [
-    'En büyük emisyon kaynağım hangisi?',
-    'Kapsam 1, 2 ve 3 arasındaki fark nedir?',
-    'ISO 14064-1 raporu nasıl hazırlanır?',
+  const suggestions = tr ? [
+    { icon: '🌿', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?' },
+    { icon: '📊', text: 'En büyük emisyon kaynağım hangisi?' },
+    { icon: '📋', text: 'ISO 14064-1 raporu nasıl hazırlanır?' },
+    { icon: '🎯', text: 'Karbon azaltma hedefleri nasıl belirlenir?' },
   ] : [
-    "What's my biggest emission source?",
-    "What's the difference between Scope 1, 2 and 3?",
-    "How do I prepare an ISO 14064-1 report?",
-  ];
-  const features = tr ? [
-    ['📊', 'Kapsam 1, 2 ve 3 emisyonlarınızı hesaplayın'],
-    ['📋', 'ISO 14064-1 uyumlu envanter oluşturun'],
-    ['🎯', 'Bilimsel tabanlı azaltma hedefleri belirleyin'],
-  ] : [
-    ['📊', 'Calculate your Scope 1, 2 & 3 emissions'],
-    ['📋', 'Build an ISO 14064-1 compliant inventory'],
-    ['🎯', 'Set science-based reduction targets'],
+    { icon: '🌿', text: "What's the difference between Scope 1, 2, and 3?" },
+    { icon: '📊', text: "What's my biggest emission source?" },
+    { icon: '📋', text: "How do I prepare an ISO 14064-1 report?" },
+    { icon: '🎯', text: "How do I set carbon reduction targets?" },
   ];
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-8 py-6">
-      <div className="w-full max-w-sm flex flex-col items-center gap-6">
+    <div className="flex flex-1 flex-col items-center justify-center px-6 pb-6">
+      <div className="w-full max-w-lg flex flex-col items-center gap-8">
 
-        {/* Small orb */}
-        <div className="relative flex items-center justify-center select-none">
-          <div className="absolute h-32 w-32 rounded-full bg-[#B4BE6A]/10 blur-2xl cb-glow" />
-          <div className="cb-float">
-            <Image src="/carbon-hero.png" alt="" width={88} height={66} className="object-contain drop-shadow-lg" priority />
+        {/* Brand icon + intro text */}
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="h-14 w-14 rounded-2xl bg-[#75863B] flex items-center justify-center shadow-lg shadow-[#75863B]/20">
+            <Sparkles className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <h2 className="text-[22px] font-bold text-[#1C1C1C] tracking-tight leading-tight">
+              {tr ? 'Merhaba, ben CarbonIQ' : "Hello, I'm CarbonIQ"}
+            </h2>
+            <p className="text-[13px] text-[#302817]/45 mt-2 max-w-sm mx-auto leading-relaxed">
+              {tr
+                ? 'Karbon muhasebesi ve ISO 14064-1 raporlaması için AI destekli asistanınızım.'
+                : 'Your AI assistant for carbon accounting and ISO 14064-1 reporting.'}
+            </p>
           </div>
         </div>
 
-        {/* Title */}
-        <div className="text-center cb-fadeup" style={{ animationDelay: '0.1s' }}>
-          <h2 className="text-[22px] font-black text-[#302817] tracking-tight leading-tight">
-            {tr ? 'Carbon AI\'ye hoş geldiniz' : 'Welcome to Carbon AI'}
-          </h2>
-          <p className="text-[12.5px] text-[#302817]/45 mt-1.5">
-            {tr
-              ? 'Karbon muhasebesi konusunda size nasıl yardımcı olabilirim?'
-              : 'How can I help you with carbon accounting today?'}
-          </p>
-        </div>
-
-        {/* Features */}
-        <div className="w-full space-y-2 cb-fadeup" style={{ animationDelay: '0.2s' }}>
-          {features.map(([icon, text]) => (
-            <div key={text} className="flex items-center gap-3 rounded-xl px-3 py-1.5">
-              <span className="text-base shrink-0">{icon}</span>
-              <span className="text-[12.5px] text-[#302817]/55">{text}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Divider */}
-        <div className="w-full border-t border-[#302817]/6 cb-fadeup" style={{ animationDelay: '0.28s' }} />
-
-        {/* Starter prompts */}
-        <div className="w-full flex flex-col gap-2 cb-fadeup" style={{ animationDelay: '0.35s' }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#302817]/28 px-1">
-            {tr ? 'Başlamak için bir konu seçin' : 'Or pick a topic to start'}
-          </p>
-          {starters.map(q => (
+        {/* Suggestion cards */}
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {suggestions.map(({ icon, text }) => (
             <button
-              key={q}
-              onClick={() => onNew(q)}
-              className="text-left rounded-xl border border-[#302817]/8 bg-white/80 px-4 py-2.5 text-[12.5px] text-[#302817]/65 transition hover:border-[#95A847]/40 hover:bg-[#F0F3E0] hover:text-[#302817] active:scale-[0.98]"
+              key={text}
+              onClick={() => onNew(text)}
+              className="group text-left flex items-start gap-3 rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] px-4 py-3.5 transition-all duration-150 hover:border-[#95A847]/35 hover:bg-[#F3F7E9] active:scale-[0.98]"
             >
-              {q}
+              <span className="text-lg shrink-0 mt-0.5 leading-none">{icon}</span>
+              <span className="text-[13px] text-[#302817]/60 leading-snug group-hover:text-[#302817] transition-colors">
+                {text}
+              </span>
             </button>
           ))}
         </div>
 
+        <p className="text-[11px] text-[#302817]/25">
+          {tr ? 'veya aşağıya sorunuzu yazın' : 'or type your question below'}
+        </p>
       </div>
     </div>
   );
@@ -535,7 +513,7 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
   if (msg.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className={`${base} rounded-tr-sm bg-[#75863B] text-white shadow-sm`}>{msg.content}</div>
+        <div className={`${base} rounded-br-sm rounded-tr-sm bg-[#5E7A2E] text-white/95`}>{msg.content}</div>
       </div>
     );
   }
@@ -917,7 +895,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       <button
         onClick={() => onSubmit()}
         disabled={disabled}
-        className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+        className="rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
       >
         {tr ? 'Devam Et →' : 'Continue →'}
       </button>
@@ -954,7 +932,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit(value)}
           disabled={disabled || !value?.country || cityRequired}
-          className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+          className="rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1047,7 +1025,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || vals.length === 0}
-          className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+          className="self-start rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1117,7 +1095,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || !allRequiredFilled}
-          className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+          className="self-start rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1161,7 +1139,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || (mlRequired && mlEmpty)}
-          className="self-start rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+          className="self-start rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1211,7 +1189,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
@@ -1345,7 +1323,7 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
       <div className="flex justify-end">
         <button
           onClick={onContinue}
-          className="rounded-full bg-[#302817] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-black"
+          className="rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A]"
         >
           {tr ? 'Devam Et →' : 'Continue →'}
         </button>
@@ -1608,7 +1586,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
               <div
                 className={`max-w-[90%] rounded-[18px] px-3 py-2.5 text-[12.5px] leading-[1.6] ${
                   msg.role === 'user'
-                    ? 'rounded-tr-sm bg-[#302817] text-white'
+                    ? 'rounded-tr-sm bg-[#5E7A2E] text-white'
                     : 'rounded-tl-sm border border-[#302817]/6 bg-[#FAFAF8] text-[#302817]'
                 }`}
               >
@@ -1667,7 +1645,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
                   <button
                     onClick={sendHelp}
                     disabled={!input.trim() || sending || helpCharOver}
-                    className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#302817] text-white transition hover:bg-black disabled:opacity-30"
+                    className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#75863B] text-white transition hover:bg-[#5E6B2A] disabled:opacity-30"
                   >
                     {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   </button>
@@ -1708,66 +1686,86 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 // Questionnaire: Welcome Screen
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
+  const steps = tr ? [
+    { icon: '📝', title: 'Şirket bilgileri', desc: 'Vergi numarası, sektör ve raporlama tercihleri' },
+    { icon: '🔥', title: 'Kapsam 1 ve 2', desc: 'Yakıt tüketimi ve elektrik kullanımı' },
+    { icon: '🚛', title: 'Kapsam 3', desc: 'Nakliye, iş seyahati ve tedarik zinciri' },
+    { icon: '📄', title: 'Rapor', desc: 'ISO 14064-1 uyumlu karbon envanteri' },
+  ] : [
+    { icon: '📝', title: 'Company info', desc: 'Tax ID, sector, and reporting preferences' },
+    { icon: '🔥', title: 'Scope 1 & 2', desc: 'Fuel consumption and electricity usage' },
+    { icon: '🚛', title: 'Scope 3', desc: 'Transport, business travel, and supply chain' },
+    { icon: '📄', title: 'Report', desc: 'ISO 14064-1 compliant carbon inventory' },
+  ];
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
-      {/* Carbon Brain Orb (same as FreeChatTab EmptyState) */}
-      <div className="relative flex items-center justify-center select-none">
-        <div className="absolute h-56 w-56 rounded-full bg-[#B4BE6A]/8 blur-3xl animate-pulse" />
-        <div className="absolute h-44 w-44 rounded-full bg-[#95A847]/12 blur-2xl cb-glow" />
-        <svg className="absolute h-52 w-52 cb-ring opacity-[0.13]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="100" cy="100" r="92" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="14 7" strokeLinecap="round" />
-          <circle cx="100" cy="100" r="70" fill="none" stroke="#95A847" strokeWidth="0.75" strokeDasharray="6 16" />
-        </svg>
-        <svg className="absolute h-40 w-40 cb-ring-r opacity-[0.07]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="100" cy="100" r="90" fill="none" stroke="#75863B" strokeWidth="1" strokeDasharray="8 20" />
-        </svg>
-        <div className="cb-float">
-          <Image src="/carbon-hero.png" alt="Carbon Brain" width={170} height={128} className="object-contain drop-shadow-2xl" priority />
-        </div>
-      </div>
+    <div className="flex flex-1 flex-col items-center justify-center px-6 py-8">
+      <div className="w-full max-w-md flex flex-col items-center gap-7">
 
-      {/* Text */}
-      <div className="cb-fadeup" style={{ animationDelay: '0.15s' }}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#302817]/28 mb-1">
-          {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
-        </p>
-        <h2 className="text-[24px] font-black tracking-tight text-[#302817]">
-          {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
-        </h2>
-        <p className="mt-2 text-[13px] text-[#302817]/50 max-w-sm">
-          {tr
-            ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış envanter akışı. Her adımda AI asistanı yanınızda.`
-            : `${TOTAL_QUESTIONS}-question structured inventory flow. AI assistant guides you at every step.`}
-        </p>
-      </div>
-
-      {answeredCount > 0 && !error && (
-        <div className="rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 px-5 py-2.5 text-[12px] font-semibold text-[#75863B] cb-fadeup" style={{ animationDelay: '0.25s' }}>
-          {tr
-            ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
-            : `${answeredCount} questions answered — continue where you left off.`}
+        {/* Icon + title */}
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="h-14 w-14 rounded-2xl bg-[#75863B] flex items-center justify-center shadow-sm">
+            <ClipboardList className="h-7 w-7 text-white" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75863B]/60 mb-1.5">
+              {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
+            </p>
+            <h2 className="text-[22px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
+              {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
+            </h2>
+            <p className="mt-2 text-[13px] text-[#302817]/50 max-w-xs mx-auto leading-relaxed">
+              {tr
+                ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış akış. Her adımda AI asistanı yanınızda.`
+                : `${TOTAL_QUESTIONS}-question structured flow. AI guides you at every step.`}
+            </p>
+          </div>
         </div>
-      )}
-      {error && (
-        <div className="max-w-sm rounded-2xl border border-red-200 bg-red-50 px-5 py-2.5 text-[12px] font-semibold text-red-600">
-          {error}
-        </div>
-      )}
 
-      <div className="flex flex-col items-center gap-2 cb-fadeup" style={{ animationDelay: '0.3s' }}>
-        <button
-          onClick={onStart}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-[#75863B] px-8 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-[#5E6B2A] disabled:opacity-40"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {tr
-            ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
-            : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
-        </button>
-        <p className="text-[11px] text-[#302817]/28">
-          {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
-        </p>
+        {/* Steps */}
+        <div className="w-full flex flex-col gap-2">
+          {steps.map(({ icon, title, desc }, idx) => (
+            <div key={idx} className="flex items-center gap-4 rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] px-4 py-3">
+              <span className="text-xl shrink-0 leading-none">{icon}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold text-[#2C4010]">{title}</p>
+                <p className="text-[11px] text-[#302817]/45 mt-0.5 leading-snug">{desc}</p>
+              </div>
+              <span className="shrink-0 h-6 w-6 rounded-full bg-[#75863B]/12 flex items-center justify-center text-[10px] font-bold text-[#75863B]">
+                {idx + 1}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {answeredCount > 0 && !error && (
+          <div className="w-full rounded-2xl border border-[#B4BE6A]/40 bg-[#F3F7E9] px-5 py-2.5 text-[12px] font-semibold text-[#5E7A2E] text-center">
+            {tr
+              ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
+              : `${answeredCount} questions answered — continue where you left off.`}
+          </div>
+        )}
+        {error && (
+          <div className="w-full max-w-sm rounded-2xl border border-red-200 bg-red-50 px-5 py-2.5 text-[12px] font-semibold text-red-600 text-center">
+            {error}
+          </div>
+        )}
+
+        <div className="flex flex-col items-center gap-2">
+          <button
+            onClick={onStart}
+            disabled={loading}
+            className="flex items-center gap-2.5 rounded-full bg-[#75863B] px-8 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {tr
+              ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
+              : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
+          </button>
+          <p className="text-[11px] text-[#302817]/30">
+            {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -3058,27 +3056,27 @@ function FreeChatTab({ language, summary, entries, targets }) {
         />
       )}
       {/* Sidebar */}
-      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#F9F8F5] transition-all duration-300 ${
+      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#F8F8F5] transition-all duration-300 ${
         sidebarOpen
-          ? 'absolute inset-y-0 left-0 z-30 w-[200px] lg:relative lg:inset-auto lg:z-auto'
+          ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
           : 'w-0 overflow-hidden'
       }`}>
-        {/* New chat — top of sidebar */}
-        <div className="shrink-0 px-3 pt-3 pb-2">
+        {/* New chat */}
+        <div className="shrink-0 px-3 pt-4 pb-2">
           <button
             onClick={() => startNew()}
             disabled={creatingSession}
-            className="flex w-full items-center gap-2 rounded-xl bg-[#75863B] px-3 py-2 text-[11.5px] font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-[12px] font-semibold text-[#302817]/70 shadow-sm transition hover:bg-[#F3F7E9] hover:border-[#95A847]/30 hover:text-[#302817] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creatingSession
-              ? <Loader2 className="h-3 w-3 animate-spin" />
-              : <Plus className="h-3 w-3" />}
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Plus className="h-3.5 w-3.5" />}
             {tr ? 'Yeni sohbet' : 'New chat'}
           </button>
         </div>
 
         {/* Session list */}
-        <div className="flex-1 overflow-y-auto px-2 pb-3">
+        <div className="flex-1 overflow-y-auto px-2 pb-4">
           {loadingSessions ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-4 w-4 animate-spin text-[#302817]/20" />
@@ -3090,7 +3088,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
           ) : (
             groupSessionsByDate(sessions, tr).map(group => (
               <div key={group.key} className="mb-1">
-                <p className="px-2 pb-1 pt-3 text-[9px] font-bold uppercase tracking-widest text-[#302817]/22">
+                <p className="px-2 pb-1 pt-3 text-[9.5px] font-semibold uppercase tracking-wider text-[#302817]/25">
                   {group.label}
                 </p>
                 {group.items.map(s => (
@@ -3111,25 +3109,24 @@ function FreeChatTab({ language, summary, entries, targets }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Minimal header */}
-        <header className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 px-3 py-2.5">
+        {/* Clean header */}
+        <header className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 bg-white px-4 py-2.5">
           <button
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-[#302817]/6 hover:text-[#302817]"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/35 transition hover:bg-[#302817]/5 hover:text-[#302817]"
             title={sidebarOpen ? (tr ? 'Geçmişi gizle' : 'Hide history') : (tr ? 'Geçmişi göster' : 'Show history')}
           >
-            <MessageSquare className="h-3.5 w-3.5" />
+            <MessageSquare className="h-4 w-4" />
           </button>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-bold text-[#302817]">
-              {activeSession ? activeSession.title : (tr ? 'Carbon AI' : 'Carbon AI')}
+            <p className="truncate text-[13px] font-semibold text-[#302817]/80">
+              {activeSession ? activeSession.title : 'Carbon AI'}
             </p>
           </div>
 
-          {/* Live data chip — compact, only when data exists */}
           {totalTonne > 0 && (
-            <span className="shrink-0 rounded-full bg-[#95A847]/12 px-2.5 py-1 text-[10px] font-bold text-[#75863B]">
+            <span className="shrink-0 rounded-full bg-[#F3F6E8] border border-[#95A847]/20 px-2.5 py-1 text-[11px] font-semibold text-[#75863B]">
               {totalTonne.toFixed(1)} tCO₂e
             </span>
           )}
@@ -3272,30 +3269,30 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
   return (
     <>
     <style>{CHAT_ANIM_STYLES}</style>
-    <div className="flex h-[calc(100svh-190px)] min-h-[520px] flex-col overflow-hidden rounded-[28px] border border-[#302817]/8 bg-white shadow-[0_10px_40px_rgba(48,40,23,0.06)] sm:h-[calc(100svh-150px)] lg:h-[calc(100vh-120px)]">
+    <div className="flex h-[calc(100svh-190px)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-[#302817]/8 bg-white shadow-[0_8px_32px_rgba(48,40,23,0.07)] sm:h-[calc(100svh-150px)] lg:h-[calc(100vh-120px)]">
 
       {/* Tab switcher */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-[#302817]/6 bg-[#FAFAF8] px-3 py-2">
+      <div className="flex shrink-0 items-center gap-0.5 border-b border-[#302817]/6 bg-[#F8F8F5] px-3 py-2">
         <button
           onClick={() => setActiveTab('questionnaire')}
-          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-bold tracking-wide transition ${
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
             activeTab === 'questionnaire'
-              ? 'bg-[#75863B] text-white shadow-sm'
-              : 'text-[#302817]/50 hover:bg-[#302817]/6 hover:text-[#302817]'
+              ? 'bg-white text-[#302817] shadow-sm border border-[#302817]/8'
+              : 'text-[#302817]/45 hover:bg-white/70 hover:text-[#302817]/70'
           }`}
         >
-          <ClipboardList className="h-3 w-3" />
+          <ClipboardList className="h-3.5 w-3.5" />
           {tr ? 'Envanter' : 'Inventory'}
         </button>
         <button
           onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
-          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-bold tracking-wide transition ${
+          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
             activeTab === 'chat'
-              ? 'bg-[#75863B] text-white shadow-sm'
-              : 'text-[#302817]/50 hover:bg-[#302817]/6 hover:text-[#302817]'
+              ? 'bg-white text-[#302817] shadow-sm border border-[#302817]/8'
+              : 'text-[#302817]/45 hover:bg-white/70 hover:text-[#302817]/70'
           }`}
         >
-          <MessageSquare className="h-3 w-3" />
+          <MessageSquare className="h-3.5 w-3.5" />
           {tr ? 'AI Sohbet' : 'AI Chat'}
         </button>
       </div>
