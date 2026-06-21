@@ -533,19 +533,19 @@ function groupSessionsByDate(sessions, tr) {
 // Fix #106: memo() prevents re-rendering the full message history on every
 // keystroke in the questionnaire input field.
 const ChatBubble = memo(function ChatBubble({ msg }) {
-  const base = 'rounded-[22px] px-4 py-3 text-[13.5px] leading-[1.65] max-w-[85%] sm:max-w-[75%]';
+  const base = 'rounded-[20px] px-4 py-3 text-[13.5px] leading-[1.65] max-w-[85%] sm:max-w-[75%]';
   if (msg.role === 'user') {
     return (
       <div className="flex justify-end">
-        <div className={`${base} rounded-tr-sm bg-[#302817] text-white`}>{msg.content}</div>
+        <div className={`${base} rounded-tr-sm bg-[#75863B] text-white shadow-sm`}>{msg.content}</div>
       </div>
     );
   }
   if (msg.type === 'warning') {
     return (
-      <div className="flex gap-2.5">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-600">
-          <AlertTriangle className="h-4 w-4" />
+      <div className="flex gap-3">
+        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-amber-400 flex items-center justify-center">
+          <span className="block h-2 w-2 rounded-full bg-white/90" />
         </div>
         <div className={`${base} rounded-tl-sm border border-amber-200 bg-amber-50 text-amber-800`}>
           <Markdown text={msg.content} />
@@ -555,9 +555,9 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
   }
   if (msg.type === 'error') {
     return (
-      <div className="flex gap-2.5">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-500">
-          <AlertTriangle className="h-4 w-4" />
+      <div className="flex gap-3">
+        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-red-400 flex items-center justify-center">
+          <span className="block h-2 w-2 rounded-full bg-white/90" />
         </div>
         <div className={`${base} rounded-tl-sm border border-red-200 bg-red-50 text-red-700`}>
           {msg.content}
@@ -567,11 +567,11 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
   }
   if (msg.type === 'info') {
     return (
-      <div className="flex gap-2.5">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#B4BE6A]/20 text-[#75863B]">
-          <CheckCircle2 className="h-4 w-4" />
+      <div className="flex gap-3">
+        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center">
+          <span className="block h-2 w-2 rounded-full bg-white/90" />
         </div>
-        <div className={`${base} rounded-tl-sm border border-[#B4BE6A]/30 bg-[#B4BE6A]/10 text-[#302817]`}>
+        <div className={`${base} rounded-tl-sm border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 text-[#302817]`}>
           <Markdown text={msg.content} />
         </div>
       </div>
@@ -579,11 +579,11 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
   }
   // assistant (default)
   return (
-    <div className="flex gap-2.5">
-      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
-        <Bot className="h-4 w-4" />
+    <div className="flex gap-3">
+      <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+        <span className="block h-2 w-2 rounded-full bg-white/80" />
       </div>
-      <div className={`${base} rounded-tl-sm border border-[#302817]/6 bg-white text-[#302817] shadow-[0_2px_12px_rgba(48,40,23,0.05)]`}>
+      <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#302817]">
         <Markdown text={msg.content} />
       </div>
     </div>
@@ -1711,44 +1711,63 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 py-12 text-center">
-      <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 shadow-[0_4px_20px_rgba(149,168,71,0.2)]">
-        <ClipboardList className="h-9 w-9 text-[#75863B]" />
+    <div className="flex flex-1 flex-col items-center justify-center gap-5 px-6 py-8 text-center">
+      {/* Carbon Brain Orb (same as FreeChatTab EmptyState) */}
+      <div className="relative flex items-center justify-center select-none">
+        <div className="absolute h-56 w-56 rounded-full bg-[#B4BE6A]/8 blur-3xl animate-pulse" />
+        <div className="absolute h-44 w-44 rounded-full bg-[#95A847]/12 blur-2xl cb-glow" />
+        <svg className="absolute h-52 w-52 cb-ring opacity-[0.13]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="92" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="14 7" strokeLinecap="round" />
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#95A847" strokeWidth="0.75" strokeDasharray="6 16" />
+        </svg>
+        <svg className="absolute h-40 w-40 cb-ring-r opacity-[0.07]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="90" fill="none" stroke="#75863B" strokeWidth="1" strokeDasharray="8 20" />
+        </svg>
+        <div className="cb-float">
+          <Image src="/carbon-hero.png" alt="Carbon Brain" width={170} height={128} className="object-contain drop-shadow-2xl" priority />
+        </div>
       </div>
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-[#302817]">
-          {tr ? 'Karbon Envanterinizi Oluşturun' : 'Build your carbon inventory with AI'}
+
+      {/* Text */}
+      <div className="cb-fadeup" style={{ animationDelay: '0.15s' }}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#302817]/28 mb-1">
+          {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
+        </p>
+        <h2 className="text-[24px] font-black tracking-tight text-[#302817]">
+          {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
         </h2>
-        <p className="mt-3 text-sm text-[#302817]/55 max-w-md">
+        <p className="mt-2 text-[13px] text-[#302817]/50 max-w-sm">
           {tr
-            ? `${TOTAL_QUESTIONS} sorudan oluşan ISO 14064-1 uyumlu yapılandırılmış envanter akışı. AI asistanı her adımda yanınızda.`
-            : `${TOTAL_QUESTIONS}-question ISO 14064-1 structured inventory flow. AI assistant by your side at every step.`}
+            ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış envanter akışı. Her adımda AI asistanı yanınızda.`
+            : `${TOTAL_QUESTIONS}-question structured inventory flow. AI assistant guides you at every step.`}
         </p>
       </div>
+
       {answeredCount > 0 && !error && (
-        <div className="rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 px-5 py-3 text-sm font-semibold text-[#75863B]">
+        <div className="rounded-2xl border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 px-5 py-2.5 text-[12px] font-semibold text-[#75863B] cb-fadeup" style={{ animationDelay: '0.25s' }}>
           {tr
-            ? `${answeredCount} soru daha önce yanıtlandı — kaldığınız yerden devam edebilirsiniz.`
-            : `${answeredCount} questions already answered — you can continue where you left off.`}
+            ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
+            : `${answeredCount} questions answered — continue where you left off.`}
         </div>
       )}
       {error && (
-        <div className="max-w-sm rounded-2xl border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-600">
+        <div className="max-w-sm rounded-2xl border border-red-200 bg-red-50 px-5 py-2.5 text-[12px] font-semibold text-red-600">
           {error}
         </div>
       )}
-      <div className="flex flex-col items-center gap-3">
+
+      <div className="flex flex-col items-center gap-2 cb-fadeup" style={{ animationDelay: '0.3s' }}>
         <button
           onClick={onStart}
           disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-[#302817] px-8 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-black disabled:opacity-40"
+          className="flex items-center gap-2 rounded-full bg-[#75863B] px-8 py-3.5 text-sm font-bold text-white shadow-md transition hover:bg-[#5E6B2A] disabled:opacity-40"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {tr
             ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
             : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
         </button>
-        <p className="text-[11px] text-[#302817]/30">
+        <p className="text-[11px] text-[#302817]/28">
           {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
         </p>
       </div>
@@ -2637,11 +2656,11 @@ function QuestionnaireTab({ language, isVisible = true }) {
               />
             )}
             {isTyping && (
-              <div className="flex gap-2.5">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10 text-[#75863B]">
-                  <Bot className="h-4 w-4" />
+              <div className="flex gap-3">
+                <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+                  <span className="block h-2 w-2 rounded-full bg-white/80" />
                 </div>
-                <div className="rounded-[22px] rounded-tl-sm border border-[#302817]/6 bg-white px-4 py-3 shadow-[0_2px_12px_rgba(48,40,23,0.05)]">
+                <div className="py-1">
                   <TypingDots />
                 </div>
               </div>
@@ -3311,30 +3330,32 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
   const [chatMounted, setChatMounted] = useState(false);
 
   return (
+    <>
+    <style>{CHAT_ANIM_STYLES}</style>
     <div className="flex h-[calc(100svh-190px)] min-h-[520px] flex-col overflow-hidden rounded-[28px] border border-[#302817]/8 bg-white shadow-[0_10px_40px_rgba(48,40,23,0.06)] sm:h-[calc(100svh-150px)] lg:h-[calc(100vh-120px)]">
 
       {/* Tab switcher */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-[#302817]/6 bg-[#FAFAF8] px-4 py-2">
+      <div className="flex shrink-0 items-center gap-1 border-b border-[#302817]/6 bg-[#FAFAF8] px-3 py-2">
         <button
           onClick={() => setActiveTab('questionnaire')}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-bold tracking-wide transition ${
             activeTab === 'questionnaire'
-              ? 'bg-[#302817] text-white shadow-sm'
-              : 'text-[#302817]/55 hover:bg-[#302817]/6 hover:text-[#302817]'
+              ? 'bg-[#75863B] text-white shadow-sm'
+              : 'text-[#302817]/50 hover:bg-[#302817]/6 hover:text-[#302817]'
           }`}
         >
-          <ClipboardList className="h-3.5 w-3.5" />
-          {tr ? 'Envanter' : 'Questionnaire'}
+          <ClipboardList className="h-3 w-3" />
+          {tr ? 'Envanter' : 'Inventory'}
         </button>
         <button
           onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
-          className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold transition ${
+          className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[11px] font-bold tracking-wide transition ${
             activeTab === 'chat'
-              ? 'bg-[#302817] text-white shadow-sm'
-              : 'text-[#302817]/55 hover:bg-[#302817]/6 hover:text-[#302817]'
+              ? 'bg-[#75863B] text-white shadow-sm'
+              : 'text-[#302817]/50 hover:bg-[#302817]/6 hover:text-[#302817]'
           }`}
         >
-          <MessageSquare className="h-3.5 w-3.5" />
+          <MessageSquare className="h-3 w-3" />
           {tr ? 'AI Sohbet' : 'AI Chat'}
         </button>
       </div>
@@ -3351,5 +3372,6 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
         )}
       </div>
     </div>
+    </>
   );
 }
