@@ -403,14 +403,9 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
           : 'text-[#302817]/60 hover:bg-[#302817]/5 hover:text-[#302817]'
       }`}
     >
-      <div className="flex items-start gap-2 pr-6">
-        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-[#95A847]' : 'bg-[#302817]/20'}`} />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-bold leading-tight">{session.title}</p>
-          <p className="mt-0.5 text-[10px] font-medium text-[#302817]/35">
-            {session.updated_at ? new Date(session.updated_at).toLocaleDateString() : ''}
-          </p>
-        </div>
+      <div className="flex items-center gap-2 pr-6">
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-[#95A847]' : 'bg-transparent'}`} />
+        <p className="truncate text-[12px] font-medium leading-tight">{session.title}</p>
       </div>
       <button
         onClick={e => { e.stopPropagation(); onDelete(session.id); }}
@@ -427,76 +422,79 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
 // Free-chat: Welcome hero (shown when no session is selected)
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyState({ onNew, tr }) {
-  const cards = tr ? [
-    { icon: '📊', title: 'Emisyon hesaplama',    q: 'Scope 1, 2 ve 3 emisyonları nasıl hesaplanır?' },
-    { icon: '🎯', title: 'Hedef belirleme',       q: 'Bilimsel tabanlı karbon azaltma hedefi nasıl kurulur?' },
-    { icon: '📋', title: 'ISO 14064-1',           q: 'ISO 14064-1\'e göre organizasyon sınırı nasıl belirlenir?' },
-    { icon: '🌱', title: 'Azaltma stratejisi',    q: 'Şirketim için en etkili emisyon azaltma stratejileri neler?' },
+  const starters = tr ? [
+    'En büyük emisyon kaynağım hangisi?',
+    'Kapsam 1, 2 ve 3 arasındaki fark nedir?',
+    'ISO 14064-1 raporu nasıl hazırlanır?',
   ] : [
-    { icon: '📊', title: 'Calculate emissions',  q: 'How do I calculate Scope 1, 2 and 3 emissions?' },
-    { icon: '🎯', title: 'Set targets',           q: 'How do I set a science-based carbon reduction target?' },
-    { icon: '📋', title: 'ISO 14064-1',           q: 'How do I determine organizational boundaries per ISO 14064-1?' },
-    { icon: '🌱', title: 'Reduction strategy',   q: 'What are the most effective emission reduction strategies for my company?' },
+    "What's my biggest emission source?",
+    "What's the difference between Scope 1, 2 and 3?",
+    "How do I prepare an ISO 14064-1 report?",
   ];
+  const features = tr ? [
+    ['📊', 'Kapsam 1, 2 ve 3 emisyonlarınızı hesaplayın'],
+    ['📋', 'ISO 14064-1 uyumlu envanter oluşturun'],
+    ['🎯', 'Bilimsel tabanlı azaltma hedefleri belirleyin'],
+  ] : [
+    ['📊', 'Calculate your Scope 1, 2 & 3 emissions'],
+    ['📋', 'Build an ISO 14064-1 compliant inventory'],
+    ['🎯', 'Set science-based reduction targets'],
+  ];
+
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-4 text-center">
-      {/* ── Carbon Brain Orb ── */}
-      <div className="relative flex items-center justify-center select-none">
-        {/* Ambient glow halos */}
-        <div className="absolute h-72 w-72 rounded-full bg-[#B4BE6A]/8 blur-3xl animate-pulse" />
-        <div className="absolute h-56 w-56 rounded-full bg-[#95A847]/12 blur-2xl cb-glow" />
-        {/* Rotating orbit rings */}
-        <svg className="absolute h-64 w-64 cb-ring opacity-[0.13]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="100" cy="100" r="92" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="14 7" strokeLinecap="round" />
-          <circle cx="100" cy="100" r="70" fill="none" stroke="#95A847" strokeWidth="0.75" strokeDasharray="6 16" />
-        </svg>
-        <svg className="absolute h-48 w-48 cb-ring-r opacity-[0.07]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="100" cy="100" r="90" fill="none" stroke="#75863B" strokeWidth="1" strokeDasharray="8 20" />
-        </svg>
-        {/* Globe */}
-        <div className="cb-float">
-          <Image
-            src="/carbon-hero.png"
-            alt="Carbon Brain"
-            width={210}
-            height={158}
-            className="object-contain drop-shadow-2xl"
-            priority
-          />
+    <div className="flex flex-1 flex-col items-center justify-center px-8 py-6">
+      <div className="w-full max-w-sm flex flex-col items-center gap-6">
+
+        {/* Small orb */}
+        <div className="relative flex items-center justify-center select-none">
+          <div className="absolute h-32 w-32 rounded-full bg-[#B4BE6A]/10 blur-2xl cb-glow" />
+          <div className="cb-float">
+            <Image src="/carbon-hero.png" alt="" width={88} height={66} className="object-contain drop-shadow-lg" priority />
+          </div>
         </div>
-      </div>
 
-      {/* Welcome text */}
-      <div className="flex flex-col items-center gap-1.5 cb-fadeup" style={{ animationDelay: '0.15s' }}>
-        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#302817]/28">
-          {tr ? 'Hoş geldiniz' : 'Welcome to'}
-        </p>
-        <p className="text-[30px] font-black text-[#302817] tracking-tight leading-none">Carbon AI</p>
-        <p className="text-[13px] text-[#302817]/48 font-medium max-w-[280px] mt-1">
-          {tr
-            ? 'Karbon muhasebesi ve sera gazı raporlaması için AI asistanınız'
-            : 'Your AI assistant for carbon accounting & GHG reporting'}
-        </p>
-      </div>
+        {/* Title */}
+        <div className="text-center cb-fadeup" style={{ animationDelay: '0.1s' }}>
+          <h2 className="text-[22px] font-black text-[#302817] tracking-tight leading-tight">
+            {tr ? 'Carbon AI\'ye hoş geldiniz' : 'Welcome to Carbon AI'}
+          </h2>
+          <p className="text-[12.5px] text-[#302817]/45 mt-1.5">
+            {tr
+              ? 'Karbon muhasebesi konusunda size nasıl yardımcı olabilirim?'
+              : 'How can I help you with carbon accounting today?'}
+          </p>
+        </div>
 
-      {/* Prompt cards 2×2 */}
-      <div className="grid grid-cols-2 gap-2.5 w-full max-w-md cb-fadeup" style={{ animationDelay: '0.3s' }}>
-        {cards.map((c, i) => (
-          <button
-            key={i}
-            onClick={() => onNew(c.q)}
-            className="rounded-2xl border border-[#302817]/8 bg-white px-3.5 py-3.5 text-left transition hover:border-[#B4BE6A]/50 hover:bg-[#F0F3E0] active:scale-[0.97]"
-          >
-            <span className="text-xl leading-none">{c.icon}</span>
-            <p className="mt-2 text-[12px] font-bold text-[#302817] leading-tight">{c.title}</p>
-            <p className="text-[10px] text-[#302817]/38 mt-1 leading-snug">{c.q}</p>
-          </button>
-        ))}
-      </div>
+        {/* Features */}
+        <div className="w-full space-y-2 cb-fadeup" style={{ animationDelay: '0.2s' }}>
+          {features.map(([icon, text]) => (
+            <div key={text} className="flex items-center gap-3 rounded-xl px-3 py-1.5">
+              <span className="text-base shrink-0">{icon}</span>
+              <span className="text-[12.5px] text-[#302817]/55">{text}</span>
+            </div>
+          ))}
+        </div>
 
-      <p className="text-[10px] text-[#302817]/22 cb-fadeup" style={{ animationDelay: '0.42s' }}>
-        {tr ? 'veya aşağıya yazın' : 'or type anything below'}
-      </p>
+        {/* Divider */}
+        <div className="w-full border-t border-[#302817]/6 cb-fadeup" style={{ animationDelay: '0.28s' }} />
+
+        {/* Starter prompts */}
+        <div className="w-full flex flex-col gap-2 cb-fadeup" style={{ animationDelay: '0.35s' }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-[#302817]/28 px-1">
+            {tr ? 'Başlamak için bir konu seçin' : 'Or pick a topic to start'}
+          </p>
+          {starters.map(q => (
+            <button
+              key={q}
+              onClick={() => onNew(q)}
+              className="text-left rounded-xl border border-[#302817]/8 bg-white/80 px-4 py-2.5 text-[12.5px] text-[#302817]/65 transition hover:border-[#95A847]/40 hover:bg-[#F0F3E0] hover:text-[#302817] active:scale-[0.98]"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+
+      </div>
     </div>
   );
 }
@@ -3060,29 +3058,39 @@ function FreeChatTab({ language, summary, entries, targets }) {
         />
       )}
       {/* Sidebar */}
-      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#FAFAF8] transition-all duration-300 ${
+      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#F9F8F5] transition-all duration-300 ${
         sidebarOpen
-          ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
+          ? 'absolute inset-y-0 left-0 z-30 w-[200px] lg:relative lg:inset-auto lg:z-auto'
           : 'w-0 overflow-hidden'
       }`}>
-        <div className="flex items-center border-b border-[#302817]/6 px-3 py-3">
-          <span className="text-xs font-bold text-[#302817]/50 uppercase tracking-wider flex-1">
-            {tr ? 'Sohbetler' : 'Chats'}
-          </span>
+        {/* New chat — top of sidebar */}
+        <div className="shrink-0 px-3 pt-3 pb-2">
+          <button
+            onClick={() => startNew()}
+            disabled={creatingSession}
+            className="flex w-full items-center gap-2 rounded-xl bg-[#75863B] px-3 py-2 text-[11.5px] font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creatingSession
+              ? <Loader2 className="h-3 w-3 animate-spin" />
+              : <Plus className="h-3 w-3" />}
+            {tr ? 'Yeni sohbet' : 'New chat'}
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2">
+
+        {/* Session list */}
+        <div className="flex-1 overflow-y-auto px-2 pb-3">
           {loadingSessions ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin text-[#302817]/30" />
+              <Loader2 className="h-4 w-4 animate-spin text-[#302817]/20" />
             </div>
           ) : sessions.length === 0 ? (
-            <p className="px-3 py-6 text-center text-[11px] text-[#302817]/30 leading-relaxed">
+            <p className="px-3 py-8 text-center text-[11px] text-[#302817]/28 leading-relaxed">
               {tr ? 'Henüz sohbet yok.' : 'No chats yet.'}
             </p>
           ) : (
             groupSessionsByDate(sessions, tr).map(group => (
-              <div key={group.key} className="mb-2">
-                <p className="px-3 pb-1 pt-2 text-[9px] font-bold uppercase tracking-widest text-[#302817]/25">
+              <div key={group.key} className="mb-1">
+                <p className="px-2 pb-1 pt-3 text-[9px] font-bold uppercase tracking-widest text-[#302817]/22">
                   {group.label}
                 </p>
                 {group.items.map(s => (
@@ -3099,101 +3107,56 @@ function FreeChatTab({ language, summary, entries, targets }) {
             ))
           )}
         </div>
-        {/* New chat button — pinned to bottom of sidebar */}
-        <div className="shrink-0 border-t border-[#302817]/6 p-3">
-          <button
-            onClick={() => startNew()}
-            disabled={creatingSession}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#302817] px-3 py-2.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {creatingSession
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Plus className="h-3.5 w-3.5" />}
-            {tr ? '+ Yeni Sohbet' : '+ New Chat'}
-          </button>
-        </div>
       </aside>
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center gap-3 border-b border-[#302817]/6 px-4 py-3">
+        {/* Minimal header */}
+        <header className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 px-3 py-2.5">
           <button
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#302817]/40 transition hover:bg-[#302817]/6 hover:text-[#302817]"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-[#302817]/6 hover:text-[#302817]"
+            title={sidebarOpen ? (tr ? 'Geçmişi gizle' : 'Hide history') : (tr ? 'Geçmişi göster' : 'Show history')}
           >
-            {sidebarOpen
-              ? <ChevronLeft className="h-4 w-4" />
-              : <MessageSquare className="h-4 w-4" />}
+            <MessageSquare className="h-3.5 w-3.5" />
           </button>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#302817]">
-            <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
-          </div>
+
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-bold text-[#302817]">
-              {tr ? 'Ayak izi asistanı' : 'Footprint assistant'}
-            </p>
-            <p className="text-[10px] font-semibold text-[#302817]/40">
-              {totalTonne > 0
-                ? (tr ? 'Canlı verilerinizden yanıtlar' : 'Answers from your live data')
-                : (tr ? 'ISO 14064-1 · Karbon uzmanı AI' : 'ISO 14064-1 · Carbon expert AI')}
+              {activeSession ? activeSession.title : (tr ? 'Carbon AI' : 'Carbon AI')}
             </p>
           </div>
-          {/* Language toggle — EN / TR */}
-          <div className="flex items-center shrink-0 gap-0.5 rounded-lg border border-[#302817]/10 bg-[#302817]/5 p-0.5">
+
+          {/* Live data chip — compact, only when data exists */}
+          {totalTonne > 0 && (
+            <span className="shrink-0 rounded-full bg-[#95A847]/12 px-2.5 py-1 text-[10px] font-bold text-[#75863B]">
+              {totalTonne.toFixed(1)} tCO₂e
+            </span>
+          )}
+
+          {/* Language toggle */}
+          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#302817]/8 bg-[#302817]/4 p-0.5">
             {['tr', 'en'].map(l => (
               <button
                 key={l}
                 onClick={() => setActiveLang(l)}
-                className={`rounded-md px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide transition ${
-                  activeLang === l
-                    ? 'bg-[#302817] text-white shadow-sm'
-                    : 'text-[#302817]/45 hover:text-[#302817]'
+                className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition ${
+                  activeLang === l ? 'bg-white text-[#302817] shadow-sm' : 'text-[#302817]/40 hover:text-[#302817]'
                 }`}
               >
                 {l}
               </button>
             ))}
           </div>
-          {!activeId && (
-            <button
-              onClick={() => startNew()}
-              disabled={creatingSession}
-              className="flex items-center gap-1.5 rounded-lg border border-[#302817]/10 bg-white px-3 py-1.5 text-[11px] font-bold text-[#302817] transition hover:bg-[#302817] hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {creatingSession
-                ? <Loader2 className="h-3 w-3 animate-spin" />
-                : <Plus className="h-3 w-3" />}
-              {tr ? 'Yeni' : 'New'}
-            </button>
-          )}
         </header>
 
-        {/* Error banner — shown at all times (session load, message load, send errors) */}
-        {/* Fix #81: added dismiss × so users aren't stuck staring at a stale error. */}
+        {/* Error banner */}
         {error && (
-          <div role="alert" aria-live="assertive" className="shrink-0 mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
+          <div role="alert" aria-live="assertive" className="shrink-0 mx-4 mt-3 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
             <span className="flex-1">{error}</span>
-            <button
-              onClick={() => setError('')}
-              aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'}
-              className="shrink-0 text-red-400 transition hover:text-red-600"
-            >
+            <button onClick={() => setError('')} className="shrink-0 text-red-400 transition hover:text-red-600">
               <X className="h-3.5 w-3.5" />
             </button>
-          </div>
-        )}
-
-        {/* Emission data context strip (carbon brain data-awareness) */}
-        {totalTonne > 0 && (
-          <div className="shrink-0 border-b border-[#302817]/6 bg-[#EEF3D8]/50 px-4 py-2">
-            <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-[#302817]/35">{tr ? 'Mevcut Veriler' : 'Your Data'}</span>
-              <span className="text-[11px] font-bold text-[#302817]/70">{tr ? 'Toplam' : 'Total'}: <span className="text-[#75863B]">{totalTonne.toFixed(1)} tCO₂e</span></span>
-              {s1 > 0 && <span className="text-[11px] text-[#302817]/50">K1: {s1.toFixed(1)}</span>}
-              {s2 > 0 && <span className="text-[11px] text-[#302817]/50">K2: {s2.toFixed(1)}</span>}
-              {s3 > 0 && <span className="text-[11px] text-[#302817]/50">K3: {s3.toFixed(1)}</span>}
-              {entries?.length > 0 && <span className="text-[11px] text-[#302817]/40">{entries.length} {tr ? 'kayıt' : 'entries'}</span>}
-            </div>
           </div>
         )}
 
@@ -3205,16 +3168,10 @@ function FreeChatTab({ language, summary, entries, targets }) {
               <Loader2 className="h-6 w-6 animate-spin text-[#302817]/30" />
             </div>
           ) : messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#302817]">
-                <Sparkles className="h-5 w-5 text-[#B4BE6A]" />
-              </div>
-              <div>
-                <p className="text-[14px] font-bold text-[#302817]/60">CarbonIQ</p>
-                <p className="text-[12px] text-[#302817]/35 mt-1">
-                  {tr ? 'Sorunuzu yazın, yanıtlayayım.' : 'Type your question below.'}
-                </p>
-              </div>
+            <div className="flex items-center justify-center h-full">
+              <p className="text-[12px] text-[#302817]/30">
+                {tr ? 'Sorunuzu yazın…' : 'Type your question below…'}
+              </p>
             </div>
           ) : (
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
@@ -3235,25 +3192,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
           )}
         </div>
 
-        <div className="shrink-0 border-t border-[#302817]/6 px-4 pt-2.5 pb-3 sm:px-6">
-          {/* Persistent suggestion chips — shown when a session is active */}
-          {activeId && messages.length > 0 && (
-            <div className="mx-auto mb-2.5 flex w-full max-w-3xl flex-wrap gap-1.5">
-              {(tr
-                ? ['En büyük emisyon kaynağım nedir?', 'Nasıl azaltabilirim?', 'Q3 ofset planı hazırla']
-                : ['What\'s my biggest emission source?', 'How can I cut it?', 'Draft a Q3 offset plan']
-              ).map(q => (
-                <button
-                  key={q}
-                  onClick={() => sendMessage(q)}
-                  disabled={sending || creatingSession}
-                  className="rounded-full border border-[#302817]/12 bg-white px-3 py-1.5 text-[11px] font-medium text-[#302817]/65 transition hover:border-[#95A847]/50 hover:bg-[#F0F3E0] hover:text-[#302817] disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="shrink-0 border-t border-[#302817]/6 px-4 pt-3 pb-3 sm:px-6">
           {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
               see a warning before they hit a 400 error, not after.
               Fix #87: CHAT_CHAR_LIMIT is now a module-level constant (see top of file)
