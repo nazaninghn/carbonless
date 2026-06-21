@@ -1,12 +1,28 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import Image from 'next/image';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ClipboardList, AlertTriangle, RotateCcw, X,
   HelpCircle, CheckCircle2, Menu,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Carbon Brain orb animations (injected once via <style> in FreeChatTab)
+// ─────────────────────────────────────────────────────────────────────────────
+const CHAT_ANIM_STYLES = `
+@keyframes cbFloat   { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-14px)} }
+@keyframes cbGlow    { 0%,100%{opacity:0.45} 50%{opacity:1} }
+@keyframes cbRing    { to{transform:rotate(360deg)} }
+@keyframes cbFadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+.cb-float   { animation: cbFloat   5.5s ease-in-out infinite; }
+.cb-glow    { animation: cbGlow    4s   ease-in-out infinite; }
+.cb-ring    { animation: cbRing    9s   linear     infinite; }
+.cb-ring-r  { animation: cbRing    14s  linear     infinite reverse; }
+.cb-fadeup  { animation: cbFadeUp  0.55s ease-out  both; }
+`;
 import {
   CARBONIQ_STAGES,
   CARBONIQ_QUESTIONS,
@@ -418,27 +434,48 @@ function EmptyState({ onNew, tr }) {
     { icon: '🌱', title: 'Reduction strategy',   q: 'What are the most effective emission reduction strategies for my company?' },
   ];
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-7 px-6 py-6 text-center">
-      {/* Hero logo */}
-      <div className="flex flex-col items-center gap-3">
-        <div className="relative">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#302817]">
-            <Sparkles className="h-6 w-6 text-[#B4BE6A]" />
-          </div>
-          <span className="absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full bg-[#95A847] border-2 border-white" />
+    <div className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-4 text-center">
+      {/* ── Carbon Brain Orb ── */}
+      <div className="relative flex items-center justify-center select-none">
+        {/* Ambient glow halos */}
+        <div className="absolute h-72 w-72 rounded-full bg-[#B4BE6A]/8 blur-3xl animate-pulse" />
+        <div className="absolute h-56 w-56 rounded-full bg-[#95A847]/12 blur-2xl cb-glow" />
+        {/* Rotating orbit rings */}
+        <svg className="absolute h-64 w-64 cb-ring opacity-[0.13]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="92" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="14 7" strokeLinecap="round" />
+          <circle cx="100" cy="100" r="70" fill="none" stroke="#95A847" strokeWidth="0.75" strokeDasharray="6 16" />
+        </svg>
+        <svg className="absolute h-48 w-48 cb-ring-r opacity-[0.07]" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="90" fill="none" stroke="#75863B" strokeWidth="1" strokeDasharray="8 20" />
+        </svg>
+        {/* Globe */}
+        <div className="cb-float">
+          <Image
+            src="/carbon-hero.png"
+            alt="Carbon Brain"
+            width={210}
+            height={158}
+            className="object-contain drop-shadow-2xl"
+            priority
+          />
         </div>
-        <div>
-          <p className="text-[26px] font-black text-[#302817] tracking-tight">CarbonIQ</p>
-          <p className="text-[11px] text-[#302817]/35 mt-0.5 font-semibold uppercase tracking-widest">
-            ISO 14064-1 · GHG Protocol
-          </p>
-        </div>
-        <p className="text-[15px] font-semibold text-[#302817]/65 max-w-xs">
-          {tr ? 'Bugün size nasıl yardımcı olabilirim?' : 'What can I help you with today?'}
+      </div>
+
+      {/* Welcome text */}
+      <div className="flex flex-col items-center gap-1.5 cb-fadeup" style={{ animationDelay: '0.15s' }}>
+        <p className="text-[10px] font-bold uppercase tracking-[0.28em] text-[#302817]/28">
+          {tr ? 'Hoş geldiniz' : 'Welcome to'}
+        </p>
+        <p className="text-[30px] font-black text-[#302817] tracking-tight leading-none">Carbon AI</p>
+        <p className="text-[13px] text-[#302817]/48 font-medium max-w-[280px] mt-1">
+          {tr
+            ? 'Karbon muhasebesi ve sera gazı raporlaması için AI asistanınız'
+            : 'Your AI assistant for carbon accounting & GHG reporting'}
         </p>
       </div>
+
       {/* Prompt cards 2×2 */}
-      <div className="grid grid-cols-2 gap-2.5 w-full max-w-md">
+      <div className="grid grid-cols-2 gap-2.5 w-full max-w-md cb-fadeup" style={{ animationDelay: '0.3s' }}>
         {cards.map((c, i) => (
           <button
             key={i}
@@ -451,7 +488,8 @@ function EmptyState({ onNew, tr }) {
           </button>
         ))}
       </div>
-      <p className="text-[10px] text-[#302817]/25">
+
+      <p className="text-[10px] text-[#302817]/22 cb-fadeup" style={{ animationDelay: '0.42s' }}>
         {tr ? 'veya aşağıya yazın' : 'or type anything below'}
       </p>
     </div>
@@ -2987,6 +3025,8 @@ function FreeChatTab({ language, summary, entries, targets }) {
   const activeSession = useMemo(() => sessions.find(s => s.id === activeId), [sessions, activeId]);
 
   return (
+    <>
+    <style>{CHAT_ANIM_STYLES}</style>
     <div className="relative flex flex-1 min-h-0 overflow-hidden">
       {/* Mobile backdrop for chat sidebar */}
       {sidebarOpen && (
@@ -3001,20 +3041,10 @@ function FreeChatTab({ language, summary, entries, targets }) {
           ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
           : 'w-0 overflow-hidden'
       }`}>
-        <div className="flex items-center justify-between border-b border-[#302817]/6 px-3 py-3">
-          <span className="text-xs font-bold text-[#302817]/50 uppercase tracking-wider">
+        <div className="flex items-center border-b border-[#302817]/6 px-3 py-3">
+          <span className="text-xs font-bold text-[#302817]/50 uppercase tracking-wider flex-1">
             {tr ? 'Sohbetler' : 'Chats'}
           </span>
-          <button
-            onClick={() => startNew()}
-            disabled={creatingSession}
-            className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
-            title={tr ? 'Yeni sohbet' : 'New chat'}
-          >
-            {creatingSession
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <Plus className="h-3.5 w-3.5" />}
-          </button>
         </div>
         <div className="flex-1 overflow-y-auto p-2">
           {loadingSessions ? (
@@ -3023,7 +3053,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
             </div>
           ) : sessions.length === 0 ? (
             <p className="px-3 py-6 text-center text-[11px] text-[#302817]/30 leading-relaxed">
-              {tr ? 'Henüz sohbet yok.\nAşağıdan yeni sohbet başlatın.' : 'No chats yet.\nStart a new conversation below.'}
+              {tr ? 'Henüz sohbet yok.' : 'No chats yet.'}
             </p>
           ) : (
             groupSessionsByDate(sessions, tr).map(group => (
@@ -3044,6 +3074,19 @@ function FreeChatTab({ language, summary, entries, targets }) {
               </div>
             ))
           )}
+        </div>
+        {/* New chat button — pinned to bottom of sidebar */}
+        <div className="shrink-0 border-t border-[#302817]/6 p-3">
+          <button
+            onClick={() => startNew()}
+            disabled={creatingSession}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#302817] px-3 py-2.5 text-[11px] font-bold text-white shadow-sm transition hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {creatingSession
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <Plus className="h-3.5 w-3.5" />}
+            {tr ? '+ Yeni Sohbet' : '+ New Chat'}
+          </button>
         </div>
       </aside>
 
@@ -3236,6 +3279,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
 
