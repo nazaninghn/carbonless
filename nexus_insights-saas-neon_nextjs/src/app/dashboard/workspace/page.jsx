@@ -106,7 +106,7 @@ function ModeToggle({ mode, onChange, lang }) {
         onClick={() => onChange('chat')}
         className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all duration-200 ${
           mode === 'chat'
-            ? 'bg-[#302817] text-white shadow-sm'
+            ? 'bg-[#75863B] text-white shadow-sm'
             : 'text-[#302817]/50 hover:text-[#302817]/80 hover:bg-[#302817]/5'
         }`}
       >
@@ -117,7 +117,7 @@ function ModeToggle({ mode, onChange, lang }) {
         onClick={() => onChange('expert')}
         className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all duration-200 ${
           mode === 'expert'
-            ? 'bg-[#302817] text-white shadow-sm'
+            ? 'bg-[#75863B] text-white shadow-sm'
             : 'text-[#302817]/50 hover:text-[#302817]/80 hover:bg-[#302817]/5'
         }`}
       >
@@ -183,7 +183,7 @@ function ExpertView({ lang, fieldValues, statuses, onCategoryClick }) {
         {/* Hero total — only when data exists */}
         {grandKg > 0 ? (
           <div className="rounded-2xl overflow-hidden shadow-sm">
-            <div className="bg-gradient-to-br from-[#302817] to-[#527A1A] p-5 text-white">
+            <div className="bg-gradient-to-br from-[#527A1A] to-[#75863B] p-5 text-white">
               <p className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">
                 {tr ? 'Toplam Karbon Ayak İzi' : 'Total Carbon Footprint'}
               </p>
@@ -193,7 +193,7 @@ function ExpertView({ lang, fieldValues, statuses, onCategoryClick }) {
               </p>
             </div>
             {/* Progress bar */}
-            <div className="bg-[#302817]/90 px-5 py-2.5 flex items-center gap-3">
+            <div className="bg-[#527A1A]/90 px-5 py-2.5 flex items-center gap-3">
               <div className="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[#B4BE6A] to-[#75863B] transition-all duration-700"
@@ -278,8 +278,8 @@ function PanelDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#302817]/8">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#302817]">
-              <LayoutDashboard className="h-3.5 w-3.5 text-[#B4BE6A]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#75863B]">
+              <LayoutDashboard className="h-3.5 w-3.5 text-white/80" />
             </div>
             <div>
               <p className="text-[13px] font-bold text-[#302817]">
@@ -338,7 +338,7 @@ function PanelDrawer({
                 key={cat.id}
                 onClick={() => setActive(cat.id)}
                 className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 transition ${
-                  isA ? 'bg-[#302817] shadow-sm' : 'hover:bg-[#302817]/5'
+                  isA ? 'bg-[#75863B] shadow-sm' : 'hover:bg-[#302817]/5'
                 }`}
               >
                 <div className="relative">
