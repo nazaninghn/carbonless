@@ -363,7 +363,7 @@ const Bubble = memo(function Bubble({ role, content }) {
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[82%] sm:max-w-[72%] rounded-[20px] rounded-tr-sm bg-[#302817] px-4 py-3 text-[13.5px] leading-[1.65] text-white">
+        <div className="max-w-[82%] sm:max-w-[72%] rounded-[20px] rounded-tr-sm bg-[#75863B] px-4 py-3 text-[13.5px] leading-[1.65] text-white shadow-sm">
           {content}
         </div>
       </div>
@@ -371,8 +371,8 @@ const Bubble = memo(function Bubble({ role, content }) {
   }
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
-        <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+      <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+        <span className="block h-2 w-2 rounded-full bg-white/80" />
       </div>
       <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#302817]">
         <Markdown text={content} />
@@ -399,14 +399,19 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(session.id); } }}
       className={`group relative w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
         active
-          ? 'bg-[#302817]/8 text-[#302817]'
+          ? 'bg-[#95A847]/12 text-[#302817]'
           : 'text-[#302817]/60 hover:bg-[#302817]/5 hover:text-[#302817]'
       }`}
     >
-      <p className="truncate text-xs font-bold leading-tight pr-6">{session.title}</p>
-      <p className="mt-0.5 text-[10px] font-medium text-[#302817]/35">
-        {session.message_count ?? 0} {tr ? 'mesaj' : 'msgs'}{session.updated_at ? ` · ${new Date(session.updated_at).toLocaleDateString()}` : ''}
-      </p>
+      <div className="flex items-start gap-2 pr-6">
+        <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-[#95A847]' : 'bg-[#302817]/20'}`} />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold leading-tight">{session.title}</p>
+          <p className="mt-0.5 text-[10px] font-medium text-[#302817]/35">
+            {session.updated_at ? new Date(session.updated_at).toLocaleDateString() : ''}
+          </p>
+        </div>
+      </div>
       <button
         onClick={e => { e.stopPropagation(); onDelete(session.id); }}
         aria-label={tr ? 'Sohbeti sil' : 'Delete chat'}
@@ -3106,10 +3111,12 @@ function FreeChatTab({ language, summary, entries, targets }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-bold text-[#302817]">
-              {activeSession ? activeSession.title : 'CarbonIQ'}
+              {tr ? 'Ayak izi asistanı' : 'Footprint assistant'}
             </p>
-            <p className="text-[10px] font-semibold text-[#302817]/35">
-              {tr ? 'ISO 14064-1 · Karbon uzmanı AI' : 'ISO 14064-1 · Carbon expert AI'}
+            <p className="text-[10px] font-semibold text-[#302817]/40">
+              {totalTonne > 0
+                ? (tr ? 'Canlı verilerinizden yanıtlar' : 'Answers from your live data')
+                : (tr ? 'ISO 14064-1 · Karbon uzmanı AI' : 'ISO 14064-1 · Carbon expert AI')}
             </p>
           </div>
           {/* Language toggle — EN / TR */}
@@ -3197,8 +3204,8 @@ function FreeChatTab({ language, summary, entries, targets }) {
               ))}
               {sending && (
                 <div className="flex gap-3">
-                  <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#302817]">
-                    <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+                  <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+                    <span className="block h-2 w-2 rounded-full bg-white/80" />
                   </div>
                   <div className="py-1">
                     <TypingDots />
@@ -3209,7 +3216,25 @@ function FreeChatTab({ language, summary, entries, targets }) {
           )}
         </div>
 
-        <div className="shrink-0 border-t border-[#302817]/6 px-4 py-3 sm:px-6">
+        <div className="shrink-0 border-t border-[#302817]/6 px-4 pt-2.5 pb-3 sm:px-6">
+          {/* Persistent suggestion chips — shown when a session is active */}
+          {activeId && messages.length > 0 && (
+            <div className="mx-auto mb-2.5 flex w-full max-w-3xl flex-wrap gap-1.5">
+              {(tr
+                ? ['En büyük emisyon kaynağım nedir?', 'Nasıl azaltabilirim?', 'Q3 ofset planı hazırla']
+                : ['What\'s my biggest emission source?', 'How can I cut it?', 'Draft a Q3 offset plan']
+              ).map(q => (
+                <button
+                  key={q}
+                  onClick={() => sendMessage(q)}
+                  disabled={sending || creatingSession}
+                  className="rounded-full border border-[#302817]/12 bg-white px-3 py-1.5 text-[11px] font-medium text-[#302817]/65 transition hover:border-[#95A847]/50 hover:bg-[#F0F3E0] hover:text-[#302817] disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
           {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
               see a warning before they hit a 400 error, not after.
               Fix #87: CHAT_CHAR_LIMIT is now a module-level constant (see top of file)
@@ -3230,16 +3255,8 @@ function FreeChatTab({ language, summary, entries, targets }) {
                     value={input}
                     onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
                     onKeyDown={handleKeyDown}
-                    // Fix #91: was `disabled={!activeId && !sending}` which prevented typing
-                    // before a session existed, making the "Press Enter to start chatting"
-                    // placeholder a lie — users could not type a custom first message.
-                    // Now only locked during active network operations (sending / creatingSession).
                     disabled={sending || creatingSession}
-                    placeholder={
-                      !activeId
-                        ? (tr ? 'Yeni sohbet başlatmak için Enter\'a basın' : 'Press Enter or click ↑ to start chatting')
-                        : (tr ? 'Mesajınızı yazın… (Enter gönderir)' : 'Type a message… (Enter to send)')
-                    }
+                    placeholder={tr ? 'CarbonIQ\'ya sor…' : 'Ask CarbonIQ…'}
                     rows={1}
                     className="min-h-[24px] max-h-[120px] flex-1 resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30 disabled:cursor-not-allowed"
                     style={{ scrollbarWidth: 'none' }}
@@ -3254,10 +3271,8 @@ function FreeChatTab({ language, summary, entries, targets }) {
                       else sendMessage();
                     }}
                     disabled={!input.trim() || sending || creatingSession || charOver}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    {/* Fix #68: also disable + spin during session creation (creatingSession),
-                        not just while AI is replying (sending). Matches sidebar/header buttons. */}
                     {(sending || creatingSession)
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       : <Send className="h-3.5 w-3.5" />}
@@ -3265,7 +3280,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
                 </div>
                 <div className="mt-1.5 mx-auto flex w-full max-w-3xl items-center justify-between px-1">
                   <p className="text-[10px] text-[#302817]/25">
-                    {tr ? 'CarbonIQ yanılabilir. Önemli kararlar için uzmanla doğrulayın.' : 'CarbonIQ may make errors. Verify critical decisions with an expert.'}
+                    {tr ? 'CarbonIQ yanılabilir. Önemli rakamları doğrulayın.' : 'CarbonIQ can make mistakes. Verify important figures.'}
                   </p>
                   {charWarn && (
                     <span className={`text-[10px] font-semibold tabular-nums ${charOver ? 'text-red-500' : 'text-amber-500'}`}>
