@@ -705,7 +705,7 @@ function ChatBubble({ msg }) {
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#302817] px-4 py-2.5 text-white text-[13px] leading-[1.7]">
+        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#5E7A2E] px-4 py-2.5 text-white/95 text-[13px] leading-[1.7]">
           {msg.content}
         </div>
       </div>
@@ -713,8 +713,8 @@ function ChatBubble({ msg }) {
   }
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#302817]">
-        <Sparkles className="h-2.5 w-2.5 text-[#B4BE6A]" />
+      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#75863B]">
+        <Sparkles className="h-2.5 w-2.5 text-white/80" />
       </div>
       <div className="flex-1 min-w-0 text-[#302817]">
         <RichText text={msg.content} />
@@ -1279,8 +1279,8 @@ export function ChatWorkspace({
       {/* ── Header ── */}
       <div className="shrink-0 flex items-center gap-2.5 px-4 py-2 border-b border-[#302817]/8 bg-white">
         {/* Icon */}
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#302817] shrink-0">
-          <Sparkles className="h-3 w-3 text-[#B4BE6A]" />
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#75863B] shrink-0">
+          <Sparkles className="h-3 w-3 text-white/80" />
         </div>
         {/* Title + online dot */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -1294,7 +1294,7 @@ export function ChatWorkspace({
             onClick={() => mode === 'guided' ? switchToFreeMode() : null}
             className={`px-2.5 py-1.5 transition-all ${
               mode === 'free'
-                ? 'bg-[#302817] text-white cursor-default'
+                ? 'bg-[#75863B] text-white cursor-default'
                 : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
             {tr ? 'Sohbet' : 'Chat'}
@@ -1303,7 +1303,7 @@ export function ChatWorkspace({
             onClick={() => mode === 'free' ? startGuidedMode() : null}
             className={`px-2.5 py-1.5 transition-all ${
               mode === 'guided'
-                ? 'bg-[#302817] text-white cursor-default'
+                ? 'bg-[#75863B] text-white cursor-default'
                 : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
             {tr ? 'Anket' : 'Questions'}
@@ -1316,7 +1316,7 @@ export function ChatWorkspace({
             onClick={() => setActiveLang('tr')}
             className={`px-2 py-1.5 transition-all ${
               activeLang === 'tr'
-                ? 'bg-[#302817] text-white'
+                ? 'bg-[#75863B] text-white'
                 : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
             TR
@@ -1325,7 +1325,7 @@ export function ChatWorkspace({
             onClick={() => setActiveLang('en')}
             className={`px-2 py-1.5 transition-all ${
               activeLang === 'en'
-                ? 'bg-[#302817] text-white'
+                ? 'bg-[#75863B] text-white'
                 : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
             }`}>
             EN
@@ -1387,8 +1387,8 @@ export function ChatWorkspace({
             return (
               <div key={msg.id} className="flex flex-col items-center gap-7 py-10 text-center">
                 <div className="flex flex-col items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#302817]">
-                    <Sparkles className="h-5 w-5 text-[#B4BE6A]" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#75863B] shadow-lg shadow-[#75863B]/20">
+                    <Sparkles className="h-5 w-5 text-white/90" />
                   </div>
                   <div>
                     <p className="text-[22px] font-black text-[#302817] tracking-tight">CarbonIQ</p>
@@ -1485,8 +1485,8 @@ export function ChatWorkspace({
 
         {sending && (
           <div className="flex gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#302817]">
-              <Sparkles className="h-2.5 w-2.5 text-[#B4BE6A]" />
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#75863B]">
+              <Sparkles className="h-2.5 w-2.5 text-white/80" />
             </div>
             <div className="pt-0.5">
               <TypingDots />
@@ -1522,7 +1522,7 @@ export function ChatWorkspace({
             {/* INFO → Continue button */}
             {currentQuestion.type === 'info' && (
               <button onClick={handleInfoContinue}
-                className="w-full rounded-full bg-[#302817] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-black active:scale-[0.98] transition">
+                className="w-full rounded-full bg-[#75863B] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#5E6B2A] active:scale-[0.98] transition">
                 {tr ? '→ Devam' : '→ Continue'}
               </button>
             )}
@@ -1563,7 +1563,7 @@ export function ChatWorkspace({
                 <button
                   onClick={() => submitGuidedAnswer(selectedOpts)}
                   disabled={selectedOpts.length === 0 && currentQuestion.required}
-                  className="w-full rounded-full bg-[#302817] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-black disabled:opacity-40 active:scale-[0.98] transition mt-0.5">
+                  className="w-full rounded-full bg-[#75863B] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#5E6B2A] disabled:opacity-40 active:scale-[0.98] transition mt-0.5">
                   {tr
                     ? `Onayla${selectedOpts.length > 0 ? ` (${selectedOpts.length})` : ''}`
                     : `Confirm${selectedOpts.length > 0 ? ` (${selectedOpts.length})` : ''}`}
@@ -1596,7 +1596,7 @@ export function ChatWorkspace({
                 <button
                   onClick={() => submitGuidedAnswer(countryCityVal)}
                   disabled={!countryCityVal.country || !countryCityVal.city}
-                  className="w-full rounded-full bg-[#302817] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-black disabled:opacity-40 active:scale-[0.98] transition">
+                  className="w-full rounded-full bg-[#75863B] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#5E6B2A] disabled:opacity-40 active:scale-[0.98] transition">
                   {tr ? '→ Onayla' : '→ Confirm'}
                 </button>
               </div>
@@ -1634,7 +1634,7 @@ export function ChatWorkspace({
                   }}
                   disabled={!pendingAnswer.trim() && currentQuestion.required}
                   aria-label={tr ? 'Gönder' : 'Send'}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1690,7 +1690,7 @@ export function ChatWorkspace({
               />
               <button onClick={send} disabled={!input.trim() || sending}
                 aria-label={tr ? 'Gönder' : 'Send'}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#302817] text-white shadow-sm transition hover:bg-black disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               </button>
             </div>
