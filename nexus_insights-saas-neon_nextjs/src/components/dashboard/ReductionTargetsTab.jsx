@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
@@ -397,7 +397,7 @@ export default function ReductionTargetsTab({
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black sm:self-auto"
+            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] sm:self-auto"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Hedef Ekle' : 'Add Target'}
@@ -472,7 +472,7 @@ export default function ReductionTargetsTab({
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black"
+            className="inline-flex items-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Hedefinizi Ekleyin' : 'Add Your First Target'}
@@ -634,7 +634,7 @@ export default function ReductionTargetsTab({
               </button>
               <button
                 type="submit" form="edit-target-form" disabled={editSaving}
-                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black disabled:opacity-60"
+                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60"
               >
                 {editSaving ? '…' : (tr ? 'Kaydet' : 'Save Changes')}
               </button>
@@ -766,7 +766,7 @@ export default function ReductionTargetsTab({
               </button>
               <button
                 type="submit" form="target-form" disabled={saving}
-                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black disabled:opacity-60"
+                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60"
               >
                 {saving ? '…' : (tr ? 'Hedefi Kaydet' : 'Save Target')}
               </button>

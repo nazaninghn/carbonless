@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -253,7 +253,7 @@ export default function TeamManagement({ language }) {
           <button
             onClick={handleInvite}
             disabled={inviting || !inviteEmail}
-            className="px-5 py-2 bg-[#302817] text-white rounded-xl text-sm font-medium hover:bg-black transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-5 py-2 bg-[#75863B] text-white rounded-xl text-sm font-medium hover:bg-[#5E6B2A] transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             <UserPlus className="w-4 h-4" />
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useCallback } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
@@ -82,7 +82,7 @@ export default function DashboardSidebar({
                   className={`
                     group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition
                     ${isActive
-                      ? 'bg-[#302817] text-white shadow-[0_4px_12px_rgba(48,40,23,0.15)]'
+                      ? 'bg-[#75863B] text-white shadow-[0_4px_12px_rgba(48,40,23,0.15)]'
                       : 'text-[#302817]/65 hover:bg-[#B4BE6A]/8 hover:text-[#302817]'}
                   `}
                 >

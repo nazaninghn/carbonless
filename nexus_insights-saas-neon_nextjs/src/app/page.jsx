@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -485,7 +485,7 @@ export default function Home() {
                 {t.chatDesc}
               </p>
               <Link href="/register"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#302817] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-black transition">
+                className="inline-flex items-center gap-2 rounded-lg bg-[#302817] px-5 py-2.5 text-[13px] font-bold text-white hover:bg-[#5E6B2A] transition">
                 <Sparkles className="h-3.5 w-3.5 text-[#B4BE6A]" />
                 {t.start}
                 <ArrowRight className="h-3.5 w-3.5" />

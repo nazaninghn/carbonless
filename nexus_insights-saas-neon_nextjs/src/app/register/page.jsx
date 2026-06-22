@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -367,5 +367,5 @@ function RadioOption({ name, option, value, onChange, label }) { const active = 
 function CheckCard({ checked, onChange, label }) { return (<label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 text-sm font-bold transition ${checked ? 'border-[#B4BE6A]/55 bg-[#B4BE6A]/14 text-[#302817] ring-4 ring-[#B4BE6A]/15' : 'border-[#302817]/10 bg-white/55 text-[#302817]/70 hover:border-[#B4BE6A]/45'}`}><input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 h-5 w-5 accent-[#B4BE6A]" /><span>{label}</span></label>); }
 function ErrorBox({ message }) { return <div className="mb-5 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-semibold text-red-600">{message}</div>; }
 function FormActions({ children }) { return <div className="flex flex-col-reverse justify-between gap-3 border-t border-[#302817]/10 pt-5 sm:flex-row sm:items-center">{children}</div>; }
-function PrimaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/18 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60 sm:w-auto">{children}</button>; }
+function PrimaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/18 transition hover:-translate-y-0.5 hover:bg-[#5E6B2A] disabled:opacity-60 sm:w-auto">{children}</button>; }
 function SecondaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#302817]/10 bg-white/55 px-6 py-3 text-sm font-bold text-[#302817] shadow-lg shadow-[#302817]/5 backdrop-blur-xl transition hover:bg-white/80 sm:w-auto">{children}</button>; }

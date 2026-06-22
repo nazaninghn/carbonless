@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -125,7 +125,7 @@ function LoginContent() {
               {sessionExpired &&<div className="rounded-2xl border border-amber-200 bg-amber-50/90 p-3 text-xs font-semibold text-amber-700">{tr ? 'Oturumunuz sona erdi.' : 'Your session has expired.'}</div>}
               {error && <div className="rounded-2xl border border-red-200 bg-red-50/90 p-3 text-xs font-semibold text-red-600">{error}</div>}
 
-              <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/18 transition hover:-translate-y-0.5 hover:bg-black disabled:opacity-60">
+              <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/18 transition hover:-translate-y-0.5 hover:bg-[#5E6B2A] disabled:opacity-60">
                 {loading ? (tr ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                 {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>

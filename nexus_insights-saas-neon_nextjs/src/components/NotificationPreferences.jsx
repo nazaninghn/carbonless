@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -49,7 +49,7 @@ export default function NotificationPreferences({ language, user }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="px-4 py-2 bg-[#302817] text-white rounded-xl text-sm hover:bg-black disabled:opacity-60"
+        className="px-4 py-2 bg-[#75863B] text-white rounded-xl text-sm hover:bg-[#5E6B2A] disabled:opacity-60"
       >
         {saving ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save')}
       </button>

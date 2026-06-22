@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   Leaf,
@@ -138,7 +138,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-bold transition lg:w-full lg:gap-2 lg:px-3 lg:text-xs ${
                     isActive
-                      ? 'bg-[#302817] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
+                      ? 'bg-[#75863B] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
                       : 'border border-[#302817]/8 bg-white text-[#302817]/60 hover:bg-white hover:text-[#302817] lg:border-0 lg:bg-transparent'
                   }`}
                 >
@@ -297,7 +297,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   onClick={handleExport}
                   disabled={exporting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/15 transition hover:bg-black disabled:opacity-60 sm:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/15 transition hover:bg-[#5E6B2A] disabled:opacity-60 sm:w-auto"
                 >
                   <Download className="h-4 w-4" />
                   {exporting ? '...' : tr ? 'Tüm Verileri İndir' : 'Export All Data'}

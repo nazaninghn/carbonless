@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 
@@ -33,7 +33,7 @@ export default function Error({ error, reset }) {
         </p>
         <button
           onClick={() => reset()}
-          className="px-6 py-3 bg-[#302817] text-[#F9EFE5] rounded-xl hover:bg-black transition-colors font-semibold"
+          className="px-6 py-3 bg-[#75863B] text-[#F9EFE5] rounded-xl hover:bg-[#5E6B2A] transition-colors font-semibold"
         >
           {tr ? 'Tekrar Dene' : 'Try Again'}
         </button>

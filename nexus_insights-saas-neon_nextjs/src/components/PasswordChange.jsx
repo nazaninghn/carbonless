@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
@@ -61,7 +61,7 @@ export default function PasswordChange({ language }) {
       </div>
       {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
       {msg && <p className="text-sm text-green-600 bg-green-50 p-2 rounded">{msg}</p>}
-      <button type="submit" disabled={loading} className="px-4 py-2 bg-[#302817] text-white rounded-xl text-sm hover:bg-black disabled:opacity-60">
+      <button type="submit" disabled={loading} className="px-4 py-2 bg-[#75863B] text-white rounded-xl text-sm hover:bg-[#5E6B2A] disabled:opacity-60">
         {loading ? (tr ? 'Değiştiriliyor…' : 'Changing…') : (tr ? 'Şifreyi Değiştir' : 'Change Password')}
       </button>
     </form>

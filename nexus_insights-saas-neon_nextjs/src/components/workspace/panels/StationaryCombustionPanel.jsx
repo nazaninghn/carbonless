@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Flame } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
@@ -265,7 +265,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
             ? 'bg-[#95A847]/15 border border-[#95A847]/30 text-[#527A1A]'
-            : 'bg-[#302817] text-white hover:bg-black disabled:opacity-35'
+            : 'bg-[#75863B] text-white hover:bg-[#5E6B2A] disabled:opacity-35'
         }`}
       >
         {saving ? (

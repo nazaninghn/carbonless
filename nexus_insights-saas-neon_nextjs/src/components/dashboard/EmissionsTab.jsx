@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
@@ -450,7 +450,7 @@ export default function EmissionsTab({
           <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A]"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Yeni Kayıt' : 'New Entry'}
@@ -513,7 +513,7 @@ export default function EmissionsTab({
               onClick={() => setFilterScope(p.val)}
               className={`rounded-full px-3 py-2 text-[11px] font-bold transition ${
                 filterScope === p.val
-                  ? 'bg-[#302817] text-white'
+                  ? 'bg-[#75863B] text-white'
                   : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
               }`}
             >
@@ -531,7 +531,7 @@ export default function EmissionsTab({
             onClick={() => setFilterMonth(0)}
             className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
               filterMonth === 0
-                ? 'bg-[#302817] text-white'
+                ? 'bg-[#75863B] text-white'
                 : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
             }`}
           >
@@ -547,7 +547,7 @@ export default function EmissionsTab({
                 onClick={() => setFilterMonth(filterMonth === mo ? 0 : mo)}
                 className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition ${
                   filterMonth === mo
-                    ? 'bg-[#302817] text-white'
+                    ? 'bg-[#75863B] text-white'
                     : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
                 }`}
               >
@@ -647,7 +647,7 @@ export default function EmissionsTab({
           </div>
           <button
             onClick={() => setShowAddForm(true)}
-            className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:bg-black"
+            className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:bg-[#5E6B2A]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Kaydı Ekle' : 'Add First Entry'}
@@ -990,7 +990,7 @@ export default function EmissionsTab({
               <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
                 {tr ? 'İptal' : 'Cancel'}
               </button>
-              <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black disabled:opacity-60">
+              <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60">
                 {submitting ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save Entry')}
               </button>
             </div>
@@ -1034,7 +1034,7 @@ export default function EmissionsTab({
             </div>
             <div className="flex shrink-0 gap-2 border-t border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
               <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#302817]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
-              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/12 transition hover:bg-black disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
+              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/12 transition hover:bg-[#5E6B2A] disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
             </div>
           </div>
         </div>
@@ -1109,7 +1109,7 @@ export default function EmissionsTab({
             </div>
             <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 sm:px-6 sm:py-4">
               <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
-              <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-colors hover:bg-black disabled:opacity-60">
+              <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-colors hover:bg-[#5E6B2A] disabled:opacity-60">
                 {cSaving ? '…' : (tr ? 'Talep Gönder' : 'Submit Request')}
               </button>
             </div>

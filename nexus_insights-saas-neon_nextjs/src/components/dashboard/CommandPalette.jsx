@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -230,7 +230,7 @@ export default function CommandPalette({
                         onMouseMove={() => setHighlighted(idx)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-100 ${
                           isHi
-                            ? 'bg-[#302817] text-white'
+                            ? 'bg-[#75863B] text-white'
                             : 'text-[#302817]/70 hover:bg-[#302817]/4'
                         }`}
                       >

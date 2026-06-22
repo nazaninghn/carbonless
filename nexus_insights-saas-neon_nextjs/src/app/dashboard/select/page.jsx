@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { MessageCircle, LayoutGrid, ArrowRight, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
@@ -115,7 +115,7 @@ export default function SelectModePage() {
         <button
           type="button"
           onClick={go}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] py-3.5 text-[14px] font-bold text-white transition hover:bg-black active:scale-[0.97]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] py-3.5 text-[14px] font-bold text-white transition hover:bg-[#5E6B2A] active:scale-[0.97]"
         >
           Devam
           <ArrowRight className="h-4 w-4" />

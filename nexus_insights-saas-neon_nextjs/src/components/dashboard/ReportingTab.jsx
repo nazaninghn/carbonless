@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useMemo, useCallback } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 import {
@@ -143,7 +143,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-black disabled:opacity-60">
+            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading === 'pdftr' ? '...' : 'PDF TR'}
             </button>
@@ -300,7 +300,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         {/* Compliance Status */}
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#302817] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#75863B] text-white">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Uyumluluk Durumu' : 'Compliance Status'}</h2>

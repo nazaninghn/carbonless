@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, LayoutGrid, ArrowRight, RefreshCw } from 'lucide-react';
 import Image from 'next/image';
@@ -131,7 +131,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
         {/* CTA */}
         <button
           onClick={finish}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-black active:scale-[0.97]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] active:scale-[0.97]"
         >
           {tr ? 'Devam' : 'Continue'}
           <ArrowRight className="h-4 w-4" />

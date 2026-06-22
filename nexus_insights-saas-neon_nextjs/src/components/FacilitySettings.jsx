@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -259,7 +259,7 @@ export default function FacilitySettings({ language }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-black disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5E6B2A] disabled:opacity-60"
             >
               {saving ? (
                 <>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import NextLink from 'next/link';
@@ -32,7 +32,7 @@ export default function NotFound() {
         </p>
         <NextLink
           href="/"
-          className="px-6 py-3 bg-[#302817] text-[#F9EFE5] rounded-xl hover:bg-black transition-colors inline-block font-semibold"
+          className="px-6 py-3 bg-[#75863B] text-[#F9EFE5] rounded-xl hover:bg-[#5E6B2A] transition-colors inline-block font-semibold"
         >
           {tr ? 'Ana Sayfaya Dön' : 'Back to Home'}
         </NextLink>

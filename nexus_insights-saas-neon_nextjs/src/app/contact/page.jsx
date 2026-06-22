@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -128,7 +128,7 @@ export default function ContactPage() {
                           className="w-full px-4 py-3 rounded-xl border border-[#302817]/20 focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none resize-none"
                         />
                       </div>
-                      <button type="submit" className="px-8 py-3 bg-[#302817] text-[#F9EFE5] font-semibold rounded-xl hover:bg-black transition-colors flex items-center gap-2">
+                      <button type="submit" className="px-8 py-3 bg-[#75863B] text-[#F9EFE5] font-semibold rounded-xl hover:bg-[#5E6B2A] transition-colors flex items-center gap-2">
                         <Send className="w-5 h-5" /> {tr ? 'Mesaj Gönder' : 'Send Message'}
                       </button>
                     </form>

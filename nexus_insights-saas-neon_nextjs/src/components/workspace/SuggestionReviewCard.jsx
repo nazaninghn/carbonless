@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { CheckCircle2, X, Edit3, Loader2, Flame, Zap, Truck, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -299,7 +299,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <button
           onClick={handleConfirm}
           disabled={loading}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-black active:scale-[0.98] disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] active:scale-[0.98] disabled:opacity-40"
         >
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           {tr ? 'Rapora Kaydet' : 'Save to Report'}

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -95,7 +95,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-lg shadow-[#302817]/10 transition hover:bg-black disabled:opacity-60 sm:w-auto"
+          className="w-full rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-lg shadow-[#302817]/10 transition hover:bg-[#5E6B2A] disabled:opacity-60 sm:w-auto"
         >
           {saving ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save')}
         </button>
