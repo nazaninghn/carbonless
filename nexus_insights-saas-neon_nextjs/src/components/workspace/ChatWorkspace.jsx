@@ -1385,31 +1385,44 @@ export function ChatWorkspace({
           if (msg.id === 'welcome') {
             if (messages.length > 1) return null;
             return (
-              <div key={msg.id} className="flex flex-col items-center gap-7 py-10 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#75863B] shadow-lg shadow-[#75863B]/20">
-                    <Sparkles className="h-5 w-5 text-white/90" />
-                  </div>
-                  <div>
-                    <p className="text-[22px] font-black text-[#302817] tracking-tight">CarbonIQ</p>
-                    <p className="text-[11px] text-[#302817]/35 mt-1.5">
-                      {tr ? 'Karbon envanterinizin AI asistanı' : 'AI assistant for your carbon inventory'}
-                    </p>
-                  </div>
+              <div key={msg.id} className="flex flex-col items-center gap-8 py-8 text-center w-full">
+                {/* Sphere / circle element */}
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute h-40 w-40 rounded-full bg-[#95A847]/15 blur-3xl" />
+                  <div className="absolute h-28 w-28 rounded-full bg-[#B4BE6A]/20 blur-2xl" />
+                  <img
+                    src="/chatbot.png"
+                    alt="CarbonIQ"
+                    className="relative h-32 w-32 object-contain drop-shadow-xl"
+                    draggable={false}
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-2 w-full">
+
+                {/* Greeting */}
+                <div className="flex flex-col gap-1">
+                  <p className="text-[13px] text-[#302817]/40 font-medium">
+                    {tr ? 'Merhaba,' : 'Hi, there'}
+                  </p>
+                  <p className="text-[20px] font-black text-[#302817] tracking-tight leading-snug">
+                    {tr ? 'Nasıl yardımcı olabilirim?' : 'How can I assist?'}
+                  </p>
+                </div>
+
+                {/* Category chips — horizontal scroll */}
+                <div className="flex gap-2 overflow-x-auto w-full pb-1 px-0.5 scrollbar-none">
                   {CHIPS.map((chip, i) => (
                     <button key={i} onClick={() => handleChipClick(chip)}
-                      className="rounded-2xl border border-[#302817]/8 bg-white px-4 py-4 text-left transition hover:border-[#B4BE6A]/60 hover:bg-[#F0F3E0] active:scale-[0.97]">
-                      <div className="flex items-center gap-1.5 mb-2">
+                      className="flex-shrink-0 flex flex-col items-start gap-1.5 rounded-2xl border border-[#302817]/8 bg-white px-4 py-3.5 text-left transition hover:border-[#B4BE6A]/60 hover:bg-[#F0F3E0] active:scale-[0.97] min-w-[130px]">
+                      <div className="flex items-center gap-1.5">
                         <span className={`h-1.5 w-1.5 rounded-full ${chip.dot}`} />
                         <span className="text-[9px] font-bold uppercase tracking-wide text-[#302817]/30">{chip.scope}</span>
                       </div>
                       <p className="text-[12.5px] font-bold text-[#302817]">{chip.emoji} {chip.title}</p>
-                      <p className="text-[10px] text-[#302817]/35 mt-1">{chip.hint}</p>
+                      <p className="text-[10px] text-[#302817]/35 leading-tight">{chip.hint}</p>
                     </button>
                   ))}
                 </div>
+
                 <p className="text-[10px] text-[#302817]/25">{tr ? 'veya aşağıya yazın' : 'or type anything below'}</p>
               </div>
             );
