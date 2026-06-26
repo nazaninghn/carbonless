@@ -3282,7 +3282,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
           }`}
         >
           <ClipboardList className="h-3.5 w-3.5" />
-          {tr ? 'Envanter' : 'Inventory'}
+          {tr ? 'Anket' : 'Questionnaire'}
         </button>
         <button
           onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
