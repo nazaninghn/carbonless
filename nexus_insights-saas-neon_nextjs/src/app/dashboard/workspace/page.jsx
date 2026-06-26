@@ -111,18 +111,18 @@ function ModeToggle({ mode, onChange, lang }) {
         }`}
       >
         <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-        <span>{tr ? 'Rehberli' : 'Guided'}</span>
+        <span>{tr ? 'Sohbet' : 'Chat'}</span>
       </button>
       <button
-        onClick={() => onChange('expert')}
+        onClick={() => onChange('questionnaire')}
         className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[12px] font-bold transition-all duration-200 ${
-          mode === 'expert'
+          mode === 'questionnaire'
             ? 'bg-[#75863B] text-white shadow-sm'
             : 'text-[#302817]/50 hover:text-[#302817]/80 hover:bg-[#302817]/5'
         }`}
       >
         <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-        <span>{tr ? 'Uzman' : 'Expert'}</span>
+        <span>{tr ? 'Anket' : 'Questionnaire'}</span>
       </button>
     </div>
   );
@@ -385,7 +385,7 @@ export default function WorkspacePage() {
   const [loading,       setLoading]       = useState(true);
 
   /* UI */
-  const [workspaceMode, setWorkspaceMode] = useState('chat');   // 'chat' | 'expert'
+  const [workspaceMode, setWorkspaceMode] = useState('chat');   // 'chat' | 'questionnaire'
   const [panelOpen,     setPanelOpen]     = useState(false);
   const [openCategory,  setOpenCategory]  = useState('3A');     // which tab opens in drawer
   const [startingReport,setStartingReport]= useState(false);
@@ -529,11 +529,6 @@ export default function WorkspacePage() {
   const totalCount     = CATEGORIES.length;
   const grandKg        = CATEGORIES.reduce((sum, c) => sum + (estimateKg(c.id, fieldValues) || 0), 0);
   const hasData        = grandKg > 0;
-  const scopeTotals    = SCOPE_GROUPS.map(g => {
-    const cats = CATEGORIES.filter(c => g.cats.includes(c.id));
-    const kg   = cats.reduce((s, c) => s + (estimateKg(c.id, fieldValues) || 0), 0);
-    return { ...g, kg, pct: grandKg > 0 ? Math.max(4, Math.round((kg / grandKg) * 100)) : 0, hasData: kg > 0 };
-  });
 
   /* ── Loading ── */
   if (loading) {
@@ -556,184 +551,13 @@ export default function WorkspacePage() {
       <style>{ANIM_STYLES}</style>
       <div className="flex h-screen overflow-hidden font-sans bg-[#F9F8F4]">
 
-        {/* ═══ LEFT SIDEBAR ══════════════════════════════════════════════════ */}
-        <aside className="hidden lg:flex w-[300px] xl:w-[330px] shrink-0 flex-col bg-white border-r border-[#302817]/8 relative overflow-hidden">
-
-          {/* Dot texture */}
-          <div className="pointer-events-none absolute inset-0"
-            style={{ backgroundImage: 'radial-gradient(circle, rgba(48,40,23,0.04) 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-          {/* Top gradient accent */}
-          <div className="pointer-events-none absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#75863B] via-[#B4BE6A] to-[#95A847]" />
-
-          {/* Logo */}
-          <div className="relative z-10 flex items-center gap-2.5 px-5 pt-5 pb-2">
-            <a href="/dashboard" className="flex items-center gap-2.5 group">
-              <Image src="/carbonless.png" alt="Carbonless" width={34} height={34} className="h-8 w-8 group-hover:scale-105 transition-transform" />
-              <span className="text-[14px] font-bold text-[#302817]/70 group-hover:text-[#302817] transition tracking-tight">Carbonless</span>
-            </a>
-          </div>
-
-          {/* Preview mode banner */}
-          {isPreviewMode && (
-            <div className="relative z-10 mx-4 mt-2 mb-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400/20 text-[10px]">👁</span>
-                <span className="text-[10.5px] font-bold text-amber-700">{tr ? 'Önizleme Modu' : 'Preview Mode'}</span>
-                <span className="ml-auto text-[9px] text-amber-500/70 font-semibold">{tr ? 'Veriler tarayıcıda' : 'Data local only'}</span>
-              </div>
-              <p className="text-[9.5px] text-amber-600/80 leading-relaxed">
-                {tr
-                  ? 'Chatbot çalışıyor ancak veriler sunucuya kaydedilmiyor. Gerçek rapor başlatın.'
-                  : 'Chatbot works but data is not saved to server. Start a real report.'}
-              </p>
-              <button
-                onClick={handleStartReport}
-                disabled={startingReport}
-                className="flex items-center justify-center gap-1.5 rounded-full bg-amber-500 py-1.5 text-[10.5px] font-bold text-white transition hover:bg-amber-600 disabled:opacity-60"
-              >
-                {startingReport ? (tr ? 'Oluşturuluyor…' : 'Creating…') : (tr ? '🚀 Gerçek Rapor Başlat' : '🚀 Start Real Report')}
-              </button>
-              {startReportErr && <p className="text-[9.5px] text-red-600 font-semibold mt-0.5">{startReportErr}</p>}
-            </div>
-          )}
-
-          {/* Animated globe — only in chat mode */}
-          {workspaceMode === 'chat' && (
-            <div className="relative z-10 flex items-center justify-center px-4 pt-4 pb-1">
-              <div className="glow-pulse absolute h-44 w-44 rounded-full bg-[#B4BE6A]/15 blur-2xl" />
-              {hasData && (
-                <svg className="data-ring absolute h-56 w-56 opacity-30" viewBox="0 0 200 200">
-                  <circle cx="100" cy="100" r="90" fill="none" stroke="#B4BE6A" strokeWidth="1.5" strokeDasharray="12 8" />
-                </svg>
-              )}
-              <div className="hero-float relative">
-                <Image src="/carbon-hero.png" alt="Carbon AI" width={230} height={172} className="w-full object-contain" priority />
-              </div>
-            </div>
-          )}
-
-          {/* Headline */}
-          <div className="relative z-10 px-5 pb-3 text-center">
-            <h1 className="text-[17px] xl:text-[19px] font-bold text-[#302817] leading-snug tracking-tight">
-              {tr ? 'Karbon raporlaması' : 'Carbon reporting'}
-              <br />
-              <span className="text-[#75863B]">{tr ? 'AI ile basit.' : 'simplified by AI.'}</span>
-            </h1>
-            <p className="mt-1.5 text-[10.5px] text-[#302817]/40 leading-relaxed">
-              {tr ? 'Verilerinizi konuşun — AI çıkarsın, siz onaylayın.' : 'Talk your data — AI extracts, you approve.'}
-            </p>
-            <div className="mt-2.5 flex items-center justify-center gap-1.5 flex-wrap">
-              {['ISO 14064-1', 'DEFRA 2023', 'GHG Protocol'].map(b => (
-                <span key={b} className="rounded-full border border-[#302817]/10 bg-[#302817]/4 px-2 py-0.5 text-[8.5px] font-bold text-[#302817]/45">{b}</span>
-              ))}
-            </div>
-          </div>
-
-          {/* Category status list */}
-          <div className="relative z-10 mx-4 mt-1 flex-1 flex flex-col gap-2 min-h-0 overflow-y-auto">
-            <div className="space-y-1.5">
-              {CATEGORIES.map(cat => {
-                const Icon = cat.icon;
-                const st   = statuses[cat.id] || 'missing';
-                const em   = estimateKg(cat.id, fieldValues);
-                const done = st === 'complete';
-                const part = st === 'in_progress';
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => handleCategoryClick(cat.id)}
-                    className={`w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 border transition-all duration-300 text-left hover:shadow-sm ${
-                      done ? 'bg-[#95A847]/8 border-[#95A847]/20 hover:bg-[#95A847]/12' :
-                      part ? 'bg-amber-50/80 border-amber-200/60 hover:bg-amber-50' :
-                             'bg-white border-[#302817]/6 hover:bg-[#302817]/3'
-                    }`}
-                  >
-                    <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${cat.bg}`}>
-                      <Icon className={`h-3 w-3 ${cat.color}`} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <p className="text-[10px] font-bold text-[#302817]/65 truncate">{cat.label[lang]}</p>
-                        <span className={`shrink-0 text-[7px] font-black rounded px-1 py-px leading-none ${cat.bg} ${cat.color}`}>{cat.tab}</span>
-                      </div>
-                      {em !== null
-                        ? <p className="text-[9px] font-semibold text-[#75863B] tabular-nums">{fmt(em)}</p>
-                        : <p className="text-[9px] text-[#302817]/22">{tr ? 'Henüz veri yok' : 'No data yet'}</p>
-                      }
-                    </div>
-                    {done && <CheckCircle2 className="h-3.5 w-3.5 text-[#527A1A] shrink-0" />}
-                    {part && <Clock        className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                    {!done && !part && <ChevronRight className="h-3.5 w-3.5 text-[#302817]/15 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Scope breakdown */}
-            {hasData && (
-              <div className="rounded-2xl border border-[#302817]/8 bg-[#F5F4EF] px-3.5 py-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-[#302817]/35">
-                    {tr ? 'Toplam Emisyon' : 'Total Emission'}
-                  </span>
-                  <span className="text-[13px] font-bold text-[#527A1A] tabular-nums">{fmt(grandKg)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[8.5px] font-semibold text-[#302817]/30">
-                    {completedCount}/{totalCount} {tr ? 'tamamlandı' : 'complete'}
-                  </span>
-                  <div className="flex gap-1">
-                    {CATEGORIES.map(cat => {
-                      const st = statuses[cat.id] || 'missing';
-                      return (
-                        <span key={cat.id} title={cat.tab} className={`h-1 w-5 rounded-full transition-colors duration-500 ${
-                          st === 'complete'    ? 'bg-[#75863B]' :
-                          st === 'in_progress' ? 'bg-amber-400' : 'bg-[#302817]/15'
-                        }`} />
-                      );
-                    })}
-                  </div>
-                </div>
-                {scopeTotals.filter(s => s.hasData).map(scope => (
-                  <div key={scope.id}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9.5px] font-semibold text-[#302817]/45">{scope.label[lang]}</span>
-                      <span className="text-[9.5px] font-bold text-[#75863B] tabular-nums">{fmt(scope.kg)}</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-[#302817]/8 overflow-hidden">
-                      <div className={`h-full rounded-full ${scope.color} transition-all duration-700`} style={{ width: `${scope.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Bottom actions */}
-          <div className="relative z-10 px-4 pb-5 pt-4 space-y-2">
-            {completedCount === totalCount && completedCount > 0 && (
-              <a href="/dashboard"
-                className="flex w-full items-center gap-2.5 rounded-xl border border-[#527A1A]/30 bg-gradient-to-r from-[#527A1A] to-[#75863B] px-4 py-2.5 text-[12px] font-bold text-white shadow-md hover:shadow-lg transition-all hover:brightness-110">
-                <Sparkles className="h-3.5 w-3.5 text-white/80 shrink-0" />
-                {tr ? 'Raporu Oluştur' : 'Generate Report'}
-                <ChevronRight className="h-3.5 w-3.5 ml-auto text-white/60" />
-              </a>
-            )}
-            <a href="/dashboard"
-              className="flex items-center gap-2 px-4 py-2 text-[11px] font-semibold text-[#302817]/35 transition hover:text-[#302817]/70 rounded-xl hover:bg-[#302817]/4">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {tr ? 'Kontrol Paneline Dön' : 'Back to Dashboard'}
-            </a>
-          </div>
-        </aside>
-
-        {/* ═══ RIGHT — MAIN CONTENT ══════════════════════════════════════════ */}
+        {/* ═══ MAIN CONTENT ══════════════════════════════════════════════════ */}
         <div className="flex flex-1 flex-col min-w-0">
 
           {/* ── Top bar: logo (mobile) + mode toggle + panel button ── */}
           <header className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#302817]/8 bg-white shrink-0">
-            {/* Logo — mobile only */}
-            <a href="/dashboard" className="lg:hidden flex items-center gap-2">
+            {/* Logo */}
+            <a href="/dashboard" className="flex items-center gap-2">
               <Image src="/carbonless.png" alt="Carbonless" width={30} height={30} className="h-7 w-7" />
               <span className="text-[13px] font-bold text-[#302817]/70">Carbonless</span>
             </a>
@@ -753,10 +577,10 @@ export default function WorkspacePage() {
                 <LayoutDashboard className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{tr ? 'Veri Paneli' : 'Data Panel'}</span>
               </button>
-              {/* Back — mobile only */}
+              {/* Back */}
               <a href="/dashboard"
                 aria-label={tr ? 'Kontrol Paneline Dön' : 'Back to Dashboard'}
-                className="lg:hidden flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">
+                className="flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">
                 <ArrowLeft className="h-3.5 w-3.5" />
               </a>
             </div>
@@ -784,26 +608,16 @@ export default function WorkspacePage() {
 
           {/* ── Content area ── */}
           <div className="flex-1 min-h-0 flex flex-col">
-            {workspaceMode === 'chat' ? (
-              /* Rehberli mod — AI chatbot (133 questions, full logic intact) */
-              <ChatWorkspace
-                reportId={reportId}
-                lang={lang}
-                onLangChange={setLang}
-                onFieldsConfirmed={handleFieldsSaved}
-                isPreview={reportId === 'preview-001'}
-                onPreviewFields={handlePreviewFields}
-                fieldValues={fieldValues}
-              />
-            ) : (
-              /* Uzman mod — category cards */
-              <ExpertView
-                lang={lang}
-                fieldValues={fieldValues}
-                statuses={statuses}
-                onCategoryClick={handleCategoryClick}
-              />
-            )}
+            <ChatWorkspace
+              reportId={reportId}
+              lang={lang}
+              onLangChange={setLang}
+              onFieldsConfirmed={handleFieldsSaved}
+              isPreview={reportId === 'preview-001'}
+              onPreviewFields={handlePreviewFields}
+              fieldValues={fieldValues}
+              startQuestionnaire={workspaceMode === 'questionnaire'}
+            />
           </div>
         </div>
 

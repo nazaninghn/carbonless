@@ -770,6 +770,7 @@ export function ChatWorkspace({
   isPreview = false,
   onPreviewFields,
   fieldValues = {},
+  startQuestionnaire = false,
 }) {
   // ── Language state (local — user can toggle; also notifies parent) ────────────
   const [activeLang, setActiveLangRaw] = useState(lang || 'en');
@@ -838,6 +839,16 @@ export function ChatWorkspace({
       return prev;
     });
   }, [activeLang, buildWelcome]);
+
+  // Auto-start questionnaire when parent switches to questionnaire tab
+  useEffect(() => {
+    if (startQuestionnaire && mode === 'free') {
+      startGuidedMode();
+    } else if (!startQuestionnaire && mode === 'guided') {
+      switchToFreeMode();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startQuestionnaire]);
 
   useEffect(() => {
     const el = scrollRef.current;
