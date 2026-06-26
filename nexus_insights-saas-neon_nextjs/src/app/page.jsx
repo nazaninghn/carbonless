@@ -299,74 +299,134 @@ export default function Home() {
   const t = copy[lang] ?? copy['en'];
 
   return (
-    <main className="relative min-h-screen bg-[#FAFAF8] text-[#302817] overflow-x-hidden">
+    <main className="relative min-h-screen text-[#302817] overflow-x-hidden">
 
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-20 border-b border-[#302817]/8 bg-[#FAFAF8]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/carbonless.png" alt="CarbonIQ" width={36} height={36} className="h-9 w-auto" />
-            <span className="text-[17px] font-bold tracking-tight text-[#302817]">CarbonIQ</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            {/* Lang toggle */}
-            <div className="relative" ref={langMenuRef}>
-              <button
-                onClick={() => setShowLangMenu(v => !v)}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#302817]/10 bg-white text-[#302817]/50 hover:border-[#B4BE6A]/40 transition"
-              >
-                <Globe2 className="h-3.5 w-3.5" />
-              </button>
-              {showLangMenu && (
-                <div className="absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl border border-[#302817]/10 bg-white shadow-xl">
-                  {['en', 'tr'].map(l => (
-                    <button key={l} onClick={() => { changeLanguage(l); setShowLangMenu(false); }}
-                      className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold transition hover:bg-[#FAFAF8] ${lang === l ? 'text-[#95A847]' : 'text-[#302817]/60'}`}>
-                      {l === 'en' ? '🇬🇧 English' : '🇹🇷 Türkçe'} {lang === l && '✓'}
-                    </button>
-                  ))}
-                </div>
-              )}
+      {/* ── Nature background ── */}
+      <div className="fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0f1f07] via-[#1e3a0c] to-[#0a2208]" />
+        {/* Organic light blobs */}
+        <div className="absolute inset-0 opacity-40"
+          style={{background:'radial-gradient(ellipse 60% 50% at 25% 65%, #3a6b18 0%, transparent 60%), radial-gradient(ellipse 50% 40% at 75% 30%, #2d5510 0%, transparent 55%), radial-gradient(ellipse 40% 35% at 55% 80%, #4a7a1e 0%, transparent 50%)'}} />
+        {/* Subtle dot pattern */}
+        <div className="absolute inset-0 opacity-[0.06]"
+          style={{backgroundImage:'radial-gradient(circle, #a0c060 1px, transparent 1px)', backgroundSize:'28px 28px'}} />
+      </div>
+
+      {/* ── Hero Card (full viewport) ── */}
+      <section className="relative z-10 min-h-screen flex flex-col items-center justify-start p-4 sm:p-6 lg:p-8 pt-6">
+        <div className="w-full max-w-5xl bg-white/90 backdrop-blur-xl rounded-[28px] shadow-2xl shadow-black/40 overflow-hidden">
+
+          {/* ── Navbar inside card ── */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-[#302817]/6">
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/carbonless.png" alt="CarbonIQ" width={32} height={32} className="h-8 w-auto" />
+              <span className="text-[16px] font-bold tracking-tight text-[#302817]">CarbonIQ</span>
+            </Link>
+            {/* Nav links */}
+            <nav className="hidden md:flex items-center gap-6">
+              <a href="#features" className="text-[13px] font-medium text-[#302817]/55 hover:text-[#302817] transition">
+                {lang === 'tr' ? 'Özellikler' : 'Features'}
+              </a>
+              <a href="#pricing" className="text-[13px] font-medium text-[#302817]/55 hover:text-[#302817] transition">
+                {lang === 'tr' ? 'Fiyatlandırma' : 'Pricing'}
+              </a>
+              <Link href="/login" className="text-[13px] font-medium text-[#302817]/55 hover:text-[#302817] transition">
+                {t.login}
+              </Link>
+            </nav>
+            {/* Right actions */}
+            <div className="flex items-center gap-2">
+              {/* Lang toggle */}
+              <div className="relative" ref={langMenuRef}>
+                <button
+                  onClick={() => setShowLangMenu(v => !v)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#302817]/10 bg-white text-[#302817]/50 hover:border-[#B4BE6A]/40 transition"
+                >
+                  <Globe2 className="h-3.5 w-3.5" />
+                </button>
+                {showLangMenu && (
+                  <div className="absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl border border-[#302817]/10 bg-white shadow-xl">
+                    {['en', 'tr'].map(l => (
+                      <button key={l} onClick={() => { changeLanguage(l); setShowLangMenu(false); }}
+                        className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold transition hover:bg-[#FAFAF8] ${lang === l ? 'text-[#95A847]' : 'text-[#302817]/60'}`}>
+                        {l === 'en' ? '🇬🇧 English' : '🇹🇷 Türkçe'} {lang === l && '✓'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Link href="/register" className="rounded-full bg-[#75863B] px-4 py-1.5 text-[13px] font-bold text-white shadow-sm hover:bg-[#5E7A2E] transition">
+                {t.register}
+              </Link>
             </div>
-            <Link href="/login" className="hidden text-sm font-semibold text-[#302817]/55 hover:text-[#302817] transition sm:inline-flex">
-              {t.login}
-            </Link>
-            <Link href="/register" className="rounded-lg bg-[#95A847] px-4 py-1.5 text-sm font-bold text-white shadow-sm hover:bg-[#75863B] transition">
-              {t.register}
-            </Link>
           </div>
-        </div>
-      </header>
 
-      {/* ── Hero ── */}
-      <section className="pt-16 pb-14 text-center">
-        <div className="mx-auto max-w-2xl px-5">
-          {/* ISO badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#B4BE6A]/35 bg-[#EEF3D8] px-4 py-1.5 mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#95A847]" />
-            <span className="text-[11px] font-semibold text-[#75863B]">{t.badge}</span>
+          {/* ── Hero body — 2 columns ── */}
+          <div className="grid lg:grid-cols-2 gap-0 min-h-[480px]">
+
+            {/* Left: copy */}
+            <div className="flex flex-col justify-center px-8 py-10 lg:px-12 lg:py-14">
+              {/* ISO badge */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#B4BE6A]/40 bg-[#EEF3D8] px-3.5 py-1.5 mb-6 self-start">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#95A847]" />
+                <span className="text-[11px] font-semibold text-[#75863B]">{t.badge}</span>
+              </div>
+
+              {/* Title — big green like BetterClimate */}
+              <h1 className="text-[28px] sm:text-[36px] lg:text-[40px] font-extrabold leading-[1.15] tracking-[-0.02em] text-[#4a7020] mb-5">
+                {t.title}
+              </h1>
+
+              {/* Desc */}
+              <p className="text-[13.5px] leading-[1.75] text-[#302817]/55 mb-8 max-w-md">
+                {t.desc}
+              </p>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                <Link href="/register"
+                  className="rounded-full bg-[#75863B] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm hover:bg-[#5E7A2E] transition">
+                  {t.start}
+                </Link>
+                <Link href="/login"
+                  className="rounded-full border border-[#302817]/15 bg-transparent px-6 py-2.5 text-[13px] font-semibold text-[#302817]/60 hover:border-[#75863B]/40 hover:text-[#302817] transition">
+                  {t.demo}
+                </Link>
+              </div>
+              <p className="text-[11px] text-[#302817]/35">{t.note}</p>
+            </div>
+
+            {/* Right: animated chat demo */}
+            <div className="relative flex items-center justify-center bg-gradient-to-br from-[#f4f7ea] to-[#eaf0d4] p-8 lg:p-10">
+              {/* Decorative circles — BetterClimate style */}
+              <div className="absolute top-6 right-6 h-32 w-32 rounded-full border border-[#B4BE6A]/20" />
+              <div className="absolute top-10 right-10 h-20 w-20 rounded-full border border-[#B4BE6A]/15" />
+              <div className="absolute bottom-8 left-4 h-16 w-16 rounded-full border border-[#95A847]/15" />
+              {/* Chat demo */}
+              <div className="relative w-full max-w-[380px]">
+                <AnimatedChatDemo lang={lang} />
+                <p className="mt-2 text-center text-[10px] font-semibold text-[#302817]/30 tracking-wide">
+                  {lang === 'tr' ? '↑ Canlı demo — gerçek AI hesaplaması' : '↑ Live demo — real AI calculation'}
+                </p>
+              </div>
+            </div>
           </div>
-          {/* Title */}
-          <h1 className="text-[30px] sm:text-[40px] font-bold leading-[1.18] tracking-[-0.02em] text-[#302817] mb-5">
-            {t.title}
-          </h1>
-          {/* Subtitle */}
-          <p className="text-[14px] sm:text-[15px] leading-[1.75] text-[#302817]/55 mb-8 max-w-xl mx-auto">
-            {t.desc}
-          </p>
-          {/* CTAs */}
-          <div className="flex justify-center gap-2.5 mb-4">
-            <Link href="/register"
-              className="rounded-lg bg-[#95A847] px-6 py-2.5 text-[13px] font-bold text-white shadow-sm hover:bg-[#75863B] transition">
-              {t.start}
-            </Link>
-            <Link href="/login"
-              className="rounded-lg border border-[#302817]/12 bg-white px-6 py-2.5 text-[13px] font-semibold text-[#302817]/60 hover:border-[#302817]/25 hover:text-[#302817] transition">
-              {t.demo}
-            </Link>
+
+          {/* ── Trust / proof strip inside card ── */}
+          <div className="border-t border-[#302817]/6 bg-[#FAFAF8]/80 px-8 py-4">
+            <div className="flex flex-wrap items-center justify-center gap-y-3">
+              {PROOF.map((k, i) => (
+                <div key={k} className="flex items-center">
+                  <div className="px-5 text-center">
+                    <p className="text-[13px] font-bold text-[#302817]">{t[k]}</p>
+                    <p className="text-[10px] text-[#302817]/38">{t[`${k}s`]}</p>
+                  </div>
+                  {i < PROOF.length - 1 && <div className="hidden sm:block h-7 w-px bg-[#302817]/10" />}
+                </div>
+              ))}
+            </div>
           </div>
-          {/* Note */}
-          <p className="text-[11.5px] text-[#302817]/38">{t.note}</p>
+
         </div>
       </section>
 
