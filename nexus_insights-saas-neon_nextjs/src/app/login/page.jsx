@@ -34,7 +34,9 @@ function LoginContent() {
       const res = await api.login(email, password);
       if (res.ok) {
         markSessionActive();
-        window.location.href = '/dashboard/select';
+        // Set mode cookie so middleware doesn't redirect to select page
+        document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
+        window.location.href = '/dashboard';
       } else {
         const data = await res.json().catch(() => ({}));
         if (res.status >= 500) {

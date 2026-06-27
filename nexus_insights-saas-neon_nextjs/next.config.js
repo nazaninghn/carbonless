@@ -35,16 +35,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              // Fix 25F: removed 'unsafe-eval' — Next.js 15 only needs unsafe-inline for
-              // hydration chunks, not eval. Keeping eval widens the XSS attack surface.
-              "script-src 'self' 'unsafe-inline'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
               "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
               "img-src 'self' data: blob: https://images.unsplash.com",
               "font-src 'self' data:",
-              "connect-src 'self' https: http://localhost:8000",  // covers backend API + any HTTPS fetch
-              "frame-ancestors 'none'",                 // belt-and-suspenders alongside X-Frame-Options
+              "connect-src 'self' https: http://localhost:8000 http://localhost:3000",
+              "frame-ancestors 'none'",
               "base-uri 'self'",
-              "form-action 'self' mailto:",             // mailto: needed for contact form
+              "form-action 'self' mailto:",
             ].join('; '),
           },
         ],

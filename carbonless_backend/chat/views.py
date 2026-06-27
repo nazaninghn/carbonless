@@ -37,7 +37,33 @@ Always be professional, accurate, and helpful. When giving numerical data, cite 
 
 IMPORTANT: When the user asks for a report, summary, or analysis of their emissions, use the
 real data provided in the DATA CONTEXT section below. Do NOT ask them to provide data you already have.
-Generate a professional ISO 14064-1 style summary using their actual numbers."""
+Generate a professional ISO 14064-1 style summary using their actual numbers.
+
+CRITICAL — EMISSION DATA ENTRY:
+When the user provides emission/consumption data (e.g. "5000 m³ natural gas", "18000 kWh electricity",
+"500 liters diesel"), you MUST include a JSON block in your response to save it to the database.
+Format your response like this:
+
+1. First give a normal text response acknowledging the data
+2. Then include this EXACT JSON block (the system will parse and save it automatically):
+
+```emission_entry
+{
+  "fuel_type": "natural_gas",
+  "quantity": 5000,
+  "unit": "m³",
+  "month": 1,
+  "year": 2024,
+  "description": "Natural gas consumption - head office"
+}
+```
+
+Valid fuel_type values: natural_gas, diesel, lpg, fuel_oil, coal, electricity, petrol, kerosene, biodiesel
+Valid units: m³, kWh, litre, kg, tonne, GJ, MWh
+If month is not specified, use the current month. If year is not specified, use the current year.
+Always ask for clarification if the fuel type or unit is ambiguous.
+If the user says something like "monthly" or "per month", create ONE entry for the current month.
+DO NOT create emission entries for hypothetical questions or examples — only for actual consumption data."""
 
 
 def _get_user_emission_context(user):
@@ -149,6 +175,145 @@ def _get_groq_client():
         except Exception:
             return None
     return _groq_client_cache
+
+
+def _parse_emission_entry(ai_text):
+    """
+    Parse ```emission_entry JSON blocks from AI response.
+    Returns list of parsed emission data dicts, or empty list if none found.
+    """
+    import json
+    import re
+    entries = []
+    # Find all ```emission_entry ... ``` blocks
+    pattern = r'```emission_entry\s*\n(.*?)\n```'
+    matches = re.findall(pattern, ai_text, re.DOTALL)
+    for match in matches:
+        try:
+            data = json.loads(match.strip())
+            if data.get('fuel_type') and data.get('quantity'):
+                entries.append(data)
+        except (json.JSONDecodeError, ValueError):
+            continue
+    return entries
+
+
+def _create_emission_from_chat(user, entry_data):
+    """
+    Create an EmissionEntry from AI-parsed chat data.
+    Returns (entry, error_message) tuple.
+    """
+    from emissions.models import EmissionFactor, EmissionEntry as EEntry
+    from companies.utils import get_current_company
+
+    company = get_current_company(user)
+    if not company:
+        return None, 'No company found. Please create a company first.'
+
+    fuel_type = entry_data.get('fuel_type', '').lower().replace(' ', '_')
+    quantity = entry_data.get('quantity')
+    unit = entry_data.get('unit', '')
+    month = entry_data.get('month', datetime.now(timezone.utc).month)
+    year = entry_data.get('year', datetime.now(timezone.utc).year)
+    description = entry_data.get('description', '')
+
+    # Map fuel_type to slug patterns for EmissionFactor lookup
+    fuel_to_slug = {
+        'natural_gas': 'natural-gas',
+        'diesel': 'diesel',
+        'lpg': 'lpg',
+        'fuel_oil': 'fuel-oil',
+        'coal': 'coal',
+        'petrol': 'motor-gasoline',
+        'kerosene': 'kerosene',
+        'biodiesel': 'biodiesel',
+        'electricity': 'grid-electricity',
+    }
+
+    slug = fuel_to_slug.get(fuel_type, fuel_type.replace('_', '-'))
+
+    # Common unit conversions to match available factors
+    # Natural gas: 1 m³ ≈ 0.0388 GJ (gross calorific value)
+    # Electricity is in kWh, factors might be in kWh or GJ
+    UNIT_CONVERSIONS = {
+        ('natural_gas', 'm3'): ('gj', 0.0388),
+        ('natural_gas', 'm³'): ('gj', 0.0388),
+        ('diesel', 'litre'): ('liters', 1.0),
+        ('diesel', 'liter'): ('liters', 1.0),
+        ('diesel', 'l'): ('liters', 1.0),
+        ('lpg', 'litre'): ('liters', 1.0),
+        ('lpg', 'liter'): ('liters', 1.0),
+        ('lpg', 'l'): ('liters', 1.0),
+        ('fuel_oil', 'litre'): ('liters', 1.0),
+        ('fuel_oil', 'liter'): ('liters', 1.0),
+        ('electricity', 'kwh'): ('kWh', 1.0),
+        ('electricity', 'mwh'): ('kWh', 1000.0),
+    }
+
+    # Determine the scope
+    if fuel_type == 'electricity':
+        scope = 'scope2'
+    else:
+        scope = 'scope1'
+
+    # Normalize unit and apply conversion
+    unit_lower = unit.lower().replace(' ', '')
+    conversion_key = (fuel_type, unit_lower)
+    converted_quantity = float(quantity)
+    target_unit = unit
+
+    if conversion_key in UNIT_CONVERSIONS:
+        target_unit, factor_mult = UNIT_CONVERSIONS[conversion_key]
+        converted_quantity = float(quantity) * factor_mult
+
+    # Find matching emission factor by slug
+    factor = EmissionFactor.objects.filter(
+        slug=slug,
+        is_active=True,
+        is_default=True,
+    ).first()
+
+    # Try contains match
+    if not factor:
+        factor = EmissionFactor.objects.filter(
+            slug__icontains=slug,
+            is_active=True,
+            is_default=True,
+        ).first()
+
+    # Fallback: try broader name search
+    if not factor:
+        search_name = fuel_type.replace('_', ' ')
+        factor = EmissionFactor.objects.filter(
+            name__icontains=search_name,
+            is_active=True,
+            is_default=True,
+        ).first()
+
+    if not factor:
+        return None, f'No emission factor found for {fuel_type} ({unit}). Please add it manually in the dashboard.'
+
+    # Calculate CO2e
+    from decimal import Decimal
+    qty = Decimal(str(converted_quantity))
+    co2e_kg = qty * factor.factor_kg_co2e
+
+    # Create entry
+    entry = EEntry.objects.create(
+        user=user,
+        company=company,
+        emission_factor=factor,
+        year=year,
+        month=month,
+        quantity=qty,
+        calculated_co2e_kg=co2e_kg,
+        description=description or f'AI Chat: {fuel_type} {quantity} {unit}',
+        factor_value_snapshot=factor.factor_kg_co2e,
+        factor_source_snapshot=factor.source,
+        status='approved',
+    )
+
+    return entry, None
 
 
 def _call_groq(messages_history, user_context=''):
@@ -319,14 +484,47 @@ def send_message(request, session_id):
         # it in "AI error: ..." created an awkward double-prefix in the UI.
         return Response({'error': error}, status=502)
 
+    # Parse and create emission entries from AI response
+    saved_entries = []
+    emission_blocks = _parse_emission_entry(ai_text)
+    for entry_data in emission_blocks:
+        entry, err = _create_emission_from_chat(request.user, entry_data)
+        if entry:
+            saved_entries.append({
+                'id': entry.id,
+                'fuel_type': entry_data.get('fuel_type'),
+                'quantity': float(entry.quantity),
+                'unit': entry_data.get('unit'),
+                'co2e_kg': float(entry.calculated_co2e_kg),
+                'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
+            })
+            logger.info('AI Chat created EmissionEntry id=%s for user=%s: %s %s %s → %.2f kgCO2e',
+                        entry.id, request.user.username, entry_data.get('fuel_type'),
+                        entry.quantity, entry_data.get('unit'), float(entry.calculated_co2e_kg))
+
+    # Clean the AI response — remove the ```emission_entry blocks before saving
+    import re
+    clean_text = re.sub(r'```emission_entry\s*\n.*?\n```', '', ai_text, flags=re.DOTALL).strip()
+
+    # If entries were saved, append a confirmation to the visible message
+    if saved_entries:
+        confirmations = []
+        for se in saved_entries:
+            confirmations.append(
+                f"✅ **Saved:** {se['fuel_type'].replace('_',' ').title()} — "
+                f"{se['quantity']} {se['unit']} → {se['co2e_tonne']:.3f} tCO₂e"
+            )
+        clean_text += '\n\n' + '\n'.join(confirmations)
+
     # Save assistant message
-    ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=ai_text)
+    ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
     session.save(update_fields=['updated_at'])
 
     return Response({
         'id': ai_msg.id,
         'role': 'assistant',
-        'content': ai_text,
+        'content': clean_text,
         'created_at': ai_msg.created_at,
         'session_title': session.title,
+        'saved_entries': saved_entries,
     })

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ClipboardList, AlertTriangle, RotateCcw, X,
-  HelpCircle, CheckCircle2, Menu,
+  HelpCircle, CheckCircle2, Menu, BarChart3,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
@@ -421,57 +421,87 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyState({ onNew, tr }) {
   const suggestions = tr ? [
-    { icon: '🌿', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?' },
-    { icon: '📊', text: 'En büyük emisyon kaynağım hangisi?' },
-    { icon: '📋', text: 'ISO 14064-1 raporu nasıl hazırlanır?' },
-    { icon: '🎯', text: 'Karbon azaltma hedefleri nasıl belirlenir?' },
+    { icon: '🌿', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?', label: 'Scopes' },
+    { icon: '📊', text: 'En büyük emisyon kaynağım hangisi?', label: 'Analytics' },
+    { icon: '📋', text: 'ISO 14064-1 raporu nasıl hazırlanır?', label: 'Raporlama' },
+    { icon: '🎯', text: 'Karbon azaltma hedefleri nasıl belirlenir?', label: 'Hedefler' },
+    { icon: '⚡', text: 'Enerji verimliliği önerileri', label: 'Verimlilik' },
+    { icon: '🏭', text: 'Emisyon faktörlerini hesapla', label: 'Hesaplama' },
   ] : [
-    { icon: '🌿', text: "What's the difference between Scope 1, 2, and 3?" },
-    { icon: '📊', text: "What's my biggest emission source?" },
-    { icon: '📋', text: "How do I prepare an ISO 14064-1 report?" },
-    { icon: '🎯', text: "How do I set carbon reduction targets?" },
+    { icon: '🌿', text: "What's the difference between Scope 1, 2, and 3?", label: 'Scopes' },
+    { icon: '📊', text: "What's my biggest emission source?", label: 'Analytics' },
+    { icon: '📋', text: "How do I prepare an ISO 14064-1 report?", label: 'Reporting' },
+    { icon: '🎯', text: "How do I set carbon reduction targets?", label: 'Targets' },
+    { icon: '⚡', text: "Energy efficiency recommendations", label: 'Efficiency' },
+    { icon: '🏭', text: "Calculate my emission factors", label: 'Calculator' },
   ];
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-6 pb-6">
-      <div className="w-full max-w-lg flex flex-col items-center gap-8">
+      <div className="w-full max-w-2xl flex flex-col items-center gap-6">
 
-        {/* Brand icon + intro text */}
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-[#75863B] flex items-center justify-center shadow-lg shadow-[#75863B]/20">
-            <Sparkles className="h-7 w-7 text-white" />
+        {/* Hero image — carbon-hero.png sphere */}
+        <div className="relative">
+          <div className="h-36 w-36 sm:h-44 sm:w-44 relative cb-float">
+            <Image
+              src="/carbon-hero.png"
+              alt="CarbonIQ AI"
+              width={176}
+              height={176}
+              className="h-full w-full object-contain drop-shadow-xl"
+            />
           </div>
-          <div>
-            <h2 className="text-[22px] font-bold text-[#1C1C1C] tracking-tight leading-tight">
-              {tr ? 'Merhaba, ben CarbonIQ' : "Hello, I'm CarbonIQ"}
-            </h2>
-            <p className="text-[13px] text-[#302817]/45 mt-2 max-w-sm mx-auto leading-relaxed">
-              {tr
-                ? 'Karbon muhasebesi ve ISO 14064-1 raporlaması için AI destekli asistanınızım.'
-                : 'Your AI assistant for carbon accounting and ISO 14064-1 reporting.'}
-            </p>
-          </div>
+          {/* Subtle glow behind */}
+          <div className="absolute inset-0 rounded-full bg-[#4CAF50]/8 blur-3xl scale-150 -z-10" />
         </div>
 
-        {/* Suggestion cards */}
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-          {suggestions.map(({ icon, text }) => (
-            <button
-              key={text}
-              onClick={() => onNew(text)}
-              className="group text-left flex items-start gap-3 rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] px-4 py-3.5 transition-all duration-150 hover:border-[#95A847]/35 hover:bg-[#F3F7E9] active:scale-[0.98]"
-            >
-              <span className="text-lg shrink-0 mt-0.5 leading-none">{icon}</span>
-              <span className="text-[13px] text-[#302817]/60 leading-snug group-hover:text-[#302817] transition-colors">
-                {text}
-              </span>
-            </button>
-          ))}
+        {/* Welcome text */}
+        <div className="text-center">
+          <p className="text-[13px] text-[#4CAF50] font-medium mb-1">
+            {tr ? 'Merhaba 👋' : 'Hi, there'}
+          </p>
+          <h2 className="text-[24px] sm:text-[28px] font-bold text-[#1a1a1a] tracking-tight leading-tight">
+            {tr ? 'Size nasıl yardımcı olabilirim?' : 'How can I assist?'}
+          </h2>
         </div>
 
-        <p className="text-[11px] text-[#302817]/25">
-          {tr ? 'veya aşağıya sorunuzu yazın' : 'or type your question below'}
+        {/* Input field — prominent, centered like Dinnect */}
+        <div className="w-full max-w-md">
+          <button
+            onClick={() => onNew()}
+            className="w-full flex items-center gap-3 rounded-2xl border border-[#e8e8e0] bg-white px-5 py-4 text-left shadow-sm hover:shadow-md hover:border-[#4CAF50]/30 transition-all duration-200 group"
+          >
+            <Sparkles className="h-5 w-5 text-[#4CAF50]/50 group-hover:text-[#4CAF50] transition" />
+            <span className="flex-1 text-[14px] text-[#302817]/35 font-medium">
+              {tr ? 'CarbonIQ\'ya sor...' : 'Ask CarbonIQ...'}
+            </span>
+            <div className="h-8 w-8 rounded-full bg-[#f5f5f0] border border-[#e8e8e0] flex items-center justify-center group-hover:bg-[#4CAF50] group-hover:border-[#4CAF50] transition">
+              <Send className="h-3.5 w-3.5 text-[#302817]/30 group-hover:text-white transition" />
+            </div>
+          </button>
+        </div>
+
+        {/* Info line */}
+        <p className="text-[11px] text-[#302817]/30 text-center">
+          {tr ? 'CarbonIQ yanılabilir. Önemli rakamları doğrulayın.' : 'CarbonIQ can make mistakes. Verify important figures.'}
         </p>
+
+        {/* Suggestion chips — horizontal scrollable row like Dinnect */}
+        <div className="w-full overflow-x-auto pb-2">
+          <div className="flex gap-2 min-w-max px-1">
+            {suggestions.map(({ icon, text, label }) => (
+              <button
+                key={text}
+                onClick={() => onNew(text)}
+                className="flex items-center gap-2 rounded-full border border-[#e8e8e0] bg-white px-4 py-2.5 text-[12px] font-medium text-[#302817]/60 shadow-sm whitespace-nowrap hover:border-[#4CAF50]/30 hover:bg-[#f0f9f0] hover:text-[#2d4a1a] transition-all duration-200 active:scale-[0.97]"
+              >
+                <span className="text-sm">{icon}</span>
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
@@ -1699,7 +1729,7 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
   ];
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 py-8">
+    <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-8">
       <div className="w-full max-w-md flex flex-col items-center gap-7">
 
         {/* Icon + title */}
@@ -3259,45 +3289,145 @@ function FreeChatTab({ language, summary, entries, targets }) {
 export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets }) {
   const tr = language === 'tr';
   const [activeTab, setActiveTab] = useState('chat');
-  // Fix #44: track whether the Chat tab has ever been opened so we can lazy-mount
-  // FreeChatTab on first visit and then KEEP it mounted on subsequent tab switches.
-  // Switching tabs no longer unmounts the inactive component, preserving questionnaire
-  // state (messages, answers, history, loopState) across tab switches.
-  // Default tab is now 'chat' (with session history), so chatMounted starts true.
   const [chatMounted, setChatMounted] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  // When not visible and not minimized, hide completely
+  if (!isVisible && !isMinimized) {
+    return <style>{CHAT_ANIM_STYLES}</style>;
+  }
+
+  // When minimized, show a floating bubble (always visible regardless of isVisible)
+  if (isMinimized) {
+    return (
+      <>
+      <style>{CHAT_ANIM_STYLES}</style>
+      {/* Floating minimized bubble */}
+      <div className="fixed bottom-6 right-6 z-[100] animate-bounce-slow">
+        <button
+          onClick={() => {
+            setIsMinimized(false);
+            // Tell parent to switch back to AI tab
+            window.dispatchEvent(new CustomEvent('carboniq-open'));
+          }}
+          className="group relative flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-2xl shadow-[#4CAF50]/15 border border-[#4CAF50]/20 hover:shadow-[#4CAF50]/25 transition-all duration-300 hover:scale-105"
+        >
+          <Image src="/chatbot.png" alt="Carbonless AI" width={56} height={56} className="h-14 w-14 object-contain" />
+          <div className="text-left">
+            <p className="text-[15px] font-bold text-[#2d4a1a]">Carbonless AI</p>
+            <p className="text-[12px] text-[#4CAF50]">{tr ? 'Devam et →' : 'Continue →'}</p>
+          </div>
+          {/* Pulse ring */}
+          <div className="absolute -top-1 -right-1 h-4 w-4">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4CAF50]/40" />
+            <span className="relative inline-flex h-4 w-4 rounded-full bg-[#4CAF50]" />
+          </div>
+        </button>
+      </div>
+      </>
+    );
+  }
 
   return (
     <>
     <style>{CHAT_ANIM_STYLES}</style>
-    <div className="flex h-[calc(100svh-190px)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-[#302817]/8 bg-white shadow-[0_8px_32px_rgba(48,40,23,0.07)] sm:h-[calc(100svh-150px)] lg:h-[calc(100vh-120px)]">
+    {/* Full-screen AI overlay — light, premium, clean */}
+    <div className="fixed inset-0 z-[90] flex flex-col bg-gradient-to-br from-[#f8fdf6] via-white to-[#f0f9f0] animate-in fade-in duration-200">
 
-      {/* Tab switcher */}
-      <div className="flex shrink-0 items-center gap-0.5 border-b border-[#302817]/6 bg-[#F8F8F5] px-3 py-2">
-        <button
-          onClick={() => setActiveTab('questionnaire')}
-          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
-            activeTab === 'questionnaire'
-              ? 'bg-white text-[#302817] shadow-sm border border-[#302817]/8'
-              : 'text-[#302817]/45 hover:bg-white/70 hover:text-[#302817]/70'
-          }`}
-        >
-          <ClipboardList className="h-3.5 w-3.5" />
-          {tr ? 'Anket' : 'Questionnaire'}
-        </button>
-        <button
-          onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
-          className={`flex items-center gap-1.5 rounded-xl px-3.5 py-1.5 text-[12px] font-semibold transition ${
-            activeTab === 'chat'
-              ? 'bg-white text-[#302817] shadow-sm border border-[#302817]/8'
-              : 'text-[#302817]/45 hover:bg-white/70 hover:text-[#302817]/70'
-          }`}
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
-          {tr ? 'AI Sohbet' : 'AI Chat'}
-        </button>
+      {/* Mode switcher banner — tells user they can switch */}
+      <div className="flex shrink-0 items-center justify-center gap-3 bg-[#f0f9f0] border-b border-[#4CAF50]/10 px-4 py-2">
+        <div className="flex items-center gap-2 rounded-full bg-white border border-[#e8e8e0] p-0.5 shadow-sm">
+          <button
+            className="flex items-center gap-1.5 rounded-full bg-[#4CAF50] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm"
+          >
+            <Sparkles className="h-3 w-3" />
+            {tr ? 'AI Modu' : 'AI Mode'}
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
+            className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold text-[#302817]/50 hover:text-[#302817] hover:bg-[#f5f5f0] transition"
+          >
+            <BarChart3 className="h-3 w-3" />
+            {tr ? 'Dashboard' : 'Dashboard'}
+          </button>
+        </div>
+        <span className="hidden sm:block text-[10px] text-[#302817]/35">
+          {tr ? '• Her ikisi aynı veritabanına kaydeder' : '• Both save to the same database'}
+        </span>
       </div>
 
-      {/* Tab content — both stay mounted once visited so in-progress state is preserved */}
+      {/* Premium header */}
+      <div className="flex shrink-0 items-center justify-between px-5 py-3 border-b border-[#e8f5e9] bg-white/80 backdrop-blur-md">
+        {/* Left: branding */}
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10 object-contain" />
+            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#4CAF50] border-2 border-white" />
+          </div>
+          <div>
+            <h2 className="text-[16px] font-bold text-[#2d4a1a] tracking-tight">
+              Carbonless AI
+            </h2>
+            <p className="text-[11px] text-[#4CAF50] font-medium">
+              {tr ? 'Akıllı karbon hesaplama' : 'Smart carbon calculator'}
+            </p>
+          </div>
+        </div>
+
+        {/* Center: Tab switcher */}
+        <div className="flex items-center gap-1 rounded-full bg-[#f0f9f0] border border-[#4CAF50]/15 p-1">
+          <button
+            onClick={() => setActiveTab('questionnaire')}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-200 ${
+              activeTab === 'questionnaire'
+                ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#4CAF50]/20'
+                : 'text-[#2d4a1a]/50 hover:text-[#2d4a1a]/80'
+            }`}
+          >
+            <ClipboardList className="h-3.5 w-3.5" />
+            {tr ? 'Anket' : 'Questionnaire'}
+          </button>
+          <button
+            onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-200 ${
+              activeTab === 'chat'
+                ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#4CAF50]/20'
+                : 'text-[#2d4a1a]/50 hover:text-[#2d4a1a]/80'
+            }`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            {tr ? 'AI Sohbet' : 'AI Chat'}
+          </button>
+        </div>
+
+        {/* Right: actions */}
+        <div className="flex items-center gap-2">
+          {/* Status */}
+          <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-[#e8f5e9] px-3 py-1.5">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
+            <span className="text-[10px] font-semibold text-[#2d6235]">
+              {tr ? 'Bağlı' : 'Connected'}
+            </span>
+          </div>
+          {/* Minimize button */}
+          <button
+            onClick={() => {
+              setIsMinimized(true);
+              // Tell parent to show dashboard underneath
+              window.dispatchEvent(new CustomEvent('carboniq-close'));
+            }}
+            className="flex items-center gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-3 py-2 text-[11px] font-semibold text-[#302817]/60 hover:bg-[#eee] hover:text-[#302817] transition"
+            title={tr ? 'Küçült' : 'Minimize'}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+            {tr ? 'Küçült' : 'Minimize'}
+          </button>
+        </div>
+      </div>
+
+      {/* Content area */}
       <div className="flex flex-1 min-h-0 flex-col">
         <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'questionnaire' ? 'hidden' : ''}`}>
           <QuestionnaireTab language={language} isVisible={isVisible} />

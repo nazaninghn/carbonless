@@ -49,5 +49,14 @@ export async function POST(request) {
     maxAge: 7 * 24 * 3600,
     path: '/',
   });
+  // Also set the session indicator cookie so middleware recognizes the user
+  // without relying on the client-side markSessionActive() call timing.
+  response.cookies.set('carbonless_auth', '1', {
+    httpOnly: false,
+    secure: IS_PROD,
+    sameSite: 'lax',
+    maxAge: 86400,
+    path: '/',
+  });
   return response;
 }

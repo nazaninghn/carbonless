@@ -5,7 +5,8 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/dashboard')) {
-    const hasSession  = request.cookies.has('carbonless_auth');
+    // Check both the JS-set cookie and the httpOnly refresh cookie
+    const hasSession = request.cookies.has('carbonless_auth') || request.cookies.has('_carbonless_refresh');
 
     // Not logged in → send to login
     if (!hasSession) {
@@ -28,7 +29,7 @@ export function middleware(request: NextRequest) {
 
   // Redirect logged-in users away from /login and /register → select page
   if (pathname === '/login' || pathname === '/register') {
-    const hasSession = request.cookies.has('carbonless_auth');
+    const hasSession = request.cookies.has('carbonless_auth') || request.cookies.has('_carbonless_refresh');
     if (hasSession) {
       return NextResponse.redirect(new URL('/dashboard/select', request.url));
     }

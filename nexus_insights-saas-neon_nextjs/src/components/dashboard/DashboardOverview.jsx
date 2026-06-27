@@ -410,6 +410,69 @@ export default function DashboardOverview({
   return (
     <div className="space-y-3 sm:space-y-4">
 
+      {/* ── EMPTY STATE — when no data yet ─────────────────────────── */}
+      {entries.length === 0 && (
+        <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 sm:p-12">
+          <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
+            {/* Icon */}
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#f0f9f0] to-[#e8f5e9] flex items-center justify-center border border-[#4CAF50]/10">
+              <Layers className="h-8 w-8 text-[#4CAF50]" />
+            </div>
+
+            {/* Text */}
+            <div>
+              <h2 className="text-[20px] font-bold text-[#1a1a1a]">
+                {tr ? 'Henüz emisyon verisi yok' : 'No emission data yet'}
+              </h2>
+              <p className="mt-2 text-[14px] text-[#302817]/50 leading-relaxed max-w-md">
+                {tr
+                  ? 'Verilerinizi girmenin iki yolu var: AI ile konuşarak (önerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynı yere kaydedilir.'
+                  : 'Two ways to enter your data: talk to AI (recommended) or manually from this panel. Both methods save to the same database.'}
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+              <button
+                onClick={() => setActiveTab('ai_carbon')}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#4CAF50] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#388E3C] transition"
+              >
+                <Sparkles className="h-4 w-4" />
+                {tr ? 'AI ile Başla' : 'Start with AI'}
+              </button>
+              <button
+                onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-[#e8e8e0] bg-white px-5 py-3 text-[13px] font-semibold text-[#302817]/70 hover:border-[#302817]/25 transition"
+              >
+                <Plus className="h-4 w-4" />
+                {tr ? 'Manuel Giriş' : 'Manual Entry'}
+              </button>
+            </div>
+
+            {/* How it works */}
+            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+              {(tr ? [
+                { step: '1', title: 'Veri Girin', desc: 'AI\'a söyleyin veya formdan girin' },
+                { step: '2', title: 'Otomatik Hesaplama', desc: 'ISO 14064-1 uyumlu hesap' },
+                { step: '3', title: 'Rapor Alın', desc: 'PDF veya Excel dışa aktarma' },
+              ] : [
+                { step: '1', title: 'Enter Data', desc: 'Tell AI or use the form' },
+                { step: '2', title: 'Auto Calculate', desc: 'ISO 14064-1 compliant' },
+                { step: '3', title: 'Get Report', desc: 'PDF or Excel export' },
+              ]).map(({ step, title, desc }) => (
+                <div key={step} className="rounded-xl bg-[#fafaf8] border border-[#e8e8e0] p-3 text-center">
+                  <div className="h-6 w-6 rounded-full bg-[#4CAF50]/10 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-[10px] font-bold text-[#4CAF50]">{step}</span>
+                  </div>
+                  <p className="text-[12px] font-semibold text-[#1a1a1a]">{title}</p>
+                  <p className="text-[10px] text-[#302817]/40 mt-0.5">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── SECTION HEADER (WF-03 style) ────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

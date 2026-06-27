@@ -80,7 +80,7 @@ function PreviewBanner({ tr }) {
 export default function DashboardPage() {
   const { t, language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('ai_carbon');
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -114,10 +114,32 @@ export default function DashboardPage() {
   // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
   // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
   // visibility is controlled via CSS hidden — identical to the inner-tab fix (#44).
-  const [aiCarbonMounted, setAiCarbonMounted] = useState(false);
+  const [aiCarbonMounted, setAiCarbonMounted] = useState(true);
+  const [aiCarbonVisible, setAiCarbonVisible] = useState(true);
   useEffect(() => {
-    if (activeTab === 'ai_carbon') setAiCarbonMounted(true);
+    if (activeTab === 'ai_carbon') {
+      setAiCarbonMounted(true);
+      setAiCarbonVisible(true);
+    } else {
+      setAiCarbonVisible(false);
+    }
   }, [activeTab]);
+
+  // Listen for close/open events from CarbonAIPage
+  useEffect(() => {
+    function handleClose() {
+      setActiveTab('dashboard');
+    }
+    function handleOpen() {
+      setActiveTab('ai_carbon');
+    }
+    window.addEventListener('carboniq-close', handleClose);
+    window.addEventListener('carboniq-open', handleOpen);
+    return () => {
+      window.removeEventListener('carboniq-close', handleClose);
+      window.removeEventListener('carboniq-open', handleOpen);
+    };
+  }, []);
 
   const handleLogout = useCallback(() => {
     api.logout();
@@ -125,7 +147,7 @@ export default function DashboardPage() {
 
   return (
     <ToastProvider>
-    <div className="dashboard-android-fix min-h-screen bg-white text-[#302817] flex font-inter">
+    <div className="dashboard-android-fix min-h-screen bg-[#fafaf8] text-[#1a1a1a] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar
         language={language}
@@ -152,7 +174,9 @@ export default function DashboardPage() {
           setSidebarOpen={setSidebarOpen}
         />
 
-        <main className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5">
+        <main className={`w-full min-w-0 max-w-full flex-1 overflow-x-hidden ${
+          activeTab === 'ai_carbon' ? 'p-2 pb-20 sm:p-2 sm:pb-20 lg:p-3 lg:pb-3' : 'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
+        }`}>
           {/* Slim top bar — only on very first load, no layout shift */}
           {loading && (
             <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] overflow-hidden bg-[#95A847]/15">
@@ -243,22 +267,18 @@ export default function DashboardPage() {
             </ErrorBoundary>
           )}
 
-          {/* ===== AI CARBON TAB ===== */}
-          {/* Fix #46: always-mounted once visited; CSS hidden keeps questionnaire
-              state alive across outer dashboard tab switches. */}
-          <div className={activeTab !== 'ai_carbon' ? 'hidden' : ''}>
-            {aiCarbonMounted && (
-              <ErrorBoundary language={language}>
-                <CarbonAIPage
-                  language={language}
-                  isVisible={activeTab === 'ai_carbon'}
-                  summary={effectiveSummary}
-                  entries={entries}
-                  targets={targets}
-                />
-              </ErrorBoundary>
-            )}
-          </div>
+          {/* ===== AI CARBON — renders as fullscreen overlay or minimized bubble ===== */}
+          {aiCarbonMounted && (
+            <ErrorBoundary language={language}>
+              <CarbonAIPage
+                language={language}
+                isVisible={aiCarbonVisible}
+                summary={effectiveSummary}
+                entries={entries}
+                targets={targets}
+              />
+            </ErrorBoundary>
+          )}
           </div>
         </main>
       </div>

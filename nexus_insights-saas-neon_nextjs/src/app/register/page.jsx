@@ -200,7 +200,9 @@ export default function RegisterPage() {
         try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
       }
 
-      router.push('/dashboard/workspace');
+      // Set mode cookie so middleware allows dashboard access
+      document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
+      router.push('/dashboard');
 
     } catch (err) {
       setError(tr
