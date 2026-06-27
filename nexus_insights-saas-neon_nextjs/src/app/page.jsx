@@ -125,6 +125,18 @@ export default function Home() {
             ))}
           </div>
 
+          {/* Login & Register */}
+          <div className="flex items-center gap-1.5 ml-2">
+            <Link href="/login"
+              className="px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
+              {lang === 'tr' ? 'Giriş' : 'Login'}
+            </Link>
+            <Link href="/register"
+              className="px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[12px] font-bold text-white hover:bg-[#333] transition">
+              {lang === 'tr' ? 'Kayıt Ol' : 'Sign Up'}
+            </Link>
+          </div>
+
           {/* Lang */}
           <div className="relative ml-2" ref={langMenuRef}>
             <button
