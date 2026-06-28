@@ -15,10 +15,51 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
 
     def perform_create(self, serializer):
-        user = serializer.save()
-        # Default role: data_entry. Admin role assigned when user creates a company.
-        from .models import UserProfile
+        # Create user as inactive — they must verify email first
+        user = serializer.save(is_active=False)
+        from .models import UserProfile, EmailVerificationToken
         UserProfile.objects.create(user=user, role='data_entry')
+
+        # Create verification token
+        token_obj = EmailVerificationToken.objects.create(user=user)
+
+        # Send verification email
+        self._send_verification_email(user, token_obj.token)
+
+        # For development: also activate immediately if SKIP_EMAIL_VERIFICATION=true
+        import os
+        if os.environ.get('SKIP_EMAIL_VERIFICATION', 'false').lower() == 'true':
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+
+    def _send_verification_email(self, user, token):
+        from django.core.mail import send_mail
+        from django.conf import settings
+        import os
+
+        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+        verify_link = f"{frontend_url}/verify-email?token={token}"
+
+        subject = 'Verify your Carbonless account'
+        message = (
+            f"Hi {user.username},\n\n"
+            f"Please verify your email address by clicking the link below:\n\n"
+            f"{verify_link}\n\n"
+            f"This link expires in 24 hours.\n\n"
+            f"If you didn't create this account, please ignore this email.\n\n"
+            f"— Carbonless Team"
+        )
+
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass  # Don't block registration if email fails
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
@@ -284,25 +325,105 @@ def update_profile(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def password_reset_request(request):
-    """Password reset — Fix #66: endpoint was missing; forgot-password page was
-    silently receiving Django's built-in 404 page and treating it as success.
+    """Send password reset email with a unique token link"""
+    from .models import PasswordResetToken
+    from django.core.mail import send_mail
+    from django.conf import settings
+    import os
 
-    Currently returns 200 regardless of whether the email exists (anti-enumeration).
-    TODO: wire up Django's PasswordResetForm + email backend for production.
-    """
+    email = (request.data.get('email') or '').strip().lower()
     # Always respond 200 so attackers cannot probe which emails are registered.
-    # Once an email backend is configured, uncomment the block below.
-    # -----------------------------------------------------------------------
-    # email = (request.data.get('email') or '').strip().lower()
-    # user = User.objects.filter(email__iexact=email).first()
-    # if user:
-    #     from django.contrib.auth.forms import PasswordResetForm
-    #     form = PasswordResetForm({'email': email})
-    #     if form.is_valid():
-    #         form.save(request=request, use_https=True,
-    #                   email_template_name='registration/password_reset_email.html')
-    # -----------------------------------------------------------------------
-    return Response({'status': 'ok', 'message': 'If an account with that email exists, a reset link has been sent.'})
+    success_msg = {'status': 'ok', 'message': 'If an account with that email exists, a reset link has been sent.'}
+
+    if not email:
+        return Response(success_msg)
+
+    user = User.objects.filter(email__iexact=email).first()
+    if not user:
+        return Response(success_msg)
+
+    # Invalidate old tokens
+    PasswordResetToken.objects.filter(user=user, used_at__isnull=True).delete()
+
+    # Create new token
+    token_obj = PasswordResetToken.objects.create(user=user)
+
+    # Send email
+    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    reset_link = f"{frontend_url}/reset-password?token={token_obj.token}"
+
+    try:
+        send_mail(
+            subject='Reset your Carbonless password',
+            message=(
+                f"Hi {user.username},\n\n"
+                f"We received a request to reset your password. Click the link below:\n\n"
+                f"{reset_link}\n\n"
+                f"This link expires in 1 hour.\n\n"
+                f"If you didn't request this, please ignore this email.\n\n"
+                f"— Carbonless Team"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+    return Response(success_msg)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def password_reset_confirm(request):
+    """Confirm password reset — validate token and set new password"""
+    from .models import PasswordResetToken
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+
+    token_str = request.data.get('token', '')
+    new_password = request.data.get('new_password', '')
+
+    if not token_str or not new_password:
+        return Response({'error': 'Token and new_password are required'}, status=400)
+
+    try:
+        import uuid
+        token_uuid = uuid.UUID(str(token_str))
+    except ValueError:
+        return Response({'error': 'Invalid token'}, status=400)
+
+    try:
+        token_obj = PasswordResetToken.objects.select_related('user').get(token=token_uuid)
+    except PasswordResetToken.DoesNotExist:
+        return Response({'error': 'Invalid or expired reset link'}, status=400)
+
+    if token_obj.is_used:
+        return Response({'error': 'This reset link has already been used'}, status=400)
+
+    if token_obj.is_expired:
+        return Response({'error': 'This reset link has expired. Please request a new one.'}, status=400)
+
+    # Validate new password
+    try:
+        validate_password(new_password, token_obj.user)
+    except ValidationError as e:
+        return Response({'error': '; '.join(e.messages)}, status=400)
+
+    # Set new password
+    token_obj.user.set_password(new_password)
+    token_obj.user.save()
+    token_obj.use()
+
+    # Log the action
+    from .models import ActivityLog
+    ActivityLog.objects.create(
+        user=token_obj.user, action='password_changed',
+        detail='Password reset via email link',
+        target_type='User', target_id=str(token_obj.user.id),
+    )
+
+    return Response({'status': 'ok', 'message': 'Password has been reset successfully. You can now log in.'})
 
 
 @api_view(['DELETE'])
@@ -325,3 +446,80 @@ def delete_account(request):
     response.delete_cookie('access_token', path='/')
     response.delete_cookie('refresh_token', path='/')
     return response
+
+
+# ── Email Verification ──────────────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def verify_email(request):
+    """Verify email address using token from registration email"""
+    from .models import EmailVerificationToken
+    token_str = request.data.get('token', '')
+    if not token_str:
+        return Response({'error': 'Token is required'}, status=400)
+
+    try:
+        import uuid
+        token_uuid = uuid.UUID(str(token_str))
+    except ValueError:
+        return Response({'error': 'Invalid token format'}, status=400)
+
+    try:
+        token_obj = EmailVerificationToken.objects.select_related('user').get(token=token_uuid)
+    except EmailVerificationToken.DoesNotExist:
+        return Response({'error': 'Invalid or expired verification link'}, status=400)
+
+    if token_obj.is_verified:
+        return Response({'status': 'ok', 'message': 'Email already verified'})
+
+    if token_obj.is_expired:
+        return Response({'error': 'Verification link has expired. Please request a new one.'}, status=400)
+
+    # Verify!
+    token_obj.verify()
+    return Response({'status': 'ok', 'message': 'Email verified successfully. You can now log in.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def resend_verification(request):
+    """Resend verification email"""
+    from .models import EmailVerificationToken
+    email = (request.data.get('email') or '').strip().lower()
+    if not email:
+        return Response({'error': 'Email is required'}, status=400)
+
+    user = User.objects.filter(email__iexact=email, is_active=False).first()
+    if not user:
+        # Don't reveal whether the email exists
+        return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new link has been sent.'})
+
+    # Delete old token and create new one
+    EmailVerificationToken.objects.filter(user=user).delete()
+    token_obj = EmailVerificationToken.objects.create(user=user)
+
+    # Send email
+    from django.core.mail import send_mail
+    from django.conf import settings
+    import os
+
+    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+    verify_link = f"{frontend_url}/verify-email?token={token_obj.token}"
+
+    try:
+        send_mail(
+            subject='Verify your Carbonless account',
+            message=(
+                f"Hi {user.username},\n\n"
+                f"Please verify your email:\n{verify_link}\n\n"
+                f"This link expires in 24 hours.\n\n— Carbonless Team"
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+    except Exception:
+        pass
+
+    return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new link has been sent.'})

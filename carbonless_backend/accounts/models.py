@@ -110,3 +110,60 @@ class ActivityLog(models.Model):
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['action', '-created_at']),
         ]
+
+
+import uuid
+from django.utils import timezone
+from datetime import timedelta
+
+
+class EmailVerificationToken(models.Model):
+    """Token for email verification after registration"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_verification')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_expired(self):
+        """Token expires after 24 hours"""
+        return timezone.now() > self.created_at + timedelta(hours=24)
+
+    @property
+    def is_verified(self):
+        return self.verified_at is not None
+
+    def verify(self):
+        """Mark as verified and activate the user"""
+        self.verified_at = timezone.now()
+        self.save(update_fields=['verified_at'])
+        self.user.is_active = True
+        self.user.save(update_fields=['is_active'])
+
+    def __str__(self):
+        status = 'verified' if self.is_verified else ('expired' if self.is_expired else 'pending')
+        return f"{self.user.email} — {status}"
+
+
+class PasswordResetToken(models.Model):
+    """Token for password reset via email"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_resets')
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_expired(self):
+        """Token expires after 1 hour"""
+        return timezone.now() > self.created_at + timedelta(hours=1)
+
+    @property
+    def is_used(self):
+        return self.used_at is not None
+
+    def use(self):
+        self.used_at = timezone.now()
+        self.save(update_fields=['used_at'])
+
+    def __str__(self):
+        return f"{self.user.email} — {'used' if self.is_used else 'active'}"

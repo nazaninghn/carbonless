@@ -264,4 +264,68 @@ EMISSION_FACTORS = [
     {'slug': 'bus-commute', 'name': 'Bus commute (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Turkey urban bus'},
     {'slug': 'metro-commute', 'name': 'Metro commute (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro'},
     {'slug': 'dolmus-commute', 'name': 'Dolmuş commute (Turkey)', 'name_tr': 'Dolmuş (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.082, 'source': 'turkey_fleet', 'reference': 'Shared urban transport'},
+
+    # ============================================
+    # SCOPE 1 - NATURAL GAS (volume & energy units) — DEFRA 2024
+    # ============================================
+    {'slug': 'natural-gas-kwh', 'name': 'Natural Gas (kWh)', 'name_tr': 'Doğal Gaz (kWh)', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'kWh', 'factor_kg_co2e': 0.18316, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Natural Gas, Gross CV (0.18316 kg CO2e/kWh)'},
+    {'slug': 'natural-gas-m3', 'name': 'Natural Gas (m³)', 'name_tr': 'Doğal Gaz (m³)', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'm3', 'factor_kg_co2e': 2.02, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Natural Gas (2.02 kg CO2e/m³)'},
+    {'slug': 'natural-gas-kwh', 'name': 'Natural Gas (kWh) (Turkey)', 'name_tr': 'Doğal Gaz (kWh) (Türkiye)', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'turkey', 'unit': 'kWh', 'factor_kg_co2e': 0.18316, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Natural Gas'},
+    {'slug': 'natural-gas-m3', 'name': 'Natural Gas (m³) (Turkey)', 'name_tr': 'Doğal Gaz (m³) (Türkiye)', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'turkey', 'unit': 'm3', 'factor_kg_co2e': 2.02, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Natural Gas (2.02 kg CO2e/m³)'},
+
+    # SCOPE 1 - DIESEL (kWh) — DEFRA 2024
+    {'slug': 'diesel-kwh', 'name': 'Diesel (kWh)', 'name_tr': 'Dizel (kWh)', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'kWh', 'factor_kg_co2e': 0.24882, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Gas Oil, Gross CV'},
+
+    # SCOPE 1 - BIOFUELS — DEFRA 2024
+    {'slug': 'biodiesel', 'name': 'Biodiesel', 'name_tr': 'Biyodizel', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 0.03639, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Bioenergy, Biodiesel (biogenic CO2 excluded)'},
+    {'slug': 'bioethanol', 'name': 'Bioethanol', 'name_tr': 'Biyoetanol', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 0.02719, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Bioenergy, Bioethanol'},
+    {'slug': 'wood-pellets', 'name': 'Wood pellets', 'name_tr': 'Odun peleti', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.01553, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Bioenergy, Wood pellets'},
+    {'slug': 'biogas', 'name': 'Biogas', 'name_tr': 'Biyogaz', 'scope': 'scope1', 'category': 'stationary_combustion', 'country': 'global', 'unit': 'kWh', 'factor_kg_co2e': 0.00022, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Bioenergy, Biogas'},
+
+    # ============================================
+    # SCOPE 2 - ELECTRICITY (More Countries) — IEA 2024
+    # ============================================
+    {'slug': 'uk-grid', 'name': 'UK grid', 'name_tr': 'İngiltere şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.207, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – UK Electricity'},
+    {'slug': 'germany-grid', 'name': 'Germany grid', 'name_tr': 'Almanya şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.364, 'source': 'iea_2024', 'reference': 'IEA 2024 – Germany electricity mix'},
+    {'slug': 'france-grid', 'name': 'France grid', 'name_tr': 'Fransa şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.052, 'source': 'iea_2024', 'reference': 'IEA 2024 – France (nuclear dominant)'},
+    {'slug': 'india-grid', 'name': 'India grid', 'name_tr': 'Hindistan şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.708, 'source': 'iea_2024', 'reference': 'IEA 2024 – India electricity mix'},
+    {'slug': 'japan-grid', 'name': 'Japan grid', 'name_tr': 'Japonya şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.457, 'source': 'iea_2024', 'reference': 'IEA 2024 – Japan electricity mix'},
+    {'slug': 'brazil-grid', 'name': 'Brazil grid', 'name_tr': 'Brezilya şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.074, 'source': 'iea_2024', 'reference': 'IEA 2024 – Brazil (hydro dominant)'},
+    {'slug': 'australia-grid', 'name': 'Australia grid', 'name_tr': 'Avustralya şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.656, 'source': 'iea_2024', 'reference': 'IEA 2024 – Australia electricity mix'},
+    {'slug': 'canada-grid', 'name': 'Canada grid', 'name_tr': 'Kanada şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.120, 'source': 'iea_2024', 'reference': 'IEA 2024 – Canada (hydro dominant)'},
+    {'slug': 'south-korea-grid', 'name': 'South Korea grid', 'name_tr': 'Güney Kore şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.415, 'source': 'iea_2024', 'reference': 'IEA 2024 – South Korea electricity mix'},
+    {'slug': 'saudi-arabia-grid', 'name': 'Saudi Arabia grid', 'name_tr': 'Suudi Arabistan şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.579, 'source': 'iea_2024', 'reference': 'IEA 2024 – Saudi Arabia'},
+    {'slug': 'uae-grid', 'name': 'UAE grid', 'name_tr': 'BAE şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.404, 'source': 'iea_2024', 'reference': 'IEA 2024 – UAE electricity mix'},
+
+    # ============================================
+    # SCOPE 3 - HOTEL ACCOMMODATION (Business Travel Cat 6) — DEFRA 2024
+    # ============================================
+    {'slug': 'hotel-uk', 'name': 'Hotel (UK)', 'name_tr': 'Otel (İngiltere)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'nights', 'factor_kg_co2e': 10.5, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Hotel stay, UK average'},
+    {'slug': 'hotel-global-avg', 'name': 'Hotel (global average)', 'name_tr': 'Otel (dünya ortalaması)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'nights', 'factor_kg_co2e': 20.6, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Hotel stay, global average'},
+    {'slug': 'hotel-luxury', 'name': 'Hotel (luxury/5-star)', 'name_tr': 'Otel (lüks/5 yıldız)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'nights', 'factor_kg_co2e': 33.4, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Hotel stay, luxury'},
+
+    # ============================================
+    # SCOPE 3 - WFH & REMOTE WORK (Cat 7) — DEFRA 2024
+    # ============================================
+    {'slug': 'wfh-day', 'name': 'Working from home (per day)', 'name_tr': 'Evden çalışma (günlük)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'days', 'factor_kg_co2e': 0.79, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Homeworking (heating + electricity)'},
+
+    # ============================================
+    # SCOPE 1 - REFRIGERANTS (additional) — DEFRA 2024
+    # ============================================
+    {'slug': 'r134a', 'name': 'R-134a (HFC-134a)', 'name_tr': 'R-134a', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 1430, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – AR6 GWP100'},
+    {'slug': 'r404a', 'name': 'R-404A', 'name_tr': 'R-404A', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 3922, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – AR6 GWP100'},
+    {'slug': 'r407c', 'name': 'R-407C', 'name_tr': 'R-407C', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 1774, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – AR6 GWP100'},
+    {'slug': 'r32', 'name': 'R-32', 'name_tr': 'R-32', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 675, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – AR6 GWP100'},
+    {'slug': 'sf6', 'name': 'SF6 (Sulphur hexafluoride)', 'name_tr': 'SF6 (Kükürt heksaflorür)', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 25200, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – AR6 GWP100 (switchgear)'},
+    {'slug': 'co2-fire-suppression', 'name': 'CO2 fire suppression', 'name_tr': 'CO2 yangın söndürme', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 1.0, 'source': 'ipcc_2006', 'reference': 'IPCC 2006 – direct CO2'},
+    {'slug': 'n2o', 'name': 'Nitrous Oxide (N2O)', 'name_tr': 'Azot Oksit (N2O)', 'scope': 'scope1', 'category': 'fugitive_emissions', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 273, 'source': 'ipcc_2019', 'reference': 'IPCC AR6 GWP100'},
+
+    # ============================================
+    # SCOPE 3 - PURCHASED SERVICES (Spend-based) — DEFRA 2024
+    # ============================================
+    {'slug': 'food-catering', 'name': 'Food & catering services', 'name_tr': 'Yemek ve catering hizmetleri', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.52, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Scope 3, spend-based food services'},
+    {'slug': 'cleaning-services', 'name': 'Cleaning services', 'name_tr': 'Temizlik hizmetleri', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.19, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – Scope 3, cleaning'},
+    {'slug': 'legal-accounting', 'name': 'Legal & accounting services', 'name_tr': 'Hukuk ve muhasebe hizmetleri', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.13, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – professional services'},
+    {'slug': 'it-telecom-services', 'name': 'IT & telecom services', 'name_tr': 'BT ve telekom hizmetleri', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.15, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – IT services'},
+    {'slug': 'marketing-advertising', 'name': 'Marketing & advertising', 'name_tr': 'Pazarlama ve reklam', 'scope': 'scope3', 'category': 'purchased_goods', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.17, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – marketing/media'},
 ]
