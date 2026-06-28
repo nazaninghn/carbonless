@@ -91,6 +91,173 @@ def extract_profile(session):
     return profile
 
 
+def _extract_emission_from_step(step_id, data, report):
+    """
+    Check if a questionnaire step contains consumption data that should create
+    an EmissionEntry. Returns a dict with fuel_type, quantity, unit, etc. or None.
+    """
+    # Phase 2 consumption steps follow patterns:
+    # 3A-5: stationary combustion consumption (quantity + unit per fuel)
+    # 3B-7: mobile combustion fuel litres
+    # 4A-1a: electricity consumption kWh per facility
+    # Data format from frontend: { answer: "15000", unit: "m³", fuel_type: "natural_gas" }
+    # or compound: { consumption: "15000", unit: "m³" }
+
+    if not data:
+        return None
+
+    # Direct consumption data (most common pattern from frontend questionnaire)
+    quantity = (
+        data.get('consumption') or data.get('quantity') or
+        data.get('answer') or data.get('value')
+    )
+    if not quantity:
+        return None
+
+    # Try to parse as number
+    try:
+        qty = float(str(quantity).replace(',', '').replace(' ', ''))
+    except (ValueError, TypeError):
+        return None
+
+    if qty <= 0:
+        return None
+
+    fuel_type = data.get('fuel_type', '')
+    unit = data.get('unit', '')
+
+    # Determine scope/category based on step pattern
+    if step_id.startswith('3A'):
+        # Scope 1 - Stationary combustion
+        scope = 'scope1'
+        if not fuel_type:
+            fuel_type = 'natural_gas'  # default
+    elif step_id.startswith('3B'):
+        # Scope 1 - Mobile combustion
+        scope = 'scope1'
+        if not fuel_type:
+            fuel_type = 'diesel'
+    elif step_id.startswith('3C'):
+        # Scope 1 - Process emissions
+        scope = 'scope1'
+        if not fuel_type:
+            fuel_type = 'process'
+    elif step_id.startswith('4A') or step_id.startswith('4B'):
+        # Scope 2 - Electricity
+        scope = 'scope2'
+        fuel_type = 'electricity'
+        if not unit:
+            unit = 'kWh'
+    elif step_id.startswith('5') or step_id.startswith('6') or step_id.startswith('7'):
+        # Scope 3
+        scope = 'scope3'
+    else:
+        return None
+
+    year = report.reporting_year or 2024
+    month = data.get('month', 1)  # Default to January (annual data)
+    description = data.get('description', f'Questionnaire step {step_id}')
+
+    return {
+        'fuel_type': fuel_type,
+        'quantity': qty,
+        'unit': unit or 'kWh',
+        'year': year,
+        'month': month,
+        'scope': scope,
+        'description': description,
+        'step_id': step_id,
+    }
+
+
+def _create_entry_from_questionnaire(user, company, emission_data):
+    """
+    Create an EmissionEntry from questionnaire-extracted data.
+    Returns (entry, error) tuple.
+    """
+    from emissions.models import EmissionFactor, EmissionEntry
+    from decimal import Decimal
+
+    if not company:
+        return None, 'No company'
+
+    fuel_type = emission_data['fuel_type']
+    quantity = emission_data['quantity']
+    unit = emission_data['unit']
+    scope = emission_data['scope']
+    year = emission_data['year']
+    month = emission_data['month']
+    description = emission_data['description']
+
+    # Map fuel_type to slug for factor lookup
+    fuel_to_slug = {
+        'natural_gas': 'natural-gas',
+        'diesel': 'diesel',
+        'lpg': 'lpg',
+        'fuel_oil': 'fuel-oil',
+        'coal': 'coal',
+        'petrol': 'motor-gasoline',
+        'electricity': 'grid-electricity',
+    }
+    slug = fuel_to_slug.get(fuel_type, fuel_type.replace('_', '-'))
+
+    # Unit conversions (same as chat/views.py)
+    CONVERSIONS = {
+        ('natural_gas', 'm³'): 0.0388,  # m³ → GJ
+        ('natural_gas', 'm3'): 0.0388,
+    }
+    conversion = CONVERSIONS.get((fuel_type, unit), 1.0)
+    converted_qty = quantity * conversion
+
+    # Find emission factor
+    factor = EmissionFactor.objects.filter(
+        slug=slug, is_active=True, is_default=True
+    ).first()
+
+    if not factor:
+        factor = EmissionFactor.objects.filter(
+            slug__icontains=slug, is_active=True, is_default=True
+        ).first()
+
+    if not factor:
+        factor = EmissionFactor.objects.filter(
+            scope=scope, is_active=True, is_default=True
+        ).first()
+
+    if not factor:
+        return None, f'No factor for {fuel_type}'
+
+    qty_decimal = Decimal(str(converted_qty))
+    co2e_kg = qty_decimal * factor.factor_kg_co2e
+
+    # Check for duplicate (same step, same report year, same fuel)
+    existing = EmissionEntry.objects.filter(
+        user=user, company=company, year=year,
+        description__contains=f'step {emission_data["step_id"]}'
+    ).first()
+    if existing:
+        # Update instead of duplicate
+        existing.quantity = qty_decimal
+        existing.calculated_co2e_kg = co2e_kg
+        existing.save()
+        return existing, None
+
+    entry = EmissionEntry.objects.create(
+        user=user,
+        company=company,
+        emission_factor=factor,
+        year=year,
+        month=month,
+        quantity=qty_decimal,
+        calculated_co2e_kg=co2e_kg,
+        description=description,
+        factor_value_snapshot=factor.factor_kg_co2e,
+        factor_source_snapshot=factor.source,
+        status='approved',
+    )
+    return entry, None
+
+
 class StartReportView(APIView):
     """POST /api/questionnaire/start/"""
     permission_classes = [IsAuthenticated]
@@ -234,6 +401,22 @@ class SubmitStepView(APIView):
         report.current_step = step
         report.save()
 
+        # ── Phase 2: Auto-create EmissionEntry for consumption data steps ──
+        # If this step contains emission/consumption data, create a real entry
+        saved_entry = None
+        emission_data = _extract_emission_from_step(step, data, report)
+        if emission_data:
+            entry, err = _create_entry_from_questionnaire(
+                request.user, report.company, emission_data
+            )
+            if entry:
+                saved_entry = {
+                    'id': entry.id,
+                    'co2e_kg': float(entry.calculated_co2e_kg),
+                    'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
+                    'factor_name': entry.emission_factor.name,
+                }
+
         return Response({
             'success': True,
             'step': step,
@@ -241,6 +424,7 @@ class SubmitStepView(APIView):
             'message': 'Step saved.',
             'warnings': [],
             'bot_messages': [],
+            'saved_entry': saved_entry,
         })
 
 

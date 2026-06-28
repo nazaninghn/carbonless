@@ -80,7 +80,7 @@ function PreviewBanner({ tr }) {
 export default function DashboardPage() {
   const { t, language } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('ai_carbon');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -114,6 +114,7 @@ export default function DashboardPage() {
   // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
   // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
   // visibility is controlled via CSS hidden — identical to the inner-tab fix (#44).
+  // AI overlay state — starts visible (AI-first UX) but dashboard is the "base" tab
   const [aiCarbonMounted, setAiCarbonMounted] = useState(true);
   const [aiCarbonVisible, setAiCarbonVisible] = useState(true);
   useEffect(() => {
@@ -121,16 +122,19 @@ export default function DashboardPage() {
       setAiCarbonMounted(true);
       setAiCarbonVisible(true);
     } else {
+      // Any non-AI tab hides the overlay
       setAiCarbonVisible(false);
     }
   }, [activeTab]);
 
-  // Listen for close/open events from CarbonAIPage
+  // Listen for close/open events from CarbonAIPage overlay buttons
   useEffect(() => {
     function handleClose() {
+      setAiCarbonVisible(false);
       setActiveTab('dashboard');
     }
     function handleOpen() {
+      setAiCarbonVisible(true);
       setActiveTab('ai_carbon');
     }
     window.addEventListener('carboniq-close', handleClose);
@@ -267,21 +271,23 @@ export default function DashboardPage() {
             </ErrorBoundary>
           )}
 
-          {/* ===== AI CARBON — renders as fullscreen overlay or minimized bubble ===== */}
-          {aiCarbonMounted && (
-            <ErrorBoundary language={language}>
-              <CarbonAIPage
-                language={language}
-                isVisible={aiCarbonVisible}
-                summary={effectiveSummary}
-                entries={entries}
-                targets={targets}
-              />
-            </ErrorBoundary>
-          )}
           </div>
         </main>
       </div>
+
+      {/* ===== AI CARBON — renders as fullscreen overlay or minimized bubble ===== */}
+      {/* Rendered OUTSIDE main content flow so it never affects dashboard layout */}
+      {aiCarbonMounted && (
+        <ErrorBoundary language={language}>
+          <CarbonAIPage
+            language={language}
+            isVisible={aiCarbonVisible}
+            summary={effectiveSummary}
+            entries={entries}
+            targets={targets}
+          />
+        </ErrorBoundary>
+      )}
 
       {/* Command Palette ⌘K */}
       <CommandPalette

@@ -3292,9 +3292,10 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
   const [chatMounted, setChatMounted] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // When not visible and not minimized, hide completely
+  // When not visible and not minimized, render nothing visible but keep mounted
+  // (preserving internal state like chat sessions and messages)
   if (!isVisible && !isMinimized) {
-    return <style>{CHAT_ANIM_STYLES}</style>;
+    return <div className="hidden" />;
   }
 
   // When minimized, show a floating bubble (always visible regardless of isVisible)
