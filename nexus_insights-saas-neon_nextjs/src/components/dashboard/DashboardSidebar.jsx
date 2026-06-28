@@ -10,14 +10,14 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
 const NAV_ITEMS = [
-  { key: 'dashboard',  icon: LayoutDashboard, tr: 'داشبورد',           en: 'Dashboard',   trS: 'داشبورد',  enS: 'Home',     section: 'main' },
-  { key: 'ai_carbon',  icon: Bot,             tr: 'محاسبه با AI',      en: 'AI Calculator', trS: 'AI',      enS: 'AI',       section: 'main' },
-  { key: 'emissions',  icon: Leaf,            tr: 'مدیریت انتشار',     en: 'Emissions',   trS: 'انتشار',   enS: 'Emissions', section: 'data' },
-  { key: 'reduction',  icon: TrendingDown,    tr: 'اهداف کاهش',       en: 'Targets',     trS: 'اهداف',    enS: 'Targets',  section: 'data' },
-  { key: 'reporting',  icon: FileText,        tr: 'گزارش‌دهی',         en: 'Reports',     trS: 'گزارش',    enS: 'Reports',  section: 'data' },
-  { key: 'benchmark',  icon: BarChart2,       tr: 'معیار',             en: 'Benchmark',   trS: 'معیار',    enS: 'Benchmark', section: 'data' },
-  { key: 'review',     icon: ClipboardCheck,  tr: 'در انتظار تایید',    en: 'Review',      trS: 'تایید',    enS: 'Review',   section: 'manage' },
-  { key: 'settings',   icon: Settings,        tr: 'تنظیمات',           en: 'Settings',    trS: 'تنظیمات',  enS: 'Settings', section: 'manage' },
+  { key: 'dashboard',  icon: LayoutDashboard, tr: 'Kontrol Paneli',    en: 'Dashboard',     trS: 'Panel',    enS: 'Home',      section: 'main' },
+  { key: 'ai_carbon',  icon: Bot,             tr: 'AI Hesaplayıcı',    en: 'AI Calculator', trS: 'AI',       enS: 'AI',        section: 'main' },
+  { key: 'emissions',  icon: Leaf,            tr: 'Emisyon Yönetimi',  en: 'Emissions',     trS: 'Emisyon',  enS: 'Emissions', section: 'data' },
+  { key: 'reduction',  icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',       trS: 'Hedefler', enS: 'Targets',   section: 'data' },
+  { key: 'reporting',  icon: FileText,        tr: 'Raporlama',         en: 'Reports',       trS: 'Rapor',    enS: 'Reports',   section: 'data' },
+  { key: 'benchmark',  icon: BarChart2,       tr: 'Benchmark',         en: 'Benchmark',     trS: 'Kıyas',    enS: 'Benchmark', section: 'data' },
+  { key: 'review',     icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',        trS: 'Onay',     enS: 'Review',    section: 'manage' },
+  { key: 'settings',   icon: Settings,        tr: 'Ayarlar',           en: 'Settings',      trS: 'Ayarlar',  enS: 'Settings',  section: 'manage' },
 ];
 
 // Bottom nav shows the most-used tabs — AI FIRST
@@ -82,7 +82,7 @@ export default function DashboardSidebar({
     <>
       {/* ═══════════════════ DESKTOP SIDEBAR ════════════════════════════ */}
       <aside
-        aria-label={tr ? 'ناوبری اصلی' : 'Main navigation'}
+        aria-label={tr ? 'Ana gezinme' : 'Main navigation'}
         className={`
           fixed inset-y-0 left-0 z-50 w-[260px] bg-white
           border-r border-[#e8e8e0] transition-transform duration-300
@@ -116,14 +116,14 @@ export default function DashboardSidebar({
             {/* AI Bold Section — PRIMARY action */}
             <div className="space-y-1">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#4CAF50]/70">
-                {tr ? 'هوش مصنوعی' : 'AI Engine'}
+                {tr ? 'AI Motor' : 'AI Engine'}
               </p>
               {mainItems.filter(i => i.key === 'ai_carbon').map(renderNavItem)}
               {/* Quick info card */}
               <div className="mt-2 mx-1 rounded-xl bg-gradient-to-br from-[#f0f9f0] to-[#e8f5e9] border border-[#4CAF50]/10 p-2.5">
                 <p className="text-[10px] text-[#2d6235]/70 leading-relaxed">
                   {tr
-                    ? '💡 داده‌هایتان را بگویید، AI محاسبه و ذخیره می‌کند.'
+                    ? '💡 Verilerinizi söyleyin, AI hesaplar ve kaydeder.'
                     : '💡 Tell your data, AI calculates & saves automatically.'}
                 </p>
               </div>
@@ -132,7 +132,7 @@ export default function DashboardSidebar({
             {/* Dashboard section — secondary */}
             <div className="space-y-1">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/30">
-                {tr ? 'داشبورد' : 'Dashboard'}
+                {tr ? 'Kontrol Paneli' : 'Dashboard'}
               </p>
               {mainItems.filter(i => i.key !== 'ai_carbon').map(renderNavItem)}
             </div>
@@ -140,7 +140,7 @@ export default function DashboardSidebar({
             {/* Data section */}
             <div className="space-y-1">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/30">
-                {tr ? 'داده‌ها' : 'Data & Reports'}
+                {tr ? 'Veri ve Raporlar' : 'Data & Reports'}
               </p>
               {dataItems.map(renderNavItem)}
             </div>
@@ -148,7 +148,7 @@ export default function DashboardSidebar({
             {/* Management section */}
             <div className="space-y-1">
               <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/30">
-                {tr ? 'مدیریت' : 'Management'}
+                {tr ? 'Yönetim' : 'Management'}
               </p>
               {manageItems.map(renderNavItem)}
             </div>
@@ -160,12 +160,12 @@ export default function DashboardSidebar({
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-4 w-4 text-[#4CAF50]" />
                 <span className="text-[11px] font-bold text-[#2d6235]">
-                  {tr ? 'حالت‌های کار' : 'Work Modes'}
+                  {tr ? 'Çalışma Modları' : 'Work Modes'}
                 </span>
               </div>
               <p className="text-[10px] text-[#302817]/50 leading-relaxed">
                 {tr
-                  ? 'داشبورد و AI هر دو به یک دیتابیس متصلن. هر جا وارد کنید، همه‌جا نشان داده می‌شود.'
+                  ? 'Dashboard ve AI aynı veritabanına kaydeder. Nerede girerseniz girin, her yerde görünür.'
                   : 'Dashboard & AI both write to the same database. Data entered anywhere shows everywhere.'}
               </p>
             </div>
@@ -189,7 +189,7 @@ export default function DashboardSidebar({
               className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-red-500/70 transition hover:bg-red-50 hover:text-red-600"
             >
               <LogOut className="h-3.5 w-3.5" />
-              {tr ? 'خروج' : 'Logout'}
+              {tr ? 'Çıkış' : 'Logout'}
             </button>
           </div>
         </div>
@@ -290,7 +290,7 @@ export default function DashboardSidebar({
             <span className={`text-[9px] font-bold leading-none tracking-wide ${
               ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#1a1a1a]' : 'text-[#302817]/35'
             }`}>
-              {tr ? 'بیشتر' : 'More'}
+              {tr ? 'Daha' : 'More'}
             </span>
           </button>
         </div>
@@ -300,12 +300,12 @@ export default function DashboardSidebar({
       <ConfirmDialog
         open={showLogoutConfirm}
         type="danger"
-        title={tr ? 'خروج از حساب' : 'Sign out'}
+        title={tr ? 'Oturumu kapat' : 'Sign out'}
         message={tr
-          ? 'آیا مطمئن هستید؟ از حساب کاربری خود خارج خواهید شد.'
+          ? 'Hesabınızdan çıkış yapılacak. Devam etmek istiyor musunuz?'
           : 'You will be signed out of your account. Do you want to continue?'}
-        confirmText={tr ? 'خروج' : 'Sign out'}
-        cancelText={tr ? 'لغو' : 'Cancel'}
+        confirmText={tr ? 'Çıkış yap' : 'Sign out'}
+        cancelText={tr ? 'İptal' : 'Cancel'}
         onConfirm={() => { setShowLogoutConfirm(false); onLogout(); }}
         onCancel={() => setShowLogoutConfirm(false)}
       />
