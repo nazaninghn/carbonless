@@ -64,6 +64,33 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found. Please create or join a company first.'})
         serializer.save(user=self.request.user, company=company)
+        from accounts.models import ActivityLog
+        ActivityLog.objects.create(
+            user=self.request.user, action='entry_created',
+            detail=f'Created emission entry: {serializer.instance.emission_factor.name}',
+            ip_address=self.request.META.get('REMOTE_ADDR'),
+            target_type='EmissionEntry', target_id=str(serializer.instance.id),
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        from accounts.models import ActivityLog
+        ActivityLog.objects.create(
+            user=self.request.user, action='entry_updated',
+            detail=f'Updated emission entry: {instance.emission_factor.name} ({instance.quantity} {instance.emission_factor.unit})',
+            ip_address=self.request.META.get('REMOTE_ADDR'),
+            target_type='EmissionEntry', target_id=str(instance.id),
+        )
+
+    def perform_destroy(self, instance):
+        from accounts.models import ActivityLog
+        ActivityLog.objects.create(
+            user=self.request.user, action='entry_deleted',
+            detail=f'Deleted emission entry: {instance.emission_factor.name} ({instance.quantity} {instance.emission_factor.unit})',
+            ip_address=self.request.META.get('REMOTE_ADDR'),
+            target_type='EmissionEntry', target_id=str(instance.id),
+        )
+        instance.delete()
 
 
 class ReductionTargetViewSet(viewsets.ModelViewSet):

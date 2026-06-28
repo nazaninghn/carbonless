@@ -448,6 +448,19 @@ def send_message(request, session_id):
             status=400,
         )
 
+    # Subscription-based AI rate limiting
+    try:
+        from subscriptions.views import get_or_create_subscription
+        sub = get_or_create_subscription(request.user)
+        if not sub.can_send_ai_message:
+            limit = sub.ai_message_limit
+            return Response(
+                {'error': f'Monthly AI message limit reached ({limit}). Upgrade to Pro for unlimited access.'},
+                status=429,
+            )
+    except Exception:
+        pass  # If subscriptions app fails, don't block the user
+
     # Fix #102: verify the AI client is available BEFORE writing the user message
     # to the DB.  Without this check, a missing GROQ_API_KEY would save the user
     # message and then immediately return 502, leaving an orphaned message in the
@@ -519,6 +532,14 @@ def send_message(request, session_id):
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
     session.save(update_fields=['updated_at'])
+
+    # Track AI usage
+    try:
+        from subscriptions.views import get_or_create_subscription
+        sub = get_or_create_subscription(request.user)
+        sub.increment_ai_usage()
+    except Exception:
+        pass
 
     return Response({
         'id': ai_msg.id,
