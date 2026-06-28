@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/emissions/', include('emissions.urls')),
     path('api/questionnaire/', include('questionnaire.urls')),
     path('api/chat/', include('chat.urls')),
+    path('api/subscriptions/', include('subscriptions.urls')),
 ]
 
 if settings.DEBUG:
