@@ -171,6 +171,21 @@ export default function DashboardSidebar({
             </div>
           </div>
 
+          {/* Upgrade to Pro card (for free users) */}
+          <div className="px-3 pb-3">
+            <button
+              onClick={() => navigate('settings')}
+              className="w-full rounded-xl bg-gradient-to-r from-[#4CAF50] to-[#2E7D32] p-3 text-left hover:opacity-90 transition"
+            >
+              <p className="text-[11px] font-bold text-white">
+                {tr ? 'Pro\'ya Yükselt' : 'Upgrade to Pro'}
+              </p>
+              <p className="text-[9px] text-white/70 mt-0.5">
+                {tr ? 'Sınırsız AI, PDF rapor, anket' : 'Unlimited AI, PDF reports, questionnaire'}
+              </p>
+            </button>
+          </div>
+
           {/* User footer */}
           <div className="border-t border-[#e8e8e0] p-3">
             <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-[#f9f9f7] px-3 py-2.5">

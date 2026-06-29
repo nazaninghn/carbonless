@@ -263,6 +263,18 @@ class StartReportView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
+        # Subscription gate: Questionnaire is Pro feature
+        try:
+            from subscriptions.views import get_or_create_subscription
+            sub = get_or_create_subscription(request.user)
+            if not sub.can_use_questionnaire:
+                return Response(
+                    {'error': 'AI Questionnaire is a Pro feature. Please upgrade your plan.'},
+                    status=403,
+                )
+        except Exception:
+            pass  # If subscriptions fails, allow access
+
         from companies.utils import get_current_company
         company = get_current_company(request.user)
         if not company:

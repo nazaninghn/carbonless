@@ -56,7 +56,7 @@ def verify_totp(secret, code, window=1):
 def _generate_code(key, time_step):
     """Generate a 6-digit TOTP code"""
     msg = struct.pack('>Q', time_step)
-    h = hmac.new(key, msg, hashlib.sha1).digest()
+    h = hmac.HMAC(key, msg, hashlib.sha1).digest()
     offset = h[-1] & 0x0F
     truncated = struct.unpack('>I', h[offset:offset + 4])[0] & 0x7FFFFFFF
     return truncated % 1000000
