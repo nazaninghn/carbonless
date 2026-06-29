@@ -150,16 +150,15 @@ export default function RegisterPage() {
         loginRes = await apiModule.login(formData.username, formData.password);
         if (loginRes.ok) activate();
       } catch {
-        setError(language === 'tr'
-          ? 'Hesap oluşturuldu fakat giriş yapılamadı. Lütfen giriş sayfasına gidin.'
-          : 'Account created but login failed. Please go to the login page.');
+        // Login failed — likely email verification required
+        router.push('/verify-email');
         return;
       }
 
       if (!loginRes.ok) {
-        setError(language === 'tr'
-          ? 'Hesap oluşturuldu fakat otomatik giriş başarısız. Lütfen manuel giriş yapın.'
-          : 'Account created but auto-login failed. Please log in manually.');
+        // User created but inactive (needs email verification)
+        // Redirect to verify-email page instead of showing error
+        router.push('/verify-email');
         return;
       }
 
