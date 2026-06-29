@@ -4,6 +4,7 @@ from .views import (
     notification_list, mark_notifications_read, unread_count,
     change_password, logout_view, update_profile, delete_account,
     password_reset_request, password_reset_confirm, verify_email, resend_verification,
+    setup_2fa, confirm_2fa, disable_2fa, get_2fa_status,
 )
 
 urlpatterns = [
@@ -22,4 +23,9 @@ urlpatterns = [
     path('password-reset-confirm/', password_reset_confirm, name='password_reset_confirm'),
     path('verify-email/', verify_email, name='verify_email'),
     path('resend-verification/', resend_verification, name='resend_verification'),
+    # 2FA
+    path('2fa/setup/', setup_2fa, name='setup_2fa'),
+    path('2fa/confirm/', confirm_2fa, name='confirm_2fa'),
+    path('2fa/disable/', disable_2fa, name='disable_2fa'),
+    path('2fa/status/', get_2fa_status, name='get_2fa_status'),
 ]

@@ -167,3 +167,16 @@ class PasswordResetToken(models.Model):
 
     def __str__(self):
         return f"{self.user.email} — {'used' if self.is_used else 'active'}"
+
+
+class TOTPDevice(models.Model):
+    """TOTP-based Two-Factor Authentication device"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='totp_device')
+    secret = models.CharField(max_length=64)
+    is_confirmed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+    backup_codes = models.JSONField(default=list, blank=True)
+
+    def __str__(self):
+        return f"2FA: {self.user.username} ({'active' if self.is_confirmed else 'pending'})"

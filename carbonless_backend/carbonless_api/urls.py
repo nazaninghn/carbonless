@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from .api_docs import api_documentation
 
 # Admin branding
 admin.site.site_header = 'Carbonless Admin'
@@ -32,6 +33,7 @@ urlpatterns = [
     path('api/questionnaire/', include('questionnaire.urls')),
     path('api/chat/', include('chat.urls')),
     path('api/subscriptions/', include('subscriptions.urls')),
+    path('api/docs/', api_documentation, name='api_docs'),
 ]
 
 if settings.DEBUG:

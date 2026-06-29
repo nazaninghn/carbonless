@@ -523,3 +523,91 @@ def resend_verification(request):
         pass
 
     return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new link has been sent.'})
+
+
+# ── Two-Factor Authentication (2FA) ─────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def setup_2fa(request):
+    """Generate TOTP secret and QR URI for setting up 2FA"""
+    from .totp import TOTPDevice, generate_secret, generate_backup_codes, get_totp_uri
+
+    # Check if already has a device
+    device, created = TOTPDevice.objects.get_or_create(
+        user=request.user,
+        defaults={'secret': generate_secret(), 'backup_codes': generate_backup_codes()}
+    )
+
+    if not created and device.is_confirmed:
+        return Response({'error': '2FA is already enabled. Disable it first to reconfigure.'}, status=400)
+
+    # If not confirmed yet, regenerate
+    if not created and not device.is_confirmed:
+        device.secret = generate_secret()
+        device.backup_codes = generate_backup_codes()
+        device.save()
+
+    uri = get_totp_uri(device.secret, request.user.username)
+
+    return Response({
+        'secret': device.secret,
+        'uri': uri,
+        'backup_codes': device.backup_codes,
+        'message': 'Scan the QR code with your authenticator app, then confirm with a code.',
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_2fa(request):
+    """Confirm 2FA setup by verifying the first TOTP code"""
+    from .totp import TOTPDevice, verify_totp
+
+    code = request.data.get('code', '')
+    if not code:
+        return Response({'error': 'Verification code is required'}, status=400)
+
+    try:
+        device = TOTPDevice.objects.get(user=request.user)
+    except TOTPDevice.DoesNotExist:
+        return Response({'error': 'Please set up 2FA first'}, status=400)
+
+    if device.is_confirmed:
+        return Response({'error': '2FA is already confirmed'}, status=400)
+
+    if verify_totp(device.secret, code):
+        device.is_confirmed = True
+        device.save(update_fields=['is_confirmed'])
+        return Response({'status': 'ok', 'message': '2FA enabled successfully!'})
+    else:
+        return Response({'error': 'Invalid code. Please try again.'}, status=400)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def disable_2fa(request):
+    """Disable 2FA (requires password confirmation)"""
+    from .totp import TOTPDevice
+
+    password = request.data.get('password', '')
+    if not password or not request.user.check_password(password):
+        return Response({'error': 'Password confirmation required'}, status=400)
+
+    TOTPDevice.objects.filter(user=request.user).delete()
+    return Response({'status': 'ok', 'message': '2FA has been disabled.'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_2fa_status(request):
+    """Check if 2FA is enabled for current user"""
+    from .totp import TOTPDevice
+    try:
+        device = TOTPDevice.objects.get(user=request.user)
+        return Response({
+            'enabled': device.is_confirmed,
+            'pending_setup': not device.is_confirmed,
+        })
+    except TOTPDevice.DoesNotExist:
+        return Response({'enabled': False, 'pending_setup': False})
