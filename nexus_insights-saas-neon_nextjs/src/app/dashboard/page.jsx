@@ -277,11 +277,11 @@ export default function DashboardPage() {
 
       {/* ===== AI CARBON — renders as fullscreen overlay or minimized bubble ===== */}
       {/* Rendered OUTSIDE main content flow so it never affects dashboard layout */}
-      {aiCarbonMounted && (
+      {aiCarbonMounted && aiCarbonVisible && (
         <ErrorBoundary language={language}>
           <CarbonAIPage
             language={language}
-            isVisible={aiCarbonVisible}
+            isVisible={true}
             summary={effectiveSummary}
             entries={entries}
             targets={targets}
