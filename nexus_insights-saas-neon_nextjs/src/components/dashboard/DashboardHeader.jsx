@@ -34,6 +34,7 @@ export default function DashboardHeader({
   unreadCount,
   setUnreadCount,
   setSidebarOpen,
+  onLanguageChange,
 }) {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -96,154 +97,112 @@ export default function DashboardHeader({
   }, [unreadCount, notifications, setUnreadCount]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#302817]/10 bg-white px-3 py-2.5 sm:px-4 lg:px-5">
+    <header className="sticky top-0 z-30 border-b border-[#e8e8e0] bg-white px-3 py-2.5 sm:px-4 lg:px-5">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
-        {/* Left */}
-        <div className="flex min-w-0 items-center gap-2">
+        {/* Left: Logo + brand */}
+        <div className="flex min-w-0 items-center gap-2.5">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#302817]/10 bg-white text-[#302817] shadow-sm transition hover:bg-white md:flex lg:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#302817]/50 hover:bg-[#f5f5f0] lg:hidden"
             aria-label="Open sidebar"
           >
-            <Menu className="h-4.5 w-4.5" />
+            <Menu className="h-4 w-4" />
           </button>
-          {/* Back to dashboard — tablet only (md–lg), bottom nav handles mobile */}
-          {activeTab !== 'dashboard' && (
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className="hidden h-9 items-center gap-1.5 rounded-xl border border-[#302817]/10 bg-white px-3 text-xs font-bold text-[#302817]/60 shadow-sm transition hover:bg-white hover:text-[#302817] md:flex lg:hidden"
-            >
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-              {tr ? 'Ana Sayfa' : 'Home'}
-            </button>
-          )}
-          {/* Mobile: active tab label */}
-          <div className="min-w-0 md:hidden">
-            <p className="truncate text-sm font-bold text-[#302817]">
-              {TAB_LABELS[activeTab]?.[tr ? 'tr' : 'en'] ?? (tr ? 'Kontrol Paneli' : 'Dashboard')}
-            </p>
-          </div>
-          {/* Desktop: workspace label */}
-          <div className="hidden min-w-0 lg:block">
-            <p className="truncate text-sm font-bold text-[#302817]">
-              {tr ? 'Kontrol Paneli' : 'Dashboard'}
-            </p>
-            <p className="text-xs font-semibold text-[#302817]/45">
-              {tr ? 'Karbon çalışma alanınız' : 'Your carbon workspace'}
-            </p>
+          <div className="hidden sm:flex items-center gap-2">
+            <img src="/carbonless.png" alt="Carbonless" className="h-7 w-7 object-contain" />
+            <span className="text-[14px] font-bold text-[#1a1a1a] tracking-tight">Carbonless AI</span>
           </div>
         </div>
 
-        {/* Right */}
-        <div className="flex shrink-0 items-center gap-2">
-          {/* ⌘K trigger (desktop only) */}
+        {/* Center: Mode switcher pill */}
+        <div className="flex items-center gap-0.5 rounded-full bg-[#F5F5F5] border border-[#e5e5e5] p-1">
           <button
-            onClick={() => {
-              // metaKey = Mac ⌘K, ctrlKey = Windows/Linux Ctrl+K
-              // navigator.platform is deprecated; userAgent is the recommended fallback
-              const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
-              window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: isMac, ctrlKey: !isMac, bubbles: true }));
-            }}
-            className="hidden items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[#302817]/45 shadow-sm transition hover:bg-white hover:text-[#302817] sm:flex"
-            aria-label="Open command palette"
+            onClick={() => setActiveTab('ai_carbon')}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-semibold transition-all duration-200 ${
+              activeTab === 'ai_carbon'
+                ? 'bg-[#53A67F] text-white shadow-sm'
+                : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]'
+            }`}
           >
-            <Search className="h-3.5 w-3.5" />
-            <span className="text-[11px] font-semibold">{tr ? 'Ara…' : 'Search…'}</span>
-            <kbd className="ml-1 rounded-md border border-[#302817]/10 bg-[#302817]/5 px-1.5 py-0.5 text-[9px] font-bold leading-none">⌘K</kbd>
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0112 15a9.065 9.065 0 00-6.23.693L5 14.5m14.8.8l1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0112 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" /></svg>
+            {tr ? 'AI Hesaplayıcı' : 'AI Analyzer'}
           </button>
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[12px] font-semibold transition-all duration-200 ${
+              activeTab === 'dashboard' || (activeTab !== 'ai_carbon')
+                ? 'bg-[#C9C858] text-[#1a1a1a] shadow-sm'
+                : 'text-[#1a1a1a]/50 hover:text-[#1a1a1a]'
+            }`}
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" /></svg>
+            {tr ? 'Kontrol Paneli' : 'Dashboard'}
+          </button>
+        </div>
 
-          {/* Year */}
-          <MiniSelect
-            icon={CalendarDays}
+        {/* Right: language + year + notifications */}
+        <div className="flex items-center gap-2">
+          {/* Language toggle */}
+          {onLanguageChange && (
+            <div className="flex items-center gap-0.5 rounded-full bg-[#f5f5f0] border border-[#e8e8e0] p-0.5">
+              {['tr', 'en'].map(l => (
+                <button
+                  key={l}
+                  onClick={() => onLanguageChange(l)}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition ${
+                    language === l ? 'bg-white text-[#1a1a1a] shadow-sm' : 'text-[#302817]/40 hover:text-[#302817]'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Year selector */}
+          <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="hidden sm:block h-8 rounded-lg border border-[#e8e8e0] bg-white px-2 text-[11px] font-semibold text-[#302817]/70 outline-none"
           >
-            {YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </MiniSelect>
+            {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
 
-          {/* Country */}
-          <MiniSelect
-            icon={Globe2}
-            value={selectedCountry}
-            onChange={(e) => setSelectedCountry(e.target.value)}
-          >
-            <option value="turkey">{tr ? 'Türkiye' : 'Turkey'}</option>
-            <option value="global">Global</option>
-          </MiniSelect>
-
-          {/* Notifications */}
+          {/* Notification bell */}
           <div className="relative" ref={notifPanelRef}>
             <button
               onClick={loadNotifications}
-              className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-[#302817]/10 bg-white text-[#302817] shadow-sm transition hover:bg-white"
-              aria-label="Notifications"
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-[#e8e8e0] text-[#302817]/50 hover:text-[#302817] transition"
             >
-              <Bell className="h-[18px] w-[18px]" />
+              <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-[#F8F8F8]">
-                  {unreadCount}
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-white shadow-[0_12px_40px_rgba(48,40,23,0.12)] sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[360px]">
-                <div className="flex items-center justify-between border-b border-[#302817]/10 px-4 py-3">
-                  <div>
-                    <p className="text-sm font-bold text-[#302817]">
-                      {tr ? 'Bildirimler' : 'Notifications'}
-                    </p>
-                    <p className="text-xs font-semibold text-[#302817]/40">
-                      {unreadCount > 0
-                        ? `${unreadCount} ${tr ? 'okunmamış' : 'unread'}`
-                        : tr
-                        ? 'Hepsi güncel'
-                        : 'All caught up'}
-                    </p>
-                  </div>
+              <div className="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-2xl border border-[#e8e8e0] bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[360px]">
+                <div className="flex items-center justify-between border-b border-[#e8e8e0] px-4 py-3">
+                  <p className="text-sm font-bold text-[#1a1a1a]">
+                    {tr ? 'Bildirimler' : 'Notifications'}
+                  </p>
                   {unreadCount > 0 && (
-                    <button
-                      onClick={markAllRead}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#B4BE6A]/12 px-3 py-2 text-xs font-bold text-[#95A847] transition hover:bg-[#B4BE6A]/18 hover:text-[#302817]"
-                    >
-                      <CheckCheck className="h-3.5 w-3.5" />
-                      {tr ? 'Okundu' : 'Read all'}
+                    <button onClick={markAllRead} className="text-[11px] font-semibold text-[#4CAF50] hover:underline">
+                      {tr ? 'Hepsini oku' : 'Mark all read'}
                     </button>
                   )}
                 </div>
-
-                <div className="max-h-[60vh] overflow-y-auto sm:max-h-80">
+                <div className="max-h-64 overflow-y-auto p-2">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-10 text-center">
-                      <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-[#B4BE6A]/12 text-[#95A847]">
-                        <Bell className="h-5 w-5" />
-                      </div>
-                      <p className="mt-3 text-sm font-bold text-[#302817]">
-                        {tr ? 'Bildirim yok' : 'No notifications'}
-                      </p>
-                      <p className="mt-1 text-xs font-semibold text-[#302817]/45">
-                        {tr
-                          ? 'Yeni bir şey olduğunda burada görünür.'
-                          : 'New updates will appear here.'}
-                      </p>
+                    <p className="py-6 text-center text-[12px] text-[#302817]/35">{tr ? 'Bildirim yok' : 'No notifications'}</p>
+                  ) : notifications.map(n => (
+                    <div key={n.id} className={`rounded-xl px-3 py-2.5 mb-1 ${n.is_read ? '' : 'bg-[#f0f9f0]'}`}>
+                      <p className="text-[12px] font-semibold text-[#1a1a1a]">{n.title}</p>
+                      <p className="text-[10px] text-[#302817]/50 mt-0.5">{n.message}</p>
                     </div>
-                  ) : (
-                    notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        className={`border-b border-[#302817]/8 px-4 py-3 last:border-0 ${
-                          !n.is_read ? 'bg-[#B4BE6A]/8' : 'bg-white'
-                        }`}
-                      >
-                        <p className="text-sm font-bold text-[#302817]">{n.title}</p>
-                        <p className="mt-1 text-xs leading-5 text-[#302817]/55">
-                          {n.message}
-                        </p>
-                      </div>
-                    ))
-                  )}
+                  ))}
                 </div>
               </div>
             )}
@@ -251,21 +210,5 @@ export default function DashboardHeader({
         </div>
       </div>
     </header>
-  );
-}
-
-function MiniSelect({ icon: Icon, value, onChange, children }) {
-  return (
-    <label className="flex items-center gap-1.5 rounded-2xl border border-[#302817]/10 bg-white px-2.5 py-2 text-[#302817] shadow-sm transition hover:bg-white">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-[#B4BE6A]" />
-      <select
-        value={value}
-        onChange={onChange}
-        className="max-w-[76px] appearance-none bg-transparent pr-4 text-xs font-bold text-[#302817] outline-none sm:max-w-[120px]"
-      >
-        {children}
-      </select>
-      <ChevronDown className="pointer-events-none -ml-3 h-3 w-3 shrink-0 text-[#302817]/35" />
-    </label>
   );
 }

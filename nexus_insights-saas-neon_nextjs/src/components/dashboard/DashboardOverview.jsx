@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
@@ -23,20 +23,20 @@ import {
   MONTHS_EN as MONTHS_EN_SHORT,
 } from '@/lib/constants/emissions';
 
-// ─── Full month names (only needed here for the detailed monthly breakdown) ──
-const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+// â”€â”€â”€ Full month names (only needed here for the detailed monthly breakdown) â”€â”€
+const MONTHS_TR_FULL = ['Ocak','Åžubat','Mart','Nisan','MayÄ±s','Haziran','Temmuz','AÄŸustos','EylÃ¼l','Ekim','KasÄ±m','AralÄ±k'];
 const MONTHS_EN_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-// ─── SVG Donut Chart ───────────────────────────────────────────────────────
+// â”€â”€â”€ SVG Donut Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function DonutChart({ s1, s2, s3, total, tr }) {
   const R = 58, SW = 18;
   const C = 2 * Math.PI * R;
   const cx = 80, cy = 80;
 
   const segs = [
-    { label: 'Scope 1', val: s1, color: '#75863B' },
-    { label: 'Scope 2', val: s2, color: '#95A847' },
-    { label: 'Scope 3', val: s3, color: '#B4BE6A' },
+    { label: 'Scope 1', val: s1, color: '#3d8564' },
+    { label: 'Scope 2', val: s2, color: '#53A67F' },
+    { label: 'Scope 3', val: s3, color: '#C9C858' },
   ].filter(s => s.val > 0);
 
   let cum = 0;
@@ -70,16 +70,16 @@ function DonutChart({ s1, s2, s3, total, tr }) {
           <span className="text-[22px] font-bold leading-none tracking-tight text-[#302817]">
             {total.toFixed(1)}
           </span>
-          <span className="mt-0.5 text-[10px] font-bold text-[#302817]/40">tCO₂e</span>
+          <span className="mt-0.5 text-[10px] font-bold text-[#302817]/40">tCOâ‚‚e</span>
         </div>
       </div>
 
       {/* legend */}
       <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5">
         {[
-          { label: 'Scope 1', val: s1, color: '#75863B' },
-          { label: 'Scope 2', val: s2, color: '#95A847' },
-          { label: 'Scope 3', val: s3, color: '#B4BE6A' },
+          { label: 'Scope 1', val: s1, color: '#3d8564' },
+          { label: 'Scope 2', val: s2, color: '#53A67F' },
+          { label: 'Scope 3', val: s3, color: '#C9C858' },
         ].filter(s => s.val > 0).map(s => (
           <div key={s.label} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
@@ -92,17 +92,17 @@ function DonutChart({ s1, s2, s3, total, tr }) {
   );
 }
 
-// ─── Monthly Bar Chart ─────────────────────────────────────────────────────
+// â”€â”€â”€ Monthly Bar Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function MonthlyChart({ monthly, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   // Memoized so the spread+map only runs when monthly data changes, not on every hover state update
   const maxKg = useMemo(() => Math.max(...(monthly ?? []).map(m => m.total_kg), 1), [monthly]);
-  const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level — no recreation
+  const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level â€” no recreation
   const curMonth = new Date().getFullYear() === selectedYear ? new Date().getMonth() : -1;
 
   if (!monthly || !monthly.some(m => m.total_kg > 0)) {
     return (
-      <EmptyState label={tr ? 'Henüz aylık veri yok' : 'No monthly data yet'} />
+      <EmptyState label={tr ? 'HenÃ¼z aylÄ±k veri yok' : 'No monthly data yet'} />
     );
   }
 
@@ -124,7 +124,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
             {/* Tooltip */}
             {isHovered && hasData && (
               <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#302817] px-2 py-1.5 text-[10px] font-bold text-white shadow-xl">
-                {(m.total_kg / 1000).toFixed(2)} tCO₂e
+                {(m.total_kg / 1000).toFixed(2)} tCOâ‚‚e
                 <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#302817]" />
               </div>
             )}
@@ -136,8 +136,8 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
                     ? isCur
                       ? 'bg-gradient-to-t from-[#302817] to-[#302817]/70'
                       : isHovered
-                      ? 'bg-gradient-to-t from-[#75863B] to-[#B4BE6A]'
-                      : 'bg-gradient-to-t from-[#75863B] to-[#95A847]'
+                      ? 'bg-gradient-to-t from-[#3d8564] to-[#C9C858]'
+                      : 'bg-gradient-to-t from-[#3d8564] to-[#53A67F]'
                     : 'bg-[#302817]/4'
                 }`}
                 style={{ height: `${hasData ? Math.max(pct, 5) : 4}%` }}
@@ -153,7 +153,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
   );
 }
 
-// ─── Category Breakdown ────────────────────────────────────────────────────
+// â”€â”€â”€ Category Breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CategoryChart({ entries, tr }) {
   const data = useMemo(() => {
     const map = {};
@@ -170,7 +170,7 @@ function CategoryChart({ entries, tr }) {
   if (data.length === 0) return <EmptyState label={tr ? 'Kategori verisi yok' : 'No category data'} />;
 
   const maxT = data[0].tonne;
-  const scopeColors = ['#75863B', '#95A847', '#B4BE6A', '#302817', '#B4BE6A', '#95A847'];
+  const scopeColors = ['#3d8564', '#53A67F', '#C9C858', '#302817', '#C9C858', '#53A67F'];
 
   return (
     <div className="space-y-3">
@@ -195,7 +195,7 @@ function CategoryChart({ entries, tr }) {
   );
 }
 
-// ─── Target Progress Ring ──────────────────────────────────────────────────
+// â”€â”€â”€ Target Progress Ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function TargetRing({ target, currentTonne, tr }) {
   const R = 32, SW = 7;
   const C = 2 * Math.PI * R;
@@ -211,10 +211,10 @@ function TargetRing({ target, currentTonne, tr }) {
   const dash = progress * C;
 
   const STATUS = {
-    on_track:  { color: '#95A847', bg: 'bg-[#95A847]/12', text: 'text-[#75863B]', label: { tr: 'Yolunda', en: 'On Track' } },
+    on_track:  { color: '#53A67F', bg: 'bg-[#53A67F]/12', text: 'text-[#3d8564]', label: { tr: 'Yolunda', en: 'On Track' } },
     off_track: { color: '#f59e0b', bg: 'bg-amber-100',    text: 'text-amber-700', label: { tr: 'Geride',  en: 'Off Track' } },
-    succeeded: { color: '#75863B', bg: 'bg-[#75863B]/12', text: 'text-[#75863B]', label: { tr: 'Başarıldı',en: 'Succeeded'} },
-    failed:    { color: '#ef4444', bg: 'bg-red-100',      text: 'text-red-600',   label: { tr: 'Başarısız',en: 'Failed' } },
+    succeeded: { color: '#3d8564', bg: 'bg-[#3d8564]/12', text: 'text-[#3d8564]', label: { tr: 'BaÅŸarÄ±ldÄ±',en: 'Succeeded'} },
+    failed:    { color: '#ef4444', bg: 'bg-red-100',      text: 'text-red-600',   label: { tr: 'BaÅŸarÄ±sÄ±z',en: 'Failed' } },
   };
   const s = STATUS[target.status] ?? STATUS.on_track;
 
@@ -237,13 +237,13 @@ function TargetRing({ target, currentTonne, tr }) {
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-[13px] font-bold leading-none text-[#302817]">{(progress * 100).toFixed(0)}%</span>
-          <span className="text-[9px] font-semibold text-[#302817]/40">{tr ? 'tamamlandı' : 'done'}</span>
+          <span className="text-[9px] font-semibold text-[#302817]/40">{tr ? 'tamamlandÄ±' : 'done'}</span>
         </div>
       </div>
       {/* Info */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-bold text-[#302817]">{target.title}</p>
-        <p className="text-[10px] text-[#302817]/45 mt-0.5">{target.base_year} → {target.target_year}</p>
+        <p className="text-[10px] text-[#302817]/45 mt-0.5">{target.base_year} â†’ {target.target_year}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${s.bg} ${s.text}`}>
             {s.label[tr ? 'tr' : 'en']}
@@ -255,7 +255,7 @@ function TargetRing({ target, currentTonne, tr }) {
   );
 }
 
-// ─── Empty State ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function EmptyState({ label }) {
   return (
     <div className="flex h-28 items-center justify-center rounded-xl bg-[#302817]/3">
@@ -264,7 +264,7 @@ function EmptyState({ label }) {
   );
 }
 
-// ─── Chart Card wrapper ────────────────────────────────────────────────────
+// â”€â”€â”€ Chart Card wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '', action }) {
   return (
     <section className={`flex flex-col rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5 ${className}`}>
@@ -283,12 +283,12 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
   );
 }
 
-// ─── KPI Card ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ KPI Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor }) {
   return (
     <div className={`relative rounded-[1.25rem] border p-3.5 sm:p-4 ${
       accent
-        ? 'border-[#95A847] bg-[#EFF4DA]'
+        ? 'border-[#53A67F] bg-[#EFF4DA]'
         : 'border-[#E2E8D8] bg-white'
     }`}>
       <div className="flex items-start justify-between gap-2">
@@ -312,7 +312,7 @@ function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor })
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function DashboardOverview({
   language,
   selectedYear,
@@ -329,11 +329,11 @@ export default function DashboardOverview({
   const s1         = summary?.scope1_tonne ?? 0;
   const s2         = summary?.scope2_tonne ?? 0;
   const s3         = summary?.scope3_tonne ?? 0;
-  // Memoized so the array reference is stable — prevents false "dep changed every
+  // Memoized so the array reference is stable â€” prevents false "dep changed every
   // render" warnings in the useMemo hooks below that depend on monthly.
   const monthly    = useMemo(() => summary?.monthly ?? [], [summary?.monthly]);
 
-  // Derived: average monthly (only months with data) — memoized so the filter/reduce
+  // Derived: average monthly (only months with data) â€” memoized so the filter/reduce
   // only re-runs when monthly data changes, not on every local state update.
   const avgTonne = useMemo(() => {
     const active = monthly.filter(m => m.total_kg > 0);
@@ -345,14 +345,14 @@ export default function DashboardOverview({
   // Language-aware month name arrays (used in JSX, not inside any memo)
   const MONTHS_FULL = tr ? MONTHS_TR_FULL : MONTHS_EN_FULL;
 
-  // Biggest monthly spike — memoized so it only recomputes when monthly data changes.
+  // Biggest monthly spike â€” memoized so it only recomputes when monthly data changes.
   // Returns a numeric index into `monthly`; the name lookup uses MONTHS_FULL at render time.
   const peakMonth = useMemo(
     () => monthly.reduce((best, m, i) => m.total_kg > (monthly[best]?.total_kg ?? 0) ? i : best, 0),
     [monthly],
   );
 
-  // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
+  // Touch-tablet simplified view â€” useLayoutEffect runs before browser paint,
   // so GPU-heavy complex view is never painted to screen on Android tablets.
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
   useIsomorphicLayoutEffect(() => {
@@ -364,32 +364,32 @@ export default function DashboardOverview({
     return (
       <div className="space-y-4">
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#95A847]">
-            {tr ? 'Karbon çalışma alanı' : 'Carbon workspace'}
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#53A67F]">
+            {tr ? 'Karbon Ã§alÄ±ÅŸma alanÄ±' : 'Carbon workspace'}
           </p>
           <h1 className="mt-2 text-2xl font-black text-[#302817]">
-            {tr ? 'Emisyon Profili' : 'Emission Profile'} · {selectedYear}
+            {tr ? 'Emisyon Profili' : 'Emission Profile'} Â· {selectedYear}
           </h1>
           <p className="mt-1 text-sm text-[#302817]/55">
-            {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCO₂e
+            {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCOâ‚‚e
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
             <p className="text-xs text-[#302817]/50">Scope 1</p>
-            <p className="text-2xl font-black text-[#302817]">{s1.toFixed(2)} <span className="text-sm font-normal">tCO₂e</span></p>
+            <p className="text-2xl font-black text-[#302817]">{s1.toFixed(2)} <span className="text-sm font-normal">tCOâ‚‚e</span></p>
           </div>
           <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
             <p className="text-xs text-[#302817]/50">Scope 2</p>
-            <p className="text-2xl font-black text-[#302817]">{s2.toFixed(2)} <span className="text-sm font-normal">tCO₂e</span></p>
+            <p className="text-2xl font-black text-[#302817]">{s2.toFixed(2)} <span className="text-sm font-normal">tCOâ‚‚e</span></p>
           </div>
           <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
             <p className="text-xs text-[#302817]/50">Scope 3</p>
-            <p className="text-2xl font-black text-[#302817]">{s3.toFixed(2)} <span className="text-sm font-normal">tCO₂e</span></p>
+            <p className="text-2xl font-black text-[#302817]">{s3.toFixed(2)} <span className="text-sm font-normal">tCOâ‚‚e</span></p>
           </div>
         </div>
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <h2 className="text-sm font-bold text-[#302817]">{tr ? 'Başlangıç Rehberi' : 'Getting Started'}</h2>
+          <h2 className="text-sm font-bold text-[#302817]">{tr ? 'BaÅŸlangÄ±Ã§ Rehberi' : 'Getting Started'}</h2>
           <div className="mt-3 space-y-2">
             {[
               { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anketi tamamla' : 'Complete questionnaire' },
@@ -397,8 +397,8 @@ export default function DashboardOverview({
               { done: targets.length > 0, label: tr ? 'Hedef belirle' : 'Set target' },
               { done: facilityList.length > 0, label: tr ? 'Tesis ekle' : 'Add facility' },
             ].map((s, i) => (
-              <p key={i} className={`text-sm ${s.done ? 'text-[#95A847] line-through' : 'text-[#302817]/70'}`}>
-                {s.done ? '✓' : `${i+1}.`} {s.label}
+              <p key={i} className={`text-sm ${s.done ? 'text-[#53A67F] line-through' : 'text-[#302817]/70'}`}>
+                {s.done ? 'âœ“' : `${i+1}.`} {s.label}
               </p>
             ))}
           </div>
@@ -410,23 +410,23 @@ export default function DashboardOverview({
   return (
     <div className="space-y-3 sm:space-y-4">
 
-      {/* ── EMPTY STATE — when no data yet ─────────────────────────── */}
+      {/* â”€â”€ EMPTY STATE â€” when no data yet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {entries.length === 0 && (
         <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 sm:p-12">
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
             {/* Icon */}
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#f0f9f0] to-[#e8f5e9] flex items-center justify-center border border-[#4CAF50]/10">
-              <Layers className="h-8 w-8 text-[#4CAF50]" />
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#f0f9f0] to-[#e8f5e9] flex items-center justify-center border border-[#53A67F]/10">
+              <Layers className="h-8 w-8 text-[#53A67F]" />
             </div>
 
             {/* Text */}
             <div>
               <h2 className="text-[20px] font-bold text-[#1a1a1a]">
-                {tr ? 'Henüz emisyon verisi yok' : 'No emission data yet'}
+                {tr ? 'HenÃ¼z emisyon verisi yok' : 'No emission data yet'}
               </h2>
               <p className="mt-2 text-[14px] text-[#302817]/50 leading-relaxed max-w-md">
                 {tr
-                  ? 'Verilerinizi girmenin iki yolu var: AI ile konuşarak (önerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynı yere kaydedilir.'
+                  ? 'Verilerinizi girmenin iki yolu var: AI ile konuÅŸarak (Ã¶nerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynÄ± yere kaydedilir.'
                   : 'Two ways to enter your data: talk to AI (recommended) or manually from this panel. Both methods save to the same database.'}
               </p>
             </div>
@@ -435,34 +435,34 @@ export default function DashboardOverview({
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
               <button
                 onClick={() => setActiveTab('ai_carbon')}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#4CAF50] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#388E3C] transition"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#53A67F] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
               >
                 <Sparkles className="h-4 w-4" />
-                {tr ? 'AI ile Başla' : 'Start with AI'}
+                {tr ? 'AI ile BaÅŸla' : 'Start with AI'}
               </button>
               <button
                 onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-[#e8e8e0] bg-white px-5 py-3 text-[13px] font-semibold text-[#302817]/70 hover:border-[#302817]/25 transition"
               >
                 <Plus className="h-4 w-4" />
-                {tr ? 'Manuel Giriş' : 'Manual Entry'}
+                {tr ? 'Manuel GiriÅŸ' : 'Manual Entry'}
               </button>
             </div>
 
             {/* How it works */}
             <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
               {(tr ? [
-                { step: '1', title: 'Veri Girin', desc: 'AI\'a söyleyin veya formdan girin' },
+                { step: '1', title: 'Veri Girin', desc: 'AI\'a sÃ¶yleyin veya formdan girin' },
                 { step: '2', title: 'Otomatik Hesaplama', desc: 'ISO 14064-1 uyumlu hesap' },
-                { step: '3', title: 'Rapor Alın', desc: 'PDF veya Excel dışa aktarma' },
+                { step: '3', title: 'Rapor AlÄ±n', desc: 'PDF veya Excel dÄ±ÅŸa aktarma' },
               ] : [
                 { step: '1', title: 'Enter Data', desc: 'Tell AI or use the form' },
                 { step: '2', title: 'Auto Calculate', desc: 'ISO 14064-1 compliant' },
                 { step: '3', title: 'Get Report', desc: 'PDF or Excel export' },
               ]).map(({ step, title, desc }) => (
                 <div key={step} className="rounded-xl bg-[#fafaf8] border border-[#e8e8e0] p-3 text-center">
-                  <div className="h-6 w-6 rounded-full bg-[#4CAF50]/10 flex items-center justify-center mx-auto mb-2">
-                    <span className="text-[10px] font-bold text-[#4CAF50]">{step}</span>
+                  <div className="h-6 w-6 rounded-full bg-[#53A67F]/10 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-[10px] font-bold text-[#53A67F]">{step}</span>
                   </div>
                   <p className="text-[12px] font-semibold text-[#1a1a1a]">{title}</p>
                   <p className="text-[10px] text-[#302817]/40 mt-0.5">{desc}</p>
@@ -473,11 +473,11 @@ export default function DashboardOverview({
         </div>
       )}
 
-      {/* ── SECTION HEADER (WF-03 style) ────────────────────────────── */}
+      {/* â”€â”€ SECTION HEADER (WF-03 style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/35">
-            {selectedYear} {tr ? 'Özet' : 'Summary'}
+            {selectedYear} {tr ? 'Ã–zet' : 'Summary'}
           </p>
           <h1 className="mt-0.5 text-base font-bold text-[#302817] sm:text-[17px]">
             {tr ? 'Ana Dashboard' : 'Main Dashboard'}
@@ -486,17 +486,10 @@ export default function DashboardOverview({
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#95A847] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#75863B]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#53A67F] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#3d8564]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Veri Ekle' : 'Add Data'}
-          </button>
-          <button
-            onClick={() => setActiveTab('ai_carbon')}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#302817]/10 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#302817]/60 transition hover:border-[#B4BE6A]/40"
-          >
-            <Bot className="h-3.5 w-3.5" />
-            AI Chatbot
           </button>
           <button
             onClick={() => setActiveTab('reporting')}
@@ -507,26 +500,26 @@ export default function DashboardOverview({
         </div>
       </div>
 
-      {/* AI insight strip — shown only when data exists */}
+      {/* AI insight strip â€” shown only when data exists */}
       {totalTonne > 0 && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-[#95A847]/20 bg-[#EEF3D8]/60 px-3.5 py-2.5">
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#95A847]" />
+        <div className="flex items-start gap-2.5 rounded-xl border border-[#53A67F]/20 bg-[#f0f9f3]/60 px-3.5 py-2.5">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#53A67F]" />
           <p className="text-[11px] font-semibold leading-5 text-[#302817]/65">
             {tr
-              ? `Toplam ${totalTonne.toFixed(1)} tCO₂e kaydedildi — en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO₂e.`
-              : `Total ${totalTonne.toFixed(1)} tCO₂e recorded — peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO₂e.`}
+              ? `Toplam ${totalTonne.toFixed(1)} tCOâ‚‚e kaydedildi â€” en yÃ¼ksek ay ${MONTHS_TR_FULL[peakMonth]}. AylÄ±k ortalama ${avgTonne.toFixed(2)} tCOâ‚‚e.`
+              : `Total ${totalTonne.toFixed(1)} tCOâ‚‚e recorded â€” peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCOâ‚‚e.`}
           </p>
         </div>
       )}
 
-      {/* ── QUESTIONNAIRE BANNER ─────────────────────────────────────── */}
+      {/* â”€â”€ QUESTIONNAIRE BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {questionnaireProfile && !questionnaireProfile.is_complete && (
         <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-xs font-semibold text-amber-800">
             {tr
-              ? 'Karbon envanteri anketi tamamlanmadı — AI Carbon sekmesinden devam edin.'
-              : 'Carbon inventory questionnaire incomplete — continue from the AI Carbon tab.'}
+              ? 'Karbon envanteri anketi tamamlanmadÄ± â€” AI Carbon sekmesinden devam edin.'
+              : 'Carbon inventory questionnaire incomplete â€” continue from the AI Carbon tab.'}
           </p>
           <button
             onClick={() => setActiveTab('ai_carbon')}
@@ -537,33 +530,33 @@ export default function DashboardOverview({
         </div>
       )}
 
-      {/* ── KPI CARDS ────────────────────────────────────────────────── */}
+      {/* â”€â”€ KPI CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCO₂e" accent icon={Leaf} />
-        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO₂e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#75863B" />
-        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCO₂e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#95A847" />
-        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO₂e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#B4BE6A" />
+        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCOâ‚‚e" accent icon={Leaf} />
+        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCOâ‚‚e" subtitle={tr ? 'DoÄŸrudan' : 'Direct'} topColor="#3d8564" />
+        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCOâ‚‚e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#53A67F" />
+        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCOâ‚‚e" subtitle={tr ? 'DolaylÄ±' : 'Indirect'} topColor="#C9C858" />
       </div>
 
-      {/* ── ROW 2: Monthly trend + Scope donut ──────────────────────── */}
+      {/* â”€â”€ ROW 2: Monthly trend + Scope donut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-[1fr_300px]">
 
         {/* Monthly Trend */}
         <ChartCard
-          title={tr ? 'Aylık Emisyon Trendi' : 'Monthly Emission Trend'}
+          title={tr ? 'AylÄ±k Emisyon Trendi' : 'Monthly Emission Trend'}
           subtitle={String(selectedYear)}
           icon={TrendingDown}
-          iconBg="bg-[#95A847] text-white"
+          iconBg="bg-[#53A67F] text-white"
         >
           <MonthlyChart monthly={monthly} selectedYear={selectedYear} tr={tr} />
         </ChartCard>
 
         {/* Scope Donut */}
         <ChartCard
-          title={tr ? 'Kapsam Dağılımı' : 'Scope Distribution'}
-          subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO₂e` : undefined}
+          title={tr ? 'Kapsam DaÄŸÄ±lÄ±mÄ±' : 'Scope Distribution'}
+          subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCOâ‚‚e` : undefined}
           icon={Layers}
-          iconBg="bg-[#B4BE6A]/20 text-[#75863B]"
+          iconBg="bg-[#C9C858]/20 text-[#3d8564]"
         >
           {totalTonne > 0 ? (
             <div className="flex h-full items-center justify-center py-1">
@@ -575,25 +568,25 @@ export default function DashboardOverview({
         </ChartCard>
       </div>
 
-      {/* ── ROW 3: Benchmark + Pending Actions + Targets (WF-03 3-col) ── */}
+      {/* â”€â”€ ROW 3: Benchmark + Pending Actions + Targets (WF-03 3-col) â”€â”€ */}
       <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-3">
 
         {/* Benchmark mini (WF-03) */}
         <ChartCard
-          title={tr ? 'Sektör Benchmarkı' : 'Sector Benchmark'}
-          subtitle={tr ? 'Anonim karşılaştırma' : 'Anonymous comparison'}
+          title={tr ? 'SektÃ¶r BenchmarkÄ±' : 'Sector Benchmark'}
+          subtitle={tr ? 'Anonim karÅŸÄ±laÅŸtÄ±rma' : 'Anonymous comparison'}
           icon={BarChart2}
-          iconBg="bg-[#95A847]/15 text-[#95A847]"
-          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#95A847] hover:underline">{tr ? 'Detay →' : 'Detail →'}</button>}
+          iconBg="bg-[#53A67F]/15 text-[#53A67F]"
+          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Detay â†’' : 'Detail â†’'}</button>}
         >
           {totalTonne > 0 ? (
             <div className="space-y-3">
               {/* Bar chart showing your position vs sector average */}
               <div className="relative h-5 overflow-hidden rounded-full bg-[#302817]/6">
                 {/* Low zone */}
-                <div className="absolute left-0 top-0 h-full w-[36%] rounded-l-full bg-[#EEF3D8]" />
+                <div className="absolute left-0 top-0 h-full w-[36%] rounded-l-full bg-[#f0f9f3]" />
                 {/* Mid zone */}
-                <div className="absolute top-0 h-full bg-[#B4BE6A]/40" style={{ left: '36%', width: '28%' }} />
+                <div className="absolute top-0 h-full bg-[#C9C858]/40" style={{ left: '36%', width: '28%' }} />
                 {/* High zone */}
                 <div className="absolute top-0 h-full rounded-r-full bg-amber-100" style={{ left: '64%', width: '36%' }} />
                 {/* Your position marker */}
@@ -606,13 +599,13 @@ export default function DashboardOverview({
                 <div className="absolute top-0 h-full w-0.5 bg-amber-500/60" style={{ left: '60%' }} />
               </div>
               <div className="flex items-center justify-between text-[10px] text-[#302817]/45">
-                <span>{tr ? 'Düşük' : 'Low'}</span>
-                <span className="font-semibold text-[#75863B]">{tr ? 'Ortalamanın altındasınız' : 'Below sector average'}</span>
-                <span>{tr ? 'Yüksek' : 'High'}</span>
+                <span>{tr ? 'DÃ¼ÅŸÃ¼k' : 'Low'}</span>
+                <span className="font-semibold text-[#3d8564]">{tr ? 'OrtalamanÄ±n altÄ±ndasÄ±nÄ±z' : 'Below sector average'}</span>
+                <span>{tr ? 'YÃ¼ksek' : 'High'}</span>
               </div>
               <button
                 onClick={() => setActiveTab('benchmark')}
-                className="flex w-full items-center justify-between rounded-lg bg-[#EEF3D8] px-3 py-2 text-[11px] font-semibold text-[#75863B] transition hover:bg-[#B4BE6A]/30"
+                className="flex w-full items-center justify-between rounded-lg bg-[#f0f9f3] px-3 py-2 text-[11px] font-semibold text-[#3d8564] transition hover:bg-[#C9C858]/30"
               >
                 <span>{tr ? 'Tam benchmark raporu' : 'Full benchmark report'}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -620,8 +613,8 @@ export default function DashboardOverview({
             </div>
           ) : (
             <div className="flex h-20 flex-col items-center justify-center gap-1.5">
-              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince görünür' : 'Visible once data is entered'}</p>
-              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#95A847] hover:underline">{tr ? 'Veri ekle →' : 'Add data →'}</button>
+              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince gÃ¶rÃ¼nÃ¼r' : 'Visible once data is entered'}</p>
+              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#53A67F] hover:underline">{tr ? 'Veri ekle â†’' : 'Add data â†’'}</button>
             </div>
           )}
         </ChartCard>
@@ -629,35 +622,35 @@ export default function DashboardOverview({
         {/* Pending Actions (WF-03) */}
         <ChartCard
           title={tr ? 'Bekleyen Aksiyonlar' : 'Pending Actions'}
-          subtitle={tr ? 'Tamamlanması gerekenler' : 'Items requiring attention'}
+          subtitle={tr ? 'TamamlanmasÄ± gerekenler' : 'Items requiring attention'}
           icon={AlertTriangle}
           iconBg="bg-amber-50 text-amber-500"
         >
           <div className="space-y-1.5">
             {[
               {
-                dot: 'bg-[#95A847]',
+                dot: 'bg-[#53A67F]',
                 done: !!questionnaireProfile?.is_complete,
-                tr: 'CarbonIQ anketi tamamlanmadı',
+                tr: 'CarbonIQ anketi tamamlanmadÄ±',
                 en: 'CarbonIQ questionnaire incomplete',
                 tab: 'ai_carbon',
               },
               {
-                dot: entries.length === 0 ? 'bg-red-400' : 'bg-[#95A847]',
+                dot: entries.length === 0 ? 'bg-red-400' : 'bg-[#53A67F]',
                 done: entries.length > 0,
                 tr: 'Emisyon verisi eksik',
                 en: 'No emission data entered',
                 tab: 'emissions',
               },
               {
-                dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#95A847]',
+                dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#53A67F]',
                 done: targets.length > 0,
-                tr: 'Azaltım hedefi belirlenmedi',
+                tr: 'AzaltÄ±m hedefi belirlenmedi',
                 en: 'No reduction target set',
                 tab: 'reduction',
               },
               {
-                dot: facilityList.length === 0 ? 'bg-[#302817]/25' : 'bg-[#95A847]',
+                dot: facilityList.length === 0 ? 'bg-[#302817]/25' : 'bg-[#53A67F]',
                 done: facilityList.length > 0,
                 tr: 'Tesis bilgisi eksik',
                 en: 'No facility added',
@@ -679,8 +672,8 @@ export default function DashboardOverview({
             {/* All done state */}
             {[questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
-                <CheckCircle2 className="h-6 w-6 text-[#95A847]" />
-                <p className="text-[11px] font-semibold text-[#302817]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
+                <CheckCircle2 className="h-6 w-6 text-[#53A67F]" />
+                <p className="text-[11px] font-semibold text-[#302817]/50">{tr ? 'TÃ¼m aksiyonlar tamamlandÄ±' : 'All actions complete'}</p>
               </div>
             )}
           </div>
@@ -689,17 +682,17 @@ export default function DashboardOverview({
         {/* Targets (WF-03) */}
         <ChartCard
           title={tr ? 'Hedefler' : 'Targets'}
-          subtitle={tr ? 'Azaltım ilerleme durumu' : 'Reduction progress'}
+          subtitle={tr ? 'AzaltÄ±m ilerleme durumu' : 'Reduction progress'}
           icon={Target}
-          iconBg="bg-[#B4BE6A]/20 text-[#75863B]"
-          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#95A847] hover:underline">{tr ? 'Tümü →' : 'All →'}</button>}
+          iconBg="bg-[#C9C858]/20 text-[#3d8564]"
+          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'TÃ¼mÃ¼ â†’' : 'All â†’'}</button>}
         >
           {targets.length === 0 ? (
             <div className="flex h-24 flex-col items-center justify-center gap-2">
-              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
+              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'HenÃ¼z hedef yok' : 'No targets yet'}</p>
               <button
                 onClick={() => setActiveTab('reduction')}
-                className="rounded-full border border-[#95A847]/30 px-3 py-1 text-[11px] font-bold text-[#75863B] transition hover:bg-[#95A847]/8"
+                className="rounded-full border border-[#53A67F]/30 px-3 py-1 text-[11px] font-bold text-[#3d8564] transition hover:bg-[#53A67F]/8"
               >
                 {tr ? '+ Hedef ekle' : '+ Add target'}
               </button>
@@ -714,18 +707,18 @@ export default function DashboardOverview({
                 return (
                   <div key={t.id}>
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-[#302817]/70">{t.target_year || '—'} {tr ? 'hedefi' : 'target'}</span>
-                      <span className="text-[11px] font-bold text-[#75863B]">{pct}%</span>
+                      <span className="text-[11px] font-semibold text-[#302817]/70">{t.target_year || 'â€”'} {tr ? 'hedefi' : 'target'}</span>
+                      <span className="text-[11px] font-bold text-[#3d8564]">{pct}%</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#B4BE6A] transition-all duration-700"
+                        className="h-full rounded-full bg-gradient-to-r from-[#3d8564] to-[#C9C858] transition-all duration-700"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
                     <div className="mt-0.5 flex justify-between text-[10px] text-[#302817]/35">
-                      <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCO₂e</span>
-                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCO₂e</span>
+                      <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCOâ‚‚e</span>
+                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCOâ‚‚e</span>
                     </div>
                   </div>
                 );
@@ -734,37 +727,37 @@ export default function DashboardOverview({
               <div className="flex items-center justify-between rounded-lg border border-[#302817]/8 bg-[#302817]/3 px-3 py-2">
                 <div className="flex items-center gap-1.5 text-[11px] text-[#302817]/45">
                   <Lock className="h-3 w-3" />
-                  <span>{tr ? 'Hatırlatma bildirimleri — Pro' : 'Reminder notifications — Pro'}</span>
+                  <span>{tr ? 'HatÄ±rlatma bildirimleri â€” Pro' : 'Reminder notifications â€” Pro'}</span>
                 </div>
-                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#95A847] hover:underline">{tr ? 'Yükselt' : 'Upgrade'}</button>
+                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#53A67F] hover:underline">{tr ? 'YÃ¼kselt' : 'Upgrade'}</button>
               </div>
             </div>
           )}
         </ChartCard>
       </div>
 
-      {/* ── UPGRADE BANNER (WF-03 "Pro'ya Geç") ────────────────────── */}
-      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#95A847]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-5 py-4 sm:flex-row sm:gap-4">
+      {/* â”€â”€ UPGRADE BANNER (WF-03 "Pro'ya GeÃ§") â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#53A67F]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-5 py-4 sm:flex-row sm:gap-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#95A847]/20">
-            <Sparkles className="h-4 w-4 text-[#B4BE6A]" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#53A67F]/20">
+            <Sparkles className="h-4 w-4 text-[#C9C858]" />
           </span>
           <div>
             <p className="text-[13px] font-bold text-white">
-              {tr ? "Pro'ya geç — tüm özellikleri aç" : "Upgrade to Pro — unlock everything"}
+              {tr ? "Pro'ya geÃ§ â€” tÃ¼m Ã¶zellikleri aÃ§" : "Upgrade to Pro â€” unlock everything"}
             </p>
             <p className="text-[11px] text-white/50">
               {tr
-                ? 'ISO 14064-1 raporları, AI analitik, sınırsız tesis'
+                ? 'ISO 14064-1 raporlarÄ±, AI analitik, sÄ±nÄ±rsÄ±z tesis'
                 : 'ISO 14064-1 reports, AI analytics, unlimited facilities'}
             </p>
           </div>
         </div>
         <button
           onClick={() => setActiveTab('settings')}
-          className="shrink-0 rounded-xl bg-[#95A847] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#B4BE6A]"
+          className="shrink-0 rounded-xl bg-[#53A67F] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#C9C858]"
         >
-          {tr ? "Pro'ya Geç →" : "Upgrade to Pro →"}
+          {tr ? "Pro'ya GeÃ§ â†’" : "Upgrade to Pro â†’"}
         </button>
       </div>
     </div>

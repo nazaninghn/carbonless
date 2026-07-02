@@ -8,17 +8,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Carbonless brand palette
-        primary:   '#95A847',   // Brand olive green — CTAs, icons, badges
-        secondary: '#B4BE6A',   // Brand light olive — gradient midpoints
-        accent:    '#75863B',   // Brand dark olive — gradient endpoints, hover
-        mint:      '#B4BE6A',   // Alias of secondary (legacy compat)
-        // Neutral UI tokens (unchanged)
-        graphite:  '#475569',   // Body text
-        slate:     '#1E293B',   // Deep text
-        mist:      '#F1F5F9',   // Subtle bg sections
-        sky:       '#F8FAFC',   // Main bg
-        dark:      '#302817',   // App-specific dark brown
+        // Carbonless brand palette — Citron + Mint + White Smoke
+        citron:    '#C9C858',   // Primary accent — CTAs, badges, highlights
+        'citron-light': '#d6d67a',
+        'citron-dark': '#a8a73a',
+        mint:      '#53A67F',   // Primary — AI, success, nature
+        'mint-light': '#6dba95',
+        'mint-dark': '#3d8564',
+        smoke:     '#F5F5F5',   // Background
+        'smoke-dark': '#ebebeb',
+        // Legacy aliases (for backward compat with existing components)
+        primary:   '#53A67F',
+        secondary: '#C9C858',
+        accent:    '#3d8564',
+        // Neutral UI tokens
+        graphite:  '#475569',
+        slate:     '#1E293B',
+        mist:      '#F5F5F5',
+        sky:       '#F5F5F5',
+        dark:      '#1a1a1a',
       },
       fontFamily: {
         "inter": ["var(--font-inter)", "sans-serif"],

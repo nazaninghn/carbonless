@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
-/* ── Copy ── */
+/* -- Copy -- */
 const copy = {
   en: {
     nav: { home: 'Home', about: 'About', features: 'Features', ai: 'AI', login: 'Login' },
@@ -20,19 +20,19 @@ const copy = {
     },
   },
   tr: {
-    nav: { home: 'Ana Sayfa', about: 'Hakkında', features: 'Özellikler', ai: 'AI', login: 'Giriş' },
+    nav: { home: 'Ana Sayfa', about: 'Hakkinda', features: 'Özellikler', ai: 'AI', login: 'Giris' },
     hero: {
       line1: 'AI destekli',
       highlight: 'karbon hesaplama',
       line2: 'platformunuz.',
-      desc: 'AI rehberliğiyle şirketinizin karbon ayak izini ölçün. Gerçekten önemli olan ISO 14064-1 uyumlu raporlar oluşturun.',
-      cta: 'Ücretsiz Başlayın',
+      desc: 'AI rehberligiyle sirketinizin karbon ayak izini ölçün. Gerçekten önemli olan ISO 14064-1 uyumlu raporlar olusturun.',
+      cta: 'Ücretsiz Baslayin',
       demo: 'Demo Talep Et',
     },
   },
 };
 
-/* ── Floating node component ── */
+/* -- Floating node component -- */
 function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[#302817]/70' }) {
   return (
     <div className={`absolute ${className} animate-float`} style={{ animationDelay: `${delay}s` }}>
@@ -42,7 +42,7 @@ function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[
             <Icon className={`h-6 w-6 ${color}`} />
           </div>
           {/* Small green dot indicator */}
-          <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#4CAF50] border-2 border-white" />
+          <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#53A67F] border-2 border-white" />
         </div>
         {label && (
           <span className="rounded-full bg-[#f0f4e8] border border-[#d4deb8] px-2.5 py-0.5 text-[10px] font-semibold text-[#5a6b2a]">
@@ -54,7 +54,7 @@ function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[
   );
 }
 
-/* ── Connection lines SVG ── */
+/* -- Connection lines SVG -- */
 function ConnectionLines() {
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.12]" viewBox="0 0 1200 700">
@@ -75,7 +75,7 @@ function ConnectionLines() {
   );
 }
 
-/* ── Page ── */
+/* -- Page -- */
 export default function Home() {
   const { language: lang, changeLanguage } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -95,7 +95,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white relative overflow-hidden">
 
-      {/* ── Global float animation via tailwind ── */}
+      {/* -- Global float animation via tailwind -- */}
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes float {
           0%, 100% { transform: translateY(0px); }
@@ -106,7 +106,7 @@ export default function Home() {
         }
       `}} />
 
-      {/* ── Navbar ── */}
+      {/* -- Navbar -- */}
       <header className="relative z-50 mx-auto flex h-16 max-w-6xl items-center justify-center px-5 sm:px-8 pt-4">
         <nav className="flex items-center gap-1 rounded-full border border-[#e8e8e0] bg-white/90 backdrop-blur-sm px-2 py-1.5 shadow-sm">
           {/* Logo */}
@@ -129,11 +129,11 @@ export default function Home() {
           <div className="flex items-center gap-1.5 ml-2">
             <Link href="/login"
               className="px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
-              {lang === 'tr' ? 'Giriş' : 'Login'}
+              {lang === 'tr' ? 'Giris' : 'Login'}
             </Link>
             <Link href="/register"
               className="px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[12px] font-bold text-white hover:bg-[#333] transition">
-              {lang === 'tr' ? 'Kayıt Ol' : 'Sign Up'}
+              {lang === 'tr' ? 'Kayit Ol' : 'Sign Up'}
             </Link>
           </div>
 
@@ -149,8 +149,8 @@ export default function Home() {
               <div className="absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl border border-[#e8e8e0] bg-white shadow-xl">
                 {['en', 'tr'].map(l => (
                   <button key={l} onClick={() => { changeLanguage(l); setShowLangMenu(false); }}
-                    className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold transition hover:bg-[#f9faf5] ${lang === l ? 'text-[#4CAF50]' : 'text-[#302817]/60'}`}>
-                    {l === 'en' ? '🇬🇧 English' : '🇹🇷 Türkçe'} {lang === l && '✓'}
+                    className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold transition hover:bg-[#f9faf5] ${lang === l ? 'text-[#53A67F]' : 'text-[#302817]/60'}`}>
+                    {l === 'en' ? '???? English' : '???? Türkçe'} {lang === l && '?'}
                   </button>
                 ))}
               </div>
@@ -159,36 +159,36 @@ export default function Home() {
         </nav>
       </header>
 
-      {/* ── Hero Section ── */}
+      {/* -- Hero Section -- */}
       <section className="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-5 sm:px-8">
 
         {/* Connection lines background */}
         <ConnectionLines />
 
-        {/* ── Left side floating nodes ── */}
+        {/* -- Left side floating nodes -- */}
         <FloatingNode icon={Factory} label="Scope 1" className="top-[12%] left-[5%] sm:left-[8%]" delay={0} color="text-orange-500" />
         <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[3%] sm:left-[6%]" delay={0.8} color="text-yellow-600" />
         <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[8%] sm:left-[12%]" delay={1.6} color="text-sky-500" />
         <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[4%] sm:left-[7%]" delay={2.2} color="text-blue-500" />
 
-        {/* ── Right side floating nodes ── */}
+        {/* -- Right side floating nodes -- */}
         <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[6%] sm:right-[10%]" delay={0.4} color="text-purple-500" />
-        <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[3%] sm:right-[5%]" delay={1.2} color="text-[#4CAF50]" />
+        <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[3%] sm:right-[5%]" delay={1.2} color="text-[#53A67F]" />
         <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[8%] sm:right-[12%]" delay={2.0} color="text-emerald-600" />
         <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[5%] sm:right-[8%]" delay={0.6} color="text-[#6B8E23]" />
 
         {/* Additional smaller nodes */}
         <FloatingNode icon={Flame} className="top-[22%] left-[20%] sm:left-[22%]" delay={1.4} color="text-red-400" />
         <FloatingNode icon={CloudSun} className="top-[18%] right-[22%] sm:right-[24%]" delay={1.8} color="text-sky-400" />
-        <FloatingNode icon={Leaf} className="bottom-[28%] left-[18%] sm:left-[20%]" delay={2.4} color="text-[#4CAF50]" />
+        <FloatingNode icon={Leaf} className="bottom-[28%] left-[18%] sm:left-[20%]" delay={2.4} color="text-[#53A67F]" />
         <FloatingNode icon={Globe2} className="bottom-[22%] right-[18%] sm:right-[20%]" delay={0.2} color="text-teal-500" />
 
-        {/* ── Center content ── */}
+        {/* -- Center content -- */}
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           {/* Main title */}
           <h1 className="text-[40px] sm:text-[56px] lg:text-[72px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#1a1a1a]">
             {t.hero.line1}{' '}
-            <span className="text-[#4CAF50]">{t.hero.highlight}</span>{' '}
+            <span className="text-[#53A67F]">{t.hero.highlight}</span>{' '}
             {t.hero.line2}
           </h1>
 
@@ -202,13 +202,13 @@ export default function Home() {
             <Link href="/register"
               className="flex items-center gap-3 rounded-full bg-[#1a1a1a] pl-6 pr-3 py-3 text-[14px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#333] transition hover:-translate-y-0.5">
               <span>{t.hero.cta}</span>
-              <div className="h-8 w-8 rounded-full bg-[#4CAF50] flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-[#53A67F] flex items-center justify-center">
                 <Leaf className="h-4 w-4 text-white" />
               </div>
             </Link>
             <Link href="/login"
-              className="flex items-center gap-3 rounded-full border-2 border-[#e8e8e0] bg-white px-6 py-3 text-[14px] font-bold text-[#302817]/70 shadow-sm hover:border-[#4CAF50]/40 hover:text-[#302817] transition">
-              <Brain className="h-4 w-4 text-[#4CAF50]" />
+              className="flex items-center gap-3 rounded-full border-2 border-[#e8e8e0] bg-white px-6 py-3 text-[14px] font-bold text-[#302817]/70 shadow-sm hover:border-[#53A67F]/40 hover:text-[#302817] transition">
+              <Brain className="h-4 w-4 text-[#53A67F]" />
               <span>{t.hero.demo}</span>
             </Link>
           </div>
@@ -216,7 +216,7 @@ export default function Home() {
 
       </section>
 
-      {/* ── AI Section (like Dinnect AI) ── */}
+      {/* -- AI Section (like Dinnect AI) -- */}
       <section id="ai" className="relative z-10 py-20 sm:py-28 bg-white">
         <div className="mx-auto max-w-6xl px-5 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
@@ -224,20 +224,20 @@ export default function Home() {
             {/* Left: Text */}
             <div>
               <h2 className="text-[36px] sm:text-[48px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#1a1a1a]">
-                Carbonless <span className="text-[#4CAF50]">AI</span>
+                Carbonless <span className="text-[#53A67F]">AI</span>
               </h2>
               <p className="mt-5 text-[15px] leading-[1.8] text-[#302817]/55 max-w-md">
                 {lang === 'tr'
-                  ? 'Tüm karbon hesaplama ihtiyaçlarınız için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalım, raporlayalım ve azaltma stratejileri önerelim.'
+                  ? 'Tüm karbon hesaplama ihtiyaçlariniz için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalim, raporlayalim ve azaltma stratejileri önerelim.'
                   : 'One AI for all your carbon needs. Tell us your emission data — we calculate, report, and suggest reduction strategies. Powered by CarbonIQ engine.'}
               </p>
 
               {/* Feature list */}
               <div className="mt-8 space-y-4">
                 {(lang === 'tr' ? [
-                  'AI destekli emisyon hesaplama ve sınıflandırma',
-                  'ISO 14064-1 uyumlu otomatik rapor oluşturma',
-                  'Doğal dil ile veri girişi — sadece konuşun',
+                  'AI destekli emisyon hesaplama ve siniflandirma',
+                  'ISO 14064-1 uyumlu otomatik rapor olusturma',
+                  'Dogal dil ile veri girisi — sadece konusun',
                   'Saniyeler içinde karbon ayak izi analizi',
                 ] : [
                   'AI-driven emission calculation and classification',
@@ -246,8 +246,8 @@ export default function Home() {
                   'Carbon footprint analysis generated in seconds',
                 ]).map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <div className="h-7 w-7 rounded-lg bg-[#f0f9f0] border border-[#4CAF50]/15 flex items-center justify-center shrink-0">
-                      <svg className="h-3.5 w-3.5 text-[#4CAF50]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <div className="h-7 w-7 rounded-lg bg-[#f0f9f0] border border-[#53A67F]/15 flex items-center justify-center shrink-0">
+                      <svg className="h-3.5 w-3.5 text-[#53A67F]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
@@ -284,10 +284,10 @@ export default function Home() {
                     <Image src="/carbon-hero.png" alt="CarbonIQ AI" width={200} height={200} className="h-32 w-32 object-contain mb-4" />
                     <p className="text-[11px] text-[#302817]/40 mb-1">Hi, there</p>
                     <p className="text-[16px] font-bold text-[#1a1a1a]">
-                      {lang === 'tr' ? 'Size nasıl yardımcı olabilirim?' : 'How can I assist?'}
+                      {lang === 'tr' ? 'Size nasil yardimci olabilirim?' : 'How can I assist?'}
                     </p>
                     <div className="mt-4 w-full rounded-xl border border-[#e8e8e0] px-4 py-2.5 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-[#4CAF50]/40" />
+                      <Sparkles className="h-4 w-4 text-[#53A67F]/40" />
                       <span className="text-[12px] text-[#302817]/30">Ask CarbonIQ...</span>
                     </div>
                     {/* Suggestion chips */}
@@ -306,16 +306,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Pricing Section ── */}
+      {/* -- Pricing Section -- */}
       <section id="pricing" className="relative z-10 py-20 sm:py-28 bg-[#fafaf8] border-t border-[#e8e8e0]">
         <div className="mx-auto max-w-4xl px-5 sm:px-8">
           {/* Header */}
           <div className="text-center mb-12">
             <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#1a1a1a]">
-              {lang === 'tr' ? 'Basit fiyatlandırma' : 'Simple pricing'}
+              {lang === 'tr' ? 'Basit fiyatlandirma' : 'Simple pricing'}
             </h2>
             <p className="mt-3 text-[15px] text-[#302817]/50">
-              {lang === 'tr' ? 'Her büyüklükteki şirket için uygun planlar.' : 'Plans that fit companies of every size.'}
+              {lang === 'tr' ? 'Her büyüklükteki sirket için uygun planlar.' : 'Plans that fit companies of every size.'}
             </p>
           </div>
 
@@ -336,10 +336,10 @@ export default function Home() {
               </div>
               <div className="space-y-3 mb-8">
                 {(lang === 'tr' ? [
-                  'Dashboard veri girişi',
+                  'Dashboard veri girisi',
                   'Temel emisyon hesaplama',
-                  'Sektör benchmarkı',
-                  'Aylık 5 AI soru',
+                  'Sektör benchmarki',
+                  'Aylik 5 AI soru',
                 ] : [
                   'Dashboard data entry',
                   'Basic emission calculations',
@@ -347,7 +347,7 @@ export default function Home() {
                   '5 AI questions / month',
                 ]).map(f => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <svg className="h-4 w-4 text-[#4CAF50] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg className="h-4 w-4 text-[#53A67F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-[13px] text-[#302817]/65">{f}</span>
@@ -356,18 +356,18 @@ export default function Home() {
               </div>
               <Link href="/register"
                 className="block w-full rounded-full border-2 border-[#e8e8e0] py-3 text-center text-[13px] font-bold text-[#302817]/60 hover:border-[#302817]/30 hover:text-[#302817] transition">
-                {lang === 'tr' ? 'Ücretsiz Başla' : 'Get Started'}
+                {lang === 'tr' ? 'Ücretsiz Basla' : 'Get Started'}
               </Link>
             </div>
 
             {/* Pro Plan */}
-            <div className="relative rounded-2xl border-2 border-[#4CAF50] bg-white p-7 shadow-lg shadow-[#4CAF50]/5">
+            <div className="relative rounded-2xl border-2 border-[#53A67F] bg-white p-7 shadow-lg shadow-[#53A67F]/5">
               {/* Popular badge */}
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#4CAF50] px-4 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#53A67F] px-4 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
                 {lang === 'tr' ? 'Popüler' : 'Popular'}
               </div>
               <div className="mb-6">
-                <p className="text-[14px] font-bold text-[#4CAF50]">Pro</p>
+                <p className="text-[14px] font-bold text-[#53A67F]">Pro</p>
                 <div className="mt-2 flex items-baseline gap-1">
                   <span className="text-[36px] font-extrabold text-[#1a1a1a]">$49</span>
                   <span className="text-[14px] text-[#302817]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
@@ -378,13 +378,13 @@ export default function Home() {
               </div>
               <div className="space-y-3 mb-8">
                 {(lang === 'tr' ? [
-                  'Ücretsiz\'deki her şey',
-                  'Sınırsız AI karbon hesaplama',
+                  'Ücretsiz\'deki her sey',
+                  'Sinirsiz AI karbon hesaplama',
                   'ISO 14064-1 PDF raporu',
                   'Hedefler ve ilerleme takibi',
                   'AI rehberli anket (133 soru)',
-                  'Danışman onay sistemi',
-                  'Excel/CSV dışa aktarma',
+                  'Danisman onay sistemi',
+                  'Excel/CSV disa aktarma',
                 ] : [
                   'Everything in Free',
                   'Unlimited AI carbon calculations',
@@ -395,7 +395,7 @@ export default function Home() {
                   'Excel/CSV export',
                 ]).map(f => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <svg className="h-4 w-4 text-[#4CAF50] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg className="h-4 w-4 text-[#53A67F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                     <span className="text-[13px] text-[#302817]/65">{f}</span>
@@ -403,7 +403,7 @@ export default function Home() {
                 ))}
               </div>
               <Link href="/register"
-                className="block w-full rounded-full bg-[#4CAF50] py-3 text-center text-[13px] font-bold text-white shadow-sm hover:bg-[#388E3C] transition">
+                className="block w-full rounded-full bg-[#53A67F] py-3 text-center text-[13px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition">
                 {lang === 'tr' ? 'Pro\'ya Geç' : 'Go Pro'}
               </Link>
             </div>
@@ -411,7 +411,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Footer strip ── */}
+      {/* -- Footer strip -- */}
       <footer className="relative z-10 border-t border-[#e8e8e0] bg-white/80 backdrop-blur-sm py-5">
         <div className="mx-auto max-w-6xl px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -420,7 +420,7 @@ export default function Home() {
           </div>
           <div className="flex gap-4">
             <Link href="/terms" className="text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
-              {lang === 'tr' ? 'Kullanım Koşulları' : 'Terms'}
+              {lang === 'tr' ? 'Kullanim Kosullari' : 'Terms'}
             </Link>
             <Link href="/privacy" className="text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
               {lang === 'tr' ? 'Gizlilik' : 'Privacy'}

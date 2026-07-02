@@ -27,11 +27,11 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect logged-in users away from /login and /register → dashboard
+  // Redirect logged-in users away from /login and /register → select page
   if (pathname === '/login' || pathname === '/register') {
     const hasSession = request.cookies.has('carbonless_auth') || request.cookies.has('_carbonless_refresh');
     if (hasSession) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+      return NextResponse.redirect(new URL('/dashboard/select', request.url));
     }
   }
 

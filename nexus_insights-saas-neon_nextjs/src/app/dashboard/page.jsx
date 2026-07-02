@@ -78,9 +78,16 @@ function PreviewBanner({ tr }) {
 }
 
 export default function DashboardPage() {
-  const { t, language } = useLanguage();
+  const { t, language, changeLanguage } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const mode = localStorage.getItem('carbonless_startup_mode');
+      if (mode) localStorage.removeItem('carbonless_startup_mode');
+      return mode === 'ai' ? 'ai_carbon' : 'dashboard';
+    }
+    return 'dashboard';
+  });
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -114,15 +121,14 @@ export default function DashboardPage() {
   // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
   // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
   // visibility is controlled via CSS hidden — identical to the inner-tab fix (#44).
-  // AI overlay state — starts visible (AI-first UX) but dashboard is the "base" tab
-  const [aiCarbonMounted, setAiCarbonMounted] = useState(true);
-  const [aiCarbonVisible, setAiCarbonVisible] = useState(true);
+  // AI overlay state — only shows when explicitly activated from header or select page
+  const [aiCarbonMounted, setAiCarbonMounted] = useState(false);
+  const [aiCarbonVisible, setAiCarbonVisible] = useState(false);
   useEffect(() => {
     if (activeTab === 'ai_carbon') {
       setAiCarbonMounted(true);
       setAiCarbonVisible(true);
     } else {
-      // Any non-AI tab hides the overlay
       setAiCarbonVisible(false);
     }
   }, [activeTab]);
@@ -176,6 +182,7 @@ export default function DashboardPage() {
           unreadCount={unreadCount}
           setUnreadCount={setUnreadCount}
           setSidebarOpen={setSidebarOpen}
+          onLanguageChange={changeLanguage}
         />
 
         <main className={`w-full min-w-0 max-w-full flex-1 overflow-x-hidden ${

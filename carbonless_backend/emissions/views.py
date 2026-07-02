@@ -271,20 +271,11 @@ def countries_view(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def generate_report_view(request):
-    """Generate ISO 14064-1 PDF report — Pro feature"""
-    # Subscription gate: Pro only
-    try:
-        from subscriptions.views import get_or_create_subscription
-        sub = get_or_create_subscription(request.user)
-        if not sub.can_generate_report:
-            return Response(
-                {'error': 'PDF report generation is a Pro feature. Please upgrade your plan.'},
-                status=403,
-            )
-    except Exception:
-        pass  # If subscriptions app fails, allow access
+    """Generate ISO 14064-1 PDF report"""
+    # Subscription gate temporarily disabled — all users can generate reports
+    # TODO: Re-enable when Stripe billing is connected
 
-    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
+    year = int(request.query_params.get('year', datetime.now().year))
     lang = request.query_params.get('lang', 'tr')
 
     try:

@@ -2,9 +2,24 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    /* ── Brand Color Palette ── */
+    --color-citron: #C9C858;
+    --color-citron-light: #d6d67a;
+    --color-citron-dark: #a8a73a;
+    --color-mint: #53A67F;
+    --color-mint-light: #6dba95;
+    --color-mint-dark: #3d8564;
+    --color-smoke: #F5F5F5;
+    --color-smoke-dark: #ebebeb;
+    --color-text: #1a1a1a;
+    --color-text-muted: rgba(26,26,26,0.55);
+    --color-border: #e5e5e5;
+  }
+
   [x-cloak] { display: none !important; }
   html { scrollbar-gutter: stable; overflow-x: hidden; scroll-behavior: smooth; }
-  body { overflow-x: hidden; font-family: var(--font-inter), sans-serif; color: #302817; background-color: #F8FAFC; }
+  body { overflow-x: hidden; font-family: var(--font-inter), sans-serif; color: var(--color-text); background-color: var(--color-smoke); }
   
   /* Mobile safe areas */
   @supports (padding: env(safe-area-inset-bottom)) {

@@ -421,19 +421,19 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyState({ onNew, tr }) {
   const suggestions = tr ? [
-    { icon: '🌿', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?', label: 'Scopes' },
-    { icon: '📊', text: 'En büyük emisyon kaynağım hangisi?', label: 'Analytics' },
-    { icon: '📋', text: 'ISO 14064-1 raporu nasıl hazırlanır?', label: 'Raporlama' },
-    { icon: '🎯', text: 'Karbon azaltma hedefleri nasıl belirlenir?', label: 'Hedefler' },
-    { icon: '⚡', text: 'Enerji verimliliği önerileri', label: 'Verimlilik' },
-    { icon: '🏭', text: 'Emisyon faktörlerini hesapla', label: 'Hesaplama' },
+    { img: '/icons/scopes.png', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?', label: 'Scopes' },
+    { img: '/icons/analytics.png', text: 'En büyük emisyon kaynağım hangisi?', label: 'Analytics' },
+    { img: '/icons/reporting.png', text: 'ISO 14064-1 raporu nasıl hazırlanır?', label: 'Raporlama' },
+    { img: '/icons/targets.png', text: 'Karbon azaltma hedefleri nasıl belirlenir?', label: 'Hedefler' },
+    { img: '/icons/efficiency.png', text: 'Enerji verimliliği önerileri', label: 'Verimlilik' },
+    { img: '/icons/calculator.png', text: 'Emisyon faktörlerini hesapla', label: 'Hesaplama' },
   ] : [
-    { icon: '🌿', text: "What's the difference between Scope 1, 2, and 3?", label: 'Scopes' },
-    { icon: '📊', text: "What's my biggest emission source?", label: 'Analytics' },
-    { icon: '📋', text: "How do I prepare an ISO 14064-1 report?", label: 'Reporting' },
-    { icon: '🎯', text: "How do I set carbon reduction targets?", label: 'Targets' },
-    { icon: '⚡', text: "Energy efficiency recommendations", label: 'Efficiency' },
-    { icon: '🏭', text: "Calculate my emission factors", label: 'Calculator' },
+    { img: '/icons/scopes.png', text: "What's the difference between Scope 1, 2, and 3?", label: 'Scopes' },
+    { img: '/icons/analytics.png', text: "What's my biggest emission source?", label: 'Analytics' },
+    { img: '/icons/reporting.png', text: "How do I prepare an ISO 14064-1 report?", label: 'Reporting' },
+    { img: '/icons/targets.png', text: "How do I set carbon reduction targets?", label: 'Targets' },
+    { img: '/icons/efficiency.png', text: "Energy efficiency recommendations", label: 'Efficiency' },
+    { img: '/icons/calculator.png', text: "Calculate my emission factors", label: 'Calculator' },
   ];
 
   return (
@@ -489,13 +489,13 @@ function EmptyState({ onNew, tr }) {
         {/* Suggestion chips — horizontal scrollable row like Dinnect */}
         <div className="w-full overflow-x-auto pb-2">
           <div className="flex gap-2 min-w-max px-1">
-            {suggestions.map(({ icon, text, label }) => (
+            {suggestions.map(({ img, text, label }) => (
               <button
                 key={text}
                 onClick={() => onNew(text)}
                 className="flex items-center gap-2 rounded-full border border-[#e8e8e0] bg-white px-4 py-2.5 text-[12px] font-medium text-[#302817]/60 shadow-sm whitespace-nowrap hover:border-[#4CAF50]/30 hover:bg-[#f0f9f0] hover:text-[#2d4a1a] transition-all duration-200 active:scale-[0.97]"
               >
-                <span className="text-sm">{icon}</span>
+                <Image src={img} alt={label} width={18} height={18} className="h-[18px] w-[18px] object-contain" />
                 <span>{label}</span>
               </button>
             ))}
