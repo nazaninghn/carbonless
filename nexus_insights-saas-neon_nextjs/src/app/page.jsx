@@ -14,7 +14,7 @@ const copy = {
       line1: 'Your AI-powered',
       highlight: 'carbon calculator',
       line2: 'platform.',
-      desc: 'Measure your company\'s carbon footprint with AI guidance. Build ISO 14064-1 compliant reports that actually matter.',
+      desc: '',
       cta: 'Get Started Free',
       demo: 'Request Demo',
     },
@@ -25,7 +25,7 @@ const copy = {
       line1: 'AI destekli',
       highlight: 'karbon hesaplama',
       line2: 'platformunuz.',
-      desc: 'AI rehberligiyle sirketinizin karbon ayak izini ölçün. Gerçekten önemli olan ISO 14064-1 uyumlu raporlar olusturun.',
+      desc: '',
       cta: 'Ücretsiz Baslayin',
       demo: 'Demo Talep Et',
     },
@@ -106,16 +106,16 @@ export default function Home() {
       `}} />
 
       {/* -- Navbar -- */}
-      <header className="relative z-50 mx-auto flex h-16 max-w-6xl items-center justify-center px-5 sm:px-8 pt-4">
-        <nav className="flex items-center gap-1 rounded-full border border-[#e8e8e0] bg-white/90 backdrop-blur-sm px-2 py-1.5 shadow-sm">
+      <header className="relative z-50 mx-auto flex h-16 max-w-6xl items-center justify-center px-3 sm:px-8 pt-4">
+        <nav className="flex items-center gap-0.5 sm:gap-1 rounded-full border border-[#e8e8e0] bg-white/90 backdrop-blur-sm px-1.5 sm:px-2 py-1.5 shadow-sm max-w-full overflow-hidden">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 px-3 py-1.5">
-            <Image src="/carbonless.png" alt="Carbonless" width={28} height={28} className="h-7 w-7 object-contain" />
-            <span className="text-[15px] font-bold tracking-tight text-[#302817]">Carbonless</span>
+          <Link href="/" className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 shrink-0">
+            <Image src="/carbonless.png" alt="Carbonless" width={28} height={28} className="h-6 w-6 sm:h-7 sm:w-7 object-contain" />
+            <span className="text-[13px] sm:text-[15px] font-bold tracking-tight text-[#302817]">Carbonless</span>
           </Link>
 
           {/* Nav links */}
-          <div className="hidden sm:flex items-center gap-0.5 ml-2">
+          <div className="hidden md:flex items-center gap-0.5 ml-2">
             {['home', 'about', 'ai'].map(key => (
               <a key={key} href={key === 'home' ? '/' : key === 'ai' ? '/dashboard/select' : `#${key}`}
                 className="px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
@@ -125,22 +125,22 @@ export default function Home() {
           </div>
 
           {/* Login & Create Account */}
-          <div className="flex items-center gap-1.5 ml-auto sm:ml-2">
+          <div className="flex items-center gap-1 sm:gap-1.5 ml-auto sm:ml-2">
             <Link href="/login"
-              className="hidden sm:block px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
+              className="hidden sm:block px-3 sm:px-3.5 py-1.5 rounded-full text-[12px] sm:text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
               {lang === 'tr' ? 'Giris Yap' : 'Log In'}
             </Link>
             <Link href="/register"
-              className="px-3 sm:px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[11px] sm:text-[12px] font-bold text-white hover:bg-[#333] transition">
+              className="px-2.5 sm:px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[10px] sm:text-[12px] font-bold text-white hover:bg-[#333] transition whitespace-nowrap">
               {lang === 'tr' ? 'Hesap Olustur' : 'Create Account'}
             </Link>
           </div>
 
           {/* Lang */}
-          <div className="relative ml-2" ref={langMenuRef}>
+          <div className="relative ml-1 sm:ml-2 shrink-0" ref={langMenuRef}>
             <button
               onClick={() => setShowLangMenu(v => !v)}
-              className="px-2.5 py-1.5 rounded-full text-[12px] font-semibold text-[#302817]/50 hover:bg-[#f5f5f0] transition uppercase"
+              className="px-2 sm:px-2.5 py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold text-[#302817]/50 hover:bg-[#f5f5f0] transition uppercase"
             >
               {lang}
             </button>
@@ -200,22 +200,24 @@ export default function Home() {
             {t.hero.line2}
           </h1>
 
-          {/* Description */}
-          <p className="mt-6 text-[16px] sm:text-[18px] leading-relaxed text-[#302817]/55 max-w-xl mx-auto">
-            {t.hero.desc}
-          </p>
+          {/* Description - only render if content exists */}
+          {t.hero.desc && (
+            <p className="mt-6 text-[16px] sm:text-[18px] leading-relaxed text-[#302817]/55 max-w-xl mx-auto">
+              {t.hero.desc}
+            </p>
+          )}
 
           {/* CTA Buttons */}
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full px-4 sm:px-0">
             <Link href="/register"
-              className="flex items-center gap-3 rounded-full bg-[#1a1a1a] pl-6 pr-3 py-3 text-[14px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#333] transition hover:-translate-y-0.5">
+              className="flex w-full sm:w-auto items-center justify-center gap-3 rounded-full bg-[#1a1a1a] pl-6 pr-3 py-3 text-[13px] sm:text-[14px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#333] transition hover:-translate-y-0.5">
               <span>{t.hero.cta}</span>
               <div className="h-8 w-8 rounded-full bg-[#53A67F] flex items-center justify-center">
                 <Leaf className="h-4 w-4 text-white" />
               </div>
             </Link>
             <Link href="/login"
-              className="flex items-center gap-3 rounded-full border-2 border-[#e8e8e0] bg-white px-6 py-3 text-[14px] font-bold text-[#302817]/70 shadow-sm hover:border-[#53A67F]/40 hover:text-[#302817] transition">
+              className="flex w-full sm:w-auto items-center justify-center gap-3 rounded-full border-2 border-[#e8e8e0] bg-white px-6 py-3 text-[13px] sm:text-[14px] font-bold text-[#302817]/70 shadow-sm hover:border-[#53A67F]/40 hover:text-[#302817] transition">
               <Brain className="h-4 w-4 text-[#53A67F]" />
               <span>{t.hero.demo}</span>
             </Link>
@@ -225,16 +227,16 @@ export default function Home() {
       </section>
 
       {/* -- AI Section (like Dinnect AI) -- */}
-      <section id="ai" className="relative z-10 py-20 sm:py-28 bg-white">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+      <section id="ai" className="relative z-10 py-16 sm:py-28 bg-white">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
 
             {/* Left: Text */}
             <div>
-              <h2 className="text-[36px] sm:text-[48px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#1a1a1a]">
+              <h2 className="text-[28px] sm:text-[48px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#1a1a1a]">
                 Carbonless <span className="text-[#53A67F]">AI</span>
               </h2>
-              <p className="mt-5 text-[15px] leading-[1.8] text-[#302817]/55 max-w-md">
+              <p className="mt-4 sm:mt-5 text-[14px] sm:text-[15px] leading-[1.8] text-[#302817]/55 max-w-md">
                 {lang === 'tr'
                   ? 'Tüm karbon hesaplama ihtiyaçlariniz için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalim, raporlayalim ve azaltma stratejileri önerelim.'
                   : 'One AI for all your carbon needs. Tell us your emission data  -  we calculate, report, and suggest reduction strategies. Powered by CarbonIQ engine.'}
@@ -315,34 +317,34 @@ export default function Home() {
       </section>
 
       {/* -- Pricing Section -- */}
-      <section id="pricing" className="relative z-10 py-20 sm:py-28 bg-[#fafaf8] border-t border-[#e8e8e0]">
-        <div className="mx-auto max-w-4xl px-5 sm:px-8">
+      <section id="pricing" className="relative z-10 py-16 sm:py-28 bg-[#fafaf8] border-t border-[#e8e8e0]">
+        <div className="mx-auto max-w-4xl px-4 sm:px-8">
           {/* Header */}
-          <div className="text-center mb-12">
-            <h2 className="text-[32px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#1a1a1a]">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#1a1a1a]">
               {lang === 'tr' ? 'Basit fiyatlandirma' : 'Simple pricing'}
             </h2>
-            <p className="mt-3 text-[15px] text-[#302817]/50">
+            <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#302817]/50">
               {lang === 'tr' ? 'Her büyüklükteki sirket için uygun planlar.' : 'Plans that fit companies of every size.'}
             </p>
           </div>
 
           {/* Cards */}
-          <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 max-w-3xl mx-auto">
 
             {/* Free Plan */}
-            <div className="rounded-2xl border border-[#e8e8e0] bg-white p-7 shadow-sm">
-              <div className="mb-6">
-                <p className="text-[14px] font-bold text-[#302817]/80">{lang === 'tr' ? 'Ücretsiz' : 'Free'}</p>
+            <div className="rounded-2xl border border-[#e8e8e0] bg-white p-5 sm:p-7 shadow-sm">
+              <div className="mb-5 sm:mb-6">
+                <p className="text-[13px] sm:text-[14px] font-bold text-[#302817]/80">{lang === 'tr' ? 'Ücretsiz' : 'Free'}</p>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-[36px] font-extrabold text-[#1a1a1a]">$0</span>
-                  <span className="text-[14px] text-[#302817]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
+                  <span className="text-[30px] sm:text-[36px] font-extrabold text-[#1a1a1a]">$0</span>
+                  <span className="text-[13px] sm:text-[14px] text-[#302817]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
                 </div>
-                <p className="mt-2 text-[13px] text-[#302817]/50">
+                <p className="mt-2 text-[12px] sm:text-[13px] text-[#302817]/50">
                   {lang === 'tr' ? 'Küçük ekipler için temel karbon hesaplama.' : 'Basic carbon calculation for small teams.'}
                 </p>
               </div>
-              <div className="space-y-3 mb-8">
+              <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                 {(lang === 'tr' ? [
                   'Dashboard veri girisi',
                   'Temel emisyon hesaplama',
@@ -355,36 +357,36 @@ export default function Home() {
                   '5 AI questions / month',
                 ]).map(f => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <svg className="h-4 w-4 text-[#53A67F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#53A67F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-[13px] text-[#302817]/65">{f}</span>
+                    <span className="text-[12px] sm:text-[13px] text-[#302817]/65">{f}</span>
                   </div>
                 ))}
               </div>
               <Link href="/register"
-                className="block w-full rounded-full border-2 border-[#e8e8e0] py-3 text-center text-[13px] font-bold text-[#302817]/60 hover:border-[#302817]/30 hover:text-[#302817] transition">
+                className="block w-full rounded-full border-2 border-[#e8e8e0] py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold text-[#302817]/60 hover:border-[#302817]/30 hover:text-[#302817] transition">
                 {lang === 'tr' ? 'Ücretsiz Basla' : 'Get Started'}
               </Link>
             </div>
 
             {/* Pro Plan */}
-            <div className="relative rounded-2xl border-2 border-[#53A67F] bg-white p-7 shadow-lg shadow-[#53A67F]/5">
+            <div className="relative rounded-2xl border-2 border-[#53A67F] bg-white p-5 sm:p-7 shadow-lg shadow-[#53A67F]/5">
               {/* Popular badge */}
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#53A67F] px-4 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
                 {lang === 'tr' ? 'Popüler' : 'Popular'}
               </div>
-              <div className="mb-6">
-                <p className="text-[14px] font-bold text-[#53A67F]">Pro</p>
+              <div className="mb-5 sm:mb-6">
+                <p className="text-[13px] sm:text-[14px] font-bold text-[#53A67F]">Pro</p>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-[36px] font-extrabold text-[#1a1a1a]">$49</span>
-                  <span className="text-[14px] text-[#302817]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
+                  <span className="text-[30px] sm:text-[36px] font-extrabold text-[#1a1a1a]">$49</span>
+                  <span className="text-[13px] sm:text-[14px] text-[#302817]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
                 </div>
-                <p className="mt-2 text-[13px] text-[#302817]/50">
+                <p className="mt-2 text-[12px] sm:text-[13px] text-[#302817]/50">
                   {lang === 'tr' ? 'AI destekli tam karbon yönetim platformu.' : 'Full AI-powered carbon management platform.'}
                 </p>
               </div>
-              <div className="space-y-3 mb-8">
+              <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                 {(lang === 'tr' ? [
                   'Ücretsiz\'deki her sey',
                   'Sinirsiz AI karbon hesaplama',
@@ -403,15 +405,15 @@ export default function Home() {
                   'Excel/CSV export',
                 ]).map(f => (
                   <div key={f} className="flex items-center gap-2.5">
-                    <svg className="h-4 w-4 text-[#53A67F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#53A67F] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
-                    <span className="text-[13px] text-[#302817]/65">{f}</span>
+                    <span className="text-[12px] sm:text-[13px] text-[#302817]/65">{f}</span>
                   </div>
                 ))}
               </div>
               <Link href="/register"
-                className="block w-full rounded-full bg-[#53A67F] py-3 text-center text-[13px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition">
+                className="block w-full rounded-full bg-[#53A67F] py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition">
                 {lang === 'tr' ? 'Pro\'ya Geç' : 'Go Pro'}
               </Link>
             </div>
@@ -420,17 +422,17 @@ export default function Home() {
       </section>
 
       {/* -- Footer strip -- */}
-      <footer className="relative z-10 border-t border-[#e8e8e0] bg-white/80 backdrop-blur-sm py-5">
-        <div className="mx-auto max-w-6xl px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="relative z-10 border-t border-[#e8e8e0] bg-white/80 backdrop-blur-sm py-4 sm:py-5">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={16} height={16} className="h-4 w-4 object-contain" />
-            <span className="text-[12px] font-medium text-[#302817]/40">© 2024 Carbonless. All rights reserved.</span>
+            <span className="text-[11px] sm:text-[12px] font-medium text-[#302817]/40">&copy; 2024 Carbonless. All rights reserved.</span>
           </div>
           <div className="flex gap-4">
-            <Link href="/terms" className="text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
+            <Link href="/terms" className="text-[11px] sm:text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
               {lang === 'tr' ? 'Kullanim Kosullari' : 'Terms'}
             </Link>
-            <Link href="/privacy" className="text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
+            <Link href="/privacy" className="text-[11px] sm:text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
               {lang === 'tr' ? 'Gizlilik' : 'Privacy'}
             </Link>
           </div>
