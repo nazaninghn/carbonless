@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
@@ -36,16 +36,15 @@ const copy = {
 function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[#302817]/70' }) {
   return (
     <div className={`absolute ${className} animate-float`} style={{ animationDelay: `${delay}s` }}>
-      <div className="flex flex-col items-center gap-1.5">
+      <div className="flex flex-col items-center gap-1">
         <div className="relative">
-          <div className="h-14 w-14 rounded-full bg-white shadow-lg shadow-black/8 border border-[#e8e8e0] flex items-center justify-center">
-            <Icon className={`h-6 w-6 ${color}`} />
+          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-full bg-white shadow-lg shadow-black/8 border border-[#e8e8e0] flex items-center justify-center">
+            <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${color}`} />
           </div>
-          {/* Small green dot indicator */}
-          <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#53A67F] border-2 border-white" />
+          <div className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-[#53A67F] border-2 border-white" />
         </div>
         {label && (
-          <span className="rounded-full bg-[#f0f4e8] border border-[#d4deb8] px-2.5 py-0.5 text-[10px] font-semibold text-[#5a6b2a]">
+          <span className="hidden sm:block rounded-full bg-[#f0f4e8] border border-[#d4deb8] px-2.5 py-0.5 text-[10px] font-semibold text-[#5a6b2a]">
             {label}
           </span>
         )}
@@ -117,23 +116,23 @@ export default function Home() {
 
           {/* Nav links */}
           <div className="hidden sm:flex items-center gap-0.5 ml-2">
-            {Object.entries(t.nav).filter(([k]) => k !== 'login').map(([key, label]) => (
-              <a key={key} href={key === 'home' ? '/' : `#${key}`}
+            {['home', 'about', 'ai'].map(key => (
+              <a key={key} href={key === 'home' ? '/' : key === 'ai' ? '/dashboard/select' : `#${key}`}
                 className="px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
-                {label}
+                {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkinda' : 'About') : 'AI'}
               </a>
             ))}
           </div>
 
-          {/* Login & Register */}
-          <div className="flex items-center gap-1.5 ml-2">
+          {/* Login & Create Account */}
+          <div className="flex items-center gap-1.5 ml-auto sm:ml-2">
             <Link href="/login"
-              className="px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
-              {lang === 'tr' ? 'Giris' : 'Login'}
+              className="hidden sm:block px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
+              {lang === 'tr' ? 'Giris Yap' : 'Log In'}
             </Link>
             <Link href="/register"
-              className="px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[12px] font-bold text-white hover:bg-[#333] transition">
-              {lang === 'tr' ? 'Kayit Ol' : 'Sign Up'}
+              className="px-3 sm:px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[11px] sm:text-[12px] font-bold text-white hover:bg-[#333] transition">
+              {lang === 'tr' ? 'Hesap Olustur' : 'Create Account'}
             </Link>
           </div>
 
@@ -150,7 +149,7 @@ export default function Home() {
                 {['en', 'tr'].map(l => (
                   <button key={l} onClick={() => { changeLanguage(l); setShowLangMenu(false); }}
                     className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold transition hover:bg-[#f9faf5] ${lang === l ? 'text-[#53A67F]' : 'text-[#302817]/60'}`}>
-                    {l === 'en' ? '???? English' : '???? Türkçe'} {lang === l && '?'}
+                    {l === 'en' ? 'EN - English' : 'TR - Turkce'} {lang === l && '\u2713'}
                   </button>
                 ))}
               </div>
@@ -162,31 +161,40 @@ export default function Home() {
       {/* -- Hero Section -- */}
       <section className="relative min-h-[calc(100vh-80px)] flex flex-col items-center justify-center px-5 sm:px-8">
 
-        {/* Connection lines background */}
-        <ConnectionLines />
+        {/* Connection lines background  -  tablet+ only */}
+        <div className="hidden sm:block">
+          <ConnectionLines />
+        </div>
 
-        {/* -- Left side floating nodes -- */}
-        <FloatingNode icon={Factory} label="Scope 1" className="top-[12%] left-[5%] sm:left-[8%]" delay={0} color="text-orange-500" />
-        <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[3%] sm:left-[6%]" delay={0.8} color="text-yellow-600" />
-        <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[8%] sm:left-[12%]" delay={1.6} color="text-sky-500" />
-        <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[4%] sm:left-[7%]" delay={2.2} color="text-blue-500" />
+        {/* Floating nodes  -  tablet (sm-lg): 4 nodes, desktop (lg+): all */}
+        <div className="hidden sm:block lg:hidden">
+          <FloatingNode icon={Factory} label="Scope 1" className="top-[15%] left-[6%]" delay={0} color="text-orange-500" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[15%] right-[6%]" delay={0.4} color="text-purple-500" />
+          <FloatingNode icon={Zap} label="Scope 2" className="top-[5%] left-[40%]" delay={1.0} color="text-yellow-600" />
+          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[20%] left-[8%]" delay={1.6} color="text-sky-500" />
+          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[20%] right-[8%]" delay={0.6} color="text-[#6B8E23]" />
+        </div>
 
-        {/* -- Right side floating nodes -- */}
-        <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[6%] sm:right-[10%]" delay={0.4} color="text-purple-500" />
-        <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[3%] sm:right-[5%]" delay={1.2} color="text-[#53A67F]" />
-        <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[8%] sm:right-[12%]" delay={2.0} color="text-emerald-600" />
-        <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[5%] sm:right-[8%]" delay={0.6} color="text-[#6B8E23]" />
-
-        {/* Additional smaller nodes */}
-        <FloatingNode icon={Flame} className="top-[22%] left-[20%] sm:left-[22%]" delay={1.4} color="text-red-400" />
-        <FloatingNode icon={CloudSun} className="top-[18%] right-[22%] sm:right-[24%]" delay={1.8} color="text-sky-400" />
-        <FloatingNode icon={Leaf} className="bottom-[28%] left-[18%] sm:left-[20%]" delay={2.4} color="text-[#53A67F]" />
-        <FloatingNode icon={Globe2} className="bottom-[22%] right-[18%] sm:right-[20%]" delay={0.2} color="text-teal-500" />
+        {/* All nodes on desktop */}
+        <div className="hidden lg:block">
+          <FloatingNode icon={Factory} label="Scope 1" className="top-[12%] left-[8%]" delay={0} color="text-orange-500" />
+          <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[6%]" delay={0.8} color="text-yellow-600" />
+          <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[12%]" delay={1.6} color="text-sky-500" />
+          <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[7%]" delay={2.2} color="text-blue-500" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[10%]" delay={0.4} color="text-purple-500" />
+          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[5%]" delay={1.2} color="text-[#53A67F]" />
+          <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[12%]" delay={2.0} color="text-emerald-600" />
+          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[8%]" delay={0.6} color="text-[#6B8E23]" />
+          <FloatingNode icon={Flame} className="top-[22%] left-[22%]" delay={1.4} color="text-red-400" />
+          <FloatingNode icon={CloudSun} className="top-[18%] right-[24%]" delay={1.8} color="text-sky-400" />
+          <FloatingNode icon={Leaf} className="bottom-[28%] left-[20%]" delay={2.4} color="text-[#53A67F]" />
+          <FloatingNode icon={Globe2} className="bottom-[22%] right-[20%]" delay={0.2} color="text-teal-500" />
+        </div>
 
         {/* -- Center content -- */}
         <div className="relative z-10 text-center max-w-3xl mx-auto">
           {/* Main title */}
-          <h1 className="text-[40px] sm:text-[56px] lg:text-[72px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#1a1a1a]">
+          <h1 className="text-[28px] sm:text-[44px] lg:text-[72px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#1a1a1a]">
             {t.hero.line1}{' '}
             <span className="text-[#53A67F]">{t.hero.highlight}</span>{' '}
             {t.hero.line2}
@@ -229,7 +237,7 @@ export default function Home() {
               <p className="mt-5 text-[15px] leading-[1.8] text-[#302817]/55 max-w-md">
                 {lang === 'tr'
                   ? 'Tüm karbon hesaplama ihtiyaçlariniz için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalim, raporlayalim ve azaltma stratejileri önerelim.'
-                  : 'One AI for all your carbon needs. Tell us your emission data — we calculate, report, and suggest reduction strategies. Powered by CarbonIQ engine.'}
+                  : 'One AI for all your carbon needs. Tell us your emission data  -  we calculate, report, and suggest reduction strategies. Powered by CarbonIQ engine.'}
               </p>
 
               {/* Feature list */}
@@ -237,12 +245,12 @@ export default function Home() {
                 {(lang === 'tr' ? [
                   'AI destekli emisyon hesaplama ve siniflandirma',
                   'ISO 14064-1 uyumlu otomatik rapor olusturma',
-                  'Dogal dil ile veri girisi — sadece konusun',
+                  'Dogal dil ile veri girisi  -  sadece konusun',
                   'Saniyeler içinde karbon ayak izi analizi',
                 ] : [
                   'AI-driven emission calculation and classification',
                   'ISO 14064-1 compliant automated report generation',
-                  'Natural language data entry — just talk',
+                  'Natural language data entry  -  just talk',
                   'Carbon footprint analysis generated in seconds',
                 ]).map((item, i) => (
                   <div key={i} className="flex items-center gap-3">

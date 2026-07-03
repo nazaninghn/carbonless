@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
@@ -70,7 +70,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
           <span className="text-[22px] font-bold leading-none tracking-tight text-[#302817]">
             {total.toFixed(1)}
           </span>
-          <span className="mt-0.5 text-[10px] font-bold text-[#302817]/40">tCOâ‚‚e</span>
+          <span className="mt-0.5 text-[10px] font-bold text-[#302817]/40">tCO2e</span>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   // Memoized so the spread+map only runs when monthly data changes, not on every hover state update
   const maxKg = useMemo(() => Math.max(...(monthly ?? []).map(m => m.total_kg), 1), [monthly]);
-  const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level â€” no recreation
+  const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level  -  no recreation
   const curMonth = new Date().getFullYear() === selectedYear ? new Date().getMonth() : -1;
 
   if (!monthly || !monthly.some(m => m.total_kg > 0)) {
@@ -124,7 +124,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
             {/* Tooltip */}
             {isHovered && hasData && (
               <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#302817] px-2 py-1.5 text-[10px] font-bold text-white shadow-xl">
-                {(m.total_kg / 1000).toFixed(2)} tCOâ‚‚e
+                {(m.total_kg / 1000).toFixed(2)} tCO2e
                 <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#302817]" />
               </div>
             )}
@@ -243,7 +243,7 @@ function TargetRing({ target, currentTonne, tr }) {
       {/* Info */}
       <div className="min-w-0 flex-1">
         <p className="truncate text-[12px] font-bold text-[#302817]">{target.title}</p>
-        <p className="text-[10px] text-[#302817]/45 mt-0.5">{target.base_year} â†’ {target.target_year}</p>
+        <p className="text-[10px] text-[#302817]/45 mt-0.5">{target.base_year} {"→"} {target.target_year}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${s.bg} ${s.text}`}>
             {s.label[tr ? 'tr' : 'en']}
@@ -329,11 +329,11 @@ export default function DashboardOverview({
   const s1         = summary?.scope1_tonne ?? 0;
   const s2         = summary?.scope2_tonne ?? 0;
   const s3         = summary?.scope3_tonne ?? 0;
-  // Memoized so the array reference is stable â€” prevents false "dep changed every
+  // Memoized so the array reference is stable  -  prevents false "dep changed every
   // render" warnings in the useMemo hooks below that depend on monthly.
   const monthly    = useMemo(() => summary?.monthly ?? [], [summary?.monthly]);
 
-  // Derived: average monthly (only months with data) â€” memoized so the filter/reduce
+  // Derived: average monthly (only months with data)  -  memoized so the filter/reduce
   // only re-runs when monthly data changes, not on every local state update.
   const avgTonne = useMemo(() => {
     const active = monthly.filter(m => m.total_kg > 0);
@@ -345,14 +345,14 @@ export default function DashboardOverview({
   // Language-aware month name arrays (used in JSX, not inside any memo)
   const MONTHS_FULL = tr ? MONTHS_TR_FULL : MONTHS_EN_FULL;
 
-  // Biggest monthly spike â€” memoized so it only recomputes when monthly data changes.
+  // Biggest monthly spike  -  memoized so it only recomputes when monthly data changes.
   // Returns a numeric index into `monthly`; the name lookup uses MONTHS_FULL at render time.
   const peakMonth = useMemo(
     () => monthly.reduce((best, m, i) => m.total_kg > (monthly[best]?.total_kg ?? 0) ? i : best, 0),
     [monthly],
   );
 
-  // Touch-tablet simplified view â€” useLayoutEffect runs before browser paint,
+  // Touch-tablet simplified view  -  useLayoutEffect runs before browser paint,
   // so GPU-heavy complex view is never painted to screen on Android tablets.
   const [isAndroidTablet, setIsAndroidTablet] = useState(false);
   useIsomorphicLayoutEffect(() => {
@@ -371,21 +371,21 @@ export default function DashboardOverview({
             {tr ? 'Emisyon Profili' : 'Emission Profile'} Â· {selectedYear}
           </h1>
           <p className="mt-1 text-sm text-[#302817]/55">
-            {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCOâ‚‚e
+            {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCO2e
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
             <p className="text-xs text-[#302817]/50">Scope 1</p>
-            <p className="text-2xl font-black text-[#302817]">{s1.toFixed(2)} <span className="text-sm font-normal">tCOâ‚‚e</span></p>
+            <p className="text-2xl font-black text-[#302817]">{s1.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
           <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
             <p className="text-xs text-[#302817]/50">Scope 2</p>
-            <p className="text-2xl font-black text-[#302817]">{s2.toFixed(2)} <span className="text-sm font-normal">tCOâ‚‚e</span></p>
+            <p className="text-2xl font-black text-[#302817]">{s2.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
           <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
             <p className="text-xs text-[#302817]/50">Scope 3</p>
-            <p className="text-2xl font-black text-[#302817]">{s3.toFixed(2)} <span className="text-sm font-normal">tCOâ‚‚e</span></p>
+            <p className="text-2xl font-black text-[#302817]">{s3.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
         </div>
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
@@ -410,7 +410,7 @@ export default function DashboardOverview({
   return (
     <div className="space-y-3 sm:space-y-4">
 
-      {/* â”€â”€ EMPTY STATE â€” when no data yet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* â”€â”€ EMPTY STATE  -  when no data yet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {entries.length === 0 && (
         <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 sm:p-12">
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
@@ -477,7 +477,7 @@ export default function DashboardOverview({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/35">
-            {selectedYear} {tr ? 'Ã–zet' : 'Summary'}
+            {selectedYear} {tr ? 'Ã-zet' : 'Summary'}
           </p>
           <h1 className="mt-0.5 text-base font-bold text-[#302817] sm:text-[17px]">
             {tr ? 'Ana Dashboard' : 'Main Dashboard'}
@@ -500,14 +500,14 @@ export default function DashboardOverview({
         </div>
       </div>
 
-      {/* AI insight strip â€” shown only when data exists */}
+      {/* AI insight strip  -  shown only when data exists */}
       {totalTonne > 0 && (
         <div className="flex items-start gap-2.5 rounded-xl border border-[#53A67F]/20 bg-[#f0f9f3]/60 px-3.5 py-2.5">
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#53A67F]" />
           <p className="text-[11px] font-semibold leading-5 text-[#302817]/65">
             {tr
-              ? `Toplam ${totalTonne.toFixed(1)} tCOâ‚‚e kaydedildi â€” en yÃ¼ksek ay ${MONTHS_TR_FULL[peakMonth]}. AylÄ±k ortalama ${avgTonne.toFixed(2)} tCOâ‚‚e.`
-              : `Total ${totalTonne.toFixed(1)} tCOâ‚‚e recorded â€” peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCOâ‚‚e.`}
+              ? `Toplam ${totalTonne.toFixed(1)} tCO2e kaydedildi  -  en yÃ¼ksek ay ${MONTHS_TR_FULL[peakMonth]}. AylÄ±k ortalama ${avgTonne.toFixed(2)} tCO2e.`
+              : `Total ${totalTonne.toFixed(1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO2e.`}
           </p>
         </div>
       )}
@@ -518,8 +518,8 @@ export default function DashboardOverview({
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-xs font-semibold text-amber-800">
             {tr
-              ? 'Karbon envanteri anketi tamamlanmadÄ± â€” AI Carbon sekmesinden devam edin.'
-              : 'Carbon inventory questionnaire incomplete â€” continue from the AI Carbon tab.'}
+              ? 'Karbon envanteri anketi tamamlanmadÄ±  -  AI Carbon sekmesinden devam edin.'
+              : 'Carbon inventory questionnaire incomplete  -  continue from the AI Carbon tab.'}
           </p>
           <button
             onClick={() => setActiveTab('ai_carbon')}
@@ -532,10 +532,10 @@ export default function DashboardOverview({
 
       {/* â”€â”€ KPI CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCOâ‚‚e" accent icon={Leaf} />
-        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCOâ‚‚e" subtitle={tr ? 'DoÄŸrudan' : 'Direct'} topColor="#3d8564" />
-        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCOâ‚‚e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#53A67F" />
-        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCOâ‚‚e" subtitle={tr ? 'DolaylÄ±' : 'Indirect'} topColor="#C9C858" />
+        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCO2e" accent icon={Leaf} />
+        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO2e" subtitle={tr ? 'DoÄŸrudan' : 'Direct'} topColor="#3d8564" />
+        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#53A67F" />
+        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO2e" subtitle={tr ? 'DolaylÄ±' : 'Indirect'} topColor="#C9C858" />
       </div>
 
       {/* â”€â”€ ROW 2: Monthly trend + Scope donut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
@@ -554,7 +554,7 @@ export default function DashboardOverview({
         {/* Scope Donut */}
         <ChartCard
           title={tr ? 'Kapsam DaÄŸÄ±lÄ±mÄ±' : 'Scope Distribution'}
-          subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCOâ‚‚e` : undefined}
+          subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO2e` : undefined}
           icon={Layers}
           iconBg="bg-[#C9C858]/20 text-[#3d8564]"
         >
@@ -577,7 +577,7 @@ export default function DashboardOverview({
           subtitle={tr ? 'Anonim karÅŸÄ±laÅŸtÄ±rma' : 'Anonymous comparison'}
           icon={BarChart2}
           iconBg="bg-[#53A67F]/15 text-[#53A67F]"
-          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Detay â†’' : 'Detail â†’'}</button>}
+          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Detay ->' : 'Detail ->'}</button>}
         >
           {totalTonne > 0 ? (
             <div className="space-y-3">
@@ -614,7 +614,7 @@ export default function DashboardOverview({
           ) : (
             <div className="flex h-20 flex-col items-center justify-center gap-1.5">
               <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince gÃ¶rÃ¼nÃ¼r' : 'Visible once data is entered'}</p>
-              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#53A67F] hover:underline">{tr ? 'Veri ekle â†’' : 'Add data â†’'}</button>
+              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#53A67F] hover:underline">{tr ? 'Veri ekle ->' : 'Add data ->'}</button>
             </div>
           )}
         </ChartCard>
@@ -685,7 +685,7 @@ export default function DashboardOverview({
           subtitle={tr ? 'AzaltÄ±m ilerleme durumu' : 'Reduction progress'}
           icon={Target}
           iconBg="bg-[#C9C858]/20 text-[#3d8564]"
-          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'TÃ¼mÃ¼ â†’' : 'All â†’'}</button>}
+          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'TÃ¼mÃ¼ ->' : 'All ->'}</button>}
         >
           {targets.length === 0 ? (
             <div className="flex h-24 flex-col items-center justify-center gap-2">
@@ -707,7 +707,7 @@ export default function DashboardOverview({
                 return (
                   <div key={t.id}>
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-[#302817]/70">{t.target_year || 'â€”'} {tr ? 'hedefi' : 'target'}</span>
+                      <span className="text-[11px] font-semibold text-[#302817]/70">{t.target_year || ' - '} {tr ? 'hedefi' : 'target'}</span>
                       <span className="text-[11px] font-bold text-[#3d8564]">{pct}%</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
@@ -717,8 +717,8 @@ export default function DashboardOverview({
                       />
                     </div>
                     <div className="mt-0.5 flex justify-between text-[10px] text-[#302817]/35">
-                      <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCOâ‚‚e</span>
-                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCOâ‚‚e</span>
+                      <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCO2e</span>
+                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCO2e</span>
                     </div>
                   </div>
                 );
@@ -727,7 +727,7 @@ export default function DashboardOverview({
               <div className="flex items-center justify-between rounded-lg border border-[#302817]/8 bg-[#302817]/3 px-3 py-2">
                 <div className="flex items-center gap-1.5 text-[11px] text-[#302817]/45">
                   <Lock className="h-3 w-3" />
-                  <span>{tr ? 'HatÄ±rlatma bildirimleri â€” Pro' : 'Reminder notifications â€” Pro'}</span>
+                  <span>{tr ? 'HatÄ±rlatma bildirimleri  -  Pro' : 'Reminder notifications  -  Pro'}</span>
                 </div>
                 <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#53A67F] hover:underline">{tr ? 'YÃ¼kselt' : 'Upgrade'}</button>
               </div>
@@ -744,7 +744,7 @@ export default function DashboardOverview({
           </span>
           <div>
             <p className="text-[13px] font-bold text-white">
-              {tr ? "Pro'ya geÃ§ â€” tÃ¼m Ã¶zellikleri aÃ§" : "Upgrade to Pro â€” unlock everything"}
+              {tr ? "Pro'ya geÃ§  -  tÃ¼m Ã¶zellikleri aÃ§" : "Upgrade to Pro  -  unlock everything"}
             </p>
             <p className="text-[11px] text-white/50">
               {tr
@@ -757,7 +757,7 @@ export default function DashboardOverview({
           onClick={() => setActiveTab('settings')}
           className="shrink-0 rounded-xl bg-[#53A67F] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#C9C858]"
         >
-          {tr ? "Pro'ya GeÃ§ â†’" : "Upgrade to Pro â†’"}
+          {tr ? "Pro'ya GeÃ§ ->" : "Upgrade to Pro ->"}
         </button>
       </div>
     </div>

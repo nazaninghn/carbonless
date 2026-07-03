@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import Image from 'next/image';
@@ -22,7 +22,7 @@ const texts = {
     dashF2: 'Charts and analytics',
     dashF3: 'Reduction targets',
     dashBtn: 'Go to Dashboard',
-    note: 'Both modes write to the same database — you can switch anytime.',
+    note: 'Both modes write to the same database  -  you can switch anytime.',
     logout: 'Sign in with different account',
   },
   tr: {
@@ -41,7 +41,7 @@ const texts = {
     dashF2: 'Grafik ve analizler',
     dashF3: 'Azaltma hedefleri',
     dashBtn: 'Dashboard\'a git',
-    note: 'Her iki mod da aynı veritabanına yazar — istediğiniz zaman değiştirebilirsiniz.',
+    note: 'Her iki mod da aynı veritabanına yazar  -  istediğiniz zaman değiştirebilirsiniz.',
     logout: 'Farklı hesapla giriş yap',
   },
 };

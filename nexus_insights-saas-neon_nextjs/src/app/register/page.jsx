@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -48,7 +48,7 @@ export default function RegisterPage() {
     return () => document.removeEventListener('mousedown', onMouse);
   }, [naceOpen]);
 
-  // Stable across renders — setFormData and setError are guaranteed stable by React
+  // Stable across renders  -  setFormData and setError are guaranteed stable by React
   const handleInputChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     setError('');
@@ -105,7 +105,7 @@ export default function RegisterPage() {
 
     // Step 1 registration hits the backend directly (no auth token needed yet).
     // api.js does not export API_BASE, so we read the same env var here.
-    // This is intentional — subsequent authenticated calls use api.* helpers.
+    // This is intentional  -  subsequent authenticated calls use api.* helpers.
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
     try {
@@ -142,7 +142,7 @@ export default function RegisterPage() {
       // ── Step 2: Login via proxy (sets localStorage token + session cookie) ──
       // Must use /api/auth/login (not direct backend) so api.js stores the
       // access token in localStorage and markSessionActive() takes effect.
-      // Import once here and reuse for Step 3 — two separate imports of the same
+      // Import once here and reuse for Step 3  -  two separate imports of the same
       // dynamic module were previously used, which risked the second call missing
       // the auth token on a cold SSR edge case.
       let loginRes;
@@ -150,7 +150,7 @@ export default function RegisterPage() {
         loginRes = await apiModule.login(formData.username, formData.password);
         if (loginRes.ok) activate();
       } catch {
-        // Login failed — likely email verification required
+        // Login failed  -  likely email verification required
         router.push('/verify-email');
         return;
       }
@@ -162,7 +162,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // ── Step 3: Create company (token is now set — api.createCompany works) ─
+      // ── Step 3: Create company (token is now set  -  api.createCompany works) ─
 
       const companyPayload = {
         legal_entity_name: formData.legalEntityName,
@@ -189,13 +189,13 @@ export default function RegisterPage() {
       try {
         const companyRes = await apiModule.createCompany(companyPayload); // reuse same import
         if (!companyRes.ok) {
-          // Save so Settings → Company can auto-fill — no re-typing needed
+          // Save so Settings → Company can auto-fill  -  no re-typing needed
           try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
         } else {
           try { sessionStorage.removeItem('pendingCompany'); } catch {}
         }
       } catch {
-        // Company creation failed — save data for Settings → Company auto-fill
+        // Company creation failed  -  save data for Settings → Company auto-fill
         try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
       }
 
@@ -287,7 +287,7 @@ export default function RegisterPage() {
                 <Panel title={language === 'tr' ? 'Temel Kurumsal Bilgiler' : 'Corporate Information'} icon={Building2}>
                   <div className="grid gap-4 md:grid-cols-2">
                     <TextField label={language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} required value={formData.legalEntityName} onChange={e => handleInputChange('legalEntityName', e.target.value)} icon={Building2} placeholder={language === 'tr' ? 'örn: ABC Teknoloji A.Ş.' : 'e.g. ABC Technology Inc.'} />
-                    <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={10} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel — 10 haneli' : 'Optional — 10 digits'} /></div>
+                    <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={10} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel  -  10 haneli' : 'Optional  -  10 digits'} /></div>
                   </div>
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     <div><Label required>{language === 'tr' ? 'Merkez Ülkesi' : 'Country of HQ'}</Label><CountryPicker value={formData.countryOfHeadquarters} onChange={val => handleInputChange('countryOfHeadquarters', val)} language={language} placeholder={language === 'tr' ? 'Ülke ara...' : 'Search...'} /></div>
@@ -295,7 +295,7 @@ export default function RegisterPage() {
                   </div>
                 </Panel>
                 <Panel title={language === 'tr' ? 'Sektör' : 'Sector'} icon={Globe2}>
-                  <div><Label required>{language === 'tr' ? 'NACE Kodu' : 'NACE Code'}</Label><div ref={naceRef} className="relative"><input type="text" value={naceSearch} onChange={e => { setNaceSearch(e.target.value); setNaceOpen(true); }} onFocus={() => setNaceOpen(true)} placeholder={language === 'tr' ? 'Kod veya sektör adı...' : 'Code or sector name...'} className="field-premium" />{formData.naceCode && <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#C9C858]/30 bg-[#C9C858]/12 px-4 py-3 text-sm"><span><b>{formData.naceCode}</b> — {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span><button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-xs text-red-500">✕</button></div>}{naceOpen && naceSearch.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#1a1a1a]/10 bg-white p-2 shadow-2xl">{ALL_NACE_CODES.filter(n => { const q = naceSearch.toLowerCase(); return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q); }).slice(0, 12).map(n => <button key={n.code} type="button" onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }} className="w-full rounded-xl px-4 py-3 text-left text-sm hover:bg-[#C9C858]/10"><b className="text-[#53A67F]">{n.code}</b> <span className="text-[#1a1a1a]/70">{language === 'tr' ? n.tr : n.en}</span></button>)}</div>}</div></div>
+                  <div><Label required>{language === 'tr' ? 'NACE Kodu' : 'NACE Code'}</Label><div ref={naceRef} className="relative"><input type="text" value={naceSearch} onChange={e => { setNaceSearch(e.target.value); setNaceOpen(true); }} onFocus={() => setNaceOpen(true)} placeholder={language === 'tr' ? 'Kod veya sektör adı...' : 'Code or sector name...'} className="field-premium" />{formData.naceCode && <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#C9C858]/30 bg-[#C9C858]/12 px-4 py-3 text-sm"><span><b>{formData.naceCode}</b>  -  {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span><button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-xs text-red-500">✕</button></div>}{naceOpen && naceSearch.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#1a1a1a]/10 bg-white p-2 shadow-2xl">{ALL_NACE_CODES.filter(n => { const q = naceSearch.toLowerCase(); return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q); }).slice(0, 12).map(n => <button key={n.code} type="button" onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }} className="w-full rounded-xl px-4 py-3 text-left text-sm hover:bg-[#C9C858]/10"><b className="text-[#53A67F]">{n.code}</b> <span className="text-[#1a1a1a]/70">{language === 'tr' ? n.tr : n.en}</span></button>)}</div>}</div></div>
                   <div className="mt-4"><Label required>{language === 'tr' ? 'Ana Faaliyet' : 'Main Activity'}</Label><textarea required value={formData.mainActivityDescription} onChange={e => handleInputChange('mainActivityDescription', e.target.value)} maxLength={500} rows={3} className="field-premium resize-none" placeholder={language === 'tr' ? 'Kısa açıklama...' : 'Short description...'} /></div>
                 </Panel>
                 <FormActions><PrimaryButton type="button" onClick={() => goToSection(2)}>{language === 'tr' ? 'Devam' : 'Continue'}<ArrowRight className="h-4 w-4" /></PrimaryButton></FormActions>
@@ -306,8 +306,8 @@ export default function RegisterPage() {
               <div className="space-y-4">
                 <Panel title={language === 'tr' ? 'Ölçek' : 'Scale'} icon={Factory}>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <SelectField label={language === 'tr' ? 'Çalışan Sayısı' : 'Employees'} required value={formData.numberOfEmployees} onChange={e => handleInputChange('numberOfEmployees', e.target.value)}><option value="">—</option><option value="1-10">1-10</option><option value="11-50">11-50</option><option value="51-250">51-250</option><option value="251-1000">251-1000</option><option value="1000+">1000+</option></SelectField>
-                    <SelectField label={language === 'tr' ? 'Yıllık Ciro' : 'Annual Turnover'} required value={formData.annualTurnoverRange} onChange={e => handleInputChange('annualTurnoverRange', e.target.value)}><option value="">—</option><option value="<500K">&lt;500K ₺</option><option value="500K-2M">500K–2M ₺</option><option value="2M-10M">2M–10M ₺</option><option value="10M-50M">10M–50M ₺</option><option value="50M-250M">50M–250M ₺</option><option value="250M-1B">250M–1B ₺</option><option value="1B+">1B+ ₺</option></SelectField>
+                    <SelectField label={language === 'tr' ? 'Çalışan Sayısı' : 'Employees'} required value={formData.numberOfEmployees} onChange={e => handleInputChange('numberOfEmployees', e.target.value)}><option value=""> - </option><option value="1-10">1-10</option><option value="11-50">11-50</option><option value="51-250">51-250</option><option value="251-1000">251-1000</option><option value="1000+">1000+</option></SelectField>
+                    <SelectField label={language === 'tr' ? 'Yıllık Ciro' : 'Annual Turnover'} required value={formData.annualTurnoverRange} onChange={e => handleInputChange('annualTurnoverRange', e.target.value)}><option value=""> - </option><option value="<500K">&lt;500K ₺</option><option value="500K-2M">500K - 2M ₺</option><option value="2M-10M">2M - 10M ₺</option><option value="10M-50M">10M - 50M ₺</option><option value="50M-250M">50M - 250M ₺</option><option value="250M-1B">250M - 1B ₺</option><option value="1B+">1B+ ₺</option></SelectField>
                     <TextField label={language === 'tr' ? 'Tesis Sayısı' : 'Facilities'} type="number" min="0" required value={formData.numberOfFacilities} onChange={e => handleInputChange('numberOfFacilities', e.target.value)} icon={Factory} />
                     <TextField label={language === 'tr' ? 'Bağlı Şirket' : 'Subsidiaries'} type="number" min="0" required value={formData.numberOfSubsidiaries} onChange={e => handleInputChange('numberOfSubsidiaries', e.target.value)} icon={Building2} />
                   </div>

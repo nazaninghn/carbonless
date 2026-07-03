@@ -63,8 +63,8 @@ function PreviewBanner({ tr }) {
         </p>
         <p className="text-[10.5px] text-amber-600/80 mt-0.5">
           {tr
-            ? 'Chatbot\'ta girdiğiniz veriler — sunucuya henüz kaydedilmedi.'
-            : 'Data you entered in the chatbot — not yet saved to the server.'}
+            ? 'Chatbot\'ta girdiğiniz veriler  -  sunucuya henüz kaydedilmedi.'
+            : 'Data you entered in the chatbot  -  not yet saved to the server.'}
         </p>
       </div>
       <a
@@ -80,14 +80,20 @@ function PreviewBanner({ tr }) {
 export default function DashboardPage() {
   const { t, language, changeLanguage } = useLanguage();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined') {
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [startupResolved, setStartupResolved] = useState(false);
+
+  // Check startup mode from select page (client-only, after hydration)
+  useEffect(() => {
+    try {
       const mode = localStorage.getItem('carbonless_startup_mode');
+      if (mode === 'ai') {
+        setActiveTab('ai_carbon');
+      }
       if (mode) localStorage.removeItem('carbonless_startup_mode');
-      return mode === 'ai' ? 'ai_carbon' : 'dashboard';
-    }
-    return 'dashboard';
-  });
+    } catch {}
+    setStartupResolved(true);
+  }, []);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -120,8 +126,8 @@ export default function DashboardPage() {
 
   // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
   // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
-  // visibility is controlled via CSS hidden — identical to the inner-tab fix (#44).
-  // AI overlay state — only shows when explicitly activated from header or select page
+  // visibility is controlled via CSS hidden  -  identical to the inner-tab fix (#44).
+  // AI overlay state  -  only shows when explicitly activated from header or select page
   const [aiCarbonMounted, setAiCarbonMounted] = useState(false);
   const [aiCarbonVisible, setAiCarbonVisible] = useState(false);
   useEffect(() => {
@@ -154,6 +160,15 @@ export default function DashboardPage() {
   const handleLogout = useCallback(() => {
     api.logout();
   }, []);
+
+  // Don't render anything until startup mode is resolved (prevents flash)
+  if (!startupResolved) {
+    return (
+      <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
+        <div className="h-6 w-6 rounded-full border-2 border-[#53A67F] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <ToastProvider>
@@ -188,7 +203,7 @@ export default function DashboardPage() {
         <main className={`w-full min-w-0 max-w-full flex-1 overflow-x-hidden ${
           activeTab === 'ai_carbon' ? 'p-2 pb-20 sm:p-2 sm:pb-20 lg:p-3 lg:pb-3' : 'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
         }`}>
-          {/* Slim top bar — only on very first load, no layout shift */}
+          {/* Slim top bar  -  only on very first load, no layout shift */}
           {loading && (
             <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] overflow-hidden bg-[#95A847]/15">
               <div className="h-full animate-[shimmer_1s_ease-in-out_infinite] bg-[#95A847] rounded-full" style={{ width: '40%' }} />
@@ -282,7 +297,7 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* ===== AI CARBON — renders as fullscreen overlay or minimized bubble ===== */}
+      {/* ===== AI CARBON  -  renders as fullscreen overlay or minimized bubble ===== */}
       {/* Rendered OUTSIDE main content flow so it never affects dashboard layout */}
       {aiCarbonMounted && aiCarbonVisible && (
         <ErrorBoundary language={language}>
