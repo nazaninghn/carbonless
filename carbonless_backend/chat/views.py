@@ -438,8 +438,12 @@ def send_message(request, session_id):
         return Response({'error': 'Session not found'}, status=404)
 
     content = (request.data.get('content') or '').strip()
+    attachment = request.FILES.get('attachment')
+
+    if not content and not attachment:
+        return Response({'error': 'content or attachment is required'}, status=400)
     if not content:
-        return Response({'error': 'content is required'}, status=400)
+        content = '[File attached]'
     # Fix #72: reject payloads that would blow up the Groq token budget or
     # trip the upstream 413 / context-length limit.
     if len(content) > MAX_MESSAGE_LENGTH:
@@ -447,6 +451,18 @@ def send_message(request, session_id):
             {'error': f'Message too long (max {MAX_MESSAGE_LENGTH} characters).'},
             status=400,
         )
+
+    # Validate attachment if present
+    attachment_name = ''
+    if attachment:
+        # Max 10MB
+        if attachment.size > 10 * 1024 * 1024:
+            return Response({'error': 'File too large (max 10MB).'}, status=400)
+        allowed_extensions = ['.pdf', '.csv', '.xlsx', '.xls', '.doc', '.docx', '.txt', '.png', '.jpg', '.jpeg']
+        ext = os.path.splitext(attachment.name)[1].lower()
+        if ext not in allowed_extensions:
+            return Response({'error': f'File type {ext} not supported.'}, status=400)
+        attachment_name = attachment.name
 
     # Subscription-based AI rate limiting
     try:
@@ -469,7 +485,11 @@ def send_message(request, session_id):
         return Response({'error': 'AI service not available.'}, status=503)
 
     # Save user message
-    ChatMessage.objects.create(session=session, role='user', content=content)
+    user_msg = ChatMessage.objects.create(
+        session=session, role='user', content=content,
+        attachment=attachment if attachment else None,
+        attachment_name=attachment_name,
+    )
 
     # Fix #61: Limit the DB query to the last 20 messages so we never load an
     # unbounded message history into Python.  _call_groq already slices [-20:]
@@ -479,6 +499,10 @@ def send_message(request, session_id):
         {'role': m.role, 'content': m.content}
         for m in reversed(list(recent))
     ]
+
+    # If attachment present, append file info to the content for AI context
+    if attachment:
+        history[-1]['content'] += f'\n\n[User attached file: {attachment_name}]'
 
     # Auto-title: use first user message — strip newlines/extra whitespace so
     # multi-line openers don't embed literal \n characters in the sidebar title.

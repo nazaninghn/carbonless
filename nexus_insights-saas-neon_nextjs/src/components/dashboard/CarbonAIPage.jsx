@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 import {
   Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
-  ClipboardList, AlertTriangle, RotateCcw, X,
+  ClipboardList, AlertTriangle, RotateCcw, X, Paperclip, FileText,
   HelpCircle, CheckCircle2, Menu, BarChart3,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
@@ -437,12 +437,12 @@ function EmptyState({ onNew, tr }) {
   ];
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 pb-6">
-      <div className="w-full max-w-2xl flex flex-col items-center gap-6">
+    <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-6 pb-4 sm:pb-6">
+      <div className="w-full max-w-2xl flex flex-col items-center gap-4 sm:gap-6">
 
         {/* Hero image — carbon-hero.png sphere */}
         <div className="relative">
-          <div className="h-36 w-36 sm:h-44 sm:w-44 relative cb-float">
+          <div className="h-24 w-24 sm:h-44 sm:w-44 relative cb-float">
             <Image
               src="/carbon-hero.png"
               alt="CarbonIQ AI"
@@ -457,10 +457,10 @@ function EmptyState({ onNew, tr }) {
 
         {/* Welcome text */}
         <div className="text-center">
-          <p className="text-[13px] text-[#4CAF50] font-medium mb-1">
+          <p className="text-[12px] sm:text-[13px] text-[#4CAF50] font-medium mb-1">
             {tr ? 'Merhaba 👋' : 'Hi, there'}
           </p>
-          <h2 className="text-[24px] sm:text-[28px] font-bold text-[#1a1a1a] tracking-tight leading-tight">
+          <h2 className="text-[20px] sm:text-[28px] font-bold text-[#1a1a1a] tracking-tight leading-tight">
             {tr ? 'Size nasıl yardımcı olabilirim?' : 'How can I assist?'}
           </h2>
         </div>
@@ -469,33 +469,28 @@ function EmptyState({ onNew, tr }) {
         <div className="w-full max-w-md">
           <button
             onClick={() => onNew()}
-            className="w-full flex items-center gap-3 rounded-2xl border border-[#e8e8e0] bg-white px-5 py-4 text-left shadow-sm hover:shadow-md hover:border-[#4CAF50]/30 transition-all duration-200 group"
+            className="w-full flex items-center gap-3 rounded-2xl border border-[#e8e8e0] bg-white px-4 sm:px-5 py-3 sm:py-4 text-left shadow-sm hover:shadow-md hover:border-[#4CAF50]/30 transition-all duration-200 group"
           >
-            <Sparkles className="h-5 w-5 text-[#4CAF50]/50 group-hover:text-[#4CAF50] transition" />
-            <span className="flex-1 text-[14px] text-[#302817]/35 font-medium">
-              {tr ? 'CarbonIQ\'ya sor...' : 'Ask CarbonIQ...'}
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-[#4CAF50]/50 group-hover:text-[#4CAF50] transition" />
+            <span className="flex-1 text-[13px] sm:text-[14px] text-[#302817]/35 font-medium">
+              {tr ? 'Carbonless\'a sor...' : 'Ask Carbonless...'}
             </span>
-            <div className="h-8 w-8 rounded-full bg-[#f5f5f0] border border-[#e8e8e0] flex items-center justify-center group-hover:bg-[#4CAF50] group-hover:border-[#4CAF50] transition">
-              <Send className="h-3.5 w-3.5 text-[#302817]/30 group-hover:text-white transition" />
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#f5f5f0] border border-[#e8e8e0] flex items-center justify-center group-hover:bg-[#4CAF50] group-hover:border-[#4CAF50] transition">
+              <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#302817]/30 group-hover:text-white transition" />
             </div>
           </button>
         </div>
 
-        {/* Info line */}
-        <p className="text-[11px] text-[#302817]/30 text-center">
-          {tr ? 'CarbonIQ yanılabilir. Önemli rakamları doğrulayın.' : 'CarbonIQ can make mistakes. Verify important figures.'}
-        </p>
-
         {/* Suggestion chips — horizontal scrollable row like Dinnect */}
-        <div className="w-full overflow-x-auto pb-2">
-          <div className="flex gap-2 min-w-max px-1">
+        <div className="w-full overflow-x-auto pb-2 -mx-3 px-3">
+          <div className="flex gap-2 min-w-max">
             {suggestions.map(({ img, text, label }) => (
               <button
                 key={text}
                 onClick={() => onNew(text)}
-                className="flex items-center gap-2 rounded-full border border-[#e8e8e0] bg-white px-4 py-2.5 text-[12px] font-medium text-[#302817]/60 shadow-sm whitespace-nowrap hover:border-[#4CAF50]/30 hover:bg-[#f0f9f0] hover:text-[#2d4a1a] transition-all duration-200 active:scale-[0.97]"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#e8e8e0] bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-medium text-[#302817]/60 shadow-sm whitespace-nowrap hover:border-[#4CAF50]/30 hover:bg-[#f0f9f0] hover:text-[#2d4a1a] transition-all duration-200 active:scale-[0.97]"
               >
-                <Image src={img} alt={label} width={18} height={18} className="h-[18px] w-[18px] object-contain" />
+                <Image src={img} alt={label} width={18} height={18} className="h-4 w-4 sm:h-[18px] sm:w-[18px] object-contain" />
                 <span>{label}</span>
               </button>
             ))}
@@ -1717,34 +1712,34 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
   const steps = tr ? [
-    { icon: '📝', title: 'Şirket bilgileri', desc: 'Vergi numarası, sektör ve raporlama tercihleri' },
-    { icon: '🔥', title: 'Kapsam 1 ve 2', desc: 'Yakıt tüketimi ve elektrik kullanımı' },
-    { icon: '🚛', title: 'Kapsam 3', desc: 'Nakliye, iş seyahati ve tedarik zinciri' },
-    { icon: '📄', title: 'Rapor', desc: 'ISO 14064-1 uyumlu karbon envanteri' },
+    { img: '/company-info.png', title: 'Şirket bilgileri', desc: 'Vergi numarası, sektör ve raporlama tercihleri' },
+    { img: '/scope12.png', title: 'Kapsam 1 ve 2', desc: 'Yakıt tüketimi ve elektrik kullanımı' },
+    { img: '/scope3.png', title: 'Kapsam 3', desc: 'Nakliye, iş seyahati ve tedarik zinciri' },
+    { img: '/report.png', title: 'Rapor', desc: 'ISO 14064-1 uyumlu karbon envanteri' },
   ] : [
-    { icon: '📝', title: 'Company info', desc: 'Tax ID, sector, and reporting preferences' },
-    { icon: '🔥', title: 'Scope 1 & 2', desc: 'Fuel consumption and electricity usage' },
-    { icon: '🚛', title: 'Scope 3', desc: 'Transport, business travel, and supply chain' },
-    { icon: '📄', title: 'Report', desc: 'ISO 14064-1 compliant carbon inventory' },
+    { img: '/company-info.png', title: 'Company info', desc: 'Tax ID, sector, and reporting preferences' },
+    { img: '/scope12.png', title: 'Scope 1 & 2', desc: 'Fuel consumption and electricity usage' },
+    { img: '/scope3.png', title: 'Scope 3', desc: 'Transport, business travel, and supply chain' },
+    { img: '/report.png', title: 'Report', desc: 'ISO 14064-1 compliant carbon inventory' },
   ];
 
   return (
-    <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-8">
-      <div className="w-full max-w-md flex flex-col items-center gap-7">
+    <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6">
+      <div className="w-full max-w-md flex flex-col items-center gap-3 sm:gap-5">
 
         {/* Icon + title */}
-        <div className="flex flex-col items-center gap-4 text-center">
-          <div className="h-14 w-14 rounded-2xl bg-[#75863B] flex items-center justify-center shadow-sm">
-            <ClipboardList className="h-7 w-7 text-white" />
+        <div className="flex flex-col items-center gap-2 sm:gap-3 text-center">
+          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-[#75863B] flex items-center justify-center shadow-sm">
+            <ClipboardList className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
           </div>
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#75863B]/60 mb-1.5">
+            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-[#75863B]/60 mb-0.5 sm:mb-1.5">
               {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
             </p>
-            <h2 className="text-[22px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
+            <h2 className="text-[18px] sm:text-[22px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
               {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
             </h2>
-            <p className="mt-2 text-[13px] text-[#302817]/50 max-w-xs mx-auto leading-relaxed">
+            <p className="mt-1 sm:mt-2 text-[11px] sm:text-[13px] text-[#302817]/50 max-w-xs mx-auto leading-relaxed">
               {tr
                 ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış akış. Her adımda AI asistanı yanınızda.`
                 : `${TOTAL_QUESTIONS}-question structured flow. AI guides you at every step.`}
@@ -1753,15 +1748,15 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         </div>
 
         {/* Steps */}
-        <div className="w-full flex flex-col gap-2">
-          {steps.map(({ icon, title, desc }, idx) => (
-            <div key={idx} className="flex items-center gap-4 rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] px-4 py-3">
-              <span className="text-xl shrink-0 leading-none">{icon}</span>
+        <div className="w-full flex flex-col gap-1.5 sm:gap-2">
+          {steps.map(({ img, title, desc }, idx) => (
+            <div key={idx} className="flex items-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] px-3 sm:px-4 py-2 sm:py-3">
+              <Image src={img} alt={title} width={32} height={32} className="h-6 w-6 sm:h-8 sm:w-8 shrink-0 object-contain" />
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-[#2C4010]">{title}</p>
-                <p className="text-[11px] text-[#302817]/45 mt-0.5 leading-snug">{desc}</p>
+                <p className="text-[12px] sm:text-[13px] font-semibold text-[#2C4010]">{title}</p>
+                <p className="text-[10px] sm:text-[11px] text-[#302817]/45 mt-0.5 leading-snug">{desc}</p>
               </div>
-              <span className="shrink-0 h-6 w-6 rounded-full bg-[#75863B]/12 flex items-center justify-center text-[10px] font-bold text-[#75863B]">
+              <span className="shrink-0 h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-[#75863B]/12 flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-[#75863B]">
                 {idx + 1}
               </span>
             </div>
@@ -1769,30 +1764,30 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         </div>
 
         {answeredCount > 0 && !error && (
-          <div className="w-full rounded-2xl border border-[#B4BE6A]/40 bg-[#F3F7E9] px-5 py-2.5 text-[12px] font-semibold text-[#5E7A2E] text-center">
+          <div className="w-full rounded-xl sm:rounded-2xl border border-[#B4BE6A]/40 bg-[#F3F7E9] px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-semibold text-[#5E7A2E] text-center">
             {tr
               ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
               : `${answeredCount} questions answered — continue where you left off.`}
           </div>
         )}
         {error && (
-          <div className="w-full max-w-sm rounded-2xl border border-red-200 bg-red-50 px-5 py-2.5 text-[12px] font-semibold text-red-600 text-center">
+          <div className="w-full max-w-sm rounded-xl sm:rounded-2xl border border-red-200 bg-red-50 px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-semibold text-red-600 text-center">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-col items-center gap-1.5 sm:gap-2">
           <button
             onClick={onStart}
             disabled={loading}
-            className="flex items-center gap-2.5 rounded-full bg-[#75863B] px-8 py-3.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+            className="flex items-center gap-2 sm:gap-2.5 rounded-full bg-[#75863B] px-6 sm:px-8 py-2.5 sm:py-3.5 text-[13px] sm:text-sm font-semibold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
             {tr
               ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
               : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
           </button>
-          <p className="text-[11px] text-[#302817]/30">
+          <p className="text-[10px] sm:text-[11px] text-[#302817]/30">
             {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
           </p>
         </div>
@@ -2826,6 +2821,9 @@ function FreeChatTab({ language, summary, entries, targets }) {
   // On mobile starts closed; desktop opens automatically
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState('');
+  // File attachment state
+  const [attachedFile, setAttachedFile] = useState(null);
+  const fileInputRef = useRef(null);
   // Mirrors creatingSessionRef so the "New Chat" buttons can be disabled while
   // the createChatSession request is in-flight (refs don't trigger re-renders).
   const [creatingSession, setCreatingSession] = useState(false);
@@ -2946,19 +2944,31 @@ function FreeChatTab({ language, summary, entries, targets }) {
     // recreated on every keystroke, causing unnecessary re-renders.
     const content = (text || inputValueRef.current).trim();
     const sessionId = sid || activeId;
+    const file = attachedFile;
     // Fix #101: use sendingRef (synchronous, same-tick) instead of `sending` state
     // so the guard fires immediately without waiting for a re-render.
-    if (!content || !sessionId || sendingRef.current) return;
+    if ((!content && !file) || !sessionId || sendingRef.current) return;
 
     setInput('');
     inputValueRef.current = '';
+    setAttachedFile(null);
     sendingRef.current = true;
     setSending(true);
     setError('');
-    setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
+    const displayContent = file ? (content || `📎 ${file.name}`) : content;
+    setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent }]);
 
     try {
-      const res = await api.sendChatMessage(sessionId, content);
+      let res;
+      if (file) {
+        // Use FormData for file upload
+        const formData = new FormData();
+        formData.append('content', content || '');
+        formData.append('attachment', file);
+        res = await api.sendChatMessageWithFile(sessionId, formData);
+      } else {
+        res = await api.sendChatMessage(sessionId, content);
+      }
       if (!isMountedRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -2968,9 +2978,6 @@ function FreeChatTab({ language, summary, entries, targets }) {
         if (!isMountedRef.current) return;
         setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
         if (aiMsg.session_title) {
-          // Fix #45: after updating the session title / timestamp, re-sort descending by
-          // updated_at so the active chat bubbles up to the top of the sidebar list,
-          // matching the server-side ORDER BY -updated_at on next page load.
           setSessions(prev => [...prev.map(s =>
             s.id === sessionId
               ? { ...s, title: aiMsg.session_title, updated_at: new Date().toISOString(), message_count: (s.message_count || 0) + 2 }
@@ -2981,16 +2988,13 @@ function FreeChatTab({ language, summary, entries, targets }) {
     } catch {
       if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
     } finally {
-      // Mirror the sendHelp pattern: always reset sending so the button is never
-      // permanently stuck in spinner state if an early return skips this path.
-      // Fix #101: reset sendingRef unconditionally (ref is not tied to mount state).
       sendingRef.current = false;
       if (isMountedRef.current) {
         setSending(false);
         inputRef.current?.focus();
       }
     }
-  }, [activeId]); // Fix #101: `sending` removed — read via sendingRef.current; `tr` and `input` also read via refs
+  }, [activeId, attachedFile]);
 
   const startNew = useCallback(async (initialPrompt = '') => {
     // Prevent concurrent "New chat" clicks from creating duplicate sessions.
@@ -3139,24 +3143,24 @@ function FreeChatTab({ language, summary, entries, targets }) {
 
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Clean header */}
-        <header className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 bg-white px-4 py-2.5">
+        {/* Clean header - hidden on mobile (parent header already shows branding + tabs) */}
+        <header className="hidden sm:flex shrink-0 items-center gap-2 border-b border-[#302817]/6 bg-white px-3 sm:px-4 py-2 sm:py-2.5">
           <button
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/35 transition hover:bg-[#302817]/5 hover:text-[#302817]"
+            className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl text-[#302817]/35 transition hover:bg-[#302817]/5 hover:text-[#302817]"
             title={sidebarOpen ? (tr ? 'Geçmişi gizle' : 'Hide history') : (tr ? 'Geçmişi göster' : 'Show history')}
           >
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold text-[#302817]/80">
+            <p className="truncate text-[12px] sm:text-[13px] font-semibold text-[#302817]/80">
               {activeSession ? activeSession.title : 'Carbon AI'}
             </p>
           </div>
 
           {totalTonne > 0 && (
-            <span className="shrink-0 rounded-full bg-[#F3F6E8] border border-[#95A847]/20 px-2.5 py-1 text-[11px] font-semibold text-[#75863B]">
+            <span className="hidden sm:inline-block shrink-0 rounded-full bg-[#F3F6E8] border border-[#95A847]/20 px-2.5 py-1 text-[11px] font-semibold text-[#75863B]">
               {totalTonne.toFixed(1)} tCO₂e
             </span>
           )}
@@ -3167,7 +3171,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
               <button
                 key={l}
                 onClick={() => setActiveLang(l)}
-                className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition ${
+                className={`rounded-md px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide transition ${
                   activeLang === l ? 'bg-white text-[#302817] shadow-sm' : 'text-[#302817]/40 hover:text-[#302817]'
                 }`}
               >
@@ -3176,6 +3180,32 @@ function FreeChatTab({ language, summary, entries, targets }) {
             ))}
           </div>
         </header>
+
+        {/* Mobile-only compact bar */}
+        <div className="flex sm:hidden shrink-0 items-center justify-between border-b border-[#302817]/6 bg-white px-3 py-1.5">
+          <button
+            onClick={() => setSidebarOpen(v => !v)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40"
+          >
+            <Menu className="h-3.5 w-3.5" />
+          </button>
+          <p className="text-[11px] font-semibold text-[#302817]/60 truncate max-w-[40%]">
+            {activeSession ? activeSession.title : 'Carbon AI'}
+          </p>
+          <div className="flex items-center gap-0.5 rounded-md border border-[#302817]/8 bg-[#302817]/4 p-0.5">
+            {['tr', 'en'].map(l => (
+              <button
+                key={l}
+                onClick={() => setActiveLang(l)}
+                className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase transition ${
+                  activeLang === l ? 'bg-white text-[#302817] shadow-sm' : 'text-[#302817]/35'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Error banner */}
         {error && (
@@ -3187,7 +3217,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
           ) : loadingMessages ? (
@@ -3219,7 +3249,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
           )}
         </div>
 
-        <div className="shrink-0 border-t border-[#302817]/6 px-4 pt-3 pb-3 sm:px-6">
+        <div className={`shrink-0 border-t border-[#302817]/6 px-3 pt-2 pb-2 sm:px-6 sm:pt-3 sm:pb-3 ${!activeId ? 'hidden sm:block' : ''}`}>
           {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
               see a warning before they hit a 400 error, not after.
               Fix #87: CHAT_CHAR_LIMIT is now a module-level constant (see top of file)
@@ -3235,27 +3265,66 @@ function FreeChatTab({ language, summary, entries, targets }) {
                     ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
                     : 'border-[#302817]/10 focus-within:border-[#B4BE6A]/50 focus-within:ring-[#B4BE6A]/12'
                 }`}>
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
-                    onKeyDown={handleKeyDown}
-                    disabled={sending || creatingSession}
-                    placeholder={tr ? 'CarbonIQ\'ya sor…' : 'Ask CarbonIQ…'}
-                    rows={1}
-                    className="min-h-[24px] max-h-[120px] flex-1 resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30 disabled:cursor-not-allowed"
-                    style={{ scrollbarWidth: 'none' }}
-                    onInput={e => {
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                  {/* File upload button */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept=".pdf,.csv,.xlsx,.xls,.doc,.docx,.txt,.png,.jpg,.jpeg"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) {
+                        if (f.size > 10 * 1024 * 1024) {
+                          setError(tr ? 'Dosya çok büyük (maks 10MB)' : 'File too large (max 10MB)');
+                          return;
+                        }
+                        setAttachedFile(f);
+                      }
+                      e.target.value = '';
                     }}
                   />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sending || creatingSession}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#302817]/30 transition hover:text-[#75863B] hover:bg-[#75863B]/10 disabled:opacity-30"
+                    title={tr ? 'Dosya ekle' : 'Attach file'}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    {/* Attached file indicator */}
+                    {attachedFile && (
+                      <div className="flex items-center gap-2 mb-1.5 rounded-lg bg-[#F3F7E9] border border-[#B4BE6A]/30 px-2.5 py-1.5">
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#75863B]" />
+                        <span className="text-[11px] font-medium text-[#302817]/70 truncate">{attachedFile.name}</span>
+                        <button onClick={() => setAttachedFile(null)} className="shrink-0 ml-auto text-[#302817]/30 hover:text-red-500 transition">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    <textarea
+                      ref={inputRef}
+                      value={input}
+                      onChange={e => { setInput(e.target.value); inputValueRef.current = e.target.value; }}
+                      onKeyDown={handleKeyDown}
+                      disabled={sending || creatingSession}
+                      placeholder={tr ? 'Carbonless\'a sor…' : 'Ask Carbonless…'}
+                      rows={1}
+                      className="min-h-[24px] max-h-[120px] w-full resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30 disabled:cursor-not-allowed"
+                      style={{ scrollbarWidth: 'none' }}
+                      onInput={e => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                      }}
+                    />
+                  </div>
                   <button
                     onClick={() => {
                       if (!activeId) startNew(input);
                       else sendMessage();
                     }}
-                    disabled={!input.trim() || sending || creatingSession || charOver}
+                    disabled={(!input.trim() && !attachedFile) || sending || creatingSession || charOver}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {(sending || creatingSession)
@@ -3263,10 +3332,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
                       : <Send className="h-3.5 w-3.5" />}
                   </button>
                 </div>
-                <div className="mt-1.5 mx-auto flex w-full max-w-3xl items-center justify-between px-1">
-                  <p className="text-[10px] text-[#302817]/25">
-                    {tr ? 'CarbonIQ yanılabilir. Önemli rakamları doğrulayın.' : 'CarbonIQ can make mistakes. Verify important figures.'}
-                  </p>
+                <div className="mt-1.5 mx-auto flex w-full max-w-3xl items-center justify-end px-1">
                   {charWarn && (
                     <span className={`text-[10px] font-semibold tabular-nums ${charOver ? 'text-red-500' : 'text-amber-500'}`}>
                       {charCount}/{CHAT_CHAR_LIMIT}
@@ -3337,17 +3403,17 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
     <div className="fixed inset-0 z-[90] flex flex-col bg-gradient-to-br from-[#f8fdf6] via-white to-[#f0f9f0] animate-in fade-in duration-200">
 
       {/* Mode switcher banner — tells user they can switch */}
-      <div className="flex shrink-0 items-center justify-center gap-3 bg-[#f0f9f0] border-b border-[#4CAF50]/10 px-4 py-2">
+      <div className="flex shrink-0 items-center justify-center gap-3 bg-[#f0f9f0] border-b border-[#4CAF50]/10 px-3 sm:px-4 py-1.5 sm:py-2">
         <div className="flex items-center gap-2 rounded-full bg-white border border-[#e8e8e0] p-0.5 shadow-sm">
           <button
-            className="flex items-center gap-1.5 rounded-full bg-[#4CAF50] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm"
+            className="flex items-center gap-1.5 rounded-full bg-[#4CAF50] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
           >
             <Sparkles className="h-3 w-3" />
             {tr ? 'AI Modu' : 'AI Mode'}
           </button>
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
-            className="flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[11px] font-semibold text-[#302817]/50 hover:text-[#302817] hover:bg-[#f5f5f0] transition"
+            className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#302817]/50 hover:text-[#302817] hover:bg-[#f5f5f0] transition"
           >
             <BarChart3 className="h-3 w-3" />
             {tr ? 'Dashboard' : 'Dashboard'}
@@ -3358,73 +3424,72 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
         </span>
       </div>
 
-      {/* Premium header */}
-      <div className="flex shrink-0 items-center justify-between px-5 py-3 border-b border-[#e8f5e9] bg-white/80 backdrop-blur-md">
+      {/* Premium header - compact on mobile */}
+      <div className="flex shrink-0 items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-b border-[#e8f5e9] bg-white/80 backdrop-blur-md">
         {/* Left: branding */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
-            <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10 object-contain" />
-            <div className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-[#4CAF50] border-2 border-white" />
+            <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
+            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#4CAF50] border-2 border-white" />
           </div>
           <div>
-            <h2 className="text-[16px] font-bold text-[#2d4a1a] tracking-tight">
+            <h2 className="text-[14px] sm:text-[16px] font-bold text-[#2d4a1a] tracking-tight">
               Carbonless AI
             </h2>
-            <p className="text-[11px] text-[#4CAF50] font-medium">
+            <p className="hidden sm:block text-[11px] text-[#4CAF50] font-medium">
               {tr ? 'Akıllı karbon hesaplama' : 'Smart carbon calculator'}
             </p>
           </div>
         </div>
 
         {/* Center: Tab switcher */}
-        <div className="flex items-center gap-1 rounded-full bg-[#f0f9f0] border border-[#4CAF50]/15 p-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-[#f0f9f0] border border-[#4CAF50]/15 p-0.5 sm:p-1">
           <button
             onClick={() => setActiveTab('questionnaire')}
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab === 'questionnaire'
                 ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#4CAF50]/20'
                 : 'text-[#2d4a1a]/50 hover:text-[#2d4a1a]/80'
             }`}
           >
-            <ClipboardList className="h-3.5 w-3.5" />
-            {tr ? 'Anket' : 'Questionnaire'}
+            <ClipboardList className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden xs:inline">{tr ? 'Anket' : 'Questionnaire'}</span>
           </button>
           <button
             onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
-            className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-semibold transition-all duration-200 ${
+            className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab === 'chat'
                 ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#4CAF50]/20'
                 : 'text-[#2d4a1a]/50 hover:text-[#2d4a1a]/80'
             }`}
           >
-            <MessageSquare className="h-3.5 w-3.5" />
-            {tr ? 'AI Sohbet' : 'AI Chat'}
+            <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+            <span className="hidden xs:inline">{tr ? 'AI Sohbet' : 'AI Chat'}</span>
           </button>
         </div>
 
         {/* Right: actions */}
-        <div className="flex items-center gap-2">
-          {/* Status */}
-          <div className="hidden sm:flex items-center gap-1.5 rounded-full bg-[#e8f5e9] px-3 py-1.5">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Status - hidden on mobile */}
+          <div className="hidden md:flex items-center gap-1.5 rounded-full bg-[#e8f5e9] px-3 py-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
             <span className="text-[10px] font-semibold text-[#2d6235]">
               {tr ? 'Bağlı' : 'Connected'}
             </span>
           </div>
-          {/* Minimize button */}
+          {/* Minimize button - compact on mobile */}
           <button
             onClick={() => {
               setIsMinimized(true);
-              // Tell parent to show dashboard underneath
               window.dispatchEvent(new CustomEvent('carboniq-close'));
             }}
-            className="flex items-center gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-3 py-2 text-[11px] font-semibold text-[#302817]/60 hover:bg-[#eee] hover:text-[#302817] transition"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#302817]/60 hover:bg-[#eee] hover:text-[#302817] transition"
             title={tr ? 'Küçült' : 'Minimize'}
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
-            {tr ? 'Küçült' : 'Minimize'}
+            <span className="hidden sm:inline">{tr ? 'Küçült' : 'Minimize'}</span>
           </button>
         </div>
       </div>

@@ -26,6 +26,8 @@ class ChatMessage(models.Model):
     session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     content = models.TextField()
+    attachment = models.FileField(upload_to='chat_attachments/%Y/%m/', blank=True, null=True)
+    attachment_name = models.CharField(max_length=255, blank=True, default='')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

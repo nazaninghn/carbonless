@@ -298,7 +298,7 @@ export default function Home() {
                     </p>
                     <div className="mt-4 w-full rounded-xl border border-[#e8e8e0] px-4 py-2.5 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-[#53A67F]/40" />
-                      <span className="text-[12px] text-[#302817]/30">Ask CarbonIQ...</span>
+                      <span className="text-[12px] text-[#302817]/30">Ask Carbonless...</span>
                     </div>
                     {/* Suggestion chips */}
                     <div className="mt-3 flex flex-wrap gap-1.5 justify-center">

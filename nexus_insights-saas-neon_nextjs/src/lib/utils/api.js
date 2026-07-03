@@ -244,6 +244,18 @@ export const api = {
   getChatSession: (id) => request(`/chat/sessions/${id}/`),
   deleteChatSession: (id) => request(`/chat/sessions/${id}/`, { method: 'DELETE' }),
   sendChatMessage: (sessionId, content) => request(`/chat/sessions/${sessionId}/message/`, { method: 'POST', body: JSON.stringify({ content }) }),
+  sendChatMessageWithFile: (sessionId, formData) => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('_ca') : null;
+    /** @type {Record<string, string>} */
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/chat/sessions/${sessionId}/message/`, {
+      method: 'POST',
+      headers: /** @type {HeadersInit} */ (headers),
+      body: formData,
+      credentials: 'include',
+    });
+  },
 };
 
 /**
