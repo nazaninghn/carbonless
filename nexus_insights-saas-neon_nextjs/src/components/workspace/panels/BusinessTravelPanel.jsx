@@ -2,27 +2,28 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Briefcase, Plane, Train, Car, Plus, Trash2 } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
+import { getEmissionFactor } from '@/lib/carboniq/emission-factors';
 
-// ── DEFRA 2023 emission factors ───────────────────────────────────────────────
+// Factors come from the shared, backend-aligned table — see emission-factors.js
 // kg CO₂e per passenger-km (air/rail) or per vehicle-km (car)
 const AIR_MODES = [
   {
     id: 'domestic',
-    ef: 0.264,
+    ef: getEmissionFactor('flight_domestic', 'pkm'),
     label: { tr: 'İç Hat Uçuş',       en: 'Domestic Flight'       },
     hint:  { tr: 'Yurt içi hat',        en: 'Within country'        },
     field: 'rf.k5.air_domestic_pkm',
   },
   {
     id: 'short_haul',
-    ef: 0.153,
+    ef: getEmissionFactor('flight_short_haul', 'pkm'),
     label: { tr: 'Kısa Mesafe Uçuş',   en: 'Short-Haul Flight'      },
     hint:  { tr: '< 3.700 km',          en: '< 3,700 km'             },
     field: 'rf.k5.air_short_haul_pkm',
   },
   {
     id: 'long_haul',
-    ef: 0.195,
+    ef: getEmissionFactor('flight_long_haul', 'pkm'),
     label: { tr: 'Uzun Mesafe Uçuş',   en: 'Long-Haul Flight'       },
     hint:  { tr: '≥ 3.700 km',          en: '≥ 3,700 km'             },
     field: 'rf.k5.air_long_haul_pkm',
@@ -32,7 +33,7 @@ const AIR_MODES = [
 const GROUND_MODES = [
   {
     id: 'rail',
-    ef: 0.035,
+    ef: getEmissionFactor('rail_travel', 'pkm'),
     icon: Train,
     label: { tr: 'Tren',               en: 'Rail'                   },
     hint:  { tr: 'Yolcu-km',           en: 'Passenger-km'           },
@@ -41,7 +42,7 @@ const GROUND_MODES = [
   },
   {
     id: 'car',
-    ef: 0.149,
+    ef: getEmissionFactor('car_rental', 'km'),
     icon: Car,
     label: { tr: 'Kiralık Araç / Taksi', en: 'Rental Car / Taxi'    },
     hint:  { tr: 'Araç-km',            en: 'Vehicle-km'             },
@@ -270,7 +271,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
       {hasData && (
         <div className="rounded-xl bg-gradient-to-br from-violet-50/80 to-violet-50/30 border border-violet-200/40 px-4 py-3">
           <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-violet-600/70 mb-1">
-            {tr ? 'Tahmini Toplam Emisyon (DEFRA 2023)' : 'Estimated Total Emission (DEFRA 2023)'}
+            {tr ? 'Tahmini Toplam Emisyon' : 'Estimated Total Emission'}
           </p>
           <div className="flex items-baseline gap-1.5 mb-2">
             <span className="text-2xl font-bold text-[#302817]">

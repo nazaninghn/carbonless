@@ -9,6 +9,7 @@ import { UpstreamTransportPanel } from '@/components/workspace/panels/UpstreamTr
 import { BusinessTravelPanel } from '@/components/workspace/panels/BusinessTravelPanel';
 import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
 import { api } from '@/lib/utils/api';
+import { calcScope1Kg, calcScope2Kg, calcK4Kg, calcK5Kg } from '@/lib/carboniq/emission-factors';
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const CATEGORIES = [
@@ -18,36 +19,13 @@ const CATEGORIES = [
   { id: 'K5', tab: 'S3b', icon: Briefcase, color: 'text-violet-500', bg: 'bg-violet-50',  label: { tr: 'İş Seyahati',    en: 'Business Travel'       } },
 ];
 
-const DEFRA_EF = {
-  natural_gas: { 'm³': 2.02, m3: 2.02, kWh: 0.183, KWH: 0.183, GJ: 50.77, MCF: 57.17 },
-  fuel_oil:    { litre: 2.52, kg: 2.96, GJ: 74.07  },
-  diesel:      { litre: 2.54, GJ: 68.08             },
-  lpg:         { litre: 1.51, kg: 2.94, GJ: 59.65  },
-  coal:        { kg: 2.42, tonne: 2420, GJ: 88.34   },
-};
-
+// Estimation math lives in emission-factors.js (shared with the chat/dashboard
+// preview) so this drawer never shows a different number than the rest of the app.
 function estimateKg(catId, vals) {
-  if (catId === '3A') {
-    const ef = DEFRA_EF[vals['rf.3a.fuel_type']]?.[vals['rf.3a.unit']];
-    const c  = parseFloat(vals['rf.3a.consumption']);
-    if (!isNaN(c) && ef) return c * ef;
-  }
-  if (catId === '4A') {
-    const k = parseFloat(vals['rf.4a.consumption_kwh']);
-    const e = parseFloat(vals['rf.4a.emission_factor']);
-    const r = parseFloat(vals['rf.4a.renewable_on_site']) || 0;
-    if (!isNaN(k) && !isNaN(e)) return Math.max(k - r, 0) * e;
-  }
-  if (catId === 'K4') { const v = parseFloat(vals['rf.k4.total_emission_kgco2e']); if (!isNaN(v)) return v; }
-  if (catId === 'K5') {
-    const d = parseFloat(vals['rf.k5.total_emission_kgco2e']);
-    if (!isNaN(d) && d > 0) return d;
-    let t = 0, has = false;
-    [['rf.k5.air_domestic_pkm',0.264],['rf.k5.air_short_haul_pkm',0.153],
-     ['rf.k5.air_long_haul_pkm',0.195],['rf.k5.rail_pkm',0.035],['rf.k5.car_km',0.149]]
-      .forEach(([k, ef]) => { const v = parseFloat(vals[k]); if (!isNaN(v) && v > 0) { t += v * ef; has = true; } });
-    return has ? t : null;
-  }
+  if (catId === '3A') { const kg = calcScope1Kg(vals); return kg > 0 ? kg : null; }
+  if (catId === '4A') { const kg = calcScope2Kg(vals); return kg > 0 ? kg : null; }
+  if (catId === 'K4') { const kg = calcK4Kg(vals); return kg > 0 ? kg : null; }
+  if (catId === 'K5') { const kg = calcK5Kg(vals); return kg > 0 ? kg : null; }
   return null;
 }
 
@@ -170,7 +148,7 @@ export default function WorkspacePage() {
       if (!isEmpty) {
         const pf = {
           'rf.3a.fuel_type':'natural_gas','rf.3a.consumption':15000,'rf.3a.unit':'m³','rf.3a.facility':'Merkez Ofis',
-          'rf.4a.consumption_kwh':18000,'rf.4a.grid_region':'turkey_teias','rf.4a.supplier':'TEDAŞ','rf.4a.emission_factor':0.439,
+          'rf.4a.consumption_kwh':18000,'rf.4a.grid_region':'turkey_teias','rf.4a.supplier':'TEDAŞ','rf.4a.emission_factor':0.4199,
           'rf.k4.shipments':[{mode:'road_hgv_gt34t_full',weight_t:45,distance_km:1200}],'rf.k4.total_emission_kgco2e':3312,
           'rf.k5.air_domestic_pkm':5000,'rf.k5.air_short_haul_pkm':12000,'rf.k5.air_long_haul_pkm':18000,
           'rf.k5.rail_pkm':4000,'rf.k5.total_emission_kgco2e':6806,

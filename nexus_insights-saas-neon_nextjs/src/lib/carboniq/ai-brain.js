@@ -8,40 +8,10 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EMISSION FACTORS  (mirrors ChatWorkspace — used for status calculation)
+// EMISSION FACTORS — shared with ChatWorkspace and the dashboard preview so a
+// status report always agrees with the numbers shown elsewhere in the app.
 // ═══════════════════════════════════════════════════════════════════════════════
-const EF_CALC = {
-  natural_gas: { 'm³': 2.02, m3: 2.02, kwh: 0.183, kWh: 0.183, gj: 50.77, GJ: 50.77, mcf: 57.17, MCF: 57.17 },
-  diesel:      { litre: 2.54, liter: 2.54, l: 2.54, kg: 2.68, ton: 2680, tonne: 2680 },
-  lpg:         { litre: 1.51, liter: 1.51, kg: 2.94, ton: 2940, tonne: 2940 },
-  fuel_oil:    { litre: 2.52, kg: 2.96, ton: 2960, tonne: 2960, GJ: 74.07 },
-  // DEFRA 2023 — mixed coal / industrial coal
-  coal:        { kg: 2.42, ton: 2420, tonne: 2420, GJ: 88.34 },
-  // DEFRA 2023 — biomass (oven dry wood)
-  biomass:     { kg: 0.39, ton: 390, tonne: 390, GJ: 10.23 },
-};
-const EF_ELEC = 0.439; // IEA 2023 Turkey
-
-function _calcScope1(vals) {
-  const fuel = vals['rf.3a.fuel_type'];
-  const amt  = parseFloat(vals['rf.3a.consumption']);
-  // Normalise unit: accept common variants regardless of case
-  const rawUnit = (vals['rf.3a.unit'] || 'm³').replace(/m\^3/i, 'm³');
-  const UNIT_NORM = { 'kwh': 'kWh', 'KWH': 'kWh', 'gj': 'GJ', 'mcf': 'MCF' };
-  const unit = UNIT_NORM[rawUnit] || rawUnit;
-  if (!fuel || isNaN(amt) || amt <= 0) return 0;
-  const efMap = EF_CALC[fuel] || {};
-  const ef = efMap[unit] || efMap['m³'] || efMap['litre'] || 0;
-  return Math.round(amt * ef);
-}
-
-function _calcScope2(vals) {
-  const kwh = parseFloat(vals['rf.4a.consumption_kwh']);
-  const ef  = parseFloat(vals['rf.4a.emission_factor']) || EF_ELEC;
-  const ren = parseFloat(vals['rf.4a.renewable_on_site']) || 0;
-  if (isNaN(kwh) || kwh <= 0) return 0;
-  return Math.round(Math.max(kwh - ren, 0) * ef);
-}
+import { calcScope1Kg, calcScope2Kg } from './emission-factors';
 
 function _fmtKg(kg) {
   if (!kg || kg <= 0) return '0 kgCO₂e';
@@ -69,8 +39,8 @@ const KB = [
     id: 'scope1',
     match: /kapsam\s*1\b|scope\s*1\b|birinci\s*kapsam|doğrudan\s*emis/i,
     answer: {
-      tr: `**Kapsam 1 — Doğrudan Emisyonlar**\n\nKuruluşun sahip olduğu veya kontrol ettiği kaynaklardan çıkan emisyonlar.\n\n**Tipik kaynaklar:**\n→ 🔥 Doğalgaz yakma (ısıtma, proses) — **2,02 kgCO₂e/m³**\n→ 🛢️ Dizel (jeneratör, kazan) — **2,54 kgCO₂e/litre**\n→ 🟡 LPG — **1,51 kgCO₂e/litre**\n→ 🚗 Şirket araçları (benzin/dizel)\n→ ❄️ Kaçak soğutucu gaz\n→ ⚙️ Proses emisyonları (çimento, çelik)\n\n**Faktör kaynağı:** DEFRA 2023\n\n**Örnek:** "15.000 m³ doğalgaz kullandık" yazmanız yeterli — hesabı otomatik yaparım.`,
-      en: `**Scope 1 — Direct Emissions**\n\nEmissions from sources owned or controlled by the organization.\n\n**Typical sources:**\n→ 🔥 Natural gas combustion (heating, process) — **2.02 kgCO₂e/m³**\n→ 🛢️ Diesel (generator, boiler) — **2.54 kgCO₂e/litre**\n→ 🟡 LPG — **1.51 kgCO₂e/litre**\n→ 🚗 Company vehicles (petrol/diesel)\n→ ❄️ Fugitive refrigerant gas\n→ ⚙️ Process emissions (cement, steel)\n\n**Factor source:** DEFRA 2023\n\n**Example:** Just write "We used 15,000 m³ natural gas" — I'll calculate automatically.`
+      tr: `**Kapsam 1 — Doğrudan Emisyonlar**\n\nKuruluşun sahip olduğu veya kontrol ettiği kaynaklardan çıkan emisyonlar.\n\n**Tipik kaynaklar:**\n→ 🔥 Doğalgaz yakma (ısıtma, proses) — **2,02 kgCO₂e/m³**\n→ 🛢️ Dizel (jeneratör, kazan) — **2,68 kgCO₂e/litre**\n→ 🟡 LPG — **1,51 kgCO₂e/litre**\n→ 🚗 Şirket araçları (benzin/dizel)\n→ ❄️ Kaçak soğutucu gaz\n→ ⚙️ Proses emisyonları (çimento, çelik)\n\n**Faktör kaynağı:** DEFRA 2024 / IPCC 2006\n\n**Örnek:** "15.000 m³ doğalgaz kullandık" yazmanız yeterli — hesabı otomatik yaparım.`,
+      en: `**Scope 1 — Direct Emissions**\n\nEmissions from sources owned or controlled by the organization.\n\n**Typical sources:**\n→ 🔥 Natural gas combustion (heating, process) — **2.02 kgCO₂e/m³**\n→ 🛢️ Diesel (generator, boiler) — **2.68 kgCO₂e/litre**\n→ 🟡 LPG — **1.51 kgCO₂e/litre**\n→ 🚗 Company vehicles (petrol/diesel)\n→ ❄️ Fugitive refrigerant gas\n→ ⚙️ Process emissions (cement, steel)\n\n**Factor source:** DEFRA 2024 / IPCC 2006\n\n**Example:** Just write "We used 15,000 m³ natural gas" — I'll calculate automatically.`
     }
   },
 
@@ -79,8 +49,8 @@ const KB = [
     id: 'scope2',
     match: /kapsam\s*2\b|scope\s*2\b|ikinci\s*kapsam|satın\s*alınan\s*elektrik|purchased.?electricity/i,
     answer: {
-      tr: `**Kapsam 2 — Enerji Dolaylı Emisyonlar**\n\nSatın alınan elektrik, ısı veya buharın üretiminden kaynaklanan emisyonlar.\n\n**Türkiye TEIAS grid faktörü (IEA 2023):**\n→ **0,439 kgCO₂e/kWh** ← Sistemde kullanılan değer\n\n**Yıllara göre değişim:**\n→ 2021: 0,499 → 2022: 0,463 → 2023: **0,439** (↓ yenilenebilir artışı)\n\n**Hesaplama:**\n→ 18.000 kWh × 0,439 = **7.902 kgCO₂e = 7,9 tCO₂e**\n\n**İki yöntem:**\n→ **Konum tabanlı:** Grid ortalaması (0,439) — faturanızdan\n→ **Piyasa tabanlı:** GO/REC sertifikası varsa daha düşük faktör\n\n💡 Elektrik tüketiminizi kWh olarak paylaşın — otomatik hesaplayayım.`,
-      en: `**Scope 2 — Energy Indirect Emissions**\n\nEmissions from generation of purchased electricity, heat, or steam.\n\n**Turkey TEIAS grid factor (IEA 2023):**\n→ **0.439 kgCO₂e/kWh** ← Value used in this system\n\n**Year-on-year change:**\n→ 2021: 0.499 → 2022: 0.463 → 2023: **0.439** (↓ renewables growth)\n\n**Calculation:**\n→ 18,000 kWh × 0.439 = **7,902 kgCO₂e = 7.9 tCO₂e**\n\n**Two methods:**\n→ **Location-based:** Grid average (0.439) — from your invoice\n→ **Market-based:** If GO/REC certificate available, lower factor\n\n💡 Share your electricity consumption in kWh — I'll calculate automatically.`
+      tr: `**Kapsam 2 — Enerji Dolaylı Emisyonlar**\n\nSatın alınan elektrik, ısı veya buharın üretiminden kaynaklanan emisyonlar.\n\n**Türkiye şebeke faktörü (ATOM KABLO ISO 14064-1 2023):**\n→ **0,4199 kgCO₂e/kWh** ← Sistemde kullanılan değer\n\n**Hesaplama:**\n→ 18.000 kWh × 0,4199 = **7.558 kgCO₂e = 7,56 tCO₂e**\n\n**İki yöntem:**\n→ **Konum tabanlı:** Şebeke ortalaması (0,4199) — faturanızdan\n→ **Piyasa tabanlı:** GO/REC sertifikası varsa daha düşük faktör\n\n💡 Elektrik tüketiminizi kWh olarak paylaşın — otomatik hesaplayayım.`,
+      en: `**Scope 2 — Energy Indirect Emissions**\n\nEmissions from generation of purchased electricity, heat, or steam.\n\n**Turkey grid factor (ATOM KABLO ISO 14064-1 2023):**\n→ **0.4199 kgCO₂e/kWh** ← Value used in this system\n\n**Calculation:**\n→ 18,000 kWh × 0.4199 = **7,558 kgCO₂e = 7.56 tCO₂e**\n\n**Two methods:**\n→ **Location-based:** Grid average (0.4199) — from your invoice\n→ **Market-based:** If GO/REC certificate available, lower factor\n\n💡 Share your electricity consumption in kWh — I'll calculate automatically.`
     }
   },
 
@@ -89,8 +59,8 @@ const KB = [
     id: 'scope3',
     match: /kapsam\s*3\b|scope\s*3\b|üçüncü\s*kapsam|değer\s*zinciri|value.?chain|tedarik\s*zinciri|supply.?chain/i,
     answer: {
-      tr: `**Kapsam 3 — Diğer Dolaylı Emisyonlar**\n\nDeğer zincirindeki tüm diğer dolaylı emisyonlar. ISO 14064-1'de 15 kategori vardır.\n\n**Çoğu Türk şirketi için öncelikli kategoriler:**\n\n→ **Kat.4 Upstream Taşıma** 🚛\n  Tedarikçiden fabrikaya/depoya taşıma (ton×km)\n  Faktör: HGV **0,0614** · Deniz **0,00681** · Hava **0,7027 kgCO₂e/tkm**\n\n→ **Kat.6 İş Seyahati** ✈️\n  Uçuş: Kısa **0,153** · Uzun **0,195 kgCO₂e/pkm**\n  Tren: **0,035 kgCO₂e/pkm**\n\n→ **Kat.1 Satın Alınan Ürün/Hizmet** 🏭\n  Genellikle en büyük Kapsam 3 kalemi\n\n→ **Kat.7 Çalışan Kommüt** 🚌\n  Çalışanların işe gidip gelme emisyonları\n\n**Faktör kaynağı:** GLEC v3 (taşıma), DEFRA 2023 (seyahat)`,
-      en: `**Scope 3 — Other Indirect Emissions**\n\nAll other indirect emissions in the value chain. ISO 14064-1 has 15 categories.\n\n**Priority categories for most Turkish companies:**\n\n→ **Cat.4 Upstream Transport** 🚛\n  Transport from supplier to factory/warehouse (tonne×km)\n  Factor: HGV **0.0614** · Sea **0.00681** · Air **0.7027 kgCO₂e/tkm**\n\n→ **Cat.6 Business Travel** ✈️\n  Flights: Short-haul **0.153** · Long-haul **0.195 kgCO₂e/pkm**\n  Rail: **0.035 kgCO₂e/pkm**\n\n→ **Cat.1 Purchased Goods/Services** 🏭\n  Usually the largest Scope 3 item\n\n→ **Cat.7 Employee Commuting** 🚌\n  Emissions from employee travel to/from work\n\n**Factor sources:** GLEC v3 (transport), DEFRA 2023 (travel)`
+      tr: `**Kapsam 3 — Diğer Dolaylı Emisyonlar**\n\nDeğer zincirindeki tüm diğer dolaylı emisyonlar. ISO 14064-1'de 15 kategori vardır.\n\n**Çoğu Türk şirketi için öncelikli kategoriler:**\n\n→ **Kat.4 Upstream Taşıma** 🚛\n  Tedarikçiden fabrikaya/depoya taşıma (ton×km)\n  Faktör: HGV **0,823** · Deniz **0,0161** · Hava **0,602 kgCO₂e/tkm**\n\n→ **Kat.6 İş Seyahati** ✈️\n  Uçuş: Kısa **0,255** · Uzun **0,150 kgCO₂e/pkm**\n  Tren: **0,035 kgCO₂e/pkm**\n\n→ **Kat.1 Satın Alınan Ürün/Hizmet** 🏭\n  Genellikle en büyük Kapsam 3 kalemi\n\n→ **Kat.7 Çalışan Kommüt** 🚌\n  Çalışanların işe gidip gelme emisyonları\n\n**Faktör kaynağı:** ATOM KABLO ISO 14064-1 2023 (taşıma), GHG Protocol / Turkish Airlines (seyahat)`,
+      en: `**Scope 3 — Other Indirect Emissions**\n\nAll other indirect emissions in the value chain. ISO 14064-1 has 15 categories.\n\n**Priority categories for most Turkish companies:**\n\n→ **Cat.4 Upstream Transport** 🚛\n  Transport from supplier to factory/warehouse (tonne×km)\n  Factor: HGV **0.823** · Sea **0.0161** · Air **0.602 kgCO₂e/tkm**\n\n→ **Cat.6 Business Travel** ✈️\n  Flights: Short-haul **0.255** · Long-haul **0.150 kgCO₂e/pkm**\n  Rail: **0.035 kgCO₂e/pkm**\n\n→ **Cat.1 Purchased Goods/Services** 🏭\n  Usually the largest Scope 3 item\n\n→ **Cat.7 Employee Commuting** 🚌\n  Emissions from employee travel to/from work\n\n**Factor sources:** ATOM KABLO ISO 14064-1 2023 (transport), GHG Protocol / Turkish Airlines (travel)`
     }
   },
 
@@ -109,18 +79,18 @@ const KB = [
     id: 'emission_factors',
     match: /emisyon\s*faktör|emission\s*factor|\bdefra\b|\biea\b|\bglec\b|hangi\s*faktör|which\s*factor|nereden.*faktör/i,
     answer: {
-      tr: `**Emisyon Faktörü Kaynakları**\n\nBu sistemde 3 uluslararası veritabanı kullanılır:\n\n**🇬🇧 DEFRA 2023** (UK Çevre Bakanlığı)\n→ Yakıt yanması: doğalgaz, dizel, LPG, fuel oil, kömür\n→ İş seyahati: uçuş, tren, araç kiralama\n→ Güncellenme: Her yıl (son: Temmuz 2023)\n\n**⚡ IEA 2023** (Uluslararası Enerji Ajansı)\n→ Türkiye elektrik şebekesi: **0,439 kgCO₂e/kWh**\n→ Ülkeye özgü grid faktörleri\n→ Kaynak: TEIAS + Enerji Bakanlığı verileri\n\n**🚢 GLEC v3** (Smart Freight Centre)\n→ Yük taşımacılığı: karayolu, denizyolu, havayolu, demiryolu\n→ Her mod için ayrı faktör (tam yük / kısmi yük)\n→ Küresel en güncel nakliye veri tabanı\n\n**Neden 3 kaynak?** Her kaynak kendi alanında en yetkili ve güncel veriyi sunar.`,
-      en: `**Emission Factor Sources**\n\nThis system uses 3 international databases:\n\n**🇬🇧 DEFRA 2023** (UK Department for Environment)\n→ Fuel combustion: natural gas, diesel, LPG, fuel oil, coal\n→ Business travel: flights, rail, car rental\n→ Updated: Annually (last: July 2023)\n\n**⚡ IEA 2023** (International Energy Agency)\n→ Turkey electricity grid: **0.439 kgCO₂e/kWh**\n→ Country-specific grid factors\n→ Source: TEIAS + Ministry of Energy data\n\n**🚢 GLEC v3** (Smart Freight Centre)\n→ Freight transport: road, sea, air, rail\n→ Separate factor per mode (full load / partial load)\n→ Global's most current freight database\n\n**Why 3 sources?** Each source provides the most authoritative and current data in its domain.`
+      tr: `**Emisyon Faktörü Kaynakları**\n\nBu sistemde birkaç uluslararası ve ulusal veritabanı kullanılır:\n\n**🇬🇧 DEFRA 2024 / IPCC** \n→ Yakıt yanması: doğalgaz, dizel, LPG, fuel oil, kömür\n\n**🇹🇷 ATOM KABLO ISO 14064-1 2023**\n→ Türkiye elektrik şebekesi: **0,4199 kgCO₂e/kWh**\n→ Türkiye'ye özgü taşımacılık ve seyahat faktörleri\n\n**✈️ GHG Protocol / Turkish Airlines**\n→ Uluslararası uçuş ve genel taşımacılık faktörleri\n\n**Neden birden fazla kaynak?** Her kaynak kendi alanında en yetkili ve güncel veriyi sunar.`,
+      en: `**Emission Factor Sources**\n\nThis system uses several international and national databases:\n\n**🇬🇧 DEFRA 2024 / IPCC**\n→ Fuel combustion: natural gas, diesel, LPG, fuel oil, coal\n\n**🇹🇷 ATOM KABLO ISO 14064-1 2023**\n→ Turkey electricity grid: **0.4199 kgCO₂e/kWh**\n→ Turkey-specific transport and travel factors\n\n**✈️ GHG Protocol / Turkish Airlines**\n→ International flight and generic freight factors\n\n**Why multiple sources?** Each source provides the most authoritative and current data in its domain.`
     }
   },
 
   // ── Turkey electricity ────────────────────────────────────────────────────────
   {
     id: 'turkey_electricity',
-    match: /türkiye.*(?:elektrik|grid|şebeke)|(?:elektrik|grid|şebeke).*türkiye|teias|0[.,]439/i,
+    match: /türkiye.*(?:elektrik|grid|şebeke)|(?:elektrik|grid|şebeke).*türkiye|teias|0[.,]4199|0[.,]439/i,
     answer: {
-      tr: `**Türkiye Elektrik Faktörü (IEA 2023): 0,439 kgCO₂e/kWh**\n\n**Trend (TEIAS ağı):**\n→ 2019: 0,524  → 2020: 0,521  → 2021: 0,499\n→ 2022: 0,463  → **2023: 0,439** ← Güncel\n\n**Neden düşüyor?** Türkiye'nin yenilenebilir kapasitesi hızla artıyor:\n→ Güneş: 2019'da 5 GW → 2023'te 22 GW+\n→ Rüzgar: 7 GW → 11 GW+\n\n**Yenilenebilir enerji aldıysanız:**\n→ GO (Garanti Belgesi) / REC ile piyasa bazlı faktör ≈ 0 olabilir\n→ Bu durumu raporunuzda belgelemeniz gerekir\n\n**Örnek:** 18.000 kWh × 0,439 = **7.902 kgCO₂e** ≈ 7,9 tCO₂e`,
-      en: `**Turkey Electricity Factor (IEA 2023): 0.439 kgCO₂e/kWh**\n\n**Trend (TEIAS grid):**\n→ 2019: 0.524  → 2020: 0.521  → 2021: 0.499\n→ 2022: 0.463  → **2023: 0.439** ← Current\n\n**Why decreasing?** Turkey's renewable capacity is growing rapidly:\n→ Solar: 5 GW in 2019 → 22 GW+ in 2023\n→ Wind: 7 GW → 11 GW+\n\n**If you purchased renewables:**\n→ GO (Guarantee of Origin) / REC can bring market-based factor ≈ 0\n→ You must document this in your report\n\n**Example:** 18,000 kWh × 0.439 = **7,902 kgCO₂e** ≈ 7.9 tCO₂e`
+      tr: `**Türkiye Elektrik Faktörü (ATOM KABLO ISO 14064-1 2023): 0,4199 kgCO₂e/kWh**\n\nBu değer, ithal edilen şebeke enerjisinin CO₂, CH₄ ve N₂O bileşenlerini içerir.\n\n**Yenilenebilir enerji aldıysanız:**\n→ GO (Garanti Belgesi) / REC ile piyasa bazlı faktör ≈ 0 olabilir\n→ Bu durumu raporunuzda belgelemeniz gerekir\n\n**Örnek:** 18.000 kWh × 0,4199 = **7.558 kgCO₂e** ≈ 7,56 tCO₂e`,
+      en: `**Turkey Electricity Factor (ATOM KABLO ISO 14064-1 2023): 0.4199 kgCO₂e/kWh**\n\nThis value includes the CO₂, CH₄, and N₂O components of imported grid energy.\n\n**If you purchased renewables:**\n→ GO (Guarantee of Origin) / REC can bring market-based factor ≈ 0\n→ You must document this in your report\n\n**Example:** 18,000 kWh × 0.4199 = **7,558 kgCO₂e** ≈ 7.56 tCO₂e`
     }
   },
 
@@ -129,8 +99,8 @@ const KB = [
     id: 'natural_gas_factor',
     match: /doğal\s*gaz.*(?:faktör|fiyat|hesap)|(?:faktör|nasıl\s*hesap).*doğal\s*gaz|natural\s*gas.*factor|m³.*co2/i,
     answer: {
-      tr: `**Doğalgaz Emisyon Faktörü (DEFRA 2023)**\n\n| Birim | Faktör |\n|-------|--------|\n| **m³** | **2,02 kgCO₂e/m³** ← En yaygın |\n| kWh | 0,183 kgCO₂e/kWh |\n| GJ | 50,77 kgCO₂e/GJ |\n| mcf | 57,17 kgCO₂e/mcf |\n\n**Örnek hesaplamalar:**\n→ 5.000 m³ × 2,02 = **10.100 kgCO₂e = 10,1 tCO₂e**\n→ 15.000 m³ × 2,02 = **30.300 kgCO₂e = 30,3 tCO₂e**\n→ 50.000 m³ × 2,02 = **101.000 kgCO₂e = 101 tCO₂e**\n\n**Faturanızda ne bakmalısınız?**\n→ "Tüketim m³" satırı — doğrudan kullanabilirsiniz\n→ kWh/Sm³ yazıyorsa: 1 Sm³ ≈ 10,55 kWh olarak çevirin`,
-      en: `**Natural Gas Emission Factor (DEFRA 2023)**\n\n| Unit | Factor |\n|------|--------|\n| **m³** | **2.02 kgCO₂e/m³** ← Most common |\n| kWh | 0.183 kgCO₂e/kWh |\n| GJ | 50.77 kgCO₂e/GJ |\n| mcf | 57.17 kgCO₂e/mcf |\n\n**Example calculations:**\n→ 5,000 m³ × 2.02 = **10,100 kgCO₂e = 10.1 tCO₂e**\n→ 15,000 m³ × 2.02 = **30,300 kgCO₂e = 30.3 tCO₂e**\n→ 50,000 m³ × 2.02 = **101,000 kgCO₂e = 101 tCO₂e**\n\n**What to look for on your invoice:**\n→ "Consumption m³" line — use directly\n→ If it shows kWh/Sm³: 1 Sm³ ≈ 10.55 kWh conversion`
+      tr: `**Doğalgaz Emisyon Faktörü (DEFRA 2024)**\n\n| Birim | Faktör |\n|-------|--------|\n| **m³** | **2,02 kgCO₂e/m³** ← En yaygın |\n| kWh | 0,18316 kgCO₂e/kWh |\n| GJ | 56,211 kgCO₂e/GJ |\n| mcf | ~57,2 kgCO₂e/mcf (türetilmiş) |\n\n**Örnek hesaplamalar:**\n→ 5.000 m³ × 2,02 = **10.100 kgCO₂e = 10,1 tCO₂e**\n→ 15.000 m³ × 2,02 = **30.300 kgCO₂e = 30,3 tCO₂e**\n→ 50.000 m³ × 2,02 = **101.000 kgCO₂e = 101 tCO₂e**\n\n**Faturanızda ne bakmalısınız?**\n→ "Tüketim m³" satırı — doğrudan kullanabilirsiniz\n→ kWh/Sm³ yazıyorsa: 1 Sm³ ≈ 10,55 kWh olarak çevirin`,
+      en: `**Natural Gas Emission Factor (DEFRA 2024)**\n\n| Unit | Factor |\n|------|--------|\n| **m³** | **2.02 kgCO₂e/m³** ← Most common |\n| kWh | 0.18316 kgCO₂e/kWh |\n| GJ | 56.211 kgCO₂e/GJ |\n| mcf | ~57.2 kgCO₂e/mcf (derived) |\n\n**Example calculations:**\n→ 5,000 m³ × 2.02 = **10,100 kgCO₂e = 10.1 tCO₂e**\n→ 15,000 m³ × 2.02 = **30,300 kgCO₂e = 30.3 tCO₂e**\n→ 50,000 m³ × 2.02 = **101,000 kgCO₂e = 101 tCO₂e**\n\n**What to look for on your invoice:**\n→ "Consumption m³" line — use directly\n→ If it shows kWh/Sm³: 1 Sm³ ≈ 10.55 kWh conversion`
     }
   },
 
@@ -189,8 +159,8 @@ const KB = [
     id: 'freight_calc',
     match: /nakliye.*nasıl|taşıma.*hesap|how.*freight.*calc|tkm\s*nedir|ton.?km\s*nedir|glec/i,
     answer: {
-      tr: `**Yük Taşımacılığı Emisyon Hesabı (GLEC v3)**\n\n**Temel formül:** Ton-km × Emisyon Faktörü = kgCO₂e\n\n**Ton-km hesaplama:** Ağırlık (ton) × Mesafe (km) = tkm\n\n**GLEC v3 Faktörleri:**\n| Mod | Faktör (kgCO₂e/tkm) |\n|-----|---------------------|\n| 🚛 HGV >3,5t | **0,0614** |\n| 🚐 LGV ≤3,5t | **0,0961** |\n| 🚢 Deniz (bulk) | **0,00681** |\n| 🚂 Demiryolu | **0,0280** |\n| ✈️ Hava kargo | **0,7027** |\n\n**Örnek:** 45 ton yük × 1.200 km = 54.000 tkm × 0,0614 = **3.316 kgCO₂e**\n\n💡 Direkt yazan: "45 ton yük 1200 km karayoluyla taşındı" — hesabı yaparım!`,
-      en: `**Freight Transport Emission Calculation (GLEC v3)**\n\n**Basic formula:** Tonne-km × Emission Factor = kgCO₂e\n\n**Tonne-km calculation:** Weight (tonnes) × Distance (km) = tkm\n\n**GLEC v3 Factors:**\n| Mode | Factor (kgCO₂e/tkm) |\n|------|---------------------|\n| 🚛 HGV >3.5t | **0.0614** |\n| 🚐 LGV ≤3.5t | **0.0961** |\n| 🚢 Sea (bulk) | **0.00681** |\n| 🚂 Rail | **0.0280** |\n| ✈️ Air freight | **0.7027** |\n\n**Example:** 45 tonnes × 1,200 km = 54,000 tkm × 0.0614 = **3,316 kgCO₂e**\n\n💡 Just write: "45 tonnes shipped 1,200 km by road" — I'll calculate!`
+      tr: `**Yük Taşımacılığı Emisyon Hesabı (ATOM KABLO ISO 14064-1 2023)**\n\n**Temel formül:** Ton-km × Emisyon Faktörü = kgCO₂e\n\n**Ton-km hesaplama:** Ağırlık (ton) × Mesafe (km) = tkm\n\n**Faktörler (kgCO₂e/tkm):**\n| Mod | Faktör |\n|-----|--------|\n| 🚛 Karayolu (HGV/LGV) | **0,823** |\n| 🚢 Deniz (bulk) | **0,0161** |\n| 🚂 Demiryolu | **0,022** |\n| ✈️ Hava kargo | **0,602** |\n\n**Örnek:** 45 ton yük × 1.200 km = 54.000 tkm × 0,823 = **44.449 kgCO₂e ≈ 44,4 tCO₂e**\n\n💡 Direkt yazan: "45 ton yük 1200 km karayoluyla taşındı" — hesabı yaparım!`,
+      en: `**Freight Transport Emission Calculation (ATOM KABLO ISO 14064-1 2023)**\n\n**Basic formula:** Tonne-km × Emission Factor = kgCO₂e\n\n**Tonne-km calculation:** Weight (tonnes) × Distance (km) = tkm\n\n**Factors (kgCO₂e/tkm):**\n| Mode | Factor |\n|------|--------|\n| 🚛 Road (HGV/LGV) | **0.823** |\n| 🚢 Sea (bulk) | **0.0161** |\n| 🚂 Rail | **0.022** |\n| ✈️ Air freight | **0.602** |\n\n**Example:** 45 tonnes × 1,200 km = 54,000 tkm × 0.823 = **44,449 kgCO₂e ≈ 44.4 tCO₂e**\n\n💡 Just write: "45 tonnes shipped 1,200 km by road" — I'll calculate!`
     }
   },
 
@@ -361,8 +331,8 @@ export function buildStatusReport(fieldValues, lang) {
   }
 
   // Calculate totals — each scope is independent
-  const scope1Kg = has3A ? _calcScope1(fieldValues) : 0;
-  const scope2Kg = has4A ? _calcScope2(fieldValues) : 0;
+  const scope1Kg = has3A ? calcScope1Kg(fieldValues) : 0;
+  const scope2Kg = has4A ? calcScope2Kg(fieldValues) : 0;
   const scope3K4 = hasK4 ? (parseFloat(fieldValues['rf.k4.total_emission_kgco2e']) || 0) : 0;
   const scope3K5 = hasK5 ? (parseFloat(fieldValues['rf.k5.total_emission_kgco2e']) || 0) : 0;
   const grandTotalKg = scope1Kg + scope2Kg + scope3K4 + scope3K5;

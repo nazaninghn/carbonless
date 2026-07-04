@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Flame } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
+import { getEmissionFactor, EF_SOURCE } from '@/lib/carboniq/emission-factors';
 
 const FUEL_OPTIONS = [
   { value: 'natural_gas', label: { tr: 'Doğalgaz', en: 'Natural Gas' } },
@@ -23,16 +24,16 @@ const UNIT_OPTIONS = {
   other:       ['GJ', 'kWh', 'tonne'],
 };
 
-// Approximate DEFRA 2023 emission factors (kg CO₂e per unit)
-const EMISSION_FACTORS = {
-  natural_gas: { 'm³': 2.02,  kWh: 0.183, GJ: 50.77 },
-  fuel_oil:    { litre: 2.52, kg: 2.96,   GJ: 74.07 },
-  diesel:      { litre: 2.54, GJ: 68.08 },
-  lpg:         { litre: 1.51, kg: 2.94,   GJ: 59.65 },
-  coal:        { tonne: 2420, kg: 2.42,   GJ: 88.34 },
-  biomass:     { tonne: 390,  GJ: 10.23 },
-  other:       { GJ: 56, kWh: 0.2, tonne: 500 },
-};
+// 'other' has no real backend factor row (it's a free-text/custom fuel bucket),
+// so it keeps a rough local placeholder. Every other fuel reads the shared,
+// backend-aligned table via getEmissionFactor() below.
+const OTHER_EF = { GJ: 56, kWh: 0.2, tonne: 500 };
+
+function lookupEf(fuelType, unit) {
+  if (!fuelType || !unit) return 0;
+  if (fuelType === 'other') return OTHER_EF[unit] || 0;
+  return getEmissionFactor(fuelType, unit);
+}
 
 const INPUT_CLS =
   'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
@@ -94,7 +95,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
 
   // Calculate emission estimate
   const emissionKg = (() => {
-    const ef = EMISSION_FACTORS[fuelType]?.[unit];
+    const ef = lookupEf(fuelType, unit);
     const qty = parseFloat(String(consumption).replace(',', '.'));
     if (!ef || isNaN(qty)) return null;
     return qty * ef;
@@ -211,7 +212,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
       </div>
 
       {/* Emission factor + result */}
-      {fuelType && unit && EMISSION_FACTORS[fuelType]?.[unit] && (
+      {fuelType && unit && !!lookupEf(fuelType, unit) && (
         <div className="flex flex-col gap-2">
           <SectionDivider>{tr ? 'Emisyon Faktörü' : 'Emission Factor'}</SectionDivider>
           {/* EF box with left-border accent */}
@@ -219,10 +220,10 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
             <div className="w-[3px] shrink-0 bg-[#75863B]" />
             <div className="flex-1 bg-[#F8F7F2] px-3 py-2.5">
               <p className="text-[9.5px] text-[#302817]/40 mb-0.5">
-                {tr ? 'Kaynak: DEFRA 2023' : 'Source: DEFRA 2023'}
+                {tr ? `Kaynak: ${EF_SOURCE[fuelType] || 'DEFRA 2024'}` : `Source: ${EF_SOURCE[fuelType] || 'DEFRA 2024'}`}
               </p>
               <p className="text-[13px] font-bold text-[#302817]">
-                {EMISSION_FACTORS[fuelType][unit]} kgCO₂e/{unit}
+                {lookupEf(fuelType, unit)} kgCO₂e/{unit}
               </p>
               <p className="text-[10px] text-[#75863B] mt-0.5">
                 {tr ? 'Onaylı · Seviye 1' : 'Verified · Level 1'}
@@ -236,7 +237,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
       {emissionKg !== null && (
         <div className="rounded-xl bg-gradient-to-br from-[#95A847]/8 to-[#B4BE6A]/4 border border-[#B4BE6A]/20 px-4 py-3">
           <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#75863B] mb-1">
-            {tr ? 'Tahmini Emisyon (DEFRA 2023)' : 'Estimated Emission (DEFRA 2023)'}
+            {tr ? `Tahmini Emisyon (${EF_SOURCE[fuelType] || 'DEFRA 2024'})` : `Estimated Emission (${EF_SOURCE[fuelType] || 'DEFRA 2024'})`}
           </p>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-bold text-[#302817]">

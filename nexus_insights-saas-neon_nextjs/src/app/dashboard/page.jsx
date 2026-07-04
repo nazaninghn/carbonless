@@ -18,40 +18,7 @@ import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
 import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
-
-// ── Preview data bridge ────────────────────────────────────────────────────────
-// When the user has entered data via the chatbot (workspace preview mode) but has
-// no real backend report yet, we compute scope totals from localStorage so the
-// main dashboard reflects chatbot-entered data instead of showing blank.
-const _WS_EF = {
-  natural_gas: { 'm³':2.02, m3:2.02, kWh:0.183, GJ:50.77, MCF:57.17 },
-  diesel:      { litre:2.54, GJ:68.08 },
-  lpg:         { litre:1.51, kg:2.94, GJ:59.65 },
-  fuel_oil:    { litre:2.52, kg:2.96, GJ:74.07 },
-  coal:        { kg:2.42, tonne:2420, GJ:88.34 },
-};
-
-function _computeLocalSummary(v) {
-  const efS1 = _WS_EF[v['rf.3a.fuel_type']]?.[v['rf.3a.unit']];
-  const s1Kg = efS1 ? (parseFloat(v['rf.3a.consumption']) || 0) * efS1 : 0;
-  const kWh  = parseFloat(v['rf.4a.consumption_kwh']);
-  const ef2  = parseFloat(v['rf.4a.emission_factor']);
-  const s2Kg = !isNaN(kWh) && !isNaN(ef2) ? kWh * ef2 : 0;
-  const k4Kg = parseFloat(v['rf.k4.total_emission_kgco2e']) || 0;
-  const k5Kg = parseFloat(v['rf.k5.total_emission_kgco2e']) || 0;
-  const s3Kg = k4Kg + k5Kg;
-  const safe = x => (isNaN(x) ? 0 : x);
-  const totalKg = safe(s1Kg) + safe(s2Kg) + safe(s3Kg);
-  if (totalKg <= 0) return null;
-  return {
-    total_tonne:   totalKg / 1000,
-    scope1_tonne:  safe(s1Kg) / 1000,
-    scope2_tonne:  safe(s2Kg) / 1000,
-    scope3_tonne:  safe(s3Kg) / 1000,
-    monthly: Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total_kg: 0 })),
-    _isLocalPreview: true,
-  };
-}
+import { computeLocalSummaryFromFields } from '@/lib/carboniq/emission-factors';
 
 function PreviewBanner({ tr }) {
   return (
@@ -89,11 +56,20 @@ export default function DashboardPage() {
       const mode = localStorage.getItem('carbonless_startup_mode');
       if (mode === 'ai') {
         setActiveTab('ai_carbon');
+      } else {
+        const savedTab = localStorage.getItem('carbonless_active_tab');
+        if (savedTab) setActiveTab(savedTab);
       }
       if (mode) localStorage.removeItem('carbonless_startup_mode');
     } catch {}
     setStartupResolved(true);
   }, []);
+
+  // Remember the active tab so a page refresh stays where the user was
+  useEffect(() => {
+    if (!startupResolved) return;
+    try { localStorage.setItem('carbonless_active_tab', activeTab); } catch {}
+  }, [activeTab, startupResolved]);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
   // Data from hook
@@ -110,11 +86,17 @@ export default function DashboardPage() {
   const [localSummary, setLocalSummary] = useState(null);
   useEffect(() => {
     if (loading) return;
-    if (summary) { setLocalSummary(null); return; }
+    if (summary) {
+      // Real backend data has arrived — the local preview is no longer needed
+      // and would otherwise linger and show stale numbers on a future visit.
+      setLocalSummary(null);
+      try { localStorage.removeItem('ciq_preview_fields'); } catch {}
+      return;
+    }
     try {
       const raw = localStorage.getItem('ciq_preview_fields');
       if (!raw) return;
-      setLocalSummary(_computeLocalSummary(JSON.parse(raw)));
+      setLocalSummary(computeLocalSummaryFromFields(JSON.parse(raw)));
     } catch {}
   }, [loading, summary]);
   const effectiveSummary = summary || localSummary;
@@ -214,18 +196,26 @@ export default function DashboardPage() {
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
             <ErrorBoundary language={language}>
-              {isPreviewMode && <PreviewBanner tr={language === 'tr'} />}
-              <DashboardOverview
-                language={language}
-                selectedYear={selectedYear}
-                summary={effectiveSummary}
-                entries={entries}
-                targets={targets}
-                facilityList={facilityList}
-                questionnaireProfile={questionnaireProfile}
-                setActiveTab={setActiveTab}
-                setShowAddForm={setShowAddForm}
-              />
+              {loading ? (
+                <div className="flex min-h-[50vh] items-center justify-center">
+                  <div className="h-6 w-6 rounded-full border-2 border-[#53A67F] border-t-transparent animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {isPreviewMode && <PreviewBanner tr={language === 'tr'} />}
+                  <DashboardOverview
+                    language={language}
+                    selectedYear={selectedYear}
+                    summary={effectiveSummary}
+                    entries={entries}
+                    targets={targets}
+                    facilityList={facilityList}
+                    questionnaireProfile={questionnaireProfile}
+                    setActiveTab={setActiveTab}
+                    setShowAddForm={setShowAddForm}
+                  />
+                </>
+              )}
             </ErrorBoundary>
           )}
 

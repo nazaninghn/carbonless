@@ -21,42 +21,9 @@ import {
   CARBONIQ_STAGES,
   TOTAL_QUESTIONS,
 } from '@/lib/carboniq/questions';
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// EMISSION FACTOR DATABASE  —  DEFRA 2023 / IEA 2023 / GLEC v3
-// ═══════════════════════════════════════════════════════════════════════════════
-const EF = {
-  // ── Scope 1: Stationary combustion ──────────────────────────────────────────
-  natural_gas: { 'm³': 2.02, m3: 2.02, kwh: 0.183, gj: 50.77, mcf: 57.17 },
-  diesel:      { litre: 2.54, liter: 2.54, l: 2.54, kg: 2.68, ton: 2680, gj: 68.08 },
-  lpg:         { litre: 1.51, liter: 1.51, kg: 2.94, ton: 2940, gj: 59.65 },
-  fuel_oil:    { litre: 2.52, kg: 2.96, ton: 2960, gj: 74.07 },
-  coal:        { kg: 2.42, ton: 2420, tonne: 2420 },
-  // ── Scope 2: Electricity ────────────────────────────────────────────────────
-  electricity: { kwh: 0.439, mwh: 439 }, // Turkey TEIAS IEA 2023
-  // ── Scope 3 Cat 5: Business travel ──────────────────────────────────────────
-  flight_domestic:   { pkm: 0.264, km: 0.264 },
-  flight_short_haul: { pkm: 0.153, km: 0.153 },  // < 3,700 km
-  flight_long_haul:  { pkm: 0.195, km: 0.195 },  // ≥ 3,700 km
-  rail_travel:       { pkm: 0.035, km: 0.035 },
-  car_rental:        { km: 0.149, vkm: 0.149 },
-  // ── Scope 3 Cat 4: Upstream transport ───────────────────────────────────────
-  road_hgv:     { tkm: 0.0614 },
-  road_lgv:     { tkm: 0.0961 },
-  sea_bulk:     { tkm: 0.00681 },
-  rail_freight: { tkm: 0.0280 },
-  air_freight:  { tkm: 0.7027 },
-};
-
-const EF_SOURCE = {
-  natural_gas: 'DEFRA 2023', diesel: 'DEFRA 2023', lpg: 'DEFRA 2023',
-  fuel_oil: 'DEFRA 2023',  coal: 'DEFRA 2023',
-  electricity: 'IEA 2023 Turkey',
-  flight_domestic: 'DEFRA 2023', flight_short_haul: 'DEFRA 2023', flight_long_haul: 'DEFRA 2023',
-  rail_travel: 'DEFRA 2023', car_rental: 'DEFRA 2023',
-  road_hgv: 'GLEC v3', road_lgv: 'GLEC v3', sea_bulk: 'GLEC v3',
-  rail_freight: 'GLEC v3', air_freight: 'GLEC v3',
-};
+// Emission factors shared with ai-brain.js and the dashboard preview — see
+// emission-factors.js for why this used to be three separate, drifting tables.
+import { getEmissionFactor, EF_SOURCE } from '@/lib/carboniq/emission-factors';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SMART NUMBER EXTRACTION
@@ -89,7 +56,7 @@ function extractEmissions(text) {
     const UNIT_DISPLAY = { 'm³': 'm³', kwh: 'kWh', gj: 'GJ', mcf: 'MCF' };
     const displayUnit = UNIT_DISPLAY[unitRaw] || unitRaw.toUpperCase();
     const amount = nums.find(n => n > 10) || 15000;
-    const ef = EF.natural_gas[unitRaw] || EF.natural_gas['m³'];
+    const ef = getEmissionFactor('natural_gas', unitRaw);
     results.push({
       scope: 1, category: '3A', type: 'natural_gas',
       amount, unit: displayUnit, ef, emKg: Math.round(amount * ef),
@@ -106,7 +73,7 @@ function extractEmissions(text) {
   if (/\bdizel\b|\bdiesel\b|\bmazot\b/i.test(t)) {
     const unit = /\bton\b/i.test(t) ? 'ton' : /\bkg\b/i.test(t) ? 'kg' : 'litre';
     const amount = nums.find(n => n > 0) || 5000;
-    const ef = EF.diesel[unit] || EF.diesel.litre;
+    const ef = getEmissionFactor('diesel', unit);
     results.push({
       scope: 1, category: '3A', type: 'diesel',
       amount, unit, ef, emKg: Math.round(amount * ef),
@@ -123,7 +90,7 @@ function extractEmissions(text) {
   if (/\blpg\b|likit\s*petrol|sıvılaştırılmış/i.test(t)) {
     const unit = /\bton\b/i.test(t) ? 'ton' : /\bkg\b/i.test(t) ? 'kg' : 'litre';
     const amount = nums.find(n => n > 0) || 3000;
-    const ef = EF.lpg[unit] || EF.lpg.litre;
+    const ef = getEmissionFactor('lpg', unit);
     results.push({
       scope: 1, category: '3A', type: 'lpg',
       amount, unit, ef, emKg: Math.round(amount * ef),
@@ -140,7 +107,7 @@ function extractEmissions(text) {
   if (/fuel\s*oil|motorin\b|kalorifer\s*yakıtı|mazut\b/i.test(t)) {
     const unit = /\bton\b/i.test(t) ? 'ton' : /\bkg\b/i.test(t) ? 'kg' : 'litre';
     const amount = nums.find(n => n > 0) || 4000;
-    const ef = EF.fuel_oil[unit] || EF.fuel_oil.litre;
+    const ef = getEmissionFactor('fuel_oil', unit);
     results.push({
       scope: 1, category: '3A', type: 'fuel_oil',
       amount, unit, ef, emKg: Math.round(amount * ef),
@@ -159,16 +126,16 @@ function extractEmissions(text) {
     const isMwh = /\bmwh\b/i.test(t);
     const rawAmt = nums.find(n => n > 0);
     const kwhAmt = isMwh ? (rawAmt || 18) * 1000 : (rawAmt || 18000);
-    const ef = EF.electricity.kwh;
+    const ef = getEmissionFactor('electricity', 'kwh');
     results.push({
       scope: 2, category: '4A', type: 'electricity',
       amount: kwhAmt, unit: 'kWh', ef, emKg: Math.round(kwhAmt * ef),
       fields: [
         { field_id: 'rf.4a.consumption_kwh', label: 'Consumption', value: kwhAmt, unit: 'kWh', confidence: 0.94 },
-        { field_id: 'rf.4a.emission_factor', label: 'Emission Factor', value: 0.439, unit: 'kgCO₂e/kWh', confidence: 0.99 },
+        { field_id: 'rf.4a.emission_factor', label: 'Emission Factor', value: 0.4199, unit: 'kgCO₂e/kWh', confidence: 0.99 },
         { field_id: 'rf.4a.supplier',        label: 'Supplier', value: 'Şebeke (TEDAŞ)', confidence: 0.75 },
       ],
-      _localFields: { 'rf.4a.consumption_kwh': kwhAmt, 'rf.4a.emission_factor': 0.439, 'rf.4a.supplier': 'Şebeke (TEDAŞ)' },
+      _localFields: { 'rf.4a.consumption_kwh': kwhAmt, 'rf.4a.emission_factor': 0.4199, 'rf.4a.supplier': 'Şebeke (TEDAŞ)' },
       confidence: 0.92,
     });
   }
@@ -184,7 +151,7 @@ function extractEmissions(text) {
                  : fType === 'flight_long_haul'  ? 'Long-Haul Flight'
                  :                                 'Short-Haul Flight';
     const pkm  = nums.find(n => n > 10) || 12000;
-    const ef   = EF[fType].pkm;
+    const ef   = getEmissionFactor(fType, 'pkm');
     const emKg = Math.round(pkm * ef);
     results.push({
       scope: 3, category: 'K5', type: fType,
@@ -201,7 +168,7 @@ function extractEmissions(text) {
   if (/tren\s*(seyahat|yolculuk)|rail\s*travel|yüksek\s*hızlı\s*tren|hsr\b/i.test(t)
       && !/tren\s*yük|rail.?freight/i.test(t)) {
     const pkm  = nums.find(n => n > 10) || 4000;
-    const ef   = EF.rail_travel.pkm;
+    const ef   = getEmissionFactor('rail_travel', 'pkm');
     const emKg = Math.round(pkm * ef);
     results.push({
       scope: 3, category: 'K5', type: 'rail_travel',
@@ -222,7 +189,7 @@ function extractEmissions(text) {
     const isRail = /demiryolu|rail.?freight|tren\s*yük/i.test(t);
     const isLgv  = /hafif\s*araç|lgv\b|light\s*goods/i.test(t);
     const mode   = isSea ? 'sea_bulk' : isAir ? 'air_freight' : isRail ? 'rail_freight' : isLgv ? 'road_lgv' : 'road_hgv';
-    const ef = EF[mode].tkm;
+    const ef = getEmissionFactor(mode, 'tkm');
 
     if (/tkm\b|ton.?km|tonne.?km/i.test(t)) {
       const tkm  = nums.find(n => n > 0) || 54000;
@@ -333,7 +300,7 @@ const CONV_FLOWS = {
       },
     ],
     finish(data) {
-      const ef = EF[data.fuel_type]?.[data.unit] ?? EF[data.fuel_type]?.['litre'] ?? EF[data.fuel_type]?.['m³'] ?? 2.02;
+      const ef = getEmissionFactor(data.fuel_type, data.unit);
       const emKg = Math.round(data.amount * ef);
       return {
         category: '3A', confidence: 0.95, emKg,
@@ -362,16 +329,16 @@ const CONV_FLOWS = {
       },
     ],
     finish(data) {
-      const ef = EF.electricity.kwh;
+      const ef = getEmissionFactor('electricity', 'kwh');
       const emKg = Math.round(data.kwh * ef);
       return {
         category: '4A', confidence: 0.94, emKg,
         fields: [
           { field_id: 'rf.4a.consumption_kwh',      value: data.kwh, unit: 'kWh',        label: 'Consumption'    },
-          { field_id: 'rf.4a.emission_factor',       value: 0.439,    unit: 'kgCO₂e/kWh', label: 'Emission factor' },
+          { field_id: 'rf.4a.emission_factor',       value: 0.4199,    unit: 'kgCO₂e/kWh', label: 'Emission factor' },
           { field_id: 'rf.4a.total_emission_kgco2e', value: emKg,     unit: 'kgCO₂e',     label: 'Total emission'  },
         ],
-        _localFields: { 'rf.4a.consumption_kwh': data.kwh, 'rf.4a.emission_factor': 0.439 },
+        _localFields: { 'rf.4a.consumption_kwh': data.kwh, 'rf.4a.emission_factor': 0.4199 },
       };
     },
   },
@@ -406,7 +373,7 @@ const CONV_FLOWS = {
       },
     ],
     finish(data) {
-      const ef = EF[data.ttype]?.pkm ?? EF[data.ttype]?.km ?? 0.153;
+      const ef = getEmissionFactor(data.ttype, 'pkm');
       const emKg = Math.round(data.distance * ef);
       return {
         category: 'K5', confidence: 0.90, emKg,
@@ -455,7 +422,7 @@ const CONV_FLOWS = {
       },
     ],
     finish(data) {
-      const ef = EF[data.mode]?.tkm ?? 0.0614;
+      const ef = getEmissionFactor(data.mode, 'tkm');
       const tkm = data.tonnes * data.km;
       const emKg = Math.round(tkm * ef);
       return {
@@ -500,7 +467,7 @@ function buildReply(results, inputText, lang, fieldValues) {
 
   const r        = results[0];
   const catLabel = SCOPE_LABEL[r.category]?.[L] || r.category;
-  const source   = EF_SOURCE[r.type] || 'DEFRA 2023';
+  const source   = EF_SOURCE[r.type] || 'DEFRA 2024';
   const emText   = fmtKg(r.emKg);
 
   // Clean calculation line

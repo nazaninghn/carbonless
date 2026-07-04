@@ -3,14 +3,16 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
 
-// Location-based grid emission factors (kgCO2e/kWh) — IEA 2023
+// Location-based grid emission factors (kgCO2e/kWh) — matches the backend's
+// EmissionFactor rows (carbonless_backend/emissions/seed_data.py) so a
+// preview here lands on the same number the backend will compute.
 const GRID_FACTORS = [
   { value: '',        label: { tr: '— Seçin —',        en: '— Select —'        }, factor: null },
-  { value: 'turkey',  label: { tr: 'Türkiye (TEİAŞ)',   en: 'Turkey (TEİAŞ)'   }, factor: 0.439 },
-  { value: 'eu_avg',  label: { tr: 'AB Ortalaması',     en: 'EU Average'        }, factor: 0.276 },
-  { value: 'germany', label: { tr: 'Almanya',           en: 'Germany'           }, factor: 0.380 },
+  { value: 'turkey',  label: { tr: 'Türkiye (TEİAŞ)',   en: 'Turkey (TEİAŞ)'   }, factor: 0.4199 },
+  { value: 'eu_avg',  label: { tr: 'AB Ortalaması',     en: 'EU Average'        }, factor: 0.295 },
+  { value: 'germany', label: { tr: 'Almanya',           en: 'Germany'           }, factor: 0.364 },
   { value: 'uk',      label: { tr: 'İngiltere',         en: 'UK'                }, factor: 0.207 },
-  { value: 'usa',     label: { tr: 'ABD Ort.',          en: 'USA Avg.'          }, factor: 0.386 },
+  { value: 'usa',     label: { tr: 'ABD Ort.',          en: 'USA Avg.'          }, factor: 0.417 },
   { value: 'custom',  label: { tr: 'Özel (manuel gir)', en: 'Custom (enter manually)' }, factor: null },
 ];
 
@@ -261,7 +263,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
                 min="0"
                 step="0.001"
                 className={INPUT_CLS}
-                placeholder="0.439"
+                placeholder="0.4199"
                 value={emissionFactor}
                 onChange={e => { setEmissionFactor(e.target.value); setGridPreset('custom'); }}
               />
@@ -272,7 +274,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
               <input
                 type="text"
                 className={INPUT_CLS}
-                placeholder={tr ? 'Örn: IEA 2023' : 'e.g. IEA 2023'}
+                placeholder={tr ? 'Örn: ATOM KABLO ISO 14064-1' : 'e.g. ATOM KABLO ISO 14064-1'}
                 value={emissionFactorSource}
                 onChange={e => setEmissionFactorSource(e.target.value)}
               />
@@ -292,7 +294,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
                 {parseFloat(emissionFactor).toFixed(3)} kgCO₂e/kWh
               </p>
               <p className="text-[10px] text-[#75863B] mt-0.5">
-                {tr ? 'Lokasyon bazlı · IEA 2023' : 'Location-based · IEA 2023'}
+                {tr ? 'Lokasyon bazlı' : 'Location-based'}
               </p>
             </div>
           </div>

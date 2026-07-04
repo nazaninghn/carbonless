@@ -1724,22 +1724,22 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
   ];
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-4 sm:py-6">
-      <div className="w-full max-w-md flex flex-col items-center gap-3 sm:gap-5">
+    <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-2 sm:py-4 overflow-y-auto">
+      <div className="w-full max-w-md flex flex-col items-center gap-2 sm:gap-4">
 
         {/* Icon + title */}
-        <div className="flex flex-col items-center gap-2 sm:gap-3 text-center">
-          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl bg-[#75863B] flex items-center justify-center shadow-sm">
-            <ClipboardList className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
+        <div className="flex flex-col items-center gap-1.5 sm:gap-2 text-center">
+          <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-[#75863B] flex items-center justify-center shadow-sm">
+            <ClipboardList className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-white" />
           </div>
           <div>
-            <p className="text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest text-[#75863B]/60 mb-0.5 sm:mb-1.5">
+            <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-[#75863B]/60 mb-0.5">
               {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
             </p>
-            <h2 className="text-[18px] sm:text-[22px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
+            <h2 className="text-[16px] sm:text-[20px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
               {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
             </h2>
-            <p className="mt-1 sm:mt-2 text-[11px] sm:text-[13px] text-[#302817]/50 max-w-xs mx-auto leading-relaxed">
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[12px] text-[#302817]/50 max-w-xs mx-auto leading-snug">
               {tr
                 ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış akış. Her adımda AI asistanı yanınızda.`
                 : `${TOTAL_QUESTIONS}-question structured flow. AI guides you at every step.`}
@@ -1748,15 +1748,15 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         </div>
 
         {/* Steps */}
-        <div className="w-full flex flex-col gap-1.5 sm:gap-2">
+        <div className="w-full flex flex-col gap-1 sm:gap-1.5">
           {steps.map(({ img, title, desc }, idx) => (
-            <div key={idx} className="flex items-center gap-3 sm:gap-4 rounded-xl sm:rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] px-3 sm:px-4 py-2 sm:py-3">
-              <Image src={img} alt={title} width={32} height={32} className="h-6 w-6 sm:h-8 sm:w-8 shrink-0 object-contain" />
+            <div key={idx} className="flex items-center gap-3 rounded-xl border border-[#302817]/8 bg-[#FAFAF8] px-3 py-1.5 sm:py-2.5">
+              <Image src={img} alt={title} width={28} height={28} className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 object-contain" />
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] sm:text-[13px] font-semibold text-[#2C4010]">{title}</p>
-                <p className="text-[10px] sm:text-[11px] text-[#302817]/45 mt-0.5 leading-snug">{desc}</p>
+                <p className="text-[11px] sm:text-[13px] font-semibold text-[#2C4010]">{title}</p>
+                <p className="text-[9px] sm:text-[11px] text-[#302817]/45 leading-snug">{desc}</p>
               </div>
-              <span className="shrink-0 h-5 w-5 sm:h-6 sm:w-6 rounded-full bg-[#75863B]/12 flex items-center justify-center text-[9px] sm:text-[10px] font-bold text-[#75863B]">
+              <span className="shrink-0 h-5 w-5 rounded-full bg-[#75863B]/12 flex items-center justify-center text-[9px] font-bold text-[#75863B]">
                 {idx + 1}
               </span>
             </div>
@@ -1764,33 +1764,31 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         </div>
 
         {answeredCount > 0 && !error && (
-          <div className="w-full rounded-xl sm:rounded-2xl border border-[#B4BE6A]/40 bg-[#F3F7E9] px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-semibold text-[#5E7A2E] text-center">
+          <div className="w-full rounded-xl border border-[#B4BE6A]/40 bg-[#F3F7E9] px-3 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold text-[#5E7A2E] text-center">
             {tr
               ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
               : `${answeredCount} questions answered — continue where you left off.`}
           </div>
         )}
         {error && (
-          <div className="w-full max-w-sm rounded-xl sm:rounded-2xl border border-red-200 bg-red-50 px-4 sm:px-5 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-semibold text-red-600 text-center">
+          <div className="w-full max-w-sm rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold text-red-600 text-center">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-          <button
-            onClick={onStart}
-            disabled={loading}
-            className="flex items-center gap-2 sm:gap-2.5 rounded-full bg-[#75863B] px-6 sm:px-8 py-2.5 sm:py-3.5 text-[13px] sm:text-sm font-semibold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
-          >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {tr
-              ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
-              : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
-          </button>
-          <p className="text-[10px] sm:text-[11px] text-[#302817]/30">
-            {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
-          </p>
-        </div>
+        <button
+          onClick={onStart}
+          disabled={loading}
+          className="flex items-center gap-2 rounded-full bg-[#75863B] px-6 sm:px-8 py-2.5 sm:py-3 text-[12px] sm:text-sm font-semibold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {tr
+            ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
+            : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
+        </button>
+        <p className="text-[9px] sm:text-[10px] text-[#302817]/30">
+          {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
+        </p>
       </div>
     </div>
   );
@@ -3403,25 +3401,35 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
     <div className="fixed inset-0 z-[90] flex flex-col bg-gradient-to-br from-[#f8fdf6] via-white to-[#f0f9f0] animate-in fade-in duration-200">
 
       {/* Mode switcher banner — tells user they can switch */}
-      <div className="flex shrink-0 items-center justify-center gap-3 bg-[#f0f9f0] border-b border-[#4CAF50]/10 px-3 sm:px-4 py-1.5 sm:py-2">
-        <div className="flex items-center gap-2 rounded-full bg-white border border-[#e8e8e0] p-0.5 shadow-sm">
-          <button
-            className="flex items-center gap-1.5 rounded-full bg-[#4CAF50] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
-          >
-            <Sparkles className="h-3 w-3" />
-            {tr ? 'AI Modu' : 'AI Mode'}
-          </button>
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
-            className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#302817]/50 hover:text-[#302817] hover:bg-[#f5f5f0] transition"
-          >
-            <BarChart3 className="h-3 w-3" />
-            {tr ? 'Dashboard' : 'Dashboard'}
-          </button>
+      <div className="flex shrink-0 items-center justify-between bg-[#f0f9f0] border-b border-[#4CAF50]/10 px-3 sm:px-4 py-1.5 sm:py-2">
+        <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
+          <div className="flex items-center gap-2 rounded-full bg-white border border-[#e8e8e0] p-0.5 shadow-sm">
+            <button
+              className="flex items-center gap-1.5 rounded-full bg-[#4CAF50] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
+            >
+              <Sparkles className="h-3 w-3" />
+              {tr ? 'AI Modu' : 'AI Mode'}
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
+              className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#302817]/50 hover:text-[#302817] hover:bg-[#f5f5f0] transition"
+            >
+              <BarChart3 className="h-3 w-3" />
+              {tr ? 'Dashboard' : 'Dashboard'}
+            </button>
+          </div>
+          <span className="hidden sm:block text-[10px] text-[#302817]/35">
+            {tr ? '• Her ikisi aynı veritabanına kaydeder' : '• Both save to the same database'}
+          </span>
         </div>
-        <span className="hidden sm:block text-[10px] text-[#302817]/35">
-          {tr ? '• Her ikisi aynı veritabanına kaydeder' : '• Both save to the same database'}
-        </span>
+        {/* Close / Exit button */}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
+          className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#302817]/10 bg-white text-[#302817]/40 hover:text-[#302817] hover:bg-red-50 hover:border-red-200 transition"
+          title={tr ? 'Çıkış' : 'Exit'}
+        >
+          <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+        </button>
       </div>
 
       {/* Premium header - compact on mobile */}
@@ -3490,6 +3498,26 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
             </svg>
             <span className="hidden sm:inline">{tr ? 'Küçült' : 'Minimize'}</span>
+          </button>
+          {/* Logout button */}
+          <button
+            onClick={() => {
+              const confirmed = window.confirm(tr ? 'Çıkış yapmak istediğinize emin misiniz?' : 'Are you sure you want to log out?');
+              if (confirmed) {
+                document.cookie = 'carbonless_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                document.cookie = '_carbonless_refresh=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                document.cookie = 'carbonless_mode_chosen=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                localStorage.removeItem('_ca');
+                window.location.href = '/login';
+              }
+            }}
+            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#302817]/40 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition"
+            title={tr ? 'Çıkış Yap' : 'Log Out'}
+          >
+            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            <span className="hidden sm:inline">{tr ? 'Çıkış' : 'Logout'}</span>
           </button>
         </div>
       </div>
