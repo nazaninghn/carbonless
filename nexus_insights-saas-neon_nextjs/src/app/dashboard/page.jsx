@@ -303,6 +303,7 @@ export default function DashboardPage() {
             summary={effectiveSummary}
             entries={entries}
             targets={targets}
+            fetchData={fetchData}
           />
         </ErrorBoundary>
       )}

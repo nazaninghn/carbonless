@@ -2800,7 +2800,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Free Chat Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function FreeChatTab({ language, summary, entries, targets }) {
+function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // Local language toggle — EN / TR, initialized from app-level language prop
   const [activeLang, setActiveLang] = useState(language || 'tr');
   const tr = activeLang === 'tr';
@@ -2975,6 +2975,13 @@ function FreeChatTab({ language, summary, entries, targets }) {
         const aiMsg = await res.json();
         if (!isMountedRef.current) return;
         setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
+        // The chat can save real emission entries in the background (see the
+        // ```emission_entry block the backend parses out of the AI reply).
+        // Without this, the Dashboard tab keeps showing pre-chat totals until
+        // a full page reload, because its data was only fetched once on mount.
+        if (aiMsg.saved_entries?.length > 0) {
+          fetchData?.();
+        }
         if (aiMsg.session_title) {
           setSessions(prev => [...prev.map(s =>
             s.id === sessionId
@@ -2992,7 +2999,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
         inputRef.current?.focus();
       }
     }
-  }, [activeId, attachedFile]);
+  }, [activeId, attachedFile, fetchData]);
 
   const startNew = useCallback(async (initialPrompt = '') => {
     // Prevent concurrent "New chat" clicks from creating duplicate sessions.
@@ -3419,7 +3426,7 @@ function FreeChatTab({ language, summary, entries, targets }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main export: CarbonAIPage (dual-tab)
 // ─────────────────────────────────────────────────────────────────────────────
-export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets }) {
+export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets, fetchData }) {
   const tr = language === 'tr';
   const [activeTab, setActiveTab] = useState('chat');
   const [chatMounted, setChatMounted] = useState(true);
@@ -3598,7 +3605,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
         </div>
         {chatMounted && (
           <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`}>
-            <FreeChatTab language={language} summary={summary} entries={entries} targets={targets} />
+            <FreeChatTab language={language} summary={summary} entries={entries} targets={targets} fetchData={fetchData} />
           </div>
         )}
       </div>
