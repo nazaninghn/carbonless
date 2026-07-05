@@ -12,8 +12,126 @@ from rest_framework.views import APIView
 from rest_framework import status
 
 from .models import CarbonReport, ReportField, PendingSuggestion
+from emissions.models import EmissionEntry
+from emissions.factor_lookup import resolve_factor_and_amount
 
 logger = logging.getLogger(__name__)
+
+# rf.k5.* leg field -> real activity_type (all measured in km, see ACTIVITY_TO_SLUG)
+K5_LEG_TO_ACTIVITY = {
+    'rf.k5.air_domestic_pkm':   'flight_domestic',
+    'rf.k5.air_short_haul_pkm': 'flight_short_haul',
+    'rf.k5.air_long_haul_pkm':  'flight_long_haul',
+    'rf.k5.rail_pkm':           'train',
+    'rf.k5.car_km':             'car_rental',
+}
+
+
+def _map_shipment_mode_to_activity(mode):
+    """Maps a free-form K4 shipment 'mode' string (e.g. 'road_hgv_gt34t_full') to a
+    real freight activity_type. Substring-based so it tolerates the different mode
+    vocabularies used by the various upstream-transport UI panels."""
+    mode = (mode or '').lower()
+    if 'air' in mode:
+        return 'air_freight'
+    if 'rail' in mode:
+        return 'rail_freight'
+    if 'sea' in mode or 'inland' in mode or 'water' in mode:
+        return 'sea_freight'
+    if 'road' in mode or 'hgv' in mode or 'lgv' in mode or 'van' in mode or 'truck' in mode:
+        return 'truck_freight'
+    return None
+
+
+def _sync_workspace_to_emission_entries(report, user):
+    """
+    Bridges the Workspace's ReportField data (rf.3a.*, rf.4a.*, rf.k4.*, rf.k5.*)
+    into real EmissionEntry rows using the same shared, backend-validated factor
+    lookup as the AI chat and the guided questionnaire — so data entered via the
+    free-chat Workspace panels finally counts toward the dashboard/report totals
+    instead of being an orphaned preview that only exists in ReportField.
+
+    Every entry this function creates is tagged with a description containing
+    'Workspace <tag> (report <id>)' so re-running it (fields change, shipments
+    added/removed) updates/replaces the same rows instead of duplicating them.
+    """
+    values, _ = _fields_map(report)
+    company = report.company
+    year = report.reporting_year or timezone.now().year
+    month = 1  # Workspace fields represent annual/period totals, not a specific month
+    tag_prefix = f'(report {report.id})'
+
+    def _upsert(tag, activity_type, quantity, unit):
+        factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit)
+        if error:
+            logger.warning('Workspace sync skipped %s for report %s: %s', tag, report.id, error)
+            return
+        desc = f'Workspace {tag} {tag_prefix}'
+        existing = EmissionEntry.objects.filter(company=company, description=desc).first()
+        if existing:
+            existing.emission_factor = factor
+            existing.quantity = qty
+            existing.calculated_co2e_kg = co2e_kg
+            existing.factor_value_snapshot = factor.factor_kg_co2e
+            existing.factor_source_snapshot = factor.source
+            existing.year = year
+            existing.save()
+        else:
+            EmissionEntry.objects.create(
+                user=user, company=company, emission_factor=factor,
+                year=year, month=month, quantity=qty, calculated_co2e_kg=co2e_kg,
+                description=desc, factor_value_snapshot=factor.factor_kg_co2e,
+                factor_source_snapshot=factor.source, status='approved',
+            )
+
+    def _remove_stale(tag_startswith, keep_tags):
+        stale = EmissionEntry.objects.filter(
+            company=company, description__startswith=f'Workspace {tag_startswith}',
+            description__endswith=tag_prefix,
+        ).exclude(description__in=[f'Workspace {t} {tag_prefix}' for t in keep_tags])
+        stale.delete()
+
+    # 3A — Stationary combustion
+    if values.get('rf.3a.fuel_type') and values.get('rf.3a.consumption') and values.get('rf.3a.unit'):
+        _upsert('3A', values['rf.3a.fuel_type'], values['rf.3a.consumption'], values['rf.3a.unit'])
+
+    # 4A — Purchased electricity (net of on-site renewable generation)
+    if values.get('rf.4a.consumption_kwh'):
+        try:
+            net_kwh = float(values['rf.4a.consumption_kwh']) - float(values.get('rf.4a.renewable_on_site') or 0)
+        except (TypeError, ValueError):
+            net_kwh = None
+        if net_kwh and net_kwh > 0:
+            _upsert('4A', 'electricity', net_kwh, 'kwh')
+
+    # K4 — Upstream transport: one entry per shipment (each may use a different mode)
+    shipments = values.get('rf.k4.shipments')
+    if isinstance(shipments, list) and shipments:
+        keep_tags = []
+        for i, s in enumerate(shipments):
+            activity_type = _map_shipment_mode_to_activity(s.get('mode'))
+            try:
+                weight_t = float(s.get('weight_t') or 0)
+                distance_km = float(s.get('distance_km') or 0)
+            except (TypeError, ValueError):
+                continue
+            if not activity_type or weight_t <= 0 or distance_km <= 0:
+                continue
+            tag = f'K4-{i}'
+            _upsert(tag, activity_type, weight_t * distance_km, 'tonne-km')
+            keep_tags.append(tag)
+        _remove_stale('K4-', keep_tags)
+
+    # K5 — Business travel: one entry per travel-mode leg
+    for field_id, activity_type in K5_LEG_TO_ACTIVITY.items():
+        val = values.get(field_id)
+        if val:
+            try:
+                distance = float(val)
+            except (TypeError, ValueError):
+                continue
+            if distance > 0:
+                _upsert(f'K5-{activity_type}', activity_type, distance, 'km')
 
 # ── Groq client (reuse pattern from chat/views.py) ─────────────────────────
 _groq_cache = None
@@ -312,6 +430,11 @@ class ReportFieldBulkUpsertView(APIView):
             )
             updated.append(obj.field_id)
 
+        try:
+            _sync_workspace_to_emission_entries(report, request.user)
+        except Exception:
+            logger.error('Workspace->EmissionEntry sync failed for report %s', report.id, exc_info=True)
+
         return Response({'updated': updated, 'count': len(updated)})
 
 
@@ -455,6 +578,11 @@ class SuggestionConfirmView(APIView):
                 },
             )
             saved.append(fid)
+
+        try:
+            _sync_workspace_to_emission_entries(suggestion.report, request.user)
+        except Exception:
+            logger.error('Workspace->EmissionEntry sync failed for report %s', suggestion.report.id, exc_info=True)
 
         return Response({
             'status': suggestion.status,

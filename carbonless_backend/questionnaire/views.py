@@ -173,10 +173,16 @@ def _extract_emission_from_step(step_id, data, report):
 def _create_entry_from_questionnaire(user, company, emission_data):
     """
     Create an EmissionEntry from questionnaire-extracted data.
+
+    Factor resolution is shared with the AI chat (chat/views.py) via
+    emissions/factor_lookup.py, so a fuel_type+unit resolves to the exact same
+    registered factor no matter which entry point produced it — no more
+    fuzzy slug matching or unit-mismatched factors being silently applied.
+
     Returns (entry, error) tuple.
     """
-    from emissions.models import EmissionFactor, EmissionEntry
-    from decimal import Decimal
+    from emissions.models import EmissionEntry
+    from emissions.factor_lookup import resolve_factor_and_amount
 
     if not company:
         return None, 'No company'
@@ -184,51 +190,13 @@ def _create_entry_from_questionnaire(user, company, emission_data):
     fuel_type = emission_data['fuel_type']
     quantity = emission_data['quantity']
     unit = emission_data['unit']
-    scope = emission_data['scope']
     year = emission_data['year']
     month = emission_data['month']
     description = emission_data['description']
 
-    # Map fuel_type to slug for factor lookup
-    fuel_to_slug = {
-        'natural_gas': 'natural-gas',
-        'diesel': 'diesel',
-        'lpg': 'lpg',
-        'fuel_oil': 'fuel-oil',
-        'coal': 'coal',
-        'petrol': 'motor-gasoline',
-        'electricity': 'grid-electricity',
-    }
-    slug = fuel_to_slug.get(fuel_type, fuel_type.replace('_', '-'))
-
-    # Unit conversions (same as chat/views.py)
-    CONVERSIONS = {
-        ('natural_gas', 'm³'): 0.0388,  # m³ → GJ
-        ('natural_gas', 'm3'): 0.0388,
-    }
-    conversion = CONVERSIONS.get((fuel_type, unit), 1.0)
-    converted_qty = quantity * conversion
-
-    # Find emission factor
-    factor = EmissionFactor.objects.filter(
-        slug=slug, is_active=True, is_default=True
-    ).first()
-
-    if not factor:
-        factor = EmissionFactor.objects.filter(
-            slug__icontains=slug, is_active=True, is_default=True
-        ).first()
-
-    if not factor:
-        factor = EmissionFactor.objects.filter(
-            scope=scope, is_active=True, is_default=True
-        ).first()
-
-    if not factor:
-        return None, f'No factor for {fuel_type}'
-
-    qty_decimal = Decimal(str(converted_qty))
-    co2e_kg = qty_decimal * factor.factor_kg_co2e
+    factor, qty_decimal, co2e_kg, error = resolve_factor_and_amount(fuel_type, quantity, unit)
+    if error:
+        return None, error
 
     # Check for duplicate (same step, same report year, same fuel)
     existing = EmissionEntry.objects.filter(
@@ -237,8 +205,11 @@ def _create_entry_from_questionnaire(user, company, emission_data):
     ).first()
     if existing:
         # Update instead of duplicate
+        existing.emission_factor = factor
         existing.quantity = qty_decimal
         existing.calculated_co2e_kg = co2e_kg
+        existing.factor_value_snapshot = factor.factor_kg_co2e
+        existing.factor_source_snapshot = factor.source
         existing.save()
         return existing, None
 

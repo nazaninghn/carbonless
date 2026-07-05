@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
+from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
 
 logger = logging.getLogger(__name__)
 
@@ -32,38 +33,60 @@ You can help with:
 - Data quality, uncertainty, and verification
 - Turkish and English language support
 
-Always be professional, accurate, and helpful. When giving numerical data, cite your source
-(e.g. IPCC, DEFRA, IEA). Keep responses concise but complete. If asked in Turkish, respond in Turkish.
+Always be professional, accurate, and helpful. Keep responses concise but complete.
+If asked in Turkish, respond in Turkish.
 
 IMPORTANT: When the user asks for a report, summary, or analysis of their emissions, use the
 real data provided in the DATA CONTEXT section below. Do NOT ask them to provide data you already have.
 Generate a professional ISO 14064-1 style summary using their actual numbers.
 
+CRITICAL — EMISSION FACTORS ARE PROVIDED, NEVER GUESSED:
+An "EMISSION FACTOR REFERENCE" section below lists every activity type this system can currently
+calculate, with its exact registered emission factor. You MUST use ONLY those numbers and cite the
+source given there. NEVER use a DEFRA/IPCC/IEA/GLEC figure from your own training data — even if the
+user's activity looks like a textbook example, the registered value in the reference below is the one
+this company's report is legally based on, and it may differ from generic published averages.
+If the user's activity/unit does not appear in the reference, say so plainly and ask them to enter it
+manually in the dashboard — do NOT estimate a number yourself.
+
 CRITICAL — EMISSION DATA ENTRY:
-When the user provides emission/consumption data (e.g. "5000 m³ natural gas", "18000 kWh electricity",
-"500 liters diesel"), you MUST include a JSON block in your response to save it to the database.
+When the user provides activity data for something that IS listed in the EMISSION FACTOR REFERENCE
+(e.g. "5000 m³ natural gas", "18000 kWh electricity", "2000 km road travel", "45 tonnes shipped 1200 km
+by truck"), you MUST include a JSON block in your response so the system can save it. The system —
+not you — performs the final kg CO2e multiplication using the real registered factor, so you do not
+need to (and should not try to) compute the total yourself; just extract the structured activity data.
+
 Format your response like this:
 
 1. First give a normal text response acknowledging the data
-2. Then include this EXACT JSON block (the system will parse and save it automatically):
+2. Then include this EXACT JSON block (the system will parse it, look up the real factor, and save it):
 
 ```emission_entry
 {
   "fuel_type": "natural_gas",
   "quantity": 5000,
-  "unit": "m³",
+  "unit": "m3",
   "month": 1,
   "year": 2024,
   "description": "Natural gas consumption - head office"
 }
 ```
 
-Valid fuel_type values: natural_gas, diesel, lpg, fuel_oil, coal, electricity, petrol, kerosene, biodiesel
-Valid units: m³, kWh, litre, kg, tonne, GJ, MWh
+`fuel_type` must be one of the exact `activity_type` values listed in the EMISSION FACTOR REFERENCE
+below (e.g. natural_gas, diesel, lpg, fuel_oil, coal, electricity, petrol, road_travel, flight_domestic,
+flight_short_haul, flight_medium_haul, flight_long_haul, train, truck_freight, rail_freight, sea_freight,
+air_freight) and `unit` must be one of that activity's listed units, exactly as written there.
 If month is not specified, use the current month. If year is not specified, use the current year.
-Always ask for clarification if the fuel type or unit is ambiguous.
+Always ask for clarification if the activity type or unit is ambiguous.
 If the user says something like "monthly" or "per month", create ONE entry for the current month.
-DO NOT create emission entries for hypothetical questions or examples — only for actual consumption data."""
+DO NOT create emission entries for hypothetical questions or examples — only for actual consumption/activity data."""
+
+
+# The activity→slug map, unit resolution, and factor lookup are shared with the
+# guided questionnaire (questionnaire/views.py) via emissions/factor_lookup.py,
+# so the AI chat and the questionnaire always agree with each other and with
+# the dashboard on what a given activity is worth.
+_get_emission_factor_reference = get_emission_factor_reference
 
 
 def _get_user_emission_context(user):
@@ -201,119 +224,25 @@ def _parse_emission_entry(ai_text):
 def _create_emission_from_chat(user, entry_data):
     """
     Create an EmissionEntry from AI-parsed chat data.
+
+    The AI only ever supplies (activity_type, quantity, unit) — it never supplies or
+    influences the numeric emission factor; create_entry_from_activity (shared with
+    the guided questionnaire) resolves the real registered factor and rejects
+    anything that doesn't match a real factor for that exact unit.
+
     Returns (entry, error_message) tuple.
     """
-    from emissions.models import EmissionFactor, EmissionEntry as EEntry
     from companies.utils import get_current_company
 
     company = get_current_company(user)
-    if not company:
-        return None, 'No company found. Please create a company first.'
-
-    fuel_type = entry_data.get('fuel_type', '').lower().replace(' ', '_')
+    activity_type = entry_data.get('fuel_type', '')
     quantity = entry_data.get('quantity')
     unit = entry_data.get('unit', '')
     month = entry_data.get('month', datetime.now(timezone.utc).month)
     year = entry_data.get('year', datetime.now(timezone.utc).year)
-    description = entry_data.get('description', '')
+    description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
 
-    # Map fuel_type to slug patterns for EmissionFactor lookup
-    fuel_to_slug = {
-        'natural_gas': 'natural-gas',
-        'diesel': 'diesel',
-        'lpg': 'lpg',
-        'fuel_oil': 'fuel-oil',
-        'coal': 'coal',
-        'petrol': 'motor-gasoline',
-        'kerosene': 'kerosene',
-        'biodiesel': 'biodiesel',
-        'electricity': 'grid-electricity',
-    }
-
-    slug = fuel_to_slug.get(fuel_type, fuel_type.replace('_', '-'))
-
-    # Common unit conversions to match available factors
-    # Natural gas: 1 m³ ≈ 0.0388 GJ (gross calorific value)
-    # Electricity is in kWh, factors might be in kWh or GJ
-    UNIT_CONVERSIONS = {
-        ('natural_gas', 'm3'): ('gj', 0.0388),
-        ('natural_gas', 'm³'): ('gj', 0.0388),
-        ('diesel', 'litre'): ('liters', 1.0),
-        ('diesel', 'liter'): ('liters', 1.0),
-        ('diesel', 'l'): ('liters', 1.0),
-        ('lpg', 'litre'): ('liters', 1.0),
-        ('lpg', 'liter'): ('liters', 1.0),
-        ('lpg', 'l'): ('liters', 1.0),
-        ('fuel_oil', 'litre'): ('liters', 1.0),
-        ('fuel_oil', 'liter'): ('liters', 1.0),
-        ('electricity', 'kwh'): ('kWh', 1.0),
-        ('electricity', 'mwh'): ('kWh', 1000.0),
-    }
-
-    # Determine the scope
-    if fuel_type == 'electricity':
-        scope = 'scope2'
-    else:
-        scope = 'scope1'
-
-    # Normalize unit and apply conversion
-    unit_lower = unit.lower().replace(' ', '')
-    conversion_key = (fuel_type, unit_lower)
-    converted_quantity = float(quantity)
-    target_unit = unit
-
-    if conversion_key in UNIT_CONVERSIONS:
-        target_unit, factor_mult = UNIT_CONVERSIONS[conversion_key]
-        converted_quantity = float(quantity) * factor_mult
-
-    # Find matching emission factor by slug
-    factor = EmissionFactor.objects.filter(
-        slug=slug,
-        is_active=True,
-        is_default=True,
-    ).first()
-
-    # Try contains match
-    if not factor:
-        factor = EmissionFactor.objects.filter(
-            slug__icontains=slug,
-            is_active=True,
-            is_default=True,
-        ).first()
-
-    # Fallback: try broader name search
-    if not factor:
-        search_name = fuel_type.replace('_', ' ')
-        factor = EmissionFactor.objects.filter(
-            name__icontains=search_name,
-            is_active=True,
-            is_default=True,
-        ).first()
-
-    if not factor:
-        return None, f'No emission factor found for {fuel_type} ({unit}). Please add it manually in the dashboard.'
-
-    # Calculate CO2e
-    from decimal import Decimal
-    qty = Decimal(str(converted_quantity))
-    co2e_kg = qty * factor.factor_kg_co2e
-
-    # Create entry
-    entry = EEntry.objects.create(
-        user=user,
-        company=company,
-        emission_factor=factor,
-        year=year,
-        month=month,
-        quantity=qty,
-        calculated_co2e_kg=co2e_kg,
-        description=description or f'AI Chat: {fuel_type} {quantity} {unit}',
-        factor_value_snapshot=factor.factor_kg_co2e,
-        factor_source_snapshot=factor.source,
-        status='approved',
-    )
-
-    return entry, None
+    return create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description)
 
 
 def _call_groq(messages_history, user_context=''):
@@ -325,7 +254,7 @@ def _call_groq(messages_history, user_context=''):
         logger.error('GROQ_API_KEY not set or Groq client failed to initialise')
         return None, 'AI service not available.'
 
-    system_prompt = BASE_SYSTEM_PROMPT + user_context
+    system_prompt = BASE_SYSTEM_PROMPT + _get_emission_factor_reference() + user_context
 
     groq_messages = [{'role': 'system', 'content': system_prompt}]
     for msg in messages_history[-20:]:
