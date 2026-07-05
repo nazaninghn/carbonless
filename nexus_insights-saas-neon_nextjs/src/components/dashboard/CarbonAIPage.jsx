@@ -3233,54 +3233,70 @@ function FreeChatTab({ language, summary, entries, targets }) {
               {messages.map((msg) => (
                 <div key={msg.id}>
                   <Bubble role={msg.role} content={msg.content} />
-                  {/* Save to Dashboard button for pending entries */}
+                  {/* ── Save confirmation section ── */}
                   {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
-                    <div className="ml-9 mt-2 flex flex-wrap gap-2">
-                      <button
-                        onClick={async () => {
-                          try {
-                            for (const pe of msg.pending_entries) {
-                              const res = await api.confirmEmissionEntry(pe);
-                              if (!res.ok) {
-                                const d = await res.json().catch(() => ({}));
-                                setError(d.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
-                                return;
+                    <div className="ml-9 mt-3 rounded-2xl border border-[#53A67F]/20 bg-gradient-to-br from-[#f0f9f4] to-white p-4 shadow-sm">
+                      <p className="text-[13px] font-bold text-[#302817] mb-3">
+                        {tr ? '📋 Bu veriyi dashboard\'a kaydetmek ister misiniz?' : '📋 Would you like to save this data to the dashboard?'}
+                      </p>
+                      {/* Show summary of what will be saved */}
+                      <div className="mb-3 space-y-1.5">
+                        {msg.pending_entries.map((pe, idx) => (
+                          <div key={idx} className="flex items-center gap-2 rounded-lg bg-white/80 border border-[#302817]/5 px-3 py-2">
+                            <span className="text-[11px] font-bold text-[#53A67F]">●</span>
+                            <span className="text-[12px] text-[#302817]/70">
+                              {pe.fuel_type.replace(/_/g, ' ')} — {pe.quantity} {pe.unit} = <strong>{pe.co2e_kg?.toFixed(2)} kgCO₂e</strong>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex gap-2.5">
+                        <button
+                          onClick={async () => {
+                            try {
+                              for (const pe of msg.pending_entries) {
+                                const res = await api.confirmEmissionEntry(pe);
+                                if (!res.ok) {
+                                  const d = await res.json().catch(() => ({}));
+                                  setError(d.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
+                                  return;
+                                }
                               }
+                              setMessages(prev => prev.map(m =>
+                                m.id === msg.id ? { ...m, entriesSaved: true } : m
+                              ));
+                            } catch {
+                              setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
                             }
-                            // Mark as saved
+                          }}
+                          className="flex items-center gap-2 rounded-full bg-[#53A67F] px-5 py-2.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          {tr ? 'Evet, Kaydet' : 'Yes, Save'}
+                        </button>
+                        <button
+                          onClick={() => {
                             setMessages(prev => prev.map(m =>
-                              m.id === msg.id ? { ...m, entriesSaved: true } : m
+                              m.id === msg.id ? { ...m, entriesSaved: true, entriesRejected: true } : m
                             ));
-                          } catch {
-                            setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
-                          }
-                        }}
-                        className="flex items-center gap-2 rounded-xl bg-[#53A67F] px-4 py-2 text-[12px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        {tr ? 'Dashboard\'a Kaydet' : 'Save to Dashboard'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setMessages(prev => prev.map(m =>
-                            m.id === msg.id ? { ...m, entriesSaved: true, entriesRejected: true } : m
-                          ));
-                        }}
-                        className="flex items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-4 py-2 text-[12px] font-semibold text-[#302817]/50 hover:border-red-200 hover:text-red-500 transition"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        {tr ? 'Kaydetme' : 'Discard'}
-                      </button>
+                          }}
+                          className="flex items-center gap-2 rounded-full border border-[#302817]/15 bg-white px-5 py-2.5 text-[12px] font-semibold text-[#302817]/50 hover:border-red-300 hover:text-red-500 hover:bg-red-50/50 transition"
+                        >
+                          <X className="h-4 w-4" />
+                          {tr ? 'Hayır' : 'No'}
+                        </button>
+                      </div>
                     </div>
                   )}
                   {msg.entriesSaved && !msg.entriesRejected && (
-                    <div className="ml-9 mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#53A67F]">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    <div className="ml-9 mt-2 flex items-center gap-2 text-[12px] font-semibold text-[#53A67F]">
+                      <CheckCircle2 className="h-4 w-4" />
                       {tr ? 'Dashboard\'a kaydedildi ✓' : 'Saved to Dashboard ✓'}
                     </div>
                   )}
                   {msg.entriesRejected && (
                     <div className="ml-9 mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#302817]/30">
+                      <X className="h-3.5 w-3.5" />
                       {tr ? 'Kaydedilmedi' : 'Not saved'}
                     </div>
                   )}
