@@ -56,9 +56,11 @@ export default function SelectModePage() {
     if (mode === 'ai') {
       // Signal dashboard to open AI directly
       localStorage.setItem('carbonless_startup_mode', 'ai');
+      localStorage.setItem('carbonless_active_tab', 'ai_carbon');
       window.location.href = '/dashboard';
     } else {
       localStorage.setItem('carbonless_startup_mode', 'dashboard');
+      localStorage.setItem('carbonless_active_tab', 'dashboard');
       window.location.href = '/dashboard';
     }
   }
