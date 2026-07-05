@@ -16,7 +16,11 @@ guessing, and no `slug__icontains` fuzzy fallback that could match the wrong row
 from decimal import Decimal, InvalidOperation
 
 from .models import EmissionFactor, EmissionEntry
-from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
+try:
+    from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
+except ImportError:
+    SCOPE3_CATEGORIES = {}
+    SCOPE3_GHG_NUMBER = {}
 
 # (activity_type, normalized_unit) -> EmissionFactor.slug
 ACTIVITY_TO_SLUG = {

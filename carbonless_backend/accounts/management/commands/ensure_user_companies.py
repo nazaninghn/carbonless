@@ -31,37 +31,43 @@ class Command(BaseCommand):
             if not company:
                 # Create a default company for this user
                 company_name = f"{user.username}'s Company"
-                company = Company.objects.create(
-                    legal_entity_name=company_name,
-                    tax_number='0000000000',
-                    country_of_headquarters='Turkey',
-                    countries_of_operation='Turkey',
-                    nace_code='62.01',
-                    main_activity_description='Auto-created on deploy',
-                    number_of_employees='1-10',
-                    annual_turnover_range='<1M',
-                    number_of_facilities=1,
-                    has_overseas_operations=False,
-                    number_of_subsidiaries=0,
-                    has_iso_14001=False,
-                    has_iso_50001=False,
-                    has_iso_14064_work=False,
-                    target_iso_14064_verification=False,
-                    has_3rd_party_audit_plan=False,
-                    is_for_financing=False,
-                    is_due_to_export_pressure=False,
-                    is_for_group_reporting=False,
-                )
-                CompanyMembership.objects.create(
-                    user=user,
-                    company=company,
-                    role='admin',
-                    is_active=True,
-                )
-                users_fixed += 1
-                self.stdout.write(
-                    self.style.SUCCESS(f'  Created company for user "{user.username}"')
-                )
+                try:
+                    company = Company.objects.create(
+                        legal_entity_name=company_name,
+                        tax_number='0000000000',
+                        country_of_headquarters='Turkey',
+                        countries_of_operation='Turkey',
+                        nace_code='62.01',
+                        main_activity_description='Auto-created on deploy',
+                        number_of_employees='1-10',
+                        annual_turnover_range='<1M',
+                        number_of_facilities=1,
+                        has_overseas_operations=False,
+                        number_of_subsidiaries=0,
+                        has_iso_14001=False,
+                        has_iso_50001=False,
+                        has_iso_14064_work=False,
+                        target_iso_14064_verification=False,
+                        has_3rd_party_audit_plan=False,
+                        is_for_financing=False,
+                        is_due_to_export_pressure=False,
+                        is_for_group_reporting=False,
+                    )
+                    CompanyMembership.objects.create(
+                        user=user,
+                        company=company,
+                        role='admin',
+                        is_active=True,
+                    )
+                    users_fixed += 1
+                    self.stdout.write(
+                        self.style.SUCCESS(f'  Created company for user "{user.username}"')
+                    )
+                except Exception as e:
+                    self.stdout.write(
+                        self.style.WARNING(f'  Could not create company for "{user.username}": {e}')
+                    )
+                    continue
 
             # Fix any orphan entries (company=None) for this user
             orphans = EmissionEntry.objects.filter(user=user, company__isnull=True)

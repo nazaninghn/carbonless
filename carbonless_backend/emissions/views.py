@@ -12,7 +12,11 @@ from .serializers import (
     ReductionTargetSerializer, CustomEmissionRequestSerializer
 )
 from .calculator import calculate_emissions, get_available_countries
-from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
+try:
+    from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
+except ImportError:
+    SCOPE3_CATEGORIES = {}
+    SCOPE3_GHG_NUMBER = {}
 from companies.utils import get_current_company
 
 
