@@ -64,8 +64,9 @@ formula: quantity × factor_from_reference = total kgCO2e. Round to 2 decimal pl
 
 Format your response like this:
 
-1. First give a normal text response acknowledging the data
-2. Then include this EXACT JSON block (the system will parse it, look up the real factor, and save it):
+1. A SHORT confirmation (1-2 sentences max) that you understood the data
+2. Show the calculation in ONE line: quantity × factor = result kgCO₂e
+3. Then include this EXACT JSON block (the system will parse it and save it):
 
 ```emission_entry
 {
@@ -74,14 +75,19 @@ Format your response like this:
   "unit": "m3",
   "month": 1,
   "year": 2024,
-  "description": "Natural gas consumption - head office"
+  "description": "Natural gas consumption"
 }
 ```
 
+IMPORTANT FORMATTING RULES:
+- Keep your text response SHORT and to the point. No lengthy explanations.
+- Do NOT show the JSON block to the user or explain it — the system handles it invisibly.
+- Do NOT repeat the emission factor reference or list available activities unless asked.
+- Just confirm, show the one-line calculation, and include the hidden JSON block.
+- The JSON block MUST use ```emission_entry as the fence language (not ```json).
+
 `fuel_type` must be one of the exact `activity_type` values listed in the EMISSION FACTOR REFERENCE
-below (e.g. natural_gas, diesel, lpg, fuel_oil, coal, electricity, petrol, road_travel, flight_domestic,
-flight_short_haul, flight_medium_haul, flight_long_haul, train, truck_freight, rail_freight, sea_freight,
-air_freight) and `unit` must be one of that activity's listed units, exactly as written there.
+below and `unit` must be one of that activity's listed units, exactly as written there.
 If month is not specified, use the current month. If year is not specified, use the current year.
 Always ask for clarification if the activity type or unit is ambiguous.
 If the user says something like "monthly" or "per month", create ONE entry for the current month.
@@ -275,14 +281,37 @@ def _get_groq_client():
 def _parse_emission_entry(ai_text):
     """
     Parse ```emission_entry JSON blocks from AI response.
+    Also handles ```json blocks that contain emission entry data.
     Returns list of parsed emission data dicts, or empty list if none found.
     """
     import json
     import re
     entries = []
-    # Find all ```emission_entry ... ``` blocks
+    # Find ```emission_entry ... ``` blocks (primary format)
     pattern = r'```emission_entry\s*\n(.*?)\n```'
     matches = re.findall(pattern, ai_text, re.DOTALL)
+    # Also find ```json blocks that look like emission entries (fallback)
+    if not matches:
+        json_pattern = r'```json\s*\n(.*?)\n```'
+        json_matches = re.findall(json_pattern, ai_text, re.DOTALL)
+        for match in json_matches:
+            try:
+                data = json.loads(match.strip())
+                if data.get('fuel_type') and data.get('quantity'):
+                    matches.append(match)
+            except (json.JSONDecodeError, ValueError):
+                continue
+    # Also try bare ``` blocks without language tag
+    if not matches:
+        bare_pattern = r'```\s*\n(.*?)\n```'
+        bare_matches = re.findall(bare_pattern, ai_text, re.DOTALL)
+        for match in bare_matches:
+            try:
+                data = json.loads(match.strip())
+                if data.get('fuel_type') and data.get('quantity'):
+                    matches.append(match)
+            except (json.JSONDecodeError, ValueError):
+                continue
     for match in matches:
         try:
             data = json.loads(match.strip())
@@ -558,20 +587,23 @@ def send_message(request, session_id):
 
     # Clean the AI response — remove the ```emission_entry blocks before saving
     import re
-    clean_text = re.sub(r'```emission_entry\s*\n.*?\n```', '', ai_text, flags=re.DOTALL).strip()
+    # Remove all code blocks that contain emission entry JSON (any fence format)
+    clean_text = re.sub(r'```(?:emission_entry|json)?\s*\n\{[^`]*?"fuel_type"[^`]*?\}\s*\n```', '', ai_text, flags=re.DOTALL).strip()
+    # Also remove bare ``` blocks with fuel_type JSON
+    clean_text = re.sub(r'```\s*\n\{[^`]*?"fuel_type"[^`]*?\}\s*\n```', '', clean_text, flags=re.DOTALL).strip()
 
-    # If pending entries exist, append calculation result (not saved yet)
+    # If pending entries exist, append a clean one-line summary (not the raw JSON)
     if pending_entries:
         confirmations = []
         for pe in pending_entries:
             scope_label = pe['scope'].replace('scope', 'Scope ') if pe['scope'] else ''
             confirmations.append(
-                f"📊 **Calculated** ({scope_label}):\n"
-                f"   {pe['fuel_type'].replace('_',' ').title()} — "
-                f"{pe['quantity']:g} {pe['unit']} × {pe['factor_used']:.6f} kgCO₂e/{pe['factor_unit']} = "
+                f"✅ **{scope_label}**: "
+                f"{pe['fuel_type'].replace('_',' ').title()} — "
+                f"{pe['quantity']:g} {pe['unit']} × {pe['factor_used']:.4f} = "
                 f"**{pe['co2e_kg']:.2f} kgCO₂e** ({pe['co2e_tonne']:.4f} tCO₂e)"
             )
-        clean_text += '\n\n---\n' + '\n'.join(confirmations)
+        clean_text += '\n\n' + '\n'.join(confirmations)
 
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
