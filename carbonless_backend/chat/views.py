@@ -7,7 +7,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
-from emissions.scope3_categories import SCOPE3_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +107,10 @@ def _build_scope3_category_prompt():
     Includes all 15 GHG Protocol categories with EN/TR names, valid sub-types,
     expected units, and instructions for composing activity_type keys.
     """
+    try:
+        from emissions.scope3_categories import SCOPE3_CATEGORIES
+    except ImportError:
+        return ''  # Gracefully degrade if scope3_categories not yet deployed
     lines = [
         '',
         '',
