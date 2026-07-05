@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from django.db.models import Count
 from rest_framework.decorators import api_view, permission_classes
@@ -7,6 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
+
+try:
+    from groq import RateLimitError
+except Exception:
+    RateLimitError = None
 
 logger = logging.getLogger(__name__)
 
@@ -350,37 +356,37 @@ def _create_emission_from_chat(user, entry_data):
 
 
 def _call_groq(messages_history, user_context=''):
-    """Call Groq API with conversation history and optional user data context."""
+    """Call Groq API. Returns (ai_text, error, status_code)."""
     client = _get_groq_client()
     if not client:
-        # Fix #97: never expose internal config details (missing API key) to the
-        # client — log server-side only and return a generic message.
         logger.error('GROQ_API_KEY not set or Groq client failed to initialise')
-        return None, 'AI service not available.'
+        return None, 'AI service not available.', 503
+
+    model = os.environ.get('GROQ_MODEL', 'llama-3.1-8b-instant')
+    max_tokens = int(os.environ.get('GROQ_MAX_TOKENS', '700'))
+    history_limit = int(os.environ.get('GROQ_HISTORY_MESSAGES', '6'))
 
     system_prompt = BASE_SYSTEM_PROMPT + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
 
     groq_messages = [{'role': 'system', 'content': system_prompt}]
-    for msg in messages_history[-20:]:
-        groq_messages.append({'role': msg['role'], 'content': msg['content']})
+    for msg in messages_history[-history_limit:]:
+        groq_messages.append({'role': msg['role'], 'content': msg['content'][:1200]})
 
     try:
-        # Fix #73: 30-second timeout prevents the Django worker thread from blocking
-        # indefinitely when Groq is slow or unreachable.
         response = client.chat.completions.create(
-            model='llama-3.3-70b-versatile',
+            model=model,
             messages=groq_messages,
-            temperature=0.7,
-            max_tokens=1500,
+            temperature=0.1,
+            max_tokens=max_tokens,
             timeout=30,
         )
-        return response.choices[0].message.content, None
+        return response.choices[0].message.content, None, 200
     except Exception as e:
-        # Fix #96: log the raw exception server-side for debugging, but return a
-        # generic string to the caller so internal details (SDK error messages,
-        # rate-limit headers, potential stack info) are never sent to the browser.
+        if RateLimitError and isinstance(e, RateLimitError):
+            logger.warning('Groq rate limit reached: %s', e)
+            return None, 'AI usage limit reached. Please try again later.', 429
         logger.error('Groq API error: %s', e, exc_info=True)
-        return None, 'AI service temporarily unavailable. Please try again.'
+        return None, 'AI service temporarily unavailable. Please try again.', 502
 
 
 def _session_to_dict(session, include_messages=False):
@@ -411,6 +417,131 @@ def _session_to_dict(session, include_messages=False):
             for m in msgs
         ]
     return data
+
+
+# ── Local emission calculator (no Groq needed) ────────────────────────────────
+
+LOCAL_ACTIVITY_ALIASES = {
+    'electricity': ['electricity', 'elektrik', 'grid electricity', 'برق'],
+    'natural_gas': ['natural gas', 'doğalgaz', 'dogalgaz', 'gas', 'گاز'],
+    'diesel': ['diesel', 'mazot', 'دیزل', 'گازوییل'],
+    'petrol': ['petrol', 'gasoline', 'benzin', 'بنزین'],
+    'lpg': ['lpg'],
+    'coal': ['coal', 'kömür', 'komur', 'زغال'],
+    'road_travel': ['car', 'road', 'drive', 'araba', 'ماشین', 'خودرو'],
+    'water_water_supply': ['water supply', 'su', 'آب'],
+}
+
+
+def _normalise_unit(unit):
+    unit = (unit or '').strip().lower()
+    return {
+        'm³': 'm3', 'm^3': 'm3',
+        'kw/h': 'kwh', 'kw h': 'kwh',
+        'liter': 'liters', 'litre': 'liters', 'litres': 'liters', 'l': 'liters', 'lt': 'liters',
+        'ton': 'tonne', 'tons': 'tonne', 'tonnes': 'tonne',
+        'tkm': 'tonne-km',
+    }.get(unit, unit)
+
+
+def _detect_activity_type(text):
+    t = text.lower()
+    for activity_type, aliases in LOCAL_ACTIVITY_ALIASES.items():
+        if any(alias in t for alias in aliases):
+            return activity_type
+    if 'kwh' in t or 'kw/h' in t:
+        return 'electricity'
+    if ('m3' in t or 'm³' in t or 'm^3' in t) and 'gas' in t:
+        return 'natural_gas'
+    return None
+
+
+def _try_local_emission_parse(text):
+    """Try to parse a simple emission data entry from user text without Groq."""
+    if not text:
+        return None
+
+    lower_text = text.lower()
+
+    # Skip questions / analysis requests
+    question_words = [
+        'how', 'why', 'what', 'explain', 'summarize', 'report', 'reduce', 'strategy',
+        'iso', 'ghg', 'nasıl', 'neden', 'nedir', 'özetle', 'rapor',
+        'چطور', 'چگونه', 'چرا', 'چیست', 'گزارش', 'توضیح',
+    ]
+    if '?' in text or any(q in lower_text for q in question_words):
+        return None
+
+    pattern = (
+        r'(?P<quantity>\d+(?:[.,]\d+)?)\s*'
+        r'(?P<unit>kwh|kw/h|m3|m³|m\^3|liters?|litres?|l|lt|kg|km|tonne-km|tkm|gj)\b'
+    )
+    match = re.search(pattern, text, re.IGNORECASE)
+    if not match:
+        return None
+
+    activity_type = _detect_activity_type(text)
+    if not activity_type:
+        return None
+
+    quantity = match.group('quantity').replace(',', '.')
+    unit = _normalise_unit(match.group('unit'))
+
+    return {
+        'fuel_type': activity_type,
+        'quantity': float(quantity),
+        'unit': unit,
+        'month': datetime.now(timezone.utc).month,
+        'year': datetime.now(timezone.utc).year,
+        'description': f'AI Chat: {activity_type} {quantity} {unit}',
+    }
+
+
+def _build_pending_entries_from_data(emission_blocks):
+    """Resolve emission data dicts to pending entries using factor_lookup."""
+    from emissions.factor_lookup import resolve_factor_and_amount
+    pending_entries = []
+    for entry_data in emission_blocks:
+        activity_type = entry_data.get('fuel_type', '')
+        quantity = entry_data.get('quantity')
+        unit = entry_data.get('unit', '')
+        month = entry_data.get('month', datetime.now(timezone.utc).month)
+        year = entry_data.get('year', datetime.now(timezone.utc).year)
+        description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
+
+        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit)
+        if factor and co2e_kg is not None:
+            pending_entries.append({
+                'fuel_type': activity_type,
+                'quantity': float(qty),
+                'unit': unit,
+                'month': month,
+                'year': year,
+                'description': description,
+                'co2e_kg': float(co2e_kg),
+                'co2e_tonne': float(co2e_kg) / 1000,
+                'factor_used': float(factor.factor_kg_co2e),
+                'factor_unit': factor.unit,
+                'factor_id': factor.pk,
+                'scope': factor.scope,
+            })
+        elif err:
+            logger.warning('Local emission resolve failed: %s', err)
+    return pending_entries
+
+
+def _build_pending_entries_text(pending_entries):
+    """Build clean display text for pending entries."""
+    confirmations = []
+    for pe in pending_entries:
+        scope_label = pe['scope'].replace('scope', 'Scope ') if pe['scope'] else ''
+        confirmations.append(
+            f"✅ **{scope_label}**: "
+            f"{pe['fuel_type'].replace('_', ' ').title()} — "
+            f"{pe['quantity']:g} {pe['unit']} × {pe['factor_used']:.4f} = "
+            f"**{pe['co2e_kg']:.2f} kgCO₂e** ({pe['co2e_tonne']:.4f} tCO₂e)"
+        )
+    return '\n'.join(confirmations)
 
 
 # ── List sessions ─────────────────────────────────────────────────────────────
@@ -510,13 +641,6 @@ def send_message(request, session_id):
     # except Exception:
     #     pass  # If subscriptions app fails, don't block the user
 
-    # Fix #102: verify the AI client is available BEFORE writing the user message
-    # to the DB.  Without this check, a missing GROQ_API_KEY would save the user
-    # message and then immediately return 502, leaving an orphaned message in the
-    # session that reappears on every reload with no corresponding AI response.
-    if _get_groq_client() is None:
-        return Response({'error': 'AI service not available.'}, status=503)
-
     # Save user message
     user_msg = ChatMessage.objects.create(
         session=session, role='user', content=content,
@@ -544,52 +668,44 @@ def send_message(request, session_id):
         session.title = ' '.join(content[:80].split()).strip() or 'New Chat'
         session.save(update_fields=['title'])
 
+    # ─── 1) LOCAL CALCULATOR: handle simple data entries without Groq ─────
+    if not attachment:
+        local_entry = _try_local_emission_parse(content)
+        if local_entry:
+            pending_entries = _build_pending_entries_from_data([local_entry])
+            if pending_entries:
+                clean_text = _build_pending_entries_text(pending_entries)
+                clean_text += '\n\nWould you like to save this to your dashboard?'
+                ai_msg = ChatMessage.objects.create(
+                    session=session, role='assistant', content=clean_text,
+                )
+                session.save(update_fields=['updated_at'])
+                return Response({
+                    'id': ai_msg.id,
+                    'role': 'assistant',
+                    'content': clean_text,
+                    'created_at': ai_msg.created_at,
+                    'session_title': session.title,
+                    'pending_entries': pending_entries,
+                    'source': 'local_calculator',
+                })
+
+    # ─── 2) GROQ: for questions, analysis, complex inputs ─────────────────
+    if _get_groq_client() is None:
+        return Response({'error': 'AI service not available.'}, status=503)
+
     # Fetch user's real emission data to give AI full context
     user_context = _get_user_emission_context(request.user)
 
     # Call Groq
-    ai_text, error = _call_groq(history, user_context)
+    ai_text, error, status_code = _call_groq(history, user_context)
     if error:
-        # Fix #107: _call_groq already returns a user-friendly message; wrapping
-        # it in "AI error: ..." created an awkward double-prefix in the UI.
-        return Response({'error': error}, status=502)
+        return Response({'error': error}, status=status_code)
 
     # Parse emission entries from AI response — DO NOT save yet, return as pending
-    pending_entries = []
-    emission_blocks = _parse_emission_entry(ai_text)
-    for entry_data in emission_blocks:
-        # Resolve the factor and calculate, but don't create the DB entry yet
-        from emissions.factor_lookup import resolve_factor_and_amount
-        from companies.utils import get_current_company
-        company = get_current_company(request.user)
-        activity_type = entry_data.get('fuel_type', '')
-        quantity = entry_data.get('quantity')
-        unit = entry_data.get('unit', '')
-        month = entry_data.get('month', datetime.now(timezone.utc).month)
-        year = entry_data.get('year', datetime.now(timezone.utc).year)
-        description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
-
-        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit)
-        if factor and co2e_kg:
-            pending_entries.append({
-                'fuel_type': activity_type,
-                'quantity': float(qty),
-                'unit': unit,
-                'month': month,
-                'year': year,
-                'description': description,
-                'co2e_kg': float(co2e_kg),
-                'co2e_tonne': float(co2e_kg) / 1000,
-                'factor_used': float(factor.factor_kg_co2e),
-                'factor_unit': factor.unit,
-                'factor_id': factor.pk,
-                'scope': factor.scope,
-            })
-        elif err:
-            logger.warning('AI Chat emission resolve failed for user=%s: %s', request.user.username, err)
+    pending_entries = _build_pending_entries_from_data(_parse_emission_entry(ai_text))
 
     # Clean the AI response — remove the ```emission_entry blocks before saving
-    import re
     # Remove all code blocks that contain emission entry JSON (any fence format)
     clean_text = re.sub(r'```(?:emission_entry|json)?\s*\n\{[^`]*?"fuel_type"[^`]*?\}\s*\n```', '', ai_text, flags=re.DOTALL).strip()
     # Also remove bare ``` blocks with fuel_type JSON
