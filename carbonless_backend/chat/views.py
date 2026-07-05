@@ -56,6 +56,11 @@ by truck"), you MUST include a JSON block in your response so the system can sav
 not you — performs the final kg CO2e multiplication using the real registered factor, so you do not
 need to (and should not try to) compute the total yourself; just extract the structured activity data.
 
+IMPORTANT: When you show the calculation to the user, use the EXACT factor value from the EMISSION
+FACTOR REFERENCE below. The result you show in text MUST match the system's saved result. Use this
+formula: quantity × factor_from_reference = total kgCO2e. Round to 2 decimal places for kgCO2e and
+4 decimal places for tCO2e. This ensures the chat and dashboard always show the same numbers.
+
 Format your response like this:
 
 1. First give a normal text response acknowledging the data
@@ -463,24 +468,33 @@ def send_message(request, session_id):
                 'unit': entry_data.get('unit'),
                 'co2e_kg': float(entry.calculated_co2e_kg),
                 'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
+                'factor_used': float(entry.factor_value_snapshot),
+                'factor_unit': entry.emission_factor.unit if entry.emission_factor else '',
+                'scope': entry.emission_factor.scope if entry.emission_factor else '',
             })
-            logger.info('AI Chat created EmissionEntry id=%s for user=%s: %s %s %s → %.2f kgCO2e',
+            logger.info('AI Chat created EmissionEntry id=%s for user=%s: %s %s %s → %.2f kgCO2e (factor=%.6f)',
                         entry.id, request.user.username, entry_data.get('fuel_type'),
-                        entry.quantity, entry_data.get('unit'), float(entry.calculated_co2e_kg))
+                        entry.quantity, entry_data.get('unit'), float(entry.calculated_co2e_kg),
+                        float(entry.factor_value_snapshot))
+        elif err:
+            logger.warning('AI Chat emission entry failed for user=%s: %s', request.user.username, err)
 
     # Clean the AI response — remove the ```emission_entry blocks before saving
     import re
     clean_text = re.sub(r'```emission_entry\s*\n.*?\n```', '', ai_text, flags=re.DOTALL).strip()
 
-    # If entries were saved, append a confirmation to the visible message
+    # If entries were saved, replace AI's calculation text with system's exact result
     if saved_entries:
         confirmations = []
         for se in saved_entries:
+            scope_label = se['scope'].replace('scope', 'Scope ') if se['scope'] else ''
             confirmations.append(
-                f"✅ **Saved:** {se['fuel_type'].replace('_',' ').title()} — "
-                f"{se['quantity']} {se['unit']} → {se['co2e_tonne']:.3f} tCO₂e"
+                f"✅ **Saved to Dashboard** ({scope_label}):\n"
+                f"   {se['fuel_type'].replace('_',' ').title()} — "
+                f"{se['quantity']:g} {se['unit']} × {se['factor_used']:.6f} kgCO₂e/{se['factor_unit']} = "
+                f"**{se['co2e_kg']:.2f} kgCO₂e** ({se['co2e_tonne']:.4f} tCO₂e)"
             )
-        clean_text += '\n\n' + '\n'.join(confirmations)
+        clean_text += '\n\n---\n' + '\n'.join(confirmations)
 
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
