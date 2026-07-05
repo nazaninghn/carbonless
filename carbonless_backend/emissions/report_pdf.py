@@ -27,6 +27,7 @@ from reportlab.platypus import (
 )
 from django.db.models import Sum
 from .models import EmissionEntry, CustomEmissionRequest
+from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
 from companies.utils import get_current_company
 
 
@@ -522,6 +523,82 @@ def generate_report(user, year, lang='tr'):
             E.append(Spacer(1, 5*mm))
     else:
         E.append(Paragraph('Bu d\u00f6nem i\u00e7in kategori verisi bulunmamaktad\u0131r.' if tr else 'No category data for this period.', S['body']))
+
+    # ── 3.1 Scope 3 Category Breakdown (ISO 14064-1 completeness) ──
+    E.append(Spacer(1, 6*mm))
+    E.append(Paragraph(
+        '3.1 ' + ('Scope 3 Kategori Dağılımı' if tr else 'Scope 3 Category Breakdown'),
+        S['h2']
+    ))
+    E.append(Paragraph(
+        'GHG Protokolü kapsamında 15 Scope 3 kategorisinin tümü aşağıda listelenmiştir. '
+        'Sıfır girişi olan kategoriler sınır değerlendirmesinin bütünlüğünü gösterir (ISO 14064-1).'
+        if tr else
+        'All 15 GHG Protocol Scope 3 categories are listed below. '
+        'Categories with zero entries demonstrate completeness of boundary assessment (ISO 14064-1).',
+        S['body_sm']
+    ))
+    E.append(Spacer(1, 3*mm))
+
+    # Build a mapping: ghg_number -> total CO2e from entries
+    scope3_entries = entries.filter(emission_factor__scope='scope3')
+    scope3_by_cat = {}
+    for row in scope3_entries.values('emission_factor__category').annotate(total=Sum('calculated_co2e_kg')):
+        cat_key = row['emission_factor__category']
+        scope3_by_cat[cat_key] = float(row['total'] or 0)
+
+    # Also include custom entries that are scope3
+    for cr in custom_qs.filter(scope='scope3'):
+        # Try to map custom entry category to a known key
+        cat_key = getattr(cr, 'category', None)
+        if cat_key and cat_key in SCOPE3_GHG_NUMBER:
+            scope3_by_cat[cat_key] = scope3_by_cat.get(cat_key, 0) + float(cr.calculated_co2e_kg)
+
+    # Build table data for all 15 categories
+    s3_breakdown_hdr = [
+        '#',
+        'Kategori (EN)' if tr else 'Category (EN)',
+        'Kategori (TR)' if tr else 'Category (TR)',
+        'kg CO\u2082e',
+        'tCO\u2082e',
+    ]
+    s3_breakdown_rows = [s3_breakdown_hdr]
+    s3_total_for_breakdown = 0.0
+
+    # Sort SCOPE3_CATEGORIES by ghg_number (1-15)
+    sorted_cats = sorted(
+        [(k, v) for k, v in SCOPE3_CATEGORIES.items() if v.get('ghg_number') is not None],
+        key=lambda x: x[1]['ghg_number']
+    )
+
+    for cat_key, cat_meta in sorted_cats:
+        ghg_num = cat_meta['ghg_number']
+        name_en = cat_meta['name_en']
+        name_tr = cat_meta['name_tr']
+        cat_total = scope3_by_cat.get(cat_key, 0.0)
+        s3_total_for_breakdown += cat_total
+        s3_breakdown_rows.append([
+            str(ghg_num),
+            name_en,
+            name_tr,
+            _fmt(cat_total),
+            _fmt4(cat_total / 1000),
+        ])
+
+    # Add total row
+    s3_breakdown_rows.append([
+        '',
+        'TOPLAM' if tr else 'TOTAL',
+        '',
+        _fmt(s3_total_for_breakdown),
+        _fmt4(s3_total_for_breakdown / 1000),
+    ])
+
+    s3_tbl = Table(s3_breakdown_rows, colWidths=[8*mm, 50*mm, 50*mm, 28*mm, 22*mm])
+    s3_tbl.setStyle(_tbl_style(fn, fnb, SCOPE3_COLOR))
+    s3_tbl.setStyle(_total_row_style(fnb))
+    E.append(s3_tbl)
+
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════

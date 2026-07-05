@@ -56,6 +56,10 @@ export default function DashboardPage() {
       const mode = localStorage.getItem('carbonless_startup_mode');
       if (mode === 'ai') {
         setActiveTab('ai_carbon');
+      } else if (mode === 'dashboard') {
+        // Explicit choice on the select page always wins over a stale saved tab
+        // (e.g. the user was last on the AI tab in a previous session).
+        setActiveTab('dashboard');
       } else {
         const savedTab = localStorage.getItem('carbonless_active_tab');
         if (savedTab) setActiveTab(savedTab);

@@ -132,17 +132,17 @@ EMISSION_FACTORS = [
     # ============================================
     # SCOPE 3 - CAPITAL GOODS
     # ============================================
-    {'slug': 'machinery', 'name': 'Machinery', 'name_tr': 'Makine', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 5000.0, 'source': 'generic', 'reference': ''},
-    {'slug': 'vehicles', 'name': 'Vehicles', 'name_tr': 'Araçlar', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 6000.0, 'source': 'generic', 'reference': ''},
-    {'slug': 'buildings', 'name': 'Buildings/construction', 'name_tr': 'Binalar/inşaat', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 500.0, 'source': 'generic', 'reference': ''},
-    {'slug': 'it-equipment', 'name': 'IT equipment', 'name_tr': 'BT ekipmanı', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 300.0, 'source': 'generic', 'reference': ''},
+    {'slug': 'machinery', 'name': 'Machinery', 'name_tr': 'Makine', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 8500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 2 estimate', 'year': 2024},
+    {'slug': 'vehicles', 'name': 'Vehicles', 'name_tr': 'Araçlar', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 6000.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 2 estimate', 'year': 2024},
+    {'slug': 'buildings', 'name': 'Buildings/construction', 'name_tr': 'Binalar/inşaat', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 2 estimate', 'year': 2024},
+    {'slug': 'it-equipment', 'name': 'IT equipment', 'name_tr': 'BT ekipmanı', 'scope': 'scope3', 'category': 'capital_goods', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 350.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 2 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - FUEL & ENERGY RELATED
     # ============================================
-    {'slug': 'upstream-electricity', 'name': 'Upstream electricity', 'name_tr': 'Yukarı akış elektrik', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.095, 'source': 'generic', 'reference': ''},
-    {'slug': 'transmission-losses', 'name': 'T&D losses', 'name_tr': 'İletim ve dağıtım kayıpları', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.035, 'source': 'generic', 'reference': ''},
-    {'slug': 'fuel-extraction', 'name': 'Fuel extraction & processing', 'name_tr': 'Yakıt çıkarma ve işleme', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 0.52, 'source': 'generic', 'reference': ''},
+    {'slug': 'upstream-electricity', 'name': 'Upstream electricity', 'name_tr': 'Yukarı akış elektrik', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.025, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 3 estimate', 'year': 2024},
+    {'slug': 'transmission-losses', 'name': 'T&D losses', 'name_tr': 'İletim ve dağıtım kayıpları', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.02, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 3 estimate', 'year': 2024},
+    {'slug': 'fuel-extraction', 'name': 'Fuel extraction & processing', 'name_tr': 'Yakıt çıkarma ve işleme', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 0.6, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 3 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - UPSTREAM TRANSPORTATION
@@ -172,11 +172,11 @@ EMISSION_FACTORS = [
     # ============================================
     # SCOPE 3 - EMPLOYEE COMMUTING (Global)
     # ============================================
-    {'slug': 'car-commute', 'name': 'Car', 'name_tr': 'Otomobil', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.171, 'source': 'generic', 'reference': ''},
-    {'slug': 'bus-commute', 'name': 'Bus', 'name_tr': 'Otobüs', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.089, 'source': 'generic', 'reference': ''},
-    {'slug': 'train-commute', 'name': 'Train', 'name_tr': 'Tren', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.041, 'source': 'generic', 'reference': ''},
-    {'slug': 'motorcycle-commute', 'name': 'Motorcycle', 'name_tr': 'Motosiklet', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.113, 'source': 'generic', 'reference': ''},
-    {'slug': 'bicycle-commute', 'name': 'Bicycle', 'name_tr': 'Bisiklet', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.0, 'source': 'generic', 'reference': ''},
+    {'slug': 'car-commute', 'name': 'Car', 'name_tr': 'Otomobil', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.171, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 7 estimate', 'year': 2024},
+    {'slug': 'bus-commute', 'name': 'Bus', 'name_tr': 'Otobüs', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.089, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 7 estimate', 'year': 2024},
+    {'slug': 'train-commute', 'name': 'Train', 'name_tr': 'Tren', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.041, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 7 estimate', 'year': 2024},
+    {'slug': 'motorcycle-commute', 'name': 'Motorcycle', 'name_tr': 'Motosiklet', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.113, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 7 estimate', 'year': 2024},
+    {'slug': 'bicycle-commute', 'name': 'Bicycle', 'name_tr': 'Bisiklet', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.0, 'source': 'generic', 'reference': 'Zero emission transport mode', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - WASTE (Global)
@@ -195,34 +195,34 @@ EMISSION_FACTORS = [
     # ============================================
     # SCOPE 3 - UPSTREAM LEASED ASSETS
     # ============================================
-    {'slug': 'office-space', 'name': 'Leased office space (per year)', 'name_tr': 'Kiralık ofis alanı (yıllık)', 'scope': 'scope3', 'category': 'upstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 45.0, 'source': 'generic', 'reference': ''},
-    {'slug': 'warehouse', 'name': 'Leased warehouse (per year)', 'name_tr': 'Kiralık depo (yıllık)', 'scope': 'scope3', 'category': 'upstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 35.0, 'source': 'generic', 'reference': ''},
-    {'slug': 'leased-vehicles', 'name': 'Leased vehicles (per year)', 'name_tr': 'Kiralık araçlar (yıllık)', 'scope': 'scope3', 'category': 'upstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 2500.0, 'source': 'generic', 'reference': ''},
+    {'slug': 'office-space', 'name': 'Leased office space', 'name_tr': 'Kiralık ofis alanı', 'scope': 'scope3', 'category': 'upstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 0.055, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 8 estimate (per m2/day annualized)', 'year': 2024},
+    {'slug': 'warehouse', 'name': 'Leased warehouse', 'name_tr': 'Kiralık depo', 'scope': 'scope3', 'category': 'upstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 0.035, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 8 estimate (per m2/day annualized)', 'year': 2024},
+    {'slug': 'leased-vehicles', 'name': 'Leased vehicles (per year)', 'name_tr': 'Kiralık araçlar (yıllık)', 'scope': 'scope3', 'category': 'upstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 4500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 8 estimate (per vehicle/year)', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - DOWNSTREAM TRANSPORTATION
     # ============================================
-    {'slug': 'truck-delivery', 'name': 'Truck delivery', 'name_tr': 'Kamyon teslimatı', 'scope': 'scope3', 'category': 'downstream_transport', 'country': 'global', 'unit': 'tonne-km', 'factor_kg_co2e': 0.112, 'source': 'generic', 'reference': ''},
-    {'slug': 'courier', 'name': 'Courier service', 'name_tr': 'Kurye hizmeti', 'scope': 'scope3', 'category': 'downstream_transport', 'country': 'global', 'unit': 'packages', 'factor_kg_co2e': 0.5, 'source': 'generic', 'reference': ''},
-    {'slug': 'postal', 'name': 'Postal service', 'name_tr': 'Posta hizmeti', 'scope': 'scope3', 'category': 'downstream_transport', 'country': 'global', 'unit': 'packages', 'factor_kg_co2e': 0.3, 'source': 'generic', 'reference': ''},
+    {'slug': 'truck-delivery', 'name': 'Truck delivery', 'name_tr': 'Kamyon teslimatı', 'scope': 'scope3', 'category': 'downstream_transport', 'country': 'global', 'unit': 'tonne-km', 'factor_kg_co2e': 0.107, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 9 estimate', 'year': 2024},
+    {'slug': 'courier', 'name': 'Courier service', 'name_tr': 'Kurye hizmeti', 'scope': 'scope3', 'category': 'downstream_transport', 'country': 'global', 'unit': 'packages', 'factor_kg_co2e': 0.55, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 9 estimate', 'year': 2024},
+    {'slug': 'postal', 'name': 'Postal service', 'name_tr': 'Posta hizmeti', 'scope': 'scope3', 'category': 'downstream_transport', 'country': 'global', 'unit': 'packages', 'factor_kg_co2e': 0.21, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 9 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - END OF LIFE
     # ============================================
-    {'slug': 'product-recycling', 'name': 'Product recycling', 'name_tr': 'Ürün geri dönüşümü', 'scope': 'scope3', 'category': 'end_of_life', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.021, 'source': 'generic', 'reference': ''},
-    {'slug': 'product-landfill', 'name': 'Product landfill', 'name_tr': 'Ürün düzenli depolama', 'scope': 'scope3', 'category': 'end_of_life', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.57, 'source': 'generic', 'reference': ''},
-    {'slug': 'product-incineration', 'name': 'Product incineration', 'name_tr': 'Ürün yakma', 'scope': 'scope3', 'category': 'end_of_life', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.91, 'source': 'generic', 'reference': ''},
+    {'slug': 'product-recycling', 'name': 'Product recycling', 'name_tr': 'Ürün geri dönüşümü', 'scope': 'scope3', 'category': 'end_of_life', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.021, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 12 estimate', 'year': 2024},
+    {'slug': 'product-landfill', 'name': 'Product landfill', 'name_tr': 'Ürün düzenli depolama', 'scope': 'scope3', 'category': 'end_of_life', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.586, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 12 estimate', 'year': 2024},
+    {'slug': 'product-incineration', 'name': 'Product incineration', 'name_tr': 'Ürün yakma', 'scope': 'scope3', 'category': 'end_of_life', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.695, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 12 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - FRANCHISES
     # ============================================
-    {'slug': 'franchise-operations', 'name': 'Franchise operations (per franchise/year)', 'name_tr': 'Franchise operasyonları (yıllık)', 'scope': 'scope3', 'category': 'franchises', 'country': 'global', 'unit': 'franchises', 'factor_kg_co2e': 15000.0, 'source': 'generic', 'reference': ''},
+    {'slug': 'franchise-operations', 'name': 'Franchise operations (per franchise/year)', 'name_tr': 'Franchise operasyonları (yıllık)', 'scope': 'scope3', 'category': 'franchises', 'country': 'global', 'unit': 'franchises', 'factor_kg_co2e': 15000.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 14 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - INVESTMENTS
     # ============================================
-    {'slug': 'equity-investments', 'name': 'Equity investments', 'name_tr': 'Öz sermaye yatırımları', 'scope': 'scope3', 'category': 'investments', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.185, 'source': 'generic', 'reference': ''},
-    {'slug': 'debt-investments', 'name': 'Debt investments', 'name_tr': 'Borç yatırımları', 'scope': 'scope3', 'category': 'investments', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.095, 'source': 'generic', 'reference': ''},
+    {'slug': 'equity-investments', 'name': 'Equity investments', 'name_tr': 'Öz sermaye yatırımları', 'scope': 'scope3', 'category': 'investments', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.00022, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 15 estimate', 'year': 2024},
+    {'slug': 'debt-investments', 'name': 'Debt investments', 'name_tr': 'Borç yatırımları', 'scope': 'scope3', 'category': 'investments', 'country': 'global', 'unit': 'usd', 'factor_kg_co2e': 0.00015, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 15 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 1 - PROCESS EMISSIONS (GHG Protocol Cat)
@@ -239,31 +239,31 @@ EMISSION_FACTORS = [
     # ============================================
     # SCOPE 3 - PROCESSING OF SOLD PRODUCTS (Cat 10)
     # ============================================
-    {'slug': 'processing-energy-intensive', 'name': 'Energy-intensive processing', 'name_tr': 'Enerji yoğun işleme', 'scope': 'scope3', 'category': 'processing_of_sold_products', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 350.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate'},
-    {'slug': 'processing-light', 'name': 'Light processing / assembly', 'name_tr': 'Hafif işleme / montaj', 'scope': 'scope3', 'category': 'processing_of_sold_products', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 120.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate'},
-    {'slug': 'processing-chemical', 'name': 'Chemical processing', 'name_tr': 'Kimyasal işleme', 'scope': 'scope3', 'category': 'processing_of_sold_products', 'country': 'global', 'unit': 'tonnes', 'factor_kg_co2e': 500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate'},
+    {'slug': 'processing-energy-intensive', 'name': 'Energy-intensive processing', 'name_tr': 'Enerji yoğun işleme', 'scope': 'scope3', 'category': 'processing_sold', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.5, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate', 'year': 2024},
+    {'slug': 'processing-light', 'name': 'Light processing / assembly', 'name_tr': 'Hafif işleme / montaj', 'scope': 'scope3', 'category': 'processing_sold', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.15, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate', 'year': 2024},
+    {'slug': 'processing-chemical', 'name': 'Chemical processing', 'name_tr': 'Kimyasal işleme', 'scope': 'scope3', 'category': 'processing_sold', 'country': 'global', 'unit': 'kg', 'factor_kg_co2e': 0.8, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 10 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - USE OF SOLD PRODUCTS (Cat 11)
     # ============================================
-    {'slug': 'product-electricity-use', 'name': 'Product electricity use (lifetime)', 'name_tr': 'Ürün elektrik tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold_products', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.475, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 11 (grid avg)'},
-    {'slug': 'product-fuel-use', 'name': 'Product fuel use (lifetime)', 'name_tr': 'Ürün yakıt tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold_products', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 2.68, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 11 (diesel equiv)'},
-    {'slug': 'product-gas-use', 'name': 'Product gas use (lifetime)', 'name_tr': 'Ürün gaz tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold_products', 'country': 'global', 'unit': 'gj', 'factor_kg_co2e': 56.211, 'source': 'ipcc_2019', 'reference': 'IPCC 2019 – natural gas'},
+    {'slug': 'product-electricity-use', 'name': 'Product electricity use (lifetime)', 'name_tr': 'Ürün elektrik tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.5, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 11 (grid avg)', 'year': 2024},
+    {'slug': 'product-fuel-use', 'name': 'Product fuel use (lifetime)', 'name_tr': 'Ürün yakıt tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold', 'country': 'global', 'unit': 'liters', 'factor_kg_co2e': 2.7, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 11 (diesel equiv)', 'year': 2024},
+    {'slug': 'product-gas-use', 'name': 'Product gas use (lifetime)', 'name_tr': 'Ürün gaz tüketimi (ömür boyu)', 'scope': 'scope3', 'category': 'use_of_sold', 'country': 'global', 'unit': 'gj', 'factor_kg_co2e': 56.1, 'source': 'ipcc_2019', 'reference': 'IPCC 2019 – natural gas', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - DOWNSTREAM LEASED ASSETS (Cat 13)
     # ============================================
-    {'slug': 'leased-building-downstream', 'name': 'Leased building (downstream)', 'name_tr': 'Kiralanan bina (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 45.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate'},
-    {'slug': 'leased-vehicle-downstream', 'name': 'Leased vehicle (downstream)', 'name_tr': 'Kiralanan araç (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 2500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate'},
-    {'slug': 'leased-equipment-downstream', 'name': 'Leased equipment (downstream)', 'name_tr': 'Kiralanan ekipman (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 1200.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate'},
+    {'slug': 'leased-building-downstream', 'name': 'Leased building (downstream)', 'name_tr': 'Kiralanan bina (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'm2', 'factor_kg_co2e': 0.06, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate', 'year': 2024},
+    {'slug': 'leased-vehicle-downstream', 'name': 'Leased vehicle (downstream)', 'name_tr': 'Kiralanan araç (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 2500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate', 'year': 2024},
+    {'slug': 'leased-equipment-downstream', 'name': 'Leased equipment (downstream)', 'name_tr': 'Kiralanan ekipman (aşağı akış)', 'scope': 'scope3', 'category': 'downstream_leased', 'country': 'global', 'unit': 'units', 'factor_kg_co2e': 2500.0, 'source': 'generic', 'reference': 'GHG Protocol – Scope 3 Cat 13 estimate', 'year': 2024},
 
     # ============================================
     # SCOPE 3 - EMPLOYEE COMMUTING (Turkey)
     # ============================================
-    {'slug': 'car-commute', 'name': 'Car commute (Turkey)', 'name_tr': 'Otomobil (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.172, 'source': 'turkey_fleet', 'reference': 'Turkey fleet 2025 – avg car'},
-    {'slug': 'bus-commute', 'name': 'Bus commute (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Turkey urban bus'},
-    {'slug': 'metro-commute', 'name': 'Metro commute (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro'},
-    {'slug': 'dolmus-commute', 'name': 'Dolmuş commute (Turkey)', 'name_tr': 'Dolmuş (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.082, 'source': 'turkey_fleet', 'reference': 'Shared urban transport'},
+    {'slug': 'car-commute', 'name': 'Car commute (Turkey)', 'name_tr': 'Otomobil (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.172, 'source': 'turkey_fleet', 'reference': 'Turkey fleet 2025 – avg car', 'year': 2024},
+    {'slug': 'bus-commute', 'name': 'Bus commute (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Turkey urban bus', 'year': 2024},
+    {'slug': 'metro-commute', 'name': 'Metro commute (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro', 'year': 2024},
+    {'slug': 'dolmus-commute', 'name': 'Dolmuş commute (Turkey)', 'name_tr': 'Dolmuş (Türkiye)', 'scope': 'scope3', 'category': 'employee_commuting', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.082, 'source': 'turkey_fleet', 'reference': 'Shared urban transport', 'year': 2024},
 
     # ============================================
     # SCOPE 1 - NATURAL GAS (volume & energy units) — DEFRA 2024

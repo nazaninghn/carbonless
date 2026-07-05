@@ -178,6 +178,7 @@ export const api = {
   getMemberships: () => request('/companies/memberships/'),
   updateMembership: (id, data) => request(`/companies/memberships/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
 
+  getScope3Categories: () => request('/emissions/scope3-categories/'),
   getFactors: (params = '') => request(`/emissions/factors/${params ? '?' + params : ''}`),
   getEntries: (params = '') => request(`/emissions/entries/${params ? '?' + params : ''}`),
   createEntry: (data) => request('/emissions/entries/', { method: 'POST', body: JSON.stringify(data) }),
@@ -256,6 +257,7 @@ export const api = {
       credentials: 'include',
     });
   },
+  confirmEmissionEntry: (entryData) => request('/chat/confirm-entry/', { method: 'POST', body: JSON.stringify(entryData) }),
 };
 
 /**

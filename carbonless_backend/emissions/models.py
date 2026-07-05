@@ -29,6 +29,8 @@ class EmissionFactor(models.Model):
         ('employee_commuting', 'Employee Commuting'),
         ('upstream_leased', 'Upstream Leased Assets'),
         ('downstream_transport', 'Downstream Transportation'),
+        ('processing_sold', 'Processing of Sold Products'),
+        ('use_of_sold', 'Use of Sold Products'),
         ('end_of_life', 'End-of-Life Treatment'),
         ('franchises', 'Franchises'),
         ('investments', 'Investments'),

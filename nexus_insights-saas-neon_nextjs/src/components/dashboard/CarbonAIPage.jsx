@@ -3231,7 +3231,60 @@ function FreeChatTab({ language, summary, entries, targets }) {
           ) : (
             <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
               {messages.map((msg) => (
-                <Bubble key={msg.id} role={msg.role} content={msg.content} />
+                <div key={msg.id}>
+                  <Bubble role={msg.role} content={msg.content} />
+                  {/* Save to Dashboard button for pending entries */}
+                  {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
+                    <div className="ml-9 mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            for (const pe of msg.pending_entries) {
+                              const res = await api.confirmEmissionEntry(pe);
+                              if (!res.ok) {
+                                const d = await res.json().catch(() => ({}));
+                                setError(d.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
+                                return;
+                              }
+                            }
+                            // Mark as saved
+                            setMessages(prev => prev.map(m =>
+                              m.id === msg.id ? { ...m, entriesSaved: true } : m
+                            ));
+                          } catch {
+                            setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+                          }
+                        }}
+                        className="flex items-center gap-2 rounded-xl bg-[#53A67F] px-4 py-2 text-[12px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        {tr ? 'Dashboard\'a Kaydet' : 'Save to Dashboard'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setMessages(prev => prev.map(m =>
+                            m.id === msg.id ? { ...m, entriesSaved: true, entriesRejected: true } : m
+                          ));
+                        }}
+                        className="flex items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-4 py-2 text-[12px] font-semibold text-[#302817]/50 hover:border-red-200 hover:text-red-500 transition"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        {tr ? 'Kaydetme' : 'Discard'}
+                      </button>
+                    </div>
+                  )}
+                  {msg.entriesSaved && !msg.entriesRejected && (
+                    <div className="ml-9 mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#53A67F]">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      {tr ? 'Dashboard\'a kaydedildi ✓' : 'Saved to Dashboard ✓'}
+                    </div>
+                  )}
+                  {msg.entriesRejected && (
+                    <div className="ml-9 mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#302817]/30">
+                      {tr ? 'Kaydedilmedi' : 'Not saved'}
+                    </div>
+                  )}
+                </div>
               ))}
               {sending && (
                 <div className="flex gap-3">

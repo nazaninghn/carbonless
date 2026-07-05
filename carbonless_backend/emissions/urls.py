@@ -23,4 +23,5 @@ urlpatterns = [
     path('by-facility/', views.by_facility_view, name='emission-by-facility'),
     path('pending/', views.pending_entries_view, name='emission-pending'),
     path('export-excel/', views.export_excel_view, name='emission-export-excel'),
+    path('scope3-categories/', views.scope3_categories_view, name='scope3-categories'),
 ]

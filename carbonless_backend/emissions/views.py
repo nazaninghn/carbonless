@@ -12,6 +12,7 @@ from .serializers import (
     ReductionTargetSerializer, CustomEmissionRequestSerializer
 )
 from .calculator import calculate_emissions, get_available_countries
+from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
 from companies.utils import get_current_company
 
 
@@ -190,6 +191,28 @@ def emission_summary(request):
             scope3 += val
     total += custom_total
 
+    # Scope 3 breakdown by GHG Protocol category (all 15 categories, zeros for empty)
+    scope3_entries = entries.filter(emission_factor__scope='scope3')
+    scope3_agg = (
+        scope3_entries
+        .values('emission_factor__category')
+        .annotate(total_co2e_kg=Sum('calculated_co2e_kg'))
+    )
+    scope3_totals_map = {
+        row['emission_factor__category']: float(row['total_co2e_kg'] or 0)
+        for row in scope3_agg
+    }
+    scope3_by_category = []
+    for cat_key, ghg_num in sorted(SCOPE3_GHG_NUMBER.items(), key=lambda x: x[1]):
+        cat_meta = SCOPE3_CATEGORIES[cat_key]
+        scope3_by_category.append({
+            'category': cat_key,
+            'ghg_number': ghg_num,
+            'name_en': cat_meta['name_en'],
+            'name_tr': cat_meta['name_tr'],
+            'total_co2e_kg': scope3_totals_map.get(cat_key, 0.0),
+        })
+
     return Response({
         'year': int(year),
         'total_kg': float(total),
@@ -205,6 +228,7 @@ def emission_summary(request):
             {'category': c['emission_factor__category'], 'total_kg': float(c['total_kg'])}
             for c in categories
         ],
+        'scope3_by_category': scope3_by_category,
         'custom_emissions': {
             'approved_total_kg': float(custom_total),
             'pending_count': custom_pending,
@@ -570,6 +594,37 @@ def pending_entries_view(request):
 
     from .serializers import EmissionEntrySerializer
     return Response(EmissionEntrySerializer(entries, many=True).data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def scope3_categories_view(request):
+    """Return the Scope 3 category registry as JSON.
+    Categories are sorted by ghg_number (1-15), with water (ghg_number: None) at the end.
+    """
+    categories = []
+    for key, cat in SCOPE3_CATEGORIES.items():
+        subtypes = [
+            {
+                'key': st_key,
+                'unit': st_val['unit'],
+                'name_en': st_val['name_en'],
+                'name_tr': st_val['name_tr'],
+            }
+            for st_key, st_val in cat['subtypes'].items()
+        ]
+        categories.append({
+            'key': key,
+            'ghg_number': cat['ghg_number'],
+            'name_en': cat['name_en'],
+            'name_tr': cat['name_tr'],
+            'subtypes': subtypes,
+        })
+
+    # Sort by ghg_number (1-15), with None (water) at the end
+    categories.sort(key=lambda c: (c['ghg_number'] is None, c['ghg_number'] or 0))
+
+    return Response({'categories': categories})
 
 
 @api_view(['GET'])

@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
+from emissions.scope3_categories import SCOPE3_CATEGORIES
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,72 @@ DO NOT create emission entries for hypothetical questions or examples — only f
 # so the AI chat and the questionnaire always agree with each other and with
 # the dashboard on what a given activity is worth.
 _get_emission_factor_reference = get_emission_factor_reference
+
+
+def _build_scope3_category_prompt():
+    """
+    Build a Scope 3 category listing section for the AI system prompt.
+
+    Includes all 15 GHG Protocol categories with EN/TR names, valid sub-types,
+    expected units, and instructions for composing activity_type keys.
+    """
+    lines = [
+        '',
+        '',
+        'SCOPE 3 CATEGORY REFERENCE:',
+        'Below are all 15 GHG Protocol Scope 3 categories. Use this to identify the correct',
+        'category and sub-type when the user describes a Scope 3 emission activity.',
+        '',
+        'Pattern: activity_type = "{category}_{subtype}", unit = "{unit from registry}"',
+        'Example: activity_type = "purchased_goods_electrical_large", unit = "kg"',
+        '',
+        'Special case: For franchises (Category 14), use activity_type = "franchises" (not "franchises_franchise_operations").',
+        '',
+    ]
+
+    for cat_key, cat_data in SCOPE3_CATEGORIES.items():
+        ghg_num = cat_data.get('ghg_number')
+        # Skip non-GHG-Protocol categories (water has ghg_number=None)
+        if ghg_num is None:
+            continue
+
+        name_en = cat_data['name_en']
+        name_tr = cat_data['name_tr']
+        lines.append(f'Category {ghg_num}: {name_en} / {name_tr} (key: "{cat_key}")')
+
+        subtypes = cat_data.get('subtypes', {})
+        for st_key, st_data in subtypes.items():
+            unit = st_data['unit']
+            st_name_en = st_data.get('name_en', st_key)
+            st_name_tr = st_data.get('name_tr', st_key)
+            if cat_key == 'franchises':
+                activity_type_example = 'franchises'
+            else:
+                activity_type_example = f'{cat_key}_{st_key}'
+            lines.append(f'  - {st_name_en} / {st_name_tr}: activity_type="{activity_type_example}", unit="{unit}"')
+
+        lines.append('')
+
+    # Also include water (non-standard but supported)
+    water = SCOPE3_CATEGORIES.get('water')
+    if water:
+        lines.append(f'Additional: {water["name_en"]} / {water["name_tr"]} (key: "water")')
+        for st_key, st_data in water.get('subtypes', {}).items():
+            unit = st_data['unit']
+            st_name_en = st_data.get('name_en', st_key)
+            st_name_tr = st_data.get('name_tr', st_key)
+            lines.append(f'  - {st_name_en} / {st_name_tr}: activity_type="water_{st_key}", unit="{unit}"')
+        lines.append('')
+
+    lines.append('INSTRUCTIONS FOR SCOPE 3 ACTIVITIES:')
+    lines.append('When the user mentions a Scope 3 activity, identify the category and sub-type.')
+    lines.append('If ambiguous, ask which category or sub-type they mean.')
+    lines.append('Compose the activity_type as "{category}_{subtype}" and use the unit listed above.')
+    lines.append('If the user speaks Turkish, use the Turkish names above to match their description.')
+    lines.append('--- END SCOPE 3 CATEGORY REFERENCE ---')
+    lines.append('')
+
+    return '\n'.join(lines)
 
 
 def _get_user_emission_context(user):
@@ -259,7 +326,7 @@ def _call_groq(messages_history, user_context=''):
         logger.error('GROQ_API_KEY not set or Groq client failed to initialise')
         return None, 'AI service not available.'
 
-    system_prompt = BASE_SYSTEM_PROMPT + _get_emission_factor_reference() + user_context
+    system_prompt = BASE_SYSTEM_PROMPT + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
 
     groq_messages = [{'role': 'system', 'content': system_prompt}]
     for msg in messages_history[-20:]:
@@ -455,44 +522,54 @@ def send_message(request, session_id):
         # it in "AI error: ..." created an awkward double-prefix in the UI.
         return Response({'error': error}, status=502)
 
-    # Parse and create emission entries from AI response
-    saved_entries = []
+    # Parse emission entries from AI response — DO NOT save yet, return as pending
+    pending_entries = []
     emission_blocks = _parse_emission_entry(ai_text)
     for entry_data in emission_blocks:
-        entry, err = _create_emission_from_chat(request.user, entry_data)
-        if entry:
-            saved_entries.append({
-                'id': entry.id,
-                'fuel_type': entry_data.get('fuel_type'),
-                'quantity': float(entry.quantity),
-                'unit': entry_data.get('unit'),
-                'co2e_kg': float(entry.calculated_co2e_kg),
-                'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
-                'factor_used': float(entry.factor_value_snapshot),
-                'factor_unit': entry.emission_factor.unit if entry.emission_factor else '',
-                'scope': entry.emission_factor.scope if entry.emission_factor else '',
+        # Resolve the factor and calculate, but don't create the DB entry yet
+        from emissions.factor_lookup import resolve_factor_and_amount
+        from companies.utils import get_current_company
+        company = get_current_company(request.user)
+        activity_type = entry_data.get('fuel_type', '')
+        quantity = entry_data.get('quantity')
+        unit = entry_data.get('unit', '')
+        month = entry_data.get('month', datetime.now(timezone.utc).month)
+        year = entry_data.get('year', datetime.now(timezone.utc).year)
+        description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
+
+        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit)
+        if factor and co2e_kg:
+            pending_entries.append({
+                'fuel_type': activity_type,
+                'quantity': float(qty),
+                'unit': unit,
+                'month': month,
+                'year': year,
+                'description': description,
+                'co2e_kg': float(co2e_kg),
+                'co2e_tonne': float(co2e_kg) / 1000,
+                'factor_used': float(factor.factor_kg_co2e),
+                'factor_unit': factor.unit,
+                'factor_id': factor.pk,
+                'scope': factor.scope,
             })
-            logger.info('AI Chat created EmissionEntry id=%s for user=%s: %s %s %s → %.2f kgCO2e (factor=%.6f)',
-                        entry.id, request.user.username, entry_data.get('fuel_type'),
-                        entry.quantity, entry_data.get('unit'), float(entry.calculated_co2e_kg),
-                        float(entry.factor_value_snapshot))
         elif err:
-            logger.warning('AI Chat emission entry failed for user=%s: %s', request.user.username, err)
+            logger.warning('AI Chat emission resolve failed for user=%s: %s', request.user.username, err)
 
     # Clean the AI response — remove the ```emission_entry blocks before saving
     import re
     clean_text = re.sub(r'```emission_entry\s*\n.*?\n```', '', ai_text, flags=re.DOTALL).strip()
 
-    # If entries were saved, replace AI's calculation text with system's exact result
-    if saved_entries:
+    # If pending entries exist, append calculation result (not saved yet)
+    if pending_entries:
         confirmations = []
-        for se in saved_entries:
-            scope_label = se['scope'].replace('scope', 'Scope ') if se['scope'] else ''
+        for pe in pending_entries:
+            scope_label = pe['scope'].replace('scope', 'Scope ') if pe['scope'] else ''
             confirmations.append(
-                f"✅ **Saved to Dashboard** ({scope_label}):\n"
-                f"   {se['fuel_type'].replace('_',' ').title()} — "
-                f"{se['quantity']:g} {se['unit']} × {se['factor_used']:.6f} kgCO₂e/{se['factor_unit']} = "
-                f"**{se['co2e_kg']:.2f} kgCO₂e** ({se['co2e_tonne']:.4f} tCO₂e)"
+                f"📊 **Calculated** ({scope_label}):\n"
+                f"   {pe['fuel_type'].replace('_',' ').title()} — "
+                f"{pe['quantity']:g} {pe['unit']} × {pe['factor_used']:.6f} kgCO₂e/{pe['factor_unit']} = "
+                f"**{pe['co2e_kg']:.2f} kgCO₂e** ({pe['co2e_tonne']:.4f} tCO₂e)"
             )
         clean_text += '\n\n---\n' + '\n'.join(confirmations)
 
@@ -514,5 +591,33 @@ def send_message(request, session_id):
         'content': clean_text,
         'created_at': ai_msg.created_at,
         'session_title': session.title,
-        'saved_entries': saved_entries,
+        'pending_entries': pending_entries,
     })
+
+
+# ── Confirm and save pending emission entry ───────────────────────────────────
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_entry(request):
+    """
+    Save a pending emission entry that was calculated but not yet saved.
+    Frontend sends the pending_entry data after user confirms.
+    """
+    entry_data = request.data
+    if not entry_data or not entry_data.get('fuel_type') or not entry_data.get('quantity'):
+        return Response({'error': 'Invalid entry data.'}, status=400)
+
+    entry, err = _create_emission_from_chat(request.user, entry_data)
+    if err:
+        return Response({'error': err}, status=400)
+
+    return Response({
+        'id': entry.id,
+        'fuel_type': entry_data.get('fuel_type'),
+        'quantity': float(entry.quantity),
+        'unit': entry_data.get('unit', ''),
+        'co2e_kg': float(entry.calculated_co2e_kg),
+        'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
+        'scope': entry.emission_factor.scope if entry.emission_factor else '',
+        'status': 'saved',
+    }, status=201)

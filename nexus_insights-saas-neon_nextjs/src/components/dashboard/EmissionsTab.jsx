@@ -8,6 +8,7 @@ import {
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import {
   SCOPE_META, STATUS_META, CATEGORY_LABELS,
   MONTHS_TR, MONTHS_EN,
@@ -131,6 +132,9 @@ export default function EmissionsTab({
 
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState(null); // stores the entry id to delete
+
+  // Scope 3 dedicated form
+  const [showScope3Form, setShowScope3Form] = useState(false);
 
   // Custom request
   const [showCustom,   setShowCustom]  = useState(false);
@@ -456,8 +460,19 @@ export default function EmissionsTab({
               {tr ? 'Yeni Kayıt' : 'New Entry'}
             </button>
             <button
+              onClick={() => setShowScope3Form(v => !v)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-bold transition ${
+                showScope3Form
+                  ? 'border-[#95A847]/50 bg-[#95A847]/20 text-[#5A6B28] ring-2 ring-[#95A847]/15'
+                  : 'border-[#95A847]/40 bg-[#95A847]/10 text-[#75863B] hover:bg-[#95A847]/18'
+              }`}
+            >
+              <Leaf className="h-3.5 w-3.5" />
+              {tr ? 'Scope 3 Girişi' : 'Scope 3 Entry'}
+            </button>
+            <button
               onClick={() => setShowCustom(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#95A847]/40 bg-[#95A847]/10 px-4 py-2.5 text-xs font-bold text-[#75863B] transition hover:bg-[#95A847]/18"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#302817]/60 transition hover:border-[#302817]/25 hover:bg-[#F9EFE5]/60"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Özel Talep' : 'Custom Request'}
@@ -465,6 +480,11 @@ export default function EmissionsTab({
           </div>
         </div>
       </div>
+
+      {/* ── Scope 3 Entry Form (inline, toggleable) ─────────────────── */}
+      {showScope3Form && (
+        <Scope3EntryForm language={language} fetchData={fetchData} />
+      )}
 
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">

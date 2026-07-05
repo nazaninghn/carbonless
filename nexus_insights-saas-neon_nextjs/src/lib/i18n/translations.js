@@ -167,6 +167,121 @@ export const translations = {
       address: 'IT Valley - İstinye Üniversitesi Ayazağa Mahallesi, Kemerburgaz Caddesi Vadi İstanbul Park Blok 7A, No: 7B, İç Kapı No: 4 Sarıyer / İstanbul',
       phone: '+90 212 613 58 80',
       email: 'info@carbonless.com'
+    },
+
+    // Scope 3 Emissions
+    scope3: {
+      title: 'Kapsam 3 Emisyonları',
+      categories: {
+        purchased_goods: 'Satın Alınan Mallar ve Hizmetler',
+        capital_goods: 'Sermaye Malları',
+        fuel_energy: 'Yakıt ve Enerji İlişkili Faaliyetler',
+        upstream_transport: 'Üst Akış Taşımacılık ve Dağıtım',
+        waste: 'Operasyonlarda Oluşan Atıklar',
+        business_travel: 'İş Seyahatleri',
+        employee_commuting: 'Çalışan Ulaşımı',
+        upstream_leased: 'Kiralanan Varlıklar (Üst Akış)',
+        downstream_transport: 'Alt Akış Taşımacılık ve Dağıtım',
+        processing_sold: 'Satılan Ürünlerin İşlenmesi',
+        use_of_sold: 'Satılan Ürünlerin Kullanımı',
+        end_of_life: 'Satılan Ürünlerin Ömür Sonu İşlemleri',
+        downstream_leased: 'Kiralanan Varlıklar (Alt Akış)',
+        franchises: 'Franchise İşletmeler',
+        investments: 'Yatırımlar',
+        water: 'Su Temini ve Arıtma',
+      },
+      subtypes: {
+        // Category 1 - Purchased Goods & Services
+        electrical_large: 'Büyük Elektrikli Ürünler',
+        electrical_small: 'Küçük Elektrikli Ürünler',
+        electrical_it: 'BT Ekipmanları',
+        glass: 'Cam',
+        metal_aluminium: 'Alüminyum',
+        metal_steel: 'Çelik',
+        paper_mixed: 'Karışık Kağıt',
+        plastic_average: 'Plastik (Ortalama)',
+        plastic_hdpe: 'HDPE Plastik',
+        wood: 'Ahşap',
+        chemical: 'Kimyasallar',
+        mineral_oil: 'Mineral Yağ',
+        // Category 2 - Capital Goods
+        machinery: 'Makineler',
+        vehicles: 'Araçlar',
+        buildings: 'Binalar',
+        it_equipment: 'BT Ekipmanları',
+        // Category 3 - Fuel & Energy Related Activities
+        upstream_electricity: 'Üst Akış Elektrik',
+        transmission_losses: 'İletim ve Dağıtım Kayıpları',
+        fuel_extraction: 'Yakıt Çıkarma',
+        // Category 4 - Upstream Transportation & Distribution
+        freight_road: 'Karayolu Taşımacılığı',
+        freight_rail: 'Demiryolu Taşımacılığı',
+        freight_sea: 'Deniz Taşımacılığı',
+        // Category 5 - Waste Generated in Operations
+        landfill: 'Düzenli Depolama',
+        recyclable: 'Geri Dönüştürülebilir Atık',
+        organic_compost: 'Organik Kompost',
+        incineration: 'Yakma',
+        // Category 6 - Business Travel
+        flight_domestic: 'Yurtiçi Uçuşlar',
+        flight_short: 'Kısa Mesafe Uçuşlar',
+        flight_long: 'Uzun Mesafe Uçuşlar',
+        train: 'Tren',
+        car_rental: 'Araç Kiralama',
+        // Category 7 - Employee Commuting
+        car_commute: 'Otomobil',
+        bus_commute: 'Otobüs',
+        train_commute: 'Tren',
+        motorcycle_commute: 'Motosiklet',
+        bicycle_commute: 'Bisiklet',
+        // Category 8 - Upstream Leased Assets
+        office_space: 'Ofis Alanı',
+        warehouse: 'Depo',
+        leased_vehicles: 'Kiralık Araçlar',
+        // Category 9 - Downstream Transportation & Distribution
+        truck_delivery: 'Kamyon Teslimat',
+        courier: 'Kurye',
+        postal: 'Posta Hizmeti',
+        // Category 10 - Processing of Sold Products
+        energy_intensive: 'Enerji Yoğun İşleme',
+        light: 'Hafif İşleme',
+        processing_chemical: 'Kimyasal İşleme',
+        // Category 11 - Use of Sold Products
+        electricity: 'Elektrik Kullanımı',
+        fuel: 'Yakıt Kullanımı',
+        gas: 'Gaz Kullanımı',
+        // Category 12 - End-of-Life Treatment of Sold Products
+        product_recycling: 'Ürün Geri Dönüşümü',
+        product_landfill: 'Ürün Düzenli Depolama',
+        product_incineration: 'Ürün Yakma',
+        // Category 13 - Downstream Leased Assets
+        leased_building: 'Kiralık Bina',
+        leased_equipment: 'Kiralık Ekipman',
+        // Category 14 - Franchises
+        franchise_operations: 'Franchise Operasyonları',
+        // Category 15 - Investments
+        equity_investments: 'Özkaynak Yatırımları',
+        debt_investments: 'Borç Yatırımları',
+        // Water
+        water_supply: 'Su Temini',
+        water_treatment: 'Atıksu Arıtma',
+      },
+      units: {
+        kg: 'kg',
+        km: 'km',
+        m2: 'm²',
+        m3: 'm³',
+        kwh: 'kWh',
+        gj: 'GJ',
+        liters: 'Litre',
+        units: 'Adet',
+        'tonne-km': 'Ton-km',
+        packages: 'Paket',
+        franchises: 'Franchise',
+        usd: 'USD',
+        days: 'Gün',
+        nights: 'Gece',
+      }
     }
   },
   
@@ -337,6 +452,121 @@ export const translations = {
       address: 'IT Valley - İstinye University Ayazağa Mahallesi, Kemerburgaz Caddesi Vadi İstanbul Park Block 7A, No: 7B, Inner Door No: 4 Sarıyer / Istanbul',
       phone: '+90 212 613 58 80',
       email: 'info@carbonless.com'
+    },
+
+    // Scope 3 Emissions
+    scope3: {
+      title: 'Scope 3 Emissions',
+      categories: {
+        purchased_goods: 'Purchased Goods & Services',
+        capital_goods: 'Capital Goods',
+        fuel_energy: 'Fuel & Energy Related Activities',
+        upstream_transport: 'Upstream Transportation & Distribution',
+        waste: 'Waste Generated in Operations',
+        business_travel: 'Business Travel',
+        employee_commuting: 'Employee Commuting',
+        upstream_leased: 'Upstream Leased Assets',
+        downstream_transport: 'Downstream Transportation & Distribution',
+        processing_sold: 'Processing of Sold Products',
+        use_of_sold: 'Use of Sold Products',
+        end_of_life: 'End-of-Life Treatment of Sold Products',
+        downstream_leased: 'Downstream Leased Assets',
+        franchises: 'Franchises',
+        investments: 'Investments',
+        water: 'Water Supply & Treatment',
+      },
+      subtypes: {
+        // Category 1 - Purchased Goods & Services
+        electrical_large: 'Large Electrical Items',
+        electrical_small: 'Small Electrical Items',
+        electrical_it: 'IT Equipment',
+        glass: 'Glass',
+        metal_aluminium: 'Aluminium',
+        metal_steel: 'Steel',
+        paper_mixed: 'Mixed Paper',
+        plastic_average: 'Plastic (Average)',
+        plastic_hdpe: 'HDPE Plastic',
+        wood: 'Wood',
+        chemical: 'Chemicals',
+        mineral_oil: 'Mineral Oil',
+        // Category 2 - Capital Goods
+        machinery: 'Machinery',
+        vehicles: 'Vehicles',
+        buildings: 'Buildings',
+        it_equipment: 'IT Equipment',
+        // Category 3 - Fuel & Energy Related Activities
+        upstream_electricity: 'Upstream Electricity',
+        transmission_losses: 'Transmission & Distribution Losses',
+        fuel_extraction: 'Fuel Extraction',
+        // Category 4 - Upstream Transportation & Distribution
+        freight_road: 'Road Freight',
+        freight_rail: 'Rail Freight',
+        freight_sea: 'Sea Freight',
+        // Category 5 - Waste Generated in Operations
+        landfill: 'Landfill',
+        recyclable: 'Recyclable Waste',
+        organic_compost: 'Organic Composting',
+        incineration: 'Incineration',
+        // Category 6 - Business Travel
+        flight_domestic: 'Domestic Flights',
+        flight_short: 'Short-Haul Flights',
+        flight_long: 'Long-Haul Flights',
+        train: 'Train',
+        car_rental: 'Car Rental',
+        // Category 7 - Employee Commuting
+        car_commute: 'Car',
+        bus_commute: 'Bus',
+        train_commute: 'Train',
+        motorcycle_commute: 'Motorcycle',
+        bicycle_commute: 'Bicycle',
+        // Category 8 - Upstream Leased Assets
+        office_space: 'Office Space',
+        warehouse: 'Warehouse',
+        leased_vehicles: 'Leased Vehicles',
+        // Category 9 - Downstream Transportation & Distribution
+        truck_delivery: 'Truck Delivery',
+        courier: 'Courier',
+        postal: 'Postal Service',
+        // Category 10 - Processing of Sold Products
+        energy_intensive: 'Energy Intensive Processing',
+        light: 'Light Processing',
+        processing_chemical: 'Chemical Processing',
+        // Category 11 - Use of Sold Products
+        electricity: 'Electricity Use',
+        fuel: 'Fuel Use',
+        gas: 'Gas Use',
+        // Category 12 - End-of-Life Treatment of Sold Products
+        product_recycling: 'Product Recycling',
+        product_landfill: 'Product Landfill',
+        product_incineration: 'Product Incineration',
+        // Category 13 - Downstream Leased Assets
+        leased_building: 'Leased Building',
+        leased_equipment: 'Leased Equipment',
+        // Category 14 - Franchises
+        franchise_operations: 'Franchise Operations',
+        // Category 15 - Investments
+        equity_investments: 'Equity Investments',
+        debt_investments: 'Debt Investments',
+        // Water
+        water_supply: 'Water Supply',
+        water_treatment: 'Wastewater Treatment',
+      },
+      units: {
+        kg: 'kg',
+        km: 'km',
+        m2: 'm²',
+        m3: 'm³',
+        kwh: 'kWh',
+        gj: 'GJ',
+        liters: 'Liters',
+        units: 'Units',
+        'tonne-km': 'Tonne-km',
+        packages: 'Packages',
+        franchises: 'Franchises',
+        usd: 'USD',
+        days: 'Days',
+        nights: 'Nights',
+      }
     }
   }
 };
