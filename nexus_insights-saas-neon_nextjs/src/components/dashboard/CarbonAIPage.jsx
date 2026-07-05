@@ -3269,9 +3269,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                   return;
                                 }
                               }
+                              // Mark as saved in chat UI
                               setMessages(prev => prev.map(m =>
                                 m.id === msg.id ? { ...m, entriesSaved: true } : m
                               ));
+                              // Refresh dashboard data so it shows the new entry
+                              await fetchData?.();
+                              // Notify other components
+                              window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', { detail: { source: 'chat' } }));
                             } catch {
                               setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
                             }
