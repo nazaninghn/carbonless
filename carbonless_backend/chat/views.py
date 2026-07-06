@@ -545,6 +545,75 @@ def _build_pending_entries_text(pending_entries):
     return '\n'.join(confirmations)
 
 
+# ── Calculation help triggers ─────────────────────────────────────────────────
+
+CALCULATE_HELP_TRIGGERS = {
+    'calculate my emissions factors',
+    'calculate my emission factors',
+    'calculate emissions',
+    'calculate my emissions',
+    'calculate',
+    'hesapla',
+    'emisyon hesapla',
+}
+
+
+def _is_calculation_help_prompt(text):
+    return (text or '').strip().lower() in CALCULATE_HELP_TRIGGERS
+
+
+def _calculation_help_text():
+    return (
+        "I can calculate emissions when you provide activity data.\n\n"
+        "Please send **amount + unit + activity**, for example:\n"
+        "• `18000 kWh electricity`\n"
+        "• `5000 m3 natural gas`\n"
+        "• `200 liters diesel`\n"
+        "• `4000 km road travel`\n\n"
+        "After calculation, you can save it to your dashboard."
+    )
+
+
+def _strip_internal_ai_artifacts(text):
+    """
+    Remove hidden/internal model artifacts before saving assistant message.
+    Never show emission_entry JSON, factor registry dumps, or DATA CONTEXT to users.
+    """
+    if not text:
+        return ''
+
+    def remove_internal_block(match):
+        block = match.group(0)
+        lower = block.lower()
+        internal_markers = [
+            'emission_entry', '"fuel_type"', '"activity_type"', '"activitytype"',
+            'factor_kg_co2e', 'factor_used', 'emission factor reference',
+            'data context', '"quantity"', '"unit"',
+        ]
+        if any(marker in lower for marker in internal_markers):
+            return ''
+        return block
+
+    # Remove fenced code blocks that contain internal emission data
+    text = re.sub(r'```[\s\S]*?```', remove_internal_block, text, flags=re.IGNORECASE)
+
+    # Hard remove leaked internal sections
+    leak_markers = [
+        'EMISSION FACTOR REFERENCE',
+        'DATA CONTEXT',
+        '--- DATA CONTEXT',
+        '--- END DATA CONTEXT',
+        '--- EMISSION FACTOR REFERENCE',
+        '--- END EMISSION FACTOR REFERENCE',
+    ]
+    for marker in leak_markers:
+        idx = text.find(marker)
+        if idx != -1:
+            text = text[:idx].strip()
+
+    return text.strip()
+
+
 # ── List sessions ─────────────────────────────────────────────────────────────
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -670,6 +739,23 @@ def send_message(request, session_id):
         session.title = ' '.join(content[:80].split()).strip() or 'New Chat'
         session.save(update_fields=['title'])
 
+    # ─── 0) CALCULATION HELP: generic "calculate" prompts get a guide ─────
+    if _is_calculation_help_prompt(content):
+        clean_text = _calculation_help_text()
+        ai_msg = ChatMessage.objects.create(
+            session=session, role='assistant', content=clean_text,
+        )
+        session.save(update_fields=['updated_at'])
+        return Response({
+            'id': ai_msg.id,
+            'role': 'assistant',
+            'content': clean_text,
+            'created_at': ai_msg.created_at,
+            'session_title': session.title,
+            'pending_entries': [],
+            'source': 'calculation_guide',
+        })
+
     # ─── 1) LOCAL CALCULATOR: handle simple data entries without Groq ─────
     if not attachment:
         local_entry = _try_local_emission_parse(content)
@@ -707,24 +793,18 @@ def send_message(request, session_id):
     # Parse emission entries from AI response — DO NOT save yet, return as pending
     pending_entries = _build_pending_entries_from_data(_parse_emission_entry(ai_text))
 
-    # Clean the AI response — remove the ```emission_entry blocks before saving
-    # Remove all code blocks that contain emission entry JSON (any fence format)
-    clean_text = re.sub(r'```(?:emission_entry|json)?\s*\n\{[^`]*?"fuel_type"[^`]*?\}\s*\n```', '', ai_text, flags=re.DOTALL).strip()
-    # Also remove bare ``` blocks with fuel_type JSON
-    clean_text = re.sub(r'```\s*\n\{[^`]*?"fuel_type"[^`]*?\}\s*\n```', '', clean_text, flags=re.DOTALL).strip()
+    # Clean the AI response — strip all internal artifacts (JSON blocks, factor references, etc.)
+    clean_text = _strip_internal_ai_artifacts(ai_text)
 
-    # If pending entries exist, append a clean one-line summary (not the raw JSON)
+    # If pending entries exist, replace response with clean calculation summary
     if pending_entries:
-        confirmations = []
-        for pe in pending_entries:
-            scope_label = pe['scope'].replace('scope', 'Scope ') if pe['scope'] else ''
-            confirmations.append(
-                f"✅ **{scope_label}**: "
-                f"{pe['fuel_type'].replace('_',' ').title()} — "
-                f"{pe['quantity']:g} {pe['unit']} × {pe['factor_used']:.4f} = "
-                f"**{pe['co2e_kg']:.2f} kgCO₂e** ({pe['co2e_tonne']:.4f} tCO₂e)"
-            )
-        clean_text += '\n\n' + '\n'.join(confirmations)
+        clean_text = _build_pending_entries_text(pending_entries)
+        clean_text += '\n\nWould you like to save this to your dashboard?'
+    elif not clean_text:
+        clean_text = (
+            "I can help calculate emissions. Please send amount, unit, and activity, "
+            "for example: `18000 kWh electricity`."
+        )
 
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
