@@ -495,7 +495,8 @@ def _build_pending_entries_text(pending_entries):
     for pe in pending_entries:
         scope_label = pe.get('scope', '').replace('scope', 'Scope ') if pe.get('scope') else ''
         activity = pe.get('fuel_type', '').replace('_', ' ').title()
-        source_label = pe.get('factor_source_label') or pe.get('factor_source') or 'Registered emission factor'
+        raw_source = pe.get('factor_source_label') or pe.get('factor_source') or ''
+        source_label = f'Registered factor — {raw_source}' if raw_source else 'Registered emission factor'
         confirmations.append(
             f"✅ **{scope_label}: {activity} result**\n"
             f"**{pe['co2e_kg']:,.2f} kgCO₂e** ({pe['co2e_tonne']:.2f} tCO₂e)\n"
