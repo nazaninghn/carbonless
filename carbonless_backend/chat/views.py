@@ -336,7 +336,10 @@ def _create_emission_from_chat(user, entry_data):
     return create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description)
 
 
-def _call_groq(messages_history, user_context=''):
+_LANGUAGE_NAMES = {'tr': 'Turkish', 'en': 'English'}
+
+
+def _call_groq(messages_history, user_context='', ui_language=None):
     """Call Groq API. Returns (ai_text, error, status_code)."""
     client = _get_groq_client()
     if not client:
@@ -347,7 +350,24 @@ def _call_groq(messages_history, user_context=''):
     max_tokens = int(os.environ.get('GROQ_MAX_TOKENS', '700'))
     history_limit = int(os.environ.get('GROQ_HISTORY_MESSAGES', '6'))
 
-    system_prompt = BASE_SYSTEM_PROMPT + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
+    # The frontend's own EN/TR toggle is authoritative — without this, the AI
+    # was guessing the reply language from the message text alone and would
+    # default to Turkish even when the user had EN selected and wrote in
+    # English (e.g. a short, ambiguous message like "i need help").
+    lang_name = _LANGUAGE_NAMES.get(ui_language)
+    if lang_name:
+        language_directive = (
+            f'\n\nLANGUAGE: The user has {lang_name} selected in the chat language toggle. '
+            f'Reply in {lang_name} UNLESS their message is clearly written in a different '
+            f'language, in which case match their message instead.'
+        )
+    else:
+        language_directive = ''
+
+    system_prompt = (
+        BASE_SYSTEM_PROMPT + language_directive
+        + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
+    )
 
     groq_messages = [{'role': 'system', 'content': system_prompt}]
     for msg in messages_history[-history_limit:]:
@@ -583,6 +603,7 @@ def send_message(request, session_id):
         return Response({'error': 'Session not found'}, status=404)
 
     content = (request.data.get('content') or '').strip()
+    ui_language = (request.data.get('language') or '').strip().lower()
     attachment = request.FILES.get('attachment')
 
     if not content and not attachment:
@@ -679,7 +700,7 @@ def send_message(request, session_id):
     user_context = _get_user_emission_context(request.user)
 
     # Call Groq
-    ai_text, error, status_code = _call_groq(history, user_context)
+    ai_text, error, status_code = _call_groq(history, user_context, ui_language)
     if error:
         return Response({'error': error}, status=status_code)
 

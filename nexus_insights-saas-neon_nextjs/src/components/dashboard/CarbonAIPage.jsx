@@ -2957,15 +2957,20 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
     setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent }]);
 
     try {
+      // trRef mirrors the chat's own EN/TR toggle (independent of the outer app
+      // language) — send it so the backend replies in the language actually
+      // selected in this chat, instead of guessing from the message text alone.
+      const currentLang = trRef.current ? 'tr' : 'en';
       let res;
       if (file) {
         // Use FormData for file upload
         const formData = new FormData();
         formData.append('content', content || '');
         formData.append('attachment', file);
+        formData.append('language', currentLang);
         res = await api.sendChatMessageWithFile(sessionId, formData);
       } else {
-        res = await api.sendChatMessage(sessionId, content);
+        res = await api.sendChatMessage(sessionId, content, currentLang);
       }
       if (!isMountedRef.current) return;
       if (!res.ok) {

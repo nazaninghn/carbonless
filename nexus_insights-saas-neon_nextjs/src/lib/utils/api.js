@@ -244,7 +244,7 @@ export const api = {
   createChatSession: (title = 'New Chat') => request('/chat/sessions/new/', { method: 'POST', body: JSON.stringify({ title }) }),
   getChatSession: (id) => request(`/chat/sessions/${id}/`),
   deleteChatSession: (id) => request(`/chat/sessions/${id}/`, { method: 'DELETE' }),
-  sendChatMessage: (sessionId, content) => request(`/chat/sessions/${sessionId}/message/`, { method: 'POST', body: JSON.stringify({ content }) }),
+  sendChatMessage: (sessionId, content, language) => request(`/chat/sessions/${sessionId}/message/`, { method: 'POST', body: JSON.stringify({ content, language }) }),
   sendChatMessageWithFile: (sessionId, formData) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('_ca') : null;
     /** @type {Record<string, string>} */
