@@ -239,6 +239,18 @@ def resolve_scope3_activity(category, subtype, quantity, unit):
     return resolve_factor_and_amount(activity_type, quantity, unit)
 
 
+def _get_entry_status(user, company):
+    """Determine entry status based on user role in company."""
+    try:
+        from companies.models import CompanyMembership
+        membership = CompanyMembership.objects.filter(user=user, company=company, is_active=True).first()
+        if membership and membership.role in ('owner', 'admin', 'manager'):
+            return 'approved'
+    except Exception:
+        pass
+    return 'submitted'
+
+
 def create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description=''):
     """
     Resolves the activity to a real factor and creates the EmissionEntry.
@@ -266,7 +278,7 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
         description=description or f'{activity_type} {quantity} {unit}',
         factor_value_snapshot=factor.factor_kg_co2e,
         factor_source_snapshot=factor.source,
-        status='approved',
+        status=_get_entry_status(user, company),
     )
     return entry, None
 

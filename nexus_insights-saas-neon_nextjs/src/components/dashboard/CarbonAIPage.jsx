@@ -2822,6 +2822,8 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // File attachment state
   const [attachedFile, setAttachedFile] = useState(null);
   const fileInputRef = useRef(null);
+  // Prevents double-click duplicates on save button
+  const [savingMessageId, setSavingMessageId] = useState(null);
   // Mirrors creatingSessionRef so the "New Chat" buttons can be disabled while
   // the createChatSession request is in-flight (refs don't trigger re-renders).
   const [creatingSession, setCreatingSession] = useState(false);
@@ -3007,6 +3009,41 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   }, [activeId, attachedFile, fetchData]);
 
   const startNew = useCallback(async (initialPrompt = '') => {
+    // ── Calculate button: show local guide instead of calling the API ──
+    const calcTriggers = [
+      'calculate my emission factors', 'emisyon faktörlerini hesapla',
+      'calculate my emissions', 'calculate emissions', 'hesapla',
+    ];
+    if (initialPrompt && calcTriggers.includes(initialPrompt.trim().toLowerCase())) {
+      const guideContent = trRef.current
+        ? 'Hesaplama için miktar, birim ve aktivite girin.\n\nÖrnek:\n• 18000 kWh electricity\n• 5000 m3 natural gas\n• 200 liters diesel\n• 4000 km road travel'
+        : 'To calculate emissions, enter amount, unit, and activity.\n\nExamples:\n• 18000 kWh electricity\n• 5000 m3 natural gas\n• 200 liters diesel\n• 4000 km road travel';
+      // Create session without sending to AI
+      if (creatingSessionRef.current) return;
+      creatingSessionRef.current = true;
+      setCreatingSession(true);
+      try {
+        const res = await api.createChatSession();
+        if (!isMountedRef.current) return;
+        if (!res.ok) {
+          setError(trRef.current ? 'Sohbet başlatılamadı.' : 'Failed to start chat.');
+          return;
+        }
+        const session = await res.json();
+        if (!isMountedRef.current) return;
+        setSessions(prev => [session, ...prev]);
+        setActiveId(session.id);
+        setError('');
+        setMessages([{ id: `guide-${session.id}`, role: 'assistant', content: guideContent }]);
+      } catch {
+        if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
+      } finally {
+        creatingSessionRef.current = false;
+        if (isMountedRef.current) setCreatingSession(false);
+      }
+      return;
+    }
+
     // Prevent concurrent "New chat" clicks from creating duplicate sessions.
     // Ref provides the synchronous guard; state drives the disabled prop on the button.
     if (creatingSessionRef.current) return;
@@ -3265,6 +3302,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                       <div className="flex gap-2.5">
                         <button
                           onClick={async () => {
+                            setSavingMessageId(msg.id);
                             try {
                               for (const pe of msg.pending_entries) {
                                 const res = await api.confirmEmissionEntry(pe);
@@ -3284,12 +3322,15 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                               window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', { detail: { source: 'chat' } }));
                             } catch {
                               setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+                            } finally {
+                              setSavingMessageId(null);
                             }
                           }}
-                          className="flex items-center gap-2 rounded-full bg-[#53A67F] px-5 py-2.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
+                          disabled={savingMessageId === msg.id}
+                          className="flex items-center gap-2 rounded-full bg-[#53A67F] px-5 py-2.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <CheckCircle2 className="h-4 w-4" />
-                          {tr ? 'Evet, Kaydet' : 'Yes, Save'}
+                          {savingMessageId === msg.id ? (tr ? 'Kaydediliyor...' : 'Saving...') : (tr ? 'Evet, Kaydet' : 'Yes, Save')}
                         </button>
                         <button
                           onClick={() => {
