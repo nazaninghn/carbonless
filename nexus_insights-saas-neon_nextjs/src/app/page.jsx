@@ -426,7 +426,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={16} height={16} className="h-4 w-4 object-contain" />
-            <span className="text-[11px] sm:text-[12px] font-medium text-[#302817]/40">&copy; 2024 Carbonless. All rights reserved.</span>
+            <span className="text-[11px] sm:text-[12px] font-medium text-[#302817]/40">&copy; 2025 Carbonless. All rights reserved.</span>
           </div>
           <div className="flex gap-4">
             <Link href="/terms" className="text-[11px] sm:text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
