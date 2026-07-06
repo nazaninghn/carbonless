@@ -17,10 +17,9 @@ from decimal import Decimal, InvalidOperation
 
 from .models import EmissionFactor, EmissionEntry
 try:
-    from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
+    from .scope3_categories import SCOPE3_CATEGORIES
 except ImportError:
     SCOPE3_CATEGORIES = {}
-    SCOPE3_GHG_NUMBER = {}
 
 # (activity_type, normalized_unit) -> EmissionFactor.slug
 ACTIVITY_TO_SLUG = {
@@ -279,88 +278,32 @@ def get_emission_factor_reference():
     that includes it always cites (and the backend always uses) the actual
     current value — never a stale hardcoded number.
 
-    Output is grouped: Scope 1 & 2 activities first (alphabetical), then
-    Scope 3 activities grouped by GHG Protocol category number with headers.
+    Kept to ONE compact line per activity (all its units inline, no per-line
+    source citation, no category headers). The previous, fully-verbose/grouped
+    version of this function — one line per (activity, unit) pair, with a
+    header per Scope 3 category and a full source name on every line — grew
+    to several thousand tokens once ACTIVITY_TO_SLUG expanded to cover all 15
+    Scope 3 categories, and was the single largest contributor to every chat
+    request exceeding Groq's per-minute token budget (413 rate_limit_exceeded).
     """
     try:
-        lines = ['', '--- EMISSION FACTOR REFERENCE (use ONLY these values — never your own training data) ---']
-
-        # Build a set of all Scope 3 category prefixes for quick membership checks
-        scope3_prefixes = set(SCOPE3_CATEGORIES.keys())
-
-        # Separate activities into non-Scope-3 (Scope 1 & 2) and Scope 3
+        lines = ['', 'REGISTERED EMISSION FACTORS (kgCO2e per unit — use ONLY these numbers):']
         by_activity = {}
         for (activity, unit), slug in ACTIVITY_TO_SLUG.items():
             by_activity.setdefault(activity, []).append((unit, slug))
 
-        non_scope3_activities = {}
-        scope3_activities = {}
+        for activity in sorted(by_activity):
+            parts = []
+            for unit, slug in by_activity[activity]:
+                factor = (
+                    EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
+                    or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
+                )
+                if factor:
+                    parts.append(f'{unit}={factor.factor_kg_co2e}')
+            if parts:
+                lines.append(f'{activity}: {" ".join(parts)}')
 
-        for activity, entries in by_activity.items():
-            # An activity belongs to a Scope 3 category if it starts with a category key
-            matched_category = None
-            for prefix in scope3_prefixes:
-                if activity == prefix or activity.startswith(prefix + '_'):
-                    matched_category = prefix
-                    break
-            if matched_category:
-                scope3_activities.setdefault(matched_category, {})[activity] = entries
-            else:
-                non_scope3_activities[activity] = entries
-
-        # --- Scope 1 & 2 activities (alphabetical) ---
-        if non_scope3_activities:
-            lines.append('')
-            lines.append('  [Scope 1 & 2]')
-            for activity in sorted(non_scope3_activities):
-                for unit, slug in non_scope3_activities[activity]:
-                    factor = (
-                        EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
-                        or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
-                    )
-                    if not factor:
-                        continue
-                    lines.append(
-                        f'  - activity_type="{activity}", unit="{unit}": '
-                        f'{factor.factor_kg_co2e} kgCO2e/{unit} (source: {factor.get_source_display()})'
-                    )
-
-        # --- Scope 3 activities grouped by category number ---
-        # Sort categories by GHG number (water with None goes last)
-        sorted_categories = sorted(
-            scope3_activities.keys(),
-            key=lambda c: (SCOPE3_GHG_NUMBER.get(c, 999), c)
-        )
-
-        for category_key in sorted_categories:
-            cat_meta = SCOPE3_CATEGORIES[category_key]
-            ghg_num = SCOPE3_GHG_NUMBER.get(category_key)
-            cat_name = cat_meta['name_en']
-
-            if ghg_num:
-                header = f'  [Cat {ghg_num} - {cat_name}]'
-            else:
-                header = f'  [{cat_name}]'
-
-            lines.append('')
-            lines.append(header)
-
-            activities_in_cat = scope3_activities[category_key]
-            for activity in sorted(activities_in_cat):
-                for unit, slug in activities_in_cat[activity]:
-                    factor = (
-                        EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
-                        or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
-                    )
-                    if not factor:
-                        continue
-                    lines.append(
-                        f'  - activity_type="{activity}", unit="{unit}": '
-                        f'{factor.factor_kg_co2e} kgCO2e/{unit} (source: {factor.get_source_display()})'
-                    )
-
-        lines.append('')
-        lines.append('--- END EMISSION FACTOR REFERENCE ---')
         return '\n'.join(lines)
     except Exception:
         return ''

@@ -110,8 +110,15 @@ def _build_scope3_category_prompt():
     """
     Build a Scope 3 category listing section for the AI system prompt.
 
-    Includes all 15 GHG Protocol categories with EN/TR names, valid sub-types,
-    expected units, and instructions for composing activity_type keys.
+    Includes all 15 GHG Protocol categories with valid sub-types and units,
+    so the AI can compose the correct activity_type key.
+
+    Kept deliberately compact (one line per category, English keys only — the
+    AI still replies in the user's language regardless) — this block plus the
+    emission factor reference plus conversation history must all fit under
+    Groq's per-minute token budget, and the previous, fully-verbose version of
+    this function alone was ~1900 tokens, which is what caused every chat
+    message to fail with a 413 'rate_limit_exceeded' token-budget error.
     """
     try:
         from emissions.scope3_categories import SCOPE3_CATEGORIES
@@ -119,16 +126,8 @@ def _build_scope3_category_prompt():
         return ''  # Gracefully degrade if scope3_categories not yet deployed
     lines = [
         '',
-        '',
-        'SCOPE 3 CATEGORY REFERENCE:',
-        'Below are all 15 GHG Protocol Scope 3 categories. Use this to identify the correct',
-        'category and sub-type when the user describes a Scope 3 emission activity.',
-        '',
-        'Pattern: activity_type = "{category}_{subtype}", unit = "{unit from registry}"',
-        'Example: activity_type = "purchased_goods_electrical_large", unit = "kg"',
-        '',
-        'Special case: For franchises (Category 14), use activity_type = "franchises" (not "franchises_franchise_operations").',
-        '',
+        'SCOPE 3 CATEGORIES (activity_type = "{category}_{subtype}", unit as shown; '
+        'franchises uses activity_type="franchises" with no subtype):',
     ]
 
     for cat_key, cat_data in SCOPE3_CATEGORIES.items():
@@ -137,41 +136,23 @@ def _build_scope3_category_prompt():
         if ghg_num is None:
             continue
 
-        name_en = cat_data['name_en']
-        name_tr = cat_data['name_tr']
-        lines.append(f'Category {ghg_num}: {name_en} / {name_tr} (key: "{cat_key}")')
-
         subtypes = cat_data.get('subtypes', {})
-        for st_key, st_data in subtypes.items():
-            unit = st_data['unit']
-            st_name_en = st_data.get('name_en', st_key)
-            st_name_tr = st_data.get('name_tr', st_key)
-            if cat_key == 'franchises':
-                activity_type_example = 'franchises'
-            else:
-                activity_type_example = f'{cat_key}_{st_key}'
-            lines.append(f'  - {st_name_en} / {st_name_tr}: activity_type="{activity_type_example}", unit="{unit}"')
-
-        lines.append('')
+        if cat_key == 'franchises':
+            parts = 'franchises(units)'
+        else:
+            parts = ' '.join(f'{cat_key}_{st_key}({st_data["unit"]})' for st_key, st_data in subtypes.items())
+        lines.append(f'Cat{ghg_num} {cat_data["name_en"]}: {parts}')
 
     # Also include water (non-standard but supported)
     water = SCOPE3_CATEGORIES.get('water')
     if water:
-        lines.append(f'Additional: {water["name_en"]} / {water["name_tr"]} (key: "water")')
-        for st_key, st_data in water.get('subtypes', {}).items():
-            unit = st_data['unit']
-            st_name_en = st_data.get('name_en', st_key)
-            st_name_tr = st_data.get('name_tr', st_key)
-            lines.append(f'  - {st_name_en} / {st_name_tr}: activity_type="water_{st_key}", unit="{unit}"')
-        lines.append('')
+        parts = ' '.join(f'water_{st_key}({st_data["unit"]})' for st_key, st_data in water.get('subtypes', {}).items())
+        lines.append(f'Water: {parts}')
 
-    lines.append('INSTRUCTIONS FOR SCOPE 3 ACTIVITIES:')
-    lines.append('When the user mentions a Scope 3 activity, identify the category and sub-type.')
-    lines.append('If ambiguous, ask which category or sub-type they mean.')
-    lines.append('Compose the activity_type as "{category}_{subtype}" and use the unit listed above.')
-    lines.append('If the user speaks Turkish, use the Turkish names above to match their description.')
-    lines.append('--- END SCOPE 3 CATEGORY REFERENCE ---')
-    lines.append('')
+    lines.append(
+        'If ambiguous which sub-type applies, ask. Category/sub-type names above are English '
+        'keys only — respond to the user in their own language as usual.'
+    )
 
     return '\n'.join(lines)
 
