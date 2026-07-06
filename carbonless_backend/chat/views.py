@@ -478,6 +478,10 @@ def _build_pending_entries_from_data(emission_blocks):
                 'factor_used': float(factor.factor_kg_co2e),
                 'factor_unit': factor.unit,
                 'factor_id': factor.pk,
+                'factor_name': getattr(factor, 'name', ''),
+                'factor_source': getattr(factor, 'source', ''),
+                'factor_source_label': factor.get_source_display() if hasattr(factor, 'get_source_display') else getattr(factor, 'source', ''),
+                'factor_reference': getattr(factor, 'reference', ''),
                 'scope': factor.scope,
             })
         elif err:
@@ -486,17 +490,18 @@ def _build_pending_entries_from_data(emission_blocks):
 
 
 def _build_pending_entries_text(pending_entries):
-    """Build clean display text for pending entries — no formula, just result."""
+    """Build clean result text — no formula, no quantity, just result + source."""
     confirmations = []
     for pe in pending_entries:
-        scope_label = pe['scope'].replace('scope', 'Scope ') if pe['scope'] else ''
+        scope_label = pe.get('scope', '').replace('scope', 'Scope ') if pe.get('scope') else ''
+        activity = pe.get('fuel_type', '').replace('_', ' ').title()
+        source_label = pe.get('factor_source_label') or pe.get('factor_source') or 'Registered emission factor'
         confirmations.append(
-            f"✅ **{scope_label}**: "
-            f"{pe['fuel_type'].replace('_', ' ').title()} — "
-            f"{pe['quantity']:g} {pe['unit']} = "
-            f"**{pe['co2e_kg']:.2f} kgCO₂e**"
+            f"✅ **{scope_label}: {activity} result**\n"
+            f"**{pe['co2e_kg']:,.2f} kgCO₂e** ({pe['co2e_tonne']:.2f} tCO₂e)\n"
+            f"Source: {source_label}"
         )
-    return '\n'.join(confirmations)
+    return '\n\n'.join(confirmations)
 
 
 # ── Calculation help triggers ─────────────────────────────────────────────────
@@ -722,7 +727,6 @@ def send_message(request, session_id):
             pending_entries = _build_pending_entries_from_data([local_entry])
             if pending_entries:
                 clean_text = _build_pending_entries_text(pending_entries)
-                clean_text += '\n\nWould you like to save this to your dashboard?'
                 ai_msg = ChatMessage.objects.create(
                     session=session, role='assistant', content=clean_text,
                 )
@@ -758,7 +762,6 @@ def send_message(request, session_id):
     # If pending entries exist, replace response with clean calculation summary
     if pending_entries:
         clean_text = _build_pending_entries_text(pending_entries)
-        clean_text += '\n\nWould you like to save this to your dashboard?'
     elif not clean_text:
         clean_text = (
             "I can help calculate emissions. Please send amount, unit, and activity, "

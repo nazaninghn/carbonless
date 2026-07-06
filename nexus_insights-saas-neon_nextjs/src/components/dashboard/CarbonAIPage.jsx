@@ -3286,16 +3286,24 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                   {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
                     <div className="ml-9 mt-3 rounded-2xl border border-[#53A67F]/20 bg-gradient-to-br from-[#f0f9f4] to-white p-4 shadow-sm">
                       <p className="text-[13px] font-bold text-[#302817] mb-3">
-                        {tr ? '📋 Bu veriyi dashboard\'a kaydetmek ister misiniz?' : '📋 Would you like to save this data to the dashboard?'}
+                        {tr ? '💾 Bu sonucu dashboard\'a kaydet?' : '💾 Save this result to your dashboard?'}
                       </p>
-                      {/* Show summary of what will be saved */}
-                      <div className="mb-3 space-y-1.5">
+                      {/* Show clean result summary */}
+                      <div className="mb-3 space-y-2">
                         {msg.pending_entries.map((pe, idx) => (
-                          <div key={idx} className="flex items-center gap-2 rounded-lg bg-white/80 border border-[#302817]/5 px-3 py-2">
-                            <span className="text-[11px] font-bold text-[#53A67F]">●</span>
-                            <span className="text-[12px] text-[#302817]/70">
-                              {pe.fuel_type.replace(/_/g, ' ')} — {pe.quantity} {pe.unit} = <strong>{pe.co2e_kg?.toFixed(2)} kgCO₂e</strong>
-                            </span>
+                          <div key={idx} className="rounded-lg bg-white/80 border border-[#302817]/5 px-3 py-2.5">
+                            <div className="text-[12px] text-[#302817]/80">
+                              <span className="font-semibold capitalize">{(pe.fuel_type || '').replace(/_/g, ' ')}</span>
+                              {' result: '}
+                              <span className="font-bold text-[#1f3b2b]">{Number(pe.co2e_kg).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} kgCO₂e</span>
+                              {' '}
+                              <span className="text-[#7a8b7f]">({Number(pe.co2e_tonne).toFixed(2)} tCO₂e)</span>
+                            </div>
+                            {pe.factor_source_label && (
+                              <div className="mt-1 text-[10px] text-[#7a8b7f]">
+                                Source: {pe.factor_source_label}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
