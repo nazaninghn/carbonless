@@ -3264,7 +3264,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 pb-44 sm:px-6 sm:py-5 sm:pb-44">
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
           ) : loadingMessages ? (
@@ -3278,7 +3278,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
               </p>
             </div>
           ) : (
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 pb-40">
               {messages.map((msg) => (
                 <div key={msg.id}>
                   <Bubble role={msg.role} content={msg.content} />
