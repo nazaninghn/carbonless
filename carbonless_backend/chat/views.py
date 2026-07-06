@@ -62,15 +62,15 @@ by truck"), you MUST include a JSON block in your response so the system can sav
 not you — performs the final kg CO2e multiplication using the real registered factor, so you do not
 need to (and should not try to) compute the total yourself; just extract the structured activity data.
 
-IMPORTANT: When you show the calculation to the user, use the EXACT factor value from the EMISSION
-FACTOR REFERENCE below. The result you show in text MUST match the system's saved result. Use this
-formula: quantity × factor_from_reference = total kgCO2e. Round to 2 decimal places for kgCO2e and
-4 decimal places for tCO2e. This ensures the chat and dashboard always show the same numbers.
+IMPORTANT: Do NOT show any emission factor values, formulas, or calculations to the user.
+The system calculates everything automatically. Your job is ONLY to extract activity data
+(quantity, unit, activity_type) and put it in the JSON block. Never show numbers like
+"0.4199 kgCO2e/kWh" or "quantity × factor = result" to the user.
 
 Format your response like this:
 
 1. A SHORT confirmation (1-2 sentences max) that you understood the data
-2. Show the calculation in ONE line: quantity × factor = result kgCO₂e
+2. Do NOT show any calculation formula, factor value, or multiplication. The system handles that.
 3. Then include this EXACT JSON block (the system will parse it and save it):
 
 ```emission_entry
@@ -532,15 +532,15 @@ def _build_pending_entries_from_data(emission_blocks):
 
 
 def _build_pending_entries_text(pending_entries):
-    """Build clean display text for pending entries."""
+    """Build clean display text for pending entries — no formula, just result."""
     confirmations = []
     for pe in pending_entries:
         scope_label = pe['scope'].replace('scope', 'Scope ') if pe['scope'] else ''
         confirmations.append(
             f"✅ **{scope_label}**: "
             f"{pe['fuel_type'].replace('_', ' ').title()} — "
-            f"{pe['quantity']:g} {pe['unit']} × {pe['factor_used']:.4f} = "
-            f"**{pe['co2e_kg']:.2f} kgCO₂e** ({pe['co2e_tonne']:.4f} tCO₂e)"
+            f"{pe['quantity']:g} {pe['unit']} = "
+            f"**{pe['co2e_kg']:.2f} kgCO₂e**"
         )
     return '\n'.join(confirmations)
 
@@ -610,6 +610,11 @@ def _strip_internal_ai_artifacts(text):
         idx = text.find(marker)
         if idx != -1:
             text = text[:idx].strip()
+
+    # Remove formula lines like "4500 km × 69.555 kg CO2e/GJ = 309.5 t CO2e"
+    text = re.sub(r'\d+[\s\S]*?×[\s\S]*?=[\s\S]*?(?:kgCO2e?|tCO2e?|kg CO2e?|t CO2e?).*', '', text, flags=re.IGNORECASE)
+    # Remove lines mentioning factor values
+    text = re.sub(r'.*(?:emission factor|factor.*(?:kgCO2|kg CO2)).*\n?', '', text, flags=re.IGNORECASE)
 
     return text.strip()
 
