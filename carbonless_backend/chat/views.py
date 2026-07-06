@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
+from .local_parser import try_local_emission_parse
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
 
 try:
@@ -375,81 +376,7 @@ def _session_to_dict(session, include_messages=False):
 
 
 # ── Local emission calculator (no Groq needed) ────────────────────────────────
-
-LOCAL_ACTIVITY_ALIASES = {
-    'electricity': ['electricity', 'elektrik', 'grid electricity', 'برق'],
-    'natural_gas': ['natural gas', 'doğalgaz', 'dogalgaz', 'gas', 'گاز'],
-    'diesel': ['diesel', 'mazot', 'دیزل', 'گازوییل'],
-    'petrol': ['petrol', 'gasoline', 'benzin', 'بنزین'],
-    'lpg': ['lpg'],
-    'coal': ['coal', 'kömür', 'komur', 'زغال'],
-    'road_travel': ['car', 'road', 'drive', 'araba', 'ماشین', 'خودرو'],
-    'water_water_supply': ['water supply', 'su', 'آب'],
-}
-
-
-def _normalise_unit(unit):
-    unit = (unit or '').strip().lower()
-    return {
-        'm³': 'm3', 'm^3': 'm3',
-        'kw/h': 'kwh', 'kw h': 'kwh',
-        'liter': 'liters', 'litre': 'liters', 'litres': 'liters', 'l': 'liters', 'lt': 'liters',
-        'ton': 'tonne', 'tons': 'tonne', 'tonnes': 'tonne',
-        'tkm': 'tonne-km',
-    }.get(unit, unit)
-
-
-def _detect_activity_type(text):
-    t = text.lower()
-    for activity_type, aliases in LOCAL_ACTIVITY_ALIASES.items():
-        if any(alias in t for alias in aliases):
-            return activity_type
-    if 'kwh' in t or 'kw/h' in t:
-        return 'electricity'
-    if ('m3' in t or 'm³' in t or 'm^3' in t) and 'gas' in t:
-        return 'natural_gas'
-    return None
-
-
-def _try_local_emission_parse(text):
-    """Try to parse a simple emission data entry from user text without Groq."""
-    if not text:
-        return None
-
-    lower_text = text.lower()
-
-    # Skip questions / analysis requests
-    question_words = [
-        'how', 'why', 'what', 'explain', 'summarize', 'report', 'reduce', 'strategy',
-        'iso', 'ghg', 'nasıl', 'neden', 'nedir', 'özetle', 'rapor',
-        'چطور', 'چگونه', 'چرا', 'چیست', 'گزارش', 'توضیح',
-    ]
-    if '?' in text or any(q in lower_text for q in question_words):
-        return None
-
-    pattern = (
-        r'(?P<quantity>\d+(?:[.,]\d+)?)\s*'
-        r'(?P<unit>kwh|kw/h|m3|m³|m\^3|liters?|litres?|l|lt|kg|km|tonne-km|tkm|gj)\b'
-    )
-    match = re.search(pattern, text, re.IGNORECASE)
-    if not match:
-        return None
-
-    activity_type = _detect_activity_type(text)
-    if not activity_type:
-        return None
-
-    quantity = match.group('quantity').replace(',', '.')
-    unit = _normalise_unit(match.group('unit'))
-
-    return {
-        'fuel_type': activity_type,
-        'quantity': float(quantity),
-        'unit': unit,
-        'month': datetime.now(timezone.utc).month,
-        'year': datetime.now(timezone.utc).year,
-        'description': f'AI Chat: {activity_type} {quantity} {unit}',
-    }
+# Moved to chat/local_parser.py — imported at module top as try_local_emission_parse.
 
 
 def _build_pending_entries_from_data(emission_blocks):
@@ -723,7 +650,7 @@ def send_message(request, session_id):
 
     # ─── 1) LOCAL CALCULATOR: handle simple data entries without Groq ─────
     if not attachment:
-        local_entry = _try_local_emission_parse(content)
+        local_entry = try_local_emission_parse(content)
         if local_entry:
             pending_entries = _build_pending_entries_from_data([local_entry])
             if pending_entries:
