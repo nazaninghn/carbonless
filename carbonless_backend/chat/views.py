@@ -814,5 +814,6 @@ def confirm_entry(request):
         'co2e_kg': float(entry.calculated_co2e_kg),
         'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
         'scope': entry.emission_factor.scope if entry.emission_factor else '',
-        'status': 'saved',
+        'status': entry.status,
+        'entry_status': entry.status,
     }, status=201)

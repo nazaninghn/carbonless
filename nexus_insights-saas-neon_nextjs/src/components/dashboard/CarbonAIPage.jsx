@@ -3312,6 +3312,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                           onClick={async () => {
                             setSavingMessageId(msg.id);
                             try {
+                              let lastStatus = 'approved';
                               for (const pe of msg.pending_entries) {
                                 const res = await api.confirmEmissionEntry(pe);
                                 if (!res.ok) {
@@ -3319,10 +3320,12 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                   setError(d.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
                                   return;
                                 }
+                                const data = await res.json().catch(() => ({}));
+                                if (data.entry_status) lastStatus = data.entry_status;
                               }
-                              // Mark as saved in chat UI
+                              // Mark as saved in chat UI with status
                               setMessages(prev => prev.map(m =>
-                                m.id === msg.id ? { ...m, entriesSaved: true } : m
+                                m.id === msg.id ? { ...m, entriesSaved: true, entryStatus: lastStatus } : m
                               ));
                               // Refresh dashboard data so it shows the new entry
                               await fetchData?.();
@@ -3355,9 +3358,16 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                     </div>
                   )}
                   {msg.entriesSaved && !msg.entriesRejected && (
-                    <div className="ml-9 mt-2 flex items-center gap-2 text-[12px] font-semibold text-[#53A67F]">
-                      <CheckCircle2 className="h-4 w-4" />
-                      {tr ? 'Dashboard\'a kaydedildi ✓' : 'Saved to Dashboard ✓'}
+                    <div className="ml-9 mt-2 rounded-xl bg-[#f0f9f4] border border-[#53A67F]/20 px-4 py-2.5">
+                      <div className="flex items-center gap-2 text-[12px] font-semibold text-[#53A67F]">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {tr ? 'Dashboard\'a kaydedildi ✓' : 'Saved to dashboard ✓'}
+                      </div>
+                      <div className="mt-1 text-[10px] text-[#7a8b7f]">
+                        {msg.entryStatus === 'approved'
+                          ? (tr ? 'Durum: Onaylandı' : 'Status: Approved')
+                          : (tr ? 'Durum: İnceleme bekliyor' : 'Status: Submitted for review')}
+                      </div>
                     </div>
                   )}
                   {msg.entriesRejected && (
