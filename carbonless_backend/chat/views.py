@@ -540,6 +540,16 @@ def _handle_nlu_guided_reply(request, session, content):
     # Remove internal tracking keys temporarily for readiness check
     clean_draft = {k: v for k, v in updated_draft.items() if not k.startswith('_')}
 
+    # Extra guard: for vehicle_distance with multiple vehicles, ALWAYS ask distance_basis
+    if family == 'vehicle_distance':
+        vc = clean_draft.get('vehicle_count')
+        try:
+            vc_num = int(vc or 0)
+        except (TypeError, ValueError):
+            vc_num = 0
+        if vc_num > 1 and not clean_draft.get('distance_basis'):
+            return _ask_guided_question(session, family, clean_draft)
+
     if is_ready_to_calculate(family, clean_draft):
         return _complete_guided_draft(session, clean_draft)
 
@@ -980,6 +990,9 @@ def _handle_guided_reply(request, session, content):
     """Handle a reply to a guided flow question (e.g. fuel type selection)."""
     draft = (session.state or {}).get('guided_draft')
     if not draft:
+        return None
+    # Don't process NLU-based drafts here — those are handled by _handle_nlu_guided_reply
+    if draft.get('_nlu_flow'):
         return None
 
     selected = content.strip().lower()
