@@ -540,7 +540,8 @@ def _handle_nlu_guided_reply(request, session, content):
     # Remove internal tracking keys temporarily for readiness check
     clean_draft = {k: v for k, v in updated_draft.items() if not k.startswith('_')}
 
-    # Extra guard: for vehicle_distance with multiple vehicles, ALWAYS ask distance_basis
+    # Vehicle distance: if vehicle_count > 1 and distance_basis not yet answered,
+    # ALWAYS ask it next, regardless of what the schema says.
     if family == 'vehicle_distance':
         vc = clean_draft.get('vehicle_count')
         try:
@@ -548,7 +549,20 @@ def _handle_nlu_guided_reply(request, session, content):
         except (TypeError, ValueError):
             vc_num = 0
         if vc_num > 1 and not clean_draft.get('distance_basis'):
-            return _ask_guided_question(session, family, clean_draft)
+            # Store draft and ask distance_basis explicitly
+            session.state = {
+                **(session.state or {}),
+                'guided_draft': {**clean_draft, '_nlu_flow': True, '_next_field': 'distance_basis'},
+            }
+            session.save(update_fields=['state', 'updated_at'])
+            quick_replies = _format_quick_replies(['per_vehicle', 'fleet_total'], 'distance_basis')
+            ui = {'quick_replies': quick_replies, 'flow': 'nlu_vehicle_distance'}
+            text = (
+                f"I can calculate this, but I need one more detail.\n\n"
+                f"You mentioned **{vc_num} vehicles** and **{clean_draft.get('quantity', 0)} km**.\n\n"
+                f"**Is the distance per vehicle or total for all vehicles?**"
+            )
+            return _assistant_response(session, text, ui=ui, source='nlu_guided')
 
     if is_ready_to_calculate(family, clean_draft):
         return _complete_guided_draft(session, clean_draft)
@@ -1009,6 +1023,42 @@ def _handle_guided_reply(request, session, content):
             'pending_entries': [], 'source': 'guided_flow',
         })
 
+    # ── Distance basis selection (per_vehicle / fleet_total) ────────────
+    if selected in ('per_vehicle', 'fleet_total'):
+        quantity = draft.get('quantity', 0)
+        vehicle_count = draft.get('vehicle_count')
+        try:
+            vc_num = int(vehicle_count or 0)
+        except (TypeError, ValueError):
+            vc_num = 0
+
+        if selected == 'per_vehicle' and vc_num > 1:
+            quantity = float(quantity) * vc_num
+
+        entry_data = {
+            'fuel_type': 'road_travel',
+            'quantity': float(quantity),
+            'unit': draft.get('unit', 'km'),
+            'month': datetime.now(timezone.utc).month,
+            'year': datetime.now(timezone.utc).year,
+            'description': f"{draft.get('vehicle_type', 'vehicle')} travel — {selected.replace('_', ' ')}",
+        }
+
+        pending_entries = _build_pending_entries_from_data([entry_data])
+        session.state = {**(session.state or {}), 'guided_draft': None}
+        session.save(update_fields=['state', 'updated_at'])
+
+        if pending_entries:
+            clean_text = _build_pending_entries_text(pending_entries)
+            ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
+            return Response({
+                'id': ai_msg.id, 'role': 'assistant', 'content': clean_text,
+                'created_at': ai_msg.created_at, 'session_title': session.title,
+                'pending_entries': pending_entries, 'source': 'guided_calculator',
+            })
+
+        return None
+
     # ── Fuel type selection (truck/car flow) ─────────────────────────────
     fuel_map = {
         'diesel': 'diesel',
@@ -1048,6 +1098,38 @@ def _handle_guided_reply(request, session, content):
     direct_activity = activity_direct_map.get(selected)
 
     if fuel_type:
+        # If multiple vehicles mentioned, ask distance_basis before calculating
+        vehicle_count = draft.get('vehicle_count')
+        try:
+            vc_num = int(vehicle_count or 0)
+        except (TypeError, ValueError):
+            vc_num = 0
+        if vc_num > 1 and not draft.get('distance_basis'):
+            # Store fuel_type in draft and ask distance_basis
+            draft['fuel_type'] = fuel_type
+            draft['missing'] = ['distance_basis']
+            session.state = {**(session.state or {}), 'guided_draft': draft}
+            session.save(update_fields=['state', 'updated_at'])
+            quick_replies = [
+                {'label': 'Per vehicle', 'value': 'per_vehicle', 'kind': 'distance_basis'},
+                {'label': 'Total for all vehicles', 'value': 'fleet_total', 'kind': 'distance_basis'},
+                {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+            ]
+            clean_text = (
+                f"Got it — {fuel_type}.\n\n"
+                f"You mentioned **{vc_num} vehicles** and **{draft.get('quantity', 0):g} km**.\n\n"
+                f"**Is the distance per vehicle or total for all vehicles?**"
+            )
+            ai_msg = ChatMessage.objects.create(
+                session=session, role='assistant', content=clean_text,
+                ui={'quick_replies': quick_replies},
+            )
+            return Response({
+                'id': ai_msg.id, 'role': 'assistant', 'content': clean_text,
+                'created_at': ai_msg.created_at, 'session_title': session.title,
+                'pending_entries': [], 'ui': ai_msg.ui, 'source': 'guided_flow',
+            })
+
         # Build the entry using road_travel factor (distance-based)
         entry_data = {
             'fuel_type': 'road_travel',
