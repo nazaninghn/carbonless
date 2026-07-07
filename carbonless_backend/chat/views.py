@@ -8,6 +8,12 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
 from .local_parser import try_local_emission_parse, try_guided_draft_parse
+from .nlu_extractor import extract_emission_intent
+from .calculation_registry import (
+    normalize_nlu, get_schema, prepare_guided_draft,
+    apply_guided_answer, build_guided_ui, is_ready_to_calculate,
+    draft_to_entry_data,
+)
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
 
 try:
@@ -224,6 +230,342 @@ def _get_groq_client():
     return _groq_client_cache
 
 
+# ── NLU / Registry → factor_lookup adapter ────────────────────────────────────
+
+def _normalise_nlu_unit(unit):
+    """Normalize units from NLU output to factor_lookup-compatible units."""
+    if not unit:
+        return unit
+
+    u = str(unit).strip().lower()
+
+    unit_map = {
+        'litre': 'liters',
+        'litres': 'liters',
+        'liter': 'liters',
+        'l': 'liters',
+        'lt': 'liters',
+        'm³': 'm3',
+        'm^3': 'm3',
+        'tonnes': 'tonne',
+        'tons': 'tonne',
+        'tonne_km': 'tonne-km',
+        'tonne km': 'tonne-km',
+        'tkm': 'tonne-km',
+        'kwh': 'kwh',
+    }
+
+    return unit_map.get(u, u)
+
+
+def _map_registry_entry_to_factor_entry(registry_entry):
+    """
+    Adapter: map calculation_registry.draft_to_entry_data() output into a dict
+    that _build_pending_entries_from_data / factor_lookup can understand.
+    """
+    family = registry_entry.get('activity_family')
+    raw_activity = (
+        registry_entry.get('activity_type')
+        or registry_entry.get('fuel_type')
+        or ''
+    )
+    raw_activity = str(raw_activity).strip().lower()
+
+    unit = _normalise_nlu_unit(registry_entry.get('unit'))
+
+    activity_type = raw_activity
+
+    if family == 'electricity':
+        activity_type = 'electricity'
+
+    elif family == 'stationary_fuel':
+        activity_type = registry_entry.get('fuel_type') or raw_activity
+
+    elif family == 'vehicle_distance':
+        activity_type = 'road_travel'
+
+    elif family == 'waste':
+        waste_map = {
+            'landfill': 'waste_landfill',
+            'recycling': 'waste_recyclable',
+            'recyclable': 'waste_recyclable',
+            'composting': 'waste_organic_compost',
+            'organic_compost': 'waste_organic_compost',
+            'incineration': 'waste_incineration',
+        }
+        activity_type = waste_map.get(raw_activity, raw_activity)
+
+    elif family == 'flight':
+        flight_map = {
+            'domestic': 'flight_domestic',
+            'short_haul': 'flight_short_haul',
+            'medium_haul': 'flight_medium_haul',
+            'long_haul': 'flight_long_haul',
+            'international': 'flight_long_haul',
+        }
+        activity_type = flight_map.get(raw_activity, raw_activity)
+
+    elif family == 'freight':
+        freight_map = {
+            'road': 'truck_freight',
+            'truck': 'truck_freight',
+            'rail': 'rail_freight',
+            'sea': 'sea_freight',
+            'air': 'air_freight',
+        }
+        activity_type = freight_map.get(raw_activity, raw_activity)
+
+    elif family == 'commuting':
+        commute_map = {
+            'car': 'employee_commuting_car_commute',
+            'bus': 'employee_commuting_bus_commute',
+            'train': 'employee_commuting_train_commute',
+            'motorcycle': 'employee_commuting_motorcycle_commute',
+            'bicycle': 'employee_commuting_bicycle_commute',
+            'walking': 'employee_commuting_bicycle_commute',
+        }
+        activity_type = commute_map.get(raw_activity, raw_activity)
+
+    elif family == 'water':
+        water_map = {
+            'potable': 'water_water_supply',
+            'supply': 'water_water_supply',
+            'water_supply': 'water_water_supply',
+            'wastewater': 'water_water_treatment',
+            'treatment': 'water_water_treatment',
+            'water_treatment': 'water_water_treatment',
+        }
+        activity_type = water_map.get(raw_activity, raw_activity)
+
+    elif family == 'purchased_goods':
+        material_map = {
+            'paper': 'purchased_goods_paper_mixed',
+            'plastic': 'purchased_goods_plastic_average',
+            'plastics': 'purchased_goods_plastic_average',
+            'glass': 'purchased_goods_glass',
+            'steel': 'purchased_goods_metal_steel',
+            'metals': 'purchased_goods_metal_steel',
+            'metal': 'purchased_goods_metal_steel',
+            'aluminium': 'purchased_goods_metal_aluminium',
+            'aluminum': 'purchased_goods_metal_aluminium',
+        }
+        activity_type = material_map.get(raw_activity, raw_activity)
+
+    return {
+        'fuel_type': activity_type,
+        'quantity': registry_entry.get('quantity'),
+        'unit': unit,
+        'month': datetime.now(timezone.utc).month,
+        'year': datetime.now(timezone.utc).year,
+        'description': registry_entry.get('description') or f'AI Chat: {activity_type}',
+    }
+
+
+def _quick_reply_label(value):
+    """Map quick-reply values to user-friendly labels with emoji."""
+    label_map = {
+        'petrol': '⛽ Petrol',
+        'diesel': '🛢️ Diesel',
+        'electric': '⚡ Electric',
+        'hybrid': '🔋 Hybrid',
+        'lpg': '🔥 LPG',
+        'natural_gas': '🔥 Natural Gas',
+        'coal': '⚫ Coal',
+        'fuel_oil': '🛢️ Fuel Oil',
+        'landfill': '🗑️ Landfill',
+        'recycling': '♻️ Recycling',
+        'composting': '🌱 Composting',
+        'incineration': '🔥 Incineration',
+        'road': '🚛 Road / Truck',
+        'rail': '🚆 Rail',
+        'sea': '🚢 Sea',
+        'air': '✈️ Air',
+        'car': '🚗 Car',
+        'bus': '🚌 Bus',
+        'train': '🚆 Train',
+        'motorcycle': '🏍️ Motorcycle',
+        'bicycle': '🚲 Bicycle',
+        'walking': '🚶 Walking',
+        'potable': '💧 Water supply',
+        'wastewater': '🚰 Water treatment',
+        'per_vehicle': 'Per vehicle',
+        'fleet_total': 'Total for all vehicles',
+        'domestic': '🛫 Domestic (<500 km)',
+        'short_haul': '✈️ Short haul (500–1500 km)',
+        'long_haul': '✈️ Long haul (>4000 km)',
+        'international': '🌍 International',
+    }
+
+    return label_map.get(value, str(value).replace('_', ' ').title())
+
+
+def _format_quick_replies(raw_replies, field):
+    """Convert registry quick replies (plain strings) to frontend-ready dicts."""
+    replies = []
+
+    for item in raw_replies or []:
+        if isinstance(item, dict):
+            replies.append(item)
+        else:
+            replies.append({
+                'label': _quick_reply_label(item),
+                'value': item,
+                'kind': field,
+            })
+
+    if not any(r.get('value') == 'cancel' for r in replies):
+        replies.append({
+            'label': '❌ Cancel',
+            'value': 'cancel',
+            'kind': 'cancel',
+        })
+
+    return replies
+
+
+# ── NLU-based guided flow helpers ─────────────────────────────────────────────
+
+def _assistant_response(session, text, pending_entries=None, ui=None, source='nlu_guided'):
+    """Create assistant message and return Response with standard shape."""
+    ai_msg = ChatMessage.objects.create(
+        session=session, role='assistant', content=text,
+        ui=ui or {},
+    )
+    session.save(update_fields=['updated_at'])
+    resp = {
+        'id': ai_msg.id,
+        'role': 'assistant',
+        'content': text,
+        'created_at': ai_msg.created_at,
+        'session_title': session.title,
+        'pending_entries': pending_entries or [],
+        'source': source,
+    }
+    if ui:
+        resp['ui'] = ui
+    return Response(resp)
+
+
+def _ask_guided_question(session, family, draft):
+    """Ask the next guided question for an NLU-triggered draft."""
+    guided_ui = build_guided_ui(family, draft)
+
+    if guided_ui.get('complete'):
+        return _complete_guided_draft(session, draft)
+
+    field = guided_ui['field']
+    question_text = guided_ui['question']
+    raw_replies = guided_ui['quick_replies']
+    quick_replies = _format_quick_replies(raw_replies, field)
+
+    # Store the guided_draft in session state
+    session.state = {
+        **(session.state or {}),
+        'guided_draft': {**draft, '_nlu_flow': True, '_next_field': field},
+    }
+    session.save(update_fields=['state', 'updated_at'])
+
+    ui = {'quick_replies': quick_replies, 'flow': f'nlu_{family}'}
+    text = f"I can calculate this, but I need one more detail.\n\n**{question_text}**"
+    return _assistant_response(session, text, ui=ui, source='nlu_guided')
+
+
+def _cancel_guided_flow(session):
+    """Cancel any active NLU guided draft."""
+    session.state = {**(session.state or {}), 'guided_draft': None}
+    session.save(update_fields=['state', 'updated_at'])
+    return _assistant_response(session, "Okay, calculation cancelled.", source='nlu_guided')
+
+
+def _complete_guided_draft(session, draft):
+    """All fields collected — calculate and return pending entries."""
+    family = draft.get('activity_family')
+    registry_entry = draft_to_entry_data(draft)
+    factor_entry = _map_registry_entry_to_factor_entry(registry_entry)
+    pending_entries = _build_pending_entries_from_data([factor_entry])
+
+    # Clear guided draft
+    session.state = {**(session.state or {}), 'guided_draft': None}
+    session.save(update_fields=['state', 'updated_at'])
+
+    if pending_entries:
+        clean_text = _build_pending_entries_text(pending_entries)
+        return _assistant_response(session, clean_text, pending_entries=pending_entries, source='nlu_calculator')
+
+    # Factor not found — tell the user
+    return _assistant_response(
+        session,
+        f"Sorry, I couldn't find a registered emission factor for that activity ({family}). "
+        "Please try providing the data in a different format.",
+        source='nlu_calculator',
+    )
+
+
+def _handle_nlu_guided_reply(request, session, content):
+    """
+    Handle a reply to an NLU-based guided flow question.
+    Returns a Response if handled, or None if not an NLU guided flow.
+    """
+    draft = (session.state or {}).get('guided_draft')
+    if not draft or not draft.get('_nlu_flow'):
+        return None  # Not an NLU guided flow
+
+    selected = content.strip().lower()
+
+    # Cancel
+    if selected == 'cancel':
+        return _cancel_guided_flow(session)
+
+    # Apply the answer to the draft
+    field = draft.get('_next_field')
+    if not field:
+        return _cancel_guided_flow(session)
+
+    family = draft.get('activity_family')
+    updated_draft = apply_guided_answer(draft, field, selected)
+    # Remove internal tracking keys temporarily for readiness check
+    clean_draft = {k: v for k, v in updated_draft.items() if not k.startswith('_')}
+
+    if is_ready_to_calculate(family, clean_draft):
+        return _complete_guided_draft(session, clean_draft)
+
+    # Ask the next question
+    return _ask_guided_question(session, family, clean_draft)
+
+
+def _handle_groq_nlu_result(session, nlu_result):
+    """
+    Process NLU extraction result:
+    - If complete calculation → adapter → pending entries → save card
+    - If incomplete → guided draft + quick replies
+    - If general_question or low confidence → return None (fall through to Groq conversational)
+    """
+    mode = nlu_result.get('mode')
+    confidence = nlu_result.get('confidence', 0)
+
+    # If general question or unknown or low confidence → fall through
+    if mode != 'calculation' or confidence < 0.5:
+        return None
+
+    # Normalize NLU data
+    normalized = normalize_nlu(nlu_result)
+    family = normalized.get('activity_family')
+    if not family:
+        return None
+
+    # Prepare guided draft from NLU data
+    draft = prepare_guided_draft(normalized)
+    if not draft:
+        return None
+
+    # Check if all required fields are filled
+    if is_ready_to_calculate(family, draft):
+        return _complete_guided_draft(session, draft)
+
+    # Incomplete — start guided flow
+    return _ask_guided_question(session, family, draft)
+
+
 def _parse_emission_entry(ai_text):
     """
     Parse ```emission_entry JSON blocks from AI response.
@@ -370,7 +712,7 @@ def _session_to_dict(session, include_messages=False):
         msgs = list(session.messages.order_by('-created_at')[:100])
         msgs.reverse()
         data['messages'] = [
-            {'id': m.id, 'role': m.role, 'content': m.content, 'created_at': m.created_at}
+            {'id': m.id, 'role': m.role, 'content': m.content, 'created_at': m.created_at, 'ui': m.ui or {}}
             for m in msgs
         ]
     return data
@@ -887,6 +1229,11 @@ def send_message(request, session_id):
         })
 
     # ─── 0.5) GUIDED FLOW REPLY: continue incomplete calculation ──────
+    # Check NLU-based guided flow first, then legacy guided flow
+    nlu_guided_response = _handle_nlu_guided_reply(request, session, content)
+    if nlu_guided_response:
+        return nlu_guided_response
+
     guided_response = _handle_guided_reply(request, session, content)
     if guided_response:
         return guided_response
@@ -936,7 +1283,18 @@ def send_message(request, session_id):
                 'source': 'guided_flow',
             })
 
-    # ─── 2) GROQ: for questions, analysis, complex inputs ─────────────────
+    # ─── 2) GROQ NLU: extract structured intent from message ─────────────
+    if not attachment:
+        nlu_result = extract_emission_intent(content)
+        nlu_source = nlu_result.get('_source', 'default')
+
+        # Only use NLU result if Groq actually responded successfully
+        if nlu_source in ('groq_json_mode', 'groq_text_mode'):
+            nlu_response = _handle_groq_nlu_result(session, nlu_result)
+            if nlu_response:
+                return nlu_response
+
+    # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
     if _get_groq_client() is None:
         return Response({'error': 'AI service not available.'}, status=503)
 
@@ -948,16 +1306,14 @@ def send_message(request, session_id):
     if error:
         return Response({'error': error}, status=status_code)
 
-    # Parse emission entries from AI response — DO NOT save yet, return as pending
-    pending_entries = _build_pending_entries_from_data(_parse_emission_entry(ai_text))
+    # P2: Groq conversational is ONLY for general answers.
+    # Save is ONLY via confirm-entry endpoint. Do NOT parse emission_entry from AI text.
+    pending_entries = []
 
     # Clean the AI response — strip all internal artifacts (JSON blocks, factor references, etc.)
     clean_text = _strip_internal_ai_artifacts(ai_text)
 
-    # If pending entries exist, replace response with clean calculation summary
-    if pending_entries:
-        clean_text = _build_pending_entries_text(pending_entries)
-    elif not clean_text:
+    if not clean_text:
         clean_text = (
             "I can help calculate emissions. Please send amount, unit, and activity, "
             "for example: `18000 kWh electricity`."
@@ -966,14 +1322,6 @@ def send_message(request, session_id):
     # Save assistant message
     ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
     session.save(update_fields=['updated_at'])
-
-    # Track AI usage — DISABLED until payment system is connected
-    # try:
-    #     from subscriptions.views import get_or_create_subscription
-    #     sub = get_or_create_subscription(request.user)
-    #     sub.increment_ai_usage()
-    # except Exception:
-    #     pass
 
     return Response({
         'id': ai_msg.id,
