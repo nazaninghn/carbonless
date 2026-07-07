@@ -2937,7 +2937,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
 
   // sendMessage declared BEFORE startNew so that startNew's dep array [sendMessage]
   // references an already-initialised variable (avoids TDZ / stale-undefined dep).
-  const sendMessage = useCallback(async (text, sid) => {
+  const sendMessage = useCallback(async (text, sid, displayOverride) => {
     // Read input from the ref mirror rather than from closure so that `input`
     // does not need to be in the dep array — if it were, sendMessage (and
     // everything that depends on it: startNew, handleKeyDown) would be
@@ -2958,7 +2958,9 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
     sendingRef.current = true;
     setSending(true);
     setError('');
-    const displayContent = file ? (content || `📎 ${file.name}`) : content;
+    // displayOverride lets quick-reply buttons show a user-friendly label in
+    // the chat bubble while still sending the raw value to the backend.
+    const displayContent = file ? (content || `📎 ${file.name}`) : (displayOverride || content);
     setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent }]);
 
     try {
@@ -3301,14 +3303,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                               setMessages(prev => prev.map(m =>
                                 m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: '❌ Cancelled' } : m
                               ));
-                              sendMessage('cancel');
+                              sendMessage('cancel', null, '❌ Cancel');
                               return;
                             }
                             // Mark this message's quick replies as used
                             setMessages(prev => prev.map(m =>
                               m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: option.label } : m
                             ));
-                            sendMessage(option.value);
+                            sendMessage(option.value, null, option.label);
                           }}
                           className="rounded-full border border-[#53A67F]/30 bg-white px-4 py-2 text-[12px] font-bold text-[#2d6235] shadow-sm transition hover:bg-[#f3fbf6] hover:border-[#53A67F]/60"
                         >

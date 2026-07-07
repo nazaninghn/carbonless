@@ -369,31 +369,45 @@ def _quick_reply_label(value):
         'electric': '⚡ Electric',
         'hybrid': '🔋 Hybrid',
         'lpg': '🔥 LPG',
-        'natural_gas': '🔥 Natural Gas',
+        'natural_gas': '🌱 Natural gas',
         'coal': '⚫ Coal',
-        'fuel_oil': '🛢️ Fuel Oil',
+        'fuel_oil': '🛢️ Fuel oil',
+
         'landfill': '🗑️ Landfill',
         'recycling': '♻️ Recycling',
+        'recyclable': '♻️ Recycling',
         'composting': '🌱 Composting',
         'incineration': '🔥 Incineration',
+
         'road': '🚛 Road / Truck',
+        'truck': '🚛 Truck',
         'rail': '🚆 Rail',
         'sea': '🚢 Sea',
         'air': '✈️ Air',
+
         'car': '🚗 Car',
         'bus': '🚌 Bus',
         'train': '🚆 Train',
         'motorcycle': '🏍️ Motorcycle',
         'bicycle': '🚲 Bicycle',
         'walking': '🚶 Walking',
+
         'potable': '💧 Water supply',
+        'supply': '� Water supply',
         'wastewater': '🚰 Water treatment',
+        'treatment': '🚰 Water treatment',
+
+        'domestic': '🏠 Domestic',
+        'short_haul': '✈️ Short haul',
+        'medium_haul': '🌍 Medium haul',
+        'long_haul': '🛫 Long haul',
+        'international': '🌍 International',
+
         'per_vehicle': 'Per vehicle',
         'fleet_total': 'Total for all vehicles',
-        'domestic': '🛫 Domestic (<500 km)',
-        'short_haul': '✈️ Short haul (500–1500 km)',
-        'long_haul': '✈️ Long haul (>4000 km)',
-        'international': '🌍 International',
+        'total': 'Total for all vehicles',
+
+        'cancel': '❌ Cancel',
     }
 
     return label_map.get(value, str(value).replace('_', ' ').title())
@@ -1259,7 +1273,18 @@ def send_message(request, session_id):
                     'source': 'local_calculator',
                 })
 
-    # ─── 1.5) GUIDED DRAFT: detect incomplete data that needs follow-up ──
+    # ─── 2) GROQ NLU: extract structured intent from message ─────────────
+    if not attachment:
+        nlu_result = extract_emission_intent(content)
+        nlu_source = nlu_result.get('_source', 'default')
+
+        # Only use NLU result if Groq actually responded successfully
+        if nlu_source in ('groq_json_mode', 'groq_text_mode'):
+            nlu_response = _handle_groq_nlu_result(session, nlu_result)
+            if nlu_response:
+                return nlu_response
+
+    # ─── 2.5) LEGACY GUIDED DRAFT: fallback if NLU didn't handle it ───────
     if not attachment:
         guided_draft = try_guided_draft_parse(content)
         if guided_draft:
@@ -1282,17 +1307,6 @@ def send_message(request, session_id):
                 'ui': ai_msg.ui,
                 'source': 'guided_flow',
             })
-
-    # ─── 2) GROQ NLU: extract structured intent from message ─────────────
-    if not attachment:
-        nlu_result = extract_emission_intent(content)
-        nlu_source = nlu_result.get('_source', 'default')
-
-        # Only use NLU result if Groq actually responded successfully
-        if nlu_source in ('groq_json_mode', 'groq_text_mode'):
-            nlu_response = _handle_groq_nlu_result(session, nlu_result)
-            if nlu_response:
-                return nlu_response
 
     # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
     if _get_groq_client() is None:

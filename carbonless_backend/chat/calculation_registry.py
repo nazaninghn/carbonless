@@ -372,13 +372,29 @@ def get_question_fields(family: str) -> list:
 
 
 def get_next_question_field(family: str, draft: dict) -> str | None:
-    """Return the first required field not yet answered in the draft."""
+    """Return the next field that must be collected before calculation."""
     schema = get_schema(family)
     if not schema:
         return None
+
     for field in schema["required"]:
         if not draft.get(field):
             return field
+
+    # Vehicle distance special case:
+    # If the user mentioned multiple vehicles, "4500 km" is ambiguous.
+    # It can mean total fleet distance OR per-vehicle distance.
+    if family == "vehicle_distance":
+        vehicle_count = draft.get("vehicle_count")
+
+        try:
+            vehicle_count_num = int(vehicle_count or 0)
+        except (TypeError, ValueError):
+            vehicle_count_num = 0
+
+        if vehicle_count_num > 1 and not draft.get("distance_basis"):
+            return "distance_basis"
+
     return None
 
 
@@ -507,7 +523,7 @@ def draft_to_entry_data(draft: dict) -> dict:
 
         # Handle distance_basis — per_vehicle multiplier
         vehicle_count = draft.get("vehicle_count")
-        distance_basis = draft.get("distance_basis", "per_vehicle")
+        distance_basis = draft.get("distance_basis") or "fleet_total"
         quantity = draft.get("quantity")
 
         if distance_basis == "per_vehicle" and vehicle_count and quantity:
