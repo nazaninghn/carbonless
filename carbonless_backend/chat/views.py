@@ -7,7 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import ChatSession, ChatMessage
-from .local_parser import try_local_emission_parse
+from .local_parser import try_local_emission_parse, try_guided_draft_parse
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
 
 try:
@@ -42,6 +42,7 @@ CRITICAL RULES:
 10. For general questions about carbon, sustainability, ISO 14064-1, or reduction strategies, answer normally and concisely.
 11. Keep responses SHORT — 1-3 sentences max for data entry confirmations.
 12. If asked in Turkish, respond in Turkish. If asked in Persian/Farsi, respond in Persian.
+13. NEVER say "saved", "entry saved", or "saved to dashboard". Only the backend confirm-entry endpoint saves data after explicit user confirmation.
 
 INTERNAL DATA ENTRY FORMAT (never show this to the user):
 Only when the user provides real activity data, include one hidden block:
@@ -461,6 +462,218 @@ def _calculation_help_text():
     )
 
 
+# ── Guided flow helpers ───────────────────────────────────────────────────────
+
+def _fuel_quick_replies():
+    return [
+        {'label': 'Diesel', 'value': 'diesel', 'kind': 'fuel_type'},
+        {'label': 'Petrol', 'value': 'petrol', 'kind': 'fuel_type'},
+        {'label': 'LPG', 'value': 'lpg', 'kind': 'fuel_type'},
+        {'label': 'Natural Gas', 'value': 'natural_gas', 'kind': 'fuel_type'},
+        {'label': "Other / I'll type", 'value': 'other', 'kind': 'free_text'},
+        {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+    ]
+
+
+def _get_quick_replies_for_draft(draft):
+    """Return the appropriate quick replies based on what's missing."""
+    missing = draft.get('missing', [])
+
+    if 'fuel_type' in missing:
+        return [
+            {'label': 'Diesel', 'value': 'diesel', 'kind': 'fuel_type'},
+            {'label': 'Petrol', 'value': 'petrol', 'kind': 'fuel_type'},
+            {'label': 'LPG', 'value': 'lpg', 'kind': 'fuel_type'},
+            {'label': 'Natural Gas', 'value': 'natural_gas', 'kind': 'fuel_type'},
+            {'label': "Other / I'll type", 'value': 'other', 'kind': 'free_text'},
+            {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+        ]
+
+    if 'haul_type' in missing:
+        return [
+            {'label': 'Domestic (<500 km)', 'value': 'flight_domestic', 'kind': 'activity'},
+            {'label': 'Short haul (500-1500 km)', 'value': 'flight_short_haul', 'kind': 'activity'},
+            {'label': 'Medium haul (1500-4000 km)', 'value': 'flight_medium_haul', 'kind': 'activity'},
+            {'label': 'Long haul (>4000 km)', 'value': 'flight_long_haul', 'kind': 'activity'},
+            {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+        ]
+
+    if 'transport_mode' in missing and draft.get('flow') == 'freight_mode':
+        return [
+            {'label': '🚛 Truck', 'value': 'truck_freight', 'kind': 'activity'},
+            {'label': '🚂 Rail', 'value': 'rail_freight', 'kind': 'activity'},
+            {'label': '🚢 Sea', 'value': 'sea_freight', 'kind': 'activity'},
+            {'label': '✈️ Air', 'value': 'air_freight', 'kind': 'activity'},
+            {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+        ]
+
+    if 'disposal_method' in missing:
+        return [
+            {'label': '🗑️ Landfill', 'value': 'waste_landfill', 'kind': 'activity'},
+            {'label': '♻️ Recycling', 'value': 'waste_recyclable', 'kind': 'activity'},
+            {'label': '🌱 Composting', 'value': 'waste_organic_compost', 'kind': 'activity'},
+            {'label': '🔥 Incineration', 'value': 'waste_incineration', 'kind': 'activity'},
+            {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+        ]
+
+    if 'transport_mode' in missing and draft.get('flow') == 'commute_mode':
+        return [
+            {'label': '🚗 Car', 'value': 'employee_commuting_car_commute', 'kind': 'activity'},
+            {'label': '🚌 Bus', 'value': 'employee_commuting_bus_commute', 'kind': 'activity'},
+            {'label': '🚆 Train', 'value': 'employee_commuting_train_commute', 'kind': 'activity'},
+            {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+        ]
+
+    if 'water_type' in missing:
+        return [
+            {'label': '💧 Water Supply', 'value': 'water_water_supply', 'kind': 'activity'},
+            {'label': '🚿 Water Treatment', 'value': 'water_water_treatment', 'kind': 'activity'},
+            {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+        ]
+
+    return []
+
+
+def _guided_question_text(draft):
+    missing = draft.get('missing', [])
+    vehicle = draft.get('vehicle_type', '')
+
+    if 'fuel_type' in missing:
+        return f"I can calculate this, but I need one more detail.\n\n**What fuel do your {vehicle}s use?**"
+    if 'haul_type' in missing:
+        return "I can calculate this, but I need one more detail.\n\n**What type of flight is this?**"
+    if 'transport_mode' in missing and draft.get('flow') == 'freight_mode':
+        return "I can calculate this, but I need one more detail.\n\n**How was the freight transported?**"
+    if 'disposal_method' in missing:
+        return "I can calculate this, but I need one more detail.\n\n**How was the waste disposed?**"
+    if 'transport_mode' in missing and draft.get('flow') == 'commute_mode':
+        return "I can calculate this, but I need one more detail.\n\n**What transport mode for commuting?**"
+    if 'water_type' in missing:
+        return "I can calculate this, but I need one more detail.\n\n**Water supply or water treatment?**"
+
+    return "I need one more detail to calculate this."
+
+
+def _handle_guided_reply(request, session, content):
+    """Handle a reply to a guided flow question (e.g. fuel type selection)."""
+    draft = (session.state or {}).get('guided_draft')
+    if not draft:
+        return None
+
+    selected = content.strip().lower()
+
+    # ── Cancel handling ───────────────────────────────────────────────────
+    if selected == 'cancel':
+        session.state = {**(session.state or {}), 'guided_draft': None}
+        session.save(update_fields=['state', 'updated_at'])
+        clean_text = "Okay, calculation cancelled."
+        ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
+        return Response({
+            'id': ai_msg.id, 'role': 'assistant', 'content': clean_text,
+            'created_at': ai_msg.created_at, 'session_title': session.title,
+            'pending_entries': [], 'source': 'guided_flow',
+        })
+
+    # ── Fuel type selection (truck flow) ──────────────────────────────────
+    fuel_map = {
+        'diesel': 'diesel',
+        'petrol': 'petrol',
+        'gasoline': 'petrol',
+        'benzin': 'petrol',
+        'lpg': 'lpg',
+        'natural gas': 'natural_gas',
+        'natural_gas': 'natural_gas',
+    }
+
+    fuel_type = fuel_map.get(selected)
+
+    # ── Direct activity type selections (flight, freight, waste, commuting, water) ──
+    activity_direct_map = {
+        'flight_domestic': 'flight_domestic',
+        'flight_short_haul': 'flight_short_haul',
+        'flight_medium_haul': 'flight_medium_haul',
+        'flight_long_haul': 'flight_long_haul',
+        'truck_freight': 'truck_freight',
+        'rail_freight': 'rail_freight',
+        'sea_freight': 'sea_freight',
+        'air_freight': 'air_freight',
+        'waste_landfill': 'waste_landfill',
+        'waste_recyclable': 'waste_recyclable',
+        'waste_organic_compost': 'waste_organic_compost',
+        'waste_incineration': 'waste_incineration',
+        'employee_commuting_car_commute': 'employee_commuting_car_commute',
+        'employee_commuting_bus_commute': 'employee_commuting_bus_commute',
+        'employee_commuting_train_commute': 'employee_commuting_train_commute',
+        'water_water_supply': 'water_water_supply',
+        'water_water_treatment': 'water_water_treatment',
+    }
+
+    direct_activity = activity_direct_map.get(selected)
+
+    if fuel_type:
+        # Build the entry using road_travel factor (distance-based)
+        entry_data = {
+            'fuel_type': 'road_travel',
+            'quantity': draft['quantity'],
+            'unit': draft['unit'],
+            'month': datetime.now(timezone.utc).month,
+            'year': datetime.now(timezone.utc).year,
+            'description': f"{draft.get('vehicle_type', 'vehicle')} travel using {fuel_type}",
+        }
+    elif direct_activity:
+        entry_data = {
+            'fuel_type': direct_activity,
+            'quantity': draft['quantity'],
+            'unit': draft['unit'],
+            'month': datetime.now(timezone.utc).month,
+            'year': datetime.now(timezone.utc).year,
+            'description': f"{draft.get('vehicle_type', '')} — {direct_activity.replace('_', ' ')}",
+        }
+    else:
+        # Unrecognized — ask again
+        quick_replies = _get_quick_replies_for_draft(draft)
+        clean_text = "Please choose an option or type it manually."
+        ai_msg = ChatMessage.objects.create(
+            session=session,
+            role='assistant',
+            content=clean_text,
+            ui={'quick_replies': quick_replies},
+        )
+        return Response({
+            'id': ai_msg.id,
+            'role': 'assistant',
+            'content': clean_text,
+            'created_at': ai_msg.created_at,
+            'session_title': session.title,
+            'pending_entries': [],
+            'ui': ai_msg.ui,
+            'source': 'guided_flow',
+        })
+
+    pending_entries = _build_pending_entries_from_data([entry_data])
+
+    # Clear guided draft from session state
+    session.state = {**(session.state or {}), 'guided_draft': None}
+    session.save(update_fields=['state', 'updated_at'])
+
+    if pending_entries:
+        clean_text = _build_pending_entries_text(pending_entries)
+        ai_msg = ChatMessage.objects.create(
+            session=session, role='assistant', content=clean_text,
+        )
+        return Response({
+            'id': ai_msg.id,
+            'role': 'assistant',
+            'content': clean_text,
+            'created_at': ai_msg.created_at,
+            'session_title': session.title,
+            'pending_entries': pending_entries,
+            'source': 'guided_calculator',
+        })
+
+    return None
+
+
 def _strip_internal_ai_artifacts(text):
     """
     Remove hidden/internal model artifacts before saving assistant message.
@@ -648,6 +861,11 @@ def send_message(request, session_id):
             'source': 'calculation_guide',
         })
 
+    # ─── 0.5) GUIDED FLOW REPLY: continue incomplete calculation ──────
+    guided_response = _handle_guided_reply(request, session, content)
+    if guided_response:
+        return guided_response
+
     # ─── 1) LOCAL CALCULATOR: handle simple data entries without Groq ─────
     if not attachment:
         local_entry = try_local_emission_parse(content)
@@ -668,6 +886,30 @@ def send_message(request, session_id):
                     'pending_entries': pending_entries,
                     'source': 'local_calculator',
                 })
+
+    # ─── 1.5) GUIDED DRAFT: detect incomplete data that needs follow-up ──
+    if not attachment:
+        guided_draft = try_guided_draft_parse(content)
+        if guided_draft:
+            session.state = {**(session.state or {}), 'guided_draft': guided_draft}
+            session.save(update_fields=['state', 'updated_at'])
+
+            clean_text = _guided_question_text(guided_draft)
+            quick_replies = _get_quick_replies_for_draft(guided_draft)
+            ai_msg = ChatMessage.objects.create(
+                session=session, role='assistant', content=clean_text,
+                ui={'quick_replies': quick_replies, 'flow': guided_draft.get('flow')},
+            )
+            return Response({
+                'id': ai_msg.id,
+                'role': 'assistant',
+                'content': clean_text,
+                'created_at': ai_msg.created_at,
+                'session_title': session.title,
+                'pending_entries': [],
+                'ui': ai_msg.ui,
+                'source': 'guided_flow',
+            })
 
     # ─── 2) GROQ: for questions, analysis, complex inputs ─────────────────
     if _get_groq_client() is None:

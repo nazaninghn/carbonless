@@ -235,3 +235,119 @@ def try_local_emission_parse(text: str) -> dict | None:
         'year': datetime.now(timezone.utc).year,
         'description': f'AI Chat: {activity_type} {quantity} {unit}',
     }
+
+
+def try_guided_draft_parse(text: str) -> dict | None:
+    """
+    Detect incomplete but useful activity data that needs one more detail.
+    Example: "i have 3 trucks and use them 450000 km" → needs fuel type.
+    """
+    if not text:
+        return None
+
+    t = text.lower()
+
+    # ── Truck: needs fuel type ────────────────────────────────────────────
+    has_truck = any(word in t for word in [
+        'truck', 'trucks', 'trunk', 'trunks', 'kamyon', 'کامیون',
+    ])
+
+    km_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*km\b', t)
+
+    if has_truck and km_match:
+        quantity = float(km_match.group('quantity').replace(',', '.'))
+
+        # If fuel is already mentioned, the normal parser should handle it
+        has_fuel = any(fuel in t for fuel in [
+            'diesel', 'petrol', 'gasoline', 'benzin', 'lpg', 'natural gas',
+        ])
+
+        if not has_fuel:
+            return {
+                'flow': 'truck_distance',
+                'vehicle_type': 'truck',
+                'quantity': quantity,
+                'unit': 'km',
+                'missing': ['fuel_type'],
+                'description': f'Truck travel {quantity:g} km',
+            }
+
+    # ── Flight: needs haul type ───────────────────────────────────────────
+    has_flight = any(word in t for word in ['flight', 'fly', 'flew', 'uçuş', 'پرواز'])
+    if has_flight and km_match:
+        quantity = float(km_match.group('quantity').replace(',', '.'))
+        has_haul = any(h in t for h in ['domestic', 'short', 'medium', 'long', 'iç hat', 'kısa', 'orta', 'uzun'])
+        if not has_haul:
+            return {
+                'flow': 'flight_distance',
+                'vehicle_type': 'flight',
+                'quantity': quantity,
+                'unit': 'km',
+                'missing': ['haul_type'],
+                'description': f'Flight {quantity:g} km',
+            }
+
+    # ── Freight: needs mode ───────────────────────────────────────────────
+    has_freight = any(word in t for word in ['freight', 'cargo', 'shipment', 'yük', 'حمل'])
+    tkm_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*(?:tonne-km|tkm)\b', t)
+    if has_freight and tkm_match:
+        quantity = float(tkm_match.group('quantity').replace(',', '.'))
+        has_mode = any(m in t for m in ['truck', 'rail', 'sea', 'air', 'road', 'ocean', 'ship', 'train'])
+        if not has_mode:
+            return {
+                'flow': 'freight_mode',
+                'vehicle_type': 'freight',
+                'quantity': quantity,
+                'unit': 'tonne-km',
+                'missing': ['transport_mode'],
+                'description': f'Freight {quantity:g} tonne-km',
+            }
+
+    # ── Waste: needs disposal method ──────────────────────────────────────
+    has_waste = any(word in t for word in ['waste', 'atık', 'زباله', 'پسماند'])
+    kg_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*kg\b', t)
+    if has_waste and kg_match:
+        quantity = float(kg_match.group('quantity').replace(',', '.'))
+        has_method = any(m in t for m in ['landfill', 'recycle', 'recyclable', 'compost', 'incineration', 'organic'])
+        if not has_method:
+            return {
+                'flow': 'waste_method',
+                'vehicle_type': 'waste',
+                'quantity': quantity,
+                'unit': 'kg',
+                'missing': ['disposal_method'],
+                'description': f'Waste {quantity:g} kg',
+            }
+
+    # ── Commuting: needs transport mode ───────────────────────────────────
+    has_commute = any(word in t for word in ['commut', 'commute', 'commuting', 'işe gidiş', 'رفت‌وآمد'])
+    if has_commute and km_match:
+        quantity = float(km_match.group('quantity').replace(',', '.'))
+        has_mode = any(m in t for m in ['car', 'bus', 'train', 'araba', 'otobüs', 'tren'])
+        if not has_mode:
+            return {
+                'flow': 'commute_mode',
+                'vehicle_type': 'commute',
+                'quantity': quantity,
+                'unit': 'km',
+                'missing': ['transport_mode'],
+                'description': f'Commuting {quantity:g} km',
+            }
+
+    # ── Water: needs type ─────────────────────────────────────────────────
+    has_water = any(word in t for word in ['water', 'su', 'آب'])
+    m3_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*(?:m3|m³)\b', t)
+    if has_water and m3_match:
+        quantity = float(m3_match.group('quantity').replace(',', '.'))
+        has_type = any(tp in t for tp in ['supply', 'treatment', 'wastewater', 'atıksu', 'arıtma', 'تصفیه'])
+        if not has_type:
+            return {
+                'flow': 'water_type',
+                'vehicle_type': 'water',
+                'quantity': quantity,
+                'unit': 'm3',
+                'missing': ['water_type'],
+                'description': f'Water {quantity:g} m3',
+            }
+
+    return None

@@ -2949,8 +2949,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
     // so the guard fires immediately without waiting for a re-render.
     if ((!content && !file) || !sessionId || sendingRef.current) return;
 
-    setInput('');
-    inputValueRef.current = '';
+    // Only clear input if no override text was passed (quick reply buttons pass text directly)
+    if (!text) {
+      setInput('');
+      inputValueRef.current = '';
+    }
     setAttachedFile(null);
     sendingRef.current = true;
     setSending(true);
@@ -3264,7 +3267,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 pb-44 sm:px-6 sm:py-5 sm:pb-44">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 pb-48 sm:px-6 sm:py-5 sm:pb-48">
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
           ) : loadingMessages ? (
@@ -3282,6 +3285,44 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
               {messages.map((msg) => (
                 <div key={msg.id}>
                   <Bubble role={msg.role} content={msg.content} />
+                  {/* ── Quick reply buttons ── */}
+                  {msg.role === 'assistant' && msg.ui?.quick_replies?.length > 0 && !msg.entriesSaved && !msg.quickReplyUsed && (
+                    <div className="ml-9 mt-3 flex flex-wrap gap-2">
+                      {msg.ui.quick_replies.map((option, idx) => (
+                        <button
+                          key={`${msg.id}-qr-${idx}`}
+                          type="button"
+                          onClick={() => {
+                            if (option.kind === 'free_text') {
+                              inputRef.current?.focus();
+                              return;
+                            }
+                            if (option.kind === 'cancel') {
+                              setMessages(prev => prev.map(m =>
+                                m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: '❌ Cancelled' } : m
+                              ));
+                              sendMessage('cancel');
+                              return;
+                            }
+                            // Mark this message's quick replies as used
+                            setMessages(prev => prev.map(m =>
+                              m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: option.label } : m
+                            ));
+                            sendMessage(option.value);
+                          }}
+                          className="rounded-full border border-[#53A67F]/30 bg-white px-4 py-2 text-[12px] font-bold text-[#2d6235] shadow-sm transition hover:bg-[#f3fbf6] hover:border-[#53A67F]/60"
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {/* ── Selected reply indicator ── */}
+                  {msg.quickReplyUsed && msg.selectedReply && (
+                    <div className="ml-9 mt-2 text-[11px] font-semibold text-[#53A67F]">
+                      Selected: {msg.selectedReply} ✓
+                    </div>
+                  )}
                   {/* ── Save confirmation section ── */}
                   {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
                     <div className="ml-9 mt-3 rounded-2xl border border-[#53A67F]/20 bg-gradient-to-br from-[#f0f9f4] to-white p-4 shadow-sm">
@@ -3299,9 +3340,9 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                               {' '}
                               <span className="text-[#7a8b7f]">({Number(pe.co2e_tonne).toFixed(2)} tCO₂e)</span>
                             </div>
-                            {pe.factor_source_label && (
+                            {(pe.factor_source_label || pe.factor_reference) && (
                               <div className="mt-1 text-[10px] text-[#7a8b7f]">
-                                Source: {pe.factor_source_label}
+                                Source: Registered factor — {pe.factor_reference || pe.factor_source_label}
                               </div>
                             )}
                           </div>
@@ -3315,21 +3356,17 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                               let lastStatus = 'approved';
                               for (const pe of msg.pending_entries) {
                                 const res = await api.confirmEmissionEntry(pe);
+                                const data = await res.json().catch(() => ({}));
                                 if (!res.ok) {
-                                  const d = await res.json().catch(() => ({}));
-                                  setError(d.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
+                                  setError(data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
                                   return;
                                 }
-                                const data = await res.json().catch(() => ({}));
                                 if (data.entry_status) lastStatus = data.entry_status;
                               }
-                              // Mark as saved in chat UI with status
                               setMessages(prev => prev.map(m =>
                                 m.id === msg.id ? { ...m, entriesSaved: true, entryStatus: lastStatus } : m
                               ));
-                              // Refresh dashboard data so it shows the new entry
                               await fetchData?.();
-                              // Notify other components
                               window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', { detail: { source: 'chat' } }));
                             } catch {
                               setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
