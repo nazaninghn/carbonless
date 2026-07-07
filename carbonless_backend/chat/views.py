@@ -598,10 +598,22 @@ def _handle_groq_nlu_result(session, nlu_result, original_text=None):
         if extracted_count:
             normalized['vehicle_count'] = extracted_count
 
+    # Ensure vehicle_count is an integer
+    if normalized.get('vehicle_count') is not None:
+        try:
+            normalized['vehicle_count'] = int(normalized['vehicle_count'])
+        except (TypeError, ValueError):
+            normalized['vehicle_count'] = None
+
     # Prepare guided draft from NLU data
     draft = prepare_guided_draft(normalized)
     if not draft:
         return None
+
+    logger.info(
+        'NLU draft prepared: family=%s vehicle_count=%s ready=%s',
+        family, draft.get('vehicle_count'), is_ready_to_calculate(family, draft),
+    )
 
     # Check if all required fields are filled
     if is_ready_to_calculate(family, draft):
