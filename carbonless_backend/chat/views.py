@@ -478,8 +478,19 @@ def _fuel_quick_replies():
 def _get_quick_replies_for_draft(draft):
     """Return the appropriate quick replies based on what's missing."""
     missing = draft.get('missing', [])
+    flow = draft.get('flow', '')
 
     if 'fuel_type' in missing:
+        # Private car gets more options (electric, hybrid)
+        if flow == 'private_car_distance':
+            return [
+                {'label': '⛽ Petrol', 'value': 'petrol', 'kind': 'fuel_type'},
+                {'label': '🛢️ Diesel', 'value': 'diesel', 'kind': 'fuel_type'},
+                {'label': '🔥 LPG', 'value': 'lpg', 'kind': 'fuel_type'},
+                {'label': '⚡ Electric', 'value': 'electric', 'kind': 'fuel_type'},
+                {'label': '🔋 Hybrid', 'value': 'hybrid', 'kind': 'fuel_type'},
+                {'label': '❌ Cancel', 'value': 'cancel', 'kind': 'cancel'},
+            ]
         return [
             {'label': 'Diesel', 'value': 'diesel', 'kind': 'fuel_type'},
             {'label': 'Petrol', 'value': 'petrol', 'kind': 'fuel_type'},
@@ -537,16 +548,28 @@ def _get_quick_replies_for_draft(draft):
 def _guided_question_text(draft):
     missing = draft.get('missing', [])
     vehicle = draft.get('vehicle_type', '')
+    flow = draft.get('flow', '')
+
+    if flow == 'private_car_distance' and 'fuel_type' in missing:
+        count = draft.get('vehicle_count')
+        qty = draft.get('quantity', 0)
+        if count and count > 1:
+            return (
+                f"I can calculate this, but I need one more detail.\n\n"
+                f"You mentioned **{count} cars** and **{qty:g} km**.\n\n"
+                f"**What fuel do your cars use?**"
+            )
+        return "I can calculate this, but I need one more detail.\n\n**What fuel does your car use?**"
 
     if 'fuel_type' in missing:
         return f"I can calculate this, but I need one more detail.\n\n**What fuel do your {vehicle}s use?**"
     if 'haul_type' in missing:
         return "I can calculate this, but I need one more detail.\n\n**What type of flight is this?**"
-    if 'transport_mode' in missing and draft.get('flow') == 'freight_mode':
+    if 'transport_mode' in missing and flow == 'freight_mode':
         return "I can calculate this, but I need one more detail.\n\n**How was the freight transported?**"
     if 'disposal_method' in missing:
         return "I can calculate this, but I need one more detail.\n\n**How was the waste disposed?**"
-    if 'transport_mode' in missing and draft.get('flow') == 'commute_mode':
+    if 'transport_mode' in missing and flow == 'commute_mode':
         return "I can calculate this, but I need one more detail.\n\n**What transport mode for commuting?**"
     if 'water_type' in missing:
         return "I can calculate this, but I need one more detail.\n\n**Water supply or water treatment?**"
@@ -574,7 +597,7 @@ def _handle_guided_reply(request, session, content):
             'pending_entries': [], 'source': 'guided_flow',
         })
 
-    # ── Fuel type selection (truck flow) ──────────────────────────────────
+    # ── Fuel type selection (truck/car flow) ─────────────────────────────
     fuel_map = {
         'diesel': 'diesel',
         'petrol': 'petrol',
@@ -583,6 +606,8 @@ def _handle_guided_reply(request, session, content):
         'lpg': 'lpg',
         'natural gas': 'natural_gas',
         'natural_gas': 'natural_gas',
+        'electric': 'electric',
+        'hybrid': 'hybrid',
     }
 
     fuel_type = fuel_map.get(selected)

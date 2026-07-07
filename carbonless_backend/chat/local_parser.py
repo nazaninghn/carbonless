@@ -350,4 +350,28 @@ def try_guided_draft_parse(text: str) -> dict | None:
                 'description': f'Water {quantity:g} m3',
             }
 
+    # ── Private car / vehicle: needs fuel type ────────────────────────────
+    has_car = any(word in t for word in [
+        'private car', 'car', 'cars', 'vehicle', 'vehicles', 'automobile',
+        'ماشین', 'خودرو', 'اتومبیل', 'araba', 'araç',
+    ])
+    if has_car and km_match:
+        quantity = float(km_match.group('quantity').replace(',', '.'))
+        has_fuel = any(fuel in t for fuel in [
+            'diesel', 'petrol', 'gasoline', 'benzin', 'lpg', 'natural gas', 'electric', 'hybrid',
+        ])
+        if not has_fuel:
+            # Try to extract vehicle count
+            count_match = re.search(r'(\d+)\s*(?:private\s*)?(?:car|cars|vehicle|vehicles)', t)
+            vehicle_count = int(count_match.group(1)) if count_match else None
+            return {
+                'flow': 'private_car_distance',
+                'vehicle_type': 'private_car',
+                'vehicle_count': vehicle_count,
+                'quantity': quantity,
+                'unit': 'km',
+                'missing': ['fuel_type'],
+                'description': f'Private car travel {quantity:g} km',
+            }
+
     return None
