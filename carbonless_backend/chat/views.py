@@ -547,7 +547,32 @@ def _handle_nlu_guided_reply(request, session, content):
     return _ask_guided_question(session, family, clean_draft)
 
 
-def _handle_groq_nlu_result(session, nlu_result):
+def _extract_vehicle_count_from_text(text):
+    """Extract vehicle count from user text as a fallback when NLU misses it."""
+    if not text:
+        return None
+
+    t = text.lower()
+
+    patterns = [
+        r'(?P<count>\d+)\s*(?:private\s*)?(?:car|cars|vehicle|vehicles|truck|trucks|van|vans)\b',
+        r'(?:car|cars|vehicle|vehicles|truck|trucks|van|vans)\s*[:=]?\s*(?P<count>\d+)\b',
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                count = int(match.group("count"))
+                if count > 0:
+                    return count
+            except (TypeError, ValueError):
+                continue
+
+    return None
+
+
+def _handle_groq_nlu_result(session, nlu_result, original_text=None):
     """
     Process NLU extraction result:
     - If complete calculation → adapter → pending entries → save card
@@ -566,6 +591,12 @@ def _handle_groq_nlu_result(session, nlu_result):
     family = normalized.get('activity_family')
     if not family:
         return None
+
+    # Fallback: extract vehicle_count from text if NLU missed it
+    if family == 'vehicle_distance' and not normalized.get('vehicle_count'):
+        extracted_count = _extract_vehicle_count_from_text(original_text)
+        if extracted_count:
+            normalized['vehicle_count'] = extracted_count
 
     # Prepare guided draft from NLU data
     draft = prepare_guided_draft(normalized)
@@ -1280,7 +1311,7 @@ def send_message(request, session_id):
 
         # Only use NLU result if Groq actually responded successfully
         if nlu_source in ('groq_json_mode', 'groq_text_mode'):
-            nlu_response = _handle_groq_nlu_result(session, nlu_result)
+            nlu_response = _handle_groq_nlu_result(session, nlu_result, content)
             if nlu_response:
                 return nlu_response
 

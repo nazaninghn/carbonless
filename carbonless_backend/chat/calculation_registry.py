@@ -494,6 +494,17 @@ def is_ready_to_calculate(family: str, draft: dict) -> bool:
     for field in schema["required"]:
         if not draft.get(field):
             return False
+
+    # Vehicle distance special case: distance_basis must be answered for multi-vehicle
+    if family == "vehicle_distance":
+        vehicle_count = draft.get("vehicle_count")
+        try:
+            vehicle_count_num = int(vehicle_count or 0)
+        except (TypeError, ValueError):
+            vehicle_count_num = 0
+        if vehicle_count_num > 1 and not draft.get("distance_basis"):
+            return False
+
     return True
 
 
