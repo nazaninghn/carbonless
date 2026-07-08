@@ -477,17 +477,25 @@ class ReportListView(APIView):
 @permission_classes([IsAuthenticated])
 def start_session(request):
     from .flow import get_question
-    existing = QuestionnaireSession.objects.filter(user=request.user, is_complete=False).first()
-    if existing:
-        lang = request.data.get('lang', 'tr')
-        q = get_question(existing.current_question, lang)
-        return Response({
-            'session_id': existing.pk,
-            'question': q,
-            'answers': existing.answers,
-            'warnings': existing.warnings,
-            'resumed': True,
-        })
+
+    # Check if user explicitly wants to start a NEW session (ignore completed ones)
+    new_session = request.data.get('new', False)
+
+    if not new_session:
+        # Resume incomplete session if it exists
+        existing = QuestionnaireSession.objects.filter(user=request.user, is_complete=False).first()
+        if existing:
+            lang = request.data.get('lang', 'tr')
+            q = get_question(existing.current_question, lang)
+            return Response({
+                'session_id': existing.pk,
+                'question': q,
+                'answers': existing.answers,
+                'warnings': existing.warnings,
+                'resumed': True,
+            })
+
+    # Create new session (even if completed ones exist)
     session = QuestionnaireSession.objects.create(user=request.user)
     lang = request.data.get('lang', 'tr')
     q = get_question('S1', lang)
@@ -530,6 +538,17 @@ def answer_question(request):
         session.is_complete = True
         session.completed_at = timezone.now()
         session.current_question = 'DONE'
+
+        # Trigger report generation and dashboard sync
+        try:
+            from companies.utils import get_current_company
+            company = get_current_company(request.user)
+            if company:
+                logger.info(f"Questionnaire completed for user {request.user.id}, company {company.id}")
+                # Note: Full report generation logic to be implemented in P3
+                # For now, just log completion so dashboard can query completed surveys
+        except Exception as e:
+            logger.warning(f"Report generation notification failed: {e}")
     else:
         session.current_question = result['next_question']
 
