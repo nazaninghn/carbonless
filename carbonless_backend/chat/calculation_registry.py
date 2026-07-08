@@ -473,10 +473,21 @@ def build_guided_ui(family: str, draft: dict) -> dict:
     if next_field is None:
         return {"complete": True, "draft": draft}
 
+    question_text = get_question_text(family, next_field)
+
+    # Custom question text for distance_basis with context
+    if family == "vehicle_distance" and next_field == "distance_basis":
+        quantity = draft.get("quantity", 0)
+        unit = draft.get("unit", "km")
+        try:
+            question_text = f"Is {float(quantity):g} {unit} total for all vehicles or per vehicle?"
+        except (TypeError, ValueError):
+            question_text = "Is the distance total for all vehicles or per vehicle?"
+
     return {
         "complete": False,
         "field": next_field,
-        "question": get_question_text(family, next_field),
+        "question": question_text,
         "quick_replies": get_quick_replies(family, next_field),
         "draft": draft,
     }
@@ -487,25 +498,8 @@ def build_guided_ui(family: str, draft: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 def is_ready_to_calculate(family: str, draft: dict) -> bool:
-    """Check if all required fields for the family are filled in the draft."""
-    schema = get_schema(family)
-    if not schema:
-        return False
-    for field in schema["required"]:
-        if not draft.get(field):
-            return False
-
-    # Vehicle distance special case: distance_basis must be answered for multi-vehicle
-    if family == "vehicle_distance":
-        vehicle_count = draft.get("vehicle_count")
-        try:
-            vehicle_count_num = int(vehicle_count or 0)
-        except (TypeError, ValueError):
-            vehicle_count_num = 0
-        if vehicle_count_num > 1 and not draft.get("distance_basis"):
-            return False
-
-    return True
+    """Ready only when there is no required or ambiguity field left."""
+    return get_next_question_field(family, draft) is None
 
 
 def draft_to_entry_data(draft: dict) -> dict:

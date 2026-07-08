@@ -43,22 +43,13 @@ CRITICAL RULES:
 5. Never invent or guess emission factors.
 6. Never show formulas like "quantity × factor = result" to the user.
 7. The backend is the source of truth for factors, calculations, saving, and dashboard totals.
-8. If the user provides quantity + unit + activity (e.g. "18000 kWh electricity"), extract the data silently. Include ONLY an internal emission_entry JSON block — nothing visible about it.
-9. If the user asks to calculate but does NOT provide quantity, unit, and activity, ask them to provide data in this format: amount + unit + activity.
+8. Do NOT produce emission_entry JSON blocks. The system has a separate NLU extractor and calculator that handles all emission data processing automatically.
+9. If the user provides activity data (quantity + unit + activity), acknowledge briefly that it will be processed. Do NOT calculate or produce JSON.
 10. For general questions about carbon, sustainability, ISO 14064-1, or reduction strategies, answer normally and concisely.
-11. Keep responses SHORT — 1-3 sentences max for data entry confirmations.
+11. Keep responses SHORT — 1-3 sentences max.
 12. If asked in Turkish, respond in Turkish. If asked in Persian/Farsi, respond in Persian.
 13. NEVER say "saved", "entry saved", or "saved to dashboard". Only the backend confirm-entry endpoint saves data after explicit user confirmation.
-
-INTERNAL DATA ENTRY FORMAT (never show this to the user):
-Only when the user provides real activity data, include one hidden block:
-
-```emission_entry
-{"fuel_type": "activity_type_here", "quantity": 123, "unit": "unit_here", "month": 1, "year": 2025, "description": "brief description"}
-```
-
-The system parses this invisibly and shows the user a clean result with Yes/No save buttons.
-Do NOT explain the JSON or show it in your text response. Just acknowledge the data briefly."""
+14. You are in CONVERSATIONAL MODE only. Emission calculations are handled by a separate system. Just answer questions helpfully."""
 
 
 # The activity→slug map, unit resolution, and factor lookup are shared with the
@@ -537,38 +528,18 @@ def _handle_nlu_guided_reply(request, session, content):
 
     family = draft.get('activity_family')
     updated_draft = apply_guided_answer(draft, field, selected)
-    # Remove internal tracking keys temporarily for readiness check
+    # Remove internal tracking keys for readiness check
     clean_draft = {k: v for k, v in updated_draft.items() if not k.startswith('_')}
 
-    # Vehicle distance: if vehicle_count > 1 and distance_basis not yet answered,
-    # ALWAYS ask it next, regardless of what the schema says.
-    if family == 'vehicle_distance':
-        vc = clean_draft.get('vehicle_count')
-        try:
-            vc_num = int(vc or 0)
-        except (TypeError, ValueError):
-            vc_num = 0
-        if vc_num > 1 and not clean_draft.get('distance_basis'):
-            # Store draft and ask distance_basis explicitly
-            session.state = {
-                **(session.state or {}),
-                'guided_draft': {**clean_draft, '_nlu_flow': True, '_next_field': 'distance_basis'},
-            }
-            session.save(update_fields=['state', 'updated_at'])
-            quick_replies = _format_quick_replies(['per_vehicle', 'fleet_total'], 'distance_basis')
-            ui = {'quick_replies': quick_replies, 'flow': 'nlu_vehicle_distance'}
-            text = (
-                f"I can calculate this, but I need one more detail.\n\n"
-                f"You mentioned **{vc_num} vehicles** and **{clean_draft.get('quantity', 0)} km**.\n\n"
-                f"**Is the distance per vehicle or total for all vehicles?**"
-            )
-            return _assistant_response(session, text, ui=ui, source='nlu_guided')
+    # Use build_guided_ui which uses get_next_question_field (includes distance_basis logic)
+    guided_ui = build_guided_ui(family, clean_draft)
 
-    if is_ready_to_calculate(family, clean_draft):
-        return _complete_guided_draft(session, clean_draft)
+    if not guided_ui.get('complete'):
+        # More fields needed — ask next question
+        return _ask_guided_question(session, family, clean_draft)
 
-    # Ask the next question
-    return _ask_guided_question(session, family, clean_draft)
+    # All fields collected — calculate
+    return _complete_guided_draft(session, clean_draft)
 
 
 def _extract_vehicle_count_from_text(text):
