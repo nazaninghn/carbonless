@@ -603,6 +603,45 @@ def reset_session(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def get_report_summary(request, report_id=None):
+    """GET /api/questionnaire/report/<report_id>/ or /api/questionnaire/report/latest/"""
+    try:
+        from companies.utils import get_current_company
+        company = get_current_company(request.user)
+        if not company:
+            return Response({'error': 'No company found'}, status=400)
+
+        if report_id == 'latest':
+            report = CarbonReport.objects.filter(
+                company=company,
+                status=CarbonReport.Status.COMPLETED
+            ).order_by('-created_at').first()
+        elif report_id:
+            report = CarbonReport.objects.get(id=report_id, company=company)
+        else:
+            # List all reports
+            reports = CarbonReport.objects.filter(company=company).values(
+                'id', 'status', 'reporting_year', 'created_at', 'current_step'
+            ).order_by('-created_at')
+            return Response({'reports': list(reports)})
+
+        if not report:
+            return Response({'error': 'Report not found'}, status=404)
+
+        from .report_generator import build_report_summary
+        summary = build_report_summary(report, request.user)
+
+        return Response({
+            'report': summary,
+            'status': report.status,
+        })
+    except Exception as e:
+        logger.error(f"Get report summary failed: {e}")
+        return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_profile(request):
     session = QuestionnaireSession.objects.filter(user=request.user, is_complete=True).first()
     if not session:

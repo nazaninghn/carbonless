@@ -4,6 +4,7 @@ from .views import (
     SubmitStepView,
     ReportStatusView,
     ReportListView,
+    get_report_summary,
     # legacy
     start_session,
     answer_question,
@@ -23,6 +24,7 @@ urlpatterns = [
     # New CarbonIQ API
     path('', ReportListView.as_view()),
     path('start/', StartReportView.as_view()),
+    path('report/<str:report_id>/', get_report_summary, name='report-summary'),
     path('<int:report_id>/', ReportStatusView.as_view()),
     path('<int:report_id>/step/', SubmitStepView.as_view()),
 
