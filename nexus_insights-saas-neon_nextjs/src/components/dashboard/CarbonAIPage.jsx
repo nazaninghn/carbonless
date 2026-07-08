@@ -10,6 +10,7 @@ import {
 import { api } from '@/lib/utils/api';
 import SurveyNamingDialog from './SurveyNamingDialog';
 import CompletionReportCard from './CompletionReportCard';
+import ReportPicker from './ReportPicker';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Brain orb animations (injected once via <style> in FreeChatTab)
@@ -1807,6 +1808,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
   const [started, setStarted] = useState(false);
   const [startLoading, setStartLoading] = useState(false);
   const [startError, setStartError] = useState('');
+  const [showReportPicker, setShowReportPicker] = useState(false);
   const [currentId, setCurrentId] = useState(() => getInitialQuestionId());
   const [answers, setAnswers] = useState({});
   const [answerValue, setAnswerValue] = useState('');
@@ -1985,7 +1987,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
   }, [language]); // only language — not currentId/loopState, those use their own effects
 
   // ── handleShowNamingDialog ────────────────────────────────────────────────
-  const handleShowNamingDialog = useCallback(() => {
+  const handleShowNamingDialog = useCallback((forceNew = true) => {
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', {
       year: 'numeric', month: '2-digit', day: '2-digit'
@@ -1994,6 +1996,71 @@ function QuestionnaireTab({ language, isVisible = true }) {
     });
     setCurrentDateTime(dateStr);
     setShowNamingDialog(true);
+    // Store forceNew in a hidden state or use it directly in handleStartWithName
+    // For now we'll keep it simple — ReportPicker always calls with forceNew: true
+  }, []);
+
+  // ── handleContinueReport ──────────────────────────────────────────────────
+  const handleContinueReport = useCallback(async (rid) => {
+    setShowReportPicker(false);
+    if (startingRef.current) return;
+    startingRef.current = true;
+    setStartLoading(true);
+    setStartError('');
+    try {
+      const res = await api.getReportStatus(rid);
+      if (!res.ok) {
+        if (!isMounted.current) return;
+        setStartError(tr ? 'Rapor yüklenemedi.' : 'Could not load report.');
+        return;
+      }
+      const data = await res.json();
+
+      // Restore answers from backend
+      if (data.answers && typeof data.answers === 'object') {
+        setAnswers(data.answers);
+      }
+
+      // Set report ID and current step
+      setReportId(rid);
+      const nextStep = data.current_step || getInitialQuestionId();
+      setCurrentId(nextStep);
+
+      // Show welcome message
+      const firstQ = getQuestionById(nextStep);
+      const welcomeMsg = {
+        id: 'welcome',
+        role: 'assistant',
+        content: tr
+          ? `Hoş geldin! Kaldığın yerden devam ediyorsun — Soru ${firstQ?.number}:\n\n${firstQ?.text?.tr || firstQ?.text?.en}`
+          : `Welcome back! Resuming where you left off — Question ${firstQ?.number}:\n\n${firstQ?.text?.en}`,
+      };
+      if (firstQ?.helper) {
+        welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
+      }
+      setMessages([welcomeMsg]);
+      questionMsgLenRef.current = 1;
+      setAnswerValue(getInitialValue(firstQ));
+      setValidationError('');
+      setShowValidationError(false);
+      setSaveError('');
+      setStarted(true);
+    } catch {
+      if (!isMounted.current) return;
+      setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error.');
+    } finally {
+      if (isMounted.current) {
+        setStartLoading(false);
+        startingRef.current = false;
+      }
+    }
+  }, [lang, tr]);
+
+  // ── handleViewReport ──────────────────────────────────────────────────────
+  const handleViewReport = useCallback((rid) => {
+    setShowReportPicker(false);
+    // Dispatch navigate event to show Reports tab
+    window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting', reportId: rid } }));
   }, []);
 
   // ── handleStartWithName ────────────────────────────────────────────────────
@@ -2612,6 +2679,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
     setBlockSummaryState(null);
     setHistory(history.slice(0, histIdx));
     setCurrentId(qId);
+    setEditingQuestionId(qId);
     const q = getQuestionById(qId);
     if (!q?.loopSource) setLoopState(null);
     setValidationError('');
@@ -2679,10 +2747,32 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (!started) {
+    // Show ReportPicker first to let user choose: new, continue draft, or view completed
+    if (showReportPicker) {
+      return (
+        <>
+          <ReportPicker
+            onStartNew={() => handleShowNamingDialog(true)}
+            onContinue={handleContinueReport}
+            onView={handleViewReport}
+            tr={tr}
+          />
+          <SurveyNamingDialog
+            isOpen={showNamingDialog}
+            onClose={() => setShowNamingDialog(false)}
+            onConfirm={handleStartWithName}
+            currentUser={currentUser}
+            currentDate={currentDateTime}
+            tr={tr}
+          />
+        </>
+      );
+    }
+
     return (
       <>
         <QuestionnaireWelcome
-          onStart={handleShowNamingDialog}
+          onStart={() => setShowReportPicker(true)}
           loading={startLoading}
           answeredCount={Object.keys(answers).length}
           tr={tr}
