@@ -537,11 +537,11 @@ def _handle_nlu_guided_reply(request, session, content):
     if family == 'vehicle_distance' and not clean_draft.get('vehicle_count'):
         fallback_count = _extract_vehicle_count_from_text(content)
         if not fallback_count:
-            # Try to extract from the full session history (first user message)
-            recent_msgs = session.messages.order_by('created_at')[:2]
-            first_user_msg = next((m.content for m in recent_msgs if m.role == 'user'), None)
+            # Try to extract from the full session history (first user message, not just recent)
+            all_user_msgs = session.messages.filter(role='user').order_by('created_at')
+            first_user_msg = all_user_msgs.first()
             if first_user_msg:
-                fallback_count = _extract_vehicle_count_from_text(first_user_msg)
+                fallback_count = _extract_vehicle_count_from_text(first_user_msg.content)
         if fallback_count:
             clean_draft['vehicle_count'] = fallback_count
 
