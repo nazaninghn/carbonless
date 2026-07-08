@@ -252,30 +252,42 @@ class StartReportView(APIView):
         if not company:
             return Response({'error': 'No company found. Please create a company first.'}, status=400)
 
-        existing = CarbonReport.objects.filter(
-            company=company,
-            status__in=[CarbonReport.Status.DRAFT, CarbonReport.Status.IN_PROGRESS]
-        ).first()
+        # If force_new is passed, skip resume and always create new
+        force_new = request.data.get('force_new', False)
+        title = (request.data.get('title') or '').strip()
 
-        if existing:
-            return Response({
-                'report_id': existing.id,
-                'current_step': existing.current_step,
-                'resumed': True,
-                'company': {
-                    'name': company.legal_entity_name,
-                    'tax_id': company.tax_number,
-                    'country': company.country_of_headquarters,
-                },
-                'bot_messages': [
-                    f"👋 Welcome back! Resuming your report from step **{existing.current_step}**.",
-                    f"Company: **{company.legal_entity_name}**"
-                ]
-            })
+        if not force_new:
+            existing = CarbonReport.objects.filter(
+                company=company,
+                status__in=[CarbonReport.Status.DRAFT, CarbonReport.Status.IN_PROGRESS]
+            ).first()
+
+            if existing:
+                return Response({
+                    'report_id': existing.id,
+                    'title': existing.title,
+                    'current_step': existing.current_step,
+                    'resumed': True,
+                    'company': {
+                        'name': company.legal_entity_name,
+                        'tax_id': company.tax_number,
+                        'country': company.country_of_headquarters,
+                    },
+                    'bot_messages': [
+                        f"👋 Welcome back! Resuming your report from step **{existing.current_step}**.",
+                        f"Company: **{company.legal_entity_name}**"
+                    ]
+                })
+
+        # Default title if none provided
+        if not title:
+            from datetime import datetime
+            title = f"Carbon Report — {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
         report = CarbonReport.objects.create(
             company=company,
             created_by=request.user,
+            title=title,
             status=CarbonReport.Status.IN_PROGRESS,
             current_step='A1'
         )
@@ -462,11 +474,13 @@ class ReportListView(APIView):
         reports = CarbonReport.objects.filter(company=company, created_by=request.user).select_related('company')
         data = [{
             'report_id': r.id,
+            'title': r.title or f'Report — {r.created_at.strftime("%Y-%m-%d")}',
             'company': r.company.legal_entity_name,
             'reporting_year': r.reporting_year,
             'status': r.status,
             'current_step': r.current_step,
             'created_at': r.created_at,
+            'updated_at': r.updated_at,
         } for r in reports]
         return Response({'reports': data})
 

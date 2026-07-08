@@ -32,6 +32,7 @@ class CarbonReport(models.Model):
     created_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, related_name='created_reports'
     )
+    title = models.CharField(max_length=200, blank=True, default='')
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT
     )

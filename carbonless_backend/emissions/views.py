@@ -161,7 +161,7 @@ def emission_summary(request):
     ).order_by('-total_kg')
 
     # Get questionnaire profile if available
-    from questionnaire.models import QuestionnaireSession
+    from questionnaire.models import QuestionnaireSession, CarbonReport
     from questionnaire.views import extract_profile
     questionnaire_profile = None
     session = QuestionnaireSession.objects.filter(
@@ -169,6 +169,14 @@ def emission_summary(request):
     ).first()
     if session:
         questionnaire_profile = extract_profile(session)
+
+    # Also check CarbonReport completion (newer flow)
+    if not questionnaire_profile and company:
+        completed_report = CarbonReport.objects.filter(
+            company=company, status=CarbonReport.Status.COMPLETED
+        ).first()
+        if completed_report:
+            questionnaire_profile = {'is_complete': True, 'report_id': completed_report.id}
 
     # Custom emission requests (approved)
     custom_approved = CustomEmissionRequest.objects.filter(
