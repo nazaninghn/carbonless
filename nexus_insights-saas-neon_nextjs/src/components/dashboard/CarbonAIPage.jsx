@@ -2079,10 +2079,14 @@ function QuestionnaireTab({ language, isVisible = true }) {
           role: 'assistant',
           type: 'info',
           content: tr
-            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
-            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
+            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.\n\nRaporunuzu görmek için aşağıdaki butona tıklayın.`
+            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.\n\nClick below to view your report.`,
         }];
       });
+      // Auto-navigate to reports after a short delay
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
+      }, 3000);
       return;
     }
     const nextQ = getQuestionById(nextId);
@@ -2399,9 +2403,13 @@ function QuestionnaireTab({ language, isVisible = true }) {
           role: 'assistant',
           type: 'info',
           content: tr
-            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
-            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
+            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.\n\nRaporunuzu görmek için aşağıdaki butona tıklayın.`
+            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.\n\nClick below to view your report.`,
         }]);
+        // Auto-navigate to reports after a short delay
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
+        }, 3000);
       } else {
         // Show a block-level summary table when crossing a block/stage boundary
         const currBlockId = getBlockId(q);
@@ -2519,11 +2527,19 @@ function QuestionnaireTab({ language, isVisible = true }) {
   }, [blockSummaryState, answers, initLoopOrAdvance]);
 
   // ── resetFlow ──────────────────────────────────────────────────────────────
-  const resetFlow = useCallback(() => {
+  const resetFlow = useCallback(async () => {
     // Cancel any in-flight typing animation so it can't post stale bubbles
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
     isSubmittingRef.current = false;
+
+    // Tell backend to reset the session so a new one can be created
+    try {
+      await api.resetQuestionnaire();
+    } catch (e) {
+      console.warn('Backend reset failed (non-critical):', e);
+    }
+
     const initId = getInitialQuestionId();
     setCurrentId(initId);
     setAnswers({});
@@ -2773,13 +2789,22 @@ function QuestionnaireTab({ language, isVisible = true }) {
                   <button onClick={() => setResetConfirm(false)} className="rounded-full border border-[#244959]/15 px-4 py-2 text-xs font-bold text-[#244959]/50 transition hover:bg-[#244959]/5">{tr ? 'İptal' : 'Cancel'}</button>
                 </div>
               ) : (
-                <button
-                  onClick={() => setResetConfirm(true)}
-                  className="flex items-center gap-2 rounded-full border border-[#244959]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#244959]/70 shadow-sm transition hover:bg-[#244959]/5"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" />
-                  {tr ? 'Yeniden Başla' : 'Start Over'}
-                </button>
+                <>
+                  <button
+                    onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }))}
+                    className="flex items-center gap-2 rounded-full bg-[#5E7A2E] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4a6124]"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    {tr ? 'Raporu Görüntüle' : 'View Report'}
+                  </button>
+                  <button
+                    onClick={() => setResetConfirm(true)}
+                    className="flex items-center gap-2 rounded-full border border-[#244959]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#244959]/70 shadow-sm transition hover:bg-[#244959]/5"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    {tr ? 'Yeniden Başla' : 'Start Over'}
+                  </button>
+                </>
               )}
             </div>
           </div>

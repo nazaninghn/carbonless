@@ -127,7 +127,7 @@ export default function DashboardPage() {
     }
   }, [activeTab]);
 
-  // Listen for close/open events from CarbonAIPage overlay buttons
+  // Listen for close/open/navigate events from CarbonAIPage overlay buttons
   useEffect(() => {
     function handleClose() {
       setAiCarbonVisible(false);
@@ -137,11 +137,20 @@ export default function DashboardPage() {
       setAiCarbonVisible(true);
       setActiveTab('ai_carbon');
     }
+    function handleNavigate(e) {
+      const tab = e.detail?.tab;
+      if (tab) {
+        setAiCarbonVisible(false);
+        setActiveTab(tab);
+      }
+    }
     window.addEventListener('carboniq-close', handleClose);
     window.addEventListener('carboniq-open', handleOpen);
+    window.addEventListener('carboniq-navigate', handleNavigate);
     return () => {
       window.removeEventListener('carboniq-close', handleClose);
       window.removeEventListener('carboniq-open', handleOpen);
+      window.removeEventListener('carboniq-navigate', handleNavigate);
     };
   }, []);
 

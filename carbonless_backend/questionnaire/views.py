@@ -632,19 +632,23 @@ def get_sessions(request):
 def reset_session(request):
     """Reset/delete current session (complete or incomplete) and start fresh."""
     from .flow import get_question
-    # Delete ALL sessions (both incomplete and complete)
+    from .models import CarbonReport
+
+    # Delete ALL legacy sessions (both incomplete and complete)
     QuestionnaireSession.objects.filter(user=request.user).delete()
 
-    # Create brand new session
-    new_session = QuestionnaireSession.objects.create(user=request.user)
-    lang = request.data.get('lang', 'tr')
-    q = get_question('S1', lang)
+    # Mark any IN_PROGRESS CarbonReport as completed so StartReportView creates a new one
+    from companies.utils import get_current_company
+    company = get_current_company(request.user)
+    if company:
+        CarbonReport.objects.filter(
+            company=company,
+            status__in=[CarbonReport.Status.DRAFT, CarbonReport.Status.IN_PROGRESS],
+        ).update(status=CarbonReport.Status.COMPLETED)
 
     return Response({
-        'status': 'reset_and_started',
-        'session_id': new_session.pk,
-        'question': q,
-        'message': 'Questionnaire reset. Starting fresh!'
+        'status': 'reset',
+        'message': 'Questionnaire reset. You can start a new survey.',
     })
 
 

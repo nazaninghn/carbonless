@@ -232,6 +232,7 @@ export const api = {
   exportAll: () => request('/emissions/export-all/'),
 
   startCarbonReport: () => request('/questionnaire/start/', { method: 'POST' }),
+  resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
   submitReportStep: (reportId, step, data) => request(`/questionnaire/${reportId}/step/`, {
     method: 'PATCH',
     body: JSON.stringify({ step, data }),
