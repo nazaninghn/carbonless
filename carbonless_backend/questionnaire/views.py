@@ -560,36 +560,57 @@ def answer_question(request):
         response['question'] = get_question(result['next_question'], lang)
     else:
         response['summary'] = session.answers
-        # Add report summary with results and dashboard link (ALWAYS try)
+        # Add report summary with results and dashboard link (ALWAYS provide, no exceptions)
+        report_summary = None
         try:
-            from .report_generator import build_report_summary, generate_report_from_session
-            report = generate_report_from_session(session, request.user)
-            if report:
-                report_summary = build_report_summary(report, request.user)
-                response['report_summary'] = report_summary
-                if isinstance(report, dict):
-                    response['report_id'] = report.get('id')
-                else:
+            from .report_generator import build_report_summary
+            # Don't call generate_report_from_session again — it was already called above!
+            # Just fetch the report that was created
+            from companies.utils import get_current_company
+            from questionnaire.models import CarbonReport
+            company = get_current_company(request.user)
+
+            if company:
+                reporting_year = timezone.now().year
+                report = CarbonReport.objects.filter(
+                    company=company,
+                    status=CarbonReport.Status.COMPLETED
+                ).order_by('-created_at').first()
+
+                if report:
+                    report_summary = build_report_summary(report, request.user)
                     response['report_id'] = report.id
-                response['next_action'] = {
-                    'message': '✅ Questionnaire Complete!',
-                    'subtitle': 'Ready to log emissions via Chat?',
-                    'action': 'open_chat',
-                    'link': '/app/chat'
+                    logger.info(f"✅ Report retrieved for user {request.user.id}: {report.id}")
+                else:
+                    # Report not in DB yet? Use minimal
+                    logger.warning(f"No report found in DB for user {request.user.id}")
+                    report_summary = {
+                        'status': 'Complete ✅',
+                        'message': '✅ Questionnaire complete! You can now log emissions via Chat.'
+                    }
+            else:
+                logger.warning(f"No company for user {request.user.id}")
+                report_summary = {
+                    'status': 'Complete ✅',
+                    'message': '✅ Questionnaire complete! Set up company and log emissions via Chat.'
                 }
-                logger.info(f"Report generated for user {request.user.id}: {response['report_summary']}")
         except Exception as e:
-            logger.error(f"Report summary generation FAILED: {e}", exc_info=True)
-            # STILL provide minimal response even on error
-            response['report_summary'] = {
+            logger.error(f"Report summary retrieval FAILED: {e}", exc_info=True)
+            report_summary = {
                 'status': 'Complete ✅',
                 'message': '✅ Questionnaire complete! You can now log emissions via Chat.'
             }
-            response['next_action'] = {
-                'message': '✅ Questionnaire Complete!',
-                'action': 'open_chat',
-                'link': '/app/chat'
-            }
+
+        # ALWAYS add report_summary to response
+        if report_summary:
+            response['report_summary'] = report_summary
+
+        response['next_action'] = {
+            'message': '✅ Questionnaire Complete!',
+            'subtitle': 'Ready to log emissions via Chat?',
+            'action': 'open_chat',
+            'link': '/app/chat'
+        }
 
     return Response(response)
 

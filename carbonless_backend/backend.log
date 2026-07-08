@@ -1,0 +1,14 @@
+Watching for file changes with StatReloader
+C:\Users\UP\Desktop\new carbon design\carbonless_backend\questionnaire\views.py changed, reloading.
+Performing system checks...
+
+System check identified no issues (0 silenced).
+
+You have 1 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): emissions.
+Run 'python manage.py migrate' to apply them.
+July 08, 2026 - 09:28:16
+Django version 5.0.6, using settings 'carbonless_api.settings'
+Starting development server at http://127.0.0.1:8000/
+Quit the server with CTRL-BREAK.
+
+Watching for file changes with StatReloader
