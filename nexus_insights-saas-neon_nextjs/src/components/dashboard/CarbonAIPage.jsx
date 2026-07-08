@@ -2077,15 +2077,21 @@ function QuestionnaireTab({ language, isVisible = true }) {
     try {
       const backendData = mapAnswerForBackend(questionId, value);
       const res = await api.submitReportStep(rid_, questionId, backendData);
+
       // Guard: component may have unmounted while the save request was in-flight
       if (!isMounted.current) return { success: false, data: {} };
+
+      // ✅ Parse JSON ONCE
+      const respData = await res.json().catch(() => ({}));
+
       if (!res.ok) {
         setSaveSuccess(false);
-        const errData = await res.json().catch(() => ({}));
-        const msg = errData?.error || errData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
+        const msg = respData?.error || respData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
         if (isMounted.current) setSaveError(msg);
         return { success: false, data: {} };
       }
+
+      // ✅ Save succeeded - clear error
       setSaveError('');
       setSaveSuccess(true);
       if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
@@ -2093,8 +2099,6 @@ function QuestionnaireTab({ language, isVisible = true }) {
         if (isMounted.current) setSaveSuccess(false);
       }, 2000);
 
-      // ✅ Parse response to check for completion
-      const respData = await res.json().catch(() => ({}));
       return { success: true, data: respData };
     } catch (e) {
       if (isMounted.current) {
