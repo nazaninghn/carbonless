@@ -369,6 +369,7 @@ def _quick_reply_label(value):
         'recyclable': '♻️ Recycling',
         'composting': '🌱 Composting',
         'incineration': '🔥 Incineration',
+        'anaerobic_digestion': '🧪 Anaerobic digestion',
 
         'road': '🚛 Road / Truck',
         'truck': '🚛 Truck',
@@ -377,6 +378,7 @@ def _quick_reply_label(value):
         'air': '✈️ Air',
 
         'car': '🚗 Car',
+        'van': '🚐 Van',
         'bus': '🚌 Bus',
         'train': '🚆 Train',
         'motorcycle': '🏍️ Motorcycle',
@@ -384,7 +386,7 @@ def _quick_reply_label(value):
         'walking': '🚶 Walking',
 
         'potable': '💧 Water supply',
-        'supply': '� Water supply',
+        'supply': '💧 Water supply',
         'wastewater': '🚰 Water treatment',
         'treatment': '🚰 Water treatment',
 
@@ -563,6 +565,29 @@ def _extract_vehicle_count_from_text(text):
                     return count
             except (TypeError, ValueError):
                 continue
+
+    return None
+
+
+def _extract_vehicle_count_from_text(text):
+    """Fallback: extract vehicle count from raw text if NLU missed it."""
+    if not text:
+        return None
+
+    import re
+    patterns = [
+        r'(?P<count>\d+)\s*(private\s*)?(car|cars|vehicle|vehicles|truck|trucks|van|vans)\b',
+        r'(car|cars|vehicle|vehicles|truck|trucks|van|vans)\s*[:=]?\s*(?P<count>\d+)\b',
+    ]
+
+    t = text.lower()
+    for pattern in patterns:
+        match = re.search(pattern, t)
+        if match:
+            try:
+                return int(match.group("count"))
+            except (TypeError, ValueError):
+                return None
 
     return None
 

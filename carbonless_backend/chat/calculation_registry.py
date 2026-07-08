@@ -526,23 +526,31 @@ def draft_to_entry_data(draft: dict) -> dict:
         entry["fuel_type"] = draft.get("fuel_type")
         entry["vehicle_type"] = draft.get("vehicle_type")
 
-        # Handle distance_basis — per_vehicle multiplier
-        vehicle_count = draft.get("vehicle_count")
-        distance_basis = draft.get("distance_basis") or "fleet_total"
-        quantity = draft.get("quantity")
+        try:
+            quantity = float(draft.get("quantity") or 0)
+        except (TypeError, ValueError):
+            quantity = draft.get("quantity")
 
-        if distance_basis == "per_vehicle" and vehicle_count and quantity:
+        try:
+            vehicle_count = int(draft.get("vehicle_count") or 0)
+        except (TypeError, ValueError):
+            vehicle_count = 0
+
+        # Safe default: if ambiguity was not asked for any reason,
+        # treat distance as total fleet distance, not per vehicle.
+        distance_basis = draft.get("distance_basis") or "fleet_total"
+
+        final_quantity = quantity
+
+        if distance_basis == "per_vehicle" and vehicle_count > 1:
             try:
-                total_distance = float(quantity) * int(vehicle_count)
-                entry["quantity"] = total_distance
-                entry["vehicle_count"] = int(vehicle_count)
-                entry["distance_basis"] = "per_vehicle"
-            except (ValueError, TypeError):
-                pass
-        else:
-            if vehicle_count:
-                entry["vehicle_count"] = int(vehicle_count) if vehicle_count else None
-            entry["distance_basis"] = distance_basis
+                final_quantity = float(quantity) * vehicle_count
+            except (TypeError, ValueError):
+                final_quantity = quantity
+
+        entry["quantity"] = final_quantity
+        entry["vehicle_count"] = vehicle_count or None
+        entry["distance_basis"] = distance_basis
 
     elif family == "electricity":
         entry["activity_type"] = draft.get("activity_type", "grid_electricity")
