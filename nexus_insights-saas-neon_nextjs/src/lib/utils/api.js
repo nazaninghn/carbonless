@@ -231,9 +231,9 @@ export const api = {
   deleteAccount: (password) => request('/accounts/delete-account/', { method: 'DELETE', body: JSON.stringify({ password }) }),
   exportAll: () => request('/emissions/export-all/'),
 
-  startCarbonReport: (title = '') => request('/questionnaire/start/', {
+  startCarbonReport: (title = '', forceNew = false) => request('/questionnaire/start/', {
     method: 'POST',
-    body: JSON.stringify({ title })
+    body: JSON.stringify({ title, force_new: forceNew })
   }),
   resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
   submitReportStep: (reportId, step, data) => request(`/questionnaire/${reportId}/step/`, {

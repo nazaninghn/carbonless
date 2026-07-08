@@ -1995,7 +1995,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
   }, []);
 
   // ── handleStartWithName ────────────────────────────────────────────────────
-  const handleStartWithName = useCallback(async (surveyName) => {
+  const handleStartWithName = useCallback(async (surveyName, forceNew = true) => {
     setShowNamingDialog(false);
 
     if (startingRef.current) return;
@@ -2006,7 +2006,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
     let effectiveId = currentId;
     try {
       const title = `${surveyName} — ${currentDateTime}`;
-      const res = await api.startCarbonReport(title);
+      // ✅ Use force_new=true for "Start New", false for "Continue"
+      const res = await api.startCarbonReport(title, forceNew);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         // No company or other server error — guard against unmount during the await
@@ -2072,18 +2073,18 @@ function QuestionnaireTab({ language, isVisible = true }) {
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid) => {
     const rid_ = rid || reportId;
-    if (!rid_) return true; // no backend configured — treat as success
+    if (!rid_) return { success: true, data: {} };
     try {
       const backendData = mapAnswerForBackend(questionId, value);
       const res = await api.submitReportStep(rid_, questionId, backendData);
       // Guard: component may have unmounted while the save request was in-flight
-      if (!isMounted.current) return false;
+      if (!isMounted.current) return { success: false, data: {} };
       if (!res.ok) {
         setSaveSuccess(false);
         const errData = await res.json().catch(() => ({}));
         const msg = errData?.error || errData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
         if (isMounted.current) setSaveError(msg);
-        return false;
+        return { success: false, data: {} };
       }
       setSaveError('');
       setSaveSuccess(true);
@@ -2091,13 +2092,16 @@ function QuestionnaireTab({ language, isVisible = true }) {
       saveSuccessTimerRef.current = setTimeout(() => {
         if (isMounted.current) setSaveSuccess(false);
       }, 2000);
-      return true;
+
+      // ✅ Parse response to check for completion
+      const respData = await res.json().catch(() => ({}));
+      return { success: true, data: respData };
     } catch (e) {
       if (isMounted.current) {
         setSaveSuccess(false);
         setSaveError(lang === 'tr' ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
       }
-      return false;
+      return { success: false, data: {} };
     }
   }, [reportId, lang]);
 
@@ -2306,7 +2310,30 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
       // Clear mutex AFTER setIsTyping(true) to eliminate mutex gap (same as normal path).
       isSubmittingRef.current = true;
-      await saveStepToBackend(currentId, newCollected, reportId);
+      const saveRes = await saveStepToBackend(currentId, newCollected, reportId);
+
+      // ✅ Check if backend says survey is completed
+      if (saveRes.success && (saveRes.data?.completed === true || saveRes.data?.next_step === null)) {
+        setCompleted(true);
+        setMessages(prev => [...prev, {
+          id: `m-${++msgIdRef.current}`,
+          role: 'assistant',
+          type: 'info',
+          content: tr
+            ? `✅ تبریک! تمام سوالات تکمیل شدند.`
+            : `✅ Congratulations! All questions completed.`,
+        }]);
+        // Fetch report
+        if (reportId) {
+          setReportLoading(true);
+          api.getReportStatus(reportId)
+            .then(r => r.json())
+            .then(data => { setCompletedReport(data); setReportLoading(false); })
+            .catch(e => { console.error('Failed to fetch report:', e); setReportLoading(false); });
+        }
+        isSubmittingRef.current = false;
+        return;
+      }
 
       // Use newCollected (the full { item: answer } map) not value (last item only) —
       // warnings and assumptions on loop questions are keyed to the aggregate answer.
@@ -2377,7 +2404,30 @@ function QuestionnaireTab({ language, isVisible = true }) {
     // isSubmittingRef is cleared AFTER setIsTyping(true) to avoid the
     // tiny gap where both guards are false simultaneously.
     isSubmittingRef.current = true;
-    await saveStepToBackend(currentId, value, reportId);
+    const saveRes = await saveStepToBackend(currentId, value, reportId);
+
+    // ✅ Check if backend says survey is completed
+    if (saveRes.success && (saveRes.data?.completed === true || saveRes.data?.next_step === null)) {
+      setCompleted(true);
+      setMessages(prev => [...prev, {
+        id: `m-${++msgIdRef.current}`,
+        role: 'assistant',
+        type: 'info',
+        content: tr
+          ? `✅ تبریک! تمام سوالات تکمیل شدند.`
+          : `✅ Congratulations! All questions completed.`,
+      }]);
+      // Fetch report
+      if (reportId) {
+        setReportLoading(true);
+        api.getReportStatus(reportId)
+          .then(r => r.json())
+          .then(data => { setCompletedReport(data); setReportLoading(false); })
+          .catch(e => { console.error('Failed to fetch report:', e); setReportLoading(false); });
+      }
+      isSubmittingRef.current = false;
+      return;
+    }
 
     // getQuestionWarning takes (question, value, lang); getTriggeredAssumptions takes (question, value)
     // — lang is resolved at render time for assumptions so language switches show correct text.
@@ -2800,6 +2850,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
                 tr={tr}
                 onStartNew={() => {
                   resetFlow();
+                  // ✅ Start NEW survey with force_new=true
                   handleShowNamingDialog();
                 }}
                 onViewFull={() => {

@@ -397,14 +397,33 @@ class SubmitStepView(APIView):
             step_id=step,
             defaults={'answer': data if data else {}, 'is_skipped': False}
         )
-        report.current_step = step
 
-        # Mark report as COMPLETED when final question (7B-INFO / done) is submitted
-        if step == '7B-INFO' and isinstance(data, dict) and data.get('answer') == 'done':
+        # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
+        is_final_step = (
+            step == '7B-INFO' and
+            isinstance(data, dict) and
+            data.get('answer') == 'done'
+        )
+
+        if is_final_step:
             report.status = CarbonReport.Status.COMPLETED
-            logger.info(f"✅ Report {report.id} marked as COMPLETED (user {request.user.id})")
+            report.current_step = 'DONE'
+            report.save(update_fields=['status', 'current_step', 'updated_at'])
+            logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
 
-        report.save()
+            return Response({
+                'success': True,
+                'step': step,
+                'next_step': None,  # ✅ CRITICAL: NULL means done
+                'completed': True,
+                'status': 'COMPLETED',
+                'report_id': report.id,
+                'message': 'Survey completed successfully'
+            })
+
+        # Not final step - update and continue
+        report.current_step = step
+        report.save(update_fields=['current_step', 'updated_at'])
 
         # ── Phase 2: Auto-create EmissionEntry for consumption data steps ──
         # If this step contains emission/consumption data, create a real entry
