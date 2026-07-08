@@ -533,6 +533,18 @@ def _handle_nlu_guided_reply(request, session, content):
     # Remove internal tracking keys for readiness check
     clean_draft = {k: v for k, v in updated_draft.items() if not k.startswith('_')}
 
+    # Fallback: if vehicle_distance and vehicle_count still missing, try extracting from original message
+    if family == 'vehicle_distance' and not clean_draft.get('vehicle_count'):
+        fallback_count = _extract_vehicle_count_from_text(content)
+        if not fallback_count:
+            # Try to extract from the full session history (first user message)
+            recent_msgs = session.messages.order_by('created_at')[:2]
+            first_user_msg = next((m.content for m in recent_msgs if m.role == 'user'), None)
+            if first_user_msg:
+                fallback_count = _extract_vehicle_count_from_text(first_user_msg)
+        if fallback_count:
+            clean_draft['vehicle_count'] = fallback_count
+
     # Use build_guided_ui which uses get_next_question_field (includes distance_basis logic)
     guided_ui = build_guided_ui(family, clean_draft)
 
