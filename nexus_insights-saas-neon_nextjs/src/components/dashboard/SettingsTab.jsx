@@ -112,7 +112,7 @@ export default function SettingsTab({ language, user, fetchData }) {
     <div className="space-y-3 text-[#302817]">
       {/* Header */}
       <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-4 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#B4BE6A]">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#89E789]">
           Carbonless Workspace
         </p>
         <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#302817]">
@@ -138,7 +138,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-bold transition lg:w-full lg:gap-2 lg:px-3 lg:text-xs ${
                     isActive
-                      ? 'bg-[#75863B] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
+                      ? 'bg-[#244959] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
                       : 'border border-[#302817]/8 bg-white text-[#302817]/60 hover:bg-white hover:text-[#302817] lg:border-0 lg:bg-transparent'
                   }`}
                 >
@@ -146,7 +146,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg lg:h-7 lg:w-7 ${
                       isActive
                         ? 'bg-[#F9EFE5]/12 text-[#F9EFE5]'
-                        : 'bg-[#B4BE6A]/12 text-[#95A847]'
+                        : 'bg-[#89E789]/12 text-[#51B291]'
                     }`}
                   >
                     <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
@@ -163,7 +163,7 @@ export default function SettingsTab({ language, user, fetchData }) {
           {/* Section header */}
           <div className="mb-3 rounded-xl border border-[#302817]/10 bg-white p-2.5 shadow-sm lg:rounded-[1.25rem] lg:p-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25 lg:h-9 lg:w-9 lg:rounded-xl">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#89E789]/14 text-[#51B291] ring-1 ring-[#89E789]/25 lg:h-9 lg:w-9 lg:rounded-xl">
                 {active && <active.icon className="h-4 w-4" />}
               </div>
               <div>
@@ -208,7 +208,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                           key={p.key}
                           className={`rounded-2xl border px-3 py-3 text-center text-xs font-bold ${
                             allowed
-                              ? 'border-[#B4BE6A]/30 bg-[#B4BE6A]/12 text-[#302817]'
+                              ? 'border-[#89E789]/30 bg-[#89E789]/12 text-[#302817]'
                               : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/45'
                           }`}
                         >
@@ -229,13 +229,13 @@ export default function SettingsTab({ language, user, fetchData }) {
                       the CarbonAIPage questionnaire state on every language switch. */}
                   <button
                     onClick={() => changeLanguage('en')}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#51B291]/40 bg-[#51B291]/12 text-[#244959]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇬🇧 English
                   </button>
                   <button
                     onClick={() => changeLanguage('tr')}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#95A847]/40 bg-[#95A847]/12 text-[#75863B]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#51B291]/40 bg-[#51B291]/12 text-[#244959]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
                   >
                     🇹🇷 Türkçe
                   </button>
@@ -297,7 +297,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   onClick={handleExport}
                   disabled={exporting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/15 transition hover:bg-[#5E6B2A] disabled:opacity-60 sm:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/15 transition hover:bg-[#1a3a2e] disabled:opacity-60 sm:w-auto"
                 >
                   <Download className="h-4 w-4" />
                   {exporting ? '...' : tr ? 'Tüm Verileri İndir' : 'Export All Data'}
@@ -393,7 +393,7 @@ function Panel({ children }) {
 function PanelTitle({ icon: Icon, title }) {
   return (
     <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#302817]">
-      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#B4BE6A]/14 text-[#95A847] ring-1 ring-[#B4BE6A]/25 sm:h-7 sm:w-7">
+      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#89E789]/14 text-[#51B291] ring-1 ring-[#89E789]/25 sm:h-7 sm:w-7">
         <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
       </div>
       {title}

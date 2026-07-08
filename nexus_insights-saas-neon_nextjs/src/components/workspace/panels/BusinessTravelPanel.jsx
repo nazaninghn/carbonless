@@ -53,7 +53,7 @@ const GROUND_MODES = [
 
 const INPUT_CLS =
   'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/25 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+  'placeholder:text-[#302817]/25 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
 
 function SectionDivider({ children }) {
   return (
@@ -202,7 +202,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
               if (isNaN(pkm) || pkm <= 0) return null;
               const kg = pkm * mode.ef;
               return (
-                <p className="text-[10.5px] font-semibold text-[#75863B]">
+                <p className="text-[10.5px] font-semibold text-[#244959]">
                   → {pkm.toLocaleString('tr-TR')} pkm × {mode.ef} = {kg >= 1000
                     ? `${(kg / 1000).toFixed(2)} tCO₂e`
                     : `${kg.toFixed(0)} kgCO₂e`}
@@ -255,7 +255,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                 if (isNaN(km) || km <= 0) return null;
                 const kg = km * mode.ef;
                 return (
-                  <p className="text-[10.5px] font-semibold text-[#75863B]">
+                  <p className="text-[10.5px] font-semibold text-[#244959]">
                     → {km.toLocaleString('tr-TR')} {mode.unit} × {mode.ef} = {kg >= 1000
                       ? `${(kg / 1000).toFixed(2)} tCO₂e`
                       : `${kg.toFixed(0)} kgCO₂e`}
@@ -319,8 +319,8 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
         disabled={!hasData || saving}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
-            ? 'bg-[#95A847]/15 border border-[#95A847]/30 text-[#527A1A]'
-            : 'bg-[#75863B] text-white hover:bg-[#5E6B2A] disabled:opacity-35'
+            ? 'bg-[#51B291]/15 border border-[#51B291]/30 text-[#527A1A]'
+            : 'bg-[#244959] text-white hover:bg-[#1a3a2e] disabled:opacity-35'
         }`}
       >
         {saving ? (

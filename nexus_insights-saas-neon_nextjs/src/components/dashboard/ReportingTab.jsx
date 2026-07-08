@@ -94,7 +94,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     return (
       <div className="space-y-4 text-[#302817]">
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#95A847]">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#51B291]">
             {tr ? 'Rapor merkezi' : 'Report center'}
           </p>
           <h1 className="mt-2 text-2xl font-black text-[#302817]">
@@ -103,7 +103,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
           <p className="text-xs text-[#302817]/50">{tr ? 'Rapor Hazırlığı' : 'Readiness'}</p>
-          <p className="text-3xl font-black text-[#95A847]">{readiness}%</p>
+          <p className="text-3xl font-black text-[#51B291]">{readiness}%</p>
         </div>
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
           <p className="text-xs text-[#302817]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
@@ -132,7 +132,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       <div className="relative rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-5 shadow-sm">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#95A847]">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#51B291]">
               {tr ? 'Rapor merkezi' : 'Report center'}
             </p>
             <h1 className="mt-1.5 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
@@ -143,7 +143,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60">
+            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading === 'pdftr' ? '...' : 'PDF TR'}
             </button>
@@ -161,21 +161,21 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A847]/15 text-[#95A847]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291]/15 text-[#51B291]">
                 <Shield className="h-4 w-4" />
               </div>
               <h2 className="text-sm font-bold">{tr ? 'Rapor Hazırlığı' : 'Report Readiness'}</h2>
             </div>
-            <span className="text-2xl font-bold text-[#95A847]">{readiness}%</span>
+            <span className="text-2xl font-bold text-[#51B291]">{readiness}%</span>
           </div>
           {/* Progress ring simplified as bar */}
           <div className="mb-4 h-3 overflow-hidden rounded-full bg-[#302817]/6">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#95A847] transition-all duration-700" style={{ width: `${readiness}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-700" style={{ width: `${readiness}%` }} />
           </div>
           <div className="space-y-2">
             {checks.map((c) => (
               <div key={c.label} className="flex items-center gap-2.5">
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#95A847] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#51B291] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
                 <span className={`text-xs font-semibold ${c.done ? 'text-[#302817]/50 line-through' : 'text-[#302817]/70'}`}>{c.label}</span>
@@ -187,7 +187,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         {/* AI Insights */}
         <div className="rounded-[1.5rem] border border-[#302817]/80 bg-[#302817] p-5 shadow-[0_6px_20px_rgba(48,40,23,0.15)]">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#B4BE6A]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#89E789]">
               <Sparkles className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold text-white">{tr ? 'AI Karbon Analizi' : 'AI Carbon Insights'}</h2>
@@ -215,7 +215,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         {/* Scope Breakdown */}
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B4BE6A]/18 text-[#95A847]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#89E789]/18 text-[#51B291]">
               <Target className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Kapsam Dağılımı' : 'Scope Breakdown'}</h2>
@@ -223,8 +223,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           {totalTonne > 0 ? (
             <div className="space-y-4">
               {[
-                { label: 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#75863B] to-[#95A847]' },
-                { label: 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#95A847] to-[#B4BE6A]' },
+                { label: 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#244959] to-[#51B291]' },
+                { label: 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#51B291] to-[#89E789]' },
                 { label: 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#302817] to-[#302817]/60' },
               ].map(s => (
                 <div key={s.label}>
@@ -250,7 +250,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         {/* Monthly Trend */}
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A847] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291] text-white">
               <TrendingDown className="h-4 w-4" />
             </div>
             <div>
@@ -265,8 +265,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
                 const pct = (m.total_kg / monthlyMaxKg) * 100;
                 return (
                   <div key={m.month ?? i + 1} className="flex flex-1 flex-col items-center gap-1">
-                    <div className="relative h-32 w-full overflow-hidden rounded-lg bg-[#95A847]/8">
-                      <div className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#75863B] to-[#95A847] transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 6 : 0)}%` }} />
+                    <div className="relative h-32 w-full overflow-hidden rounded-lg bg-[#51B291]/8">
+                      <div className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#244959] to-[#51B291] transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 6 : 0)}%` }} />
                     </div>
                     <span className="text-[10px] font-bold text-[#302817]/35">{label}</span>
                   </div>
@@ -284,7 +284,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         {/* Export Center */}
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#95A847]/15 text-[#95A847]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291]/15 text-[#51B291]">
               <Download className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Dışa Aktarma' : 'Export Center'}</h2>
@@ -300,7 +300,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         {/* Compliance Status */}
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#75863B] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#244959] text-white">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Uyumluluk Durumu' : 'Compliance Status'}</h2>
@@ -313,7 +313,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
               <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5">
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#95A847] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#51B291] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
                 <span className={`text-xs font-semibold ${c.done ? 'text-[#302817]' : 'text-[#302817]/45'}`}>{c.label}</span>
@@ -327,7 +327,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {questionnaireProfile?.is_complete && (
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B4BE6A]/18 text-[#95A847]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#89E789]/18 text-[#51B291]">
               <FileText className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Envanter Yapılandırması' : 'Inventory Configuration'}</h2>
@@ -347,7 +347,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 function InsightItem({ text, type }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${type === 'warning' ? 'bg-amber-400' : type === 'neutral' ? 'bg-white/30' : 'bg-[#B4BE6A]'}`} />
+      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${type === 'warning' ? 'bg-amber-400' : type === 'neutral' ? 'bg-white/30' : 'bg-[#89E789]'}`} />
       <p className={`text-xs leading-5 ${type === 'neutral' ? 'text-white/50' : 'text-white/80'}`}>{text}</p>
     </div>
   );
@@ -356,7 +356,7 @@ function InsightItem({ text, type }) {
 function ExportBtn({ icon: Icon, label, loading, onClick }) {
   return (
     <button onClick={onClick} disabled={loading} className="flex items-center gap-2 rounded-xl border border-[#302817]/8 bg-[#F8F8F8] px-3.5 py-3 text-xs font-bold text-[#302817] transition hover:bg-[#F9EFE5] disabled:opacity-50">
-      <Icon className="h-4 w-4 text-[#95A847]" />
+      <Icon className="h-4 w-4 text-[#51B291]" />
       {loading ? '...' : label}
     </button>
   );

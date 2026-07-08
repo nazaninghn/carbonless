@@ -110,17 +110,17 @@ export default function TeamManagement({ language }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-[#95A847]" />
+          <Users className="w-5 h-5 text-[#51B291]" />
           <h3 className="font-semibold text-[#302817]">
             {tr ? 'Takım Yönetimi' : 'Team Management'}
           </h3>
-          <span className="px-2 py-0.5 bg-[#302817]/10 text-[#95A847] text-xs rounded-full font-medium">
+          <span className="px-2 py-0.5 bg-[#302817]/10 text-[#51B291] text-xs rounded-full font-medium">
             {members.length} {tr ? 'üye' : 'members'}
           </span>
         </div>
         <button
           onClick={() => setShowRoles(!showRoles)}
-          className="flex items-center gap-1 text-xs text-[#302817]/55 hover:text-[#95A847] transition-colors"
+          className="flex items-center gap-1 text-xs text-[#302817]/55 hover:text-[#51B291] transition-colors"
         >
           <Info className="w-3.5 h-3.5" />
           {tr ? 'Roller Hakkında' : 'About Roles'}
@@ -151,7 +151,7 @@ export default function TeamManagement({ language }) {
       {/* Members list */}
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-[#95A847] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#51B291] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : members.length === 0 ? (
         <div className="text-center py-8">
@@ -165,7 +165,7 @@ export default function TeamManagement({ language }) {
             const RoleIcon = roleInfo.icon;
             return (
               <div key={m.id} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                !m.is_active ? 'bg-[#F8F8F8] border-[#302817]/10 opacity-60' : 'bg-white border-[#302817]/10 hover:border-[#95A847]/30 hover:shadow-sm'
+                !m.is_active ? 'bg-[#F8F8F8] border-[#302817]/10 opacity-60' : 'bg-white border-[#302817]/10 hover:border-[#51B291]/30 hover:shadow-sm'
               }`}>
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
@@ -225,9 +225,9 @@ export default function TeamManagement({ language }) {
       )}
 
       {/* Invite Form */}
-      <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-4 border border-[#95A847]/20">
+      <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-4 border border-[#51B291]/20">
         <div className="flex items-center gap-2 mb-3">
-          <UserPlus className="w-4 h-4 text-[#95A847]" />
+          <UserPlus className="w-4 h-4 text-[#51B291]" />
           <h4 className="text-sm font-semibold text-[#302817]">{tr ? 'Yeni Üye Davet Et' : 'Invite New Member'}</h4>
         </div>
         <p className="text-xs text-[#302817]/55 mb-3">
@@ -253,7 +253,7 @@ export default function TeamManagement({ language }) {
           <button
             onClick={handleInvite}
             disabled={inviting || !inviteEmail}
-            className="px-5 py-2 bg-[#75863B] text-white rounded-xl text-sm font-medium hover:bg-[#5E6B2A] transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-5 py-2 bg-[#244959] text-white rounded-xl text-sm font-medium hover:bg-[#1a3a2e] transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             <UserPlus className="w-4 h-4" />
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}

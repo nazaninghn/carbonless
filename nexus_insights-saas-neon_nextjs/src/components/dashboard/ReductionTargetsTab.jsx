@@ -23,8 +23,8 @@ function ArcGauge({ achieved, status }) {
 
   const trackCol = '#302817';
   const progCol =
-    status === 'succeeded' ? '#75863B' :
-    status === 'on_track'  ? '#95A847' : '#F87171';
+    status === 'succeeded' ? '#244959' :
+    status === 'on_track'  ? '#51B291' : '#F87171';
 
   return (
     <svg viewBox="0 0 100 54" className="w-full max-w-[160px] mx-auto overflow-visible">
@@ -64,7 +64,7 @@ function TimelineBar({ baseYear, targetYear, currentYear, language }) {
       <div className="relative h-2 rounded-full bg-[#302817]/6">
         {/* elapsed fill */}
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#95A847] transition-all duration-700"
+          className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-700"
           style={{ width: `${nowPct}%` }}
         />
         {/* "now" tick */}
@@ -109,8 +109,8 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
   const annualNeededT = yearsLeft > 0 ? (remainingKg / yearsLeft / 1000) : 0;
 
   const STATUS = {
-    on_track:  { bg: 'bg-[#95A847]/12', text: 'text-[#75863B]', label: tr ? 'Yolunda' : 'On Track' },
-    succeeded: { bg: 'bg-[#75863B]/15', text: 'text-[#75863B]', label: tr ? 'Başarılı' : 'Succeeded' },
+    on_track:  { bg: 'bg-[#51B291]/12', text: 'text-[#244959]', label: tr ? 'Yolunda' : 'On Track' },
+    succeeded: { bg: 'bg-[#244959]/15', text: 'text-[#244959]', label: tr ? 'Başarılı' : 'Succeeded' },
     off_track: { bg: 'bg-red-50',       text: 'text-red-500',   label: tr ? 'Geride'   : 'Off Track' },
   };
   const st = STATUS[tgt.status] ?? STATUS.off_track;
@@ -129,7 +129,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
             <button
               onClick={() => onEdit(tgt)}
               title={tr ? 'Düzenle' : 'Edit'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-[#95A847]/10 hover:text-[#95A847]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-[#51B291]/10 hover:text-[#51B291]"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -172,9 +172,9 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
             {currentKg > 0 ? `${fmt(currentKg / 1000)} t` : '—'}
           </p>
         </div>
-        <div className="rounded-xl bg-[#95A847]/8 px-2.5 py-2 text-center">
-          <p className="text-[9px] font-bold uppercase text-[#75863B]/60">{tr ? 'Hedef' : 'Goal'}</p>
-          <p className="mt-0.5 text-xs font-bold text-[#75863B]">{fmt(targetKg / 1000)} t</p>
+        <div className="rounded-xl bg-[#51B291]/8 px-2.5 py-2 text-center">
+          <p className="text-[9px] font-bold uppercase text-[#244959]/60">{tr ? 'Hedef' : 'Goal'}</p>
+          <p className="mt-0.5 text-xs font-bold text-[#244959]">{fmt(targetKg / 1000)} t</p>
         </div>
       </div>
 
@@ -373,7 +373,7 @@ export default function ReductionTargetsTab({
     return { onTrack, succeeded, offTrack, totalReductionPct };
   }, [targets]);
 
-  const FIELD = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#95A847]/15';
+  const FIELD = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#51B291]/15';
   const LABEL = 'mb-1.5 block text-xs font-bold text-[#302817]/60';
 
   return (
@@ -383,7 +383,7 @@ export default function ReductionTargetsTab({
       <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-[0_6px_24px_rgba(48,40,23,0.05)] sm:p-5">
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#95A847]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51B291]">
               {tr ? 'Hedef yönetimi' : 'Target management'}
             </p>
             <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
@@ -397,7 +397,7 @@ export default function ReductionTargetsTab({
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] sm:self-auto"
+            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] sm:self-auto"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Hedef Ekle' : 'Add Target'}
@@ -410,8 +410,8 @@ export default function ReductionTargetsTab({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[
             { label: tr ? 'Toplam Hedef' : 'Total Targets', value: targets.length, color: null },
-            { label: tr ? 'Yolunda'      : 'On Track',      value: onTrack,   color: '#95A847' },
-            { label: tr ? 'Başarılı'     : 'Succeeded',     value: succeeded, color: '#75863B' },
+            { label: tr ? 'Yolunda'      : 'On Track',      value: onTrack,   color: '#51B291' },
+            { label: tr ? 'Başarılı'     : 'Succeeded',     value: succeeded, color: '#244959' },
             { label: tr ? 'Geride'       : 'Off Track',     value: offTrack,  color: '#F87171' },
           ].map(k => (
             <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
@@ -432,17 +432,17 @@ export default function ReductionTargetsTab({
             <p className="text-xs font-bold text-[#302817]/60">
               {tr ? 'Ortalama azaltma taahhüdü' : 'Average reduction commitment'}
             </p>
-            <span className="text-sm font-bold text-[#75863B]">-{totalReductionPct}%</span>
+            <span className="text-sm font-bold text-[#244959]">-{totalReductionPct}%</span>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-[#302817]/6">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#75863B] to-[#95A847] transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-700"
               style={{ width: `${Math.min(parseFloat(totalReductionPct), 100)}%` }}
             />
           </div>
           <div className="mt-2 flex items-center gap-4 text-[10px] font-semibold text-[#302817]/35">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#95A847]" />{onTrack} {tr ? 'yolunda' : 'on track'}</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#75863B]" />{succeeded} {tr ? 'başarılı' : 'succeeded'}</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#51B291]" />{onTrack} {tr ? 'yolunda' : 'on track'}</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#244959]" />{succeeded} {tr ? 'başarılı' : 'succeeded'}</span>
             {offTrack > 0 && <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />{offTrack} {tr ? 'geride' : 'off track'}</span>}
           </div>
         </div>
@@ -454,8 +454,8 @@ export default function ReductionTargetsTab({
           {/* SVG illustration: target with arrow */}
           <svg viewBox="0 0 80 80" className="h-20 w-20 opacity-20" fill="none">
             <circle cx="40" cy="40" r="36" stroke="#302817" strokeWidth="3" />
-            <circle cx="40" cy="40" r="24" stroke="#95A847" strokeWidth="3" />
-            <circle cx="40" cy="40" r="12" stroke="#75863B" strokeWidth="3" />
+            <circle cx="40" cy="40" r="24" stroke="#51B291" strokeWidth="3" />
+            <circle cx="40" cy="40" r="12" stroke="#244959" strokeWidth="3" />
             <circle cx="40" cy="40" r="4" fill="#302817" />
             <line x1="65" y1="15" x2="40" y2="40" stroke="#302817" strokeWidth="3" strokeLinecap="round" />
             <polyline points="58,12 65,15 62,22" stroke="#302817" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -472,7 +472,7 @@ export default function ReductionTargetsTab({
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A]"
+            className="inline-flex items-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Hedefinizi Ekleyin' : 'Add Your First Target'}
@@ -601,8 +601,8 @@ export default function ReductionTargetsTab({
 
                 {/* Live preview */}
                 {editBaseEmit && editReducePct && (
-                  <div className="rounded-2xl border border-[#95A847]/25 bg-[#95A847]/7 px-4 py-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#75863B]/60">
+                  <div className="rounded-2xl border border-[#51B291]/25 bg-[#51B291]/7 px-4 py-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#244959]/60">
                       {tr ? 'Önizleme' : 'Preview'}
                     </p>
                     <div className="mt-2 flex items-center gap-3">
@@ -610,10 +610,10 @@ export default function ReductionTargetsTab({
                         <p className="text-[10px] text-[#302817]/40">{tr ? 'Baz' : 'Base'}</p>
                         <p className="text-sm font-bold">{fmt(parseFloat(editBaseEmit))} t</p>
                       </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#75863B]">→ -{editReducePct}% →</div>
+                      <div className="flex-1 text-center text-xs font-bold text-[#244959]">→ -{editReducePct}% →</div>
                       <div className="text-center">
                         <p className="text-[10px] text-[#302817]/40">{tr ? 'Hedef' : 'Goal'}</p>
-                        <p className="text-sm font-bold text-[#75863B]">
+                        <p className="text-sm font-bold text-[#244959]">
                           {fmt(parseFloat(editBaseEmit) * (1 - parseFloat(editReducePct) / 100))} t
                         </p>
                       </div>
@@ -634,7 +634,7 @@ export default function ReductionTargetsTab({
               </button>
               <button
                 type="submit" form="edit-target-form" disabled={editSaving}
-                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60"
+                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60"
               >
                 {editSaving ? '…' : (tr ? 'Kaydet' : 'Save Changes')}
               </button>
@@ -726,8 +726,8 @@ export default function ReductionTargetsTab({
 
                 {/* Live preview */}
                 {baseEmit && reducePct && (
-                  <div className="rounded-2xl border border-[#95A847]/25 bg-[#95A847]/7 px-4 py-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#75863B]/60">
+                  <div className="rounded-2xl border border-[#51B291]/25 bg-[#51B291]/7 px-4 py-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#244959]/60">
                       {tr ? 'Önizleme' : 'Preview'}
                     </p>
                     <div className="mt-2 flex items-center gap-3">
@@ -735,17 +735,17 @@ export default function ReductionTargetsTab({
                         <p className="text-[10px] text-[#302817]/40">{tr ? 'Baz' : 'Base'}</p>
                         <p className="text-sm font-bold">{fmt(parseFloat(baseEmit))} t</p>
                       </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#75863B]">
+                      <div className="flex-1 text-center text-xs font-bold text-[#244959]">
                         → -{reducePct}% →
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] text-[#302817]/40">{tr ? 'Hedef' : 'Goal'}</p>
-                        <p className="text-sm font-bold text-[#75863B]">
+                        <p className="text-sm font-bold text-[#244959]">
                           {fmt(parseFloat(baseEmit) * (1 - parseFloat(reducePct) / 100))} t
                         </p>
                       </div>
                     </div>
-                    <p className="mt-2 text-[10px] text-[#75863B]/60">
+                    <p className="mt-2 text-[10px] text-[#244959]/60">
                       {tr
                         ? `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)} yıllık dönem`
                         : `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)}-year period`}
@@ -766,7 +766,7 @@ export default function ReductionTargetsTab({
               </button>
               <button
                 type="submit" form="target-form" disabled={saving}
-                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#5E6B2A] disabled:opacity-60"
+                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60"
               >
                 {saving ? '…' : (tr ? 'Hedefi Kaydet' : 'Save Target')}
               </button>

@@ -230,15 +230,15 @@ export default function CommandPalette({
                         onMouseMove={() => setHighlighted(idx)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-100 ${
                           isHi
-                            ? 'bg-[#75863B] text-white'
+                            ? 'bg-[#244959] text-white'
                             : 'text-[#302817]/70 hover:bg-[#302817]/4'
                         }`}
                       >
                         {/* Icon */}
                         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                          isHi ? 'bg-white/14' : 'bg-[#B4BE6A]/14'
+                          isHi ? 'bg-white/14' : 'bg-[#89E789]/14'
                         }`}>
-                          <Icon className={`h-3.5 w-3.5 ${isHi ? 'text-white' : 'text-[#95A847]'}`} />
+                          <Icon className={`h-3.5 w-3.5 ${isHi ? 'text-white' : 'text-[#51B291]'}`} />
                         </span>
 
                         {/* Label + sub */}

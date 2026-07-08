@@ -77,30 +77,30 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
         onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
         placeholder={placeholder || (language === 'tr' ? 'Ülke ara...' : 'Search country...')}
-        className="w-full px-4 py-3 bg-white border border-[#B4BE6A]/40 rounded-lg focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none"
+        className="w-full px-4 py-3 bg-white border border-[#89E789]/40 rounded-lg focus:ring-2 focus:ring-[#51B291]/30 focus:border-[#51B291] outline-none"
       />
 
       {/* Selected tags */}
       {multi && selected.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
           {selected.map(name => (
-            <span key={name} className="inline-flex items-center gap-1 px-2 py-1 bg-[#B4BE6A]/15 border border-[#B4BE6A]/35 rounded-md text-xs text-[#75863B]">
+            <span key={name} className="inline-flex items-center gap-1 px-2 py-1 bg-[#89E789]/15 border border-[#89E789]/35 rounded-md text-xs text-[#244959]">
               {getLabel(name)}
-              <button type="button" onClick={() => handleRemove(name)} className="text-[#95A847] hover:text-red-500">✕</button>
+              <button type="button" onClick={() => handleRemove(name)} className="text-[#51B291] hover:text-red-500">✕</button>
             </span>
           ))}
         </div>
       )}
       {!multi && singleVal && (
-        <div className="mt-1 px-3 py-1.5 bg-[#B4BE6A]/15 border border-[#B4BE6A]/35 rounded-lg text-sm text-[#75863B] flex items-center justify-between">
+        <div className="mt-1 px-3 py-1.5 bg-[#89E789]/15 border border-[#89E789]/35 rounded-lg text-sm text-[#244959] flex items-center justify-between">
           <span>{getLabel(singleVal)}</span>
-          <button type="button" onClick={() => handleRemove(singleVal)} className="text-[#95A847] hover:text-red-500 ml-2 text-xs">✕</button>
+          <button type="button" onClick={() => handleRemove(singleVal)} className="text-[#51B291] hover:text-red-500 ml-2 text-xs">✕</button>
         </div>
       )}
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#B4BE6A]/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#89E789]/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
           {filtered.slice(0, 15).map(c => {
             // Fix 27B: compare against c.code — survives language changes mid-session
             const isSelected = multi ? selected.includes(c.code) : singleVal === c.code;

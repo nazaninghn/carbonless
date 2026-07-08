@@ -23,11 +23,11 @@ let _seq = 0;
 const CONFIG = {
   success: {
     icon:   CheckCircle2,
-    accent: '#95A847',
+    accent: '#51B291',
     bg:     'bg-white',
-    border: 'border-[#95A847]/25',
-    bar:    '#95A847',
-    text:   'text-[#75863B]',
+    border: 'border-[#51B291]/25',
+    bar:    '#51B291',
+    text:   'text-[#244959]',
     dim:    'text-[#302817]/55',
   },
   error: {

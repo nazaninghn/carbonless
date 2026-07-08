@@ -81,10 +81,10 @@ export default function ReviewTab({ language, fetchData }) {
   return (
     <div className="space-y-3 text-[#302817]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#B4BE6A]/8 p-4 shadow-sm">
+      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#89E789]/8 p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#95A847]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51B291]">
               {tr ? 'Onay süreci' : 'Approval workflow'}
             </p>
             <h1 className="mt-1 text-lg font-bold tracking-[-0.03em]">
@@ -94,7 +94,7 @@ export default function ReviewTab({ language, fetchData }) {
               {tr ? 'Onay bekleyen emisyon kayıtları' : 'Emission entries awaiting approval'}
             </p>
           </div>
-          <div className="rounded-xl bg-[#95A847]/12 px-3 py-1.5 text-xs font-bold text-[#75863B]">
+          <div className="rounded-xl bg-[#51B291]/12 px-3 py-1.5 text-xs font-bold text-[#244959]">
             {pending.length} {tr ? 'bekleyen' : 'pending'}
           </div>
         </div>
@@ -103,11 +103,11 @@ export default function ReviewTab({ language, fetchData }) {
       {/* Content */}
       {loading ? (
         <div className="flex justify-center py-10">
-          <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#95A847] border-t-transparent"></div>
+          <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#51B291] border-t-transparent"></div>
         </div>
       ) : pending.length === 0 ? (
         <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#302817]/10 bg-white p-6 text-center shadow-sm">
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#95A847]/12 text-[#95A847]">
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#51B291]/12 text-[#51B291]">
             <ClipboardCheck className="h-5 w-5" />
           </div>
           <p className="text-sm font-bold">{tr ? 'Bekleyen kayıt yok' : 'No pending entries'}</p>
@@ -125,11 +125,11 @@ export default function ReviewTab({ language, fetchData }) {
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       entry.scope === 'scope1' ? 'bg-[#302817]/10 text-[#302817]' :
-                      entry.scope === 'scope2' ? 'bg-[#95A847]/15 text-[#75863B]' :
-                      'bg-[#B4BE6A]/18 text-[#75863B]'
+                      entry.scope === 'scope2' ? 'bg-[#51B291]/15 text-[#244959]' :
+                      'bg-[#89E789]/18 text-[#244959]'
                     }`}>{entry.scope?.replace('scope', 'S')}</span>
                     <span className="text-[11px] font-semibold text-[#302817]/50">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</span>
-                    <span className="text-[11px] font-bold text-[#95A847]">{parseFloat(entry.calculated_co2e_kg).toFixed(1)} kg</span>
+                    <span className="text-[11px] font-bold text-[#51B291]">{parseFloat(entry.calculated_co2e_kg).toFixed(1)} kg</span>
                     <span className="text-[10px] text-[#302817]/35">{tr ? 'Ay' : 'Mo'}: {entry.month}</span>
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export default function ReviewTab({ language, fetchData }) {
                   <button
                     onClick={() => handleApprove(entry.id)}
                     disabled={processing === entry.id}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#95A847]/12 px-3 py-2 text-[11px] font-bold text-[#75863B] transition hover:bg-[#95A847]/22 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#51B291]/12 px-3 py-2 text-[11px] font-bold text-[#244959] transition hover:bg-[#51B291]/22 disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
                     {tr ? 'Onayla' : 'Approve'}
@@ -169,7 +169,7 @@ export default function ReviewTab({ language, fetchData }) {
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder={tr ? 'Neden reddedildi...' : 'Why is this rejected...'}
-              className="mt-3 w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-xs text-[#302817] outline-none placeholder:text-[#302817]/30 focus:ring-4 focus:ring-[#95A847]/15"
+              className="mt-3 w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-xs text-[#302817] outline-none placeholder:text-[#302817]/30 focus:ring-4 focus:ring-[#51B291]/15"
               rows={3}
             />
             <div className="mt-4 flex gap-2">

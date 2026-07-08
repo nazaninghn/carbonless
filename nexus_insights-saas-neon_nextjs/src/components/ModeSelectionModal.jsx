@@ -31,7 +31,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
       <div className="absolute top-6 right-6 flex items-center gap-1.5">
         <div className="h-2 w-2 rounded-full bg-[#302817]/15" />
         <div className="h-2 w-2 rounded-full bg-[#302817]/15" />
-        <div className="h-2 w-5 rounded-full bg-[#95A847]" />
+        <div className="h-2 w-5 rounded-full bg-[#51B291]" />
         <div className="h-2 w-2 rounded-full bg-[#302817]/15" />
       </div>
 
@@ -58,17 +58,17 @@ export default function ModeSelectionModal({ language, onComplete }) {
             onClick={() => setSelected('guided')}
             className={`relative flex flex-col gap-3 rounded-2xl border-2 p-5 text-left transition-all duration-200 active:scale-[0.98] ${
               selected === 'guided'
-                ? 'border-[#95A847] bg-[#F2F6E4] shadow-[0_0_0_4px_rgba(149,168,71,0.14)]'
+                ? 'border-[#51B291] bg-[#F2F6E4] shadow-[0_0_0_4px_rgba(149,168,71,0.14)]'
                 : 'border-[#302817]/10 bg-white hover:border-[#302817]/20'
             }`}
           >
             {selected === 'guided' && (
-              <span className="absolute right-3.5 top-3.5 flex h-2 w-2 rounded-full bg-[#95A847]" />
+              <span className="absolute right-3.5 top-3.5 flex h-2 w-2 rounded-full bg-[#51B291]" />
             )}
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              selected === 'guided' ? 'bg-[#95A847]/20' : 'bg-[#302817]/6'
+              selected === 'guided' ? 'bg-[#51B291]/20' : 'bg-[#302817]/6'
             }`}>
-              <MessageCircle className={`h-5 w-5 ${selected === 'guided' ? 'text-[#75863B]' : 'text-[#302817]/40'}`} />
+              <MessageCircle className={`h-5 w-5 ${selected === 'guided' ? 'text-[#244959]' : 'text-[#302817]/40'}`} />
             </div>
             <div>
               <p className={`text-[15px] font-bold ${selected === 'guided' ? 'text-[#302817]' : 'text-[#302817]/70'}`}>
@@ -90,17 +90,17 @@ export default function ModeSelectionModal({ language, onComplete }) {
             onClick={() => setSelected('expert')}
             className={`relative flex flex-col gap-3 rounded-2xl border-2 p-5 text-left transition-all duration-200 active:scale-[0.98] ${
               selected === 'expert'
-                ? 'border-[#95A847] bg-[#F2F6E4] shadow-[0_0_0_4px_rgba(149,168,71,0.14)]'
+                ? 'border-[#51B291] bg-[#F2F6E4] shadow-[0_0_0_4px_rgba(149,168,71,0.14)]'
                 : 'border-[#302817]/10 bg-white hover:border-[#302817]/20'
             }`}
           >
             {selected === 'expert' && (
-              <span className="absolute right-3.5 top-3.5 flex h-2 w-2 rounded-full bg-[#95A847]" />
+              <span className="absolute right-3.5 top-3.5 flex h-2 w-2 rounded-full bg-[#51B291]" />
             )}
             <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-              selected === 'expert' ? 'bg-[#95A847]/20' : 'bg-[#302817]/6'
+              selected === 'expert' ? 'bg-[#51B291]/20' : 'bg-[#302817]/6'
             }`}>
-              <LayoutGrid className={`h-5 w-5 ${selected === 'expert' ? 'text-[#75863B]' : 'text-[#302817]/40'}`} />
+              <LayoutGrid className={`h-5 w-5 ${selected === 'expert' ? 'text-[#244959]' : 'text-[#302817]/40'}`} />
             </div>
             <div>
               <p className={`text-[15px] font-bold ${selected === 'expert' ? 'text-[#302817]' : 'text-[#302817]/70'}`}>
@@ -112,7 +112,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
                   : 'All categories visible. Start wherever you like.'}
               </p>
             </div>
-            <span className="w-fit rounded-full bg-[#95A847]/15 px-2.5 py-0.5 text-[10.5px] font-bold text-[#75863B]">
+            <span className="w-fit rounded-full bg-[#51B291]/15 px-2.5 py-0.5 text-[10.5px] font-bold text-[#244959]">
               {tr ? 'Ücretsiz' : 'Free'}
             </span>
           </button>
@@ -120,7 +120,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
 
         {/* Data sync note */}
         <div className="mt-4 flex items-center gap-2.5 rounded-2xl bg-[#F8F6F0] px-4 py-3">
-          <RefreshCw className="h-3.5 w-3.5 shrink-0 text-[#75863B]" />
+          <RefreshCw className="h-3.5 w-3.5 shrink-0 text-[#244959]" />
           <p className="text-[12px] text-[#302817]/50">
             {tr
               ? 'İkisi aynı veriye yazıyor. Her an geçiş yapabilirsiniz, veri taşınır.'
@@ -131,7 +131,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
         {/* CTA */}
         <button
           onClick={finish}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] active:scale-[0.97]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] active:scale-[0.97]"
         >
           {tr ? 'Devam' : 'Continue'}
           <ArrowRight className="h-4 w-4" />

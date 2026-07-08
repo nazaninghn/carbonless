@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/utils/api';
 
 // Module-level constant — one allocation shared across all renders and instances
-const SCOPE_COLORS = ['#75863B', '#95A847', '#B4BE6A', '#302817'];
+const SCOPE_COLORS = ['#244959', '#51B291', '#89E789', '#302817'];
 
 export default function FacilityChart({ language, selectedYear, compact }) {
   const [data, setData]       = useState([]);

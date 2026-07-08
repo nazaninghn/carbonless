@@ -50,8 +50,8 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
                       (tr ? 'Yüksek emisyon' : 'High emissions');
 
   const posColor =
-    yourValue < p25 ? 'text-[#75863B]' :
-    yourValue < avg ? 'text-[#95A847]' :
+    yourValue < p25 ? 'text-[#244959]' :
+    yourValue < avg ? 'text-[#51B291]' :
     yourValue < p75 ? 'text-amber-600' : 'text-red-500';
 
   return (
@@ -61,7 +61,7 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
         {/* Low zone */}
         <div className="absolute left-0 top-0 h-full rounded-l-full bg-[#EEF3D8]" style={{ width: `${p25Pct}%` }} />
         {/* Mid zone */}
-        <div className="absolute top-0 h-full bg-[#B4BE6A]/35" style={{ left: `${p25Pct}%`, width: `${avgPct - p25Pct}%` }} />
+        <div className="absolute top-0 h-full bg-[#89E789]/35" style={{ left: `${p25Pct}%`, width: `${avgPct - p25Pct}%` }} />
         {/* High zone */}
         <div className="absolute top-0 h-full bg-amber-100" style={{ left: `${avgPct}%`, width: `${p75Pct - avgPct}%` }} />
         {/* Very high zone */}
@@ -88,7 +88,7 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
       {/* Legend */}
       <div className="flex items-center gap-3 text-[10px] text-[#302817]/40">
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#EEF3D8] ring-1 ring-[#302817]/10" />{tr ? 'İyi' : 'Good'}</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#B4BE6A]/35 ring-1 ring-[#302817]/10" />{tr ? 'Orta' : 'Medium'}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#89E789]/35 ring-1 ring-[#302817]/10" />{tr ? 'Orta' : 'Medium'}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-100 ring-1 ring-[#302817]/10" />{tr ? 'Yüksek' : 'High'}</span>
         <span className={`ml-auto font-bold ${posColor}`}>{position}</span>
       </div>
@@ -101,8 +101,8 @@ function OpportunityRow({ rank, title, desc, saving, locked, tr }) {
   return (
     <div className={`flex items-start gap-3 rounded-xl border p-3 ${locked ? 'border-[#302817]/6 bg-[#302817]/2 opacity-60' : 'border-[#302817]/10 bg-white'}`}>
       <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-        rank === 1 ? 'bg-[#95A847] text-white' :
-        rank === 2 ? 'bg-[#B4BE6A] text-white' :
+        rank === 1 ? 'bg-[#51B291] text-white' :
+        rank === 2 ? 'bg-[#89E789] text-white' :
         'bg-[#302817]/8 text-[#302817]/50'
       }`}>
         {locked ? <Lock className="h-3 w-3" /> : rank}
@@ -112,7 +112,7 @@ function OpportunityRow({ rank, title, desc, saving, locked, tr }) {
         <p className="mt-0.5 text-[11px] leading-snug text-[#302817]/45">{desc}</p>
       </div>
       <div className="shrink-0 text-right">
-        <p className={`text-[12px] font-bold ${locked ? 'text-[#302817]/30' : 'text-[#75863B]'}`}>{saving}</p>
+        <p className={`text-[12px] font-bold ${locked ? 'text-[#302817]/30' : 'text-[#244959]'}`}>{saving}</p>
         <p className="text-[10px] text-[#302817]/35">{tr ? 'tCO₂e tasarruf' : 'tCO₂e saving'}</p>
       </div>
     </div>
@@ -197,7 +197,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             label: tr ? 'Ortalamanın Altında' : 'Below Average',
             value: totalTonne > 0 ? `%${Math.abs(pctVsAvg)}` : '—',
             sub:   pctVsAvg > 0 ? (tr ? 'Daha az emisyon ✓' : 'Less emissions ✓') : (tr ? 'Daha fazla emisyon' : 'More emissions'),
-            color: pctVsAvg > 0 ? 'text-[#75863B]' : 'text-red-500',
+            color: pctVsAvg > 0 ? 'text-[#244959]' : 'text-red-500',
           },
           {
             label: tr ? 'Çalışan Grubu' : 'Employee Band',
@@ -220,8 +220,8 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         {/* Sector position */}
         <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#95A847]/15 sm:h-9 sm:w-9">
-              <BarChart2 className="h-4 w-4 text-[#95A847]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#51B291]/15 sm:h-9 sm:w-9">
+              <BarChart2 className="h-4 w-4 text-[#51B291]" />
             </div>
             <div>
               <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">
@@ -255,8 +255,8 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         {/* Year-over-year trend placeholder */}
         <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#75863B]/15 sm:h-9 sm:w-9">
-              <TrendingDown className="h-4 w-4 text-[#75863B]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#244959]/15 sm:h-9 sm:w-9">
+              <TrendingDown className="h-4 w-4 text-[#244959]" />
             </div>
             <div>
               <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">
@@ -270,7 +270,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
               {[
                 { label: tr ? 'Sektör ortalaması' : 'Sector average', value: benchmark.avg, color: 'bg-amber-200' },
                 { label: tr ? 'P75 (üst çeyrek)' : 'P75 (upper quartile)', value: benchmark.p75, color: 'bg-red-100' },
-                { label: tr ? 'Sizin performansınız' : 'Your performance', value: Math.round(totalTonne), color: 'bg-[#95A847]' },
+                { label: tr ? 'Sizin performansınız' : 'Your performance', value: Math.round(totalTonne), color: 'bg-[#51B291]' },
                 { label: tr ? 'P25 (alt çeyrek)' : 'P25 (lower quartile)', value: benchmark.p25, color: 'bg-[#EEF3D8]' },
               ].map((row) => (
                 <div key={row.label}>
@@ -309,7 +309,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
               <p className="text-[10px] text-[#302817]/40">{tr ? 'Sektörünüze özgü öneriler' : 'Sector-specific recommendations'}</p>
             </div>
           </div>
-          <span className="rounded-full bg-[#EEF3D8] px-2 py-0.5 text-[10px] font-bold text-[#75863B]">
+          <span className="rounded-full bg-[#EEF3D8] px-2 py-0.5 text-[10px] font-bold text-[#244959]">
             {tr ? 'Ücretsiz' : 'Free'}
           </span>
         </div>
@@ -319,14 +319,14 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
           ))}
         </div>
         {/* Pro unlock banner */}
-        <div className="mt-3 flex items-center justify-between rounded-xl border border-[#95A847]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-4 py-3">
+        <div className="mt-3 flex items-center justify-between rounded-xl border border-[#51B291]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-4 py-3">
           <div className="flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5 text-[#B4BE6A]" />
+            <Lock className="h-3.5 w-3.5 text-[#89E789]" />
             <p className="text-[12px] font-semibold text-white/80">
               {tr ? 'Tüm fırsatları görmek için Pro plana geçin' : 'Upgrade to Pro to see all opportunities'}
             </p>
           </div>
-          <button className="rounded-lg bg-[#95A847] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#B4BE6A]">
+          <button className="rounded-lg bg-[#51B291] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#89E789]">
             Pro →
           </button>
         </div>

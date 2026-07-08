@@ -175,7 +175,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-[#75863B]" />
+            <Loader2 className="h-5 w-5 animate-spin text-[#244959]" />
             <span className="text-[11px] font-semibold text-[#302817]/60">
               {action === 'confirming'
                 ? (tr ? 'Rapora kaydediliyor…' : 'Saving to report…')
@@ -207,7 +207,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
           <div className="mt-1 h-[3px] w-full rounded-full bg-[#302817]/6 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                confidence >= 0.85 ? 'bg-[#75863B]' :
+                confidence >= 0.85 ? 'bg-[#244959]' :
                 confidence >= 0.65 ? 'bg-amber-400' : 'bg-red-400'
               }`}
               style={{ width: `${Math.round(confidence * 100)}%` }}
@@ -263,7 +263,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
                     <input
                       type={typeof f.value === 'number' ? 'number' : 'text'}
                       placeholder={typeof f.value === 'number' ? '0' : '…'}
-                      className="flex-1 min-w-0 text-right rounded-md border border-[#302817]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#302817] outline-none focus:border-[#B4BE6A]/60 focus:ring-1 focus:ring-[#B4BE6A]/20 max-w-[120px] ml-auto placeholder:text-[#302817]/20"
+                      className="flex-1 min-w-0 text-right rounded-md border border-[#302817]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#302817] outline-none focus:border-[#89E789]/60 focus:ring-1 focus:ring-[#89E789]/20 max-w-[120px] ml-auto placeholder:text-[#302817]/20"
                       value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : ''}
                       onChange={e => {
                         const raw = e.target.value;
@@ -299,7 +299,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <button
           onClick={handleConfirm}
           disabled={loading}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] active:scale-[0.98] disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] active:scale-[0.98] disabled:opacity-40"
         >
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           {tr ? 'Rapora Kaydet' : 'Save to Report'}
@@ -312,7 +312,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
             setShowDetails(true);
           }}
           disabled={loading}
-          className="flex items-center gap-1 rounded-xl border border-[#302817]/10 px-3 py-2.5 text-[11px] font-bold text-[#302817]/50 transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/8 hover:text-[#302817] disabled:opacity-40"
+          className="flex items-center gap-1 rounded-xl border border-[#302817]/10 px-3 py-2.5 text-[11px] font-bold text-[#302817]/50 transition hover:border-[#89E789]/40 hover:bg-[#89E789]/8 hover:text-[#302817] disabled:opacity-40"
         >
           <Edit3 className="h-3 w-3" />
           {editing ? (tr ? 'Bitti' : 'Done') : (tr ? 'Düzenle' : 'Edit')}

@@ -315,10 +315,10 @@ const Markdown = memo(function Markdown({ text }) {
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="rounded bg-black/10 px-1 py-0.5 text-[12px] font-mono">$1</code>')
-    .replace(/^### (.+)$/gm, '<p class="mt-3 mb-1 font-bold text-[#302817]">$1</p>')
-    .replace(/^## (.+)$/gm, '<p class="mt-4 mb-1 text-base font-bold text-[#302817]">$1</p>')
-    .replace(/^# (.+)$/gm, '<p class="mt-4 mb-1 text-lg font-bold text-[#302817]">$1</p>')
+    .replace(/`(.+?)`/g, '<code class="rounded bg-[#244959]/10 px-1 py-0.5 text-[12px] font-mono">$1</code>')
+    .replace(/^### (.+)$/gm, '<p class="mt-3 mb-1 font-bold text-[#244959]">$1</p>')
+    .replace(/^## (.+)$/gm, '<p class="mt-4 mb-1 text-base font-bold text-[#244959]">$1</p>')
+    .replace(/^# (.+)$/gm, '<p class="mt-4 mb-1 text-lg font-bold text-[#244959]">$1</p>')
     // Wrap consecutive unordered list lines in <ul> before paragraph splitting
     // so list items never end up inside a <p> (block-in-inline = invalid HTML).
     .replace(/((?:^- .+$\n?)+)/gm,
@@ -345,7 +345,7 @@ function TypingDots() {
       {[0, 1, 2].map(i => (
         <span
           key={i}
-          className="typing-dot h-2 w-2 rounded-full bg-[#B4BE6A]"
+          className="typing-dot h-2 w-2 rounded-full bg-[#89E789]"
           style={{ animationDelay: `${i * 0.2}s` }}
         />
       ))}
@@ -369,10 +369,10 @@ const Bubble = memo(function Bubble({ role, content }) {
   }
   return (
     <div className="flex gap-3 max-w-[88%]">
-      <div className="mt-1 h-6 w-6 shrink-0 rounded-xl bg-[#75863B] flex items-center justify-center shadow-sm">
+      <div className="mt-1 h-6 w-6 shrink-0 rounded-xl bg-[#244959] flex items-center justify-center shadow-sm">
         <Sparkles className="h-3 w-3 text-white/90" />
       </div>
-      <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#302817]">
+      <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#244959]">
         <Markdown text={content} />
       </div>
     </div>
@@ -397,18 +397,18 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(session.id); } }}
       className={`group relative w-full cursor-pointer rounded-xl px-3 py-2.5 text-left transition ${
         active
-          ? 'bg-[#95A847]/12 text-[#302817]'
-          : 'text-[#302817]/60 hover:bg-[#302817]/5 hover:text-[#302817]'
+          ? 'bg-[#51B291]/12 text-[#244959]'
+          : 'text-[#244959]/60 hover:bg-[#244959]/5 hover:text-[#244959]'
       }`}
     >
       <div className="flex items-center gap-2 pr-6">
-        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-[#95A847]' : 'bg-transparent'}`} />
+        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${active ? 'bg-[#51B291]' : 'bg-transparent'}`} />
         <p className="truncate text-[12px] font-medium leading-tight">{session.title}</p>
       </div>
       <button
         onClick={e => { e.stopPropagation(); onDelete(session.id); }}
         aria-label={tr ? 'Sohbeti sil' : 'Delete chat'}
-        className="absolute right-2 top-2.5 hidden rounded-md p-1 text-[#302817]/30 transition hover:bg-red-50 hover:text-red-400 group-hover:flex"
+        className="absolute right-2 top-2.5 hidden rounded-md p-1 text-[#244959]/30 transition hover:bg-red-50 hover:text-red-400 group-hover:flex"
       >
         <Trash2 className="h-3 w-3" />
       </button>
@@ -452,12 +452,12 @@ function EmptyState({ onNew, tr }) {
             />
           </div>
           {/* Subtle glow behind */}
-          <div className="absolute inset-0 rounded-full bg-[#4CAF50]/8 blur-3xl scale-150 -z-10" />
+          <div className="absolute inset-0 rounded-full bg-[#51B291]/8 blur-3xl scale-150 -z-10" />
         </div>
 
         {/* Welcome text */}
         <div className="text-center">
-          <p className="text-[12px] sm:text-[13px] text-[#4CAF50] font-medium mb-1">
+          <p className="text-[12px] sm:text-[13px] text-[#51B291] font-medium mb-1">
             {tr ? 'Merhaba 👋' : 'Hi, there'}
           </p>
           <h2 className="text-[20px] sm:text-[28px] font-bold text-[#1a1a1a] tracking-tight leading-tight">
@@ -469,14 +469,14 @@ function EmptyState({ onNew, tr }) {
         <div className="w-full max-w-md">
           <button
             onClick={() => onNew()}
-            className="w-full flex items-center gap-3 rounded-2xl border border-[#e8e8e0] bg-white px-4 sm:px-5 py-3 sm:py-4 text-left shadow-sm hover:shadow-md hover:border-[#4CAF50]/30 transition-all duration-200 group"
+            className="w-full flex items-center gap-3 rounded-2xl border border-[#e8e8e0] bg-white px-4 sm:px-5 py-3 sm:py-4 text-left shadow-sm hover:shadow-md hover:border-[#51B291]/30 transition-all duration-200 group"
           >
-            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-[#4CAF50]/50 group-hover:text-[#4CAF50] transition" />
-            <span className="flex-1 text-[13px] sm:text-[14px] text-[#302817]/35 font-medium">
+            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-[#51B291]/50 group-hover:text-[#51B291] transition" />
+            <span className="flex-1 text-[13px] sm:text-[14px] text-[#244959]/35 font-medium">
               {tr ? 'Carbonless\'a sor...' : 'Ask Carbonless...'}
             </span>
-            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#f5f5f0] border border-[#e8e8e0] flex items-center justify-center group-hover:bg-[#4CAF50] group-hover:border-[#4CAF50] transition">
-              <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#302817]/30 group-hover:text-white transition" />
+            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#f5f5f0] border border-[#e8e8e0] flex items-center justify-center group-hover:bg-[#51B291] group-hover:border-[#51B291] transition">
+              <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#244959]/30 group-hover:text-white transition" />
             </div>
           </button>
         </div>
@@ -488,7 +488,7 @@ function EmptyState({ onNew, tr }) {
               <button
                 key={text}
                 onClick={() => onNew(text)}
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#e8e8e0] bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-medium text-[#302817]/60 shadow-sm whitespace-nowrap hover:border-[#4CAF50]/30 hover:bg-[#f0f9f0] hover:text-[#2d4a1a] transition-all duration-200 active:scale-[0.97]"
+                className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#e8e8e0] bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-medium text-[#244959]/60 shadow-sm whitespace-nowrap hover:border-[#51B291]/30 hover:bg-[#f0f9f0] hover:text-[#2d4a1a] transition-all duration-200 active:scale-[0.97]"
               >
                 <Image src={img} alt={label} width={18} height={18} className="h-4 w-4 sm:h-[18px] sm:w-[18px] object-contain" />
                 <span>{label}</span>
@@ -569,10 +569,10 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
   if (msg.type === 'info') {
     return (
       <div className="flex gap-3">
-        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center">
+        <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#51B291] flex items-center justify-center">
           <span className="block h-2 w-2 rounded-full bg-white/90" />
         </div>
-        <div className={`${base} rounded-tl-sm border border-[#B4BE6A]/30 bg-[#B4BE6A]/8 text-[#302817]`}>
+        <div className={`${base} rounded-tl-sm border border-[#89E789]/30 bg-[#89E789]/8 text-[#244959]`}>
           <Markdown text={msg.content} />
         </div>
       </div>
@@ -581,10 +581,10 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
   // assistant (default)
   return (
     <div className="flex gap-3">
-      <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+      <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#51B291] flex items-center justify-center shadow-sm">
         <span className="block h-2 w-2 rounded-full bg-white/80" />
       </div>
-      <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#302817]">
+      <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#244959]">
         <Markdown text={msg.content} />
       </div>
     </div>
@@ -604,8 +604,8 @@ function Chip({ label, selected, onClick, multi, disabled }) {
       disabled={disabled}
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
         selected
-          ? 'border-[#95A847] bg-[#95A847] text-white shadow-sm'
-          : 'border-[#302817]/12 bg-white text-[#302817]/70 hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/8 hover:text-[#302817]'
+          ? 'border-[#51B291] bg-[#51B291] text-white shadow-sm'
+          : 'border-[#244959]/12 bg-white text-[#244959]/70 hover:border-[#89E789]/50 hover:bg-[#89E789]/8 hover:text-[#244959]'
       }`}
     >
       {multi && selected && <span className="mr-1" aria-hidden="true">✓</span>}
@@ -624,7 +624,7 @@ function CountryCityInput({ value, onChange, lang }) {
   return (
     <div className="flex flex-col gap-2 w-full">
       <select
-        className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+        className="rounded-xl border border-[#244959]/12 bg-white px-3 py-2 text-sm text-[#244959] outline-none focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20"
         value={val.country}
         onChange={e => onChange({ country: e.target.value, city: '' })}
       >
@@ -635,7 +635,7 @@ function CountryCityInput({ value, onChange, lang }) {
       </select>
       {val.country && cities.length > 0 && (
         <select
-          className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+          className="rounded-xl border border-[#244959]/12 bg-white px-3 py-2 text-sm text-[#244959] outline-none focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20"
           value={val.city}
           onChange={e => onChange({ ...val, city: e.target.value })}
         >
@@ -645,7 +645,7 @@ function CountryCityInput({ value, onChange, lang }) {
       )}
       {val.country && cities.length === 0 && (
         <input
-          className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+          className="rounded-xl border border-[#244959]/12 bg-white px-3 py-2 text-sm text-[#244959] outline-none focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20"
           placeholder={tr ? 'Şehir adı' : 'City name'}
           value={val.city}
           onChange={e => onChange({ ...val, city: e.target.value })}
@@ -675,7 +675,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
         const charLen = field.maxLength ? String(fieldVal).length : null;
         return (
           <div key={field.id} className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-[#302817]/70">
+            <label className="text-xs font-semibold text-[#244959]/70">
               {field.label?.[lang] || field.label?.en || field.id}
               {field.required && <span className="ml-1 text-red-400">*</span>}
             </label>
@@ -705,7 +705,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               </div>
             ) : field.subtype === 'multi_line' ? (
               <textarea
-                className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20 resize-none"
+                className="rounded-xl border border-[#244959]/12 bg-white px-3 py-2 text-sm text-[#244959] outline-none placeholder:text-[#244959]/30 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20 resize-none"
                 rows={3}
                 value={fieldVal}
                 onChange={e => setField(e.target.value)}
@@ -715,7 +715,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               />
             ) : (
               <input
-                className="rounded-xl border border-[#302817]/12 bg-white px-3 py-2 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+                className="rounded-xl border border-[#244959]/12 bg-white px-3 py-2 text-sm text-[#244959] outline-none placeholder:text-[#244959]/30 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20"
                 type="text"
                 inputMode={field.type === 'numeric' || field.subtype === 'numeric' ? 'decimal' : 'text'}
                 value={fieldVal}
@@ -726,7 +726,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               />
             )}
             {field.maxLength && (
-              <span className="text-right text-[10px] text-[#302817]/35">{charLen}/{field.maxLength}</span>
+              <span className="text-right text-[10px] text-[#244959]/35">{charLen}/{field.maxLength}</span>
             )}
           </div>
         );
@@ -804,45 +804,45 @@ function Scope1SummaryTable({ answers, lang, tr }) {
   ];
 
   return (
-    <div className="rounded-2xl border border-[#95A847]/30 bg-[#F6FAF0] overflow-hidden text-[#302817]">
+    <div className="rounded-2xl border border-[#51B291]/30 bg-[#F6FAF0] overflow-hidden text-[#244959]">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#95A847]/15 border-b border-[#95A847]/20">
-        <ClipboardList className="h-3.5 w-3.5 text-[#75863B] shrink-0" />
-        <span className="text-[11px] font-bold text-[#75863B] uppercase tracking-wider">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#51B291]/15 border-b border-[#51B291]/20">
+        <ClipboardList className="h-3.5 w-3.5 text-[#244959] shrink-0" />
+        <span className="text-[11px] font-bold text-[#244959] uppercase tracking-wider">
           {tr ? 'Kapsam 1 Özeti' : 'Scope 1 Summary'}
         </span>
       </div>
       {/* Rows */}
-      <div className="divide-y divide-[#302817]/6">
+      <div className="divide-y divide-[#244959]/6">
         {sections.map(s => (
           <div key={s.id} className="flex items-start gap-3 px-4 py-2.5">
             {/* Block badge */}
-            <span className="shrink-0 mt-0.5 rounded-md bg-[#302817]/8 px-1.5 py-0.5 text-[10px] font-bold text-[#302817]/50 leading-tight">
+            <span className="shrink-0 mt-0.5 rounded-md bg-[#244959]/8 px-1.5 py-0.5 text-[10px] font-bold text-[#244959]/50 leading-tight">
               {s.id}
             </span>
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <span className="text-[12px] font-semibold text-[#302817]/80">{s.label}</span>
+              <span className="text-[12px] font-semibold text-[#244959]/80">{s.label}</span>
               {s.skipped ? (
-                <span className="ml-2 text-[11px] text-[#302817]/35 italic">
+                <span className="ml-2 text-[11px] text-[#244959]/35 italic">
                   {tr ? 'yok' : 'none'}
                 </span>
               ) : s.items ? (
                 <div className="mt-0.5">
-                  <p className="text-[11px] text-[#302817]/60 leading-relaxed">{s.items}</p>
+                  <p className="text-[11px] text-[#244959]/60 leading-relaxed">{s.items}</p>
                   {s.extra && (
-                    <p className="text-[11px] text-[#75863B] mt-0.5 leading-relaxed font-medium">{s.extra}</p>
+                    <p className="text-[11px] text-[#244959] mt-0.5 leading-relaxed font-medium">{s.extra}</p>
                   )}
                 </div>
               ) : (
-                <span className="ml-2 text-[11px] text-[#302817]/30 italic">
+                <span className="ml-2 text-[11px] text-[#244959]/30 italic">
                   {tr ? 'veri girilmedi' : 'no data entered'}
                 </span>
               )}
             </div>
             {/* Status dot */}
             <span className={`shrink-0 mt-1 h-2 w-2 rounded-full ${
-              s.skipped ? 'bg-[#302817]/15' : s.items ? 'bg-[#95A847]' : 'bg-amber-400'
+              s.skipped ? 'bg-[#244959]/15' : s.items ? 'bg-[#51B291]' : 'bg-amber-400'
             }`} />
           </div>
         ))}
@@ -920,7 +920,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       <button
         onClick={() => onSubmit()}
         disabled={disabled}
-        className="rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+        className="rounded-full bg-[#244959] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
       >
         {tr ? 'Devam Et →' : 'Continue →'}
       </button>
@@ -957,7 +957,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit(value)}
           disabled={disabled || !value?.country || cityRequired}
-          className="rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          className="rounded-full bg-[#244959] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1050,7 +1050,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || vals.length === 0}
-          className="self-start rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          className="self-start rounded-full bg-[#244959] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1072,21 +1072,21 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
             onClick={() => { onChange(opt.value); scheduleSubmit(opt.value); }}
             className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left transition ${
               value === opt.value
-                ? 'border-[#95A847]/50 bg-[#95A847]/8 shadow-sm'
-                : 'border-[#302817]/10 bg-white hover:border-[#302817]/20 hover:bg-[#F8F8F5]'
+                ? 'border-[#51B291]/50 bg-[#51B291]/8 shadow-sm'
+                : 'border-[#244959]/10 bg-white hover:border-[#244959]/20 hover:bg-[#F8F8F5]'
             }`}
           >
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-bold text-[#302817] leading-tight">
+              <div className="text-[13px] font-bold text-[#244959] leading-tight">
                 {stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
               </div>
               {opt.description && (
-                <div className="text-[11px] text-[#302817]/50 mt-0.5 leading-relaxed">
+                <div className="text-[11px] text-[#244959]/50 mt-0.5 leading-relaxed">
                   {opt.description?.[lang] || opt.description?.en}
                 </div>
               )}
             </div>
-            <span className="shrink-0 text-[#302817]/25 text-base leading-none">›</span>
+            <span className="shrink-0 text-[#244959]/25 text-base leading-none">›</span>
           </button>
         ))}
       </div>
@@ -1120,7 +1120,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || !allRequiredFilled}
-          className="self-start rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          className="self-start rounded-full bg-[#244959] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1137,7 +1137,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     return (
       <div className="flex flex-col gap-1 w-full max-w-lg">
         <textarea
-          className="w-full rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20 resize-none"
+          className="w-full rounded-xl border border-[#244959]/12 bg-white px-4 py-2.5 text-sm text-[#244959] outline-none placeholder:text-[#244959]/30 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20 resize-none"
           rows={4}
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -1153,18 +1153,18 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           maxLength={maxLen}
         />
         <div className="flex items-center justify-between px-1">
-          <span className="text-[10px] text-[#302817]/40">{tr ? 'Göndermek için Ctrl+Enter' : 'Ctrl+Enter to submit'}</span>
-          {maxLen && <span className="text-[10px] text-[#302817]/35">{charCount}/{maxLen}</span>}
+          <span className="text-[10px] text-[#244959]/40">{tr ? 'Göndermek için Ctrl+Enter' : 'Ctrl+Enter to submit'}</span>
+          {maxLen && <span className="text-[10px] text-[#244959]/35">{charCount}/{maxLen}</span>}
         </div>
         {!mlRequired && mlEmpty && (
-          <span className="text-[10px] text-[#302817]/40 pl-1">
+          <span className="text-[10px] text-[#244959]/40 pl-1">
             {tr ? 'Bu alan isteğe bağlıdır — boş bırakabilirsiniz.' : 'This field is optional — you may leave it blank.'}
           </span>
         )}
         <button
           onClick={() => onSubmit()}
           disabled={disabled || (mlRequired && mlEmpty)}
-          className="self-start rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          className="self-start rounded-full bg-[#244959] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -1174,7 +1174,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 
   // text / numeric / single-line — with optional unit selector
   const isRequired = question.required !== false;
-  const maxLen = question.maxLength;
+  const maxLen = question.maxLength || question.exactLength;
   // '%' is a display-only suffix — don't bake it into the stored value because
   // it breaks numeric comparisons (Number("60 %") → NaN). All other units ARE
   // part of the stored value so the backend knows the measurement scale.
@@ -1190,7 +1190,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     <div className="flex flex-col gap-2 w-full max-w-sm">
       <div className="flex gap-2 items-center">
         <input
-          className="flex-1 rounded-xl border border-[#302817]/12 bg-white px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/20"
+          className="flex-1 rounded-xl border border-[#244959]/12 bg-white px-4 py-2.5 text-sm text-[#244959] outline-none placeholder:text-[#244959]/30 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/20"
           type="text"
           inputMode={subtype === 'numeric' ? 'numeric' : 'text'}
           value={amountStr}
@@ -1207,14 +1207,14 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         />
         {/* Fixed unit label when there's only one option (e.g. "%" or "litre") */}
         {unitList.length === 1 && (
-          <span className="shrink-0 rounded-xl border border-[#302817]/12 bg-[#F8F8F5] px-3 py-2.5 text-sm font-semibold text-[#302817]/60">
+          <span className="shrink-0 rounded-xl border border-[#244959]/12 bg-[#F8F8F5] px-3 py-2.5 text-sm font-semibold text-[#244959]/60">
             {unitList[0]}
           </span>
         )}
         <button
           onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#244959] text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
@@ -1222,7 +1222,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       {/* Unit selector chips — shown when 2+ unit options exist */}
       {unitList.length >= 2 && (
         <div className="flex flex-wrap items-center gap-1.5 pl-1">
-          <span className="text-[11px] text-[#302817]/40 font-medium">
+          <span className="text-[11px] text-[#244959]/40 font-medium">
             {tr ? 'Birim:' : 'Unit:'}
           </span>
           {unitList.map(u => (
@@ -1237,8 +1237,8 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
               }}
               className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
                 selectedUnit === u
-                  ? 'border-[#95A847]/50 bg-[#95A847]/12 text-[#75863B]'
-                  : 'border-[#302817]/10 bg-white text-[#302817]/55 hover:border-[#302817]/20 hover:bg-[#F8F8F5]'
+                  ? 'border-[#51B291]/50 bg-[#51B291]/12 text-[#244959]'
+                  : 'border-[#244959]/10 bg-white text-[#244959]/55 hover:border-[#244959]/20 hover:bg-[#F8F8F5]'
               }`}
             >
               {u}
@@ -1247,10 +1247,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         </div>
       )}
       {maxLen && (
-        <span className="text-right text-[10px] text-[#302817]/35 pr-12">{charCount}/{maxLen}</span>
+        <span className="text-right text-[10px] text-[#244959]/35 pr-12">{charCount}/{maxLen}</span>
       )}
       {!isRequired && isEmpty && (
-        <span className="text-[10px] text-[#302817]/40 pl-1">
+        <span className="text-[10px] text-[#244959]/40 pl-1">
           {tr ? 'Bu alan isteğe bağlıdır — boş bırakabilirsiniz.' : 'This field is optional — you may leave it blank.'}
         </span>
       )}
@@ -1295,27 +1295,27 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
   const tr = lang === 'tr';
   const label = getBlockLabel(blockId, stageId);
   return (
-    <div className="rounded-2xl border border-[#B4BE6A]/40 bg-[#FAFAF8] px-4 py-4 w-full">
+    <div className="rounded-2xl border border-[#89E789]/40 bg-[#FAFAF8] px-4 py-4 w-full">
       <div className="mb-2 flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4 text-[#95A847]" />
-        <span className="text-sm font-bold text-[#302817]">
+        <CheckCircle2 className="h-4 w-4 text-[#51B291]" />
+        <span className="text-sm font-bold text-[#244959]">
           {label[lang] || label.en} — {tr ? 'Tamamlandı' : 'Complete'}
         </span>
       </div>
-      <p className="mb-3 text-xs text-[#302817]/55">
+      <p className="mb-3 text-xs text-[#244959]/55">
         {tr
           ? 'Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa ✏ butonunu kullanın.'
           : 'Your answers for this section are below. Use ✏ to edit any answer before continuing.'}
       </p>
-      <div className="overflow-x-auto rounded-xl border border-[#302817]/8 mb-4">
+      <div className="overflow-x-auto rounded-xl border border-[#244959]/8 mb-4">
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-[#302817]/8 bg-[#302817]/3">
-              <th className="px-3 py-2 text-left font-semibold text-[#302817]/50">#</th>
-              <th className="px-3 py-2 text-left font-semibold text-[#302817]/50">
+            <tr className="border-b border-[#244959]/8 bg-[#244959]/3">
+              <th className="px-3 py-2 text-left font-semibold text-[#244959]/50">#</th>
+              <th className="px-3 py-2 text-left font-semibold text-[#244959]/50">
                 {tr ? 'Soru' : 'Question'}
               </th>
-              <th className="px-3 py-2 text-left font-semibold text-[#302817]/50">
+              <th className="px-3 py-2 text-left font-semibold text-[#244959]/50">
                 {tr ? 'Yanıt' : 'Answer'}
               </th>
               <th className="px-3 py-2"></th>
@@ -1327,14 +1327,14 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
               const displayVal = getDisplayValue(q, answer, lang);
               const qText = stripDocLabels(q.text?.[lang] || q.text?.en || q.id);
               return (
-                <tr key={q.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#302817]/2'}>
-                  <td className="px-3 py-2 font-mono text-[10px] text-[#302817]/35">{q.number}</td>
-                  <td className="px-3 py-2 text-[#302817]/65 max-w-[180px] leading-snug">{qText}</td>
-                  <td className="px-3 py-2 font-semibold text-[#302817] max-w-[160px] leading-snug">{displayVal}</td>
+                <tr key={q.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#244959]/2'}>
+                  <td className="px-3 py-2 font-mono text-[10px] text-[#244959]/35">{q.number}</td>
+                  <td className="px-3 py-2 text-[#244959]/65 max-w-[180px] leading-snug">{qText}</td>
+                  <td className="px-3 py-2 font-semibold text-[#244959] max-w-[160px] leading-snug">{displayVal}</td>
                   <td className="px-3 py-2 text-right">
                     <button
                       onClick={() => onEdit(q.id)}
-                      className="rounded-lg border border-[#302817]/12 px-2 py-1 text-[10px] font-bold text-[#302817]/50 transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/8 hover:text-[#302817]"
+                      className="rounded-lg border border-[#244959]/12 px-2 py-1 text-[10px] font-bold text-[#244959]/50 transition hover:border-[#89E789]/40 hover:bg-[#89E789]/8 hover:text-[#244959]"
                     >
                       ✏ {tr ? 'Düzenle' : 'Edit'}
                     </button>
@@ -1348,7 +1348,7 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
       <div className="flex justify-end">
         <button
           onClick={onContinue}
-          className="rounded-full bg-[#75863B] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#5E6B2A]"
+          className="rounded-full bg-[#244959] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1a3a2e]"
         >
           {tr ? 'Devam Et →' : 'Continue →'}
         </button>
@@ -1380,35 +1380,35 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
 
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#FAFAF8] transition-all duration-300 ${
+      className={`flex shrink-0 flex-col border-r border-[#244959]/6 bg-[#FAFAF8] transition-all duration-300 ${
         open
           ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
           : 'w-0 overflow-hidden'
       }`}
     >
-      <div className="flex items-center justify-between border-b border-[#302817]/6 px-3 py-3">
-        <span className="text-[10px] font-bold text-[#302817]/50 uppercase tracking-wider">
+      <div className="flex items-center justify-between border-b border-[#244959]/6 px-3 py-3">
+        <span className="text-[10px] font-bold text-[#244959]/50 uppercase tracking-wider">
           {tr ? 'İlerleme' : 'Progress'}
         </span>
         <button
           onClick={onToggle}
-          className="flex h-6 w-6 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
+          className="flex h-6 w-6 items-center justify-center rounded-lg text-[#244959]/40 hover:bg-[#244959]/6 hover:text-[#244959] transition"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {/* Overall progress */}
-      <div className="border-b border-[#302817]/6 px-3 py-3">
+      <div className="border-b border-[#244959]/6 px-3 py-3">
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[10px] font-semibold text-[#302817]/60">
+          <span className="text-[10px] font-semibold text-[#244959]/60">
             {totalAnswered} / {TOTAL_QUESTIONS}
           </span>
-          <span className="text-[10px] font-bold text-[#95A847]">{pct}%</span>
+          <span className="text-[10px] font-bold text-[#51B291]">{pct}%</span>
         </div>
-        <div className="h-1.5 w-full rounded-full bg-[#302817]/8">
+        <div className="h-1.5 w-full rounded-full bg-[#244959]/8">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#95A847] to-[#B4BE6A] transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-[#51B291] to-[#89E789] transition-all duration-500"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -1426,18 +1426,18 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
               key={stage.id}
               className={`rounded-xl px-3 py-2 transition ${
                 isCurrent
-                  ? 'bg-[#B4BE6A]/15 border border-[#B4BE6A]/30'
-                  : 'hover:bg-[#302817]/4'
+                  ? 'bg-[#89E789]/15 border border-[#89E789]/30'
+                  : 'hover:bg-[#244959]/4'
               }`}
             >
               <div className="flex items-center gap-1.5 mb-0.5">
-                <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isCurrent ? 'bg-[#95A847]' : answered > 0 ? 'bg-[#B4BE6A]/60' : 'bg-[#302817]/15'}`} />
-                <span className={`text-[10px] font-bold truncate ${isCurrent ? 'text-[#75863B]' : 'text-[#302817]/55'}`}>
+                <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${isCurrent ? 'bg-[#51B291]' : answered > 0 ? 'bg-[#89E789]/60' : 'bg-[#244959]/15'}`} />
+                <span className={`text-[10px] font-bold truncate ${isCurrent ? 'text-[#244959]' : 'text-[#244959]/55'}`}>
                   {stage.title[lang] || stage.title.en}
                 </span>
               </div>
               {answered > 0 && (
-                <span className="text-[9px] text-[#302817]/35 pl-3">{answered} {tr ? 'cevaplandı' : 'answered'}</span>
+                <span className="text-[9px] text-[#244959]/35 pl-3">{answered} {tr ? 'cevaplandı' : 'answered'}</span>
               )}
             </div>
           );
@@ -1545,7 +1545,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
     setHelpError('');
     setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
     try {
-      const res = await api.sendChatMessage(helpSessionRef.current, content);
+      const res = await api.sendChatMessage(helpSessionRef.current, content, lang);
       // Fix #89: guard with isMountedRef AND openRef so we never setState on an
       // unmounted component (resetFlow path) or on a closed drawer (onClose path).
       if (isMountedRef.current && openRef.current) {
@@ -1579,18 +1579,18 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
         onClick={onClose}
       />
       {/* Drawer */}
-      <div className="absolute inset-y-0 right-0 z-50 flex w-[min(340px,100vw)] flex-col border-l border-[#302817]/8 bg-white shadow-[-8px_0_40px_rgba(48,40,23,0.08)] md:relative md:inset-auto md:z-auto md:w-[300px] md:shadow-none">
+      <div className="absolute inset-y-0 right-0 z-50 flex w-[min(340px,100vw)] flex-col border-l border-[#244959]/8 bg-white shadow-[-8px_0_40px_rgba(48,40,23,0.08)] md:relative md:inset-auto md:z-auto md:w-[300px] md:shadow-none">
         {/* Header */}
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 px-4 py-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#95A847]/20 to-[#B4BE6A]/10">
-            <HelpCircle className="h-4 w-4 text-[#75863B]" />
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#244959]/6 px-4 py-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#51B291]/20 to-[#89E789]/10">
+            <HelpCircle className="h-4 w-4 text-[#244959]" />
           </div>
-          <span className="flex-1 text-sm font-bold text-[#302817]">
+          <span className="flex-1 text-sm font-bold text-[#244959]">
             {tr ? 'AI Yardımı' : 'AI Help'}
           </span>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#244959]/40 hover:bg-[#244959]/6 hover:text-[#244959] transition"
           >
             <X className="h-4 w-4" />
           </button>
@@ -1600,8 +1600,8 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
-              <HelpCircle className="h-8 w-8 text-[#302817]/15" />
-              <p className="text-xs text-[#302817]/40 max-w-[200px]">
+              <HelpCircle className="h-8 w-8 text-[#244959]/15" />
+              <p className="text-xs text-[#244959]/40 max-w-[200px]">
                 {tr ? 'Bu soru hakkında AI\'dan yardım isteyin.' : 'Ask AI for help with this specific question.'}
               </p>
             </div>
@@ -1612,7 +1612,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
                 className={`max-w-[90%] rounded-[18px] px-3 py-2.5 text-[12.5px] leading-[1.6] ${
                   msg.role === 'user'
                     ? 'rounded-tr-sm bg-[#5E7A2E] text-white'
-                    : 'rounded-tl-sm border border-[#302817]/6 bg-[#FAFAF8] text-[#302817]'
+                    : 'rounded-tl-sm border border-[#244959]/6 bg-[#FAFAF8] text-[#244959]'
                 }`}
               >
                 {msg.role === 'user' ? msg.content : <Markdown text={msg.content} />}
@@ -1621,7 +1621,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
           ))}
           {sending && (
             <div className="flex gap-2">
-              <div className="rounded-[18px] rounded-tl-sm border border-[#302817]/6 bg-[#FAFAF8] px-3 py-2.5">
+              <div className="rounded-[18px] rounded-tl-sm border border-[#244959]/6 bg-[#FAFAF8] px-3 py-2.5">
                 <TypingDots />
               </div>
             </div>
@@ -1629,7 +1629,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
         </div>
 
         {/* Input */}
-        <div className="shrink-0 border-t border-[#302817]/6 p-3">
+        <div className="shrink-0 border-t border-[#244959]/6 p-3">
           {/* Fix #98+#99: aria-label for accessibility; char limit mirrors backend
               MAX_MESSAGE_LENGTH so users see a warning instead of a cryptic 400. */}
           {(() => {
@@ -1640,7 +1640,7 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
                 <div className={`flex gap-2 rounded-2xl border bg-[#FAFAF8] px-3 py-2 focus-within:ring-2 transition ${
                   helpCharOver
                     ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
-                    : 'border-[#302817]/10 focus-within:border-[#B4BE6A]/40 focus-within:ring-[#B4BE6A]/15'
+                    : 'border-[#244959]/10 focus-within:border-[#89E789]/40 focus-within:ring-[#89E789]/15'
                 }`}>
                   <textarea
                     ref={inputRef}
@@ -1663,14 +1663,14 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
                     // Fix #98: aria-label provides accessible name for screen readers
                     // (placeholder alone disappears once the user starts typing)
                     aria-label={tr ? 'AI yardım sorusu' : 'AI help question'}
-                    className="flex-1 resize-none bg-transparent text-[12.5px] text-[#302817] outline-none placeholder:text-[#302817]/30"
+                    className="flex-1 resize-none bg-transparent text-[12.5px] text-[#244959] outline-none placeholder:text-[#244959]/30"
                     placeholder={tr ? 'Sorunuzu yazın…' : 'Ask your question…'}
                     style={{ scrollbarWidth: 'none' }}
                   />
                   <button
                     onClick={sendHelp}
                     disabled={!input.trim() || sending || helpCharOver}
-                    className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#75863B] text-white transition hover:bg-[#5E6B2A] disabled:opacity-30"
+                    className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#244959] text-white transition hover:bg-[#1a3a2e] disabled:opacity-30"
                   >
                     {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                   </button>
@@ -1729,17 +1729,17 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
 
         {/* Icon + title */}
         <div className="flex flex-col items-center gap-1.5 sm:gap-2 text-center">
-          <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-[#75863B] flex items-center justify-center shadow-sm">
+          <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-[#244959] flex items-center justify-center shadow-sm">
             <ClipboardList className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-white" />
           </div>
           <div>
-            <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-[#75863B]/60 mb-0.5">
+            <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-[#244959]/60 mb-0.5">
               {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
             </p>
             <h2 className="text-[16px] sm:text-[20px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
               {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
             </h2>
-            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[12px] text-[#302817]/50 max-w-xs mx-auto leading-snug">
+            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[12px] text-[#244959]/50 max-w-xs mx-auto leading-snug">
               {tr
                 ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış akış. Her adımda AI asistanı yanınızda.`
                 : `${TOTAL_QUESTIONS}-question structured flow. AI guides you at every step.`}
@@ -1750,13 +1750,13 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         {/* Steps */}
         <div className="w-full flex flex-col gap-1 sm:gap-1.5">
           {steps.map(({ img, title, desc }, idx) => (
-            <div key={idx} className="flex items-center gap-3 rounded-xl border border-[#302817]/8 bg-[#FAFAF8] px-3 py-1.5 sm:py-2.5">
+            <div key={idx} className="flex items-center gap-3 rounded-xl border border-[#244959]/8 bg-[#FAFAF8] px-3 py-1.5 sm:py-2.5">
               <Image src={img} alt={title} width={28} height={28} className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 object-contain" />
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] sm:text-[13px] font-semibold text-[#2C4010]">{title}</p>
-                <p className="text-[9px] sm:text-[11px] text-[#302817]/45 leading-snug">{desc}</p>
+                <p className="text-[9px] sm:text-[11px] text-[#244959]/45 leading-snug">{desc}</p>
               </div>
-              <span className="shrink-0 h-5 w-5 rounded-full bg-[#75863B]/12 flex items-center justify-center text-[9px] font-bold text-[#75863B]">
+              <span className="shrink-0 h-5 w-5 rounded-full bg-[#244959]/12 flex items-center justify-center text-[9px] font-bold text-[#244959]">
                 {idx + 1}
               </span>
             </div>
@@ -1764,7 +1764,7 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         </div>
 
         {answeredCount > 0 && !error && (
-          <div className="w-full rounded-xl border border-[#B4BE6A]/40 bg-[#F3F7E9] px-3 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold text-[#5E7A2E] text-center">
+          <div className="w-full rounded-xl border border-[#89E789]/40 bg-[#F3F7E9] px-3 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold text-[#5E7A2E] text-center">
             {tr
               ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
               : `${answeredCount} questions answered — continue where you left off.`}
@@ -1779,14 +1779,14 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
         <button
           onClick={onStart}
           disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-[#75863B] px-6 sm:px-8 py-2.5 sm:py-3 text-[12px] sm:text-sm font-semibold text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-40"
+          className="flex items-center gap-2 rounded-full bg-[#244959] px-6 sm:px-8 py-2.5 sm:py-3 text-[12px] sm:text-sm font-semibold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           {tr
             ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
             : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
         </button>
-        <p className="text-[9px] sm:text-[10px] text-[#302817]/30">
+        <p className="text-[9px] sm:text-[10px] text-[#244959]/30">
           {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
         </p>
       </div>
@@ -2490,7 +2490,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
     setBlockSummaryState(null);
     setHistory(history.slice(0, histIdx));
     setCurrentId(qId);
-    setLoopState(null);
+    const q = getQuestionById(qId);
+    if (!q?.loopSource) setLoopState(null);
     setValidationError('');
     setShowValidationError(false);
 
@@ -2582,11 +2583,11 @@ function QuestionnaireTab({ language, isVisible = true }) {
       {/* Main area */}
       <div className="flex flex-1 min-w-0 flex-col">
         {/* Sub-header */}
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#302817]/6 px-4 py-2">
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#244959]/6 px-4 py-2">
           {!sidebarOpen && (
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#244959]/40 hover:bg-[#244959]/6 hover:text-[#244959] transition"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -2594,11 +2595,11 @@ function QuestionnaireTab({ language, isVisible = true }) {
           <div className="flex-1 min-w-0">
             {currentQuestion && (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#302817]/40">
+                <span className="text-[11px] font-bold text-[#244959]/40">
                   {tr ? 'Soru' : 'Q'} {currentQuestion.number} / {TOTAL_QUESTIONS}
                 </span>
                 {currentQuestion.isoRef && (
-                  <span className="rounded-full bg-[#B4BE6A]/15 px-2 py-0.5 text-[9px] font-bold text-[#75863B]">
+                  <span className="rounded-full bg-[#89E789]/15 px-2 py-0.5 text-[9px] font-bold text-[#244959]">
                     {currentQuestion.isoRef}
                   </span>
                 )}
@@ -2611,7 +2612,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
                 onClick={goBack}
                 title={tr ? 'Geri' : 'Back'}
                 aria-label={tr ? 'Önceki soruya dön' : 'Go back to previous question'}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#244959]/40 hover:bg-[#244959]/6 hover:text-[#244959] transition"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
@@ -2627,7 +2628,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
                 </button>
                 <button
                   onClick={() => setResetConfirm(false)}
-                  className="rounded-full border border-[#302817]/15 px-2 py-1 text-[10px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/5"
+                  className="rounded-full border border-[#244959]/15 px-2 py-1 text-[10px] font-bold text-[#244959]/50 transition hover:bg-[#244959]/5"
                 >
                   {tr ? 'Hayır' : 'No'}
                 </button>
@@ -2637,7 +2638,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
                 onClick={() => setResetConfirm(true)}
                 title={tr ? 'Sıfırla' : 'Reset'}
                 aria-label={tr ? 'Envanteri sıfırla' : 'Reset inventory'}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#302817]/6 hover:text-[#302817] transition"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#244959]/40 hover:bg-[#244959]/6 hover:text-[#244959] transition"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
@@ -2676,7 +2677,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
             )}
             {isTyping && (
               <div className="flex gap-3">
-                <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+                <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#51B291] flex items-center justify-center shadow-sm">
                   <span className="block h-2 w-2 rounded-full bg-white/80" />
                 </div>
                 <div className="py-1">
@@ -2720,7 +2721,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
         {/* Input bar */}
         {!completed && !blockSummaryState && (
-          <div className="shrink-0 border-t border-[#302817]/6 px-4 py-3 sm:px-6">
+          <div className="shrink-0 border-t border-[#244959]/6 px-4 py-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
               <div className="flex flex-col gap-2">
                 <AnswerInput
@@ -2747,12 +2748,12 @@ function QuestionnaireTab({ language, isVisible = true }) {
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-[#302817]/25">
+                  <p className="text-[10px] text-[#244959]/25">
                     {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
                   </p>
                   <button
                     onClick={() => setHelpOpen(v => !v)}
-                    className="flex items-center gap-1.5 rounded-full border border-[#302817]/10 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#302817]/55 shadow-sm transition hover:border-[#B4BE6A]/40 hover:bg-[#B4BE6A]/5 hover:text-[#302817]"
+                    className="flex items-center gap-1.5 rounded-full border border-[#244959]/10 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#244959]/55 shadow-sm transition hover:border-[#89E789]/40 hover:bg-[#89E789]/5 hover:text-[#244959]"
                   >
                     <HelpCircle className="h-3 w-3" />
                     {tr ? 'AI Yardımı' : 'Ask AI Help'}
@@ -2763,18 +2764,18 @@ function QuestionnaireTab({ language, isVisible = true }) {
           </div>
         )}
         {completed && (
-          <div className="shrink-0 border-t border-[#302817]/6 px-4 py-4 sm:px-6">
+          <div className="shrink-0 border-t border-[#244959]/6 px-4 py-4 sm:px-6">
             <div className="mx-auto w-full max-w-2xl flex items-center justify-center gap-3">
               {resetConfirm ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#302817]/60">{tr ? 'Tüm yanıtlar silinecek. Emin misin?' : 'All answers will be cleared. Sure?'}</span>
+                  <span className="text-sm font-semibold text-[#244959]/60">{tr ? 'Tüm yanıtlar silinecek. Emin misin?' : 'All answers will be cleared. Sure?'}</span>
                   <button onClick={() => { setResetConfirm(false); resetFlow(); }} className="rounded-full bg-red-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-600">{tr ? 'Evet, Sıfırla' : 'Yes, Reset'}</button>
-                  <button onClick={() => setResetConfirm(false)} className="rounded-full border border-[#302817]/15 px-4 py-2 text-xs font-bold text-[#302817]/50 transition hover:bg-[#302817]/5">{tr ? 'İptal' : 'Cancel'}</button>
+                  <button onClick={() => setResetConfirm(false)} className="rounded-full border border-[#244959]/15 px-4 py-2 text-xs font-bold text-[#244959]/50 transition hover:bg-[#244959]/5">{tr ? 'İptal' : 'Cancel'}</button>
                 </div>
               ) : (
                 <button
                   onClick={() => setResetConfirm(true)}
-                  className="flex items-center gap-2 rounded-full border border-[#302817]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#302817]/70 shadow-sm transition hover:bg-[#302817]/5"
+                  className="flex items-center gap-2 rounded-full border border-[#244959]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#244959]/70 shadow-sm transition hover:bg-[#244959]/5"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   {tr ? 'Yeniden Başla' : 'Start Over'}
@@ -3142,7 +3143,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
         />
       )}
       {/* Sidebar */}
-      <aside className={`flex shrink-0 flex-col border-r border-[#302817]/6 bg-[#F8F8F5] transition-all duration-300 ${
+      <aside className={`flex shrink-0 flex-col border-r border-[#244959]/6 bg-[#F8F8F5] transition-all duration-300 ${
         sidebarOpen
           ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
           : 'w-0 overflow-hidden'
@@ -3152,7 +3153,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           <button
             onClick={() => startNew()}
             disabled={creatingSession}
-            className="flex w-full items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3 py-2.5 text-[12px] font-semibold text-[#302817]/70 shadow-sm transition hover:bg-[#F3F7E9] hover:border-[#95A847]/30 hover:text-[#302817] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex w-full items-center gap-2 rounded-xl border border-[#244959]/10 bg-white px-3 py-2.5 text-[12px] font-semibold text-[#244959]/70 shadow-sm transition hover:bg-[#F3F7E9] hover:border-[#51B291]/30 hover:text-[#244959] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {creatingSession
               ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -3165,16 +3166,16 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
         <div className="flex-1 overflow-y-auto px-2 pb-4">
           {loadingSessions ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-4 w-4 animate-spin text-[#302817]/20" />
+              <Loader2 className="h-4 w-4 animate-spin text-[#244959]/20" />
             </div>
           ) : sessions.length === 0 ? (
-            <p className="px-3 py-8 text-center text-[11px] text-[#302817]/28 leading-relaxed">
+            <p className="px-3 py-8 text-center text-[11px] text-[#244959]/28 leading-relaxed">
               {tr ? 'Henüz sohbet yok.' : 'No chats yet.'}
             </p>
           ) : (
             groupSessionsByDate(sessions, tr).map(group => (
               <div key={group.key} className="mb-1">
-                <p className="px-2 pb-1 pt-3 text-[9.5px] font-semibold uppercase tracking-wider text-[#302817]/25">
+                <p className="px-2 pb-1 pt-3 text-[9.5px] font-semibold uppercase tracking-wider text-[#244959]/25">
                   {group.label}
                 </p>
                 {group.items.map(s => (
@@ -3196,35 +3197,35 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Clean header - hidden on mobile (parent header already shows branding + tabs) */}
-        <header className="hidden sm:flex shrink-0 items-center gap-2 border-b border-[#302817]/6 bg-white px-3 sm:px-4 py-2 sm:py-2.5">
+        <header className="hidden sm:flex shrink-0 items-center gap-2 border-b border-[#244959]/6 bg-white px-3 sm:px-4 py-2 sm:py-2.5">
           <button
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl text-[#302817]/35 transition hover:bg-[#302817]/5 hover:text-[#302817]"
+            className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl text-[#244959]/35 transition hover:bg-[#244959]/5 hover:text-[#244959]"
             title={sidebarOpen ? (tr ? 'Geçmişi gizle' : 'Hide history') : (tr ? 'Geçmişi göster' : 'Show history')}
           >
             <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </button>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[12px] sm:text-[13px] font-semibold text-[#302817]/80">
+            <p className="truncate text-[12px] sm:text-[13px] font-semibold text-[#244959]/80">
               {activeSession ? activeSession.title : 'Carbon AI'}
             </p>
           </div>
 
           {totalTonne > 0 && (
-            <span className="hidden sm:inline-block shrink-0 rounded-full bg-[#F3F6E8] border border-[#95A847]/20 px-2.5 py-1 text-[11px] font-semibold text-[#75863B]">
+            <span className="hidden sm:inline-block shrink-0 rounded-full bg-[#F3F6E8] border border-[#51B291]/20 px-2.5 py-1 text-[11px] font-semibold text-[#244959]">
               {totalTonne.toFixed(1)} tCO₂e
             </span>
           )}
 
           {/* Language toggle */}
-          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#302817]/8 bg-[#302817]/4 p-0.5">
+          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#244959]/8 bg-[#244959]/4 p-0.5">
             {['tr', 'en'].map(l => (
               <button
                 key={l}
                 onClick={() => setActiveLang(l)}
                 className={`rounded-md px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide transition ${
-                  activeLang === l ? 'bg-white text-[#302817] shadow-sm' : 'text-[#302817]/40 hover:text-[#302817]'
+                  activeLang === l ? 'bg-white text-[#244959] shadow-sm' : 'text-[#244959]/40 hover:text-[#244959]'
                 }`}
               >
                 {l}
@@ -3234,23 +3235,23 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
         </header>
 
         {/* Mobile-only compact bar */}
-        <div className="flex sm:hidden shrink-0 items-center justify-between border-b border-[#302817]/6 bg-white px-3 py-1.5">
+        <div className="flex sm:hidden shrink-0 items-center justify-between border-b border-[#244959]/6 bg-white px-3 py-1.5">
           <button
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/40"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#244959]/40"
           >
             <Menu className="h-3.5 w-3.5" />
           </button>
-          <p className="text-[11px] font-semibold text-[#302817]/60 truncate max-w-[40%]">
+          <p className="text-[11px] font-semibold text-[#244959]/60 truncate max-w-[40%]">
             {activeSession ? activeSession.title : 'Carbon AI'}
           </p>
-          <div className="flex items-center gap-0.5 rounded-md border border-[#302817]/8 bg-[#302817]/4 p-0.5">
+          <div className="flex items-center gap-0.5 rounded-md border border-[#244959]/8 bg-[#244959]/4 p-0.5">
             {['tr', 'en'].map(l => (
               <button
                 key={l}
                 onClick={() => setActiveLang(l)}
                 className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase transition ${
-                  activeLang === l ? 'bg-white text-[#302817] shadow-sm' : 'text-[#302817]/35'
+                  activeLang === l ? 'bg-white text-[#244959] shadow-sm' : 'text-[#244959]/35'
                 }`}
               >
                 {l}
@@ -3274,11 +3275,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
             <EmptyState onNew={startNew} tr={tr} />
           ) : loadingMessages ? (
             <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-6 w-6 animate-spin text-[#302817]/30" />
+              <Loader2 className="h-6 w-6 animate-spin text-[#244959]/30" />
             </div>
           ) : messages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
-              <p className="text-[12px] text-[#302817]/30">
+              <p className="text-[12px] text-[#244959]/30">
                 {tr ? 'Sorunuzu yazın…' : 'Type your question below…'}
               </p>
             </div>
@@ -3328,14 +3329,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                   {/* ── Save confirmation section ── */}
                   {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
                     <div className="ml-9 mt-3 rounded-2xl border border-[#53A67F]/20 bg-gradient-to-br from-[#f0f9f4] to-white p-4 shadow-sm">
-                      <p className="text-[13px] font-bold text-[#302817] mb-3">
+                      <p className="text-[13px] font-bold text-[#244959] mb-3">
                         {tr ? '💾 Bu sonucu dashboard\'a kaydet?' : '💾 Save this result to your dashboard?'}
                       </p>
                       {/* Show clean result summary */}
                       <div className="mb-3 space-y-2">
                         {msg.pending_entries.map((pe, idx) => (
-                          <div key={idx} className="rounded-lg bg-white/80 border border-[#302817]/5 px-3 py-2.5">
-                            <div className="text-[12px] text-[#302817]/80">
+                          <div key={idx} className="rounded-lg bg-white/80 border border-[#244959]/5 px-3 py-2.5">
+                            <div className="text-[12px] text-[#244959]/80">
                               <span className="font-semibold capitalize">{(pe.fuel_type || '').replace(/_/g, ' ')}</span>
                               {' result: '}
                               <span className="font-bold text-[#1f3b2b]">{Number(pe.co2e_kg).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} kgCO₂e</span>
@@ -3388,7 +3389,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                               m.id === msg.id ? { ...m, entriesSaved: true, entriesRejected: true } : m
                             ));
                           }}
-                          className="flex items-center gap-2 rounded-full border border-[#302817]/15 bg-white px-5 py-2.5 text-[12px] font-semibold text-[#302817]/50 hover:border-red-300 hover:text-red-500 hover:bg-red-50/50 transition"
+                          className="flex items-center gap-2 rounded-full border border-[#244959]/15 bg-white px-5 py-2.5 text-[12px] font-semibold text-[#244959]/50 hover:border-red-300 hover:text-red-500 hover:bg-red-50/50 transition"
                         >
                           <X className="h-4 w-4" />
                           {tr ? 'Hayır' : 'No'}
@@ -3410,7 +3411,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                     </div>
                   )}
                   {msg.entriesRejected && (
-                    <div className="ml-9 mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#302817]/30">
+                    <div className="ml-9 mt-2 flex items-center gap-2 text-[11px] font-semibold text-[#244959]/30">
                       <X className="h-3.5 w-3.5" />
                       {tr ? 'Kaydedilmedi' : 'Not saved'}
                     </div>
@@ -3419,7 +3420,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
               ))}
               {sending && (
                 <div className="flex gap-3">
-                  <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#95A847] flex items-center justify-center shadow-sm">
+                  <div className="mt-1 h-5 w-5 shrink-0 rounded-full bg-[#51B291] flex items-center justify-center shadow-sm">
                     <span className="block h-2 w-2 rounded-full bg-white/80" />
                   </div>
                   <div className="py-1">
@@ -3431,7 +3432,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           )}
         </div>
 
-        <div className={`shrink-0 border-t border-[#302817]/6 px-3 pt-2 pb-2 sm:px-6 sm:pt-3 sm:pb-3 ${!activeId ? 'hidden sm:block' : ''}`}>
+        <div className={`shrink-0 border-t border-[#244959]/6 px-3 pt-2 pb-2 sm:px-6 sm:pt-3 sm:pb-3 ${!activeId ? 'hidden sm:block' : ''}`}>
           {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
               see a warning before they hit a 400 error, not after.
               Fix #87: CHAT_CHAR_LIMIT is now a module-level constant (see top of file)
@@ -3445,7 +3446,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                 <div className={`mx-auto flex w-full max-w-3xl items-end gap-2 rounded-[22px] border bg-white px-4 py-3 shadow-[0_4px_20px_rgba(48,40,23,0.05)] focus-within:ring-4 transition ${
                   charOver
                     ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
-                    : 'border-[#302817]/10 focus-within:border-[#B4BE6A]/50 focus-within:ring-[#B4BE6A]/12'
+                    : 'border-[#244959]/10 focus-within:border-[#89E789]/50 focus-within:ring-[#89E789]/12'
                 }`}>
                   {/* File upload button */}
                   <input
@@ -3469,7 +3470,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={sending || creatingSession}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#302817]/30 transition hover:text-[#75863B] hover:bg-[#75863B]/10 disabled:opacity-30"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#244959]/30 transition hover:text-[#244959] hover:bg-[#244959]/10 disabled:opacity-30"
                     title={tr ? 'Dosya ekle' : 'Attach file'}
                   >
                     <Paperclip className="h-4 w-4" />
@@ -3477,10 +3478,10 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                   <div className="flex-1 min-w-0">
                     {/* Attached file indicator */}
                     {attachedFile && (
-                      <div className="flex items-center gap-2 mb-1.5 rounded-lg bg-[#F3F7E9] border border-[#B4BE6A]/30 px-2.5 py-1.5">
-                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#75863B]" />
-                        <span className="text-[11px] font-medium text-[#302817]/70 truncate">{attachedFile.name}</span>
-                        <button onClick={() => setAttachedFile(null)} className="shrink-0 ml-auto text-[#302817]/30 hover:text-red-500 transition">
+                      <div className="flex items-center gap-2 mb-1.5 rounded-lg bg-[#F3F7E9] border border-[#89E789]/30 px-2.5 py-1.5">
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#244959]" />
+                        <span className="text-[11px] font-medium text-[#244959]/70 truncate">{attachedFile.name}</span>
+                        <button onClick={() => setAttachedFile(null)} className="shrink-0 ml-auto text-[#244959]/30 hover:text-red-500 transition">
                           <X className="h-3 w-3" />
                         </button>
                       </div>
@@ -3493,7 +3494,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                       disabled={sending || creatingSession}
                       placeholder={tr ? 'Carbonless\'a sor…' : 'Ask Carbonless…'}
                       rows={1}
-                      className="min-h-[24px] max-h-[120px] w-full resize-none bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30 disabled:cursor-not-allowed"
+                      className="min-h-[24px] max-h-[120px] w-full resize-none bg-transparent text-sm font-medium text-[#244959] outline-none placeholder:text-[#244959]/30 disabled:cursor-not-allowed"
                       style={{ scrollbarWidth: 'none' }}
                       onInput={e => {
                         e.target.style.height = 'auto';
@@ -3507,7 +3508,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                       else sendMessage();
                     }}
                     disabled={(!input.trim() && !attachedFile) || sending || creatingSession || charOver}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#75863B] text-white shadow-sm transition hover:bg-[#5E6B2A] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#244959] text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {(sending || creatingSession)
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -3560,17 +3561,17 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
             // Tell parent to switch back to AI tab
             window.dispatchEvent(new CustomEvent('carboniq-open'));
           }}
-          className="group relative flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-2xl shadow-[#4CAF50]/15 border border-[#4CAF50]/20 hover:shadow-[#4CAF50]/25 transition-all duration-300 hover:scale-105"
+          className="group relative flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-2xl shadow-[#51B291]/15 border border-[#51B291]/20 hover:shadow-[#51B291]/25 transition-all duration-300 hover:scale-105"
         >
           <Image src="/chatbot.png" alt="Carbonless AI" width={56} height={56} className="h-14 w-14 object-contain" />
           <div className="text-left">
             <p className="text-[15px] font-bold text-[#2d4a1a]">Carbonless AI</p>
-            <p className="text-[12px] text-[#4CAF50]">{tr ? 'Devam et →' : 'Continue →'}</p>
+            <p className="text-[12px] text-[#51B291]">{tr ? 'Devam et →' : 'Continue →'}</p>
           </div>
           {/* Pulse ring */}
           <div className="absolute -top-1 -right-1 h-4 w-4">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#4CAF50]/40" />
-            <span className="relative inline-flex h-4 w-4 rounded-full bg-[#4CAF50]" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#51B291]/40" />
+            <span className="relative inline-flex h-4 w-4 rounded-full bg-[#51B291]" />
           </div>
         </button>
       </div>
@@ -3585,31 +3586,31 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
     <div className="fixed inset-0 z-[90] flex flex-col bg-gradient-to-br from-[#f8fdf6] via-white to-[#f0f9f0] animate-in fade-in duration-200">
 
       {/* Mode switcher banner — tells user they can switch */}
-      <div className="flex shrink-0 items-center justify-between bg-[#f0f9f0] border-b border-[#4CAF50]/10 px-3 sm:px-4 py-1.5 sm:py-2">
+      <div className="flex shrink-0 items-center justify-between bg-[#f0f9f0] border-b border-[#51B291]/10 px-3 sm:px-4 py-1.5 sm:py-2">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
           <div className="flex items-center gap-2 rounded-full bg-white border border-[#e8e8e0] p-0.5 shadow-sm">
             <button
-              className="flex items-center gap-1.5 rounded-full bg-[#4CAF50] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
+              className="flex items-center gap-1.5 rounded-full bg-[#51B291] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
             >
               <Sparkles className="h-3 w-3" />
               {tr ? 'AI Modu' : 'AI Mode'}
             </button>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
-              className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#302817]/50 hover:text-[#302817] hover:bg-[#f5f5f0] transition"
+              className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#244959]/50 hover:text-[#244959] hover:bg-[#f5f5f0] transition"
             >
               <BarChart3 className="h-3 w-3" />
               {tr ? 'Dashboard' : 'Dashboard'}
             </button>
           </div>
-          <span className="hidden sm:block text-[10px] text-[#302817]/35">
+          <span className="hidden sm:block text-[10px] text-[#244959]/35">
             {tr ? '• Her ikisi aynı veritabanına kaydeder' : '• Both save to the same database'}
           </span>
         </div>
         {/* Close / Exit button */}
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
-          className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#302817]/10 bg-white text-[#302817]/40 hover:text-[#302817] hover:bg-red-50 hover:border-red-200 transition"
+          className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#244959]/10 bg-white text-[#244959]/40 hover:text-[#244959] hover:bg-red-50 hover:border-red-200 transition"
           title={tr ? 'Çıkış' : 'Exit'}
         >
           <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -3622,25 +3623,25 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="relative">
             <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
-            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#4CAF50] border-2 border-white" />
+            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#51B291] border-2 border-white" />
           </div>
           <div>
             <h2 className="text-[14px] sm:text-[16px] font-bold text-[#2d4a1a] tracking-tight">
               Carbonless AI
             </h2>
-            <p className="hidden sm:block text-[11px] text-[#4CAF50] font-medium">
+            <p className="hidden sm:block text-[11px] text-[#51B291] font-medium">
               {tr ? 'Akıllı karbon hesaplama' : 'Smart carbon calculator'}
             </p>
           </div>
         </div>
 
         {/* Center: Tab switcher */}
-        <div className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-[#f0f9f0] border border-[#4CAF50]/15 p-0.5 sm:p-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-[#f0f9f0] border border-[#51B291]/15 p-0.5 sm:p-1">
           <button
             onClick={() => setActiveTab('questionnaire')}
             className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab === 'questionnaire'
-                ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#4CAF50]/20'
+                ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#51B291]/20'
                 : 'text-[#2d4a1a]/50 hover:text-[#2d4a1a]/80'
             }`}
           >
@@ -3651,7 +3652,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
             onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
             className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab === 'chat'
-                ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#4CAF50]/20'
+                ? 'bg-white text-[#2d4a1a] shadow-sm border border-[#51B291]/20'
                 : 'text-[#2d4a1a]/50 hover:text-[#2d4a1a]/80'
             }`}
           >
@@ -3664,7 +3665,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
         <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Status - hidden on mobile */}
           <div className="hidden md:flex items-center gap-1.5 rounded-full bg-[#e8f5e9] px-3 py-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-[#4CAF50] animate-pulse" />
+            <div className="h-1.5 w-1.5 rounded-full bg-[#51B291] animate-pulse" />
             <span className="text-[10px] font-semibold text-[#2d6235]">
               {tr ? 'Bağlı' : 'Connected'}
             </span>
@@ -3675,7 +3676,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
               setIsMinimized(true);
               window.dispatchEvent(new CustomEvent('carboniq-close'));
             }}
-            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#302817]/60 hover:bg-[#eee] hover:text-[#302817] transition"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#244959]/60 hover:bg-[#eee] hover:text-[#244959] transition"
             title={tr ? 'Küçült' : 'Minimize'}
           >
             <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -3695,7 +3696,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
                 window.location.href = '/login';
               }
             }}
-            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#302817]/40 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition"
+            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#f5f5f0] border border-[#e8e8e0] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#244959]/40 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition"
             title={tr ? 'Çıkış Yap' : 'Log Out'}
           >
             <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

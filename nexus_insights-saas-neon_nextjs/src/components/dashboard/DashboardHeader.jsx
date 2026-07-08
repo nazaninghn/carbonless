@@ -191,7 +191,7 @@ export default function DashboardHeader({
                     {tr ? 'Bildirimler' : 'Notifications'}
                   </p>
                   {unreadCount > 0 && (
-                    <button onClick={markAllRead} className="text-[11px] font-semibold text-[#4CAF50] hover:underline">
+                    <button onClick={markAllRead} className="text-[11px] font-semibold text-[#51B291] hover:underline">
                       {tr ? 'Hepsini oku' : 'Mark all read'}
                     </button>
                   )}

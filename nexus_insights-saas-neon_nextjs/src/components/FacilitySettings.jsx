@@ -113,7 +113,7 @@ export default function FacilitySettings({ language }) {
   if (loading) {
     return (
       <div className="flex items-center gap-2 py-4 text-sm text-[#302817]/55">
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#95A847]/40 border-t-[#95A847]" />
+        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#51B291]/40 border-t-[#51B291]" />
         {tr ? 'Yükleniyor…' : 'Loading…'}
       </div>
     );
@@ -149,9 +149,9 @@ export default function FacilitySettings({ language }) {
     <div className="space-y-3">
       {/* Success banner */}
       {successMsg && (
-        <div className="flex items-center gap-2 rounded-xl border border-[#95A847]/30 bg-[#95A847]/8 px-3 py-2">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#75863B]" />
-          <p className="text-xs text-[#75863B]">{successMsg}</p>
+        <div className="flex items-center gap-2 rounded-xl border border-[#51B291]/30 bg-[#51B291]/8 px-3 py-2">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#244959]" />
+          <p className="text-xs text-[#244959]">{successMsg}</p>
         </div>
       )}
 
@@ -168,7 +168,7 @@ export default function FacilitySettings({ language }) {
               </div>
               <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
                 f.is_active
-                  ? 'bg-[#95A847]/12 text-[#75863B]'
+                  ? 'bg-[#51B291]/12 text-[#244959]'
                   : 'bg-[#F0F0F0] text-[#302817]/50'
               }`}>
                 {f.is_active
@@ -201,7 +201,7 @@ export default function FacilitySettings({ language }) {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder={tr ? 'Örn. İstanbul Merkez Ofis' : 'e.g. Istanbul Head Office'}
-                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#95A847] focus:outline-none"
+                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#51B291] focus:outline-none"
               />
             </div>
             <div>
@@ -211,7 +211,7 @@ export default function FacilitySettings({ language }) {
               <select
                 value={facilityType}
                 onChange={e => setFacilityType(e.target.value)}
-                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#95A847] focus:outline-none"
+                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#51B291] focus:outline-none"
               >
                 <option value="">{tr ? 'Seçiniz' : 'Select type'}</option>
                 <option value="Office">{tr ? 'Ofis' : 'Office'}</option>
@@ -230,7 +230,7 @@ export default function FacilitySettings({ language }) {
                 value={city}
                 onChange={e => setCity(e.target.value)}
                 placeholder={tr ? 'İstanbul' : 'Istanbul'}
-                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#95A847] focus:outline-none"
+                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#51B291] focus:outline-none"
               />
             </div>
             <div>
@@ -242,7 +242,7 @@ export default function FacilitySettings({ language }) {
                 value={country}
                 onChange={e => setCountry(e.target.value)}
                 placeholder={tr ? 'Türkiye' : 'Turkey'}
-                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#95A847] focus:outline-none"
+                className="w-full rounded-xl border border-[#302817]/15 bg-white px-3 py-2.5 text-sm focus:border-[#51B291] focus:outline-none"
               />
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function FacilitySettings({ language }) {
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#5E6B2A] disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1a3a2e] disabled:opacity-60"
             >
               {saving ? (
                 <>
@@ -283,7 +283,7 @@ export default function FacilitySettings({ language }) {
       ) : (
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
-          className="flex items-center gap-2 rounded-xl border border-[#95A847] px-4 py-2.5 text-sm font-medium text-[#95A847] hover:bg-[#95A847]/8 transition"
+          className="flex items-center gap-2 rounded-xl border border-[#51B291] px-4 py-2.5 text-sm font-medium text-[#51B291] hover:bg-[#51B291]/8 transition"
         >
           <Plus className="h-4 w-4" />
           {tr ? 'Tesis Ekle' : 'Add Facility'}

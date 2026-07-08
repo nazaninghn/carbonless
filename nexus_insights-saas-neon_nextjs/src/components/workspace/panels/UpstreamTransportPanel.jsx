@@ -58,10 +58,10 @@ const DATA_SOURCES = [
 
 const INPUT_CLS =
   'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/25 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+  'placeholder:text-[#302817]/25 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
 const SELECT_CLS =
   'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+  'focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
 
 function SectionDivider({ children }) {
   return (
@@ -102,7 +102,7 @@ function ShipmentRow({ s, index, lang, onRemove }) {
         </p>
       </div>
       {kg !== null && (
-        <span className="shrink-0 text-[11px] font-bold text-[#75863B]">
+        <span className="shrink-0 text-[11px] font-bold text-[#244959]">
           {kg >= 1000 ? `${(kg/1000).toFixed(2)} tCO₂e` : `${kg.toFixed(0)} kgCO₂e`}
         </span>
       )}
@@ -347,7 +347,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
             {/* EF box */}
             {draftMode && (
               <div className="flex overflow-hidden rounded-xl border border-[#302817]/8">
-                <div className="w-[3px] shrink-0 bg-[#75863B]" />
+                <div className="w-[3px] shrink-0 bg-[#244959]" />
                 <div className="flex-1 bg-white px-3 py-2.5">
                   <p className="text-[9.5px] text-[#302817]/40 mb-0.5">GLEC Framework v3</p>
                   <p className="text-[13px] font-bold text-[#302817]">{draftMode.ef} kgCO₂e/tonne-km</p>
@@ -376,7 +376,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
             <button
               onClick={addShipment}
               disabled={!canAddDraft}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#302817]/12 py-2 text-xs font-bold text-[#302817]/40 transition hover:border-[#B4BE6A]/50 hover:bg-[#B4BE6A]/5 hover:text-[#302817] disabled:opacity-30"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#302817]/12 py-2 text-xs font-bold text-[#302817]/40 transition hover:border-[#89E789]/50 hover:bg-[#89E789]/5 hover:text-[#302817] disabled:opacity-30"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Sevkiyat Ekle' : 'Add Shipment'}
@@ -418,8 +418,8 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
         const previewKg  = totals.kgco2e + (canAddDraft && draftMode ? (draftTkm || 0) * draftMode.ef : 0);
         if (previewTkm === 0) return null;
         return (
-          <div className="rounded-xl bg-gradient-to-br from-[#95A847]/8 to-[#B4BE6A]/4 border border-[#B4BE6A]/20 px-4 py-3">
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#75863B] mb-1">
+          <div className="rounded-xl bg-gradient-to-br from-[#51B291]/8 to-[#89E789]/4 border border-[#89E789]/20 px-4 py-3">
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#244959] mb-1">
               {tr ? 'Toplam Kat.4 Emisyonu (GLEC v3)' : 'Total Cat.4 Emission (GLEC v3)'}
             </p>
             <div className="flex items-baseline gap-1.5 mb-0.5">
@@ -428,7 +428,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
                   ? (previewKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })
                   : previewKg.toLocaleString(undefined, { maximumFractionDigits: 1 })}
               </span>
-              <span className="text-xs font-semibold text-[#75863B]">
+              <span className="text-xs font-semibold text-[#244959]">
                 {previewKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
               </span>
             </div>
@@ -453,8 +453,8 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
         disabled={(!canSave && shipments.length === 0) || saving}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
-            ? 'bg-[#95A847]/15 border border-[#95A847]/30 text-[#527A1A]'
-            : 'bg-[#75863B] text-white hover:bg-[#5E6B2A] disabled:opacity-35'
+            ? 'bg-[#51B291]/15 border border-[#51B291]/30 text-[#527A1A]'
+            : 'bg-[#244959] text-white hover:bg-[#1a3a2e] disabled:opacity-35'
         }`}
       >
         {saving ? (

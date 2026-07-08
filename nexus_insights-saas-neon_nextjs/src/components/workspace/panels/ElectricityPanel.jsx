@@ -25,10 +25,10 @@ const DATA_SOURCE_OPTIONS = [
 
 const INPUT_CLS =
   'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/25 focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+  'placeholder:text-[#302817]/25 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
 const SELECT_CLS =
   'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'focus:border-[#B4BE6A]/50 focus:ring-2 focus:ring-[#B4BE6A]/12 transition-colors';
+  'focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
 
 function SectionDivider({ children }) {
   return (
@@ -285,7 +285,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
         {/* EF box — shown when factor is set */}
         {emissionFactor && parseFloat(emissionFactor) > 0 && (
           <div className="flex overflow-hidden rounded-xl border border-[#302817]/8">
-            <div className="w-[3px] shrink-0 bg-[#75863B]" />
+            <div className="w-[3px] shrink-0 bg-[#244959]" />
             <div className="flex-1 bg-[#F8F7F2] px-3 py-2.5">
               <p className="text-[9.5px] text-[#302817]/40 mb-0.5">
                 {emissionFactorSource || (tr ? 'Özel faktör' : 'Custom factor')}
@@ -293,7 +293,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
               <p className="text-[13px] font-bold text-[#302817]">
                 {parseFloat(emissionFactor).toFixed(3)} kgCO₂e/kWh
               </p>
-              <p className="text-[10px] text-[#75863B] mt-0.5">
+              <p className="text-[10px] text-[#244959] mt-0.5">
                 {tr ? 'Lokasyon bazlı' : 'Location-based'}
               </p>
             </div>
@@ -303,8 +303,8 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
 
       {/* Emission estimate */}
       {emissionKg !== null && (
-        <div className="rounded-xl bg-gradient-to-br from-[#95A847]/8 to-[#B4BE6A]/4 border border-[#B4BE6A]/20 px-4 py-3">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#75863B] mb-1">
+        <div className="rounded-xl bg-gradient-to-br from-[#51B291]/8 to-[#89E789]/4 border border-[#89E789]/20 px-4 py-3">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#244959] mb-1">
             {tr ? 'Tahmini Kapsam 2 Emisyonu' : 'Estimated Scope 2 Emission'}
           </p>
           {renewableOnSite && parseFloat(renewableOnSite) > 0 && (
@@ -320,7 +320,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
                 ? (emissionKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })
                 : emissionKg.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </span>
-            <span className="text-xs font-semibold text-[#75863B]">
+            <span className="text-xs font-semibold text-[#244959]">
               {emissionKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
             </span>
           </div>
@@ -343,8 +343,8 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
         disabled={!canSave || saving}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
-            ? 'bg-[#95A847]/15 border border-[#95A847]/30 text-[#527A1A]'
-            : 'bg-[#75863B] text-white hover:bg-[#5E6B2A] disabled:opacity-35'
+            ? 'bg-[#51B291]/15 border border-[#51B291]/30 text-[#527A1A]'
+            : 'bg-[#244959] text-white hover:bg-[#1a3a2e] disabled:opacity-35'
         }`}
       >
         {saving ? (
