@@ -536,16 +536,14 @@ def answer_question(request):
         session.completed_at = timezone.now()
         session.current_question = 'DONE'
 
-        # Trigger report generation and dashboard sync
+        # Generate report and sync dashboard
         try:
-            from companies.utils import get_current_company
-            company = get_current_company(request.user)
-            if company:
-                logger.info(f"Questionnaire completed for user {request.user.id}, company {company.id}")
-                # Note: Full report generation logic to be implemented in P3
-                # For now, just log completion so dashboard can query completed surveys
+            from .report_generator import generate_report_from_session
+            report = generate_report_from_session(session, request.user)
+            if report:
+                logger.info(f"Report generated for user {request.user.id}, report {report.id}")
         except Exception as e:
-            logger.warning(f"Report generation notification failed: {e}")
+            logger.warning(f"Report generation failed: {e}")
     else:
         session.current_question = result['next_question']
 
@@ -562,6 +560,24 @@ def answer_question(request):
         response['question'] = get_question(result['next_question'], lang)
     else:
         response['summary'] = session.answers
+        # Add report summary with results and dashboard link
+        try:
+            from .report_generator import build_report_summary, generate_report_from_session
+            from companies.utils import get_current_company
+            company = get_current_company(request.user)
+            if company:
+                report = generate_report_from_session(session, request.user)
+                if report:
+                    report_summary = build_report_summary(report, request.user)
+                    response['report_summary'] = report_summary
+                    response['report_id'] = report.id
+                    response['next_action'] = {
+                        'message': '✅ Questionnaire Complete! Ready to log emissions?',
+                        'action': 'open_chat',
+                        'link': '/app/chat'
+                    }
+        except Exception as e:
+            logger.warning(f"Report summary generation failed: {e}")
 
     return Response(response)
 
