@@ -462,11 +462,17 @@ class ReportStatusView(APIView):
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
-        completed_steps = list(report.steps.values_list('step_id', flat=True))
+        # ✅ Get all answers from completed steps
+        steps = report.steps.all().order_by('created_at')
+        answers = {step.step_id: step.answer for step in steps}
+        completed_steps = list(answers.keys())
+
         return Response({
             'report_id': report.id,
+            'title': report.title,
             'current_step': report.current_step,
             'status': report.status,
+            'answers': answers,  # ✅ Include all answers
             'company': {
                 'name': report.company.legal_entity_name,
                 'tax_id': report.company.tax_number,
