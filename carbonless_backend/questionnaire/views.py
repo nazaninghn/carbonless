@@ -478,24 +478,21 @@ class ReportListView(APIView):
 def start_session(request):
     from .flow import get_question
 
-    # Check if user explicitly wants to start a NEW session (ignore completed ones)
-    new_session = request.data.get('new', False)
+    # Resume incomplete session if it exists
+    existing_incomplete = QuestionnaireSession.objects.filter(user=request.user, is_complete=False).first()
+    if existing_incomplete:
+        lang = request.data.get('lang', 'tr')
+        q = get_question(existing_incomplete.current_question, lang)
+        return Response({
+            'session_id': existing_incomplete.pk,
+            'question': q,
+            'answers': existing_incomplete.answers,
+            'warnings': existing_incomplete.warnings,
+            'resumed': True,
+        })
 
-    if not new_session:
-        # Resume incomplete session if it exists
-        existing = QuestionnaireSession.objects.filter(user=request.user, is_complete=False).first()
-        if existing:
-            lang = request.data.get('lang', 'tr')
-            q = get_question(existing.current_question, lang)
-            return Response({
-                'session_id': existing.pk,
-                'question': q,
-                'answers': existing.answers,
-                'warnings': existing.warnings,
-                'resumed': True,
-            })
-
-    # Create new session (even if completed ones exist)
+    # No incomplete session exists — create brand new one
+    # (This handles both: first-time users AND users starting fresh after completion)
     session = QuestionnaireSession.objects.create(user=request.user)
     lang = request.data.get('lang', 'tr')
     q = get_question('S1', lang)
