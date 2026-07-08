@@ -8,6 +8,8 @@ import {
   HelpCircle, CheckCircle2, Menu, BarChart3,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+import SurveyNamingDialog from './SurveyNamingDialog';
+import CompletionReportCard from './CompletionReportCard';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Brain orb animations (injected once via <style> in FreeChatTab)
@@ -1829,6 +1831,31 @@ function QuestionnaireTab({ language, isVisible = true }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
+  // Survey naming and completion states
+  const [showNamingDialog, setShowNamingDialog] = useState(false);
+  const [currentUser, setCurrentUser] = useState('User');
+  const [currentDateTime, setCurrentDateTime] = useState('');
+  const [completedReport, setCompletedReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+
+  // Get current user on mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await api.getProfile();
+        const data = await res.json().catch(() => ({}));
+        if (data.user?.first_name) {
+          setCurrentUser(data.user.first_name);
+        } else if (data.user?.username) {
+          setCurrentUser(data.user.username);
+        }
+      } catch (e) {
+        console.warn('Could not fetch user:', e);
+      }
+    };
+    fetchUser();
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
@@ -1955,22 +1982,30 @@ function QuestionnaireTab({ language, isVisible = true }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]); // only language — not currentId/loopState, those use their own effects
 
-  // ── handleStart ────────────────────────────────────────────────────────────
-  const handleStart = useCallback(async () => {
-    // Ref guard: the Start button is disabled while loading (startLoading state),
-    // but React state updates are async — a rapid double-click can fire two
-    // concurrent requests before the first re-render disables the button.
+  // ── handleShowNamingDialog ────────────────────────────────────────────────
+  const handleShowNamingDialog = useCallback(() => {
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-US', {
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    }) + ' ' + now.toLocaleTimeString('en-US', {
+      hour: '2-digit', minute: '2-digit', hour12: false
+    });
+    setCurrentDateTime(dateStr);
+    setShowNamingDialog(true);
+  }, []);
+
+  // ── handleStartWithName ────────────────────────────────────────────────────
+  const handleStartWithName = useCallback(async (surveyName) => {
+    setShowNamingDialog(false);
+
     if (startingRef.current) return;
     startingRef.current = true;
     setStartLoading(true);
     setStartError('');
-    // Capture the effective starting question ID before any async setState calls
-    // (setState is async — reading currentId after setCurrentId still sees the old value)
+    setCompletedReport(null);
     let effectiveId = currentId;
     try {
-      // Auto-generate survey title with timestamp (e.g., "2026-07-08 14:23")
-      const now = new Date();
-      const title = `Survey — ${now.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+      const title = `${surveyName} — ${currentDateTime}`;
       const res = await api.startCarbonReport(title);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -2072,24 +2107,35 @@ function QuestionnaireTab({ language, isVisible = true }) {
   const advanceToQuestion = useCallback((nextId) => {
     if (!nextId) {
       setCompleted(true);
+
+      // Fetch completed report
+      if (reportId) {
+        setReportLoading(true);
+        api.getReportStatus(reportId)
+          .then(res => res.json())
+          .then(data => {
+            setCompletedReport(data);
+            setReportLoading(false);
+          })
+          .catch(e => {
+            console.error('Failed to fetch report:', e);
+            setCompletedReport({ status: 'completed' });
+            setReportLoading(false);
+          });
+      }
+
       setMessages(prev => {
-        // Strip stale type:'error' bubbles left over from old validation paths
-        // so they never accumulate between questions.
         const filtered = prev.filter(m => m.type !== 'error');
-        questionMsgLenRef.current = filtered.length + 1; // keep ref in sync for goBack from completion screen
+        questionMsgLenRef.current = filtered.length + 1;
         return [...filtered, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'info',
           content: tr
-            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.\n\nRaporunuzu görmek için aşağıdaki butona tıklayın.`
-            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.\n\nClick below to view your report.`,
+            ? `✅ تبریک! تمام سوالات تکمیل شدند. گزارش شما در زیر نمایش داده می‌شود.`
+            : `✅ Congratulations! All questions completed. Your report is displayed below.`,
         }];
       });
-      // Auto-navigate to reports after a short delay
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
-      }, 3000);
       return;
     }
     const nextQ = getQuestionById(nextId);
@@ -2558,26 +2604,34 @@ function QuestionnaireTab({ language, isVisible = true }) {
     setIsTyping(false);
     setResetConfirm(false);
     helpSessionRef.current = null; // clear help session so next help opens a fresh one
-    setReportId(null);             // prevent stale report ID from leaking into the new session
+    setReportId(null);
     setMessages([]);
+    setCompletedReport(null);
     questionMsgLenRef.current = 0;
     setAnswerValue(getInitialValue(getQuestionById(initId)));
-    // Return to welcome screen — handleStart will create a fresh backend report
-    // and assign a new reportId, so subsequent saves reach the correct session.
-    // Without this, reportId stays null and all post-reset answers are silently discarded.
     setStarted(false);
   }, []);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (!started) {
     return (
-      <QuestionnaireWelcome
-        onStart={handleStart}
-        loading={startLoading}
-        answeredCount={Object.keys(answers).length}
-        tr={tr}
-        error={startError}
-      />
+      <>
+        <QuestionnaireWelcome
+          onStart={handleShowNamingDialog}
+          loading={startLoading}
+          answeredCount={Object.keys(answers).length}
+          tr={tr}
+          error={startError}
+        />
+        <SurveyNamingDialog
+          isOpen={showNamingDialog}
+          onClose={() => setShowNamingDialog(false)}
+          onConfirm={handleStartWithName}
+          currentUser={currentUser}
+          currentDate={currentDateTime}
+          tr={tr}
+        />
+      </>
     );
   }
 
@@ -2736,6 +2790,24 @@ function QuestionnaireTab({ language, isVisible = true }) {
               </div>
             )}
           </div>
+
+          {/* Completion Report Card */}
+          {completed && (
+            <div className="mt-6">
+              <CompletionReportCard
+                report={completedReport}
+                loading={reportLoading}
+                tr={tr}
+                onStartNew={() => {
+                  resetFlow();
+                  handleShowNamingDialog();
+                }}
+                onViewFull={() => {
+                  window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Input bar */}
