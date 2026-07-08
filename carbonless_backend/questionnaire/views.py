@@ -560,24 +560,36 @@ def answer_question(request):
         response['question'] = get_question(result['next_question'], lang)
     else:
         response['summary'] = session.answers
-        # Add report summary with results and dashboard link
+        # Add report summary with results and dashboard link (ALWAYS try)
         try:
             from .report_generator import build_report_summary, generate_report_from_session
-            from companies.utils import get_current_company
-            company = get_current_company(request.user)
-            if company:
-                report = generate_report_from_session(session, request.user)
-                if report:
-                    report_summary = build_report_summary(report, request.user)
-                    response['report_summary'] = report_summary
+            report = generate_report_from_session(session, request.user)
+            if report:
+                report_summary = build_report_summary(report, request.user)
+                response['report_summary'] = report_summary
+                if isinstance(report, dict):
+                    response['report_id'] = report.get('id')
+                else:
                     response['report_id'] = report.id
-                    response['next_action'] = {
-                        'message': '✅ Questionnaire Complete! Ready to log emissions?',
-                        'action': 'open_chat',
-                        'link': '/app/chat'
-                    }
+                response['next_action'] = {
+                    'message': '✅ Questionnaire Complete!',
+                    'subtitle': 'Ready to log emissions via Chat?',
+                    'action': 'open_chat',
+                    'link': '/app/chat'
+                }
+                logger.info(f"Report generated for user {request.user.id}: {response['report_summary']}")
         except Exception as e:
-            logger.warning(f"Report summary generation failed: {e}")
+            logger.error(f"Report summary generation FAILED: {e}", exc_info=True)
+            # STILL provide minimal response even on error
+            response['report_summary'] = {
+                'status': 'Complete ✅',
+                'message': '✅ Questionnaire complete! You can now log emissions via Chat.'
+            }
+            response['next_action'] = {
+                'message': '✅ Questionnaire Complete!',
+                'action': 'open_chat',
+                'link': '/app/chat'
+            }
 
     return Response(response)
 
@@ -597,8 +609,22 @@ def get_sessions(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def reset_session(request):
-    QuestionnaireSession.objects.filter(user=request.user, is_complete=False).delete()
-    return Response({'status': 'ok'})
+    """Reset/delete current session (complete or incomplete) and start fresh."""
+    from .flow import get_question
+    # Delete ALL sessions (both incomplete and complete)
+    QuestionnaireSession.objects.filter(user=request.user).delete()
+
+    # Create brand new session
+    new_session = QuestionnaireSession.objects.create(user=request.user)
+    lang = request.data.get('lang', 'tr')
+    q = get_question('S1', lang)
+
+    return Response({
+        'status': 'reset_and_started',
+        'session_id': new_session.pk,
+        'question': q,
+        'message': 'Questionnaire reset. Starting fresh!'
+    })
 
 
 @api_view(['GET'])
