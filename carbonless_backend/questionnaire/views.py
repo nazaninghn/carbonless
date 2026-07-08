@@ -3,12 +3,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+import logging
 
 # Fix #28: Keep in sync with the frontend questions.js question count.
 # The previous value (96) was stale — questions.js defines 133 questions.
 # Centralising the constant here makes future updates a one-line change.
 TOTAL_QUESTIONS = 133
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 from companies.models import CompanyMembership
 from .models import CarbonReport, ReportStep, QuestionnaireSession
 from .serializers import (
@@ -395,6 +398,12 @@ class SubmitStepView(APIView):
             defaults={'answer': data if data else {}, 'is_skipped': False}
         )
         report.current_step = step
+
+        # Mark report as COMPLETED when final question (7B-INFO / done) is submitted
+        if step == '7B-INFO' and isinstance(data, dict) and data.get('answer') == 'done':
+            report.status = CarbonReport.Status.COMPLETED
+            logger.info(f"✅ Report {report.id} marked as COMPLETED (user {request.user.id})")
+
         report.save()
 
         # ── Phase 2: Auto-create EmissionEntry for consumption data steps ──

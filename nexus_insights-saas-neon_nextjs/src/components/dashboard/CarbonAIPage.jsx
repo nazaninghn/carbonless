@@ -1968,7 +1968,10 @@ function QuestionnaireTab({ language, isVisible = true }) {
     // (setState is async — reading currentId after setCurrentId still sees the old value)
     let effectiveId = currentId;
     try {
-      const res = await api.startCarbonReport();
+      // Auto-generate survey title with timestamp (e.g., "2026-07-08 14:23")
+      const now = new Date();
+      const title = `Survey — ${now.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })} ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+      const res = await api.startCarbonReport(title);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         // No company or other server error — guard against unmount during the await
