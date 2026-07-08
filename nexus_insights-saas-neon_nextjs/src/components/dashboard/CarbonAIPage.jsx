@@ -1837,6 +1837,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
   const [currentDateTime, setCurrentDateTime] = useState('');
   const [completedReport, setCompletedReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
+  // ✅ Edit mode: return to review after saving, not continue survey
+  const [editingQuestionId, setEditingQuestionId] = useState(null);
 
   // Get current user on mount
   useEffect(() => {
@@ -2409,6 +2411,15 @@ function QuestionnaireTab({ language, isVisible = true }) {
     // tiny gap where both guards are false simultaneously.
     isSubmittingRef.current = true;
     const saveRes = await saveStepToBackend(currentId, value, reportId);
+
+    // ✅ If in edit mode, just save and return to review (don't continue survey)
+    if (editingQuestionId && saveRes.success) {
+      setEditingQuestionId(null);
+      isSubmittingRef.current = false;
+      setIsTyping(false);
+      // Stay in completed view - user can re-review table
+      return;
+    }
 
     // ✅ Check if backend says survey is completed
     if (saveRes.success && (saveRes.data?.completed === true || saveRes.data?.next_step === null)) {
