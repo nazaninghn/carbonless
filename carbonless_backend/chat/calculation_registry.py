@@ -379,6 +379,7 @@ def get_next_question_field(family: str, draft: dict) -> str | None:
 
     for field in schema["required"]:
         if not draft.get(field):
+            logger.debug(f"[registry] Required field missing: {field}, returning it")
             return field
 
     # Vehicle distance special case:
@@ -386,6 +387,7 @@ def get_next_question_field(family: str, draft: dict) -> str | None:
     # It can mean total fleet distance OR per-vehicle distance.
     if family == "vehicle_distance":
         vehicle_count = draft.get("vehicle_count")
+        logger.debug(f"[registry] vehicle_distance: vehicle_count={vehicle_count}, distance_basis={draft.get('distance_basis')}")
 
         try:
             vehicle_count_num = int(vehicle_count or 0)
@@ -393,7 +395,12 @@ def get_next_question_field(family: str, draft: dict) -> str | None:
             vehicle_count_num = 0
 
         if vehicle_count_num > 1 and not draft.get("distance_basis"):
+            logger.debug(f"[registry] vehicle_count_num={vehicle_count_num} > 1: returning distance_basis")
             return "distance_basis"
+        elif vehicle_count_num > 1:
+            logger.debug(f"[registry] vehicle_count_num={vehicle_count_num} > 1 but distance_basis already set")
+        else:
+            logger.debug(f"[registry] vehicle_count_num={vehicle_count_num} <= 1: no distance_basis question")
 
     return None
 

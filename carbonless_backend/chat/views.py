@@ -557,31 +557,6 @@ def _handle_nlu_guided_reply(request, session, content):
 
 
 def _extract_vehicle_count_from_text(text):
-    """Extract vehicle count from user text as a fallback when NLU misses it."""
-    if not text:
-        return None
-
-    t = text.lower()
-
-    patterns = [
-        r'(?P<count>\d+)\s*(?:private\s*)?(?:car|cars|vehicle|vehicles|truck|trucks|van|vans)\b',
-        r'(?:car|cars|vehicle|vehicles|truck|trucks|van|vans)\s*[:=]?\s*(?P<count>\d+)\b',
-    ]
-
-    for pattern in patterns:
-        match = re.search(pattern, t)
-        if match:
-            try:
-                count = int(match.group("count"))
-                if count > 0:
-                    return count
-            except (TypeError, ValueError):
-                continue
-
-    return None
-
-
-def _extract_vehicle_count_from_text(text):
     """Fallback: extract vehicle count from raw text if NLU missed it."""
     if not text:
         return None
@@ -624,9 +599,12 @@ def _handle_groq_nlu_result(session, nlu_result, original_text=None):
     if not family:
         return None
 
+    logger.debug(f"[NLU] family={family}, original_text='{original_text}', nlu_vehicle_count={nlu_result.get('vehicle_count')}")
+
     # Fallback: extract vehicle_count from text if NLU missed it
     if family == 'vehicle_distance' and not normalized.get('vehicle_count'):
         extracted_count = _extract_vehicle_count_from_text(original_text)
+        logger.debug(f"[NLU] fallback extraction: vehicle_count={extracted_count}")
         if extracted_count:
             normalized['vehicle_count'] = extracted_count
 

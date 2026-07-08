@@ -54,7 +54,10 @@ Rules:
 Examples:
 
 User: "I drove 120 km in my petrol car"
-{"mode":"calculation","activity_family":"vehicle_distance","scope_hint":"1","activity_type":"passenger_vehicle","quantity":120,"unit":"km","fuel_type":"petrol","vehicle_type":"car","vehicle_count":null,"distance_basis":"per_vehicle","waste_method":null,"transport_mode":null,"flight_type":null,"commute_mode":null,"water_type":null,"material_type":null,"refrigerant_type":null,"missing_required":[],"ambiguous_fields":[],"confidence":0.95}
+{"mode":"calculation","activity_family":"vehicle_distance","scope_hint":"1","activity_type":"passenger_vehicle","quantity":120,"unit":"km","fuel_type":"petrol","vehicle_type":"car","vehicle_count":1,"distance_basis":"per_vehicle","waste_method":null,"transport_mode":null,"flight_type":null,"commute_mode":null,"water_type":null,"material_type":null,"refrigerant_type":null,"missing_required":[],"ambiguous_fields":[],"confidence":0.95}
+
+User: "i have 3 private cars and 4500 km"
+{"mode":"calculation","activity_family":"vehicle_distance","scope_hint":"1","activity_type":"passenger_vehicle","quantity":4500,"unit":"km","fuel_type":null,"vehicle_type":"car","vehicle_count":3,"distance_basis":null,"waste_method":null,"transport_mode":null,"flight_type":null,"commute_mode":null,"water_type":null,"material_type":null,"refrigerant_type":null,"missing_required":["fuel_type"],"ambiguous_fields":["distance_basis"],"confidence":0.92}
 
 User: "We used 5000 kWh of electricity last month"
 {"mode":"calculation","activity_family":"electricity","scope_hint":"2","activity_type":"grid_electricity","quantity":5000,"unit":"kWh","fuel_type":null,"vehicle_type":null,"vehicle_count":null,"distance_basis":null,"waste_method":null,"transport_mode":null,"flight_type":null,"commute_mode":null,"water_type":null,"material_type":null,"refrigerant_type":null,"missing_required":[],"ambiguous_fields":[],"confidence":0.97}
