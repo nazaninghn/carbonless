@@ -5,6 +5,7 @@ from .views import (
     ReportStatusView,
     ReportListView,
     SaveDraftView,
+    QuestionnairePDFView,
     get_report_summary,
     # legacy
     start_session,
@@ -30,6 +31,7 @@ urlpatterns = [
     path('<int:report_id>/', ReportStatusView.as_view()),
     path('<int:report_id>/step/', SubmitStepView.as_view()),
     path('<int:report_id>/draft/', SaveDraftView.as_view(), name='questionnaire-save-draft'),
+    path('<int:report_id>/pdf/', QuestionnairePDFView.as_view(), name='questionnaire-pdf'),
 
     # Workspace: ReportField data layer
     path('report-fields/map/', ReportFieldMapView.as_view()),

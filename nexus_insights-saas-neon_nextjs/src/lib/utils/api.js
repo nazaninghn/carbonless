@@ -246,6 +246,7 @@ export const api = {
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
+  downloadQuestionnairePdf: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/pdf/?lang=${lang}`),
   listReports: () => request('/questionnaire/'),
 
   // Chat sessions

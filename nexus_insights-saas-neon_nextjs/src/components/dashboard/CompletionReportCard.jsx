@@ -1,6 +1,8 @@
 'use client';
 
-import { FileText, Download, RotateCcw, CheckCircle2, Building2, AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Download, RotateCcw, CheckCircle2, Building2, AlertTriangle, Loader2 } from 'lucide-react';
+import { api } from '@/lib/utils/api';
 
 const EF_DATABASE_LABELS = {
   DEFRA: 'DEFRA 2023',
@@ -38,6 +40,35 @@ export default function CompletionReportCard({
   onStartNew,
   onViewFull
 }) {
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+
+  const handleDownloadPdf = async () => {
+    if (pdfLoading || !report?.report_id) return;
+    setPdfLoading(true);
+    setPdfError('');
+    try {
+      const res = await api.downloadQuestionnairePdf(report.report_id, tr ? 'tr' : 'en');
+      if (!res.ok) {
+        setPdfError(tr ? 'PDF oluşturulamadı.' : 'Could not generate PDF.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `carbon_inventory_profile_${report.report_id}_${tr ? 'tr' : 'en'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } catch {
+      setPdfError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl border border-[#89E789]/40 animate-pulse">
@@ -174,8 +205,22 @@ export default function CompletionReportCard({
         </div>
       )}
 
+      {pdfError && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs text-center">
+          {pdfError}
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 w-full">
+        <button
+          onClick={handleDownloadPdf}
+          disabled={pdfLoading}
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#5E7A2E] text-white font-semibold rounded-full hover:bg-[#4a6224] transition flex-1 disabled:opacity-50"
+        >
+          {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+          {pdfLoading ? (tr ? 'در حال آماده‌سازی...' : 'Preparing PDF...') : (tr ? 'دانلود گزارش PDF' : 'Download PDF Report')}
+        </button>
         <button
           onClick={onStartNew}
           className="flex items-center justify-center gap-2 px-6 py-3 bg-[#244959] text-white font-semibold rounded-full hover:bg-[#1a3a2e] transition flex-1"

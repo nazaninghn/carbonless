@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Play, Eye, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, Play, Eye, MoreVertical, Trash2, FileText, Loader2 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
 
@@ -20,6 +20,7 @@ export default function InventoryLibrary({ tr = false }) {
   const [surveyName, setSurveyName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [pdfDownloadingId, setPdfDownloadingId] = useState(null);
 
   // Load all inventories
   useEffect(() => {
@@ -83,6 +84,31 @@ export default function InventoryLibrary({ tr = false }) {
     } finally {
       setDeletingId(null);
       setConfirmDeleteId(null);
+    }
+  };
+
+  const handleDownloadPdf = async (reportId) => {
+    if (pdfDownloadingId) return;
+    setPdfDownloadingId(reportId);
+    try {
+      const res = await api.downloadQuestionnairePdf(reportId, tr ? 'tr' : 'en');
+      if (!res.ok) {
+        console.error('Failed to generate PDF:', res.status);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `carbon_inventory_profile_${reportId}_${tr ? 'tr' : 'en'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } catch (e) {
+      console.error('Failed to download PDF:', e);
+    } finally {
+      setPdfDownloadingId(null);
     }
   };
 
@@ -246,6 +272,16 @@ export default function InventoryLibrary({ tr = false }) {
                     </>
                   ) : (
                     <>
+                      <button
+                        onClick={() => handleDownloadPdf(report.report_id)}
+                        disabled={pdfDownloadingId === report.report_id}
+                        title={tr ? 'PDF دانلود کن' : 'Download PDF'}
+                        className="flex items-center justify-center h-9 w-9 text-[#244959]/40 hover:text-[#5E7A2E] hover:bg-[#5E7A2E]/10 rounded-full transition disabled:opacity-50"
+                      >
+                        {pdfDownloadingId === report.report_id
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <FileText className="w-4 h-4" />}
+                      </button>
                       <button
                         onClick={() => handleViewReport(report.report_id)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"

@@ -521,6 +521,38 @@ class ReportStatusView(APIView):
         return Response(status=204)
 
 
+class QuestionnairePDFView(APIView):
+    """GET /api/questionnaire/<report_id>/pdf/?lang=en|tr
+
+    Generates the qualitative Carbon Inventory Profile PDF from the
+    questionnaire's own answers (company profile, reporting framework,
+    boundaries, section coverage) — distinct from /emissions/report/, which
+    generates the quantified-emissions PDF from logged EmissionEntry rows.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        try:
+            report = CarbonReport.objects.select_related('company').get(
+                id=report_id, created_by=request.user
+            )
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        lang = request.query_params.get('lang', 'en')
+        try:
+            from .report_pdf import generate_questionnaire_report
+            pdf_bytes = generate_questionnaire_report(report, lang)
+        except Exception as e:
+            logger.error(f'Questionnaire PDF generation failed for report {report_id}: {e}', exc_info=True)
+            return Response({'error': f'PDF generation failed: {e}'}, status=500)
+
+        from django.http import HttpResponse
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="carbon_inventory_profile_{report_id}_{lang}.pdf"'
+        return response
+
+
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""
     permission_classes = [IsAuthenticated]
