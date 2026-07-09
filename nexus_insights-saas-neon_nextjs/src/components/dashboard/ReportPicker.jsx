@@ -23,13 +23,25 @@ export default function ReportPicker({
     setError('');
     try {
       const res = await api.listReports();
+      if (!res.ok) {
+        console.error('🔴 listReports HTTP error:', res.status);
+        setError(tr ? 'خطای بارگذاری' : 'Failed to load reports');
+        return;
+      }
       const data = await res.json().catch(() => ({}));
+      console.log('✅ Reports loaded:', data);
       if (data.reports) {
         setReports(data.reports);
+        console.log(`📊 Found ${data.reports.length} reports`);
+        const drafts = data.reports.filter(r => r.status === 'DRAFT' || r.status === 'IN_PROGRESS');
+        console.log(`📝 Drafts: ${drafts.length}`, drafts.map(r => ({ id: r.report_id, status: r.status, title: r.title })));
+      } else {
+        console.warn('⚠️ No reports in response:', data);
+        setError(tr ? 'داده‌ای یافت نشد' : 'No reports found');
       }
     } catch (e) {
       setError(tr ? 'خطای بارگذاری' : 'Failed to load reports');
-      console.error('Failed to load reports:', e);
+      console.error('🔴 Failed to load reports:', e);
     } finally {
       setLoading(false);
     }

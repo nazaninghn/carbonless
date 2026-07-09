@@ -1874,7 +1874,9 @@ function QuestionnaireTab({ language, isVisible = true }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && !reportId && !started) {
       const saved = localStorage.getItem('carboniq_reportId');
+      console.log('🔍 localStorage check:', { saved, reportId, started });
       if (saved) {
+        console.log('✅ Restoring reportId:', saved);
         setReportId(saved);
         setShowReportPicker(true);
       }
@@ -1885,15 +1887,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
 
-  // ✅ Auto-restore saved reportId on mount (if not already started)
-  useEffect(() => {
-    if (started || typeof window === 'undefined') return;
-    const saved = localStorage.getItem('carboniq_reportId');
-    if (saved && !reportId) {
-      setReportId(saved);
-      setShowReportPicker(true);
-    }
-  }, [started]);
+  // 🗑️ Removed duplicate - use only the first restore effect above
 
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
@@ -2033,6 +2027,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
   // ── handleContinueReport ──────────────────────────────────────────────────
   const handleContinueReport = useCallback(async (rid) => {
+    console.log('▶️ Continuing report:', rid);
     setShowReportPicker(false);
     if (startingRef.current) return;
     startingRef.current = true;
@@ -2040,15 +2035,25 @@ function QuestionnaireTab({ language, isVisible = true }) {
     setStartError('');
     try {
       const res = await api.getReportStatus(rid);
+      console.log('📡 getReportStatus response:', { ok: res.ok, status: res.status });
       if (!res.ok) {
+        console.error('❌ Failed to load report:', res.status);
         if (!isMounted.current) return;
         setStartError(tr ? 'Rapor yüklenemedi.' : 'Could not load report.');
         return;
       }
       const data = await res.json();
+      console.log('✅ Report loaded:', {
+        report_id: data.report_id,
+        current_step: data.current_step,
+        status: data.status,
+        answers_count: data.answers ? Object.keys(data.answers).length : 0,
+        progress: data.progress
+      });
 
       // Restore answers from backend
       if (data.answers && typeof data.answers === 'object') {
+        console.log('📝 Restoring answers:', Object.keys(data.answers).length, 'items');
         setAnswers(data.answers);
       }
 
@@ -2059,6 +2064,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
         localStorage.setItem('carboniq_reportId', rid);
       }
       const nextStep = data.current_step || getInitialQuestionId();
+      console.log('🎯 Starting at step:', nextStep);
       setCurrentId(nextStep);
 
       // Show welcome message
@@ -2125,7 +2131,13 @@ function QuestionnaireTab({ language, isVisible = true }) {
         return;
       }
       // Fix: backend returns report_id (not id)
+      console.log('📌 Survey started:', { report_id: data.report_id, resumed: data.resumed, current_step: data.current_step });
       setReportId(data.report_id);
+      // ✅ Save to localStorage immediately
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('carboniq_reportId', data.report_id);
+        console.log('💾 Saved to localStorage:', data.report_id);
+      }
       // If resuming an existing report, jump to where user left off
       if (data.resumed && data.current_step && data.current_step !== 'DONE') {
         effectiveId = data.current_step;
@@ -2787,8 +2799,10 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (!started) {
+    console.log('🔄 Render: !started. showReportPicker:', showReportPicker, 'reportId:', reportId);
     // Show ReportPicker first to let user choose: new, continue draft, or view completed
     if (showReportPicker) {
+      console.log('📋 Showing ReportPicker');
       return (
         <>
           <ReportPicker
