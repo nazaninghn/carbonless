@@ -11,6 +11,10 @@ import { api } from '@/lib/utils/api';
 import SurveyNamingDialog from './SurveyNamingDialog';
 import CompletionReportCard from './CompletionReportCard';
 import ReportPicker from './ReportPicker';
+import { InventoryProvider, useInventory } from './InventoryWorkflow';
+import InventoryLibrary from './InventoryLibrary';
+import ReviewPage from './ReviewPage';
+import SaveDraftModal from './SaveDraftModal';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Brain orb animations (injected once via <style> in FreeChatTab)
@@ -1799,7 +1803,48 @@ function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Questionnaire: Main Tab
+// Questionnaire: Workflow Wrapper (New Architecture)
+// ─────────────────────────────────────────────────────────────────────────────
+function QuestionnaireTabWithWorkflow({ language, isVisible = true }) {
+  return (
+    <InventoryProvider>
+      <QuestionnaireTabInner language={language} isVisible={isVisible} />
+    </InventoryProvider>
+  );
+}
+
+function QuestionnaireTabInner({ language, isVisible = true }) {
+  const {
+    mode,
+    activeInventoryId,
+    error: workflowError,
+    showSaveModal,
+    handleSaveModalResponse
+  } = useInventory();
+
+  const tr = language === 'tr';
+
+  // If in library mode, show InventoryLibrary
+  if (mode === 'library') {
+    return <InventoryLibrary tr={tr} />;
+  }
+
+  // If in review mode, show ReviewPage
+  if (mode === 'review') {
+    return <ReviewPage tr={tr} />;
+  }
+
+  // Otherwise (questionnaire mode), show the questionnaire
+  return (
+    <>
+      <QuestionnaireTab language={language} isVisible={isVisible} />
+      <SaveDraftModal tr={tr} />
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Questionnaire: Main Tab (Legacy - Questionnaire Flow Only)
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionnaireTab({ language, isVisible = true }) {
   const tr = language === 'tr';
@@ -4020,7 +4065,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
       {/* Content area */}
       <div className="flex flex-1 min-h-0 flex-col">
         <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'questionnaire' ? 'hidden' : ''}`}>
-          <QuestionnaireTab language={language} isVisible={isVisible} />
+          <QuestionnaireTabWithWorkflow language={language} isVisible={isVisible} />
         </div>
         {chatMounted && (
           <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`}>
