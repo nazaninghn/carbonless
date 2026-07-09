@@ -184,8 +184,8 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           </div>
         </div>
 
-        {/* AI Insights */}
-        <div className="rounded-[1.5rem] border border-[#302817]/80 bg-[#302817] p-5 shadow-[0_6px_20px_rgba(48,40,23,0.15)]">
+        {/* AI Insights — deep green (not brown/black) to stay on-theme with the carbon branding */}
+        <div className="rounded-[1.5rem] border border-[#1a3a2e]/80 bg-gradient-to-br from-[#1a3a2e] to-[#2d6235] p-5 shadow-[0_6px_20px_rgba(26,58,46,0.25)]">
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#89E789]">
               <Sparkles className="h-4 w-4" />
@@ -225,7 +225,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               {[
                 { label: 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#244959] to-[#51B291]' },
                 { label: 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#51B291] to-[#89E789]' },
-                { label: 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#302817] to-[#302817]/60' },
+                { label: 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#5E7A2E] to-[#89E789]' },
               ].map(s => (
                 <div key={s.label}>
                   <div className="mb-1.5 flex items-center justify-between">

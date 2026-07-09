@@ -3310,7 +3310,15 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // the callback (so stale non-null is never left after it fires), check
   // isMountedRef before calling scrollTo, and null in cleanup (was just clearing
   // without nulling, leaving a dangling non-null value in the ref).
+  //
+  // ✅ Skip entirely when there's no active session (EmptyState is showing).
+  // This effect used to fire on every mount regardless of activeId — with
+  // EmptyState's centered content plus the container's pb-48 bottom padding,
+  // scrollHeight was taller than the viewport, so this scrolled straight past
+  // the "Hi, there" greeting to the mostly-blank bottom on first open. The
+  // user always had to scroll back up manually to see the welcome screen.
   useEffect(() => {
+    if (!activeId) return;
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollTimerRef.current = setTimeout(() => {
       scrollTimerRef.current = null;
@@ -3318,7 +3326,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, 50);
     return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
-  }, [messages, sending]);
+  }, [messages, sending, activeId]);
 
   useEffect(() => {
     // Sessions are language-independent — load only once on mount.
@@ -3706,7 +3714,10 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           </div>
         )}
 
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 pb-48 sm:px-6 sm:py-5 sm:pb-48">
+        {/* pb-48 reserves breathing room above the fixed input bar for a scrolled
+            message list — not needed (and actively harmful, see effect above)
+            when EmptyState is centering itself in the full available height. */}
+        <div ref={scrollRef} className={`flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5 ${activeId ? 'pb-48 sm:pb-48' : ''}`}>
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
           ) : loadingMessages ? (

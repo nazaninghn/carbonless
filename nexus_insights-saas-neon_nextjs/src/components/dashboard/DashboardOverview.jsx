@@ -134,7 +134,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
                 className={`absolute inset-x-0 bottom-0 rounded-t-md transition-all duration-500 ${
                   hasData
                     ? isCur
-                      ? 'bg-gradient-to-t from-[#302817] to-[#302817]/70'
+                      ? 'bg-gradient-to-t from-[#24503b] to-[#53A67F]'
                       : isHovered
                       ? 'bg-gradient-to-t from-[#3d8564] to-[#C9C858]'
                       : 'bg-gradient-to-t from-[#3d8564] to-[#53A67F]'
@@ -737,7 +737,7 @@ export default function DashboardOverview({
       </div>
 
       {/* â”€â”€ UPGRADE BANNER (WF-03 "Pro'ya GeÃ§") â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#53A67F]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-5 py-4 sm:flex-row sm:gap-4">
+      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#53A67F]/25 bg-gradient-to-r from-[#1f4030] to-[#3d8564] px-5 py-4 sm:flex-row sm:gap-4">
         <div className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#53A67F]/20">
             <Sparkles className="h-4 w-4 text-[#C9C858]" />
