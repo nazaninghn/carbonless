@@ -467,7 +467,8 @@ class ReportStatusView(APIView):
 
         try:
             # ✅ Get all answers from completed steps
-            steps = report.steps.all().order_by('created_at')
+            # Note: ReportStep has no created_at field — only completed_at
+            steps = report.steps.all().order_by('completed_at')
             answers = {}
             for step in steps:
                 try:
