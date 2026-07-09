@@ -258,6 +258,7 @@ class StartReportView(APIView):
         # If force_new is passed, skip resume and always create new
         force_new = request.data.get('force_new', False)
         title = (request.data.get('title') or '').strip()
+        logger.info(f'🔵 StartReportView: force_new={force_new}, title_received="{title[:50]}" (len={len(title)})')
 
         if not force_new:
             existing = CarbonReport.objects.filter(
