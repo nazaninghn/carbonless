@@ -2666,7 +2666,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
   // ── jumpToQuestion ─────────────────────────────────────────────────────────
   // Called when the user clicks "Edit" in a BlockSummaryTable row.
-  // Restores the conversation to the state just before that question was answered.
+  // Enter edit mode WITHOUT hiding the block summary — user stays in review UI.
   const jumpToQuestion = useCallback((qId) => {
     const histIdx = history.findIndex(h => (typeof h === 'object' ? h.id : h) === qId);
     if (histIdx === -1) return;
@@ -2676,7 +2676,7 @@ function QuestionnaireTab({ language, isVisible = true }) {
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     isSubmittingRef.current = false;
     setIsTyping(false);
-    setBlockSummaryState(null);
+    // ✅ KEEP blockSummaryState — don't disappear the review table!
     setHistory(history.slice(0, histIdx));
     setCurrentId(qId);
     setEditingQuestionId(qId);
@@ -2966,8 +2966,8 @@ function QuestionnaireTab({ language, isVisible = true }) {
           )}
         </div>
 
-        {/* Input bar */}
-        {!completed && !blockSummaryState && (
+        {/* Input bar — shown if no block summary OR in edit mode (editingQuestionId set) */}
+        {!completed && (!blockSummaryState || editingQuestionId) && (
           <div className="shrink-0 border-t border-[#244959]/6 px-4 py-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
               <div className="flex flex-col gap-2">
