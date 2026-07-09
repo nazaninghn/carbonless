@@ -47,8 +47,8 @@ export default function ReportPicker({
     }
   };
 
-  const drafts = reports.filter(r => r.status === 'DRAFT' || r.status === 'IN_PROGRESS');
-  const completed = reports.filter(r => r.status === 'COMPLETED');
+  const drafts = reports.filter(r => r.status === 'draft' || r.status === 'in_progress');
+  const completed = reports.filter(r => r.status === 'completed');
 
   if (loading) {
     return (
