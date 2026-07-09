@@ -860,7 +860,10 @@ def generate_report(user, year, lang='tr'):
     E.append(Paragraph('9. ' + ('AI Analizi ve \u00d6neriler' if tr else 'AI Analysis & Recommendations'), S['h1']))
     insight_marker = {'warning': '\u26a0', 'neutral': '\u25cb', 'info': '\u25cf'}
     for text, kind in ai_insights:
-        E.append(Paragraph(f'{insight_marker.get(kind, "\u25cf")}  {text}', S['body']))
+        # Marker resolved to a plain variable before the f-string \u2014 Python < 3.12
+        # rejects a backslash/unicode-escape inside an f-string expression part.
+        marker = insight_marker.get(kind, '\u25cf')
+        E.append(Paragraph(f'{marker}  {text}', S['body']))
         E.append(Spacer(1, 2*mm))
     E.append(Spacer(1, 10*mm))
 
