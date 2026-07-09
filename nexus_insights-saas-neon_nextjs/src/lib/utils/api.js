@@ -245,6 +245,7 @@ export const api = {
     body: JSON.stringify(data),
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
+  deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
   listReports: () => request('/questionnaire/'),
 
   // Chat sessions

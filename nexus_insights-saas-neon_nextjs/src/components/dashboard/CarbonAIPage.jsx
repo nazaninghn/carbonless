@@ -1817,9 +1817,9 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
   const {
     mode,
     activeInventoryId,
-    error: workflowError,
-    showSaveModal,
-    handleSaveModalResponse
+    answers: workflowAnswers,
+    currentStep: workflowStep,
+    setDirty,
   } = useInventory();
 
   const tr = language === 'tr';
@@ -1834,10 +1834,21 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     return <ReviewPage tr={tr} />;
   }
 
-  // Otherwise (questionnaire mode), show the questionnaire
+  // Otherwise (questionnaire mode) — hydrate the legacy survey component
+  // directly with what InventoryWorkflow already resolved (Continue/New both
+  // go through the context first), so it starts the survey on the first
+  // render instead of re-discovering state via its own localStorage/picker.
   return (
     <>
-      <QuestionnaireTab language={language} isVisible={isVisible} />
+      <QuestionnaireTab
+        language={language}
+        isVisible={isVisible}
+        hydrated
+        initialReportId={activeInventoryId}
+        initialAnswers={workflowAnswers}
+        initialStep={workflowStep}
+        onDirtyChange={setDirty}
+      />
       <SaveDraftModal tr={tr} />
     </>
   );
@@ -1846,22 +1857,31 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Main Tab (Legacy - Questionnaire Flow Only)
 // ─────────────────────────────────────────────────────────────────────────────
-function QuestionnaireTab({ language, isVisible = true }) {
+// hydrated: when true, this instance was launched by the new InventoryWorkflow
+// with an already-resolved inventoryId/answers/step — skip the internal
+// library/welcome/localStorage-restore paths entirely and start the survey
+// directly. This is what makes "Continue" from InventoryLibrary a single click
+// instead of landing on this component's own (now-legacy) picker first.
+function QuestionnaireTab({
+  language, isVisible = true,
+  hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null,
+  onDirtyChange = null,
+}) {
   const tr = language === 'tr';
   const lang = language;
 
   // State
-  const [started, setStarted] = useState(false);
+  const [started, setStarted] = useState(() => hydrated && !!initialReportId);
   const [startLoading, setStartLoading] = useState(false);
   const [startError, setStartError] = useState('');
   const [showReportPicker, setShowReportPicker] = useState(false);
-  const [currentId, setCurrentId] = useState(() => getInitialQuestionId());
-  const [answers, setAnswers] = useState({});
+  const [currentId, setCurrentId] = useState(() => (hydrated && initialStep) || getInitialQuestionId());
+  const [answers, setAnswers] = useState(() => (hydrated && initialAnswers) || {});
   const [answerValue, setAnswerValue] = useState('');
   const [history, setHistory] = useState([]);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [reportId, setReportId] = useState(null);
+  const [reportId, setReportId] = useState(() => (hydrated && initialReportId) || null);
   const [completed, setCompleted] = useState(false);
   const [assumptions, setAssumptions] = useState([]);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -1915,13 +1935,15 @@ function QuestionnaireTab({ language, isVisible = true }) {
     }
   }, [reportId]);
 
-  // ✅ Restore reportId from localStorage on mount
+  // ✅ Restore reportId from localStorage on mount — skipped when hydrated by
+  // InventoryWorkflow, which already resolved reportId/answers/step explicitly.
+  // Without this guard, a hydrated mount would race this effect and briefly
+  // flash the legacy ReportPicker before snapping back to the survey.
   useEffect(() => {
+    if (hydrated) return;
     if (typeof window !== 'undefined' && !reportId && !started) {
       const saved = localStorage.getItem('carboniq_reportId');
-      console.log('🔍 localStorage check:', { saved, reportId, started });
       if (saved) {
-        console.log('✅ Restoring reportId:', saved);
         setReportId(saved);
         setShowReportPicker(true);
       }
@@ -1965,6 +1987,30 @@ function QuestionnaireTab({ language, isVisible = true }) {
   }, []);
 
   const currentQuestion = getQuestionById(currentId);
+
+  // ✅ Seed the initial chat bubble when hydrated by InventoryWorkflow.
+  // handleContinueReport (the old self-driven resume path) built this welcome
+  // message itself; a hydrated mount skips that path entirely (started=true
+  // from first render), so it must build its own resume bubble once here.
+  useEffect(() => {
+    if (!hydrated || !initialReportId) return;
+    const firstQ = getQuestionById(currentId);
+    if (!firstQ) return;
+    const welcomeMsg = {
+      id: 'welcome',
+      role: 'assistant',
+      content: tr
+        ? `Hoş geldin! Kaldığın yerden devam ediyorsun — Soru ${firstQ.number}:\n\n${firstQ.text?.tr || firstQ.text?.en}`
+        : `Welcome back! Resuming where you left off — Question ${firstQ.number}:\n\n${firstQ.text?.en}`,
+    };
+    if (firstQ.helper) {
+      welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
+    }
+    setMessages([welcomeMsg]);
+    questionMsgLenRef.current = 1;
+    setAnswerValue(normalizeAnswerValue(firstQ, answers[currentId]) ?? getInitialValue(firstQ));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Clear inline validation error whenever the user changes their answer.
   // This prevents stale "please fill in X" messages from lingering after

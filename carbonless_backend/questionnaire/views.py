@@ -510,6 +510,16 @@ class ReportStatusView(APIView):
             logger.error(f'Error in ReportStatusView: {e}', exc_info=True)
             return Response({'error': f'Server error: {str(e)}'}, status=500)
 
+    def delete(self, request, report_id):
+        """DELETE /api/questionnaire/<report_id>/ — remove a draft/completed inventory."""
+        try:
+            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        report.delete()
+        return Response(status=204)
+
 
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""

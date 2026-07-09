@@ -18,6 +18,8 @@ export default function InventoryLibrary({ tr = false }) {
   const [loadingReports, setLoadingReports] = useState(true);
   const [showNamingDialog, setShowNamingDialog] = useState(false);
   const [surveyName, setSurveyName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Load all inventories
   useEffect(() => {
@@ -67,6 +69,23 @@ export default function InventoryLibrary({ tr = false }) {
     }));
   };
 
+  const handleDelete = async (reportId) => {
+    setDeletingId(reportId);
+    try {
+      const res = await api.deleteReport(reportId);
+      if (!res.ok && res.status !== 204) {
+        console.error('Failed to delete inventory:', res.status);
+        return;
+      }
+      setReports(prev => prev.filter(r => r.report_id !== reportId));
+    } catch (e) {
+      console.error('Failed to delete inventory:', e);
+    } finally {
+      setDeletingId(null);
+      setConfirmDeleteId(null);
+    }
+  };
+
   const drafts = reports.filter(r => r.status === 'draft' || r.status === 'in_progress');
   const completed = reports.filter(r => r.status === 'completed');
 
@@ -79,6 +98,7 @@ export default function InventoryLibrary({ tr = false }) {
   }
 
   return (
+    <div className="w-full h-full min-h-0 overflow-y-auto">
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-[#244959] mb-2">
@@ -139,14 +159,44 @@ export default function InventoryLibrary({ tr = false }) {
                     <span>{tr ? 'به‌روزرسانی' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString()}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleContinue(report.report_id)}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"
-                  >
-                    <Play className="w-4 h-4" />
-                    {tr ? 'ادامه' : 'Continue'}
-                  </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {confirmDeleteId === report.report_id ? (
+                    <>
+                      <span className="text-xs font-bold text-red-500">
+                        {tr ? 'حذف شود؟' : 'Delete?'}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(report.report_id)}
+                        disabled={deletingId === report.report_id}
+                        className="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-full hover:bg-red-600 transition disabled:opacity-50"
+                      >
+                        {tr ? 'بله' : 'Yes'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="px-3 py-2 border border-[#244959]/15 text-xs font-bold text-[#244959]/60 rounded-full hover:bg-[#244959]/5 transition"
+                      >
+                        {tr ? 'نه' : 'No'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleContinue(report.report_id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"
+                      >
+                        <Play className="w-4 h-4" />
+                        {tr ? 'ادامه' : 'Continue'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(report.report_id)}
+                        title={tr ? 'حذف' : 'Delete'}
+                        className="flex items-center justify-center h-9 w-9 text-[#244959]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -174,13 +224,45 @@ export default function InventoryLibrary({ tr = false }) {
                     {report.reporting_year} • {tr ? 'تکمیل شده' : 'Completed'} {new Date(report.updated_at).toLocaleDateString()}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleViewReport(report.report_id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"
-                >
-                  <Eye className="w-4 h-4" />
-                  {tr ? 'مشاهده' : 'View'}
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                  {confirmDeleteId === report.report_id ? (
+                    <>
+                      <span className="text-xs font-bold text-red-500">
+                        {tr ? 'حذف شود؟' : 'Delete?'}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(report.report_id)}
+                        disabled={deletingId === report.report_id}
+                        className="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-full hover:bg-red-600 transition disabled:opacity-50"
+                      >
+                        {tr ? 'بله' : 'Yes'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="px-3 py-2 border border-[#244959]/15 text-xs font-bold text-[#244959]/60 rounded-full hover:bg-[#244959]/5 transition"
+                      >
+                        {tr ? 'نه' : 'No'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => handleViewReport(report.report_id)}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"
+                      >
+                        <Eye className="w-4 h-4" />
+                        {tr ? 'مشاهده' : 'View'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(report.report_id)}
+                        title={tr ? 'حذف' : 'Delete'}
+                        className="flex items-center justify-center h-9 w-9 text-[#244959]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -245,6 +327,7 @@ export default function InventoryLibrary({ tr = false }) {
           </div>
         </div>
       )}
+    </div>
     </div>
   );
 }
