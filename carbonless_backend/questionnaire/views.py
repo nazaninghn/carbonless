@@ -458,7 +458,9 @@ class ReportStatusView(APIView):
 
     def get(self, request, report_id):
         try:
-            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+            report = CarbonReport.objects.select_related('company').prefetch_related('steps').get(
+                id=report_id, created_by=request.user
+            )
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
