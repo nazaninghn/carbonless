@@ -492,6 +492,43 @@ class ReportStatusView(APIView):
         })
 
 
+class SaveDraftView(APIView):
+    """PATCH /api/questionnaire/<report_id>/draft/"""
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, report_id):
+        try:
+            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=404)
+
+        if report.status == CarbonReport.Status.COMPLETED:
+            return Response(
+                {'error': 'Completed report cannot be saved as draft'},
+                status=400
+            )
+
+        title = (request.data.get('title') or '').strip()
+        current_step = request.data.get('current_step')
+
+        if title:
+            report.title = title
+        if current_step:
+            report.current_step = current_step
+
+        report.status = CarbonReport.Status.IN_PROGRESS
+        report.save(update_fields=['title', 'current_step', 'status', 'updated_at'])
+
+        return Response({
+            'success': True,
+            'report_id': report.id,
+            'title': report.title,
+            'status': report.status,
+            'current_step': report.current_step,
+            'updated_at': report.updated_at,
+        })
+
+
 class ReportListView(APIView):
     """GET /api/questionnaire/"""
     permission_classes = [IsAuthenticated]
@@ -499,23 +536,31 @@ class ReportListView(APIView):
     def get(self, request):
         from companies.utils import get_current_company
         company = get_current_company(request.user)
-        # Fix #49: company was fetched but never used in the queryset — wasted DB
-        # query AND the filter returned reports from ALL companies the user ever
-        # created reports for.  Now scoped to the active company, matching every
-        # other company-aware view in the codebase.
         if not company:
             return Response({'reports': []})
-        reports = CarbonReport.objects.filter(company=company, created_by=request.user).select_related('company')
-        data = [{
-            'report_id': r.id,
-            'title': r.title or f'Report — {r.created_at.strftime("%Y-%m-%d")}',
-            'company': r.company.legal_entity_name,
-            'reporting_year': r.reporting_year,
-            'status': r.status,
-            'current_step': r.current_step,
-            'created_at': r.created_at,
-            'updated_at': r.updated_at,
-        } for r in reports]
+
+        reports = CarbonReport.objects.filter(
+            company=company, created_by=request.user
+        ).select_related('company').prefetch_related('steps').order_by('-updated_at')
+
+        data = []
+        for r in reports:
+            completed = r.steps.count()
+            data.append({
+                'report_id': r.id,
+                'title': r.title or f'Report — {r.created_at.strftime("%Y-%m-%d")}',
+                'company': r.company.legal_entity_name,
+                'reporting_year': r.reporting_year,
+                'status': r.status,
+                'current_step': r.current_step,
+                'created_at': r.created_at,
+                'updated_at': r.updated_at,
+                'progress': {
+                    'completed': completed,
+                    'total': TOTAL_QUESTIONS,
+                    'percent': round(completed / TOTAL_QUESTIONS * 100) if TOTAL_QUESTIONS > 0 else 0,
+                },
+            })
         return Response({'reports': data})
 
 

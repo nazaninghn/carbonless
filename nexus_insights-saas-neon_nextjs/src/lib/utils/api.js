@@ -240,6 +240,10 @@ export const api = {
     method: 'PATCH',
     body: JSON.stringify({ step, data }),
   }),
+  saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   listReports: () => request('/questionnaire/'),
 
