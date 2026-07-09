@@ -26,7 +26,7 @@ from reportlab.platypus import (
     HRFlowable, NextPageTemplate
 )
 from django.db.models import Sum
-from .models import EmissionEntry, CustomEmissionRequest
+from .models import EmissionEntry, CustomEmissionRequest, ReductionTarget
 try:
     from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
 except ImportError:
@@ -335,6 +335,78 @@ def generate_report(user, year, lang='tr'):
     entry_count = entries.count()
     total_t = total_kg / 1000
 
+    # ── Readiness / Compliance / AI Insights ──────────
+    # Mirrors ReportingTab.jsx's client-side `checks`/`compliance`/`InsightItem`
+    # logic exactly (same conditions, same data sources) so the PDF a user
+    # downloads matches what the Reporting tab shows on screen — these cards
+    # previously existed only in the UI and were absent from every export.
+    targets_qs = ReductionTarget.objects.filter(company=company) if company else ReductionTarget.objects.none()
+    targets_count = targets_qs.count()
+
+    from questionnaire.models import QuestionnaireSession, CarbonReport as _CarbonReport
+    questionnaire_complete = QuestionnaireSession.objects.filter(user=user, is_complete=True).exists()
+    if not questionnaire_complete and company:
+        questionnaire_complete = _CarbonReport.objects.filter(
+            company=company, status=_CarbonReport.Status.COMPLETED
+        ).exists()
+
+    readiness_checks = [
+        (questionnaire_complete, 'Anket tamamlandı' if tr else 'Questionnaire completed'),
+        (entry_count > 0, 'Emisyon verisi girildi' if tr else 'Emission data entered'),
+        (entry_count >= 5, 'Yeterli veri (5+ kayıt)' if tr else 'Sufficient data (5+ entries)'),
+        (total_kg > 0, 'Scope haritalama tamam' if tr else 'Scope mapping complete'),
+        (targets_count > 0, 'Azaltma hedefi belirlendi' if tr else 'Reduction target set'),
+    ]
+    readiness_pct = round(sum(1 for done, _ in readiness_checks if done) / len(readiness_checks) * 100)
+
+    # Mirrors frontend exactly: entries.some(e => e.proof_document)
+    has_evidence = entries.exclude(proof_document='').exclude(proof_document__isnull=True).exists()
+    compliance_checks = [
+        (entry_count > 0 and total_kg > 0, 'ISO 14064-1'),
+        (entry_count > 0 and total_kg > 0, 'GHG Protocol'),
+        (has_evidence, 'Kanıt eklendi' if tr else 'Evidence attached'),
+        (readiness_pct >= 80, 'Denetim hazır' if tr else 'Audit ready'),
+    ]
+
+    ai_insights = []
+    if total_kg > 0:
+        s1_pct = (s1 / total_kg * 100) if s1 > 0 else 0
+        ai_insights.append((
+            f"Scope 1 toplam emisyonun %{s1_pct:.0f}'ini oluşturuyor." if tr
+            else f"Scope 1 accounts for {s1_pct:.0f}% of total emissions.",
+            'info'
+        ))
+        if s2 > s1:
+            ai_insights.append((
+                'Elektrik tüketimi Scope 2\'de baskın.' if tr else 'Electricity consumption dominates Scope 2.',
+                'info'
+            ))
+        if entry_count < 10:
+            ai_insights.append((
+                'Daha fazla veri girişi rapor kalitesini artırır.' if tr else 'More data entries will improve report quality.',
+                'warning'
+            ))
+        if entries.filter(emission_factor__category__in=[
+            'transport', 'business_travel', 'employee_commuting', 'mobile_combustion'
+        ]).exists():
+            ai_insights.append((
+                'Ulaşım aktivitelerinde azaltma potansiyeli tespit edildi.' if tr
+                else 'Reduction potential detected in transport activities.',
+                'info'
+            ))
+        if s3 > s1 + s2:
+            ai_insights.append((
+                'Scope 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' if tr
+                else 'Scope 3 dominates — consider supply chain focused reductions.',
+                'info'
+            ))
+    else:
+        ai_insights.append((
+            'Veri girildikten sonra AI analizi burada görünecek.' if tr
+            else 'AI analysis will appear here after data entry.',
+            'neutral'
+        ))
+
     # ── Pre-computed bilingual labels (avoids \u in f-string expressions, Python < 3.12) ──
     _yr   = 'Raporlama Yılı' if tr else 'Reporting Year'
     _per  = 'Raporlama Dönemi' if tr else 'Reporting Period'
@@ -397,6 +469,8 @@ def generate_report(user, year, lang='tr'):
         ('5', 'Tesis Performans\u0131' if tr else 'Facility Performance'),
         ('6', 'Detayl\u0131 Kay\u0131tlar' if tr else 'Detailed Records'),
         ('7', 'Metodoloji ve Uyumluluk' if tr else 'Methodology & Compliance'),
+        ('8', 'Rapor Haz\u0131rl\u0131\u011f\u0131 ve Uyumluluk Durumu' if tr else 'Report Readiness & Compliance Status'),
+        ('9', 'AI Analizi ve \u00d6neriler' if tr else 'AI Analysis & Recommendations'),
     ]
     for num, title in toc_items:
         E.append(Paragraph(f'<font color="#{OLIVE_DARK.hexval()[2:]}">{num}.</font>  {title}', S['toc']))
@@ -725,7 +799,70 @@ def generate_report(user, year, lang='tr'):
             E.append(Paragraph(f'{i}. {s}', S['body_sm']))
     else:
         E.append(Paragraph('\u2014', S['body_sm']))
-    E.append(Spacer(1, 12*mm))
+    E.append(PageBreak())
+
+    # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+    # 8. REPORT READINESS & COMPLIANCE STATUS
+    # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+    E.append(Paragraph('8. ' + ('Rapor Haz\u0131rl\u0131\u011f\u0131 ve Uyumluluk Durumu' if tr else 'Report Readiness & Compliance Status'), S['h1']))
+
+    E.append(Paragraph('8.1 ' + ('Rapor Haz\u0131rl\u0131\u011f\u0131' if tr else 'Report Readiness') + f' \u2014 {readiness_pct}%', S['h2']))
+    readiness_tbl_rows = [['', 'Kontrol' if tr else 'Check']]
+    for done, label in readiness_checks:
+        readiness_tbl_rows.append(['\u2713' if done else '\u2014', label])
+    rt = Table(readiness_tbl_rows, colWidths=[10*mm, 130*mm])
+    rt.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), OLIVE_DARK),
+        ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
+        ('FONTNAME', (0, 0), (-1, 0), fnb),
+        ('FONTNAME', (0, 1), (-1, -1), fn),
+        ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('TEXTCOLOR', (0, 1), (0, -1), OLIVE_DARK),
+        ('FONTNAME', (0, 1), (0, -1), fnb),
+        ('GRID', (0, 0), (-1, -1), 0.25, GRAY_200),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [WHITE, GRAY_50]),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    E.append(rt)
+    E.append(Spacer(1, 8*mm))
+
+    E.append(Paragraph('8.2 ' + ('Uyumluluk Durumu' if tr else 'Compliance Status'), S['h2']))
+    compliance_tbl_rows = [['', 'Standart' if tr else 'Standard']]
+    for done, label in compliance_checks:
+        compliance_tbl_rows.append(['\u2713' if done else '\u2014', label])
+    ct2 = Table(compliance_tbl_rows, colWidths=[10*mm, 130*mm])
+    ct2.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), BRAND_DARK),
+        ('TEXTCOLOR', (0, 0), (-1, 0), WHITE),
+        ('FONTNAME', (0, 0), (-1, 0), fnb),
+        ('FONTNAME', (0, 1), (-1, -1), fn),
+        ('FONTSIZE', (0, 0), (-1, -1), 8.5),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('TEXTCOLOR', (0, 1), (0, -1), OLIVE_DARK),
+        ('FONTNAME', (0, 1), (0, -1), fnb),
+        ('GRID', (0, 0), (-1, -1), 0.25, GRAY_200),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [WHITE, GRAY_50]),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    E.append(ct2)
+    E.append(PageBreak())
+
+    # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+    # 9. AI ANALYSIS & RECOMMENDATIONS
+    # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
+    E.append(Paragraph('9. ' + ('AI Analizi ve \u00d6neriler' if tr else 'AI Analysis & Recommendations'), S['h1']))
+    insight_marker = {'warning': '\u26a0', 'neutral': '\u25cb', 'info': '\u25cf'}
+    for text, kind in ai_insights:
+        E.append(Paragraph(f'{insight_marker.get(kind, "\u25cf")}  {text}', S['body']))
+        E.append(Spacer(1, 2*mm))
+    E.append(Spacer(1, 10*mm))
 
     # Disclaimer
     E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=5*mm))

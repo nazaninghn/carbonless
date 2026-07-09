@@ -316,7 +316,6 @@ def countries_view(request):
 
 
 @api_view(['GET'])
-@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def generate_report_view(request):
     """Generate ISO 14064-1 PDF report"""
