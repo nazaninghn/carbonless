@@ -467,7 +467,13 @@ class ReportStatusView(APIView):
         try:
             # ✅ Get all answers from completed steps
             steps = report.steps.all().order_by('created_at')
-            answers = {step.step_id: step.answer for step in steps}
+            answers = {}
+            for step in steps:
+                try:
+                    answers[step.step_id] = step.answer
+                except Exception as e:
+                    logger.warning(f'Could not serialize step {step.step_id}: {e}')
+                    answers[step.step_id] = None
             completed_steps = list(answers.keys())
 
             # ✅ Safe company access
@@ -562,10 +568,10 @@ class ReportListView(APIView):
                 'title': r.title or f'Report — {r.created_at.strftime("%Y-%m-%d")}',
                 'company': r.company.legal_entity_name,
                 'reporting_year': r.reporting_year,
-                'status': r.status,
+                'status': str(r.status).lower(),  # ✅ Ensure lowercase
                 'current_step': r.current_step,
-                'created_at': r.created_at,
-                'updated_at': r.updated_at,
+                'created_at': r.created_at.isoformat() if r.created_at else None,
+                'updated_at': r.updated_at.isoformat() if r.updated_at else None,
                 'progress': {
                     'completed': completed,
                     'total': TOTAL_QUESTIONS,
