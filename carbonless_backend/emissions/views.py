@@ -170,13 +170,25 @@ def emission_summary(request):
     if session:
         questionnaire_profile = extract_profile(session)
 
-    # Also check CarbonReport completion (newer flow)
+    # Also check CarbonReport completion (newer 137-question flow). The legacy
+    # extract_profile() above returns period_type/base_year/report_language
+    # fields that CarbonReport has no equivalent for — rather than force-map
+    # mismatched fields, this fallback exposes CarbonReport's own fields
+    # directly so ReportingTab can render real data instead of '-' placeholders.
     if not questionnaire_profile and company:
         completed_report = CarbonReport.objects.filter(
             company=company, status=CarbonReport.Status.COMPLETED
-        ).first()
+        ).order_by('-updated_at').first()
         if completed_report:
-            questionnaire_profile = {'is_complete': True, 'report_id': completed_report.id}
+            questionnaire_profile = {
+                'is_complete': True,
+                'report_id': completed_report.id,
+                'title': completed_report.title,
+                'reporting_year': completed_report.reporting_year,
+                'ef_database': completed_report.ef_database,
+                'boundary_approach': completed_report.boundary_approach,
+                'scope3_approach': completed_report.scope3_approach,
+            }
 
     # Custom emission requests (approved)
     custom_approved = CustomEmissionRequest.objects.filter(

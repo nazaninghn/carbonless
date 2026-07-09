@@ -323,7 +323,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
       </div>
 
-      {/* ─── Inventory Config (if questionnaire complete) ─── */}
+      {/* ─── Inventory Config (if questionnaire complete) ───
+           questionnaireProfile has two possible shapes depending on which flow
+           completed it: the legacy QuestionnaireSession (period_type/base_year/
+           report_language) or the newer 137-question CarbonReport flow
+           (reporting_year/ef_database/boundary_approach/scope3_approach).
+           Render whichever shape is present instead of forcing legacy field
+           names onto CarbonReport data — that previously showed all '-'. */}
       {questionnaireProfile?.is_complete && (
         <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
@@ -331,13 +337,25 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               <FileText className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Envanter Yapılandırması' : 'Inventory Configuration'}</h2>
+            {questionnaireProfile.title && (
+              <span className="ml-auto text-xs font-semibold text-[#302817]/40 truncate max-w-[45%]">{questionnaireProfile.title}</span>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            <ConfigItem label={tr ? 'Dönem' : 'Period'} value={questionnaireProfile.period_type === 'calendar_year' ? `${tr ? 'Takvim' : 'Calendar'} ${questionnaireProfile.period_year || ''}` : questionnaireProfile.period_type} />
-            <ConfigItem label={tr ? 'Baz Yıl' : 'Base Year'} value={questionnaireProfile.has_base_year ? questionnaireProfile.base_year : '-'} />
-            <ConfigItem label={tr ? 'Faktör Kaynağı' : 'Factor Source'} value={questionnaireProfile.preferred_factor_source || '-'} />
-            <ConfigItem label={tr ? 'Rapor Dili' : 'Report Language'} value={questionnaireProfile.report_language || '-'} />
-          </div>
+          {questionnaireProfile.reporting_year !== undefined ? (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              <ConfigItem label={tr ? 'Raporlama Yılı' : 'Reporting Year'} value={questionnaireProfile.reporting_year || '-'} />
+              <ConfigItem label={tr ? 'Faktör Kaynağı' : 'Factor Source'} value={questionnaireProfile.ef_database || '-'} />
+              <ConfigItem label={tr ? 'Organizasyon Sınırı' : 'Org. Boundary'} value={questionnaireProfile.boundary_approach || '-'} />
+              <ConfigItem label={tr ? 'Kapsam 3 Yaklaşımı' : 'Scope 3 Approach'} value={questionnaireProfile.scope3_approach || '-'} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+              <ConfigItem label={tr ? 'Dönem' : 'Period'} value={questionnaireProfile.period_type === 'calendar_year' ? `${tr ? 'Takvim' : 'Calendar'} ${questionnaireProfile.period_year || ''}` : questionnaireProfile.period_type} />
+              <ConfigItem label={tr ? 'Baz Yıl' : 'Base Year'} value={questionnaireProfile.has_base_year ? questionnaireProfile.base_year : '-'} />
+              <ConfigItem label={tr ? 'Faktör Kaynağı' : 'Factor Source'} value={questionnaireProfile.preferred_factor_source || '-'} />
+              <ConfigItem label={tr ? 'Rapor Dili' : 'Report Language'} value={questionnaireProfile.report_language || '-'} />
+            </div>
+          )}
         </div>
       )}
     </div>

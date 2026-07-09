@@ -1988,6 +1988,26 @@ function QuestionnaireTab({
 
   const currentQuestion = getQuestionById(currentId);
 
+  // ✅ Per-stage answer breakdown for the completion report — reuses the same
+  // CARBONIQ_STAGES grouping the ProgressSidebar already shows during the
+  // survey, so the finished-report view stays consistent with what the user
+  // saw while answering. completedReport.answers (backend, authoritative) is
+  // preferred over local `answers` state once available.
+  const completionStageBreakdown = useMemo(() => {
+    if (!completed) return [];
+    const src = completedReport?.answers || answers;
+    return CARBONIQ_STAGES.map(stage => {
+      const stageQuestions = CARBONIQ_QUESTIONS.filter(q => q.stage === stage.id && q.type !== 'info');
+      const answeredIds = stageQuestions.filter(q => q.id in src).map(q => q.id);
+      return {
+        id: stage.id,
+        title: stage.title,
+        answeredCount: answeredIds.length,
+        totalCount: stageQuestions.length,
+      };
+    });
+  }, [completed, completedReport, answers]);
+
   // ✅ Seed the initial chat bubble when hydrated by InventoryWorkflow.
   // handleContinueReport (the old self-driven resume path) built this welcome
   // message itself; a hydrated mount skips that path entirely (started=true
@@ -2716,19 +2736,32 @@ function QuestionnaireTab({
       }
 
       if (!nextId) {
+        // ✅ This branch fires when the client-side traversal (getNextQuestionId)
+        // reaches the end without the backend having already signalled
+        // completion (the saveRes.data?.completed check a few dozen lines up
+        // this same submitAnswer call). Previously this branch set
+        // completed=true but never fetched completedReport, and then force-
+        // navigated to the Reports tab after 3s regardless — so the user saw
+        // an empty/loading CompletionReportCard for a moment and then got
+        // yanked to a generic dashboard tab before they could read anything.
+        // Now it matches the other two completion paths: fetch the real
+        // report and let CompletionReportCard's own buttons drive navigation.
         setCompleted(true);
         setMessages(prev => [...prev, {
           id: `m-${++msgIdRef.current}`,
           role: 'assistant',
           type: 'info',
           content: tr
-            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.\n\nRaporunuzu görmek için aşağıdaki butona tıklayın.`
-            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.\n\nClick below to view your report.`,
+            ? `Tebrikler! Tüm sorular tamamlandı. Karbon envanteriniz başarıyla oluşturuldu.`
+            : `Congratulations! All questions completed. Your carbon inventory has been successfully created.`,
         }]);
-        // Auto-navigate to reports after a short delay
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
-        }, 3000);
+        if (reportId) {
+          setReportLoading(true);
+          api.getReportStatus(reportId)
+            .then(r => r.json())
+            .then(data => { setCompletedReport(data); setReportLoading(false); })
+            .catch(e => { console.error('Failed to fetch report:', e); setCompletedReport({ status: 'completed' }); setReportLoading(false); });
+        }
       } else {
         // Show a block-level summary table when crossing a block/stage boundary
         const currBlockId = getBlockId(q);
@@ -3098,6 +3131,8 @@ function QuestionnaireTab({
                 report={completedReport}
                 loading={reportLoading}
                 tr={tr}
+                stageBreakdown={completionStageBreakdown}
+                assumptions={assumptions}
                 onStartNew={() => {
                   resetFlow();
                   // ✅ Start NEW survey with force_new=true
