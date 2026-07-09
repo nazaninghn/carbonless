@@ -462,34 +462,43 @@ class ReportStatusView(APIView):
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
-        # ✅ Get all answers from completed steps
-        steps = report.steps.all().order_by('created_at')
-        answers = {step.step_id: step.answer for step in steps}
-        completed_steps = list(answers.keys())
+        try:
+            # ✅ Get all answers from completed steps
+            steps = report.steps.all().order_by('created_at')
+            answers = {step.step_id: step.answer for step in steps}
+            completed_steps = list(answers.keys())
 
-        return Response({
-            'report_id': report.id,
-            'title': report.title,
-            'current_step': report.current_step,
-            'status': report.status,
-            'answers': answers,  # ✅ Include all answers
-            'company': {
-                'name': report.company.legal_entity_name,
-                'tax_id': report.company.tax_number,
-                'country': report.company.country_of_headquarters,
-                'nace_code': report.company.nace_code,
-            },
-            'reporting_year': report.reporting_year,
-            'ef_database': report.ef_database,
-            'boundary_approach': report.boundary_approach,
-            'scope3_approach': report.scope3_approach,
-            'completed_steps': completed_steps,
-            'progress': {
-                'completed': len(completed_steps),
-                'total': TOTAL_QUESTIONS,
-                'percent': round(len(completed_steps) / TOTAL_QUESTIONS * 100)
-            }
-        })
+            # ✅ Safe company access
+            company_data = {}
+            if report.company:
+                company_data = {
+                    'name': report.company.legal_entity_name or 'Unknown',
+                    'tax_id': report.company.tax_number or '',
+                    'country': report.company.country_of_headquarters or '',
+                    'nace_code': report.company.nace_code or '',
+                }
+
+            return Response({
+                'report_id': report.id,
+                'title': report.title or f'Report {report.id}',
+                'current_step': report.current_step or 'A1',
+                'status': report.status,
+                'answers': answers,  # ✅ Include all answers
+                'company': company_data,
+                'reporting_year': report.reporting_year,
+                'ef_database': report.ef_database,
+                'boundary_approach': report.boundary_approach,
+                'scope3_approach': report.scope3_approach,
+                'completed_steps': completed_steps,
+                'progress': {
+                    'completed': len(completed_steps),
+                    'total': TOTAL_QUESTIONS,
+                    'percent': round(len(completed_steps) / TOTAL_QUESTIONS * 100) if TOTAL_QUESTIONS > 0 else 0,
+                }
+            })
+        except Exception as e:
+            logger.error(f'Error in ReportStatusView: {e}', exc_info=True)
+            return Response({'error': f'Server error: {str(e)}'}, status=500)
 
 
 class SaveDraftView(APIView):
