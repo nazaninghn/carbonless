@@ -1285,6 +1285,7 @@ function getBlockLabel(blockId, stageId) {
 }
 
 function getBlockAnsweredQuestions(blockId, answers) {
+  // ✅ Include ALL answered questions in block, even if conditionally shown
   return CARBONIQ_QUESTIONS.filter(
     q => getBlockId(q) === blockId && q.id in answers && q.type !== 'info',
   );
@@ -1860,9 +1861,39 @@ function QuestionnaireTab({ language, isVisible = true }) {
     fetchUser();
   }, []);
 
+  // ✅ Persist reportId to localStorage on change
+  useEffect(() => {
+    if (reportId) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('carboniq_reportId', reportId);
+      }
+    }
+  }, [reportId]);
+
+  // ✅ Restore reportId from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !reportId && !started) {
+      const saved = localStorage.getItem('carboniq_reportId');
+      if (saved) {
+        setReportId(saved);
+        setShowReportPicker(true);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
+
+  // ✅ Auto-restore saved reportId on mount (if not already started)
+  useEffect(() => {
+    if (started || typeof window === 'undefined') return;
+    const saved = localStorage.getItem('carboniq_reportId');
+    if (saved && !reportId) {
+      setReportId(saved);
+      setShowReportPicker(true);
+    }
+  }, [started]);
 
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
@@ -2023,6 +2054,10 @@ function QuestionnaireTab({ language, isVisible = true }) {
 
       // Set report ID and current step
       setReportId(rid);
+      // ✅ Save to localStorage so reload doesn't lose it
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('carboniq_reportId', rid);
+      }
       const nextStep = data.current_step || getInitialQuestionId();
       setCurrentId(nextStep);
 
@@ -2714,6 +2749,11 @@ function QuestionnaireTab({ language, isVisible = true }) {
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
     isSubmittingRef.current = false;
+
+    // ✅ Clear persisted reportId
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('carboniq_reportId');
+    }
 
     // Tell backend to reset the session so a new one can be created
     try {
