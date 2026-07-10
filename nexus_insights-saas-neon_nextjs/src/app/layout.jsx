@@ -3,7 +3,11 @@ import { Inter } from 'next/font/google';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
 
 const inter = Inter({
-  subsets: ['latin'],
+  // latin-ext is required for Turkish: ğ Ğ ş Ş ı İ live in Latin Extended-A
+  // (U+0100-017F). With only 'latin', those glyphs fell back to Arial/Segoe
+  // mid-word while ç/ö/ü (Latin-1, included in 'latin') stayed Inter —
+  // producing the unstable mixed-font look on every Turkish page.
+  subsets: ['latin', 'latin-ext'],
   weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
   variable: '--font-inter',
