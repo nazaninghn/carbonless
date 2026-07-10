@@ -3,14 +3,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 import {
-  Bot, Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
-  ClipboardList, AlertTriangle, RotateCcw, X, Paperclip, FileText,
+  Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
+  ClipboardList, RotateCcw, X, Paperclip, FileText,
   HelpCircle, CheckCircle2, Menu, BarChart3,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
-import SurveyNamingDialog from './SurveyNamingDialog';
 import CompletionReportCard from './CompletionReportCard';
-import ReportPicker from './ReportPicker';
 import { InventoryProvider, useInventory } from './InventoryWorkflow';
 import InventoryLibrary from './InventoryLibrary';
 import ReviewPage from './ReviewPage';
@@ -1716,93 +1714,6 @@ function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Questionnaire: Welcome Screen
-// ─────────────────────────────────────────────────────────────────────────────
-function QuestionnaireWelcome({ onStart, loading, answeredCount, tr, error }) {
-  const steps = tr ? [
-    { img: '/company-info.png', title: 'Şirket bilgileri', desc: 'Vergi numarası, sektör ve raporlama tercihleri' },
-    { img: '/scope12.png', title: 'Kapsam 1 ve 2', desc: 'Yakıt tüketimi ve elektrik kullanımı' },
-    { img: '/scope3.png', title: 'Kapsam 3', desc: 'Nakliye, iş seyahati ve tedarik zinciri' },
-    { img: '/report.png', title: 'Rapor', desc: 'ISO 14064-1 uyumlu karbon envanteri' },
-  ] : [
-    { img: '/company-info.png', title: 'Company info', desc: 'Tax ID, sector, and reporting preferences' },
-    { img: '/scope12.png', title: 'Scope 1 & 2', desc: 'Fuel consumption and electricity usage' },
-    { img: '/scope3.png', title: 'Scope 3', desc: 'Transport, business travel, and supply chain' },
-    { img: '/report.png', title: 'Report', desc: 'ISO 14064-1 compliant carbon inventory' },
-  ];
-
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-2 sm:py-4 overflow-y-auto">
-      <div className="w-full max-w-md flex flex-col items-center gap-2 sm:gap-4">
-
-        {/* Icon + title */}
-        <div className="flex flex-col items-center gap-1.5 sm:gap-2 text-center">
-          <div className="h-9 w-9 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl bg-[#244959] flex items-center justify-center shadow-sm">
-            <ClipboardList className="h-4.5 w-4.5 sm:h-6 sm:w-6 text-white" />
-          </div>
-          <div>
-            <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-widest text-[#244959]/60 mb-0.5">
-              {tr ? 'ISO 14064-1 · AI Destekli' : 'ISO 14064-1 · AI Guided'}
-            </p>
-            <h2 className="text-[16px] sm:text-[20px] font-bold text-[#1C2B0A] tracking-tight leading-tight">
-              {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
-            </h2>
-            <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[12px] text-[#244959]/50 max-w-xs mx-auto leading-snug">
-              {tr
-                ? `${TOTAL_QUESTIONS} soruluk yapılandırılmış akış. Her adımda AI asistanı yanınızda.`
-                : `${TOTAL_QUESTIONS}-question structured flow. AI guides you at every step.`}
-            </p>
-          </div>
-        </div>
-
-        {/* Steps */}
-        <div className="w-full flex flex-col gap-1 sm:gap-1.5">
-          {steps.map(({ img, title, desc }, idx) => (
-            <div key={idx} className="flex items-center gap-3 rounded-xl border border-[#244959]/8 bg-[#FAFAF8] px-3 py-1.5 sm:py-2.5">
-              <Image src={img} alt={title} width={28} height={28} className="h-6 w-6 sm:h-7 sm:w-7 shrink-0 object-contain" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] sm:text-[13px] font-semibold text-[#2C4010]">{title}</p>
-                <p className="text-[9px] sm:text-[11px] text-[#244959]/45 leading-snug">{desc}</p>
-              </div>
-              <span className="shrink-0 h-5 w-5 rounded-full bg-[#244959]/12 flex items-center justify-center text-[9px] font-bold text-[#244959]">
-                {idx + 1}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        {answeredCount > 0 && !error && (
-          <div className="w-full rounded-xl border border-[#89E789]/40 bg-[#F3F7E9] px-3 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold text-[#5E7A2E] text-center">
-            {tr
-              ? `${answeredCount} soru yanıtlandı — kaldığınız yerden devam edin.`
-              : `${answeredCount} questions answered — continue where you left off.`}
-          </div>
-        )}
-        {error && (
-          <div className="w-full max-w-sm rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold text-red-600 text-center">
-            {error}
-          </div>
-        )}
-
-        <button
-          onClick={onStart}
-          disabled={loading}
-          className="flex items-center gap-2 rounded-full bg-[#244959] px-6 sm:px-8 py-2.5 sm:py-3 text-[12px] sm:text-sm font-semibold text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-40"
-        >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {tr
-            ? (answeredCount > 0 ? 'Devam Et' : 'Envantere Başla')
-            : (answeredCount > 0 ? 'Continue Inventory' : 'Start Inventory')}
-        </button>
-        <p className="text-[9px] sm:text-[10px] text-[#244959]/30">
-          {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Workflow Wrapper (New Architecture)
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionnaireTabWithWorkflow({ language, isVisible = true }) {
@@ -1820,6 +1731,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     answers: workflowAnswers,
     currentStep: workflowStep,
     setDirty,
+    backToLibrary,
   } = useInventory();
 
   const tr = language === 'tr';
@@ -1848,6 +1760,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         initialAnswers={workflowAnswers}
         initialStep={workflowStep}
         onDirtyChange={setDirty}
+        onExitToLibrary={backToLibrary}
       />
       <SaveDraftModal tr={tr} />
     </>
@@ -1865,16 +1778,13 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 function QuestionnaireTab({
   language, isVisible = true,
   hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null,
-  onDirtyChange = null,
+  onDirtyChange = null, onExitToLibrary = null,
 }) {
   const tr = language === 'tr';
   const lang = language;
 
   // State
   const [started, setStarted] = useState(() => hydrated && !!initialReportId);
-  const [startLoading, setStartLoading] = useState(false);
-  const [startError, setStartError] = useState('');
-  const [showReportPicker, setShowReportPicker] = useState(false);
   const [currentId, setCurrentId] = useState(() => (hydrated && initialStep) || getInitialQuestionId());
   const [answers, setAnswers] = useState(() => (hydrated && initialAnswers) || {});
   const [answerValue, setAnswerValue] = useState('');
@@ -1899,62 +1809,18 @@ function QuestionnaireTab({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
-  // Survey naming and completion states
-  const [showNamingDialog, setShowNamingDialog] = useState(false);
-  const [currentUser, setCurrentUser] = useState('User');
-  const [currentDateTime, setCurrentDateTime] = useState('');
   const [completedReport, setCompletedReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   // ✅ Edit mode: return to review after saving, not continue survey
   const [editingQuestionId, setEditingQuestionId] = useState(null);
 
-  // Get current user on mount
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await api.getProfile();
-        const data = await res.json().catch(() => ({}));
-        if (data.user?.first_name) {
-          setCurrentUser(data.user.first_name);
-        } else if (data.user?.username) {
-          setCurrentUser(data.user.username);
-        }
-      } catch (e) {
-        console.warn('Could not fetch user:', e);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  // ✅ Persist reportId to localStorage on change
-  useEffect(() => {
-    if (reportId) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('carboniq_reportId', reportId);
-      }
-    }
-  }, [reportId]);
-
-  // ✅ Restore reportId from localStorage on mount — skipped when hydrated by
-  // InventoryWorkflow, which already resolved reportId/answers/step explicitly.
-  // Without this guard, a hydrated mount would race this effect and briefly
-  // flash the legacy ReportPicker before snapping back to the survey.
-  useEffect(() => {
-    if (hydrated) return;
-    if (typeof window !== 'undefined' && !reportId && !started) {
-      const saved = localStorage.getItem('carboniq_reportId');
-      if (saved) {
-        setReportId(saved);
-        setShowReportPicker(true);
-      }
-    }
-  }, []);
+  // reportId persistence/restore lives entirely in InventoryWorkflow.jsx now
+  // (localStorage key 'carboniq_activeInventoryId') — this component is always
+  // hydrated with an already-resolved reportId/answers/step from that context.
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
-
-  // 🗑️ Removed duplicate - use only the first restore effect above
 
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
@@ -2009,9 +1875,10 @@ function QuestionnaireTab({
   }, [completed, completedReport, answers]);
 
   // ✅ Seed the initial chat bubble when hydrated by InventoryWorkflow.
-  // handleContinueReport (the old self-driven resume path) built this welcome
-  // message itself; a hydrated mount skips that path entirely (started=true
-  // from first render), so it must build its own resume bubble once here.
+  // The old self-driven resume path (since removed) used to build this
+  // welcome message itself; a hydrated mount skips that path entirely
+  // (started=true from first render), so it must build its own resume
+  // bubble once here.
   useEffect(() => {
     if (!hydrated || !initialReportId) return;
     const firstQ = getQuestionById(currentId);
@@ -2121,181 +1988,6 @@ function QuestionnaireTab({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]); // only language — not currentId/loopState, those use their own effects
-
-  // ── handleShowNamingDialog ────────────────────────────────────────────────
-  const handleShowNamingDialog = useCallback((forceNew = true) => {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('en-US', {
-      year: 'numeric', month: '2-digit', day: '2-digit'
-    }) + ' ' + now.toLocaleTimeString('en-US', {
-      hour: '2-digit', minute: '2-digit', hour12: false
-    });
-    setCurrentDateTime(dateStr);
-    setShowNamingDialog(true);
-    // Store forceNew in a hidden state or use it directly in handleStartWithName
-    // For now we'll keep it simple — ReportPicker always calls with forceNew: true
-  }, []);
-
-  // ── handleContinueReport ──────────────────────────────────────────────────
-  const handleContinueReport = useCallback(async (rid) => {
-    console.log('▶️ Continuing report:', rid);
-    setShowReportPicker(false);
-    if (startingRef.current) return;
-    startingRef.current = true;
-    setStartLoading(true);
-    setStartError('');
-    try {
-      const res = await api.getReportStatus(rid);
-      console.log('📡 getReportStatus response:', { ok: res.ok, status: res.status });
-      if (!res.ok) {
-        console.error('❌ Failed to load report:', res.status);
-        if (!isMounted.current) return;
-        setStartError(tr ? 'Rapor yüklenemedi.' : 'Could not load report.');
-        return;
-      }
-      const data = await res.json();
-      console.log('✅ Report loaded:', {
-        report_id: data.report_id,
-        current_step: data.current_step,
-        status: data.status,
-        answers_count: data.answers ? Object.keys(data.answers).length : 0,
-        progress: data.progress
-      });
-
-      // Restore answers from backend
-      if (data.answers && typeof data.answers === 'object') {
-        console.log('📝 Restoring answers:', Object.keys(data.answers).length, 'items');
-        setAnswers(data.answers);
-      }
-
-      // Set report ID and current step
-      setReportId(rid);
-      // ✅ Save to localStorage so reload doesn't lose it
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('carboniq_reportId', rid);
-      }
-      const nextStep = data.current_step || getInitialQuestionId();
-      console.log('🎯 Starting at step:', nextStep);
-      setCurrentId(nextStep);
-
-      // Show welcome message
-      const firstQ = getQuestionById(nextStep);
-      const welcomeMsg = {
-        id: 'welcome',
-        role: 'assistant',
-        content: tr
-          ? `Hoş geldin! Kaldığın yerden devam ediyorsun — Soru ${firstQ?.number}:\n\n${firstQ?.text?.tr || firstQ?.text?.en}`
-          : `Welcome back! Resuming where you left off — Question ${firstQ?.number}:\n\n${firstQ?.text?.en}`,
-      };
-      if (firstQ?.helper) {
-        welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
-      }
-      setMessages([welcomeMsg]);
-      questionMsgLenRef.current = 1;
-      setAnswerValue(getInitialValue(firstQ));
-      setValidationError('');
-      setShowValidationError(false);
-      setSaveError('');
-      setStarted(true);
-    } catch {
-      if (!isMounted.current) return;
-      setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error.');
-    } finally {
-      if (isMounted.current) {
-        setStartLoading(false);
-        startingRef.current = false;
-      }
-    }
-  }, [lang, tr]);
-
-  // ── handleViewReport ──────────────────────────────────────────────────────
-  const handleViewReport = useCallback((rid) => {
-    setShowReportPicker(false);
-    // Dispatch navigate event to show Reports tab
-    window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting', reportId: rid } }));
-  }, []);
-
-  // ── handleStartWithName ────────────────────────────────────────────────────
-  const handleStartWithName = useCallback(async (surveyName, forceNew = true) => {
-    setShowNamingDialog(false);
-
-    if (startingRef.current) return;
-    startingRef.current = true;
-    setStartLoading(true);
-    setStartError('');
-    setCompletedReport(null);
-    let effectiveId = currentId;
-    try {
-      const title = `${surveyName} — ${currentDateTime}`;
-      // ✅ Use force_new=true for "Start New", false for "Continue"
-      const res = await api.startCarbonReport(title, forceNew);
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        // No company or other server error — guard against unmount during the await
-        if (!isMounted.current) return;
-        setStartError(
-          data.error ||
-          (tr
-            ? 'Rapor başlatılamadı. Lütfen önce Ayarlar bölümünden bir şirket oluşturun.'
-            : 'Could not start report. Please create a company first in Settings.')
-        );
-        return;
-      }
-      // Fix: backend returns report_id (not id)
-      console.log('📌 Survey started:', { report_id: data.report_id, resumed: data.resumed, current_step: data.current_step });
-      setReportId(data.report_id);
-      // ✅ Save to localStorage immediately
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('carboniq_reportId', data.report_id);
-        console.log('💾 Saved to localStorage:', data.report_id);
-      }
-      // If resuming an existing report, jump to where user left off
-      if (data.resumed && data.current_step && data.current_step !== 'DONE') {
-        effectiveId = data.current_step;
-        setCurrentId(data.current_step);
-      }
-
-      // Guard: component may have unmounted during the async call
-      if (!isMounted.current) return;
-
-      // Build welcome message using effectiveId — not the stale currentId from the closure
-      const firstQ = getQuestionById(effectiveId);
-      const isResume = effectiveId !== currentId;
-      const welcomeMsg = {
-        id: 'welcome',
-        role: 'assistant',
-        content: tr
-          ? `Merhaba! Ben CarbonIQ — ISO 14064-1 uyumlu karbon envanteri oluşturmanıza yardımcı olacağım. Size ${TOTAL_QUESTIONS} soru soracağım. İstediğiniz zaman geri dönebilirsiniz.\n\n${isResume ? `**Kaldığınız yer — Soru ${firstQ?.number}:**` : '**Soru 1:**'} ${firstQ?.text?.tr || firstQ?.text?.en}`
-          : `Hello! I'm CarbonIQ — I'll help you build an ISO 14064-1 compliant carbon inventory. I'll ask you ${TOTAL_QUESTIONS} questions. You can go back at any time.\n\n${isResume ? `**Resuming — Question ${firstQ?.number}:**` : '**Question 1:**'} ${firstQ?.text?.en}`,
-      };
-      if (firstQ?.helper) {
-        welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
-      }
-      setMessages([welcomeMsg]);
-      // The welcome message embeds Q1 — treat its length (1) as the "question shown" marker
-      // so that goBack() from Q2 correctly slices back to just the welcome message.
-      questionMsgLenRef.current = 1;
-      // Explicitly reset answer value and validation error for the effective question.
-      // If the user was already at effectiveId (e.g. navigated away without resetting),
-      // setCurrentId('A3') above is a no-op → useEffect([currentId]) never fires →
-      // stale answerValue and validationError from the previous attempt would persist.
-      // Resetting here guarantees a clean form regardless of whether currentId changed.
-      setAnswerValue(getInitialValue(firstQ));
-      setValidationError('');
-      setShowValidationError(false);
-      setSaveError('');
-      setStarted(true);
-    } catch {
-      if (!isMounted.current) return;
-      setStartError(tr ? 'Bağlantı hatası oluştu.' : 'Connection error. Please try again.');
-    } finally {
-      // Single exit point — replaces three scattered setStartLoading(false) calls.
-      if (isMounted.current) {
-        setStartLoading(false);
-        startingRef.current = false;
-      }
-    }
-  }, [currentId, tr, lang]);
 
   // ── saveStepToBackend ──────────────────────────────────────────────────────
   const saveStepToBackend = useCallback(async (questionId, value, rid) => {
@@ -2886,11 +2578,6 @@ function QuestionnaireTab({
     if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
     isSubmittingRef.current = false;
 
-    // ✅ Clear persisted reportId
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('carboniq_reportId');
-    }
-
     // Tell backend to reset the session so a new one can be created
     try {
       await api.resetQuestionnaire();
@@ -2919,52 +2606,24 @@ function QuestionnaireTab({
     questionMsgLenRef.current = 0;
     setAnswerValue(getInitialValue(getQuestionById(initId)));
     setStarted(false);
-  }, []);
+    // ✅ Hand control back to InventoryWorkflow — it owns picking/naming the
+    // next inventory now. Unmounts this component before the started=false
+    // update above could ever paint the (now-removed) internal picker.
+    onExitToLibrary?.();
+  }, [onExitToLibrary]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  // This component is only ever mounted hydrated (with started=true from the
+  // first render) — QuestionnaireTabInner routes through InventoryLibrary for
+  // picking/naming an inventory before this ever renders. !started should not
+  // happen in practice (resetFlow() below calls onExitToLibrary(), which
+  // unmounts this component via the parent's mode switch before a re-render
+  // with started=false could ever paint) — this is just a defensive fallback.
   if (!started) {
-    console.log('🔄 Render: !started. showReportPicker:', showReportPicker, 'reportId:', reportId);
-    // Show ReportPicker first to let user choose: new, continue draft, or view completed
-    if (showReportPicker) {
-      console.log('📋 Showing ReportPicker');
-      return (
-        <>
-          <ReportPicker
-            onStartNew={() => handleShowNamingDialog(true)}
-            onContinue={handleContinueReport}
-            onView={handleViewReport}
-            tr={tr}
-          />
-          <SurveyNamingDialog
-            isOpen={showNamingDialog}
-            onClose={() => setShowNamingDialog(false)}
-            onConfirm={handleStartWithName}
-            currentUser={currentUser}
-            currentDate={currentDateTime}
-            tr={tr}
-          />
-        </>
-      );
-    }
-
     return (
-      <>
-        <QuestionnaireWelcome
-          onStart={() => setShowReportPicker(true)}
-          loading={startLoading}
-          answeredCount={Object.keys(answers).length}
-          tr={tr}
-          error={startError}
-        />
-        <SurveyNamingDialog
-          isOpen={showNamingDialog}
-          onClose={() => setShowNamingDialog(false)}
-          onConfirm={handleStartWithName}
-          currentUser={currentUser}
-          currentDate={currentDateTime}
-          tr={tr}
-        />
-      </>
+      <div className="flex flex-1 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-[#244959]/30" />
+      </div>
     );
   }
 
@@ -3133,11 +2792,7 @@ function QuestionnaireTab({
                 tr={tr}
                 stageBreakdown={completionStageBreakdown}
                 assumptions={assumptions}
-                onStartNew={() => {
-                  resetFlow();
-                  // ✅ Start NEW survey with force_new=true
-                  handleShowNamingDialog();
-                }}
+                onStartNew={resetFlow}
                 onViewFull={() => {
                   window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
                 }}

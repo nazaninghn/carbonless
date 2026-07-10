@@ -34,7 +34,6 @@ export default function InventoryLibrary({ tr = false }) {
       const data = await res.json().catch(() => ({}));
       if (data.reports) {
         setReports(data.reports);
-        console.log('📋 Inventories loaded:', data.reports.length);
       }
     } catch (e) {
       console.error('Failed to load inventories:', e);
