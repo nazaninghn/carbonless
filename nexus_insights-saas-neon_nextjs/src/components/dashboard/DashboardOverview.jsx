@@ -23,11 +23,11 @@ import {
   MONTHS_EN as MONTHS_EN_SHORT,
 } from '@/lib/constants/emissions';
 
-// â”€â”€â”€ Full month names (only needed here for the detailed monthly breakdown) â”€â”€
-const MONTHS_TR_FULL = ['Ocak','Åžubat','Mart','Nisan','MayÄ±s','Haziran','Temmuz','AÄŸustos','EylÃ¼l','Ekim','KasÄ±m','AralÄ±k'];
+// ─── Full month names (only needed here for the detailed monthly breakdown) ──
+const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const MONTHS_EN_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-// â”€â”€â”€ SVG Donut Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── SVG Donut Chart ───────────────────────────────────────────────────────
 function DonutChart({ s1, s2, s3, total, tr }) {
   const R = 58, SW = 18;
   const C = 2 * Math.PI * R;
@@ -92,7 +92,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
   );
 }
 
-// â”€â”€â”€ Monthly Bar Chart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Monthly Bar Chart ─────────────────────────────────────────────────────
 function MonthlyChart({ monthly, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   // Memoized so the spread+map only runs when monthly data changes, not on every hover state update
@@ -102,7 +102,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
 
   if (!monthly || !monthly.some(m => m.total_kg > 0)) {
     return (
-      <EmptyState label={tr ? 'HenÃ¼z aylÄ±k veri yok' : 'No monthly data yet'} />
+      <EmptyState label={tr ? 'Henüz aylık veri yok' : 'No monthly data yet'} />
     );
   }
 
@@ -153,7 +153,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
   );
 }
 
-// â”€â”€â”€ Category Breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Category Breakdown ────────────────────────────────────────────────────
 function CategoryChart({ entries, tr }) {
   const data = useMemo(() => {
     const map = {};
@@ -195,7 +195,7 @@ function CategoryChart({ entries, tr }) {
   );
 }
 
-// â”€â”€â”€ Target Progress Ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Target Progress Ring ──────────────────────────────────────────────────
 function TargetRing({ target, currentTonne, tr }) {
   const R = 32, SW = 7;
   const C = 2 * Math.PI * R;
@@ -213,8 +213,8 @@ function TargetRing({ target, currentTonne, tr }) {
   const STATUS = {
     on_track:  { color: '#53A67F', bg: 'bg-[#53A67F]/12', text: 'text-[#3d8564]', label: { tr: 'Yolunda', en: 'On Track' } },
     off_track: { color: '#f59e0b', bg: 'bg-amber-100',    text: 'text-amber-700', label: { tr: 'Geride',  en: 'Off Track' } },
-    succeeded: { color: '#3d8564', bg: 'bg-[#3d8564]/12', text: 'text-[#3d8564]', label: { tr: 'BaÅŸarÄ±ldÄ±',en: 'Succeeded'} },
-    failed:    { color: '#ef4444', bg: 'bg-red-100',      text: 'text-red-600',   label: { tr: 'BaÅŸarÄ±sÄ±z',en: 'Failed' } },
+    succeeded: { color: '#3d8564', bg: 'bg-[#3d8564]/12', text: 'text-[#3d8564]', label: { tr: 'Başarıldı',en: 'Succeeded'} },
+    failed:    { color: '#ef4444', bg: 'bg-red-100',      text: 'text-red-600',   label: { tr: 'Başarısız',en: 'Failed' } },
   };
   const s = STATUS[target.status] ?? STATUS.on_track;
 
@@ -237,7 +237,7 @@ function TargetRing({ target, currentTonne, tr }) {
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-[13px] font-bold leading-none text-[#302817]">{(progress * 100).toFixed(0)}%</span>
-          <span className="text-[9px] font-semibold text-[#302817]/40">{tr ? 'tamamlandÄ±' : 'done'}</span>
+          <span className="text-[9px] font-semibold text-[#302817]/40">{tr ? 'tamamlandı' : 'done'}</span>
         </div>
       </div>
       {/* Info */}
@@ -255,7 +255,7 @@ function TargetRing({ target, currentTonne, tr }) {
   );
 }
 
-// â”€â”€â”€ Empty State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Empty State ───────────────────────────────────────────────────────────
 function EmptyState({ label }) {
   return (
     <div className="flex h-28 items-center justify-center rounded-xl bg-[#302817]/3">
@@ -264,7 +264,7 @@ function EmptyState({ label }) {
   );
 }
 
-// â”€â”€â”€ Chart Card wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Chart Card wrapper ────────────────────────────────────────────────────
 function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '', action }) {
   return (
     <section className={`flex flex-col rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5 ${className}`}>
@@ -283,7 +283,7 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
   );
 }
 
-// â”€â”€â”€ KPI Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── KPI Card ──────────────────────────────────────────────────────────────
 function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor }) {
   return (
     <div className={`relative rounded-[1.25rem] border p-3.5 sm:p-4 ${
@@ -312,7 +312,7 @@ function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor })
   );
 }
 
-// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Main Component ────────────────────────────────────────────────────────
 export default function DashboardOverview({
   language,
   selectedYear,
@@ -365,7 +365,7 @@ export default function DashboardOverview({
       <div className="space-y-4">
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#53A67F]">
-            {tr ? 'Karbon Ã§alÄ±ÅŸma alanÄ±' : 'Carbon workspace'}
+            {tr ? 'Karbon çalışma alanı' : 'Carbon workspace'}
           </p>
           <h1 className="mt-2 text-2xl font-black text-[#302817]">
             {tr ? 'Emisyon Profili' : 'Emission Profile'} Â· {selectedYear}
@@ -389,7 +389,7 @@ export default function DashboardOverview({
           </div>
         </div>
         <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <h2 className="text-sm font-bold text-[#302817]">{tr ? 'BaÅŸlangÄ±Ã§ Rehberi' : 'Getting Started'}</h2>
+          <h2 className="text-sm font-bold text-[#302817]">{tr ? 'Başlangıç Rehberi' : 'Getting Started'}</h2>
           <div className="mt-3 space-y-2">
             {[
               { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anketi tamamla' : 'Complete questionnaire' },
@@ -398,7 +398,7 @@ export default function DashboardOverview({
               { done: facilityList.length > 0, label: tr ? 'Tesis ekle' : 'Add facility' },
             ].map((s, i) => (
               <p key={i} className={`text-sm ${s.done ? 'text-[#53A67F] line-through' : 'text-[#302817]/70'}`}>
-                {s.done ? 'âœ“' : `${i+1}.`} {s.label}
+                {s.done ? '✓' : `${i+1}.`} {s.label}
               </p>
             ))}
           </div>
@@ -410,7 +410,7 @@ export default function DashboardOverview({
   return (
     <div className="space-y-3 sm:space-y-4">
 
-      {/* â”€â”€ EMPTY STATE  -  when no data yet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
       {entries.length === 0 && (
         <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 sm:p-12">
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
@@ -422,11 +422,11 @@ export default function DashboardOverview({
             {/* Text */}
             <div>
               <h2 className="text-[20px] font-bold text-[#1a1a1a]">
-                {tr ? 'HenÃ¼z emisyon verisi yok' : 'No emission data yet'}
+                {tr ? 'Henüz emisyon verisi yok' : 'No emission data yet'}
               </h2>
               <p className="mt-2 text-[14px] text-[#302817]/50 leading-relaxed max-w-md">
                 {tr
-                  ? 'Verilerinizi girmenin iki yolu var: AI ile konuÅŸarak (Ã¶nerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynÄ± yere kaydedilir.'
+                  ? 'Verilerinizi girmenin iki yolu var: AI ile konuşarak (önerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynı yere kaydedilir.'
                   : 'Two ways to enter your data: talk to AI (recommended) or manually from this panel. Both methods save to the same database.'}
               </p>
             </div>
@@ -438,23 +438,23 @@ export default function DashboardOverview({
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#53A67F] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
               >
                 <Sparkles className="h-4 w-4" />
-                {tr ? 'AI ile BaÅŸla' : 'Start with AI'}
+                {tr ? 'AI ile Başla' : 'Start with AI'}
               </button>
               <button
                 onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
                 className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-[#e8e8e0] bg-white px-5 py-3 text-[13px] font-semibold text-[#302817]/70 hover:border-[#302817]/25 transition"
               >
                 <Plus className="h-4 w-4" />
-                {tr ? 'Manuel GiriÅŸ' : 'Manual Entry'}
+                {tr ? 'Manuel Giriş' : 'Manual Entry'}
               </button>
             </div>
 
             {/* How it works */}
             <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
               {(tr ? [
-                { step: '1', title: 'Veri Girin', desc: 'AI\'a sÃ¶yleyin veya formdan girin' },
+                { step: '1', title: 'Veri Girin', desc: 'AI\'a söyleyin veya formdan girin' },
                 { step: '2', title: 'Otomatik Hesaplama', desc: 'ISO 14064-1 uyumlu hesap' },
-                { step: '3', title: 'Rapor AlÄ±n', desc: 'PDF veya Excel dÄ±ÅŸa aktarma' },
+                { step: '3', title: 'Rapor Alın', desc: 'PDF veya Excel dışa aktarma' },
               ] : [
                 { step: '1', title: 'Enter Data', desc: 'Tell AI or use the form' },
                 { step: '2', title: 'Auto Calculate', desc: 'ISO 14064-1 compliant' },
@@ -473,11 +473,11 @@ export default function DashboardOverview({
         </div>
       )}
 
-      {/* â”€â”€ SECTION HEADER (WF-03 style) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── SECTION HEADER (WF-03 style) ────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/35">
-            {selectedYear} {tr ? 'Ã-zet' : 'Summary'}
+            {selectedYear} {tr ? 'Özet' : 'Summary'}
           </p>
           <h1 className="mt-0.5 text-base font-bold text-[#302817] sm:text-[17px]">
             {tr ? 'Ana Dashboard' : 'Main Dashboard'}
@@ -506,19 +506,19 @@ export default function DashboardOverview({
           <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#53A67F]" />
           <p className="text-[11px] font-semibold leading-5 text-[#302817]/65">
             {tr
-              ? `Toplam ${totalTonne.toFixed(1)} tCO2e kaydedildi  -  en yÃ¼ksek ay ${MONTHS_TR_FULL[peakMonth]}. AylÄ±k ortalama ${avgTonne.toFixed(2)} tCO2e.`
+              ? `Toplam ${totalTonne.toFixed(1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO2e.`
               : `Total ${totalTonne.toFixed(1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO2e.`}
           </p>
         </div>
       )}
 
-      {/* â”€â”€ QUESTIONNAIRE BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── QUESTIONNAIRE BANNER ─────────────────────────────────────── */}
       {questionnaireProfile && !questionnaireProfile.is_complete && (
         <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
           <p className="text-xs font-semibold text-amber-800">
             {tr
-              ? 'Karbon envanteri anketi tamamlanmadÄ±  -  AI Carbon sekmesinden devam edin.'
+              ? 'Karbon envanteri anketi tamamlanmadı  -  AI Carbon sekmesinden devam edin.'
               : 'Carbon inventory questionnaire incomplete  -  continue from the AI Carbon tab.'}
           </p>
           <button
@@ -530,20 +530,20 @@ export default function DashboardOverview({
         </div>
       )}
 
-      {/* â”€â”€ KPI CARDS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── KPI CARDS ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCO2e" accent icon={Leaf} />
-        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO2e" subtitle={tr ? 'DoÄŸrudan' : 'Direct'} topColor="#3d8564" />
+        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#3d8564" />
         <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#53A67F" />
-        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO2e" subtitle={tr ? 'DolaylÄ±' : 'Indirect'} topColor="#C9C858" />
+        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#C9C858" />
       </div>
 
-      {/* â”€â”€ ROW 2: Monthly trend + Scope donut â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── ROW 2: Monthly trend + Scope donut ──────────────────────── */}
       <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-[1fr_300px]">
 
         {/* Monthly Trend */}
         <ChartCard
-          title={tr ? 'AylÄ±k Emisyon Trendi' : 'Monthly Emission Trend'}
+          title={tr ? 'Aylık Emisyon Trendi' : 'Monthly Emission Trend'}
           subtitle={String(selectedYear)}
           icon={TrendingDown}
           iconBg="bg-[#53A67F] text-white"
@@ -553,7 +553,7 @@ export default function DashboardOverview({
 
         {/* Scope Donut */}
         <ChartCard
-          title={tr ? 'Kapsam DaÄŸÄ±lÄ±mÄ±' : 'Scope Distribution'}
+          title={tr ? 'Kapsam Dağılımı' : 'Scope Distribution'}
           subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO2e` : undefined}
           icon={Layers}
           iconBg="bg-[#C9C858]/20 text-[#3d8564]"
@@ -568,13 +568,13 @@ export default function DashboardOverview({
         </ChartCard>
       </div>
 
-      {/* â”€â”€ ROW 3: Benchmark + Pending Actions + Targets (WF-03 3-col) â”€â”€ */}
+      {/* ── ROW 3: Benchmark + Pending Actions + Targets (WF-03 3-col) ── */}
       <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-3">
 
         {/* Benchmark mini (WF-03) */}
         <ChartCard
-          title={tr ? 'SektÃ¶r BenchmarkÄ±' : 'Sector Benchmark'}
-          subtitle={tr ? 'Anonim karÅŸÄ±laÅŸtÄ±rma' : 'Anonymous comparison'}
+          title={tr ? 'Sektör Benchmarkı' : 'Sector Benchmark'}
+          subtitle={tr ? 'Anonim karşılaştırma' : 'Anonymous comparison'}
           icon={BarChart2}
           iconBg="bg-[#53A67F]/15 text-[#53A67F]"
           action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Detay ->' : 'Detail ->'}</button>}
@@ -599,9 +599,9 @@ export default function DashboardOverview({
                 <div className="absolute top-0 h-full w-0.5 bg-amber-500/60" style={{ left: '60%' }} />
               </div>
               <div className="flex items-center justify-between text-[10px] text-[#302817]/45">
-                <span>{tr ? 'DÃ¼ÅŸÃ¼k' : 'Low'}</span>
-                <span className="font-semibold text-[#3d8564]">{tr ? 'OrtalamanÄ±n altÄ±ndasÄ±nÄ±z' : 'Below sector average'}</span>
-                <span>{tr ? 'YÃ¼ksek' : 'High'}</span>
+                <span>{tr ? 'Düşük' : 'Low'}</span>
+                <span className="font-semibold text-[#3d8564]">{tr ? 'Ortalamanın altındasınız' : 'Below sector average'}</span>
+                <span>{tr ? 'Yüksek' : 'High'}</span>
               </div>
               <button
                 onClick={() => setActiveTab('benchmark')}
@@ -613,7 +613,7 @@ export default function DashboardOverview({
             </div>
           ) : (
             <div className="flex h-20 flex-col items-center justify-center gap-1.5">
-              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince gÃ¶rÃ¼nÃ¼r' : 'Visible once data is entered'}</p>
+              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince görünür' : 'Visible once data is entered'}</p>
               <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#53A67F] hover:underline">{tr ? 'Veri ekle ->' : 'Add data ->'}</button>
             </div>
           )}
@@ -622,7 +622,7 @@ export default function DashboardOverview({
         {/* Pending Actions (WF-03) */}
         <ChartCard
           title={tr ? 'Bekleyen Aksiyonlar' : 'Pending Actions'}
-          subtitle={tr ? 'TamamlanmasÄ± gerekenler' : 'Items requiring attention'}
+          subtitle={tr ? 'Tamamlanması gerekenler' : 'Items requiring attention'}
           icon={AlertTriangle}
           iconBg="bg-amber-50 text-amber-500"
         >
@@ -631,7 +631,7 @@ export default function DashboardOverview({
               {
                 dot: 'bg-[#53A67F]',
                 done: !!questionnaireProfile?.is_complete,
-                tr: 'CarbonIQ anketi tamamlanmadÄ±',
+                tr: 'CarbonIQ anketi tamamlanmadı',
                 en: 'CarbonIQ questionnaire incomplete',
                 tab: 'ai_carbon',
               },
@@ -645,7 +645,7 @@ export default function DashboardOverview({
               {
                 dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#53A67F]',
                 done: targets.length > 0,
-                tr: 'AzaltÄ±m hedefi belirlenmedi',
+                tr: 'Azaltım hedefi belirlenmedi',
                 en: 'No reduction target set',
                 tab: 'reduction',
               },
@@ -673,7 +673,7 @@ export default function DashboardOverview({
             {[questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
                 <CheckCircle2 className="h-6 w-6 text-[#53A67F]" />
-                <p className="text-[11px] font-semibold text-[#302817]/50">{tr ? 'TÃ¼m aksiyonlar tamamlandÄ±' : 'All actions complete'}</p>
+                <p className="text-[11px] font-semibold text-[#302817]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
               </div>
             )}
           </div>
@@ -682,14 +682,14 @@ export default function DashboardOverview({
         {/* Targets (WF-03) */}
         <ChartCard
           title={tr ? 'Hedefler' : 'Targets'}
-          subtitle={tr ? 'AzaltÄ±m ilerleme durumu' : 'Reduction progress'}
+          subtitle={tr ? 'Azaltım ilerleme durumu' : 'Reduction progress'}
           icon={Target}
           iconBg="bg-[#C9C858]/20 text-[#3d8564]"
-          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'TÃ¼mÃ¼ ->' : 'All ->'}</button>}
+          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Tümü ->' : 'All ->'}</button>}
         >
           {targets.length === 0 ? (
             <div className="flex h-24 flex-col items-center justify-center gap-2">
-              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'HenÃ¼z hedef yok' : 'No targets yet'}</p>
+              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
               <button
                 onClick={() => setActiveTab('reduction')}
                 className="rounded-full border border-[#53A67F]/30 px-3 py-1 text-[11px] font-bold text-[#3d8564] transition hover:bg-[#53A67F]/8"
@@ -727,16 +727,16 @@ export default function DashboardOverview({
               <div className="flex items-center justify-between rounded-lg border border-[#302817]/8 bg-[#302817]/3 px-3 py-2">
                 <div className="flex items-center gap-1.5 text-[11px] text-[#302817]/45">
                   <Lock className="h-3 w-3" />
-                  <span>{tr ? 'HatÄ±rlatma bildirimleri  -  Pro' : 'Reminder notifications  -  Pro'}</span>
+                  <span>{tr ? 'Hatırlatma bildirimleri  -  Pro' : 'Reminder notifications  -  Pro'}</span>
                 </div>
-                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#53A67F] hover:underline">{tr ? 'YÃ¼kselt' : 'Upgrade'}</button>
+                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#53A67F] hover:underline">{tr ? 'Yükselt' : 'Upgrade'}</button>
               </div>
             </div>
           )}
         </ChartCard>
       </div>
 
-      {/* â”€â”€ UPGRADE BANNER (WF-03 "Pro'ya GeÃ§") â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* ── UPGRADE BANNER (WF-03 "Pro'ya Geç") ────────────────────── */}
       <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#53A67F]/25 bg-gradient-to-r from-[#1f4030] to-[#3d8564] px-5 py-4 sm:flex-row sm:gap-4">
         <div className="flex items-center gap-3">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#53A67F]/20">
@@ -744,11 +744,11 @@ export default function DashboardOverview({
           </span>
           <div>
             <p className="text-[13px] font-bold text-white">
-              {tr ? "Pro'ya geÃ§  -  tÃ¼m Ã¶zellikleri aÃ§" : "Upgrade to Pro  -  unlock everything"}
+              {tr ? "Pro'ya geç  -  tüm özellikleri aç" : "Upgrade to Pro  -  unlock everything"}
             </p>
             <p className="text-[11px] text-white/50">
               {tr
-                ? 'ISO 14064-1 raporlarÄ±, AI analitik, sÄ±nÄ±rsÄ±z tesis'
+                ? 'ISO 14064-1 raporları, AI analitik, sınırsız tesis'
                 : 'ISO 14064-1 reports, AI analytics, unlimited facilities'}
             </p>
           </div>
@@ -757,7 +757,7 @@ export default function DashboardOverview({
           onClick={() => setActiveTab('settings')}
           className="shrink-0 rounded-xl bg-[#53A67F] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#C9C858]"
         >
-          {tr ? "Pro'ya GeÃ§ ->" : "Upgrade to Pro ->"}
+          {tr ? "Pro'ya Geç ->" : "Upgrade to Pro ->"}
         </button>
       </div>
     </div>
