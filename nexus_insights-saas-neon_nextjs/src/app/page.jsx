@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets } from 'lucide-react';
@@ -20,13 +19,13 @@ const copy = {
     },
   },
   tr: {
-    nav: { home: 'Ana Sayfa', about: 'Hakkinda', features: 'Özellikler', ai: 'AI', login: 'Giris' },
+    nav: { home: 'Ana Sayfa', about: 'Hakkında', features: 'Özellikler', ai: 'AI', login: 'Giriş' },
     hero: {
       line1: 'AI destekli',
       highlight: 'karbon hesaplama',
       line2: 'platformunuz.',
       desc: '',
-      cta: 'Ücretsiz Baslayin',
+      cta: 'Ücretsiz Başlayın',
       demo: 'Demo Talep Et',
     },
   },
@@ -77,17 +76,6 @@ function ConnectionLines() {
 /* -- Page -- */
 export default function Home() {
   const { language: lang, changeLanguage } = useLanguage();
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const langMenuRef = useRef(null);
-
-  useEffect(() => {
-    if (!showLangMenu) return;
-    const onKey = e => { if (e.key === 'Escape') setShowLangMenu(false); };
-    const onClick = e => { if (langMenuRef.current && !langMenuRef.current.contains(e.target)) setShowLangMenu(false); };
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onClick);
-    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick); };
-  }, [showLangMenu]);
 
   const t = copy[lang] ?? copy['en'];
 
@@ -119,7 +107,7 @@ export default function Home() {
             {['home', 'about', 'ai'].map(key => (
               <a key={key} href={key === 'home' ? '/' : key === 'ai' ? '/dashboard/select' : `#${key}`}
                 className="px-3.5 py-1.5 rounded-full text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
-                {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkinda' : 'About') : 'AI'}
+                {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkında' : 'About') : 'AI'}
               </a>
             ))}
           </div>
@@ -128,33 +116,26 @@ export default function Home() {
           <div className="flex items-center gap-1 sm:gap-1.5 ml-auto sm:ml-2">
             <Link href="/login"
               className="hidden sm:block px-3 sm:px-3.5 py-1.5 rounded-full text-[12px] sm:text-[13px] font-medium text-[#302817]/60 hover:text-[#302817] hover:bg-[#f5f5f0] transition">
-              {lang === 'tr' ? 'Giris Yap' : 'Log In'}
+              {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
             </Link>
             <Link href="/register"
               className="px-2.5 sm:px-4 py-1.5 rounded-full bg-[#1a1a1a] text-[10px] sm:text-[12px] font-bold text-white hover:bg-[#333] transition whitespace-nowrap">
-              {lang === 'tr' ? 'Hesap Olustur' : 'Create Account'}
+              {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
             </Link>
           </div>
 
-          {/* Lang */}
-          <div className="relative ml-1 sm:ml-2 shrink-0" ref={langMenuRef}>
-            <button
-              onClick={() => setShowLangMenu(v => !v)}
-              className="px-2 sm:px-2.5 py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold text-[#302817]/50 hover:bg-[#f5f5f0] transition uppercase"
-            >
-              {lang}
-            </button>
-            {showLangMenu && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-32 overflow-hidden rounded-xl border border-[#e8e8e0] bg-white shadow-xl">
-                {['en', 'tr'].map(l => (
-                  <button key={l} onClick={() => { changeLanguage(l); setShowLangMenu(false); }}
-                    className={`flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold transition hover:bg-[#f9faf5] ${lang === l ? 'text-[#53A67F]' : 'text-[#302817]/60'}`}>
-                    {l === 'en' ? 'EN - English' : 'TR - Turkce'} {lang === l && '\u2713'}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Lang \u2014 direct EN<->TR toggle (same pattern as Header.jsx / SimpleHeader.jsx).
+              This was a dropdown, but the nav pill has overflow-hidden (needed for
+              the mobile squeeze), which clipped the absolutely-positioned menu into
+              invisibility \u2014 clicking the language button appeared to do nothing.
+              The label shows the language you'll switch TO. */}
+          <button
+            onClick={() => changeLanguage(lang === 'tr' ? 'en' : 'tr')}
+            aria-label={lang === 'tr' ? 'Switch to English' : 'T\u00fcrk\u00e7eye ge\u00e7'}
+            className="ml-1 sm:ml-2 shrink-0 px-2 sm:px-2.5 py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold text-[#302817]/50 hover:bg-[#f5f5f0] transition uppercase"
+          >
+            {lang === 'tr' ? 'EN' : 'TR'}
+          </button>
         </nav>
       </header>
 
@@ -238,16 +219,16 @@ export default function Home() {
               </h2>
               <p className="mt-4 sm:mt-5 text-[14px] sm:text-[15px] leading-[1.8] text-[#302817]/55 max-w-md">
                 {lang === 'tr'
-                  ? 'Tüm karbon hesaplama ihtiyaçlariniz için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalim, raporlayalim ve azaltma stratejileri önerelim.'
+                  ? 'Tüm karbon hesaplama ihtiyaçlarınız için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalım, raporlayalım ve azaltma stratejileri önerelim.'
                   : 'One AI for all your carbon needs. Tell us your emission data  -  we calculate, report, and suggest reduction strategies. Powered by CarbonIQ engine.'}
               </p>
 
               {/* Feature list */}
               <div className="mt-8 space-y-4">
                 {(lang === 'tr' ? [
-                  'AI destekli emisyon hesaplama ve siniflandirma',
-                  'ISO 14064-1 uyumlu otomatik rapor olusturma',
-                  'Dogal dil ile veri girisi  -  sadece konusun',
+                  'AI destekli emisyon hesaplama ve sınıflandırma',
+                  'ISO 14064-1 uyumlu otomatik rapor oluşturma',
+                  'Doğal dil ile veri girişi  -  sadece konuşun',
                   'Saniyeler içinde karbon ayak izi analizi',
                 ] : [
                   'AI-driven emission calculation and classification',
@@ -294,7 +275,7 @@ export default function Home() {
                     <Image src="/carbon-hero.png" alt="CarbonIQ AI" width={200} height={200} className="h-32 w-32 object-contain mb-4" />
                     <p className="text-[11px] text-[#302817]/40 mb-1">Hi, there</p>
                     <p className="text-[16px] font-bold text-[#1a1a1a]">
-                      {lang === 'tr' ? 'Size nasil yardimci olabilirim?' : 'How can I assist?'}
+                      {lang === 'tr' ? 'Size nasıl yardımcı olabilirim?' : 'How can I assist?'}
                     </p>
                     <div className="mt-4 w-full rounded-xl border border-[#e8e8e0] px-4 py-2.5 flex items-center gap-2">
                       <Sparkles className="h-4 w-4 text-[#53A67F]/40" />
@@ -322,10 +303,10 @@ export default function Home() {
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#1a1a1a]">
-              {lang === 'tr' ? 'Basit fiyatlandirma' : 'Simple pricing'}
+              {lang === 'tr' ? 'Basit fiyatlandırma' : 'Simple pricing'}
             </h2>
             <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#302817]/50">
-              {lang === 'tr' ? 'Her büyüklükteki sirket için uygun planlar.' : 'Plans that fit companies of every size.'}
+              {lang === 'tr' ? 'Her büyüklükteki şirket için uygun planlar.' : 'Plans that fit companies of every size.'}
             </p>
           </div>
 
@@ -346,10 +327,10 @@ export default function Home() {
               </div>
               <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                 {(lang === 'tr' ? [
-                  'Dashboard veri girisi',
+                  'Dashboard veri girişi',
                   'Temel emisyon hesaplama',
-                  'Sektör benchmarki',
-                  'Aylik 5 AI soru',
+                  'Sektör benchmarkı',
+                  'Aylık 5 AI soru',
                 ] : [
                   'Dashboard data entry',
                   'Basic emission calculations',
@@ -366,7 +347,7 @@ export default function Home() {
               </div>
               <Link href="/register"
                 className="block w-full rounded-full border-2 border-[#e8e8e0] py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold text-[#302817]/60 hover:border-[#302817]/30 hover:text-[#302817] transition">
-                {lang === 'tr' ? 'Ücretsiz Basla' : 'Get Started'}
+                {lang === 'tr' ? 'Ücretsiz Başla' : 'Get Started'}
               </Link>
             </div>
 
@@ -388,13 +369,13 @@ export default function Home() {
               </div>
               <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                 {(lang === 'tr' ? [
-                  'Ücretsiz\'deki her sey',
-                  'Sinirsiz AI karbon hesaplama',
+                  'Ücretsiz\'deki her şey',
+                  'Sınırsız AI karbon hesaplama',
                   'ISO 14064-1 PDF raporu',
                   'Hedefler ve ilerleme takibi',
                   'AI rehberli anket (133 soru)',
-                  'Danisman onay sistemi',
-                  'Excel/CSV disa aktarma',
+                  'Danışman onay sistemi',
+                  'Excel/CSV dışa aktarma',
                 ] : [
                   'Everything in Free',
                   'Unlimited AI carbon calculations',
@@ -430,7 +411,7 @@ export default function Home() {
           </div>
           <div className="flex gap-4">
             <Link href="/terms" className="text-[11px] sm:text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
-              {lang === 'tr' ? 'Kullanim Kosullari' : 'Terms'}
+              {lang === 'tr' ? 'Kullanım Koşulları' : 'Terms'}
             </Link>
             <Link href="/privacy" className="text-[11px] sm:text-[12px] text-[#302817]/40 hover:text-[#302817]/70 transition">
               {lang === 'tr' ? 'Gizlilik' : 'Privacy'}
