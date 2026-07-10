@@ -99,7 +99,9 @@ export default function DashboardHeader({
   return (
     <header className="sticky top-0 z-30 border-b border-[#e8e8e0] bg-white px-3 py-2.5 sm:px-4 lg:px-5">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
-        {/* Left: Logo + brand */}
+        {/* Left: sidebar toggle (mobile only) — logo/brand removed, the
+            sidebar already shows the Carbonless logo, so this header used to
+            repeat it right next to the mode-switcher pill on a second line */}
         <div className="flex min-w-0 items-center gap-2.5">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -108,10 +110,6 @@ export default function DashboardHeader({
           >
             <Menu className="h-4 w-4" />
           </button>
-          <div className="hidden sm:flex items-center gap-2">
-            <img src="/carbonless.png" alt="Carbonless" className="h-7 w-7 object-contain" />
-            <span className="text-[14px] font-bold text-[#1a1a1a] tracking-tight">Carbonless AI</span>
-          </div>
         </div>
 
         {/* Center: Mode switcher pill */}
