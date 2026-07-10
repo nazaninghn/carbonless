@@ -298,8 +298,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* -- Pricing Section -- */}
-      <section id="pricing" className="relative z-10 py-16 sm:py-28 bg-[#F1FCF2] border-t border-[#DEFAE1]">
+      {/* -- Pricing Section — fades in from the white AI section above
+             (gradient over the top padding) instead of a hard border cut -- */}
+      <section id="pricing" className="relative z-10 py-16 sm:py-28 bg-gradient-to-b from-white via-[#F1FCF2] to-[#F1FCF2]">
         <div className="mx-auto max-w-4xl px-4 sm:px-8">
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
