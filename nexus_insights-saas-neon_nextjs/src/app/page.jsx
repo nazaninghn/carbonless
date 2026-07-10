@@ -277,43 +277,21 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Right: Device mockup with carbon-hero image */}
+            {/* Right: MacBook mockup photo of the actual Carbonless AI chat
+                (public/ai-laptop.png) — replaces the old hand-built CSS
+                browser-frame mockup. Soft green glow behind it ties it into
+                the palette; gentle float + hover lift keep it alive. */}
             <div className="relative flex items-center justify-center">
-              {/* Laptop frame */}
-              <div className="relative w-full max-w-[480px]">
-                <div className="rounded-2xl border border-[#e0e0e0] bg-[#f8f8f8] p-2 shadow-2xl shadow-black/10">
-                  {/* Browser chrome */}
-                  <div className="flex items-center gap-1.5 px-3 py-2 rounded-t-xl bg-[#f0f0f0] border-b border-[#e0e0e0]">
-                    <div className="h-2 w-2 rounded-full bg-[#ff5f57]" />
-                    <div className="h-2 w-2 rounded-full bg-[#febc2e]" />
-                    <div className="h-2 w-2 rounded-full bg-[#28c840]" />
-                    <div className="flex-1 flex justify-center">
-                      <div className="rounded-md bg-white border border-[#e0e0e0] px-4 py-0.5 text-[9px] text-[#072C0E]/40 font-medium">
-                        carbonless.app
-                      </div>
-                    </div>
-                  </div>
-                  {/* Screen content */}
-                  <div className="bg-white rounded-b-xl p-6 flex flex-col items-center">
-                    <Image src="/carbon-hero.png" alt="CarbonIQ AI" width={200} height={200} className="h-32 w-32 object-contain mb-4" />
-                    <p className="text-[11px] text-[#072C0E]/40 mb-1">Hi, there</p>
-                    <p className="text-[16px] font-bold text-[#072C0E]">
-                      {lang === 'tr' ? 'Size nasıl yardımcı olabilirim?' : 'How can I assist?'}
-                    </p>
-                    <div className="mt-4 w-full rounded-xl border border-[#DEFAE1] px-4 py-2.5 flex items-center gap-2">
-                      <Sparkles className="h-4 w-4 text-[#2ABD41]/40" />
-                      <span className="text-[12px] text-[#072C0E]/30">Ask Carbonless...</span>
-                    </div>
-                    {/* Suggestion chips */}
-                    <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
-                      {['Scopes', 'Analytics', 'Report', 'Targets'].map(chip => (
-                        <span key={chip} className="rounded-full border border-[#DEFAE1] bg-[#fafafa] px-2.5 py-1 text-[9px] font-medium text-[#072C0E]/50">
-                          {chip}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+              <div className="relative w-full max-w-[560px]">
+                <div className="absolute inset-8 rounded-full bg-[#2ABD41]/10 blur-3xl" />
+                <Image
+                  src="/ai-laptop.png"
+                  alt={lang === 'tr' ? 'Carbonless AI sohbet ekranı — MacBook üzerinde' : 'Carbonless AI chat on a MacBook'}
+                  width={1402}
+                  height={1122}
+                  className="relative w-full h-auto object-contain drop-shadow-2xl transition-transform duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1"
+                  priority={false}
+                />
               </div>
             </div>
           </div>
