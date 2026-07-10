@@ -31,23 +31,37 @@ const copy = {
   },
 };
 
-/* -- Floating node component -- */
-function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[#072C0E]/70' }) {
+/* -- Floating node component --
+   Interactive hero icons (Dinnect-style floating cards): squircle gradient
+   tile, hover = lift + green glow + label fills green; labelled nodes are
+   clickable links, unlabelled ones stay purely decorative. */
+function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[#1A7B2A]', href = null }) {
+  const inner = (
+    <>
+      <div className="relative transition-transform duration-300 ease-out group-hover:scale-110 group-hover:-translate-y-1.5">
+        {/* soft glow behind the tile, only visible on hover */}
+        <div className="absolute -inset-2 rounded-3xl bg-[#2ABD41]/0 blur-xl transition-colors duration-300 group-hover:bg-[#2ABD41]/25" />
+        <div className="relative flex h-11 w-11 sm:h-16 sm:w-16 items-center justify-center rounded-2xl border border-[#DEFAE1] bg-gradient-to-br from-white to-[#F1FCF2] shadow-lg shadow-[#072C0E]/8 transition-all duration-300 group-hover:border-[#8BEA99] group-hover:shadow-xl group-hover:shadow-[#2ABD41]/25">
+          <Icon className={`h-5 w-5 sm:h-7 sm:w-7 ${color} transition-transform duration-300 group-hover:scale-110`} strokeWidth={1.8} />
+        </div>
+        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#2ABD41] border-2 border-white transition-transform duration-300 group-hover:scale-125" />
+      </div>
+      {label && (
+        <span className="hidden sm:block rounded-full border border-[#DEFAE1] bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-[#1A7B2A] shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:border-[#2ABD41] group-hover:bg-[#2ABD41] group-hover:text-white">
+          {label}
+        </span>
+      )}
+    </>
+  );
   return (
     <div className={`absolute ${className} animate-float`} style={{ animationDelay: `${delay}s` }}>
-      <div className="flex flex-col items-center gap-1">
-        <div className="relative">
-          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-full bg-white shadow-lg shadow-black/8 border border-[#DEFAE1] flex items-center justify-center">
-            <Icon className={`h-4 w-4 sm:h-6 sm:w-6 ${color}`} />
-          </div>
-          <div className="absolute -top-0.5 -right-0.5 h-2 w-2 sm:h-3 sm:w-3 rounded-full bg-[#2ABD41] border-2 border-white" />
-        </div>
-        {label && (
-          <span className="hidden sm:block rounded-full bg-[#DEFAE1] border border-[#B2F2BB] px-2.5 py-0.5 text-[10px] font-semibold text-[#1A7B2A]">
-            {label}
-          </span>
-        )}
-      </div>
+      {href ? (
+        <Link href={href} aria-label={label} className="group flex cursor-pointer flex-col items-center gap-1.5">
+          {inner}
+        </Link>
+      ) : (
+        <div className="group flex flex-col items-center gap-1.5">{inner}</div>
+      )}
     </div>
   );
 }
@@ -91,77 +105,90 @@ export default function Home() {
         .animate-float {
           animation: float 4s ease-in-out infinite;
         }
+        .animate-float:hover {
+          animation-play-state: paused;
+        }
       `}} />
 
-      {/* -- Navbar — Dinnect-style: flat full-width sticky bar, logo left
-             with nav links right beside it, minimal right side (lang toggle,
-             ghost Log In, one solid CTA). Replaces the old floating pill. -- */}
-      <header className="sticky top-0 z-50 w-full border-b border-[#DEFAE1] bg-white/90 backdrop-blur-sm">
-        <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-8">
-          {/* Left: logo + links */}
-          <div className="flex min-w-0 items-center gap-3 sm:gap-7">
-            <Link href="/" className="flex shrink-0 items-center gap-2">
-              <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain" />
-              <span className="text-[15px] sm:text-[17px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
-            </Link>
-            <div className="hidden md:flex items-center gap-1">
-              {['home', 'about', 'ai'].map(key => (
-                <a key={key} href={key === 'home' ? '/' : key === 'ai' ? '/dashboard/select' : `#${key}`}
-                  className="px-3 py-2 text-[13.5px] font-medium text-[#072C0E]/55 hover:text-[#072C0E] transition">
-                  {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkında' : 'About') : 'AI'}
-                </a>
-              ))}
-            </div>
+      {/* -- Navbar — Dinnect-style floating pill: detached rounded capsule
+             centered at the top, hovering over the hero. Logo + wordmark |
+             divider | nav links | divider | lang, Log In, solid green CTA.
+             Every item has a visible hover state. The sticky wrapper is
+             pointer-events-none so content beside the pill stays clickable;
+             no overflow-hidden anywhere (that's what clipped the old
+             language dropdown). -- */}
+      <header className="pointer-events-none sticky top-0 z-50 flex w-full justify-center px-3 pt-4">
+        <nav className="pointer-events-auto flex h-14 max-w-full items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md">
+          {/* Logo */}
+          <Link href="/" className="group flex shrink-0 items-center gap-2 rounded-full px-2 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
+            <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+            <span className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
+          </Link>
+
+          {/* Divider */}
+          <span className="hidden md:block mx-1 h-6 w-px bg-[#DEFAE1]" />
+
+          {/* Nav links */}
+          <div className="hidden md:flex items-center">
+            {['home', 'about', 'ai'].map(key => (
+              <a key={key} href={key === 'home' ? '/' : key === 'ai' ? '/dashboard/select' : `#${key}`}
+                className="rounded-full px-4 py-2 text-[13.5px] font-medium text-[#072C0E]/55 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]">
+                {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkında' : 'About') : 'AI'}
+              </a>
+            ))}
           </div>
 
-          {/* Right: Log In + solid CTA (+ lang toggle below) */}
-          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          {/* Divider */}
+          <span className="hidden sm:block mx-1 h-6 w-px bg-[#DEFAE1]" />
+
+          {/* Lang + Log In + CTA */}
+          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
             <button
               onClick={() => changeLanguage(lang === 'tr' ? 'en' : 'tr')}
               aria-label={lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
-              className="px-2 sm:px-2.5 py-1.5 rounded-full text-[11px] sm:text-[12px] font-semibold text-[#072C0E]/50 hover:bg-[#F1FCF2] hover:text-[#072C0E] transition uppercase"
+              className="rounded-full px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#072C0E]/50 uppercase transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]"
             >
               {lang === 'tr' ? 'EN' : 'TR'}
             </button>
             <Link href="/login"
-              className="hidden sm:block px-3 py-1.5 text-[13px] font-medium text-[#072C0E]/60 hover:text-[#072C0E] transition">
+              className="hidden sm:block rounded-full px-3 py-1.5 text-[13px] font-medium text-[#072C0E]/60 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]">
               {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
             </Link>
             <Link href="/register"
-              className="rounded-full bg-[#2ABD41] px-3.5 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold text-white shadow-sm hover:bg-[#1D9C31] transition whitespace-nowrap">
+              className="ml-0.5 rounded-full bg-[#2ABD41] px-3.5 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold text-white shadow-sm transition-all duration-200 hover:bg-[#1D9C31] hover:shadow-lg hover:shadow-[#2ABD41]/30 hover:-translate-y-0.5 whitespace-nowrap">
               {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
             </Link>
           </div>
         </nav>
       </header>
 
-      {/* -- Hero Section -- */}
-      <section className="relative min-h-[calc(100vh-64px)] flex flex-col items-center justify-center px-5 sm:px-8">
+      {/* -- Hero Section — pull up under the floating pill -- */}
+      <section className="relative -mt-[72px] min-h-screen flex flex-col items-center justify-center px-5 sm:px-8">
 
         {/* Connection lines background  -  tablet+ only */}
         <div className="hidden sm:block">
           <ConnectionLines />
         </div>
 
-        {/* Floating nodes  -  tablet (sm-lg): 4 nodes, desktop (lg+): all */}
+        {/* Floating nodes  -  tablet (sm-lg): 5 nodes, desktop (lg+): all */}
         <div className="hidden sm:block lg:hidden">
-          <FloatingNode icon={Factory} label="Scope 1" className="top-[15%] left-[6%]" delay={0} color="text-orange-500" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[15%] right-[6%]" delay={0.4} color="text-purple-500" />
-          <FloatingNode icon={Zap} label="Scope 2" className="top-[5%] left-[40%]" delay={1.0} color="text-yellow-600" />
-          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[20%] left-[8%]" delay={1.6} color="text-sky-500" />
-          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[20%] right-[8%]" delay={0.6} color="text-[#2ABD41]" />
+          <FloatingNode icon={Factory} label="Scope 1" className="top-[15%] left-[6%]" delay={0} color="text-orange-500" href="#ai" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[15%] right-[6%]" delay={0.4} color="text-purple-500" href="/dashboard/select" />
+          <FloatingNode icon={Zap} label="Scope 2" className="top-[5%] left-[40%]" delay={1.0} color="text-yellow-600" href="#ai" />
+          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[20%] left-[8%]" delay={1.6} color="text-sky-500" href="#ai" />
+          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[20%] right-[8%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
         </div>
 
         {/* All nodes on desktop */}
         <div className="hidden lg:block">
-          <FloatingNode icon={Factory} label="Scope 1" className="top-[12%] left-[8%]" delay={0} color="text-orange-500" />
-          <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[6%]" delay={0.8} color="text-yellow-600" />
-          <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[12%]" delay={1.6} color="text-sky-500" />
-          <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[7%]" delay={2.2} color="text-blue-500" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[10%]" delay={0.4} color="text-purple-500" />
-          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[5%]" delay={1.2} color="text-[#2ABD41]" />
-          <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[12%]" delay={2.0} color="text-emerald-600" />
-          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[8%]" delay={0.6} color="text-[#2ABD41]" />
+          <FloatingNode icon={Factory} label="Scope 1" className="top-[12%] left-[8%]" delay={0} color="text-orange-500" href="#ai" />
+          <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[6%]" delay={0.8} color="text-yellow-600" href="#ai" />
+          <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[12%]" delay={1.6} color="text-sky-500" href="#ai" />
+          <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[7%]" delay={2.2} color="text-blue-500" href="#ai" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[10%]" delay={0.4} color="text-purple-500" href="/dashboard/select" />
+          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[5%]" delay={1.2} color="text-[#2ABD41]" href="#ai" />
+          <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[12%]" delay={2.0} color="text-emerald-600" href="#ai" />
+          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[8%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
           <FloatingNode icon={Flame} className="top-[22%] left-[22%]" delay={1.4} color="text-red-400" />
           <FloatingNode icon={CloudSun} className="top-[18%] right-[24%]" delay={1.8} color="text-sky-400" />
           <FloatingNode icon={Leaf} className="bottom-[28%] left-[20%]" delay={2.4} color="text-[#2ABD41]" />
