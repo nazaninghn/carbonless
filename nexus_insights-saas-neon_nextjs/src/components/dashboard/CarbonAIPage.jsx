@@ -2893,8 +2893,18 @@ function QuestionnaireTab({
 // Free Chat Tab
 // ─────────────────────────────────────────────────────────────────────────────
 function FreeChatTab({ language, summary, entries, targets, fetchData }) {
-  // Local language toggle — EN / TR, initialized from app-level language prop
-  const [activeLang, setActiveLang] = useState(language || 'tr');
+  // Local language toggle — EN / TR, initialized from app-level language prop.
+  // This component mounts once and stays mounted (chatMounted never flips
+  // back to false), so without the effect below this initial value would be
+  // permanently frozen — if the site-wide language changed after first mount
+  // (or hadn't finished resolving from localStorage yet when this captured
+  // its initial value), the AI chat would keep responding in the stale
+  // language forever regardless of what the header's EN/TR toggle showed.
+  // Re-syncing on every `language` prop change fixes that while still
+  // letting the user manually override via the chat's own EN/TR buttons —
+  // that override just holds until the site-wide language changes again.
+  const [activeLang, setActiveLang] = useState(language || 'en');
+  useEffect(() => { setActiveLang(language || 'en'); }, [language]);
   const tr = activeLang === 'tr';
   const totalTonne = summary?.total_tonne || 0;
   const s1 = summary?.scope1_tonne || 0;
