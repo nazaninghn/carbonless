@@ -859,6 +859,55 @@ def _is_calculation_help_prompt(text):
     return (text or '').strip().lower() in CALCULATE_HELP_TRIGGERS
 
 
+# Cheap local gate for the Groq NLU call. extract_emission_intent() exists
+# solely to pull structured emission-entry data out of a message — its result
+# is discarded whenever mode != 'calculation' (see _handle_groq_nlu_result).
+# Before this gate, EVERY chat message paid a full Groq round-trip for NLU
+# and then, for ordinary questions ("what is scope 1?"), a SECOND round-trip
+# for the conversational answer — roughly doubling response latency for the
+# most common message type. A message can only become a calculation draft if
+# it mentions a quantity or an emission activity, so anything matching none
+# of these patterns skips NLU entirely. False positives just fall back to
+# the old two-call behaviour; false negatives degrade gracefully — the
+# conversational AI asks for specifics, and the user's follow-up with the
+# actual numbers goes through NLU as before.
+
+# Numeric idioms that are NOT quantities — stripped before the digit check so
+# the most common general questions ("What is Scope 1?", "How do I prepare an
+# ISO 14064-1 report?") don't false-positive into the NLU call.
+_NON_QUANTITY_IDIOM_RE = re.compile(
+    # "scope 1" / "kapsam 2" including enumerations: "scope 1, 2 and 3",
+    # "kapsam 1, 2 ve 3" — strip the whole list so no bare digits remain.
+    r'\b(?:scope|kapsam)s?\s*[1-3](?:\s*,\s*[1-3])*(?:\s*,?\s*(?:and|ve|&)\s*[1-3])?\b'
+    r'|\b(?:category|categories|kategori)\s*\d{1,2}\b'
+    r'|\biso\s*\d{4,5}(?:-\d)?\b'
+    r'|\b14064(?:-\d)?\b',
+    re.IGNORECASE,
+)
+
+# TR "bir" (=one, but also the ubiquitous indefinite article) and "on" (=ten,
+# but matches English "on") are deliberately excluded — quantity-one/ten
+# entries virtually always also name a unit or activity, which matches below.
+_EMISSION_HINT_RE = re.compile(
+    r'\d'                                            # any digit
+    r'|\b(?:two|three|four|five|six|seven|eight|nine|ten|twenty|fifty|'
+    r'hundred|thousand|million)\b'                   # EN number words
+    r'|\b(?:iki|üç|dört|dort|beş|bes|altı|alti|yedi|sekiz|dokuz|'
+    r'yirmi|elli|yüz|bin|milyon|buçuk|bucuk)\b'      # TR number words
+    r'|\b(?:kwh|mwh|kw|liter|liters|litre|lt|km|mile|miles|kg|ton|tonne|tons|'
+    r'm3|m²|m³|diesel|dizel|petrol|benzin|gasoline|fuel|yakıt|yakit|'
+    r'electricity|elektrik|doğalgaz|dogalgaz|gaz|lpg|cng|flight|flights|'
+    r'uçuş|ucus|uçak|ucak|car|cars|araba|araç|arac|vehicle|vehicles|kamyon|'
+    r'truck|trucks|bus|otobüs|otobus|waste|atık|atik|coal|kömür|komur)\b',
+    re.IGNORECASE,
+)
+
+
+def _might_be_emission_entry(text):
+    stripped = _NON_QUANTITY_IDIOM_RE.sub(' ', text or '')
+    return bool(_EMISSION_HINT_RE.search(stripped))
+
+
 def _calculation_help_text():
     return (
         "I can calculate emissions when you provide activity data.\n\n"
@@ -1398,7 +1447,10 @@ def send_message(request, session_id):
                 })
 
     # ─── 2) GROQ NLU: extract structured intent from message ─────────────
-    if not attachment:
+    # Gated by _might_be_emission_entry: general questions skip this Groq
+    # round-trip entirely and go straight to the conversational call below,
+    # cutting response latency roughly in half for non-data-entry messages.
+    if not attachment and _might_be_emission_entry(content):
         nlu_result = extract_emission_intent(content)
         nlu_source = nlu_result.get('_source', 'default')
 
