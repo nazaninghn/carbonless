@@ -38,26 +38,26 @@ from companies.utils import get_current_company
 # ═══════════════════════════════════════════════════════
 # BRAND COLORS
 # ═══════════════════════════════════════════════════════
-BRAND_DARK = colors.HexColor('#302817')
-OLIVE = colors.HexColor('#95A847')
-OLIVE_DARK = colors.HexColor('#75863B')
-OLIVE_LIGHT = colors.HexColor('#B4BE6A')
-CREAM = colors.HexColor('#F9EFE5')
-CREAM_LIGHT = colors.HexColor('#FDF8F3')
+BRAND_DARK = colors.HexColor('#072C0E')
+OLIVE = colors.HexColor('#2ABD41')
+OLIVE_DARK = colors.HexColor('#1D9C31')
+OLIVE_LIGHT = colors.HexColor('#8BEA99')
+CREAM = colors.HexColor('#DEFAE1')
+CREAM_LIGHT = colors.HexColor('#F1FCF2')
 
 GRAY_50 = colors.HexColor('#FAFAFA')
 GRAY_100 = colors.HexColor('#F5F5F5')
-GRAY_200 = colors.HexColor('#E5E5E5')
+GRAY_200 = colors.HexColor('#DEFAE1')
 GRAY_400 = colors.HexColor('#A3A3A3')
 GRAY_600 = colors.HexColor('#525252')
 GRAY_800 = colors.HexColor('#262626')
 
 SCOPE1_COLOR = OLIVE_DARK
-SCOPE1_BG = colors.HexColor('#F2F5E6')
+SCOPE1_BG = colors.HexColor('#F1FCF2')
 SCOPE2_COLOR = OLIVE
-SCOPE2_BG = colors.HexColor('#F5F8EA')
+SCOPE2_BG = colors.HexColor('#DEFAE1')
 SCOPE3_COLOR = BRAND_DARK
-SCOPE3_BG = colors.HexColor('#F8F6F2')
+SCOPE3_BG = colors.HexColor('#F1FCF2')
 
 WHITE = colors.white
 

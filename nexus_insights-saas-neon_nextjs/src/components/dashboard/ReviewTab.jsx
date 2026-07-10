@@ -79,22 +79,22 @@ export default function ReviewTab({ language, fetchData }) {
   }, [rejectId, rejectReason, tr, toast, fetchPending, fetchData]);
 
   return (
-    <div className="space-y-3 text-[#302817]">
+    <div className="space-y-3 text-[#072C0E]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#89E789]/8 p-4 shadow-sm">
+      <div className="rounded-[1.25rem] border border-[#072C0E]/10 bg-gradient-to-br from-[#DEFAE1] via-white to-[#8BEA99]/8 p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51B291]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
               {tr ? 'Onay süreci' : 'Approval workflow'}
             </p>
             <h1 className="mt-1 text-lg font-bold tracking-[-0.03em]">
               {tr ? 'Onay Bekleyenler' : 'Pending Review'}
             </h1>
-            <p className="mt-0.5 text-xs text-[#302817]/50">
+            <p className="mt-0.5 text-xs text-[#072C0E]/50">
               {tr ? 'Onay bekleyen emisyon kayıtları' : 'Emission entries awaiting approval'}
             </p>
           </div>
-          <div className="rounded-xl bg-[#51B291]/12 px-3 py-1.5 text-xs font-bold text-[#244959]">
+          <div className="rounded-xl bg-[#2ABD41]/12 px-3 py-1.5 text-xs font-bold text-[#175022]">
             {pending.length} {tr ? 'bekleyen' : 'pending'}
           </div>
         </div>
@@ -103,41 +103,41 @@ export default function ReviewTab({ language, fetchData }) {
       {/* Content */}
       {loading ? (
         <div className="flex justify-center py-10">
-          <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#51B291] border-t-transparent"></div>
+          <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#2ABD41] border-t-transparent"></div>
         </div>
       ) : pending.length === 0 ? (
-        <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#302817]/10 bg-white p-6 text-center shadow-sm">
-          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#51B291]/12 text-[#51B291]">
+        <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-6 text-center shadow-sm">
+          <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/12 text-[#2ABD41]">
             <ClipboardCheck className="h-5 w-5" />
           </div>
           <p className="text-sm font-bold">{tr ? 'Bekleyen kayıt yok' : 'No pending entries'}</p>
-          <p className="mt-0.5 text-[11px] text-[#302817]/45">{tr ? 'Tüm kayıtlar onaylanmış.' : 'All entries have been reviewed.'}</p>
+          <p className="mt-0.5 text-[11px] text-[#072C0E]/45">{tr ? 'Tüm kayıtlar onaylanmış.' : 'All entries have been reviewed.'}</p>
         </div>
       ) : (
         <div className="space-y-2">
           {pending.map(entry => (
-            <div key={entry.id} className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(48,40,23,0.07)]">
+            <div key={entry.id} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7, 44, 14,0.07)]">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0 space-y-1.5">
-                  <h3 className="truncate text-sm font-bold text-[#302817]">
+                  <h3 className="truncate text-sm font-bold text-[#072C0E]">
                     {tr && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}
                   </h3>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      entry.scope === 'scope1' ? 'bg-[#302817]/10 text-[#302817]' :
-                      entry.scope === 'scope2' ? 'bg-[#51B291]/15 text-[#244959]' :
-                      'bg-[#89E789]/18 text-[#244959]'
+                      entry.scope === 'scope1' ? 'bg-[#072C0E]/10 text-[#072C0E]' :
+                      entry.scope === 'scope2' ? 'bg-[#2ABD41]/15 text-[#175022]' :
+                      'bg-[#8BEA99]/18 text-[#175022]'
                     }`}>{entry.scope?.replace('scope', 'S')}</span>
-                    <span className="text-[11px] font-semibold text-[#302817]/50">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</span>
-                    <span className="text-[11px] font-bold text-[#51B291]">{parseFloat(entry.calculated_co2e_kg).toFixed(1)} kg</span>
-                    <span className="text-[10px] text-[#302817]/35">{tr ? 'Ay' : 'Mo'}: {entry.month}</span>
+                    <span className="text-[11px] font-semibold text-[#072C0E]/50">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</span>
+                    <span className="text-[11px] font-bold text-[#2ABD41]">{parseFloat(entry.calculated_co2e_kg).toFixed(1)} kg</span>
+                    <span className="text-[10px] text-[#072C0E]/35">{tr ? 'Ay' : 'Mo'}: {entry.month}</span>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <button
                     onClick={() => handleApprove(entry.id)}
                     disabled={processing === entry.id}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#51B291]/12 px-3 py-2 text-[11px] font-bold text-[#244959] transition hover:bg-[#51B291]/22 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#2ABD41]/12 px-3 py-2 text-[11px] font-bold text-[#175022] transition hover:bg-[#2ABD41]/22 disabled:opacity-50"
                   >
                     <Check className="h-3 w-3" />
                     {tr ? 'Onayla' : 'Approve'}
@@ -162,19 +162,19 @@ export default function ReviewTab({ language, fetchData }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
           <div
             role="dialog" aria-modal="true" aria-labelledby="reject-dialog-title"
-            className="w-full max-w-sm rounded-[1.25rem] border border-[#302817]/10 bg-white/95 p-5 shadow-[0_20px_60px_rgba(48,40,23,0.15)] backdrop-blur-2xl"
+            className="w-full max-w-sm rounded-[1.25rem] border border-[#072C0E]/10 bg-white/95 p-5 shadow-[0_20px_60px_rgba(7, 44, 14,0.15)] backdrop-blur-2xl"
           >
-            <h3 id="reject-dialog-title" className="text-sm font-bold text-[#302817]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
+            <h3 id="reject-dialog-title" className="text-sm font-bold text-[#072C0E]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
             <textarea
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder={tr ? 'Neden reddedildi...' : 'Why is this rejected...'}
-              className="mt-3 w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-xs text-[#302817] outline-none placeholder:text-[#302817]/30 focus:ring-4 focus:ring-[#51B291]/15"
+              className="mt-3 w-full rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-xs text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:ring-4 focus:ring-[#2ABD41]/15"
               rows={3}
             />
             <div className="mt-4 flex gap-2">
               <button onClick={handleReject} className="flex-1 rounded-full bg-red-500 py-2.5 text-xs font-bold text-white transition hover:bg-red-600">{tr ? 'Reddet' : 'Reject'}</button>
-              <button onClick={() => { setRejectId(null); setRejectReason(''); }} className="flex-1 rounded-full border border-[#302817]/10 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
+              <button onClick={() => { setRejectId(null); setRejectReason(''); }} className="flex-1 rounded-full border border-[#072C0E]/10 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
             </div>
           </div>
         </div>

@@ -36,19 +36,19 @@ function lookupEf(fuelType, unit) {
 }
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/25 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
+  'w-full rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-sm text-[#072C0E] outline-none ' +
+  'placeholder:text-[#072C0E]/25 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/12 transition-colors';
 const SELECT_CLS =
-  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
+  'w-full rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-sm text-[#072C0E] outline-none ' +
+  'focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/12 transition-colors';
 
 function SectionDivider({ children }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#302817]/35 shrink-0">
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#072C0E]/35 shrink-0">
         {children}
       </span>
-      <div className="flex-1 h-px bg-[#302817]/8" />
+      <div className="flex-1 h-px bg-[#072C0E]/8" />
     </div>
   );
 }
@@ -56,10 +56,10 @@ function SectionDivider({ children }) {
 function FieldRow({ label, hint, required, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-semibold text-[#302817]/55">
+      <label className="text-[11px] font-semibold text-[#072C0E]/55">
         {label}
         {required && <span className="ml-0.5 text-orange-400">*</span>}
-        {hint && <span className="ml-1 font-normal text-[#302817]/30">({hint})</span>}
+        {hint && <span className="ml-1 font-normal text-[#072C0E]/30">({hint})</span>}
       </label>
       {children}
     </div>
@@ -139,10 +139,10 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
           <Flame className="h-4.5 w-4.5 text-orange-500" />
         </div>
         <div>
-          <p className="text-[13px] font-bold text-[#302817]">
+          <p className="text-[13px] font-bold text-[#072C0E]">
             {tr ? 'Sabit Yanma' : 'Stationary Combustion'}
           </p>
-          <p className="text-[10px] text-[#302817]/40">
+          <p className="text-[10px] text-[#072C0E]/40">
             {tr ? 'Kapsam 1 · 3A · ISO 14064-1 §5.2' : 'Scope 1 · 3A · ISO 14064-1 §5.2'}
           </p>
         </div>
@@ -216,16 +216,16 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
         <div className="flex flex-col gap-2">
           <SectionDivider>{tr ? 'Emisyon Faktörü' : 'Emission Factor'}</SectionDivider>
           {/* EF box with left-border accent */}
-          <div className="flex overflow-hidden rounded-xl border border-[#302817]/8">
-            <div className="w-[3px] shrink-0 bg-[#244959]" />
-            <div className="flex-1 bg-[#F8F7F2] px-3 py-2.5">
-              <p className="text-[9.5px] text-[#302817]/40 mb-0.5">
+          <div className="flex overflow-hidden rounded-xl border border-[#072C0E]/8">
+            <div className="w-[3px] shrink-0 bg-[#175022]" />
+            <div className="flex-1 bg-[#F1FCF2] px-3 py-2.5">
+              <p className="text-[9.5px] text-[#072C0E]/40 mb-0.5">
                 {tr ? `Kaynak: ${EF_SOURCE[fuelType] || 'DEFRA 2024'}` : `Source: ${EF_SOURCE[fuelType] || 'DEFRA 2024'}`}
               </p>
-              <p className="text-[13px] font-bold text-[#302817]">
+              <p className="text-[13px] font-bold text-[#072C0E]">
                 {lookupEf(fuelType, unit)} kgCO₂e/{unit}
               </p>
-              <p className="text-[10px] text-[#244959] mt-0.5">
+              <p className="text-[10px] text-[#175022] mt-0.5">
                 {tr ? 'Onaylı · Seviye 1' : 'Verified · Level 1'}
               </p>
             </div>
@@ -235,17 +235,17 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
 
       {/* Emission estimate */}
       {emissionKg !== null && (
-        <div className="rounded-xl bg-gradient-to-br from-[#51B291]/8 to-[#89E789]/4 border border-[#89E789]/20 px-4 py-3">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#244959] mb-1">
+        <div className="rounded-xl bg-gradient-to-br from-[#2ABD41]/8 to-[#8BEA99]/4 border border-[#8BEA99]/20 px-4 py-3">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#175022] mb-1">
             {tr ? `Tahmini Emisyon (${EF_SOURCE[fuelType] || 'DEFRA 2024'})` : `Estimated Emission (${EF_SOURCE[fuelType] || 'DEFRA 2024'})`}
           </p>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-bold text-[#302817]">
+            <span className="text-2xl font-bold text-[#072C0E]">
               {emissionKg >= 1000
                 ? (emissionKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })
                 : emissionKg.toLocaleString(undefined, { maximumFractionDigits: 1 })}
             </span>
-            <span className="text-xs font-semibold text-[#244959]">
+            <span className="text-xs font-semibold text-[#175022]">
               {emissionKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
             </span>
           </div>
@@ -265,8 +265,8 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
         disabled={!canSave || saving}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
-            ? 'bg-[#51B291]/15 border border-[#51B291]/30 text-[#527A1A]'
-            : 'bg-[#244959] text-white hover:bg-[#1a3a2e] disabled:opacity-35'
+            ? 'bg-[#2ABD41]/15 border border-[#2ABD41]/30 text-[#1A7B2A]'
+            : 'bg-[#175022] text-white hover:bg-[#175022] disabled:opacity-35'
         }`}
       >
         {saving ? (

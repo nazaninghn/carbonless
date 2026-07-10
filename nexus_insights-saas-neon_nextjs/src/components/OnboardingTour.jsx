@@ -157,11 +157,11 @@ export default function OnboardingTour({ language, onComplete }) {
       aria-labelledby="tour-dialog-title"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 p-4 backdrop-blur-md"
     >
-      <div className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-white/95 shadow-[0_20px_60px_rgba(48,40,23,0.18)] backdrop-blur-2xl">
+      <div className="w-full max-w-md overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-white/95 shadow-[0_20px_60px_rgba(7, 44, 14,0.18)] backdrop-blur-2xl">
         {/* Progress bar */}
-        <div className="h-1 bg-[#302817]/6">
+        <div className="h-1 bg-[#072C0E]/6">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -170,35 +170,35 @@ export default function OnboardingTour({ language, onComplete }) {
         <div className="p-6">
           {/* Header */}
           <div className="mb-5 flex items-center justify-between">
-            <span className="rounded-full bg-[#51B291]/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#244959]">
+            <span className="rounded-full bg-[#2ABD41]/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#175022]">
               {step + 1} / {steps.length}
             </span>
-            <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-[#302817]/5 hover:text-[#302817]">
+            <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-[#072C0E]/5 hover:text-[#072C0E]">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Icon */}
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#51B291]/15 to-[#89E789]/10 text-[#51B291] ring-1 ring-[#51B291]/20">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2ABD41]/15 to-[#8BEA99]/10 text-[#2ABD41] ring-1 ring-[#2ABD41]/20">
             <Icon className="h-6 w-6" />
           </div>
 
           {/* Title */}
-          <h2 id="tour-dialog-title" className="text-lg font-bold tracking-[-0.02em] text-[#302817]">{current.title}</h2>
+          <h2 id="tour-dialog-title" className="text-lg font-bold tracking-[-0.02em] text-[#072C0E]">{current.title}</h2>
 
           {/* Description */}
-          <p className="mt-2 text-sm leading-6 text-[#302817]/60">{current.description}</p>
+          <p className="mt-2 text-sm leading-6 text-[#072C0E]/60">{current.description}</p>
 
           {/* Tip */}
-          <div className="mt-4 rounded-xl border border-[#51B291]/20 bg-[#51B291]/6 px-4 py-3">
-            <p className="text-xs font-semibold text-[#244959]">💡 {current.tip}</p>
+          <div className="mt-4 rounded-xl border border-[#2ABD41]/20 bg-[#2ABD41]/6 px-4 py-3">
+            <p className="text-xs font-semibold text-[#175022]">💡 {current.tip}</p>
           </div>
 
           {/* Navigation */}
           <div className="mt-6 flex items-center justify-between">
             <button
               onClick={handleClose}
-              className="text-xs font-semibold text-[#302817]/40 transition hover:text-[#302817]"
+              className="text-xs font-semibold text-[#072C0E]/40 transition hover:text-[#072C0E]"
             >
               {tr ? 'Turu Atla' : 'Skip Tour'}
             </button>
@@ -207,7 +207,7 @@ export default function OnboardingTour({ language, onComplete }) {
               {!isFirst && (
                 <button
                   onClick={handlePrev}
-                  className="flex items-center gap-1 rounded-full border border-[#302817]/10 px-4 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]"
+                  className="flex items-center gap-1 rounded-full border border-[#072C0E]/10 px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                   {tr ? 'Geri' : 'Back'}
@@ -215,7 +215,7 @@ export default function OnboardingTour({ language, onComplete }) {
               )}
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e]"
+                className="flex items-center gap-1 rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
               >
                 {isLast ? (tr ? 'Başla!' : 'Get Started!') : (tr ? 'İleri' : 'Next')}
                 {!isLast && <ChevronRight className="h-3.5 w-3.5" />}

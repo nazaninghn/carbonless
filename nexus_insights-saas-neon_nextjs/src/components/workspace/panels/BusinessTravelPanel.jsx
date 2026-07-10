@@ -52,16 +52,16 @@ const GROUND_MODES = [
 ];
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/25 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
+  'w-full rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-sm text-[#072C0E] outline-none ' +
+  'placeholder:text-[#072C0E]/25 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/12 transition-colors';
 
 function SectionDivider({ children }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#302817]/35 shrink-0">
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#072C0E]/35 shrink-0">
         {children}
       </span>
-      <div className="flex-1 h-px bg-[#302817]/8" />
+      <div className="flex-1 h-px bg-[#072C0E]/8" />
     </div>
   );
 }
@@ -69,10 +69,10 @@ function SectionDivider({ children }) {
 function FieldRow({ label, hint, required, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-semibold text-[#302817]/55">
+      <label className="text-[11px] font-semibold text-[#072C0E]/55">
         {label}
         {required && <span className="ml-0.5 text-orange-400">*</span>}
-        {hint && <span className="ml-1 font-normal text-[#302817]/30">({hint})</span>}
+        {hint && <span className="ml-1 font-normal text-[#072C0E]/30">({hint})</span>}
       </label>
       {children}
     </div>
@@ -158,10 +158,10 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
           <Briefcase className="h-4 w-4 text-violet-500" />
         </div>
         <div>
-          <p className="text-[13px] font-bold text-[#302817]">
+          <p className="text-[13px] font-bold text-[#072C0E]">
             {tr ? 'İş Seyahati' : 'Business Travel'}
           </p>
-          <p className="text-[10px] text-[#302817]/40">
+          <p className="text-[10px] text-[#072C0E]/40">
             Kapsam 3 · K5 · ISO 14064-1 §5.4
           </p>
         </div>
@@ -191,10 +191,10 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                 value={airVals[mode.id]}
                 onChange={e => setAirVals(prev => ({ ...prev, [mode.id]: e.target.value }))}
               />
-              <div className="shrink-0 rounded-lg border border-[#302817]/8 bg-[#FAFAF8] px-2 py-1.5 text-center">
-                <p className="text-[8.5px] text-[#302817]/35">DEFRA</p>
-                <p className="text-[10px] font-bold text-[#302817]/55">{mode.ef}</p>
-                <p className="text-[8px] text-[#302817]/30">kgCO₂e/pkm</p>
+              <div className="shrink-0 rounded-lg border border-[#072C0E]/8 bg-[#F1FCF2] px-2 py-1.5 text-center">
+                <p className="text-[8.5px] text-[#072C0E]/35">DEFRA</p>
+                <p className="text-[10px] font-bold text-[#072C0E]/55">{mode.ef}</p>
+                <p className="text-[8px] text-[#072C0E]/30">kgCO₂e/pkm</p>
               </div>
             </div>
             {(() => {
@@ -202,7 +202,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
               if (isNaN(pkm) || pkm <= 0) return null;
               const kg = pkm * mode.ef;
               return (
-                <p className="text-[10.5px] font-semibold text-[#244959]">
+                <p className="text-[10.5px] font-semibold text-[#175022]">
                   → {pkm.toLocaleString('tr-TR')} pkm × {mode.ef} = {kg >= 1000
                     ? `${(kg / 1000).toFixed(2)} tCO₂e`
                     : `${kg.toFixed(0)} kgCO₂e`}
@@ -229,7 +229,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
               key={mode.id}
               label={
                 <span className="flex items-center gap-1">
-                  <ModeIcon className="h-3 w-3 text-[#302817]/40" />
+                  <ModeIcon className="h-3 w-3 text-[#072C0E]/40" />
                   {mode.label[lang] || mode.label.en}
                 </span>
               }
@@ -244,10 +244,10 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                   value={groundVals[mode.id]}
                   onChange={e => setGroundVals(prev => ({ ...prev, [mode.id]: e.target.value }))}
                 />
-                <div className="shrink-0 rounded-lg border border-[#302817]/8 bg-[#FAFAF8] px-2 py-1.5 text-center">
-                  <p className="text-[8.5px] text-[#302817]/35">DEFRA</p>
-                  <p className="text-[10px] font-bold text-[#302817]/55">{mode.ef}</p>
-                  <p className="text-[8px] text-[#302817]/30">kg/{mode.unit}</p>
+                <div className="shrink-0 rounded-lg border border-[#072C0E]/8 bg-[#F1FCF2] px-2 py-1.5 text-center">
+                  <p className="text-[8.5px] text-[#072C0E]/35">DEFRA</p>
+                  <p className="text-[10px] font-bold text-[#072C0E]/55">{mode.ef}</p>
+                  <p className="text-[8px] text-[#072C0E]/30">kg/{mode.unit}</p>
                 </div>
               </div>
               {(() => {
@@ -255,7 +255,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                 if (isNaN(km) || km <= 0) return null;
                 const kg = km * mode.ef;
                 return (
-                  <p className="text-[10.5px] font-semibold text-[#244959]">
+                  <p className="text-[10.5px] font-semibold text-[#175022]">
                     → {km.toLocaleString('tr-TR')} {mode.unit} × {mode.ef} = {kg >= 1000
                       ? `${(kg / 1000).toFixed(2)} tCO₂e`
                       : `${kg.toFixed(0)} kgCO₂e`}
@@ -274,7 +274,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
             {tr ? 'Tahmini Toplam Emisyon' : 'Estimated Total Emission'}
           </p>
           <div className="flex items-baseline gap-1.5 mb-2">
-            <span className="text-2xl font-bold text-[#302817]">
+            <span className="text-2xl font-bold text-[#072C0E]">
               {totalKg >= 1000
                 ? (totalKg / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 })
                 : totalKg.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
@@ -287,7 +287,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
           <div className="space-y-1.5">
             {breakdown.map((b, i) => (
               <div key={i} className="flex items-center gap-2">
-                <span className="text-[10px] text-[#302817]/50 w-[130px] truncate">{b.label}</span>
+                <span className="text-[10px] text-[#072C0E]/50 w-[130px] truncate">{b.label}</span>
                 <div className="flex-1 h-1 rounded-full bg-violet-200/40 overflow-hidden">
                   <div
                     className="h-full rounded-full bg-violet-400/60"
@@ -319,8 +319,8 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
         disabled={!hasData || saving}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
-            ? 'bg-[#51B291]/15 border border-[#51B291]/30 text-[#527A1A]'
-            : 'bg-[#244959] text-white hover:bg-[#1a3a2e] disabled:opacity-35'
+            ? 'bg-[#2ABD41]/15 border border-[#2ABD41]/30 text-[#1A7B2A]'
+            : 'bg-[#175022] text-white hover:bg-[#175022] disabled:opacity-35'
         }`}
       >
         {saving ? (

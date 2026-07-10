@@ -63,16 +63,16 @@ export default function ReviewPage({ tr = false }) {
       <div className="mb-8 flex items-center gap-4">
         <button
           onClick={switchToQuestionnaire}
-          className="flex items-center gap-2 px-4 py-2 text-[#244959] hover:bg-[#244959]/10 rounded-lg transition"
+          className="flex items-center gap-2 px-4 py-2 text-[#175022] hover:bg-[#175022]/10 rounded-lg transition"
         >
           <ChevronLeft className="w-5 h-5" />
           {tr ? 'بازگشت' : 'Back'}
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-[#244959]">
+          <h1 className="text-2xl font-bold text-[#175022]">
             {tr ? 'بررسی پاسخ‌ها' : 'Review Answers'}
           </h1>
-          <p className="text-sm text-[#244959]/60">
+          <p className="text-sm text-[#175022]/60">
             {answeredQuestions.length} {tr ? 'سوال پاسخ‌داده‌شده' : 'questions answered'}
           </p>
         </div>
@@ -85,19 +85,19 @@ export default function ReviewPage({ tr = false }) {
       )}
 
       {/* Questions Table */}
-      <div className="border border-[#244959]/10 rounded-lg overflow-hidden">
+      <div className="border border-[#175022]/10 rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-[#244959]/3 border-b border-[#244959]/10">
+            <thead className="bg-[#175022]/3 border-b border-[#175022]/10">
               <tr>
-                <th className="text-left px-6 py-3 font-semibold text-[#244959]">#</th>
-                <th className="text-left px-6 py-3 font-semibold text-[#244959]">
+                <th className="text-left px-6 py-3 font-semibold text-[#175022]">#</th>
+                <th className="text-left px-6 py-3 font-semibold text-[#175022]">
                   {tr ? 'سوال' : 'Question'}
                 </th>
-                <th className="text-left px-6 py-3 font-semibold text-[#244959]">
+                <th className="text-left px-6 py-3 font-semibold text-[#175022]">
                   {tr ? 'پاسخ' : 'Answer'}
                 </th>
-                <th className="text-right px-6 py-3 font-semibold text-[#244959]">
+                <th className="text-right px-6 py-3 font-semibold text-[#175022]">
                   {tr ? 'عمل' : 'Action'}
                 </th>
               </tr>
@@ -106,21 +106,21 @@ export default function ReviewPage({ tr = false }) {
               {answeredQuestions.map((item, idx) => (
                 <tr
                   key={item.qId}
-                  className={idx % 2 === 0 ? 'bg-white' : 'bg-[#244959]/2'}
+                  className={idx % 2 === 0 ? 'bg-white' : 'bg-[#175022]/2'}
                 >
-                  <td className="px-6 py-4 font-mono text-[10px] text-[#244959]/35">
+                  <td className="px-6 py-4 font-mono text-[10px] text-[#175022]/35">
                     {item.question.number}
                   </td>
-                  <td className="px-6 py-4 text-[#244959]/65 max-w-xs">
+                  <td className="px-6 py-4 text-[#175022]/65 max-w-xs">
                     {(item.question.text?.[tr ? 'tr' : 'en'] || item.question.text?.en)?.substring(0, 60)}...
                   </td>
-                  <td className="px-6 py-4 font-semibold text-[#244959]">
+                  <td className="px-6 py-4 font-semibold text-[#175022]">
                     {editingQuestionId === item.qId ? (
                       <input
                         type="text"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        className="px-3 py-2 border border-[#244959]/20 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#89E789]"
+                        className="px-3 py-2 border border-[#175022]/20 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-[#8BEA99]"
                       />
                     ) : (
                       <span>{String(item.answer).substring(0, 40)}</span>
@@ -131,7 +131,7 @@ export default function ReviewPage({ tr = false }) {
                       <button
                         onClick={() => handleSaveEdit(item.qId)}
                         disabled={saving}
-                        className="flex items-center gap-1 px-3 py-2 bg-[#244959] text-white text-xs font-bold rounded-full hover:bg-[#1a3a2e] transition disabled:opacity-50"
+                        className="flex items-center gap-1 px-3 py-2 bg-[#175022] text-white text-xs font-bold rounded-full hover:bg-[#175022] transition disabled:opacity-50"
                       >
                         <Save className="w-3 h-3" />
                         {tr ? 'ذخیره' : 'Save'}
@@ -139,7 +139,7 @@ export default function ReviewPage({ tr = false }) {
                     ) : (
                       <button
                         onClick={() => handleEdit(item.qId, item.answer)}
-                        className="flex items-center gap-1 px-3 py-2 text-[#244959] hover:bg-[#244959]/10 rounded-full transition"
+                        className="flex items-center gap-1 px-3 py-2 text-[#175022] hover:bg-[#175022]/10 rounded-full transition"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -154,7 +154,7 @@ export default function ReviewPage({ tr = false }) {
 
       {answeredQuestions.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-[#244959]/60">
+          <p className="text-[#175022]/60">
             {tr ? 'هنوز پاسخی وجود ندارد' : 'No answers yet'}
           </p>
         </div>

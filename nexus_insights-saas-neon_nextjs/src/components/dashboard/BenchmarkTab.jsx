@@ -32,8 +32,8 @@ const EMPLOYEE_BANDS = [
 // ─── Benchmark bar (industry position visualization) ───────────────────────────
 function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
   if (!yourValue || yourValue === 0) return (
-    <div className="flex h-10 items-center justify-center rounded-xl bg-[#302817]/4">
-      <p className="text-[11px] text-[#302817]/40">{tr ? 'Emisyon verisi girilmesi gerekiyor' : 'Enter emission data first'}</p>
+    <div className="flex h-10 items-center justify-center rounded-xl bg-[#072C0E]/4">
+      <p className="text-[11px] text-[#072C0E]/40">{tr ? 'Emisyon verisi girilmesi gerekiyor' : 'Enter emission data first'}</p>
     </div>
   );
 
@@ -50,18 +50,18 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
                       (tr ? 'Yüksek emisyon' : 'High emissions');
 
   const posColor =
-    yourValue < p25 ? 'text-[#244959]' :
-    yourValue < avg ? 'text-[#51B291]' :
+    yourValue < p25 ? 'text-[#175022]' :
+    yourValue < avg ? 'text-[#2ABD41]' :
     yourValue < p75 ? 'text-amber-600' : 'text-red-500';
 
   return (
     <div className="space-y-3">
       {/* Bar track */}
-      <div className="relative h-6 rounded-full bg-[#302817]/6">
+      <div className="relative h-6 rounded-full bg-[#072C0E]/6">
         {/* Low zone */}
-        <div className="absolute left-0 top-0 h-full rounded-l-full bg-[#EEF3D8]" style={{ width: `${p25Pct}%` }} />
+        <div className="absolute left-0 top-0 h-full rounded-l-full bg-[#DEFAE1]" style={{ width: `${p25Pct}%` }} />
         {/* Mid zone */}
-        <div className="absolute top-0 h-full bg-[#89E789]/35" style={{ left: `${p25Pct}%`, width: `${avgPct - p25Pct}%` }} />
+        <div className="absolute top-0 h-full bg-[#8BEA99]/35" style={{ left: `${p25Pct}%`, width: `${avgPct - p25Pct}%` }} />
         {/* High zone */}
         <div className="absolute top-0 h-full bg-amber-100" style={{ left: `${avgPct}%`, width: `${p75Pct - avgPct}%` }} />
         {/* Very high zone */}
@@ -76,20 +76,20 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
 
         {/* Your position */}
         <div
-          className="absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-[#302817]"
+          className="absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-[#072C0E]"
           style={{ left: `${yourPct}%` }}
         >
-          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#302817]">
+          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#072C0E]">
             {tr ? 'Siz' : 'You'}·{Math.round(yourValue)}
           </span>
         </div>
       </div>
 
       {/* Legend */}
-      <div className="flex items-center gap-3 text-[10px] text-[#302817]/40">
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#EEF3D8] ring-1 ring-[#302817]/10" />{tr ? 'İyi' : 'Good'}</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#89E789]/35 ring-1 ring-[#302817]/10" />{tr ? 'Orta' : 'Medium'}</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-100 ring-1 ring-[#302817]/10" />{tr ? 'Yüksek' : 'High'}</span>
+      <div className="flex items-center gap-3 text-[10px] text-[#072C0E]/40">
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#DEFAE1] ring-1 ring-[#072C0E]/10" />{tr ? 'İyi' : 'Good'}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#8BEA99]/35 ring-1 ring-[#072C0E]/10" />{tr ? 'Orta' : 'Medium'}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-100 ring-1 ring-[#072C0E]/10" />{tr ? 'Yüksek' : 'High'}</span>
         <span className={`ml-auto font-bold ${posColor}`}>{position}</span>
       </div>
     </div>
@@ -99,21 +99,21 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
 // ─── Opportunity row ──────────────────────────────────────────────────────────
 function OpportunityRow({ rank, title, desc, saving, locked, tr }) {
   return (
-    <div className={`flex items-start gap-3 rounded-xl border p-3 ${locked ? 'border-[#302817]/6 bg-[#302817]/2 opacity-60' : 'border-[#302817]/10 bg-white'}`}>
+    <div className={`flex items-start gap-3 rounded-xl border p-3 ${locked ? 'border-[#072C0E]/6 bg-[#072C0E]/2 opacity-60' : 'border-[#072C0E]/10 bg-white'}`}>
       <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-        rank === 1 ? 'bg-[#51B291] text-white' :
-        rank === 2 ? 'bg-[#89E789] text-white' :
-        'bg-[#302817]/8 text-[#302817]/50'
+        rank === 1 ? 'bg-[#2ABD41] text-white' :
+        rank === 2 ? 'bg-[#8BEA99] text-white' :
+        'bg-[#072C0E]/8 text-[#072C0E]/50'
       }`}>
         {locked ? <Lock className="h-3 w-3" /> : rank}
       </div>
       <div className="flex-1">
-        <p className={`text-[12px] font-semibold ${locked ? 'text-[#302817]/40' : 'text-[#302817]'}`}>{title}</p>
-        <p className="mt-0.5 text-[11px] leading-snug text-[#302817]/45">{desc}</p>
+        <p className={`text-[12px] font-semibold ${locked ? 'text-[#072C0E]/40' : 'text-[#072C0E]'}`}>{title}</p>
+        <p className="mt-0.5 text-[11px] leading-snug text-[#072C0E]/45">{desc}</p>
       </div>
       <div className="shrink-0 text-right">
-        <p className={`text-[12px] font-bold ${locked ? 'text-[#302817]/30' : 'text-[#244959]'}`}>{saving}</p>
-        <p className="text-[10px] text-[#302817]/35">{tr ? 'tCO₂e tasarruf' : 'tCO₂e saving'}</p>
+        <p className={`text-[12px] font-bold ${locked ? 'text-[#072C0E]/30' : 'text-[#175022]'}`}>{saving}</p>
+        <p className="text-[10px] text-[#072C0E]/35">{tr ? 'tCO₂e tasarruf' : 'tCO₂e saving'}</p>
       </div>
     </div>
   );
@@ -165,14 +165,14 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       {/* Section header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/35">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/35">
             {tr ? 'Sektör Karşılaştırması' : 'Sector Comparison'}
           </p>
-          <h1 className="mt-0.5 text-base font-bold text-[#302817] sm:text-[17px]">
+          <h1 className="mt-0.5 text-base font-bold text-[#072C0E] sm:text-[17px]">
             {tr ? 'Benchmark' : 'Benchmark'}
           </h1>
         </div>
-        <div className="flex items-center gap-2 text-[11px] text-[#302817]/45">
+        <div className="flex items-center gap-2 text-[11px] text-[#072C0E]/45">
           <Users className="h-3.5 w-3.5" />
           <span>{benchmark.count} {tr ? 'şirket · GDPR uyumlu anonim veri' : 'companies · GDPR-compliant anonymous data'}</span>
         </div>
@@ -185,7 +185,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             label: tr ? 'Sizin Emisyonunuz' : 'Your Emissions',
             value: totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO₂e` : '—',
             sub:   tr ? 'Bu yıl' : 'This year',
-            color: 'text-[#302817]',
+            color: 'text-[#072C0E]',
           },
           {
             label: tr ? 'Sektör Ortalaması' : 'Sector Average',
@@ -197,19 +197,19 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             label: tr ? 'Ortalamanın Altında' : 'Below Average',
             value: totalTonne > 0 ? `%${Math.abs(pctVsAvg)}` : '—',
             sub:   pctVsAvg > 0 ? (tr ? 'Daha az emisyon ✓' : 'Less emissions ✓') : (tr ? 'Daha fazla emisyon' : 'More emissions'),
-            color: pctVsAvg > 0 ? 'text-[#244959]' : 'text-red-500',
+            color: pctVsAvg > 0 ? 'text-[#175022]' : 'text-red-500',
           },
           {
             label: tr ? 'Çalışan Grubu' : 'Employee Band',
             value: empBand.key,
             sub:   tr ? empBand.tr : empBand.en,
-            color: 'text-[#302817]',
+            color: 'text-[#072C0E]',
           },
         ].map((card) => (
-          <div key={card.label} className="rounded-xl border border-[#302817]/8 bg-white p-3">
-            <p className="text-[10px] font-semibold text-[#302817]/45">{card.label}</p>
+          <div key={card.label} className="rounded-xl border border-[#072C0E]/8 bg-white p-3">
+            <p className="text-[10px] font-semibold text-[#072C0E]/45">{card.label}</p>
             <p className={`mt-1 text-lg font-bold leading-none ${card.color}`}>{card.value}</p>
-            <p className="mt-0.5 text-[10px] text-[#302817]/40">{card.sub}</p>
+            <p className="mt-0.5 text-[10px] text-[#072C0E]/40">{card.sub}</p>
           </div>
         ))}
       </div>
@@ -218,16 +218,16 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-[1fr_300px]">
 
         {/* Sector position */}
-        <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 sm:p-5">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#51B291]/15 sm:h-9 sm:w-9">
-              <BarChart2 className="h-4 w-4 text-[#51B291]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#2ABD41]/15 sm:h-9 sm:w-9">
+              <BarChart2 className="h-4 w-4 text-[#2ABD41]" />
             </div>
             <div>
-              <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">
+              <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
                 {tr ? 'Sektör Konumunuz' : 'Your Sector Position'}
               </h2>
-              <p className="text-[10px] text-[#302817]/40">
+              <p className="text-[10px] text-[#072C0E]/40">
                 {benchmark.label[language] || benchmark.label.en} · {empBand[language] || empBand.en}
               </p>
             </div>
@@ -242,9 +242,9 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             />
           </div>
           {/* NACE info note */}
-          <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#302817]/3 p-3">
-            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#302817]/35" />
-            <p className="text-[11px] text-[#302817]/45 leading-relaxed">
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#072C0E]/3 p-3">
+            <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#072C0E]/35" />
+            <p className="text-[11px] text-[#072C0E]/45 leading-relaxed">
               {naceCode
                 ? (tr ? `NACE ${naceCode} sektörü · ${empBand.tr} · ${benchmark.count} anonim şirket verisi` : `NACE ${naceCode} sector · ${empBand.en} · ${benchmark.count} anonymous companies`)
                 : (tr ? 'Anket tamamlandığında sektörünüze özgü veriler gösterilir.' : 'Complete the questionnaire to see sector-specific data.')}
@@ -253,16 +253,16 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         </div>
 
         {/* Year-over-year trend placeholder */}
-        <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 sm:p-5">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 sm:p-5">
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#244959]/15 sm:h-9 sm:w-9">
-              <TrendingDown className="h-4 w-4 text-[#244959]" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#175022]/15 sm:h-9 sm:w-9">
+              <TrendingDown className="h-4 w-4 text-[#175022]" />
             </div>
             <div>
-              <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">
+              <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
                 {tr ? 'Yıllık Karşılaştırma' : 'Year-over-year'}
               </h2>
-              <p className="text-[10px] text-[#302817]/40">{tr ? 'Trend analizi' : 'Trend analysis'}</p>
+              <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Trend analizi' : 'Trend analysis'}</p>
             </div>
           </div>
           {totalTonne > 0 ? (
@@ -270,15 +270,15 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
               {[
                 { label: tr ? 'Sektör ortalaması' : 'Sector average', value: benchmark.avg, color: 'bg-amber-200' },
                 { label: tr ? 'P75 (üst çeyrek)' : 'P75 (upper quartile)', value: benchmark.p75, color: 'bg-red-100' },
-                { label: tr ? 'Sizin performansınız' : 'Your performance', value: Math.round(totalTonne), color: 'bg-[#51B291]' },
-                { label: tr ? 'P25 (alt çeyrek)' : 'P25 (lower quartile)', value: benchmark.p25, color: 'bg-[#EEF3D8]' },
+                { label: tr ? 'Sizin performansınız' : 'Your performance', value: Math.round(totalTonne), color: 'bg-[#2ABD41]' },
+                { label: tr ? 'P25 (alt çeyrek)' : 'P25 (lower quartile)', value: benchmark.p25, color: 'bg-[#DEFAE1]' },
               ].map((row) => (
                 <div key={row.label}>
                   <div className="mb-1 flex justify-between text-[11px]">
-                    <span className="text-[#302817]/55">{row.label}</span>
-                    <span className="font-bold text-[#302817]">{row.value} tCO₂e</span>
+                    <span className="text-[#072C0E]/55">{row.label}</span>
+                    <span className="font-bold text-[#072C0E]">{row.value} tCO₂e</span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[#302817]/6">
+                  <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/6">
                     <div
                       className={`h-full rounded-full ${row.color} transition-all duration-700`}
                       style={{ width: `${Math.min((row.value / (benchmark.p75 * 1.2)) * 100, 100)}%` }}
@@ -289,27 +289,27 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             </div>
           ) : (
             <div className="flex h-28 flex-col items-center justify-center gap-2">
-              <p className="text-[11px] text-[#302817]/35">{tr ? 'Veri bekleniyor' : 'Awaiting data'}</p>
+              <p className="text-[11px] text-[#072C0E]/35">{tr ? 'Veri bekleniyor' : 'Awaiting data'}</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Reduction Opportunities */}
-      <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 sm:p-5">
+      <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 sm:p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#302817]/8 sm:h-9 sm:w-9">
-              <TrendingDown className="h-4 w-4 text-[#302817]/60" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#072C0E]/8 sm:h-9 sm:w-9">
+              <TrendingDown className="h-4 w-4 text-[#072C0E]/60" />
             </div>
             <div>
-              <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">
+              <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
                 {tr ? 'Azaltım Fırsatları' : 'Reduction Opportunities'}
               </h2>
-              <p className="text-[10px] text-[#302817]/40">{tr ? 'Sektörünüze özgü öneriler' : 'Sector-specific recommendations'}</p>
+              <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Sektörünüze özgü öneriler' : 'Sector-specific recommendations'}</p>
             </div>
           </div>
-          <span className="rounded-full bg-[#EEF3D8] px-2 py-0.5 text-[10px] font-bold text-[#244959]">
+          <span className="rounded-full bg-[#DEFAE1] px-2 py-0.5 text-[10px] font-bold text-[#175022]">
             {tr ? 'Ücretsiz' : 'Free'}
           </span>
         </div>
@@ -319,14 +319,14 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
           ))}
         </div>
         {/* Pro unlock banner */}
-        <div className="mt-3 flex items-center justify-between rounded-xl border border-[#51B291]/25 bg-gradient-to-r from-[#302817] to-[#3d3520] px-4 py-3">
+        <div className="mt-3 flex items-center justify-between rounded-xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#072C0E] to-[#1A6126] px-4 py-3">
           <div className="flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5 text-[#89E789]" />
+            <Lock className="h-3.5 w-3.5 text-[#8BEA99]" />
             <p className="text-[12px] font-semibold text-white/80">
               {tr ? 'Tüm fırsatları görmek için Pro plana geçin' : 'Upgrade to Pro to see all opportunities'}
             </p>
           </div>
-          <button className="rounded-lg bg-[#51B291] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#89E789]">
+          <button className="rounded-lg bg-[#2ABD41] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#8BEA99]">
             Pro →
           </button>
         </div>

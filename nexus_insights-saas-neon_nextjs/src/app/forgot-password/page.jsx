@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
   }, [email, tr, loading]);
 
   return (
-    <div className="bg-gradient-to-br from-[#F9EFE5]/60 via-white to-[#B4BE6A]/8 text-[#302817] antialiased min-h-screen">
+    <div className="bg-gradient-to-br from-[#DEFAE1]/60 via-white to-[#8BEA99]/8 text-[#072C0E] antialiased min-h-screen">
       <SimpleHeader />
       <main className="pt-24 lg:pt-32 pb-16">
         <div className="max-w-md mx-auto px-4">
@@ -58,7 +58,7 @@ export default function ForgotPasswordPage() {
                   <h2 className="text-2xl font-bold mb-2">
                     {language === 'tr' ? 'Şifremi Unuttum' : 'Forgot Password'}
                   </h2>
-                  <p className="text-sm text-[#302817]/60">
+                  <p className="text-sm text-[#072C0E]/60">
                     {language === 'tr'
                       ? 'E-posta adresinizi girin, şifre sıfırlama bağlantısı göndereceğiz.'
                       : 'Enter your email and we will send you a password reset link.'}
@@ -66,16 +66,16 @@ export default function ForgotPasswordPage() {
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-bold text-[#302817]/75 mb-2">
+                    <label className="block text-sm font-bold text-[#072C0E]/75 mb-2">
                       {language === 'tr' ? 'E-posta' : 'Email'}
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#95A847]" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#2ABD41]" />
                       <input
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#302817]/15 focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none"
+                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-[#072C0E]/15 focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none"
                         placeholder={language === 'tr' ? 'ornek@email.com' : 'example@email.com'}
                         required
                       />
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-[#75863B] to-[#95A847] text-white font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-60"
+                    className="w-full py-3 bg-gradient-to-r from-[#1D9C31] to-[#2ABD41] text-white font-semibold rounded-xl hover:scale-[1.02] transition-all disabled:opacity-60"
                   >
                     {loading
                       ? (tr ? 'Gönderiliyor…' : 'Sending…')
@@ -100,11 +100,11 @@ export default function ForgotPasswordPage() {
               </>
             ) : (
               <div className="text-center py-4">
-                <CheckCircle className="w-16 h-16 text-[#95A847] mx-auto mb-4" />
+                <CheckCircle className="w-16 h-16 text-[#2ABD41] mx-auto mb-4" />
                 <h2 className="text-xl font-bold mb-2">
                   {language === 'tr' ? 'E-posta Gönderildi' : 'Email Sent'}
                 </h2>
-                <p className="text-sm text-[#302817]/60 mb-4">
+                <p className="text-sm text-[#072C0E]/60 mb-4">
                   {language === 'tr'
                     ? `${email} adresine şifre sıfırlama bağlantısı gönderildi. Lütfen gelen kutunuzu kontrol edin.`
                     : `A password reset link has been sent to ${email}. Please check your inbox.`}
@@ -112,7 +112,7 @@ export default function ForgotPasswordPage() {
               </div>
             )}
             <div className="mt-6 text-center">
-              <NextLink href="/login" className="text-sm text-[#95A847] hover:text-[#75863B] flex items-center justify-center gap-1">
+              <NextLink href="/login" className="text-sm text-[#2ABD41] hover:text-[#1D9C31] flex items-center justify-center gap-1">
                 <ArrowLeft className="w-4 h-4" />
                 {language === 'tr' ? 'Giriş sayfasına dön' : 'Back to login'}
               </NextLink>

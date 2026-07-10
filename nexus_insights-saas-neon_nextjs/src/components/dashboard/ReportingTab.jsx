@@ -92,35 +92,35 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
   if (isAndroidTablet) {
     return (
-      <div className="space-y-4 text-[#302817]">
-        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#51B291]">
+      <div className="space-y-4 text-[#072C0E]">
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
             {tr ? 'Rapor merkezi' : 'Report center'}
           </p>
-          <h1 className="mt-2 text-2xl font-black text-[#302817]">
+          <h1 className="mt-2 text-2xl font-black text-[#072C0E]">
             {tr ? 'Karbon Rapor Merkezi' : 'Carbon Report Center'}
           </h1>
         </div>
-        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <p className="text-xs text-[#302817]/50">{tr ? 'Rapor Hazırlığı' : 'Readiness'}</p>
-          <p className="text-3xl font-black text-[#51B291]">{readiness}%</p>
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+          <p className="text-xs text-[#072C0E]/50">{tr ? 'Rapor Hazırlığı' : 'Readiness'}</p>
+          <p className="text-3xl font-black text-[#2ABD41]">{readiness}%</p>
         </div>
-        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <p className="text-xs text-[#302817]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
-          <p className="text-3xl font-black text-[#302817]">{totalTonne.toFixed(2)} tCO₂e</p>
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+          <p className="text-xs text-[#072C0E]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
+          <p className="text-3xl font-black text-[#072C0E]">{totalTonne.toFixed(2)} tCO₂e</p>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">PDF TR</button>
-          <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">PDF EN</button>
-          <button onClick={() => handleDownload('csv', '')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">CSV</button>
-          <button onClick={() => handleDownload('excel', '')} className="rounded-2xl border border-[#302817]/10 bg-white p-4 text-center text-sm font-bold text-[#302817]">Excel</button>
+          <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">PDF TR</button>
+          <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">PDF EN</button>
+          <button onClick={() => handleDownload('csv', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">CSV</button>
+          <button onClick={() => handleDownload('excel', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">Excel</button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 text-[#302817]">
+    <div className="space-y-4 text-[#072C0E]">
       {/* ─── Download error ─── */}
       {dlError && (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
@@ -129,25 +129,25 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
       )}
       {/* ─── HERO ─── */}
-      <div className="relative rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-5 shadow-sm">
+      <div className="relative rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-5 shadow-sm">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#51B291]">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
               {tr ? 'Rapor merkezi' : 'Report center'}
             </p>
             <h1 className="mt-1.5 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
               {tr ? 'Karbon Rapor Merkezi' : 'Carbon Report Center'}
             </h1>
-            <p className="mt-1 text-sm text-[#302817]/55">
+            <p className="mt-1 text-sm text-[#072C0E]/55">
               {tr ? 'Denetim-hazır ESG & ISO 14064-1 raporları oluşturun' : 'Generate audit-ready ESG & ISO 14064-1 reports'}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60">
+            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading === 'pdftr' ? '...' : 'PDF TR'}
             </button>
-            <button onClick={() => handleDownload('pdf', 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+            <button onClick={() => handleDownload('pdf', 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading === 'pdfen' ? '...' : 'PDF EN'}
             </button>
@@ -158,36 +158,36 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 1: Readiness + AI Insights ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Report Readiness */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291]/15 text-[#51B291]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
                 <Shield className="h-4 w-4" />
               </div>
               <h2 className="text-sm font-bold">{tr ? 'Rapor Hazırlığı' : 'Report Readiness'}</h2>
             </div>
-            <span className="text-2xl font-bold text-[#51B291]">{readiness}%</span>
+            <span className="text-2xl font-bold text-[#2ABD41]">{readiness}%</span>
           </div>
           {/* Progress ring simplified as bar */}
-          <div className="mb-4 h-3 overflow-hidden rounded-full bg-[#302817]/6">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-700" style={{ width: `${readiness}%` }} />
+          <div className="mb-4 h-3 overflow-hidden rounded-full bg-[#072C0E]/6">
+            <div className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700" style={{ width: `${readiness}%` }} />
           </div>
           <div className="space-y-2">
             {checks.map((c) => (
               <div key={c.label} className="flex items-center gap-2.5">
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#51B291] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
-                <span className={`text-xs font-semibold ${c.done ? 'text-[#302817]/50 line-through' : 'text-[#302817]/70'}`}>{c.label}</span>
+                <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]/50 line-through' : 'text-[#072C0E]/70'}`}>{c.label}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* AI Insights — deep green (not brown/black) to stay on-theme with the carbon branding */}
-        <div className="rounded-[1.5rem] border border-[#1a3a2e]/80 bg-gradient-to-br from-[#1a3a2e] to-[#2d6235] p-5 shadow-[0_6px_20px_rgba(26,58,46,0.25)]">
+        <div className="rounded-[1.5rem] border border-[#175022]/80 bg-gradient-to-br from-[#175022] to-[#1A7B2A] p-5 shadow-[0_6px_20px_rgba(23, 80, 34,0.25)]">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#89E789]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#8BEA99]">
               <Sparkles className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold text-white">{tr ? 'AI Karbon Analizi' : 'AI Carbon Insights'}</h2>
@@ -213,9 +213,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 2: Scope Breakdown + Trend ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.2fr]">
         {/* Scope Breakdown */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#89E789]/18 text-[#51B291]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41]">
               <Target className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Kapsam Dağılımı' : 'Scope Breakdown'}</h2>
@@ -223,39 +223,39 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           {totalTonne > 0 ? (
             <div className="space-y-4">
               {[
-                { label: 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#244959] to-[#51B291]' },
-                { label: 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#51B291] to-[#89E789]' },
-                { label: 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#5E7A2E] to-[#89E789]' },
+                { label: 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#175022] to-[#2ABD41]' },
+                { label: 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#2ABD41] to-[#8BEA99]' },
+                { label: 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#1A7B2A] to-[#8BEA99]' },
               ].map(s => (
                 <div key={s.label}>
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-xs font-bold">{s.label}</span>
-                    <span className="text-[11px] font-bold text-[#302817]/45">{s.pct.toFixed(0)}% · {s.val.toFixed(2)} t</span>
+                    <span className="text-[11px] font-bold text-[#072C0E]/45">{s.pct.toFixed(0)}% · {s.val.toFixed(2)} t</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded-full bg-[#302817]/6">
+                  <div className="h-3 overflow-hidden rounded-full bg-[#072C0E]/6">
                     <div className={`h-full rounded-full bg-gradient-to-r ${s.color} transition-all duration-500`} style={{ width: `${Math.min(s.pct, 100)}%` }} />
                   </div>
                 </div>
               ))}
               <div className="mt-3 rounded-xl bg-[#F8F8F8] px-3 py-2.5 text-center">
-                <p className="text-[10px] font-bold uppercase text-[#302817]/35">{tr ? 'Toplam' : 'Total'}</p>
-                <p className="text-lg font-bold text-[#302817]">{totalTonne.toFixed(2)} <span className="text-xs font-semibold text-[#302817]/40">tCO₂e</span></p>
+                <p className="text-[10px] font-bold uppercase text-[#072C0E]/35">{tr ? 'Toplam' : 'Total'}</p>
+                <p className="text-lg font-bold text-[#072C0E]">{totalTonne.toFixed(2)} <span className="text-xs font-semibold text-[#072C0E]/40">tCO₂e</span></p>
               </div>
             </div>
           ) : (
-            <p className="py-8 text-center text-xs font-semibold text-[#302817]/35">{tr ? 'Veri yok' : 'No data'}</p>
+            <p className="py-8 text-center text-xs font-semibold text-[#072C0E]/35">{tr ? 'Veri yok' : 'No data'}</p>
           )}
         </div>
 
         {/* Monthly Trend */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41] text-white">
               <TrendingDown className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-sm font-bold">{tr ? 'Aylık Emisyon Trendi' : 'Monthly Emission Trend'}</h2>
-              <p className="text-[11px] text-[#302817]/40">{selectedYear}</p>
+              <p className="text-[11px] text-[#072C0E]/40">{selectedYear}</p>
             </div>
           </div>
           {summary?.monthly && summary.monthly.some(m => m.total_kg > 0) ? (
@@ -265,16 +265,16 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
                 const pct = (m.total_kg / monthlyMaxKg) * 100;
                 return (
                   <div key={m.month ?? i + 1} className="flex flex-1 flex-col items-center gap-1">
-                    <div className="relative h-32 w-full overflow-hidden rounded-lg bg-[#51B291]/8">
-                      <div className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#244959] to-[#51B291] transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 6 : 0)}%` }} />
+                    <div className="relative h-32 w-full overflow-hidden rounded-lg bg-[#2ABD41]/8">
+                      <div className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#175022] to-[#2ABD41] transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 6 : 0)}%` }} />
                     </div>
-                    <span className="text-[10px] font-bold text-[#302817]/35">{label}</span>
+                    <span className="text-[10px] font-bold text-[#072C0E]/35">{label}</span>
                   </div>
                 );
               })}
             </div>
           ) : (
-            <p className="flex h-40 items-center justify-center text-xs font-semibold text-[#302817]/35">{tr ? 'Trend verisi yok' : 'No trend data'}</p>
+            <p className="flex h-40 items-center justify-center text-xs font-semibold text-[#072C0E]/35">{tr ? 'Trend verisi yok' : 'No trend data'}</p>
           )}
         </div>
       </div>
@@ -282,9 +282,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 3: Export Center + Compliance ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Export Center */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291]/15 text-[#51B291]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
               <Download className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Dışa Aktarma' : 'Export Center'}</h2>
@@ -298,9 +298,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
 
         {/* Compliance Status */}
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#244959] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#175022] text-white">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Uyumluluk Durumu' : 'Compliance Status'}</h2>
@@ -313,10 +313,10 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
               <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5">
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#51B291] text-white' : 'bg-[#302817]/8 text-[#302817]/30'}`}>
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
-                <span className={`text-xs font-semibold ${c.done ? 'text-[#302817]' : 'text-[#302817]/45'}`}>{c.label}</span>
+                <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]' : 'text-[#072C0E]/45'}`}>{c.label}</span>
               </div>
             ))}
           </div>
@@ -331,14 +331,14 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
            Render whichever shape is present instead of forcing legacy field
            names onto CarbonReport data — that previously showed all '-'. */}
       {questionnaireProfile?.is_complete && (
-        <div className="rounded-[1.5rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#89E789]/18 text-[#51B291]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41]">
               <FileText className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Envanter Yapılandırması' : 'Inventory Configuration'}</h2>
             {questionnaireProfile.title && (
-              <span className="ml-auto text-xs font-semibold text-[#302817]/40 truncate max-w-[45%]">{questionnaireProfile.title}</span>
+              <span className="ml-auto text-xs font-semibold text-[#072C0E]/40 truncate max-w-[45%]">{questionnaireProfile.title}</span>
             )}
           </div>
           {questionnaireProfile.reporting_year !== undefined ? (
@@ -365,7 +365,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 function InsightItem({ text, type }) {
   return (
     <div className="flex items-start gap-2.5">
-      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${type === 'warning' ? 'bg-amber-400' : type === 'neutral' ? 'bg-white/30' : 'bg-[#89E789]'}`} />
+      <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${type === 'warning' ? 'bg-amber-400' : type === 'neutral' ? 'bg-white/30' : 'bg-[#8BEA99]'}`} />
       <p className={`text-xs leading-5 ${type === 'neutral' ? 'text-white/50' : 'text-white/80'}`}>{text}</p>
     </div>
   );
@@ -373,8 +373,8 @@ function InsightItem({ text, type }) {
 
 function ExportBtn({ icon: Icon, label, loading, onClick }) {
   return (
-    <button onClick={onClick} disabled={loading} className="flex items-center gap-2 rounded-xl border border-[#302817]/8 bg-[#F8F8F8] px-3.5 py-3 text-xs font-bold text-[#302817] transition hover:bg-[#F9EFE5] disabled:opacity-50">
-      <Icon className="h-4 w-4 text-[#51B291]" />
+    <button onClick={onClick} disabled={loading} className="flex items-center gap-2 rounded-xl border border-[#072C0E]/8 bg-[#F8F8F8] px-3.5 py-3 text-xs font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:opacity-50">
+      <Icon className="h-4 w-4 text-[#2ABD41]" />
       {loading ? '...' : label}
     </button>
   );
@@ -383,8 +383,8 @@ function ExportBtn({ icon: Icon, label, loading, onClick }) {
 function ConfigItem({ label, value }) {
   return (
     <div className="rounded-xl bg-[#F8F8F8] px-3 py-2.5">
-      <p className="text-[10px] font-bold uppercase text-[#302817]/35">{label}</p>
-      <p className="mt-0.5 text-xs font-bold text-[#302817] capitalize">{value}</p>
+      <p className="text-[10px] font-bold uppercase text-[#072C0E]/35">{label}</p>
+      <p className="mt-0.5 text-xs font-bold text-[#072C0E] capitalize">{value}</p>
     </div>
   );
 }

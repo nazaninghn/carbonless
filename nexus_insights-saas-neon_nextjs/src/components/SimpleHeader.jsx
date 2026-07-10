@@ -15,7 +15,7 @@ export default function SimpleHeader() {
           {/* Logo */}
           <NextLink href="/" className="flex items-center gap-3">
             <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-11 w-11 sm:h-14 sm:w-14 object-contain" />
-            <span className="text-xl sm:text-[22px] font-bold tracking-[-0.02em] text-[#302817]">
+            <span className="text-xl sm:text-[22px] font-bold tracking-[-0.02em] text-[#072C0E]">
               Carbonless
             </span>
           </NextLink>
@@ -23,7 +23,7 @@ export default function SimpleHeader() {
           {/* Language Toggle */}
           <button 
             onClick={() => changeLanguage(language === 'tr' ? 'en' : 'tr')} 
-            className="flex items-center gap-2 rounded-full border border-[#302817]/15 bg-white px-4 py-2 text-sm font-semibold text-[#302817]/60 shadow-sm transition hover:border-[#51B291]/40 hover:text-[#244959]"
+            className="flex items-center gap-2 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2 text-sm font-semibold text-[#072C0E]/60 shadow-sm transition hover:border-[#2ABD41]/40 hover:text-[#175022]"
           >
             <Globe className="w-4 h-4" />
             {language === 'tr' ? 'EN' : 'TR'}

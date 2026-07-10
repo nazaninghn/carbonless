@@ -43,35 +43,35 @@ function VerifyContent() {
   }, [token]);
 
   return (
-    <main className="min-h-screen bg-[#f9faf5] flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
-            <span className="text-[18px] font-bold text-[#1a1a1a]">Carbonless</span>
+            <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
           </Link>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 shadow-sm text-center">
+        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 shadow-sm text-center">
           {status === 'loading' && (
             <>
-              <Loader2 className="h-12 w-12 text-[#4CAF50] animate-spin mx-auto mb-4" />
-              <h1 className="text-[20px] font-bold text-[#1a1a1a]">Verifying your email...</h1>
-              <p className="mt-2 text-[14px] text-[#302817]/50">Please wait a moment.</p>
+              <Loader2 className="h-12 w-12 text-[#2ABD41] animate-spin mx-auto mb-4" />
+              <h1 className="text-[20px] font-bold text-[#072C0E]">Verifying your email...</h1>
+              <p className="mt-2 text-[14px] text-[#072C0E]/50">Please wait a moment.</p>
             </>
           )}
 
           {status === 'success' && (
             <>
-              <div className="h-16 w-16 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="h-8 w-8 text-[#4CAF50]" />
+              <div className="h-16 w-16 rounded-full bg-[#DEFAE1] flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="h-8 w-8 text-[#2ABD41]" />
               </div>
-              <h1 className="text-[20px] font-bold text-[#1a1a1a]">Email Verified!</h1>
-              <p className="mt-2 text-[14px] text-[#302817]/50">{message}</p>
+              <h1 className="text-[20px] font-bold text-[#072C0E]">Email Verified!</h1>
+              <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
               <Link href="/login"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#4CAF50] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#388E3C] transition">
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
                 Continue to Login
               </Link>
             </>
@@ -82,16 +82,16 @@ function VerifyContent() {
               <div className="h-16 w-16 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-4">
                 <XCircle className="h-8 w-8 text-red-500" />
               </div>
-              <h1 className="text-[20px] font-bold text-[#1a1a1a]">Verification Failed</h1>
+              <h1 className="text-[20px] font-bold text-[#072C0E]">Verification Failed</h1>
               <p className="mt-2 text-[14px] text-red-600">{message}</p>
               <div className="mt-6 flex flex-col gap-3">
                 <Link href="/login"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1a1a1a] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#333] transition">
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#072C0E] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#175022] transition">
                   Go to Login
                 </Link>
                 <button
                   onClick={() => window.location.reload()}
-                  className="text-[13px] font-medium text-[#4CAF50] hover:underline">
+                  className="text-[13px] font-medium text-[#2ABD41] hover:underline">
                   Try Again
                 </button>
               </div>
@@ -103,12 +103,12 @@ function VerifyContent() {
               <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
                 <Mail className="h-8 w-8 text-amber-500" />
               </div>
-              <h1 className="text-[20px] font-bold text-[#1a1a1a]">Check Your Email</h1>
-              <p className="mt-2 text-[14px] text-[#302817]/50">
+              <h1 className="text-[20px] font-bold text-[#072C0E]">Check Your Email</h1>
+              <p className="mt-2 text-[14px] text-[#072C0E]/50">
                 We sent a verification link to your email address. Click the link to activate your account.
               </p>
               <Link href="/login"
-                className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-[#e8e8e0] px-6 py-3 text-[14px] font-semibold text-[#302817]/70 hover:border-[#302817]/30 transition">
+                className="mt-6 inline-flex items-center gap-2 rounded-full border-2 border-[#DEFAE1] px-6 py-3 text-[14px] font-semibold text-[#072C0E]/70 hover:border-[#072C0E]/30 transition">
                 Back to Login
               </Link>
             </>
@@ -121,7 +121,7 @@ function VerifyContent() {
 
 export default function VerifyEmailPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-[#4CAF50]" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-[#2ABD41]" /></div>}>
       <VerifyContent />
     </Suspense>
   );

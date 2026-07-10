@@ -51,25 +51,25 @@ export default function DashboardSidebar({
           group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200
           ${isActive
             ? isAI
-              ? 'bg-[#53A67F] text-white shadow-md shadow-[#53A67F]/20'
-              : 'bg-[#1a1a1a] text-white shadow-md shadow-black/10'
-            : 'text-[#302817]/60 hover:bg-[#f5f5f0] hover:text-[#302817]'}
+              ? 'bg-[#2ABD41] text-white shadow-md shadow-[#2ABD41]/20'
+              : 'bg-[#072C0E] text-white shadow-md shadow-black/10'
+            : 'text-[#072C0E]/60 hover:bg-[#F1FCF2] hover:text-[#072C0E]'}
         `}
       >
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
           isActive
             ? isAI ? 'bg-white/20' : 'bg-white/10'
-            : isAI ? 'bg-[#53A67F]/10' : 'bg-[#302817]/5'
+            : isAI ? 'bg-[#2ABD41]/10' : 'bg-[#072C0E]/5'
         }`}>
           <Icon className={`h-[16px] w-[16px] ${
-            isActive ? 'text-white' : isAI ? 'text-[#53A67F]' : 'text-[#302817]/50'
+            isActive ? 'text-white' : isAI ? 'text-[#2ABD41]' : 'text-[#072C0E]/50'
           }`} />
         </div>
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
           {tr ? item.tr : item.en}
         </span>
         {isAI && !isActive && (
-          <span className="rounded-full bg-[#53A67F]/10 px-2 py-0.5 text-[9px] font-bold text-[#53A67F]">
+          <span className="rounded-full bg-[#2ABD41]/10 px-2 py-0.5 text-[9px] font-bold text-[#2ABD41]">
             AI
           </span>
         )}
@@ -85,7 +85,7 @@ export default function DashboardSidebar({
         aria-label={tr ? 'Ana gezinme' : 'Main navigation'}
         className={`
           fixed inset-y-0 left-0 z-50 w-[260px] bg-white
-          border-r border-[#e8e8e0] transition-transform duration-300
+          border-r border-[#DEFAE1] transition-transform duration-300
           lg:static lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0 shadow-[0_8px_40px_rgba(0,0,0,0.08)]' : '-translate-x-full'}
         `}
@@ -93,19 +93,19 @@ export default function DashboardSidebar({
         <div className="flex h-full flex-col">
 
           {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b border-[#e8e8e0] px-4">
+          <div className="flex h-16 items-center justify-between border-b border-[#DEFAE1] px-4">
             <button
               onClick={() => navigate('dashboard')}
               className="flex min-w-0 items-center gap-2.5"
             >
               <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-9 w-9 object-contain" />
-              <span className="truncate text-[15px] font-bold tracking-tight text-[#1a1a1a]">
+              <span className="truncate text-[15px] font-bold tracking-tight text-[#072C0E]">
                 Carbonless
               </span>
             </button>
             <button
               onClick={closeSidebar}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#302817]/40 hover:bg-[#f5f5f0] lg:hidden"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#072C0E]/40 hover:bg-[#F1FCF2] lg:hidden"
             >
               <X className="h-4 w-4" />
             </button>
@@ -115,7 +115,7 @@ export default function DashboardSidebar({
           <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
             {/* Dashboard section */}
             <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/30">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
                 {tr ? 'Kontrol Paneli' : 'Dashboard'}
               </p>
               {mainItems.filter(i => i.key !== 'ai_carbon').map(renderNavItem)}
@@ -123,7 +123,7 @@ export default function DashboardSidebar({
 
             {/* Data section */}
             <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/30">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
                 {tr ? 'Veri ve Raporlar' : 'Data & Reports'}
               </p>
               {dataItems.map(renderNavItem)}
@@ -131,7 +131,7 @@ export default function DashboardSidebar({
 
             {/* Management section */}
             <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/30">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
                 {tr ? 'Yönetim' : 'Management'}
               </p>
               {manageItems.map(renderNavItem)}
@@ -140,16 +140,16 @@ export default function DashboardSidebar({
 
           {/* Quick mode switch card */}
           {/* User footer */}
-          <div className="border-t border-[#e8e8e0] p-3">
-            <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-[#f9f9f7] px-3 py-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a1a1a] text-[12px] font-bold text-white">
+          <div className="border-t border-[#DEFAE1] p-3">
+            <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-[#F1FCF2] px-3 py-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#072C0E] text-[12px] font-bold text-white">
                 {user?.username?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-bold text-[#1a1a1a]">
+                <p className="truncate text-[13px] font-bold text-[#072C0E]">
                   {user?.username || 'User'}
                 </p>
-                <p className="truncate text-[11px] text-[#302817]/40">{user?.email || ''}</p>
+                <p className="truncate text-[11px] text-[#072C0E]/40">{user?.email || ''}</p>
               </div>
             </div>
             <button
@@ -178,7 +178,7 @@ export default function DashboardSidebar({
         aria-label="Mobile navigation"
         className="
           fixed bottom-0 left-0 right-0 z-40
-          border-t border-[#e8e8e0]
+          border-t border-[#DEFAE1]
           bg-white/95 backdrop-blur-sm
           lg:hidden
         "
@@ -205,7 +205,7 @@ export default function DashboardSidebar({
                 {/* Active indicator */}
                 {isActive && (
                   <span className={`absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full ${
-                    isAI ? 'bg-[#53A67F]' : 'bg-[#1a1a1a]'
+                    isAI ? 'bg-[#2ABD41]' : 'bg-[#072C0E]'
                   }`} />
                 )}
 
@@ -214,24 +214,24 @@ export default function DashboardSidebar({
                     flex items-center justify-center rounded-xl transition-all duration-200
                     ${isAI
                       ? `h-9 w-9 ${isActive
-                          ? 'bg-[#53A67F] shadow-md shadow-[#53A67F]/25'
-                          : 'bg-[#53A67F]/10'}`
-                      : `h-7 w-7 ${isActive ? 'bg-[#1a1a1a]/8' : ''}`
+                          ? 'bg-[#2ABD41] shadow-md shadow-[#2ABD41]/25'
+                          : 'bg-[#2ABD41]/10'}`
+                      : `h-7 w-7 ${isActive ? 'bg-[#072C0E]/8' : ''}`
                     }
                   `}
                 >
                   <Icon
                     className={`h-4 w-4 transition-all ${
                       isAI && isActive ? 'text-white'
-                      : isAI ? 'text-[#53A67F]'
-                      : isActive ? 'text-[#1a1a1a]'
-                      : 'text-[#302817]/40'
+                      : isAI ? 'text-[#2ABD41]'
+                      : isActive ? 'text-[#072C0E]'
+                      : 'text-[#072C0E]/40'
                     }`}
                   />
                 </div>
 
                 <span className={`text-[9px] font-bold leading-none tracking-wide ${
-                  isActive ? 'text-[#1a1a1a]' : 'text-[#302817]/35'
+                  isActive ? 'text-[#072C0E]' : 'text-[#072C0E]/35'
                 }`}>
                   {tr ? item.trS : item.enS}
                 </span>
@@ -248,15 +248,15 @@ export default function DashboardSidebar({
             `}
           >
             {['settings', 'review', 'benchmark'].includes(activeTab) && (
-              <span className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#1a1a1a]" />
+              <span className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#072C0E]" />
             )}
             <div className="flex h-7 w-7 items-center justify-center rounded-xl">
               <MoreHorizontal className={`h-4 w-4 ${
-                ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#1a1a1a]' : 'text-[#302817]/40'
+                ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#072C0E]' : 'text-[#072C0E]/40'
               }`} />
             </div>
             <span className={`text-[9px] font-bold leading-none tracking-wide ${
-              ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#1a1a1a]' : 'text-[#302817]/35'
+              ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#072C0E]' : 'text-[#072C0E]/35'
             }`}>
               {tr ? 'Daha' : 'More'}
             </span>

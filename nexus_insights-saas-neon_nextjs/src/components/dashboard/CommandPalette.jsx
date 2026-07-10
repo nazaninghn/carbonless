@@ -163,35 +163,35 @@ export default function CommandPalette({
       onMouseDown={() => setOpen(false)}
     >
       {/* Backdrop */}
-      <div className="pointer-events-none absolute inset-0 bg-[#302817]/18 backdrop-blur-[6px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[#072C0E]/18 backdrop-blur-[6px]" />
 
       {/* Panel */}
       <div
-        className="relative w-full max-w-[560px] overflow-hidden rounded-[1.75rem] border border-[#302817]/10 bg-white/96 shadow-[0_28px_80px_rgba(48,40,23,0.2),0_0_0_1px_rgba(48,40,23,0.04)] backdrop-blur-2xl"
+        className="relative w-full max-w-[560px] overflow-hidden rounded-[1.75rem] border border-[#072C0E]/10 bg-white/96 shadow-[0_28px_80px_rgba(7, 44, 14,0.2),0_0_0_1px_rgba(7, 44, 14,0.04)] backdrop-blur-2xl"
         style={{ animation: 'cpIn 160ms cubic-bezier(0.16,1,0.3,1) both' }}
         onMouseDown={e => e.stopPropagation()}
       >
         {/* ── Search row ── */}
-        <div className="flex items-center gap-3 border-b border-[#302817]/8 px-5 py-4">
-          <Search className="h-4 w-4 shrink-0 text-[#302817]/30" />
+        <div className="flex items-center gap-3 border-b border-[#072C0E]/8 px-5 py-4">
+          <Search className="h-4 w-4 shrink-0 text-[#072C0E]/30" />
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={e => { setQuery(e.target.value); setHighlighted(0); }}
             placeholder={tr ? 'Ara veya komut yaz…' : 'Search or type a command…'}
-            className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#302817] outline-none placeholder:font-medium placeholder:text-[#302817]/30"
+            className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#072C0E] outline-none placeholder:font-medium placeholder:text-[#072C0E]/30"
           />
           <div className="flex shrink-0 items-center gap-1.5">
             {query && (
               <button
                 onClick={() => { setQuery(''); inputRef.current?.focus(); }}
-                className="flex h-5 w-5 items-center justify-center rounded-full bg-[#302817]/7 text-[#302817]/40 transition hover:bg-[#302817]/12"
+                className="flex h-5 w-5 items-center justify-center rounded-full bg-[#072C0E]/7 text-[#072C0E]/40 transition hover:bg-[#072C0E]/12"
               >
                 <X className="h-3 w-3" />
               </button>
             )}
-            <kbd className="hidden rounded-lg border border-[#302817]/10 bg-[#302817]/5 px-1.5 py-0.5 text-[10px] font-bold text-[#302817]/25 sm:block">
+            <kbd className="hidden rounded-lg border border-[#072C0E]/10 bg-[#072C0E]/5 px-1.5 py-0.5 text-[10px] font-bold text-[#072C0E]/25 sm:block">
               ESC
             </kbd>
           </div>
@@ -201,11 +201,11 @@ export default function CommandPalette({
         <div ref={listRef} className="max-h-[52vh] overflow-y-auto overscroll-contain px-2 py-2">
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-1.5 py-12 text-center">
-              <Search className="h-8 w-8 text-[#302817]/12" />
-              <p className="text-sm font-semibold text-[#302817]/35">
+              <Search className="h-8 w-8 text-[#072C0E]/12" />
+              <p className="text-sm font-semibold text-[#072C0E]/35">
                 {tr ? 'Sonuç bulunamadı' : 'No results found'}
               </p>
-              <p className="text-xs text-[#302817]/25">
+              <p className="text-xs text-[#072C0E]/25">
                 {tr ? 'Farklı bir şey deneyin' : 'Try a different search'}
               </p>
             </div>
@@ -215,7 +215,7 @@ export default function CommandPalette({
               if (gItems.length === 0) return null;
               return (
                 <div key={g.key} className="mb-1 last:mb-0">
-                  <p className="mb-0.5 px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#302817]/28">
+                  <p className="mb-0.5 px-3 pt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/28">
                     {g[tr ? 'tr' : 'en']}
                   </p>
                   {gItems.map(item => {
@@ -230,24 +230,24 @@ export default function CommandPalette({
                         onMouseMove={() => setHighlighted(idx)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-100 ${
                           isHi
-                            ? 'bg-[#244959] text-white'
-                            : 'text-[#302817]/70 hover:bg-[#302817]/4'
+                            ? 'bg-[#175022] text-white'
+                            : 'text-[#072C0E]/70 hover:bg-[#072C0E]/4'
                         }`}
                       >
                         {/* Icon */}
                         <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors ${
-                          isHi ? 'bg-white/14' : 'bg-[#89E789]/14'
+                          isHi ? 'bg-white/14' : 'bg-[#8BEA99]/14'
                         }`}>
-                          <Icon className={`h-3.5 w-3.5 ${isHi ? 'text-white' : 'text-[#51B291]'}`} />
+                          <Icon className={`h-3.5 w-3.5 ${isHi ? 'text-white' : 'text-[#2ABD41]'}`} />
                         </span>
 
                         {/* Label + sub */}
                         <span className="min-w-0 flex-1">
-                          <span className={`block truncate text-[13px] font-semibold ${isHi ? 'text-white' : 'text-[#302817]'}`}>
+                          <span className={`block truncate text-[13px] font-semibold ${isHi ? 'text-white' : 'text-[#072C0E]'}`}>
                             {item.label}
                           </span>
                           {item.sub && (
-                            <span className={`block text-[10px] ${isHi ? 'text-white/55' : 'text-[#302817]/35'}`}>
+                            <span className={`block text-[10px] ${isHi ? 'text-white/55' : 'text-[#072C0E]/35'}`}>
                               {item.sub}
                             </span>
                           )}
@@ -269,20 +269,20 @@ export default function CommandPalette({
         </div>
 
         {/* ── Footer shortcut hints ── */}
-        <div className="flex items-center gap-5 border-t border-[#302817]/6 px-5 py-2.5">
+        <div className="flex items-center gap-5 border-t border-[#072C0E]/6 px-5 py-2.5">
           {[
             { key: '↑↓', label: tr ? 'gezin' : 'navigate' },
             { key: '↵',  label: tr ? 'seç'   : 'select'   },
             { key: 'ESC',label: tr ? 'kapat' : 'close'    },
           ].map(h => (
-            <span key={h.key} className="flex items-center gap-1 text-[10px] font-semibold text-[#302817]/30">
-              <kbd className="rounded border border-[#302817]/10 bg-[#302817]/5 px-1 py-0.5 text-[9px] font-bold">
+            <span key={h.key} className="flex items-center gap-1 text-[10px] font-semibold text-[#072C0E]/30">
+              <kbd className="rounded border border-[#072C0E]/10 bg-[#072C0E]/5 px-1 py-0.5 text-[9px] font-bold">
                 {h.key}
               </kbd>
               {h.label}
             </span>
           ))}
-          <span className="ml-auto text-[10px] font-semibold text-[#302817]/20">
+          <span className="ml-auto text-[10px] font-semibold text-[#072C0E]/20">
             {tr ? `${items.length} sonuç` : `${items.length} result${items.length !== 1 ? 's' : ''}`}
           </span>
         </div>

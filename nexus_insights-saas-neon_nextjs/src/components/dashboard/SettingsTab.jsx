@@ -109,16 +109,16 @@ export default function SettingsTab({ language, user, fetchData }) {
   }, [deletePassword, deleting, tr]);
 
   return (
-    <div className="space-y-3 text-[#302817]">
+    <div className="space-y-3 text-[#072C0E]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-4 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#89E789]">
+      <div className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-4 shadow-sm">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8BEA99]">
           Carbonless Workspace
         </p>
-        <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#302817]">
+        <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#072C0E]">
           {tr ? 'Ayarlar' : 'Settings'}
         </h1>
-        <p className="mt-0.5 text-xs text-[#302817]/55">
+        <p className="mt-0.5 text-xs text-[#072C0E]/55">
           {tr
             ? 'Hesap, şirket, güvenlik ve sistem tercihlerinizi yönetin.'
             : 'Manage account, company, security and system preferences.'}
@@ -128,7 +128,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Sidebar tabs */}
         <aside className="lg:sticky lg:top-4 lg:h-fit">
-          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#302817]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-sm">
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#072C0E]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-sm">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -138,15 +138,15 @@ export default function SettingsTab({ language, user, fetchData }) {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-bold transition lg:w-full lg:gap-2 lg:px-3 lg:text-xs ${
                     isActive
-                      ? 'bg-[#244959] text-[#F9EFE5] shadow-md shadow-[#302817]/12'
-                      : 'border border-[#302817]/8 bg-white text-[#302817]/60 hover:bg-white hover:text-[#302817] lg:border-0 lg:bg-transparent'
+                      ? 'bg-[#175022] text-[#DEFAE1] shadow-md shadow-[#072C0E]/12'
+                      : 'border border-[#072C0E]/8 bg-white text-[#072C0E]/60 hover:bg-white hover:text-[#072C0E] lg:border-0 lg:bg-transparent'
                   }`}
                 >
                   <span
                     className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg lg:h-7 lg:w-7 ${
                       isActive
-                        ? 'bg-[#F9EFE5]/12 text-[#F9EFE5]'
-                        : 'bg-[#89E789]/12 text-[#51B291]'
+                        ? 'bg-[#DEFAE1]/12 text-[#DEFAE1]'
+                        : 'bg-[#8BEA99]/12 text-[#2ABD41]'
                     }`}
                   >
                     <Icon className="h-3 w-3 lg:h-3.5 lg:w-3.5" />
@@ -161,16 +161,16 @@ export default function SettingsTab({ language, user, fetchData }) {
         {/* Content */}
         <section className="w-full min-w-0 max-w-full overflow-hidden">
           {/* Section header */}
-          <div className="mb-3 rounded-xl border border-[#302817]/10 bg-white p-2.5 shadow-sm lg:rounded-[1.25rem] lg:p-3">
+          <div className="mb-3 rounded-xl border border-[#072C0E]/10 bg-white p-2.5 shadow-sm lg:rounded-[1.25rem] lg:p-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#89E789]/14 text-[#51B291] ring-1 ring-[#89E789]/25 lg:h-9 lg:w-9 lg:rounded-xl">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#8BEA99]/14 text-[#2ABD41] ring-1 ring-[#8BEA99]/25 lg:h-9 lg:w-9 lg:rounded-xl">
                 {active && <active.icon className="h-4 w-4" />}
               </div>
               <div>
-                <h2 className="text-sm font-bold text-[#302817]">
+                <h2 className="text-sm font-bold text-[#072C0E]">
                   {active ? (tr ? active.tr : active.en) : ''}
                 </h2>
-                <p className="text-[11px] text-[#302817]/45">
+                <p className="text-[11px] text-[#072C0E]/45">
                   {tr ? 'Seçili ayar bölümü' : 'Selected settings section'}
                 </p>
               </div>
@@ -191,8 +191,8 @@ export default function SettingsTab({ language, user, fetchData }) {
               </div>
 
               {user?.permissions && (
-                <div className="mt-5 border-t border-[#302817]/10 pt-5">
-                  <h4 className="mb-3 text-sm font-bold text-[#302817]">
+                <div className="mt-5 border-t border-[#072C0E]/10 pt-5">
+                  <h4 className="mb-3 text-sm font-bold text-[#072C0E]">
                     {tr ? 'İzinleriniz' : 'Your Permissions'}
                   </h4>
                   <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
@@ -208,8 +208,8 @@ export default function SettingsTab({ language, user, fetchData }) {
                           key={p.key}
                           className={`rounded-2xl border px-3 py-3 text-center text-xs font-bold ${
                             allowed
-                              ? 'border-[#89E789]/30 bg-[#89E789]/12 text-[#302817]'
-                              : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/45'
+                              ? 'border-[#8BEA99]/30 bg-[#8BEA99]/12 text-[#072C0E]'
+                              : 'border-[#072C0E]/10 bg-[#F8F8F8] text-[#072C0E]/45'
                           }`}
                         >
                           {allowed ? '✓' : '—'} {tr ? p.tr : p.en}
@@ -221,26 +221,26 @@ export default function SettingsTab({ language, user, fetchData }) {
               )}
 
               {/* Language Preference */}
-              <div className="mt-4 border-t border-[#302817]/10 pt-4">
-                <h4 className="mb-2 text-xs font-bold text-[#302817]">{tr ? 'Dil Tercihi' : 'Language Preference'}</h4>
+              <div className="mt-4 border-t border-[#072C0E]/10 pt-4">
+                <h4 className="mb-2 text-xs font-bold text-[#072C0E]">{tr ? 'Dil Tercihi' : 'Language Preference'}</h4>
                 <div className="flex gap-2">
                   {/* Fix #67: use changeLanguage() from LanguageContext instead of
                       localStorage + window.location.reload(), which was destroying
                       the CarbonAIPage questionnaire state on every language switch. */}
                   <button
                     onClick={() => changeLanguage('en')}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#51B291]/40 bg-[#51B291]/12 text-[#244959]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#2ABD41]/40 bg-[#2ABD41]/12 text-[#175022]' : 'border-[#072C0E]/10 bg-[#F8F8F8] text-[#072C0E]/60 hover:bg-white'}`}
                   >
                     🇬🇧 English
                   </button>
                   <button
                     onClick={() => changeLanguage('tr')}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#51B291]/40 bg-[#51B291]/12 text-[#244959]' : 'border-[#302817]/10 bg-[#F8F8F8] text-[#302817]/60 hover:bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#2ABD41]/40 bg-[#2ABD41]/12 text-[#175022]' : 'border-[#072C0E]/10 bg-[#F8F8F8] text-[#072C0E]/60 hover:bg-white'}`}
                   >
                     🇹🇷 Türkçe
                   </button>
                 </div>
-                <p className="mt-2 text-[10px] font-semibold text-[#302817]/35">
+                <p className="mt-2 text-[10px] font-semibold text-[#072C0E]/35">
                   {tr ? 'Dil tercihi anlık olarak uygulanır.' : 'Language preference applies instantly.'}
                 </p>
               </div>
@@ -289,7 +289,7 @@ export default function SettingsTab({ language, user, fetchData }) {
             <div className="space-y-4">
               <Panel>
                 <PanelTitle icon={Download} title={tr ? 'Veri Dışa Aktarma' : 'Data Export'} />
-                <p className="mb-4 text-sm leading-6 text-[#302817]/60">
+                <p className="mb-4 text-sm leading-6 text-[#072C0E]/60">
                   {tr
                     ? 'Tüm emisyon verilerinizi JSON formatında indirin.'
                     : 'Download all your emission data in JSON format.'}
@@ -297,14 +297,14 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   onClick={handleExport}
                   disabled={exporting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-xl shadow-[#302817]/15 transition hover:bg-[#1a3a2e] disabled:opacity-60 sm:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-[#DEFAE1] shadow-xl shadow-[#072C0E]/15 transition hover:bg-[#175022] disabled:opacity-60 sm:w-auto"
                 >
                   <Download className="h-4 w-4" />
                   {exporting ? '...' : tr ? 'Tüm Verileri İndir' : 'Export All Data'}
                 </button>
               </Panel>
 
-              <div className="rounded-[2rem] border border-red-200 bg-red-50 p-5 shadow-[0_8px_30px_rgba(48,40,23,0.05)]">
+              <div className="rounded-[2rem] border border-red-200 bg-red-50 p-5 shadow-[0_8px_30px_rgba(7, 44, 14,0.05)]">
                 <h3 className="mb-3 flex items-center gap-2 font-bold text-red-700">
                   <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-red-100">
                     <Trash2 className="h-4 w-4 text-red-600" />
@@ -333,14 +333,14 @@ export default function SettingsTab({ language, user, fetchData }) {
       {/* ─── Delete Account Confirmation Modal ─────────────────────────────── */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(48,40,23,0.18)]">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]">
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100">
               <Trash2 className="h-5 w-5 text-red-600" />
             </div>
-            <h3 className="text-base font-bold text-[#302817]">
+            <h3 className="text-base font-bold text-[#072C0E]">
               {tr ? 'Hesabı Sil' : 'Delete Account'}
             </h3>
-            <p className="mt-1.5 text-xs leading-5 text-[#302817]/60">
+            <p className="mt-1.5 text-xs leading-5 text-[#072C0E]/60">
               {tr
                 ? 'Bu işlem geri alınamaz. Onaylamak için şifrenizi girin.'
                 : 'This action is irreversible. Enter your password to confirm.'}
@@ -352,7 +352,7 @@ export default function SettingsTab({ language, user, fetchData }) {
               onChange={(e) => setDeletePassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleDelete()}
               placeholder={tr ? 'Şifreniz' : 'Your password'}
-              className="mt-4 w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-sm font-semibold text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-red-300 focus:ring-4 focus:ring-red-100"
+              className="mt-4 w-full rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-sm font-semibold text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:border-red-300 focus:ring-4 focus:ring-red-100"
             />
             {deleteError && (
               <p className="mt-2 text-xs font-semibold text-red-600">{deleteError}</p>
@@ -368,7 +368,7 @@ export default function SettingsTab({ language, user, fetchData }) {
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleting}
-                className="flex-1 rounded-full border border-[#302817]/10 py-2.5 text-xs font-bold text-[#302817] transition hover:bg-[#F8F8F8]"
+                className="flex-1 rounded-full border border-[#072C0E]/10 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
@@ -382,7 +382,7 @@ export default function SettingsTab({ language, user, fetchData }) {
 
 function Panel({ children }) {
   return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#302817]/10 bg-white p-3 shadow-sm sm:rounded-[1.25rem] sm:p-4">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#072C0E]/10 bg-white p-3 shadow-sm sm:rounded-[1.25rem] sm:p-4">
       <div className="w-full min-w-0 max-w-full overflow-hidden">
         {children}
       </div>
@@ -392,8 +392,8 @@ function Panel({ children }) {
 
 function PanelTitle({ icon: Icon, title }) {
   return (
-    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#302817]">
-      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#89E789]/14 text-[#51B291] ring-1 ring-[#89E789]/25 sm:h-7 sm:w-7">
+    <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-[#072C0E]">
+      <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#8BEA99]/14 text-[#2ABD41] ring-1 ring-[#8BEA99]/25 sm:h-7 sm:w-7">
         <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
       </div>
       {title}
@@ -403,9 +403,9 @@ function PanelTitle({ icon: Icon, title }) {
 
 function InfoCard({ label, value }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-[#302817]/8 bg-[#F8F8F8] px-3 py-2 sm:block sm:rounded-xl">
-      <p className="text-[10px] font-bold text-[#302817]/40">{label}</p>
-      <p className="text-xs font-bold text-[#302817] sm:mt-0.5">{value}</p>
+    <div className="flex items-center justify-between rounded-xl border border-[#072C0E]/8 bg-[#F8F8F8] px-3 py-2 sm:block sm:rounded-xl">
+      <p className="text-[10px] font-bold text-[#072C0E]/40">{label}</p>
+      <p className="text-xs font-bold text-[#072C0E] sm:mt-0.5">{value}</p>
     </div>
   );
 }

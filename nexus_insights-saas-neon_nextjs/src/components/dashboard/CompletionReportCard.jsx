@@ -71,11 +71,11 @@ export default function CompletionReportCard({
 
   if (loading) {
     return (
-      <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl border border-[#89E789]/40 animate-pulse">
-        <div className="h-8 bg-[#244959]/10 rounded w-3/4 mb-4"></div>
+      <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-xl border border-[#8BEA99]/40 animate-pulse">
+        <div className="h-8 bg-[#175022]/10 rounded w-3/4 mb-4"></div>
         <div className="space-y-2">
-          <div className="h-4 bg-[#244959]/10 rounded w-full"></div>
-          <div className="h-4 bg-[#244959]/10 rounded w-5/6"></div>
+          <div className="h-4 bg-[#175022]/10 rounded w-full"></div>
+          <div className="h-4 bg-[#175022]/10 rounded w-5/6"></div>
         </div>
       </div>
     );
@@ -89,19 +89,19 @@ export default function CompletionReportCard({
   return (
     <div className="w-full max-w-2xl mx-auto">
       {/* Success Card */}
-      <div className="p-6 bg-gradient-to-br from-[#89E789]/10 to-[#89E789]/5 rounded-xl border border-[#89E789]/40 mb-6">
+      <div className="p-6 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40 mb-6">
         <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#89E789]/20 flex items-center justify-center">
-            <FileText className="w-6 h-6 text-[#5E7A2E]" />
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#8BEA99]/20 flex items-center justify-center">
+            <FileText className="w-6 h-6 text-[#1A7B2A]" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-[#244959] mb-1">
+            <h3 className="text-lg font-bold text-[#175022] mb-1">
               {tr ? '✅ سروی تکمیل شد!' : '✅ Survey Completed!'}
             </h3>
             {report.title && (
-              <p className="text-sm font-semibold text-[#244959]/80 mb-2 truncate">{report.title}</p>
+              <p className="text-sm font-semibold text-[#175022]/80 mb-2 truncate">{report.title}</p>
             )}
-            <p className="text-sm text-[#244959]/70 mb-4">
+            <p className="text-sm text-[#175022]/70 mb-4">
               {tr
                 ? 'گزارش کربن شما به موفقیت ایجاد شد. جزئیات کامل را در زیر مرور کنید.'
                 : 'Your carbon report has been successfully created. Review the full details below.'}
@@ -111,46 +111,46 @@ export default function CompletionReportCard({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 p-4 bg-white/60 rounded-lg">
               {report.reporting_year && (
                 <div>
-                  <p className="text-xs text-[#244959]/50">{tr ? 'سال گزارش' : 'Reporting Year'}</p>
-                  <p className="font-bold text-[#244959]">{report.reporting_year}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'سال گزارش' : 'Reporting Year'}</p>
+                  <p className="font-bold text-[#175022]">{report.reporting_year}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs text-[#244959]/50">{tr ? 'وضعیت' : 'Status'}</p>
-                <p className="font-bold text-[#5E7A2E]">{tr ? 'تکمیل شده' : 'Completed'}</p>
+                <p className="text-xs text-[#175022]/50">{tr ? 'وضعیت' : 'Status'}</p>
+                <p className="font-bold text-[#1A7B2A]">{tr ? 'تکمیل شده' : 'Completed'}</p>
               </div>
               {totalQuestions > 0 && (
                 <div>
-                  <p className="text-xs text-[#244959]/50">{tr ? 'سوالات' : 'Questions'}</p>
-                  <p className="font-bold text-[#244959]">{totalAnswered}/{totalQuestions}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'سوالات' : 'Questions'}</p>
+                  <p className="font-bold text-[#175022]">{totalAnswered}/{totalQuestions}</p>
                 </div>
               )}
               {report.ef_database && (
                 <div>
-                  <p className="text-xs text-[#244959]/50">{tr ? 'پایگاه فاکتور' : 'EF Database'}</p>
-                  <p className="font-bold text-[#244959]">{resolveLabel(EF_DATABASE_LABELS, report.ef_database, tr) || report.ef_database}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'پایگاه فاکتور' : 'EF Database'}</p>
+                  <p className="font-bold text-[#175022]">{resolveLabel(EF_DATABASE_LABELS, report.ef_database, tr) || report.ef_database}</p>
                 </div>
               )}
               {report.boundary_approach && (
                 <div>
-                  <p className="text-xs text-[#244959]/50">{tr ? 'مرز سازمانی' : 'Org. Boundary'}</p>
-                  <p className="font-bold text-[#244959]">{resolveLabel(BOUNDARY_LABELS, report.boundary_approach, tr) || report.boundary_approach}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'مرز سازمانی' : 'Org. Boundary'}</p>
+                  <p className="font-bold text-[#175022]">{resolveLabel(BOUNDARY_LABELS, report.boundary_approach, tr) || report.boundary_approach}</p>
                 </div>
               )}
               {report.scope3_approach && (
                 <div>
-                  <p className="text-xs text-[#244959]/50">{tr ? 'رویکرد کاپسام ۳' : 'Scope 3 Approach'}</p>
-                  <p className="font-bold text-[#244959]">{resolveLabel(SCOPE3_APPROACH_LABELS, report.scope3_approach, tr) || report.scope3_approach}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'رویکرد کاپسام ۳' : 'Scope 3 Approach'}</p>
+                  <p className="font-bold text-[#175022]">{resolveLabel(SCOPE3_APPROACH_LABELS, report.scope3_approach, tr) || report.scope3_approach}</p>
                 </div>
               )}
             </div>
 
             {/* Company */}
             {report.company?.name && (
-              <div className="flex items-center gap-2 mb-4 text-sm text-[#244959]/70">
+              <div className="flex items-center gap-2 mb-4 text-sm text-[#175022]/70">
                 <Building2 className="w-4 h-4 shrink-0" />
-                <span className="font-semibold text-[#244959]">{report.company.name}</span>
-                {report.company.country && <span className="text-[#244959]/50">· {report.company.country}</span>}
+                <span className="font-semibold text-[#175022]">{report.company.name}</span>
+                {report.company.country && <span className="text-[#175022]/50">· {report.company.country}</span>}
               </div>
             )}
           </div>
@@ -159,8 +159,8 @@ export default function CompletionReportCard({
 
       {/* Section-by-section breakdown */}
       {stageBreakdown.length > 0 && (
-        <div className="mb-6 p-5 bg-white rounded-xl border border-[#244959]/10">
-          <h4 className="text-sm font-bold text-[#244959] mb-3">
+        <div className="mb-6 p-5 bg-white rounded-xl border border-[#175022]/10">
+          <h4 className="text-sm font-bold text-[#175022] mb-3">
             {tr ? 'خلاصه بخش‌ها' : 'Section Summary'}
           </h4>
           <div className="space-y-2.5">
@@ -169,9 +169,9 @@ export default function CompletionReportCard({
               const label = stage.title?.[tr ? 'tr' : 'en'] || stage.title?.en;
               return (
                 <div key={stage.id} className="flex items-center gap-3">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${pct === 100 ? 'text-[#51B291]' : 'text-[#244959]/25'}`} />
-                  <span className="text-xs font-semibold text-[#244959] flex-1 min-w-0 truncate">{label}</span>
-                  <span className="text-[11px] font-bold text-[#244959]/50 shrink-0">
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${pct === 100 ? 'text-[#2ABD41]' : 'text-[#175022]/25'}`} />
+                  <span className="text-xs font-semibold text-[#175022] flex-1 min-w-0 truncate">{label}</span>
+                  <span className="text-[11px] font-bold text-[#175022]/50 shrink-0">
                     {stage.answeredCount}/{stage.totalCount} · {pct}%
                   </span>
                 </div>
@@ -216,21 +216,21 @@ export default function CompletionReportCard({
         <button
           onClick={handleDownloadPdf}
           disabled={pdfLoading}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#5E7A2E] text-white font-semibold rounded-full hover:bg-[#4a6224] transition flex-1 disabled:opacity-50"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#1A7B2A] text-white font-semibold rounded-full hover:bg-[#1A6126] transition flex-1 disabled:opacity-50"
         >
           {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
           {pdfLoading ? (tr ? 'در حال آماده‌سازی...' : 'Preparing PDF...') : (tr ? 'دانلود گزارش PDF' : 'Download PDF Report')}
         </button>
         <button
           onClick={onStartNew}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#244959] text-white font-semibold rounded-full hover:bg-[#1a3a2e] transition flex-1"
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition flex-1"
         >
           <RotateCcw className="w-4 h-4" />
           {tr ? 'سروی جدید' : 'New Survey'}
         </button>
         <button
           onClick={onViewFull}
-          className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#244959] text-[#244959] font-semibold rounded-full hover:bg-[#244959]/5 transition flex-1"
+          className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#175022] text-[#175022] font-semibold rounded-full hover:bg-[#175022]/5 transition flex-1"
         >
           <Download className="w-4 h-4" />
           {tr ? 'مشاهده گزارش کامل' : 'View Full Report'}
@@ -238,7 +238,7 @@ export default function CompletionReportCard({
       </div>
 
       {/* Additional Info */}
-      <p className="text-xs text-[#244959]/50 text-center mt-4">
+      <p className="text-xs text-[#175022]/50 text-center mt-4">
         {tr
           ? 'می‌توانید هر زمان به گزارش‌های خود از طریق بخش "گزارش‌ها" دسترسی داشته باشید.'
           : 'You can access all your reports anytime from the Reports section.'}

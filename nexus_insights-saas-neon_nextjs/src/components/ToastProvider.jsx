@@ -23,12 +23,12 @@ let _seq = 0;
 const CONFIG = {
   success: {
     icon:   CheckCircle2,
-    accent: '#51B291',
+    accent: '#2ABD41',
     bg:     'bg-white',
-    border: 'border-[#51B291]/25',
-    bar:    '#51B291',
-    text:   'text-[#244959]',
-    dim:    'text-[#302817]/55',
+    border: 'border-[#2ABD41]/25',
+    bar:    '#2ABD41',
+    text:   'text-[#175022]',
+    dim:    'text-[#072C0E]/55',
   },
   error: {
     icon:   AlertCircle,
@@ -37,7 +37,7 @@ const CONFIG = {
     border: 'border-red-200',
     bar:    '#ef4444',
     text:   'text-red-600',
-    dim:    'text-[#302817]/55',
+    dim:    'text-[#072C0E]/55',
   },
   warning: {
     icon:   AlertTriangle,
@@ -46,7 +46,7 @@ const CONFIG = {
     border: 'border-amber-200',
     bar:    '#f59e0b',
     text:   'text-amber-600',
-    dim:    'text-[#302817]/55',
+    dim:    'text-[#072C0E]/55',
   },
   info: {
     icon:   Info,
@@ -55,7 +55,7 @@ const CONFIG = {
     border: 'border-blue-200',
     bar:    '#3b82f6',
     text:   'text-blue-600',
-    dim:    'text-[#302817]/55',
+    dim:    'text-[#072C0E]/55',
   },
 };
 
@@ -98,7 +98,7 @@ function Toast({ id, type, message, duration, onDismiss }) {
     <div
       className={`
         pointer-events-auto w-full overflow-hidden
-        rounded-2xl border shadow-[0_8px_32px_rgba(48,40,23,0.13)]
+        rounded-2xl border shadow-[0_8px_32px_rgba(7, 44, 14,0.13)]
         backdrop-blur-xl transition-all duration-[260ms]
         ${bg} ${border}
         ${in_ && !out

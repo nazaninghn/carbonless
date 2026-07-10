@@ -29,10 +29,10 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <div className="bg-white text-[#302817] antialiased overflow-x-hidden">
+    <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
       <Header />
       <main>
-        <section className="pt-24 lg:pt-40 pb-16 lg:pb-28 bg-gradient-to-b from-[#F9EFE5]/40 to-white">
+        <section className="pt-24 lg:pt-40 pb-16 lg:pb-28 bg-gradient-to-b from-[#DEFAE1]/40 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto">
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-full mb-4">
@@ -42,7 +42,7 @@ export default function FeaturesPage() {
                 {tr ? 'Karbon Yönetimi İçin ' : 'Everything You Need for '}
                 <span className="gradient-text">{tr ? 'Her Şey' : 'Carbon Management'}</span>
               </h1>
-              <p className="text-lg text-[#302817]/60">
+              <p className="text-lg text-[#072C0E]/60">
                 {tr ? 'ISO 14064-1 uyumlu karbon envanteri oluşturmak için ihtiyacınız olan tüm araçlar.' : 'All the tools you need to build an ISO 14064-1 compliant carbon inventory.'}
               </p>
             </div>
@@ -53,12 +53,12 @@ export default function FeaturesPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {features.map((f) => (
-                <div key={f.title} className="bg-white rounded-2xl p-6 border border-[#302817]/8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                <div key={f.title} className="bg-white rounded-2xl p-6 border border-[#072C0E]/8 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                     <f.icon className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2 text-[#302817]">{f.title}</h3>
-                  <p className="text-[#302817]/60 text-sm">{f.desc}</p>
+                  <h3 className="text-lg font-semibold mb-2 text-[#072C0E]">{f.title}</h3>
+                  <p className="text-[#072C0E]/60 text-sm">{f.desc}</p>
                 </div>
               ))}
             </div>
@@ -66,13 +66,13 @@ export default function FeaturesPage() {
         </section>
 
         {/* Emission Factor Sources */}
-        <section className="py-20 lg:py-28 bg-[#F9EFE5]/30">
+        <section className="py-20 lg:py-28 bg-[#DEFAE1]/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-[#302817]">
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-[#072C0E]">
                 {tr ? 'Emisyon Faktör Kaynakları' : 'Emission Factor Sources'}
               </h2>
-              <p className="text-lg text-[#302817]/60">
+              <p className="text-lg text-[#072C0E]/60">
                 {tr ? '131+ emisyon faktörü, güvenilir uluslararası ve ulusal kaynaklardan.' : '131+ emission factors from trusted international and national sources.'}
               </p>
             </div>
@@ -82,9 +82,9 @@ export default function FeaturesPage() {
                 'ATOM KABLO ISO 14064-1', 'Turkey National Grid', 'Turkey Fleet 2025',
                 'ICAO 2025', 'Generic/Estimated'
               ].map((s) => (
-                <div key={s} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-[#302817]/8">
+                <div key={s} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-[#072C0E]/8">
                   <CheckCircle className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-sm text-[#302817]/70">{s}</span>
+                  <span className="text-sm text-[#072C0E]/70">{s}</span>
                 </div>
               ))}
             </div>
@@ -100,7 +100,7 @@ export default function FeaturesPage() {
             <p className="text-lg text-white/80 mb-8">
               {tr ? 'Ücretsiz hesap oluşturun ve karbon ayak izinizi ölçmeye başlayın.' : 'Create a free account and start measuring your carbon footprint.'}
             </p>
-            <NextLink href="/register" className="inline-block px-8 py-4 bg-white text-primary font-semibold rounded-xl hover:bg-[#F9EFE5] transition-colors shadow-lg">
+            <NextLink href="/register" className="inline-block px-8 py-4 bg-white text-primary font-semibold rounded-xl hover:bg-[#DEFAE1] transition-colors shadow-lg">
               {tr ? 'Ücretsiz Kayıt Ol' : 'Register Free'}
             </NextLink>
           </div>

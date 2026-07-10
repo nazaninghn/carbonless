@@ -220,15 +220,15 @@ export default function RegisterPage() {
   const progress = Math.round(((currentSection - 1) / 2) * 100);
 
   return (
-    <main className="relative min-h-screen bg-white text-[#1a1a1a]">
+    <main className="relative min-h-screen bg-white text-[#072C0E]">
 
       <header className="relative z-20 mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
           <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-11 w-11 sm:h-14 sm:w-14" />
-          <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#1a1a1a]">Carbonless</span>
+          <span className="text-[20px] sm:text-[22px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
         </Link>
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <Link href="/login" className="hidden text-sm font-bold text-[#1a1a1a]/70 transition hover:text-[#1a1a1a] sm:inline-flex">{language === 'tr' ? 'Giriş' : 'Login'}</Link>
+          <Link href="/login" className="hidden text-sm font-bold text-[#072C0E]/70 transition hover:text-[#072C0E] sm:inline-flex">{language === 'tr' ? 'Giriş' : 'Login'}</Link>
         </div>
       </header>
 
@@ -236,41 +236,41 @@ export default function RegisterPage() {
         <div className="grid gap-4 lg:grid-cols-[290px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)]">
           {/* Sidebar */}
           <aside className="lg:sticky lg:top-4 lg:h-fit">
-            <div className="rounded-[2rem] border border-[#1a1a1a]/10 bg-white/55 p-4 shadow-xl shadow-[#1a1a1a]/8 backdrop-blur-2xl">
+            <div className="rounded-[2rem] border border-[#072C0E]/10 bg-white/55 p-4 shadow-xl shadow-[#072C0E]/8 backdrop-blur-2xl">
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#C9C858]">Carbonless onboarding</p>
-                  <h1 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#1a1a1a]">{t.register.title}</h1>
-                  <p className="mt-2 text-sm leading-6 text-[#1a1a1a]/60">{t.register.subtitle}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#51D766]">Carbonless onboarding</p>
+                  <h1 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#072C0E]">{t.register.title}</h1>
+                  <p className="mt-2 text-sm leading-6 text-[#072C0E]/60">{t.register.subtitle}</p>
                 </div>
               </div>
               <div className="mb-5">
-                <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#1a1a1a]/55"><span>{language === 'tr' ? 'İlerleme' : 'Progress'}</span><span>{progress}%</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-[#1a1a1a]/10"><div className="h-full rounded-full bg-gradient-to-r from-[#C9C858] to-[#53A67F] transition-all duration-500" style={{ width: `${progress}%` }} /></div>
+                <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#072C0E]/55"><span>{language === 'tr' ? 'İlerleme' : 'Progress'}</span><span>{progress}%</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/10"><div className="h-full rounded-full bg-gradient-to-r from-[#51D766] to-[#2ABD41] transition-all duration-500" style={{ width: `${progress}%` }} /></div>
               </div>
               <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
                 {steps.map(step => { const Icon = step.icon; const active = currentSection === step.id; const done = currentSection > step.id; return (
-                  <button key={step.id} type="button" onClick={() => goToSection(step.id)} className={`group flex min-w-0 items-center gap-3 rounded-2xl border p-3 text-left transition ${active ? 'border-[#C9C858]/45 bg-[#C9C858]/14 shadow-lg shadow-[#1a1a1a]/5' : done ? 'border-[#53A67F]/35 bg-white/65 hover:border-[#C9C858]/45' : 'border-[#1a1a1a]/10 bg-white/35 hover:bg-white/60'}`}>
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition ${active ? 'bg-[#C9C858] text-white' : done ? 'bg-[#53A67F] text-white' : 'bg-[#F8F8F8] text-[#1a1a1a]/55 ring-1 ring-[#1a1a1a]/10'}`}>{done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}</span>
-                    <span className="min-w-0"><span className="block truncate text-sm font-bold text-[#1a1a1a]">{step.title}</span><span className="block truncate text-xs font-medium text-[#1a1a1a]/55">{step.subtitle}</span></span>
+                  <button key={step.id} type="button" onClick={() => goToSection(step.id)} className={`group flex min-w-0 items-center gap-3 rounded-2xl border p-3 text-left transition ${active ? 'border-[#51D766]/45 bg-[#51D766]/14 shadow-lg shadow-[#072C0E]/5' : done ? 'border-[#2ABD41]/35 bg-white/65 hover:border-[#51D766]/45' : 'border-[#072C0E]/10 bg-white/35 hover:bg-white/60'}`}>
+                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition ${active ? 'bg-[#51D766] text-white' : done ? 'bg-[#2ABD41] text-white' : 'bg-[#F8F8F8] text-[#072C0E]/55 ring-1 ring-[#072C0E]/10'}`}>{done ? <Check className="h-5 w-5" /> : <Icon className="h-5 w-5" />}</span>
+                    <span className="min-w-0"><span className="block truncate text-sm font-bold text-[#072C0E]">{step.title}</span><span className="block truncate text-xs font-medium text-[#072C0E]/55">{step.subtitle}</span></span>
                   </button>); })}
               </div>
-              <div className="mt-5 rounded-3xl border border-[#1a1a1a]/10 bg-[#1a1a1a] p-4 text-[#F5F5F5] shadow-xl shadow-[#1a1a1a]/15">
-                <div className="flex items-center gap-2 text-sm font-bold"><ShieldCheck className="h-4 w-4 text-[#C9C858]" />{language === 'tr' ? 'Güvenli kayıt' : 'Secure registration'}</div>
+              <div className="mt-5 rounded-3xl border border-[#072C0E]/10 bg-[#072C0E] p-4 text-[#F5F5F5] shadow-xl shadow-[#072C0E]/15">
+                <div className="flex items-center gap-2 text-sm font-bold"><ShieldCheck className="h-4 w-4 text-[#51D766]" />{language === 'tr' ? 'Güvenli kayıt' : 'Secure registration'}</div>
                 <p className="mt-2 text-xs leading-5 text-[#F5F5F5]/70">{language === 'tr' ? 'Şirket profiliniz güvenli şekilde kaydedilir.' : 'Your company profile is stored securely.'}</p>
               </div>
             </div>
           </aside>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="min-w-0 rounded-[2rem] border border-[#1a1a1a]/10 bg-white/55 p-4 shadow-xl shadow-[#1a1a1a]/8 backdrop-blur-2xl sm:p-5 lg:p-6">
-            <div className="mb-5 flex flex-col justify-between gap-3 border-b border-[#1a1a1a]/10 pb-4 sm:flex-row sm:items-start">
+          <form onSubmit={handleSubmit} className="min-w-0 rounded-[2rem] border border-[#072C0E]/10 bg-white/55 p-4 shadow-xl shadow-[#072C0E]/8 backdrop-blur-2xl sm:p-5 lg:p-6">
+            <div className="mb-5 flex flex-col justify-between gap-3 border-b border-[#072C0E]/10 pb-4 sm:flex-row sm:items-start">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#C9C858]">{language === 'tr' ? `Adım ${currentSection} / 3` : `Step ${currentSection} / 3`}</p>
-                <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#1a1a1a]">{steps[currentSection - 1].title}</h2>
-                <p className="mt-1 text-sm text-[#1a1a1a]/60">{steps[currentSection - 1].subtitle}</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#51D766]">{language === 'tr' ? `Adım ${currentSection} / 3` : `Step ${currentSection} / 3`}</p>
+                <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-[#072C0E]">{steps[currentSection - 1].title}</h2>
+                <p className="mt-1 text-sm text-[#072C0E]/60">{steps[currentSection - 1].subtitle}</p>
               </div>
-              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#1a1a1a]/10 bg-white/55 px-4 py-2 text-xs font-bold text-[#1a1a1a] shadow-sm backdrop-blur-xl"><BadgeCheck className="h-4 w-4 text-[#C9C858]" />{language === 'tr' ? 'Zorunlu *' : 'Required *'}</div>
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#072C0E]/10 bg-white/55 px-4 py-2 text-xs font-bold text-[#072C0E] shadow-sm backdrop-blur-xl"><BadgeCheck className="h-4 w-4 text-[#51D766]" />{language === 'tr' ? 'Zorunlu *' : 'Required *'}</div>
             </div>
             {error && <ErrorBox message={error} />}
 
@@ -295,7 +295,7 @@ export default function RegisterPage() {
                   </div>
                 </Panel>
                 <Panel title={language === 'tr' ? 'Sektör' : 'Sector'} icon={Globe2}>
-                  <div><Label required>{language === 'tr' ? 'NACE Kodu' : 'NACE Code'}</Label><div ref={naceRef} className="relative"><input type="text" value={naceSearch} onChange={e => { setNaceSearch(e.target.value); setNaceOpen(true); }} onFocus={() => setNaceOpen(true)} placeholder={language === 'tr' ? 'Kod veya sektör adı...' : 'Code or sector name...'} className="field-premium" />{formData.naceCode && <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#C9C858]/30 bg-[#C9C858]/12 px-4 py-3 text-sm"><span><b>{formData.naceCode}</b>  -  {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span><button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-xs text-red-500">✕</button></div>}{naceOpen && naceSearch.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#1a1a1a]/10 bg-white p-2 shadow-2xl">{ALL_NACE_CODES.filter(n => { const q = naceSearch.toLowerCase(); return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q); }).slice(0, 12).map(n => <button key={n.code} type="button" onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }} className="w-full rounded-xl px-4 py-3 text-left text-sm hover:bg-[#C9C858]/10"><b className="text-[#53A67F]">{n.code}</b> <span className="text-[#1a1a1a]/70">{language === 'tr' ? n.tr : n.en}</span></button>)}</div>}</div></div>
+                  <div><Label required>{language === 'tr' ? 'NACE Kodu' : 'NACE Code'}</Label><div ref={naceRef} className="relative"><input type="text" value={naceSearch} onChange={e => { setNaceSearch(e.target.value); setNaceOpen(true); }} onFocus={() => setNaceOpen(true)} placeholder={language === 'tr' ? 'Kod veya sektör adı...' : 'Code or sector name...'} className="field-premium" />{formData.naceCode && <div className="mt-2 flex items-center justify-between rounded-2xl border border-[#51D766]/30 bg-[#51D766]/12 px-4 py-3 text-sm"><span><b>{formData.naceCode}</b>  -  {ALL_NACE_CODES.find(n => n.code === formData.naceCode)?.[language === 'tr' ? 'tr' : 'en'] || ''}</span><button type="button" onClick={() => { handleInputChange('naceCode', ''); setNaceSearch(''); }} className="text-xs text-red-500">✕</button></div>}{naceOpen && naceSearch.length > 0 && <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-56 overflow-y-auto rounded-2xl border border-[#072C0E]/10 bg-white p-2 shadow-2xl">{ALL_NACE_CODES.filter(n => { const q = naceSearch.toLowerCase(); return n.code.toLowerCase().includes(q) || n.tr.toLowerCase().includes(q) || n.en.toLowerCase().includes(q); }).slice(0, 12).map(n => <button key={n.code} type="button" onClick={() => { handleInputChange('naceCode', n.code); setNaceSearch(''); setNaceOpen(false); }} className="w-full rounded-xl px-4 py-3 text-left text-sm hover:bg-[#51D766]/10"><b className="text-[#2ABD41]">{n.code}</b> <span className="text-[#072C0E]/70">{language === 'tr' ? n.tr : n.en}</span></button>)}</div>}</div></div>
                   <div className="mt-4"><Label required>{language === 'tr' ? 'Ana Faaliyet' : 'Main Activity'}</Label><textarea required value={formData.mainActivityDescription} onChange={e => handleInputChange('mainActivityDescription', e.target.value)} maxLength={500} rows={3} className="field-premium resize-none" placeholder={language === 'tr' ? 'Kısa açıklama...' : 'Short description...'} /></div>
                 </Panel>
                 <FormActions><PrimaryButton type="button" onClick={() => goToSection(2)}>{language === 'tr' ? 'Devam' : 'Continue'}<ArrowRight className="h-4 w-4" /></PrimaryButton></FormActions>
@@ -333,7 +333,7 @@ export default function RegisterPage() {
                   </div>
                 </Panel>
                 <Panel title={language === 'tr' ? 'Amaç' : 'Purpose'} icon={BadgeCheck}>
-                  <p className="mb-4 text-sm text-[#1a1a1a]/60">{language === 'tr' ? 'En az bir amaç seçin.' : 'Select at least one.'}</p>
+                  <p className="mb-4 text-sm text-[#072C0E]/60">{language === 'tr' ? 'En az bir amaç seçin.' : 'Select at least one.'}</p>
                   <div className="grid gap-4 md:grid-cols-3">
                     <CheckCard checked={formData.isForFinancing === 'yes'} onChange={c => handleInputChange('isForFinancing', c ? 'yes' : 'no')} label={language === 'tr' ? 'Finansman' : 'Financing'} />
                     <CheckCard checked={formData.isDueToExportPressure === 'yes'} onChange={c => handleInputChange('isDueToExportPressure', c ? 'yes' : 'no')} label={language === 'tr' ? 'İhracat baskısı' : 'Export pressure'} />
@@ -341,11 +341,11 @@ export default function RegisterPage() {
                   </div>
                 </Panel>
                 <FormActions><SecondaryButton type="button" onClick={() => goToSection(2)}><ArrowLeft className="h-4 w-4" />{language === 'tr' ? 'Geri' : 'Back'}</SecondaryButton><PrimaryButton type="submit" disabled={loading}>{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}{loading ? '...' : (language === 'tr' ? 'Gönder' : 'Submit')}</PrimaryButton></FormActions>
-                <p className="mt-3 text-center text-[11px] text-[#1a1a1a]/40">
+                <p className="mt-3 text-center text-[11px] text-[#072C0E]/40">
                   {language === 'tr' ? 'Kaydolarak ' : 'By registering you agree to our '}
-                  <a href="/terms" target="_blank" className="font-bold text-[#53A67F] hover:underline">{language === 'tr' ? 'Kullanım Şartları' : 'Terms of Use'}</a>
+                  <a href="/terms" target="_blank" className="font-bold text-[#2ABD41] hover:underline">{language === 'tr' ? 'Kullanım Şartları' : 'Terms of Use'}</a>
                   {language === 'tr' ? ' ve ' : ' and '}
-                  <a href="/privacy" target="_blank" className="font-bold text-[#53A67F] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
+                  <a href="/privacy" target="_blank" className="font-bold text-[#2ABD41] hover:underline">{language === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</a>
                   {language === 'tr' ? '\'nı kabul etmiş olursunuz.' : '.'}
                 </p>
               </div>
@@ -358,15 +358,15 @@ export default function RegisterPage() {
 }
 
 /* Sub-components */
-function Panel({ title, icon: Icon, children }) { return (<section className="rounded-[1.5rem] border border-[#1a1a1a]/10 bg-white/50 p-4 shadow-sm backdrop-blur-xl sm:p-5"><div className="mb-4 flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#C9C858]/14 text-[#53A67F] ring-1 ring-[#C9C858]/25"><Icon className="h-5 w-5" /></div><h3 className="text-base font-bold text-[#1a1a1a] sm:text-lg">{title}</h3></div>{children}</section>); }
-function Label({ children, required }) { return <label className="mb-2 block text-sm font-bold text-[#1a1a1a]/75">{children} {required && <span className="text-[#C9C858]">*</span>}</label>; }
-function TextField({ label, required, icon: Icon, ...props }) { return (<div><Label required={required}>{label}</Label><div className="group flex items-center gap-3 rounded-2xl border border-[#1a1a1a]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#C9C858]/60 focus-within:ring-4 focus-within:ring-[#C9C858]/20">{Icon && <Icon className="h-5 w-5 shrink-0 text-[#53A67F]" />}<input {...props} className="w-full bg-transparent text-sm font-semibold text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/35" /></div></div>); }
-function SelectField({ label, required, children, ...props }) { return (<div><Label required={required}>{label}</Label><div className="relative"><select {...props} className="field-premium appearance-none pr-10">{children}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#1a1a1a]/40" /></div></div>); }
+function Panel({ title, icon: Icon, children }) { return (<section className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white/50 p-4 shadow-sm backdrop-blur-xl sm:p-5"><div className="mb-4 flex items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#51D766]/14 text-[#2ABD41] ring-1 ring-[#51D766]/25"><Icon className="h-5 w-5" /></div><h3 className="text-base font-bold text-[#072C0E] sm:text-lg">{title}</h3></div>{children}</section>); }
+function Label({ children, required }) { return <label className="mb-2 block text-sm font-bold text-[#072C0E]/75">{children} {required && <span className="text-[#51D766]">*</span>}</label>; }
+function TextField({ label, required, icon: Icon, ...props }) { return (<div><Label required={required}>{label}</Label><div className="group flex items-center gap-3 rounded-2xl border border-[#072C0E]/10 bg-white/55 px-4 py-3 shadow-sm backdrop-blur-xl transition focus-within:border-[#51D766]/60 focus-within:ring-4 focus-within:ring-[#51D766]/20">{Icon && <Icon className="h-5 w-5 shrink-0 text-[#2ABD41]" />}<input {...props} className="w-full bg-transparent text-sm font-semibold text-[#072C0E] outline-none placeholder:text-[#072C0E]/35" /></div></div>); }
+function SelectField({ label, required, children, ...props }) { return (<div><Label required={required}>{label}</Label><div className="relative"><select {...props} className="field-premium appearance-none pr-10">{children}</select><ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#072C0E]/40" /></div></div>); }
 function RadioGroup({ label, required, name, value, onChange, yes, no }) { return (<div className="mt-4"><Label required={required}>{label}</Label><div className="grid gap-3 sm:grid-cols-2"><RadioOption name={name} option="yes" value={value} onChange={onChange} label={yes} /><RadioOption name={name} option="no" value={value} onChange={onChange} label={no} /></div></div>); }
-function RadioCard({ label, required, name, value, onChange, yes, no }) { return (<div className="rounded-2xl border border-[#1a1a1a]/10 bg-white/45 p-4 shadow-sm backdrop-blur-xl"><Label required={required}>{label}</Label><div className="mt-3 grid gap-3"><RadioOption name={name} option="yes" value={value} onChange={onChange} label={yes} /><RadioOption name={name} option="no" value={value} onChange={onChange} label={no} /></div></div>); }
-function RadioOption({ name, option, value, onChange, label }) { const active = value === option; return (<label className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${active ? 'border-[#C9C858]/55 bg-[#C9C858]/14 text-[#1a1a1a] ring-4 ring-[#C9C858]/15' : 'border-[#1a1a1a]/10 bg-white/55 text-[#1a1a1a]/70 hover:border-[#C9C858]/45'}`}><input type="radio" name={name} value={option} checked={active} onChange={e => onChange(e.target.value)} className="h-4 w-4 accent-[#C9C858]" />{label}</label>); }
-function CheckCard({ checked, onChange, label }) { return (<label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 text-sm font-bold transition ${checked ? 'border-[#C9C858]/55 bg-[#C9C858]/14 text-[#1a1a1a] ring-4 ring-[#C9C858]/15' : 'border-[#1a1a1a]/10 bg-white/55 text-[#1a1a1a]/70 hover:border-[#C9C858]/45'}`}><input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 h-5 w-5 accent-[#C9C858]" /><span>{label}</span></label>); }
+function RadioCard({ label, required, name, value, onChange, yes, no }) { return (<div className="rounded-2xl border border-[#072C0E]/10 bg-white/45 p-4 shadow-sm backdrop-blur-xl"><Label required={required}>{label}</Label><div className="mt-3 grid gap-3"><RadioOption name={name} option="yes" value={value} onChange={onChange} label={yes} /><RadioOption name={name} option="no" value={value} onChange={onChange} label={no} /></div></div>); }
+function RadioOption({ name, option, value, onChange, label }) { const active = value === option; return (<label className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-bold transition ${active ? 'border-[#51D766]/55 bg-[#51D766]/14 text-[#072C0E] ring-4 ring-[#51D766]/15' : 'border-[#072C0E]/10 bg-white/55 text-[#072C0E]/70 hover:border-[#51D766]/45'}`}><input type="radio" name={name} value={option} checked={active} onChange={e => onChange(e.target.value)} className="h-4 w-4 accent-[#51D766]" />{label}</label>); }
+function CheckCard({ checked, onChange, label }) { return (<label className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-4 text-sm font-bold transition ${checked ? 'border-[#51D766]/55 bg-[#51D766]/14 text-[#072C0E] ring-4 ring-[#51D766]/15' : 'border-[#072C0E]/10 bg-white/55 text-[#072C0E]/70 hover:border-[#51D766]/45'}`}><input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 h-5 w-5 accent-[#51D766]" /><span>{label}</span></label>); }
 function ErrorBox({ message }) { return <div className="mb-5 rounded-2xl border border-red-200 bg-red-50/90 px-4 py-3 text-sm font-semibold text-red-600">{message}</div>; }
-function FormActions({ children }) { return <div className="flex flex-col-reverse justify-between gap-3 border-t border-[#1a1a1a]/10 pt-5 sm:flex-row sm:items-center">{children}</div>; }
-function PrimaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#1a1a1a] px-6 py-3 text-sm font-bold text-[#F5F5F5] shadow-xl shadow-[#1a1a1a]/18 transition hover:-translate-y-0.5 hover:bg-[#3d8564] disabled:opacity-60 sm:w-auto">{children}</button>; }
-function SecondaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#1a1a1a]/10 bg-white/55 px-6 py-3 text-sm font-bold text-[#1a1a1a] shadow-lg shadow-[#1a1a1a]/5 backdrop-blur-xl transition hover:bg-white/80 sm:w-auto">{children}</button>; }
+function FormActions({ children }) { return <div className="flex flex-col-reverse justify-between gap-3 border-t border-[#072C0E]/10 pt-5 sm:flex-row sm:items-center">{children}</div>; }
+function PrimaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] px-6 py-3 text-sm font-bold text-[#F5F5F5] shadow-xl shadow-[#072C0E]/18 transition hover:-translate-y-0.5 hover:bg-[#1D9C31] disabled:opacity-60 sm:w-auto">{children}</button>; }
+function SecondaryButton({ children, ...props }) { return <button {...props} className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#072C0E]/10 bg-white/55 px-6 py-3 text-sm font-bold text-[#072C0E] shadow-lg shadow-[#072C0E]/5 backdrop-blur-xl transition hover:bg-white/80 sm:w-auto">{children}</button>; }

@@ -85,7 +85,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
 
       <div className="mt-4 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {msg ? (
-          <p className="rounded-full bg-[#89E789]/15 px-3 py-2 text-xs font-bold text-[#244959]">
+          <p className="rounded-full bg-[#8BEA99]/15 px-3 py-2 text-xs font-bold text-[#175022]">
             {msg}
           </p>
         ) : (
@@ -95,7 +95,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-[#F9EFE5] shadow-lg shadow-[#302817]/10 transition hover:bg-[#1a3a2e] disabled:opacity-60 sm:w-auto"
+          className="w-full rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-[#DEFAE1] shadow-lg shadow-[#072C0E]/10 transition hover:bg-[#175022] disabled:opacity-60 sm:w-auto"
         >
           {saving ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save')}
         </button>
@@ -107,14 +107,14 @@ export default function ProfileEdit({ language, user, onUpdate }) {
 function Field({ label, value, onChange }) {
   return (
     <label className="block w-full min-w-0">
-      <span className="mb-1.5 block text-xs font-bold text-[#302817]/55">
+      <span className="mb-1.5 block text-xs font-bold text-[#072C0E]/55">
         {label}
       </span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="block h-11 w-full min-w-0 max-w-full rounded-2xl border border-[#302817]/10 bg-[#F8F8F8] px-4 text-sm font-semibold text-[#302817] outline-none transition placeholder:text-[#302817]/30 focus:border-[#51B291] focus:bg-white focus:ring-4 focus:ring-[#51B291]/15"
+        className="block h-11 w-full min-w-0 max-w-full rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] px-4 text-sm font-semibold text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41] focus:bg-white focus:ring-4 focus:ring-[#2ABD41]/15"
       />
     </label>
   );

@@ -36,7 +36,7 @@ function PreviewBanner({ tr }) {
       </div>
       <a
         href="/dashboard/workspace"
-        className="shrink-0 rounded-lg bg-[#302817] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#527A1A] transition whitespace-nowrap"
+        className="shrink-0 rounded-lg bg-[#072C0E] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#1A7B2A] transition whitespace-nowrap"
       >
         {tr ? 'Çalışma Alanı →' : 'Workspace →'}
       </a>
@@ -162,14 +162,14 @@ export default function DashboardPage() {
   if (!startupResolved) {
     return (
       <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center">
-        <div className="h-6 w-6 rounded-full border-2 border-[#53A67F] border-t-transparent animate-spin" />
+        <div className="h-6 w-6 rounded-full border-2 border-[#2ABD41] border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
     <ToastProvider>
-    <div className="dashboard-android-fix min-h-screen bg-[#fafaf8] text-[#1a1a1a] flex font-inter">
+    <div className="dashboard-android-fix min-h-screen bg-[#F1FCF2] text-[#072C0E] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar
         language={language}
@@ -202,8 +202,8 @@ export default function DashboardPage() {
         }`}>
           {/* Slim top bar  -  only on very first load, no layout shift */}
           {loading && (
-            <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] overflow-hidden bg-[#95A847]/15">
-              <div className="h-full animate-[shimmer_1s_ease-in-out_infinite] bg-[#95A847] rounded-full" style={{ width: '40%' }} />
+            <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] overflow-hidden bg-[#2ABD41]/15">
+              <div className="h-full animate-[shimmer_1s_ease-in-out_infinite] bg-[#2ABD41] rounded-full" style={{ width: '40%' }} />
             </div>
           )}
           <div className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden">
@@ -213,7 +213,7 @@ export default function DashboardPage() {
             <ErrorBoundary language={language}>
               {loading ? (
                 <div className="flex min-h-[50vh] items-center justify-center">
-                  <div className="h-6 w-6 rounded-full border-2 border-[#53A67F] border-t-transparent animate-spin" />
+                  <div className="h-6 w-6 rounded-full border-2 border-[#2ABD41] border-t-transparent animate-spin" />
                 </div>
               ) : (
                 <>

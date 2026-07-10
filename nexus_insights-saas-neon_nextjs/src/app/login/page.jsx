@@ -49,13 +49,13 @@ function LoginContent() {
 
       {/* Language toggle - top right */}
       <div className="fixed top-5 right-5 z-50">
-        <div className="flex items-center gap-0.5 rounded-full bg-white border border-[#e5e5e5] p-0.5 shadow-sm">
+        <div className="flex items-center gap-0.5 rounded-full bg-white border border-[#DEFAE1] p-0.5 shadow-sm">
           {['en', 'tr'].map(l => (
             <button
               key={l}
               onClick={() => changeLanguage(l)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition ${
-                language === l ? 'bg-[#53A67F] text-white' : 'text-[#1a1a1a]/40 hover:text-[#1a1a1a]'
+                language === l ? 'bg-[#2ABD41] text-white' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
               }`}
             >
               {l}
@@ -69,30 +69,30 @@ function LoginContent() {
         <div className="flex justify-center mb-8">
           <NextLink href="/" className="flex items-center gap-2.5">
             <Image src="/carbonless.png" alt="Carbonless" width={44} height={44} className="h-11 w-11" />
-            <span className="text-[20px] font-bold text-[#1a1a1a] tracking-tight">Carbonless</span>
+            <span className="text-[20px] font-bold text-[#072C0E] tracking-tight">Carbonless</span>
           </NextLink>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#e5e5e5] bg-white p-7 sm:p-8 shadow-sm">
+        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-7 sm:p-8 shadow-sm">
           <div className="mb-6 text-center">
-            <h2 className="text-[22px] font-bold text-[#1a1a1a] tracking-tight">{t.login.title}</h2>
-            <p className="mt-1.5 text-[13px] text-[#1a1a1a]/50">{t.login.subtitle}</p>
+            <h2 className="text-[22px] font-bold text-[#072C0E] tracking-tight">{t.login.title}</h2>
+            <p className="mt-1.5 text-[13px] text-[#072C0E]/50">{t.login.subtitle}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email/Username */}
             <div>
-              <label htmlFor="login-email" className="mb-1.5 block text-[12px] font-semibold text-[#1a1a1a]/70">{t.login.email}</label>
-              <div className="flex items-center gap-3 rounded-xl border border-[#e5e5e5] bg-[#F5F5F5] px-4 py-3 transition focus-within:border-[#53A67F] focus-within:ring-2 focus-within:ring-[#53A67F]/15">
-                <Mail className="h-4 w-4 text-[#53A67F]" />
+              <label htmlFor="login-email" className="mb-1.5 block text-[12px] font-semibold text-[#072C0E]/70">{t.login.email}</label>
+              <div className="flex items-center gap-3 rounded-xl border border-[#DEFAE1] bg-[#F5F5F5] px-4 py-3 transition focus-within:border-[#2ABD41] focus-within:ring-2 focus-within:ring-[#2ABD41]/15">
+                <Mail className="h-4 w-4 text-[#2ABD41]" />
                 <input
                   id="login-email"
                   type="text"
                   autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-transparent text-[14px] font-medium text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30"
+                  className="w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30"
                   placeholder={t.login.emailPlaceholder}
                   required
                 />
@@ -102,22 +102,22 @@ function LoginContent() {
             {/* Password */}
             <div>
               <div className="mb-1.5 flex items-center justify-between">
-                <label htmlFor="login-password" className="block text-[12px] font-semibold text-[#1a1a1a]/70">{t.login.password}</label>
-                <NextLink href="/forgot-password" className="text-[11px] font-semibold text-[#53A67F] hover:underline">{t.login.forgotPassword}</NextLink>
+                <label htmlFor="login-password" className="block text-[12px] font-semibold text-[#072C0E]/70">{t.login.password}</label>
+                <NextLink href="/forgot-password" className="text-[11px] font-semibold text-[#2ABD41] hover:underline">{t.login.forgotPassword}</NextLink>
               </div>
-              <div className="flex items-center gap-3 rounded-xl border border-[#e5e5e5] bg-[#F5F5F5] px-4 py-3 transition focus-within:border-[#53A67F] focus-within:ring-2 focus-within:ring-[#53A67F]/15">
-                <LockKeyhole className="h-4 w-4 text-[#53A67F]" />
+              <div className="flex items-center gap-3 rounded-xl border border-[#DEFAE1] bg-[#F5F5F5] px-4 py-3 transition focus-within:border-[#2ABD41] focus-within:ring-2 focus-within:ring-[#2ABD41]/15">
+                <LockKeyhole className="h-4 w-4 text-[#2ABD41]" />
                 <input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent text-[14px] font-medium text-[#1a1a1a] outline-none placeholder:text-[#1a1a1a]/30"
+                  className="w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30"
                   placeholder="********"
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-[#1a1a1a]/35 hover:text-[#1a1a1a]">
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-[#072C0E]/35 hover:text-[#072C0E]">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
@@ -139,21 +139,21 @@ function LoginContent() {
             <button
               type="submit"
               disabled={loading}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#53A67F] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-[#3d8564] disabled:opacity-50"
+              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-[#2ABD41] px-5 py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-[#1D9C31] disabled:opacity-50"
             >
               {loading ? (tr ? 'Giris yapiliyor...' : 'Signing in...') : t.login.title}
               {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />}
             </button>
           </form>
 
-          <p className="mt-5 text-center text-[12px] text-[#1a1a1a]/50">
+          <p className="mt-5 text-center text-[12px] text-[#072C0E]/50">
             {t.login.noAccount}{' '}
-            <NextLink href="/register" className="font-semibold text-[#53A67F] hover:underline">{t.nav.register}</NextLink>
+            <NextLink href="/register" className="font-semibold text-[#2ABD41] hover:underline">{t.nav.register}</NextLink>
           </p>
         </div>
 
         {/* Footer note */}
-        <p className="mt-4 text-center text-[11px] text-[#1a1a1a]/30">
+        <p className="mt-4 text-center text-[11px] text-[#072C0E]/30">
           {t.login.secureData}
         </p>
       </div>

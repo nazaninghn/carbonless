@@ -13,9 +13,9 @@ import { useMemo } from 'react';
  */
 
 const BAR_COLORS = [
-  '#3d8564', '#53A67F', '#C9C858', '#244959', '#51B291',
-  '#89E789', '#302817', '#6B8E23', '#556B2F', '#8FBC8F',
-  '#2E8B57', '#3CB371', '#66CDAA', '#7B9F35', '#A0C85A',
+  '#1D9C31', '#2ABD41', '#51D766', '#175022', '#2ABD41',
+  '#8BEA99', '#072C0E', '#2ABD41', '#1A7B2A', '#8BEA99',
+  '#1A7B2A', '#2ABD41', '#51D766', '#1D9C31', '#51D766',
 ];
 
 export default function Scope3CategoryChart({ data, language }) {
@@ -38,8 +38,8 @@ export default function Scope3CategoryChart({ data, language }) {
   // Empty state — all categories are zero or no data
   if (chartData.length === 0) {
     return (
-      <div className="flex h-28 items-center justify-center rounded-xl bg-[#302817]/3">
-        <p className="text-xs font-semibold text-[#302817]/35">
+      <div className="flex h-28 items-center justify-center rounded-xl bg-[#072C0E]/3">
+        <p className="text-xs font-semibold text-[#072C0E]/35">
           {tr ? 'Scope 3 kategori verisi yok' : 'No Scope 3 category data'}
         </p>
       </div>
@@ -55,17 +55,17 @@ export default function Scope3CategoryChart({ data, language }) {
         return (
           <div key={d.category}>
             <div className="mb-1 flex items-center justify-between gap-2">
-              <span className="truncate text-[11px] font-bold text-[#302817]/80">
-                <span className="text-[10px] font-semibold text-[#302817]/40 mr-1">
+              <span className="truncate text-[11px] font-bold text-[#072C0E]/80">
+                <span className="text-[10px] font-semibold text-[#072C0E]/40 mr-1">
                   {d.ghg_number}.
                 </span>
                 {label}
               </span>
-              <span className="shrink-0 text-[10px] font-bold text-[#302817]/40">
+              <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">
                 {tonne < 0.01 ? `${d.total_co2e_kg.toFixed(1)} kg` : `${tonne.toFixed(2)} t`}
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[#302817]/5">
+            <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/5">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{

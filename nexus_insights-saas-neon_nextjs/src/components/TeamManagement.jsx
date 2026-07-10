@@ -17,7 +17,7 @@ const ROLES = [
   { value: 'data_entry', icon: Database, color: 'bg-green-100 text-green-700 border-green-300',
     label: { tr: 'Veri Girişi', en: 'Data Entry' },
     desc: { tr: 'Sadece emisyon verisi girişi', en: 'Emission data entry only' } },
-  { value: 'auditor', icon: Eye, color: 'bg-[#F8F8F8] text-[#302817] border-[#302817]/10',
+  { value: 'auditor', icon: Eye, color: 'bg-[#F8F8F8] text-[#072C0E] border-[#072C0E]/10',
     label: { tr: 'Denetçi', en: 'Auditor' },
     desc: { tr: 'Sadece görüntüleme — veri değiştiremez', en: 'View only — cannot modify data' } },
 ];
@@ -110,17 +110,17 @@ export default function TeamManagement({ language }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Users className="w-5 h-5 text-[#51B291]" />
-          <h3 className="font-semibold text-[#302817]">
+          <Users className="w-5 h-5 text-[#2ABD41]" />
+          <h3 className="font-semibold text-[#072C0E]">
             {tr ? 'Takım Yönetimi' : 'Team Management'}
           </h3>
-          <span className="px-2 py-0.5 bg-[#302817]/10 text-[#51B291] text-xs rounded-full font-medium">
+          <span className="px-2 py-0.5 bg-[#072C0E]/10 text-[#2ABD41] text-xs rounded-full font-medium">
             {members.length} {tr ? 'üye' : 'members'}
           </span>
         </div>
         <button
           onClick={() => setShowRoles(!showRoles)}
-          className="flex items-center gap-1 text-xs text-[#302817]/55 hover:text-[#51B291] transition-colors"
+          className="flex items-center gap-1 text-xs text-[#072C0E]/55 hover:text-[#2ABD41] transition-colors"
         >
           <Info className="w-3.5 h-3.5" />
           {tr ? 'Roller Hakkında' : 'About Roles'}
@@ -129,8 +129,8 @@ export default function TeamManagement({ language }) {
 
       {/* Role descriptions panel */}
       {showRoles && (
-        <div className="bg-[#F8F8F8] rounded-2xl p-4 border border-[#302817]/10">
-          <h4 className="text-sm font-semibold text-[#302817] mb-3">{tr ? 'Rol Açıklamaları' : 'Role Descriptions'}</h4>
+        <div className="bg-[#F8F8F8] rounded-2xl p-4 border border-[#072C0E]/10">
+          <h4 className="text-sm font-semibold text-[#072C0E] mb-3">{tr ? 'Rol Açıklamaları' : 'Role Descriptions'}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ROLES.map(r => {
               const Icon = r.icon;
@@ -151,12 +151,12 @@ export default function TeamManagement({ language }) {
       {/* Members list */}
       {loading ? (
         <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-[#51B291] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-[#2ABD41] border-t-transparent rounded-full animate-spin" />
         </div>
       ) : members.length === 0 ? (
         <div className="text-center py-8">
-          <Users className="w-10 h-10 text-[#302817]/55/40 mx-auto mb-2" />
-          <p className="text-sm text-[#302817]/55">{tr ? 'Henüz üye yok' : 'No members yet'}</p>
+          <Users className="w-10 h-10 text-[#072C0E]/55/40 mx-auto mb-2" />
+          <p className="text-sm text-[#072C0E]/55">{tr ? 'Henüz üye yok' : 'No members yet'}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -165,7 +165,7 @@ export default function TeamManagement({ language }) {
             const RoleIcon = roleInfo.icon;
             return (
               <div key={m.id} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
-                !m.is_active ? 'bg-[#F8F8F8] border-[#302817]/10 opacity-60' : 'bg-white border-[#302817]/10 hover:border-[#51B291]/30 hover:shadow-sm'
+                !m.is_active ? 'bg-[#F8F8F8] border-[#072C0E]/10 opacity-60' : 'bg-white border-[#072C0E]/10 hover:border-[#2ABD41]/30 hover:shadow-sm'
               }`}>
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
@@ -174,10 +174,10 @@ export default function TeamManagement({ language }) {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-[#302817]">{m.username || '—'}</p>
+                      <p className="text-sm font-medium text-[#072C0E]">{m.username || '—'}</p>
                       {m.role === 'owner' && <Crown className="w-3.5 h-3.5 text-amber-500" />}
                     </div>
-                    <p className="text-xs text-[#302817]/55">{m.user_email || '—'}</p>
+                    <p className="text-xs text-[#072C0E]/55">{m.user_email || '—'}</p>
                   </div>
                 </div>
 
@@ -225,12 +225,12 @@ export default function TeamManagement({ language }) {
       )}
 
       {/* Invite Form */}
-      <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-4 border border-[#51B291]/20">
+      <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-4 border border-[#2ABD41]/20">
         <div className="flex items-center gap-2 mb-3">
-          <UserPlus className="w-4 h-4 text-[#51B291]" />
-          <h4 className="text-sm font-semibold text-[#302817]">{tr ? 'Yeni Üye Davet Et' : 'Invite New Member'}</h4>
+          <UserPlus className="w-4 h-4 text-[#2ABD41]" />
+          <h4 className="text-sm font-semibold text-[#072C0E]">{tr ? 'Yeni Üye Davet Et' : 'Invite New Member'}</h4>
         </div>
-        <p className="text-xs text-[#302817]/55 mb-3">
+        <p className="text-xs text-[#072C0E]/55 mb-3">
           {tr ? 'E-posta adresi girin ve rol seçin. Davet edilen kişi kayıt olduktan sonra otomatik olarak takıma eklenir.' : 'Enter email and select a role. The invited person will be automatically added to the team after registration.'}
         </p>
         <div className="flex gap-2 flex-wrap">
@@ -239,12 +239,12 @@ export default function TeamManagement({ language }) {
             value={inviteEmail}
             onChange={e => setInviteEmail(e.target.value)}
             placeholder={tr ? 'ornek@sirket.com' : 'example@company.com'}
-            className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-[#302817]/10 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="flex-1 min-w-[200px] px-3 py-2 bg-white border border-[#072C0E]/10 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-transparent"
           />
           <select
             value={inviteRole}
             onChange={e => setInviteRole(e.target.value)}
-            className="px-3 py-2 bg-white border border-[#302817]/10 rounded-xl text-sm"
+            className="px-3 py-2 bg-white border border-[#072C0E]/10 rounded-xl text-sm"
           >
             {ROLES.filter(r => r.value !== 'owner').map(r => (
               <option key={r.value} value={r.value}>{tr ? r.label.tr : r.label.en}</option>
@@ -253,7 +253,7 @@ export default function TeamManagement({ language }) {
           <button
             onClick={handleInvite}
             disabled={inviting || !inviteEmail}
-            className="px-5 py-2 bg-[#244959] text-white rounded-xl text-sm font-medium hover:bg-[#1a3a2e] transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-5 py-2 bg-[#175022] text-white rounded-xl text-sm font-medium hover:bg-[#175022] transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             <UserPlus className="w-4 h-4" />
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}

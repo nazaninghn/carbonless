@@ -21,10 +21,10 @@ function ArcGauge({ achieved, status }) {
   const halfC = Math.PI * r; // ≈ 144.5 — half circumference
   const pct = Math.min(Math.max((achieved || 0) / 100, 0), 1);
 
-  const trackCol = '#302817';
+  const trackCol = '#072C0E';
   const progCol =
-    status === 'succeeded' ? '#244959' :
-    status === 'on_track'  ? '#51B291' : '#F87171';
+    status === 'succeeded' ? '#175022' :
+    status === 'on_track'  ? '#2ABD41' : '#F87171';
 
   return (
     <svg viewBox="0 0 100 54" className="w-full max-w-[160px] mx-auto overflow-visible">
@@ -61,25 +61,25 @@ function TimelineBar({ baseYear, targetYear, currentYear, language }) {
 
   return (
     <div className="mt-1">
-      <div className="relative h-2 rounded-full bg-[#302817]/6">
+      <div className="relative h-2 rounded-full bg-[#072C0E]/6">
         {/* elapsed fill */}
         <div
-          className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-700"
+          className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700"
           style={{ width: `${nowPct}%` }}
         />
         {/* "now" tick */}
         {nowPct > 0 && nowPct < 100 && (
           <div
-            className="absolute top-1/2 h-3.5 w-0.5 -translate-y-1/2 rounded-full bg-[#302817]/40"
+            className="absolute top-1/2 h-3.5 w-0.5 -translate-y-1/2 rounded-full bg-[#072C0E]/40"
             style={{ left: `${nowPct}%` }}
           />
         )}
       </div>
-      <div className="relative mt-1.5 flex justify-between text-[9px] font-bold text-[#302817]/30">
+      <div className="relative mt-1.5 flex justify-between text-[9px] font-bold text-[#072C0E]/30">
         <span>{baseYear}</span>
         {nowPct > 5 && nowPct < 95 && (
           <span
-            className="absolute text-[9px] font-bold text-[#302817]/50"
+            className="absolute text-[9px] font-bold text-[#072C0E]/50"
             style={{ left: `${nowPct}%`, transform: 'translateX(-50%)' }}
           >
             {tr ? 'şimdi' : 'now'}
@@ -109,18 +109,18 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
   const annualNeededT = yearsLeft > 0 ? (remainingKg / yearsLeft / 1000) : 0;
 
   const STATUS = {
-    on_track:  { bg: 'bg-[#51B291]/12', text: 'text-[#244959]', label: tr ? 'Yolunda' : 'On Track' },
-    succeeded: { bg: 'bg-[#244959]/15', text: 'text-[#244959]', label: tr ? 'Başarılı' : 'Succeeded' },
+    on_track:  { bg: 'bg-[#2ABD41]/12', text: 'text-[#175022]', label: tr ? 'Yolunda' : 'On Track' },
+    succeeded: { bg: 'bg-[#175022]/15', text: 'text-[#175022]', label: tr ? 'Başarılı' : 'Succeeded' },
     off_track: { bg: 'bg-red-50',       text: 'text-red-500',   label: tr ? 'Geride'   : 'Off Track' },
   };
   const st = STATUS[tgt.status] ?? STATUS.off_track;
 
   return (
-    <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#302817]/10 bg-white/82 p-5 shadow-sm transition hover:shadow-[0_10px_32px_rgba(48,40,23,0.09)]">
+    <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#072C0E]/10 bg-white/82 p-5 shadow-sm transition hover:shadow-[0_10px_32px_rgba(7, 44, 14,0.09)]">
 
       {/* Title + status + actions */}
       <div className="flex items-start justify-between gap-2">
-        <h4 className="text-sm font-bold leading-tight text-[#302817]">{tgt.title}</h4>
+        <h4 className="text-sm font-bold leading-tight text-[#072C0E]">{tgt.title}</h4>
         <div className="flex shrink-0 items-center gap-1.5">
           <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${st.bg} ${st.text}`}>
             {st.label}
@@ -129,7 +129,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
             <button
               onClick={() => onEdit(tgt)}
               title={tr ? 'Düzenle' : 'Edit'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-[#51B291]/10 hover:text-[#51B291]"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-[#2ABD41]/10 hover:text-[#2ABD41]"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -138,7 +138,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
             <button
               onClick={() => onDelete(tgt.id)}
               title={tr ? 'Sil' : 'Delete'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-red-50 hover:text-red-500"
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-red-50 hover:text-red-500"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -151,10 +151,10 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
         <ArcGauge achieved={achievedPct} status={tgt.status} />
         {/* Overlay text centered under the arc opening */}
         <div className="-mt-2 text-center">
-          <p className="text-2xl font-bold leading-none tracking-tight text-[#302817]">
+          <p className="text-2xl font-bold leading-none tracking-tight text-[#072C0E]">
             {Math.round(achievedPct)}<span className="text-sm font-bold">%</span>
           </p>
-          <p className="mt-0.5 text-[10px] font-semibold text-[#302817]/40">
+          <p className="mt-0.5 text-[10px] font-semibold text-[#072C0E]/40">
             {tr ? `${reducePct}% hedefine doğru` : `toward ${reducePct}% target`}
           </p>
         </div>
@@ -163,18 +163,18 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
       {/* Key metrics row */}
       <div className="grid grid-cols-3 gap-2">
         <div className="rounded-xl bg-[#F8F8F8] px-2.5 py-2 text-center">
-          <p className="text-[9px] font-bold uppercase text-[#302817]/30">{tr ? 'Baz' : 'Base'}</p>
-          <p className="mt-0.5 text-xs font-bold text-[#302817]">{fmt(baseKg / 1000)} t</p>
+          <p className="text-[9px] font-bold uppercase text-[#072C0E]/30">{tr ? 'Baz' : 'Base'}</p>
+          <p className="mt-0.5 text-xs font-bold text-[#072C0E]">{fmt(baseKg / 1000)} t</p>
         </div>
         <div className="rounded-xl bg-[#F8F8F8] px-2.5 py-2 text-center">
-          <p className="text-[9px] font-bold uppercase text-[#302817]/30">{tr ? 'Şimdi' : 'Now'}</p>
-          <p className="mt-0.5 text-xs font-bold text-[#302817]">
+          <p className="text-[9px] font-bold uppercase text-[#072C0E]/30">{tr ? 'Şimdi' : 'Now'}</p>
+          <p className="mt-0.5 text-xs font-bold text-[#072C0E]">
             {currentKg > 0 ? `${fmt(currentKg / 1000)} t` : '—'}
           </p>
         </div>
-        <div className="rounded-xl bg-[#51B291]/8 px-2.5 py-2 text-center">
-          <p className="text-[9px] font-bold uppercase text-[#244959]/60">{tr ? 'Hedef' : 'Goal'}</p>
-          <p className="mt-0.5 text-xs font-bold text-[#244959]">{fmt(targetKg / 1000)} t</p>
+        <div className="rounded-xl bg-[#2ABD41]/8 px-2.5 py-2 text-center">
+          <p className="text-[9px] font-bold uppercase text-[#175022]/60">{tr ? 'Hedef' : 'Goal'}</p>
+          <p className="mt-0.5 text-xs font-bold text-[#175022]">{fmt(targetKg / 1000)} t</p>
         </div>
       </div>
 
@@ -191,8 +191,8 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
       {/* Bottom stats */}
       <div className="flex items-center justify-between gap-2 rounded-xl bg-[#F8F8F8]/80 px-3.5 py-2.5">
         <div className="flex items-center gap-2">
-          <Calendar className="h-3.5 w-3.5 text-[#302817]/30" />
-          <span className="text-[11px] font-semibold text-[#302817]/50">
+          <Calendar className="h-3.5 w-3.5 text-[#072C0E]/30" />
+          <span className="text-[11px] font-semibold text-[#072C0E]/50">
             {yearsLeft > 0
               ? `${yearsLeft} ${tr ? 'yıl kaldı' : 'years left'}`
               : (tr ? 'Hedef yılı geçti' : 'Target year passed')}
@@ -201,7 +201,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
         {annualNeededT > 0 && (
           <div className="flex items-center gap-1.5">
             <Zap className="h-3.5 w-3.5 text-amber-500" />
-            <span className="text-[11px] font-bold text-[#302817]/60">
+            <span className="text-[11px] font-bold text-[#072C0E]/60">
               {fmt(annualNeededT)} t/yr
             </span>
           </div>
@@ -373,23 +373,23 @@ export default function ReductionTargetsTab({
     return { onTrack, succeeded, offTrack, totalReductionPct };
   }, [targets]);
 
-  const FIELD = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#51B291]/15';
-  const LABEL = 'mb-1.5 block text-xs font-bold text-[#302817]/60';
+  const FIELD = 'h-12 w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
+  const LABEL = 'mb-1.5 block text-xs font-bold text-[#072C0E]/60';
 
   return (
-    <div className="space-y-3 sm:space-y-4 text-[#302817]">
+    <div className="space-y-3 sm:space-y-4 text-[#072C0E]">
 
       {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-[0_6px_24px_rgba(48,40,23,0.05)] sm:p-5">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51B291]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
               {tr ? 'Hedef yönetimi' : 'Target management'}
             </p>
             <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
               {tr ? 'Azaltma Hedefleri' : 'Reduction Targets'}
             </h1>
-            <p className="mt-0.5 text-sm text-[#302817]/55">
+            <p className="mt-0.5 text-sm text-[#072C0E]/55">
               {tr
                 ? 'Karbon azaltma taahhütlerinizi takip edin'
                 : 'Track your carbon reduction commitments'}
@@ -397,7 +397,7 @@ export default function ReductionTargetsTab({
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] sm:self-auto"
+            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] sm:self-auto"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Hedef Ekle' : 'Add Target'}
@@ -410,16 +410,16 @@ export default function ReductionTargetsTab({
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[
             { label: tr ? 'Toplam Hedef' : 'Total Targets', value: targets.length, color: null },
-            { label: tr ? 'Yolunda'      : 'On Track',      value: onTrack,   color: '#51B291' },
-            { label: tr ? 'Başarılı'     : 'Succeeded',     value: succeeded, color: '#244959' },
+            { label: tr ? 'Yolunda'      : 'On Track',      value: onTrack,   color: '#2ABD41' },
+            { label: tr ? 'Başarılı'     : 'Succeeded',     value: succeeded, color: '#175022' },
             { label: tr ? 'Geride'       : 'Off Track',     value: offTrack,  color: '#F87171' },
           ].map(k => (
-            <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
+            <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#072C0E]/7 bg-white px-3 py-2.5">
               {k.color && (
                 <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />
               )}
-              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
-              <p className="mt-1 text-xl font-bold leading-none text-[#302817]">{k.value}</p>
+              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{k.label}</p>
+              <p className="mt-1 text-xl font-bold leading-none text-[#072C0E]">{k.value}</p>
             </div>
           ))}
         </div>
@@ -427,22 +427,22 @@ export default function ReductionTargetsTab({
 
       {/* ── Overall progress bar (if >1 target) ─────────────────────────── */}
       {targets.length > 1 && (
-        <div className="rounded-[1.25rem] border border-[#302817]/8 bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-[1.25rem] border border-[#072C0E]/8 bg-white px-5 py-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-bold text-[#302817]/60">
+            <p className="text-xs font-bold text-[#072C0E]/60">
               {tr ? 'Ortalama azaltma taahhüdü' : 'Average reduction commitment'}
             </p>
-            <span className="text-sm font-bold text-[#244959]">-{totalReductionPct}%</span>
+            <span className="text-sm font-bold text-[#175022]">-{totalReductionPct}%</span>
           </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-[#302817]/6">
+          <div className="h-2.5 overflow-hidden rounded-full bg-[#072C0E]/6">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#244959] to-[#51B291] transition-all duration-700"
+              className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700"
               style={{ width: `${Math.min(parseFloat(totalReductionPct), 100)}%` }}
             />
           </div>
-          <div className="mt-2 flex items-center gap-4 text-[10px] font-semibold text-[#302817]/35">
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#51B291]" />{onTrack} {tr ? 'yolunda' : 'on track'}</span>
-            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#244959]" />{succeeded} {tr ? 'başarılı' : 'succeeded'}</span>
+          <div className="mt-2 flex items-center gap-4 text-[10px] font-semibold text-[#072C0E]/35">
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#2ABD41]" />{onTrack} {tr ? 'yolunda' : 'on track'}</span>
+            <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#175022]" />{succeeded} {tr ? 'başarılı' : 'succeeded'}</span>
             {offTrack > 0 && <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-red-400" />{offTrack} {tr ? 'geride' : 'off track'}</span>}
           </div>
         </div>
@@ -450,21 +450,21 @@ export default function ReductionTargetsTab({
 
       {/* ── Empty state ──────────────────────────────────────────────────── */}
       {targets.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-[#302817]/8 bg-white p-12 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-12 text-center shadow-sm">
           {/* SVG illustration: target with arrow */}
           <svg viewBox="0 0 80 80" className="h-20 w-20 opacity-20" fill="none">
-            <circle cx="40" cy="40" r="36" stroke="#302817" strokeWidth="3" />
-            <circle cx="40" cy="40" r="24" stroke="#51B291" strokeWidth="3" />
-            <circle cx="40" cy="40" r="12" stroke="#244959" strokeWidth="3" />
-            <circle cx="40" cy="40" r="4" fill="#302817" />
-            <line x1="65" y1="15" x2="40" y2="40" stroke="#302817" strokeWidth="3" strokeLinecap="round" />
-            <polyline points="58,12 65,15 62,22" stroke="#302817" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="40" cy="40" r="36" stroke="#072C0E" strokeWidth="3" />
+            <circle cx="40" cy="40" r="24" stroke="#2ABD41" strokeWidth="3" />
+            <circle cx="40" cy="40" r="12" stroke="#175022" strokeWidth="3" />
+            <circle cx="40" cy="40" r="4" fill="#072C0E" />
+            <line x1="65" y1="15" x2="40" y2="40" stroke="#072C0E" strokeWidth="3" strokeLinecap="round" />
+            <polyline points="58,12 65,15 62,22" stroke="#072C0E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <div>
-            <p className="text-base font-bold text-[#302817]">
+            <p className="text-base font-bold text-[#072C0E]">
               {tr ? 'Henüz hedef yok' : 'No targets yet'}
             </p>
-            <p className="mt-1 text-sm text-[#302817]/50">
+            <p className="mt-1 text-sm text-[#072C0E]/50">
               {tr
                 ? 'Karbon azaltma taahhüdünüzü belirleyin ve ilerlemenizi takip edin'
                 : 'Set your carbon reduction commitment and track your progress'}
@@ -472,7 +472,7 @@ export default function ReductionTargetsTab({
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#302817] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e]"
+            className="inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Hedefinizi Ekleyin' : 'Add Your First Target'}
@@ -532,21 +532,21 @@ export default function ReductionTargetsTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
           <div
             role="dialog" aria-modal="true" aria-labelledby="edit-target-title"
-            className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl"
+            className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#072C0E]/8 bg-white/94 shadow-[0_20px_60px_rgba(7, 44, 14,0.14)] backdrop-blur-2xl"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 id="edit-target-title" className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Hedefi Düzenle' : 'Edit Target'}
                 </h2>
-                <p className="mt-0.5 text-xs text-[#302817]/45">
+                <p className="mt-0.5 text-xs text-[#072C0E]/45">
                   {editTarget.title}
                 </p>
               </div>
               <button
                 onClick={() => setEditTarget(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 transition hover:bg-[#302817]/5"
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 transition hover:bg-[#072C0E]/5"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -601,19 +601,19 @@ export default function ReductionTargetsTab({
 
                 {/* Live preview */}
                 {editBaseEmit && editReducePct && (
-                  <div className="rounded-2xl border border-[#51B291]/25 bg-[#51B291]/7 px-4 py-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#244959]/60">
+                  <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/7 px-4 py-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#175022]/60">
                       {tr ? 'Önizleme' : 'Preview'}
                     </p>
                     <div className="mt-2 flex items-center gap-3">
                       <div className="text-center">
-                        <p className="text-[10px] text-[#302817]/40">{tr ? 'Baz' : 'Base'}</p>
+                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
                         <p className="text-sm font-bold">{fmt(parseFloat(editBaseEmit))} t</p>
                       </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#244959]">→ -{editReducePct}% →</div>
+                      <div className="flex-1 text-center text-xs font-bold text-[#175022]">→ -{editReducePct}% →</div>
                       <div className="text-center">
-                        <p className="text-[10px] text-[#302817]/40">{tr ? 'Hedef' : 'Goal'}</p>
-                        <p className="text-sm font-bold text-[#244959]">
+                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
+                        <p className="text-sm font-bold text-[#175022]">
                           {fmt(parseFloat(editBaseEmit) * (1 - parseFloat(editReducePct) / 100))} t
                         </p>
                       </div>
@@ -624,17 +624,17 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button
                 type="button"
                 onClick={() => setEditTarget(null)}
-                className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
+                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 type="submit" form="edit-target-form" disabled={editSaving}
-                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60"
+                className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60"
               >
                 {editSaving ? '…' : (tr ? 'Kaydet' : 'Save Changes')}
               </button>
@@ -648,21 +648,21 @@ export default function ReductionTargetsTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
           <div
             role="dialog" aria-modal="true" aria-labelledby="add-target-title"
-            className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl"
+            className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#072C0E]/8 bg-white/94 shadow-[0_20px_60px_rgba(7, 44, 14,0.14)] backdrop-blur-2xl"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 id="add-target-title" className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Yeni Azaltma Hedefi' : 'New Reduction Target'}
                 </h2>
-                <p className="mt-0.5 text-xs text-[#302817]/45">
+                <p className="mt-0.5 text-xs text-[#072C0E]/45">
                   {tr ? 'Karbon azaltma taahhüdü oluşturun' : 'Create a carbon reduction commitment'}
                 </p>
               </div>
               <button
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 transition hover:bg-[#302817]/5"
+                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 transition hover:bg-[#072C0E]/5"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -726,26 +726,26 @@ export default function ReductionTargetsTab({
 
                 {/* Live preview */}
                 {baseEmit && reducePct && (
-                  <div className="rounded-2xl border border-[#51B291]/25 bg-[#51B291]/7 px-4 py-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#244959]/60">
+                  <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/7 px-4 py-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#175022]/60">
                       {tr ? 'Önizleme' : 'Preview'}
                     </p>
                     <div className="mt-2 flex items-center gap-3">
                       <div className="text-center">
-                        <p className="text-[10px] text-[#302817]/40">{tr ? 'Baz' : 'Base'}</p>
+                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
                         <p className="text-sm font-bold">{fmt(parseFloat(baseEmit))} t</p>
                       </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#244959]">
+                      <div className="flex-1 text-center text-xs font-bold text-[#175022]">
                         → -{reducePct}% →
                       </div>
                       <div className="text-center">
-                        <p className="text-[10px] text-[#302817]/40">{tr ? 'Hedef' : 'Goal'}</p>
-                        <p className="text-sm font-bold text-[#244959]">
+                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
+                        <p className="text-sm font-bold text-[#175022]">
                           {fmt(parseFloat(baseEmit) * (1 - parseFloat(reducePct) / 100))} t
                         </p>
                       </div>
                     </div>
-                    <p className="mt-2 text-[10px] text-[#244959]/60">
+                    <p className="mt-2 text-[10px] text-[#175022]/60">
                       {tr
                         ? `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)} yıllık dönem`
                         : `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)}-year period`}
@@ -756,17 +756,17 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button
                 type="button"
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
+                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 type="submit" form="target-form" disabled={saving}
-                className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60"
+                className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60"
               >
                 {saving ? '…' : (tr ? 'Hedefi Kaydet' : 'Save Target')}
               </button>

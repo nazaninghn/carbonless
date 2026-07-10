@@ -145,34 +145,34 @@ export default function Scope3EntryForm({ language, fetchData }) {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-3 text-[#302817]">
+    <div className="space-y-3 text-[#072C0E]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-gradient-to-br from-[#F9EFE5] via-white to-[#89E789]/8 p-4 shadow-sm">
+      <div className="rounded-[1.25rem] border border-[#072C0E]/10 bg-gradient-to-br from-[#DEFAE1] via-white to-[#8BEA99]/8 p-4 shadow-sm">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51B291]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
               {tr ? 'Kapsam 3 Girişi' : 'Scope 3 Entry'}
             </p>
             <h1 className="mt-1 text-lg font-bold tracking-[-0.03em]">
               {tr ? 'Scope 3 Emisyon Kaydı' : 'Scope 3 Emission Entry'}
             </h1>
-            <p className="mt-0.5 text-xs text-[#302817]/50">
+            <p className="mt-0.5 text-xs text-[#072C0E]/50">
               {tr
                 ? '15 GHG Protokolü kategorisinden emisyon kaydedin'
                 : 'Log emissions across all 15 GHG Protocol categories'}
             </p>
           </div>
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#51B291]/12 text-[#51B291]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/12 text-[#2ABD41]">
             <Leaf className="h-4.5 w-4.5" />
           </div>
         </div>
       </div>
 
       {/* Form Card */}
-      <div className="rounded-[1.25rem] border border-[#302817]/10 bg-white p-5 shadow-sm">
+      <div className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
         {loadingCategories ? (
           <div className="flex justify-center py-10">
-            <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#51B291] border-t-transparent" />
+            <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#2ABD41] border-t-transparent" />
           </div>
         ) : fetchError ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
@@ -181,7 +181,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
             </p>
             <button
               onClick={fetchCategories}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#51B291]/12 px-4 py-2 text-xs font-bold text-[#244959] transition hover:bg-[#51B291]/22"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41]/12 px-4 py-2 text-xs font-bold text-[#175022] transition hover:bg-[#2ABD41]/22"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               {tr ? 'Tekrar Dene' : 'Retry'}
@@ -191,14 +191,14 @@ export default function Scope3EntryForm({ language, fetchData }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Category Selector */}
             <div>
-              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#302817]/60">
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#072C0E]/60">
                 {tr ? 'Kategori' : 'Category'}
               </label>
               <div className="relative">
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#302817] outline-none transition focus:border-[#51B291]/40 focus:ring-4 focus:ring-[#51B291]/10"
+                  className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                 >
                   <option value="">
                     {tr ? '— Kategori seçin —' : '— Select category —'}
@@ -210,21 +210,21 @@ export default function Scope3EntryForm({ language, fetchData }) {
                     </option>
                   ))}
                 </select>
-                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#302817]/30" />
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#072C0E]/30" />
               </div>
             </div>
 
             {/* Sub-type Selector */}
             {selectedCategory && subtypes.length > 0 && (
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#302817]/60">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#072C0E]/60">
                   {tr ? 'Alt Tip' : 'Sub-type'}
                 </label>
                 <div className="relative">
                   <select
                     value={selectedSubtype}
                     onChange={(e) => setSelectedSubtype(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#302817] outline-none transition focus:border-[#51B291]/40 focus:ring-4 focus:ring-[#51B291]/10"
+                    className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                   >
                     <option value="">
                       {tr ? '— Alt tip seçin —' : '— Select sub-type —'}
@@ -235,7 +235,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#302817]/30" />
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#072C0E]/30" />
                 </div>
               </div>
             )}
@@ -243,7 +243,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
             {/* Quantity Input + Unit Label */}
             {selectedSubtype && (
               <div>
-                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#302817]/60">
+                <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#072C0E]/60">
                   {tr ? 'Miktar' : 'Quantity'}
                 </label>
                 <div className="relative">
@@ -254,9 +254,9 @@ export default function Scope3EntryForm({ language, fetchData }) {
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder={tr ? 'Miktar girin...' : 'Enter quantity...'}
-                    className="w-full rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-16 text-sm text-[#302817] outline-none transition placeholder:text-[#302817]/30 focus:border-[#51B291]/40 focus:ring-4 focus:ring-[#51B291]/10"
+                    className="w-full rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-16 text-sm text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                   />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md bg-[#51B291]/12 px-2 py-0.5 text-[10px] font-bold text-[#244959]">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md bg-[#2ABD41]/12 px-2 py-0.5 text-[10px] font-bold text-[#175022]">
                     {unitLabel}
                   </span>
                 </div>
@@ -267,37 +267,37 @@ export default function Scope3EntryForm({ language, fetchData }) {
             {selectedSubtype && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#302817]/60">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#072C0E]/60">
                     {tr ? 'Yıl' : 'Year'}
                   </label>
                   <div className="relative">
                     <select
                       value={year}
                       onChange={(e) => setYear(Number(e.target.value))}
-                      className="w-full appearance-none rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#302817] outline-none transition focus:border-[#51B291]/40 focus:ring-4 focus:ring-[#51B291]/10"
+                      className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                     >
                       {yearOptions.map((y) => (
                         <option key={y} value={y}>{y}</option>
                       ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#302817]/30" />
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#072C0E]/30" />
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#302817]/60">
+                  <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wide text-[#072C0E]/60">
                     {tr ? 'Ay' : 'Month'}
                   </label>
                   <div className="relative">
                     <select
                       value={month}
                       onChange={(e) => setMonth(Number(e.target.value))}
-                      className="w-full appearance-none rounded-xl border border-[#302817]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#302817] outline-none transition focus:border-[#51B291]/40 focus:ring-4 focus:ring-[#51B291]/10"
+                      className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                     >
                       {months.map((label, i) => (
                         <option key={i + 1} value={i + 1}>{label}</option>
                       ))}
                     </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#302817]/30" />
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#072C0E]/30" />
                   </div>
                 </div>
               </div>
@@ -308,7 +308,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
               <button
                 type="submit"
                 disabled={submitting || !quantity}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#302817] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#527A1A] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1A7B2A] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

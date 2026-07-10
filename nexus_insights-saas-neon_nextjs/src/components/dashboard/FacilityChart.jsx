@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/utils/api';
 
 // Module-level constant — one allocation shared across all renders and instances
-const SCOPE_COLORS = ['#244959', '#51B291', '#89E789', '#302817'];
+const SCOPE_COLORS = ['#175022', '#2ABD41', '#8BEA99', '#072C0E'];
 
 export default function FacilityChart({ language, selectedYear, compact }) {
   const [data, setData]       = useState([]);
@@ -37,10 +37,10 @@ export default function FacilityChart({ language, selectedYear, compact }) {
         {[1, 2, 3].map(i => (
           <div key={i} className="animate-pulse">
             <div className="mb-1.5 flex justify-between">
-              <div className="h-3 w-24 rounded-full bg-[#302817]/8" />
-              <div className="h-3 w-12 rounded-full bg-[#302817]/6" />
+              <div className="h-3 w-24 rounded-full bg-[#072C0E]/8" />
+              <div className="h-3 w-12 rounded-full bg-[#072C0E]/6" />
             </div>
-            <div className="h-2 rounded-full bg-[#302817]/5" />
+            <div className="h-2 rounded-full bg-[#072C0E]/5" />
           </div>
         ))}
       </div>
@@ -49,8 +49,8 @@ export default function FacilityChart({ language, selectedYear, compact }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-24 items-center justify-center rounded-xl bg-[#302817]/3">
-        <p className="text-xs font-semibold text-[#302817]/35">
+      <div className="flex h-24 items-center justify-center rounded-xl bg-[#072C0E]/3">
+        <p className="text-xs font-semibold text-[#072C0E]/35">
           {tr ? 'Tesis verisi yok' : 'No facility data'}
         </p>
       </div>
@@ -65,12 +65,12 @@ export default function FacilityChart({ language, selectedYear, compact }) {
           return (
             <div key={d.facility_id ?? i}>
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="truncate text-[11px] font-bold text-[#302817]/80">{d.facility_name}</span>
-                <span className="shrink-0 text-[10px] font-bold text-[#302817]/40">
+                <span className="truncate text-[11px] font-bold text-[#072C0E]/80">{d.facility_name}</span>
+                <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">
                   {d.total_tonne.toFixed(2)}t
                 </span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-[#302817]/5">
+              <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/5">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: SCOPE_COLORS[i % SCOPE_COLORS.length] }}
@@ -85,8 +85,8 @@ export default function FacilityChart({ language, selectedYear, compact }) {
 
   // Full view (used standalone)
   return (
-    <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5">
-      <h3 className="mb-4 text-sm font-bold text-[#302817]">
+    <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 shadow-[0_4px_20px_rgba(7, 44, 14,0.05)] sm:p-5">
+      <h3 className="mb-4 text-sm font-bold text-[#072C0E]">
         {tr ? 'Tesis Karşılaştırması' : 'Facility Comparison'}
       </h3>
       <div className="space-y-3">
@@ -95,10 +95,10 @@ export default function FacilityChart({ language, selectedYear, compact }) {
           return (
             <div key={d.facility_id ?? i}>
               <div className="mb-1 flex items-center justify-between gap-2">
-                <span className="truncate text-xs font-bold text-[#302817]">{d.facility_name}</span>
-                <span className="shrink-0 text-xs font-semibold text-[#302817]/50">{d.total_tonne.toFixed(2)} tCO₂e</span>
+                <span className="truncate text-xs font-bold text-[#072C0E]">{d.facility_name}</span>
+                <span className="shrink-0 text-xs font-semibold text-[#072C0E]/50">{d.total_tonne.toFixed(2)} tCO₂e</span>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-[#302817]/5">
+              <div className="h-2.5 overflow-hidden rounded-full bg-[#072C0E]/5">
                 <div
                   className="h-full rounded-full transition-all duration-700"
                   style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: SCOPE_COLORS[i % SCOPE_COLORS.length] }}

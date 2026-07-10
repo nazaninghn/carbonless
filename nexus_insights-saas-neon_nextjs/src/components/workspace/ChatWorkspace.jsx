@@ -576,7 +576,7 @@ function TypingDots() {
       {[0, 1, 2].map(i => (
         <span
           key={i}
-          className="h-[7px] w-[7px] rounded-full bg-[#89E789]"
+          className="h-[7px] w-[7px] rounded-full bg-[#8BEA99]"
           style={{
             animation: 'ciq-dot 1.4s ease-in-out infinite',
             animationDelay: `${i * 0.22}s`,
@@ -597,7 +597,7 @@ function RichText({ text }) {
       if (p.startsWith('**') && p.endsWith('**'))
         return <strong key={i}>{p.slice(2, -2)}</strong>;
       if (p.startsWith('`') && p.endsWith('`') && p.length > 2)
-        return <code key={i} className="rounded bg-[#302817]/8 px-1 py-px font-mono text-[10.5px]">{p.slice(1, -1)}</code>;
+        return <code key={i} className="rounded bg-[#072C0E]/8 px-1 py-px font-mono text-[10.5px]">{p.slice(1, -1)}</code>;
       if (p.startsWith('_') && p.endsWith('_') && p.length > 2)
         return <span key={i} className="opacity-60">{p.slice(1, -1)}</span>;
       return p;
@@ -632,7 +632,7 @@ function RichText({ text }) {
               <thead>
                 <tr>
                   {rows[0].map((cell, ci) => (
-                    <th key={ci} className="border border-[#302817]/10 bg-[#302817]/6 px-2.5 py-1.5 text-left font-bold text-[#302817]/60">
+                    <th key={ci} className="border border-[#072C0E]/10 bg-[#072C0E]/6 px-2.5 py-1.5 text-left font-bold text-[#072C0E]/60">
                       {renderInline(cell)}
                     </th>
                   ))}
@@ -640,9 +640,9 @@ function RichText({ text }) {
               </thead>
               <tbody>
                 {rows.slice(1).map((row, ri) => (
-                  <tr key={ri} className={ri % 2 === 1 ? 'bg-[#302817]/[0.02]' : ''}>
+                  <tr key={ri} className={ri % 2 === 1 ? 'bg-[#072C0E]/[0.02]' : ''}>
                     {row.map((cell, ci) => (
-                      <td key={ci} className="border border-[#302817]/10 px-2.5 py-1.5 text-[#302817]/65">
+                      <td key={ci} className="border border-[#072C0E]/10 px-2.5 py-1.5 text-[#072C0E]/65">
                         {renderInline(cell)}
                       </td>
                     ))}
@@ -653,11 +653,11 @@ function RichText({ text }) {
           );
         }
         const line = seg.text;
-        if (line.trim() === '---') return <hr key={si} className="border-[#302817]/10 my-2" />;
+        if (line.trim() === '---') return <hr key={si} className="border-[#072C0E]/10 my-2" />;
         if (!line.trim())          return <div key={si} className="h-2" />;
         if (line.startsWith('→ ')) return (
           <div key={si} className="flex items-start gap-1.5">
-            <span className="text-[#244959] font-bold shrink-0 select-none">→</span>
+            <span className="text-[#175022] font-bold shrink-0 select-none">→</span>
             <span>{renderInline(line.slice(2))}</span>
           </div>
         );
@@ -672,7 +672,7 @@ function ChatBubble({ msg }) {
   if (isUser) {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#5E7A2E] px-4 py-2.5 text-white/95 text-[13px] leading-[1.7]">
+        <div className="max-w-[80%] rounded-2xl rounded-tr-sm bg-[#1A7B2A] px-4 py-2.5 text-white/95 text-[13px] leading-[1.7]">
           {msg.content}
         </div>
       </div>
@@ -680,10 +680,10 @@ function ChatBubble({ msg }) {
   }
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#244959]">
+      <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#175022]">
         <Sparkles className="h-2.5 w-2.5 text-white/80" />
       </div>
-      <div className="flex-1 min-w-0 text-[#302817]">
+      <div className="flex-1 min-w-0 text-[#072C0E]">
         <RichText text={msg.content} />
       </div>
     </div>
@@ -1252,28 +1252,28 @@ export function ChatWorkspace({
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-full bg-[#FAFAF8]">
+    <div className="flex flex-col h-full bg-[#F1FCF2]">
 
       {/* ── Header ── */}
-      <div className="shrink-0 flex items-center gap-2.5 px-4 py-2 border-b border-[#302817]/8 bg-white">
+      <div className="shrink-0 flex items-center gap-2.5 px-4 py-2 border-b border-[#072C0E]/8 bg-white">
         {/* Icon */}
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#244959] shrink-0">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#175022] shrink-0">
           <Sparkles className="h-3 w-3 text-white/80" />
         </div>
         {/* Title + online dot */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <p className="text-[12px] font-bold text-[#302817]">CarbonIQ</p>
-          <span className="h-1.5 w-1.5 rounded-full bg-[#51B291] shrink-0 motion-safe:animate-pulse" />
+          <p className="text-[12px] font-bold text-[#072C0E]">CarbonIQ</p>
+          <span className="h-1.5 w-1.5 rounded-full bg-[#2ABD41] shrink-0 motion-safe:animate-pulse" />
         </div>
 
         {/* ── Mode toggle ── */}
-        <div className="flex items-center rounded-lg border border-[#302817]/10 overflow-hidden shrink-0 text-[10px] font-bold">
+        <div className="flex items-center rounded-lg border border-[#072C0E]/10 overflow-hidden shrink-0 text-[10px] font-bold">
           <button
             onClick={() => mode === 'guided' ? switchToFreeMode() : null}
             className={`px-2.5 py-1.5 transition-all ${
               mode === 'free'
-                ? 'bg-[#244959] text-white cursor-default'
-                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
+                ? 'bg-[#175022] text-white cursor-default'
+                : 'text-[#072C0E]/40 hover:text-[#072C0E] hover:bg-[#072C0E]/4'
             }`}>
             {tr ? 'Sohbet' : 'Chat'}
           </button>
@@ -1281,21 +1281,21 @@ export function ChatWorkspace({
             onClick={() => mode === 'free' ? startGuidedMode() : null}
             className={`px-2.5 py-1.5 transition-all ${
               mode === 'guided'
-                ? 'bg-[#244959] text-white cursor-default'
-                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
+                ? 'bg-[#175022] text-white cursor-default'
+                : 'text-[#072C0E]/40 hover:text-[#072C0E] hover:bg-[#072C0E]/4'
             }`}>
             {tr ? 'Anket' : 'Questions'}
           </button>
         </div>
 
         {/* ── TR / EN toggle ── */}
-        <div className="flex items-center rounded-lg border border-[#302817]/10 overflow-hidden shrink-0 text-[10px] font-bold">
+        <div className="flex items-center rounded-lg border border-[#072C0E]/10 overflow-hidden shrink-0 text-[10px] font-bold">
           <button
             onClick={() => setActiveLang('tr')}
             className={`px-2 py-1.5 transition-all ${
               activeLang === 'tr'
-                ? 'bg-[#244959] text-white'
-                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
+                ? 'bg-[#175022] text-white'
+                : 'text-[#072C0E]/40 hover:text-[#072C0E] hover:bg-[#072C0E]/4'
             }`}>
             TR
           </button>
@@ -1303,8 +1303,8 @@ export function ChatWorkspace({
             onClick={() => setActiveLang('en')}
             className={`px-2 py-1.5 transition-all ${
               activeLang === 'en'
-                ? 'bg-[#244959] text-white'
-                : 'text-[#302817]/40 hover:text-[#302817] hover:bg-[#302817]/4'
+                ? 'bg-[#175022] text-white'
+                : 'text-[#072C0E]/40 hover:text-[#072C0E] hover:bg-[#072C0E]/4'
             }`}>
             EN
           </button>
@@ -1313,30 +1313,30 @@ export function ChatWorkspace({
 
       {/* ── Guided progress bar ── */}
       {mode === 'guided' && currentQuestion && (
-        <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-[#F0F3E0]/60 to-[#F9F8F4] border-b border-[#89E789]/20">
+        <div className="shrink-0 px-4 py-2 bg-gradient-to-r from-[#DEFAE1]/60 to-[#F1FCF2] border-b border-[#8BEA99]/20">
           <div className="flex items-center justify-between mb-1.5">
             <div className="min-w-0 flex-1 mr-2">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-[#244959]/60">
+              <p className="text-[9px] font-bold uppercase tracking-wider text-[#175022]/60">
                 {tr
                   ? `Aşama ${currentStageIndex + 1} / ${CARBONIQ_STAGES.length}`
                   : `Stage ${currentStageIndex + 1} of ${CARBONIQ_STAGES.length}`}
                 {!currentQuestion.required && (
-                  <span className="ml-1.5 normal-case font-semibold text-[#302817]/30">
+                  <span className="ml-1.5 normal-case font-semibold text-[#072C0E]/30">
                     · {tr ? 'İsteğe bağlı' : 'Optional'}
                   </span>
                 )}
               </p>
-              <p className="text-[10.5px] font-bold text-[#244959] truncate">
+              <p className="text-[10.5px] font-bold text-[#175022] truncate">
                 {currentStage?.title?.[activeLang] || currentStage?.title?.en || ''}
               </p>
             </div>
-            <span className="text-[10px] font-semibold text-[#302817]/40 shrink-0 tabular-nums">
+            <span className="text-[10px] font-semibold text-[#072C0E]/40 shrink-0 tabular-nums">
               {currentQuestion.number} / {TOTAL_QUESTIONS}
             </span>
           </div>
-          <div className="w-full h-1 rounded-full bg-[#302817]/8 overflow-hidden">
+          <div className="w-full h-1 rounded-full bg-[#072C0E]/8 overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#89E789] to-[#51B291] transition-all duration-700 ease-out"
+              className="h-full rounded-full bg-gradient-to-r from-[#8BEA99] to-[#2ABD41] transition-all duration-700 ease-out"
               style={{ width: `${(currentQuestion.number / TOTAL_QUESTIONS) * 100}%` }}
             />
           </div>
@@ -1347,8 +1347,8 @@ export function ChatWorkspace({
                 key={stage.id}
                 title={stage.title?.[activeLang] || stage.title?.en}
                 className={`flex-1 h-[3px] rounded-full transition-all duration-500 ${
-                  i < currentStageIndex   ? 'bg-[#51B291]' :
-                  i === currentStageIndex ? 'bg-[#89E789]' : 'bg-[#302817]/10'
+                  i < currentStageIndex   ? 'bg-[#2ABD41]' :
+                  i === currentStageIndex ? 'bg-[#8BEA99]' : 'bg-[#072C0E]/10'
                 }`}
               />
             ))}
@@ -1366,8 +1366,8 @@ export function ChatWorkspace({
               <div key={msg.id} className="flex flex-col items-center gap-8 py-8 text-center w-full">
                 {/* Sphere / circle element */}
                 <div className="relative flex items-center justify-center">
-                  <div className="absolute h-40 w-40 rounded-full bg-[#51B291]/15 blur-3xl" />
-                  <div className="absolute h-28 w-28 rounded-full bg-[#89E789]/20 blur-2xl" />
+                  <div className="absolute h-40 w-40 rounded-full bg-[#2ABD41]/15 blur-3xl" />
+                  <div className="absolute h-28 w-28 rounded-full bg-[#8BEA99]/20 blur-2xl" />
                   <img
                     src="/chatbot.png"
                     alt="CarbonIQ"
@@ -1378,10 +1378,10 @@ export function ChatWorkspace({
 
                 {/* Greeting */}
                 <div className="flex flex-col gap-1">
-                  <p className="text-[13px] text-[#302817]/40 font-medium">
+                  <p className="text-[13px] text-[#072C0E]/40 font-medium">
                     {tr ? 'Merhaba,' : 'Hi, there'}
                   </p>
-                  <p className="text-[20px] font-black text-[#302817] tracking-tight leading-snug">
+                  <p className="text-[20px] font-black text-[#072C0E] tracking-tight leading-snug">
                     {tr ? 'Nasıl yardımcı olabilirim?' : 'How can I assist?'}
                   </p>
                 </div>
@@ -1390,27 +1390,27 @@ export function ChatWorkspace({
                 <div className="flex gap-2 overflow-x-auto w-full pb-1 px-0.5 scrollbar-none">
                   {CHIPS.map((chip, i) => (
                     <button key={i} onClick={() => handleChipClick(chip)}
-                      className="flex-shrink-0 flex flex-col items-start gap-1.5 rounded-2xl border border-[#302817]/8 bg-white px-4 py-3.5 text-left transition hover:border-[#89E789]/60 hover:bg-[#F0F3E0] active:scale-[0.97] min-w-[130px]">
+                      className="flex-shrink-0 flex flex-col items-start gap-1.5 rounded-2xl border border-[#072C0E]/8 bg-white px-4 py-3.5 text-left transition hover:border-[#8BEA99]/60 hover:bg-[#DEFAE1] active:scale-[0.97] min-w-[130px]">
                       <div className="flex items-center gap-1.5">
                         <span className={`h-1.5 w-1.5 rounded-full ${chip.dot}`} />
-                        <span className="text-[9px] font-bold uppercase tracking-wide text-[#302817]/30">{chip.scope}</span>
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-[#072C0E]/30">{chip.scope}</span>
                       </div>
-                      <p className="text-[12.5px] font-bold text-[#302817]">{chip.emoji} {chip.title}</p>
-                      <p className="text-[10px] text-[#302817]/35 leading-tight">{chip.hint}</p>
+                      <p className="text-[12.5px] font-bold text-[#072C0E]">{chip.emoji} {chip.title}</p>
+                      <p className="text-[10px] text-[#072C0E]/35 leading-tight">{chip.hint}</p>
                     </button>
                   ))}
                 </div>
 
-                <p className="text-[10px] text-[#302817]/25">{tr ? 'veya aşağıya yazın' : 'or type anything below'}</p>
+                <p className="text-[10px] text-[#072C0E]/25">{tr ? 'veya aşağıya yazın' : 'or type anything below'}</p>
               </div>
             );
           }
           if (msg.role === 'mode-switch') {
             return (
               <div key={msg.id} className="flex items-center gap-3 py-2">
-                <div className="flex-1 h-px bg-[#89E789]/25" />
-                <span className="text-[9.5px] font-bold text-[#244959]/60 shrink-0 px-1">{msg.label}</span>
-                <div className="flex-1 h-px bg-[#89E789]/25" />
+                <div className="flex-1 h-px bg-[#8BEA99]/25" />
+                <span className="text-[9.5px] font-bold text-[#175022]/60 shrink-0 px-1">{msg.label}</span>
+                <div className="flex-1 h-px bg-[#8BEA99]/25" />
               </div>
             );
           }
@@ -1434,14 +1434,14 @@ export function ChatWorkspace({
                   : `${Math.round(emKg).toLocaleString()} kgCO₂e`)
               : null;
             return (
-              <div key={msg.id} className="flex items-center gap-3 rounded-2xl border border-[#51B291]/25 bg-[#51B291]/8 px-4 py-3 shadow-sm">
-                <CheckCircle2 className="h-5 w-5 text-[#527A1A] shrink-0" />
+              <div key={msg.id} className="flex items-center gap-3 rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3 shadow-sm">
+                <CheckCircle2 className="h-5 w-5 text-[#1A7B2A] shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-bold text-[#527A1A] truncate">{tr ? 'Kaydedildi' : 'Saved'} — {catLabel}</p>
-                  <p className="text-[10px] text-[#302817]/40 mt-0.5">{tr ? 'Veriler rapora işlendi' : 'Data written to report'}</p>
+                  <p className="text-[12px] font-bold text-[#1A7B2A] truncate">{tr ? 'Kaydedildi' : 'Saved'} — {catLabel}</p>
+                  <p className="text-[10px] text-[#072C0E]/40 mt-0.5">{tr ? 'Veriler rapora işlendi' : 'Data written to report'}</p>
                 </div>
                 {emFmt && (
-                  <span className="shrink-0 text-[11px] font-bold text-[#527A1A] tabular-nums bg-[#51B291]/12 rounded-lg px-2 py-1">
+                  <span className="shrink-0 text-[11px] font-bold text-[#1A7B2A] tabular-nums bg-[#2ABD41]/12 rounded-lg px-2 py-1">
                     {emFmt}
                   </span>
                 )}
@@ -1456,18 +1456,18 @@ export function ChatWorkspace({
               'K5': tr ? 'Kapsam 3 — İş Seyahati'  : 'Scope 3 — Business Travel',
             })[msg.suggestion?.category] || msg.suggestion?.category;
             return (
-              <div key={msg.id} className="flex items-center gap-2.5 rounded-2xl border border-[#302817]/6 bg-[#302817]/[0.025] px-4 py-2.5">
+              <div key={msg.id} className="flex items-center gap-2.5 rounded-2xl border border-[#072C0E]/6 bg-[#072C0E]/[0.025] px-4 py-2.5">
                 <span className="text-[13px] shrink-0 opacity-40">↩️</span>
-                <p className="text-[11.5px] text-[#302817]/30 line-through truncate">{rejCatLabel}</p>
-                <span className="ml-auto text-[9.5px] font-semibold text-[#302817]/25 shrink-0">{tr ? 'Reddedildi' : 'Dismissed'}</span>
+                <p className="text-[11.5px] text-[#072C0E]/30 line-through truncate">{rejCatLabel}</p>
+                <span className="ml-auto text-[9.5px] font-semibold text-[#072C0E]/25 shrink-0">{tr ? 'Reddedildi' : 'Dismissed'}</span>
               </div>
             );
           }
           if (msg.role === 'hint') {
             return (
-              <div key={msg.id} className="flex items-start gap-2.5 rounded-2xl border border-[#89E789]/25 bg-[#89E789]/6 px-4 py-2.5">
-                <Info className="h-3.5 w-3.5 text-[#244959] shrink-0 mt-0.5" />
-                <span className="text-[12px] text-[#302817]/55 leading-relaxed">{msg.content}</span>
+              <div key={msg.id} className="flex items-start gap-2.5 rounded-2xl border border-[#8BEA99]/25 bg-[#8BEA99]/6 px-4 py-2.5">
+                <Info className="h-3.5 w-3.5 text-[#175022] shrink-0 mt-0.5" />
+                <span className="text-[12px] text-[#072C0E]/55 leading-relaxed">{msg.content}</span>
               </div>
             );
           }
@@ -1476,7 +1476,7 @@ export function ChatWorkspace({
 
         {sending && (
           <div className="flex gap-3">
-            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#244959]">
+            <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[#175022]">
               <Sparkles className="h-2.5 w-2.5 text-white/80" />
             </div>
             <div className="pt-0.5">
@@ -1495,7 +1495,7 @@ export function ChatWorkspace({
       </div>
 
       {/* ── Input area ── */}
-      <div className="shrink-0 border-t border-[#302817]/6 bg-white px-4 py-3">
+      <div className="shrink-0 border-t border-[#072C0E]/6 bg-white px-4 py-3">
 
         {/* ── GUIDED MODE: dynamic input based on question type ── */}
         {mode === 'guided' && currentQuestion && (
@@ -1513,7 +1513,7 @@ export function ChatWorkspace({
             {/* INFO → Continue button */}
             {currentQuestion.type === 'info' && (
               <button onClick={handleInfoContinue}
-                className="w-full rounded-full bg-[#244959] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#1a3a2e] active:scale-[0.98] transition">
+                className="w-full rounded-full bg-[#175022] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#175022] active:scale-[0.98] transition">
                 {tr ? '→ Devam' : '→ Continue'}
               </button>
             )}
@@ -1524,7 +1524,7 @@ export function ChatWorkspace({
                 {currentQuestion.options.map(opt => (
                   <button key={opt.value}
                     onClick={() => submitGuidedAnswer(opt.value)}
-                    className="w-full text-left rounded-xl border border-[#302817]/10 bg-white px-4 py-2.5 text-[12.5px] font-semibold text-[#302817] shadow-sm hover:border-[#89E789]/60 hover:bg-[#89E789]/8 hover:text-[#302817] active:scale-[0.98] transition">
+                    className="w-full text-left rounded-xl border border-[#072C0E]/10 bg-white px-4 py-2.5 text-[12.5px] font-semibold text-[#072C0E] shadow-sm hover:border-[#8BEA99]/60 hover:bg-[#8BEA99]/8 hover:text-[#072C0E] active:scale-[0.98] transition">
                     {opt.label?.[activeLang] || opt.label?.en || opt.value}
                   </button>
                 ))}
@@ -1542,8 +1542,8 @@ export function ChatWorkspace({
                         onClick={() => toggleMultiOption(opt.value, currentQuestion)}
                         className={`w-full text-left rounded-xl border px-4 py-2.5 text-[12.5px] font-semibold transition active:scale-[0.98] ${
                           isSelected
-                            ? 'border-[#89E789] bg-[#89E789]/15 text-[#302817]'
-                            : 'border-[#302817]/10 bg-white text-[#302817]/65 hover:border-[#89E789]/40 hover:text-[#302817]'
+                            ? 'border-[#8BEA99] bg-[#8BEA99]/15 text-[#072C0E]'
+                            : 'border-[#072C0E]/10 bg-white text-[#072C0E]/65 hover:border-[#8BEA99]/40 hover:text-[#072C0E]'
                         }`}>
                         <span className="mr-2.5 font-mono text-[11px]">{isSelected ? '✓' : '○'}</span>
                         {opt.label?.[activeLang] || opt.label?.en || opt.value}
@@ -1554,7 +1554,7 @@ export function ChatWorkspace({
                 <button
                   onClick={() => submitGuidedAnswer(selectedOpts)}
                   disabled={selectedOpts.length === 0 && currentQuestion.required}
-                  className="w-full rounded-full bg-[#244959] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#1a3a2e] disabled:opacity-40 active:scale-[0.98] transition mt-0.5">
+                  className="w-full rounded-full bg-[#175022] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#175022] disabled:opacity-40 active:scale-[0.98] transition mt-0.5">
                   {tr
                     ? `Onayla${selectedOpts.length > 0 ? ` (${selectedOpts.length})` : ''}`
                     : `Confirm${selectedOpts.length > 0 ? ` (${selectedOpts.length})` : ''}`}
@@ -1567,7 +1567,7 @@ export function ChatWorkspace({
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
                   <select
-                    className="flex-1 rounded-xl border border-[#302817]/10 bg-[#FAFAF8] px-3 py-2.5 text-[12.5px] font-semibold text-[#302817] outline-none focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/15 transition"
+                    className="flex-1 rounded-xl border border-[#072C0E]/10 bg-[#F1FCF2] px-3 py-2.5 text-[12.5px] font-semibold text-[#072C0E] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/15 transition"
                     value={countryCityVal.country}
                     onChange={e => { setCountryCityVal(v => ({ ...v, country: e.target.value })); setGuidedError(''); }}>
                     <option value="">{tr ? '— Ülke seçin —' : '— Select country —'}</option>
@@ -1578,7 +1578,7 @@ export function ChatWorkspace({
                     ))}
                   </select>
                   <input
-                    className="flex-1 rounded-xl border border-[#302817]/10 bg-[#FAFAF8] px-3 py-2.5 text-[12.5px] font-semibold text-[#302817] outline-none placeholder:text-[#302817]/30 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/15 transition"
+                    className="flex-1 rounded-xl border border-[#072C0E]/10 bg-[#F1FCF2] px-3 py-2.5 text-[12.5px] font-semibold text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/15 transition"
                     placeholder={tr ? 'Şehir' : 'City'}
                     value={countryCityVal.city}
                     onChange={e => { setCountryCityVal(v => ({ ...v, city: e.target.value })); setGuidedError(''); }}
@@ -1587,7 +1587,7 @@ export function ChatWorkspace({
                 <button
                   onClick={() => submitGuidedAnswer(countryCityVal)}
                   disabled={!countryCityVal.country || !countryCityVal.city}
-                  className="w-full rounded-full bg-[#244959] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#1a3a2e] disabled:opacity-40 active:scale-[0.98] transition">
+                  className="w-full rounded-full bg-[#175022] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#175022] disabled:opacity-40 active:scale-[0.98] transition">
                   {tr ? '→ Onayla' : '→ Confirm'}
                 </button>
               </div>
@@ -1602,7 +1602,7 @@ export function ChatWorkspace({
             ) && (
               <div className="flex items-end gap-2">
                 <textarea
-                  className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed"
+                  className="flex-1 resize-none rounded-2xl border border-[#072C0E]/10 bg-[#F1FCF2] px-4 py-2.5 text-sm text-[#072C0E] outline-none placeholder:text-[#072C0E]/28 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed"
                   placeholder={currentQuestion.placeholder?.[activeLang] || currentQuestion.placeholder?.en || (tr ? 'Yanıtınızı yazın…' : 'Type your answer…')}
                   value={pendingAnswer}
                   rows={1}
@@ -1625,7 +1625,7 @@ export function ChatWorkspace({
                   }}
                   disabled={!pendingAnswer.trim() && currentQuestion.required}
                   aria-label={tr ? 'Gönder' : 'Send'}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#244959] text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1634,8 +1634,8 @@ export function ChatWorkspace({
             {/* Footer: ISO ref + skip button */}
             <div className="flex items-center justify-between gap-2 pl-1">
               <div className="flex items-center gap-1.5 min-w-0">
-                <FileText className="h-3 w-3 text-[#244959]/40 shrink-0" />
-                <p className="text-[9.5px] text-[#302817]/28 truncate">
+                <FileText className="h-3 w-3 text-[#175022]/40 shrink-0" />
+                <p className="text-[9.5px] text-[#072C0E]/28 truncate">
                   {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}/${TOTAL_QUESTIONS}` : `Question ${currentQuestion.number}/${TOTAL_QUESTIONS}`}
                   {currentQuestion.required ? (tr ? ' · Zorunlu' : ' · Required') : (tr ? ' · İsteğe bağlı' : ' · Optional')}
                 </p>
@@ -1643,7 +1643,7 @@ export function ChatWorkspace({
               {!currentQuestion.required && currentQuestion.type !== 'info' && (
                 <button
                   onClick={handleSkip}
-                  className="shrink-0 text-[9.5px] font-semibold text-[#302817]/30 hover:text-[#302817]/55 transition flex items-center gap-0.5 whitespace-nowrap"
+                  className="shrink-0 text-[9.5px] font-semibold text-[#072C0E]/30 hover:text-[#072C0E]/55 transition flex items-center gap-0.5 whitespace-nowrap"
                 >
                   {tr ? 'Atla' : 'Skip'} →
                 </button>
@@ -1660,7 +1660,7 @@ export function ChatWorkspace({
               <div className="flex flex-wrap gap-1.5 pb-2">
                 {quickReplies.map((qr, i) => (
                   <button key={i} onClick={() => handleQuickReply(qr.v)}
-                    className="rounded-xl border border-[#302817]/10 bg-[#F0F3E0] px-3 py-1.5 text-[11px] font-semibold text-[#302817] transition hover:border-[#89E789]/70 hover:bg-[#E5EBD0] active:scale-[0.97]">
+                    className="rounded-xl border border-[#072C0E]/10 bg-[#DEFAE1] px-3 py-1.5 text-[11px] font-semibold text-[#072C0E] transition hover:border-[#8BEA99]/70 hover:bg-[#DEFAE1] active:scale-[0.97]">
                     {qr.l}
                   </button>
                 ))}
@@ -1668,7 +1668,7 @@ export function ChatWorkspace({
             )}
             <div className="flex items-end gap-2">
               <textarea
-                className="flex-1 resize-none rounded-2xl border border-[#302817]/10 bg-[#FAFAF8] px-4 py-2.5 text-sm text-[#302817] outline-none placeholder:text-[#302817]/28 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 resize-none rounded-2xl border border-[#072C0E]/10 bg-[#F1FCF2] px-4 py-2.5 text-sm text-[#072C0E] outline-none placeholder:text-[#072C0E]/28 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/15 min-h-[44px] max-h-[130px] transition-colors leading-relaxed disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder={tr
                   ? 'Örn: 12.000 kWh elektrik kullandık…'
                   : 'e.g. We used 12,000 kWh electricity…'}
@@ -1681,13 +1681,13 @@ export function ChatWorkspace({
               />
               <button onClick={send} disabled={!input.trim() || sending}
                 aria-label={tr ? 'Gönder' : 'Send'}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#244959] text-white shadow-sm transition hover:bg-[#1a3a2e] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               </button>
             </div>
             <div className="mt-1.5 flex items-center gap-1.5 pl-1">
-              <TrendingUp className="h-3 w-3 text-[#244959]/50" />
-              <p className="text-[9.5px] text-[#302817]/30">
+              <TrendingUp className="h-3 w-3 text-[#175022]/50" />
+              <p className="text-[9.5px] text-[#072C0E]/30">
                 {tr
                   ? 'Verileriniz güvende — onaylamadan hiçbir şey kaydedilmez'
                   : 'Your data is safe — nothing saves without your approval'}

@@ -5,15 +5,15 @@ export const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep',
 export const getMonths = (tr) => (tr ? MONTHS_TR : MONTHS_EN);
 
 export const SCOPE_META = {
-  scope1: { label: 'Scope 1', bg: 'bg-[#302817]/10', text: 'text-[#302817]',   bar: '#302817' },
-  scope2: { label: 'Scope 2', bg: 'bg-[#95A847]/15', text: 'text-[#75863B]',   bar: '#95A847' },
-  scope3: { label: 'Scope 3', bg: 'bg-[#B4BE6A]/20', text: 'text-[#75863B]',   bar: '#B4BE6A' },
+  scope1: { label: 'Scope 1', bg: 'bg-[#072C0E]/10', text: 'text-[#072C0E]',   bar: '#072C0E' },
+  scope2: { label: 'Scope 2', bg: 'bg-[#2ABD41]/15', text: 'text-[#1D9C31]',   bar: '#2ABD41' },
+  scope3: { label: 'Scope 3', bg: 'bg-[#8BEA99]/20', text: 'text-[#1D9C31]',   bar: '#8BEA99' },
 };
 
 export const STATUS_META = {
   submitted: { bg: 'bg-amber-100',    text: 'text-amber-700',   tr: 'Beklemede', en: 'Pending'  },
-  approved:  { bg: 'bg-[#95A847]/12', text: 'text-[#75863B]',   tr: 'Onaylı',    en: 'Approved' },
-  draft:     { bg: 'bg-[#302817]/8',  text: 'text-[#302817]/50', tr: 'Taslak',   en: 'Draft'    },
+  approved:  { bg: 'bg-[#2ABD41]/12', text: 'text-[#1D9C31]',   tr: 'Onaylı',    en: 'Approved' },
+  draft:     { bg: 'bg-[#072C0E]/8',  text: 'text-[#072C0E]/50', tr: 'Taslak',   en: 'Draft'    },
 };
 
 export const CATEGORY_LABELS = {

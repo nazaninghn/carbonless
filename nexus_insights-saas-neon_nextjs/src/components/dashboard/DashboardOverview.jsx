@@ -34,9 +34,9 @@ function DonutChart({ s1, s2, s3, total, tr }) {
   const cx = 80, cy = 80;
 
   const segs = [
-    { label: 'Scope 1', val: s1, color: '#3d8564' },
-    { label: 'Scope 2', val: s2, color: '#53A67F' },
-    { label: 'Scope 3', val: s3, color: '#C9C858' },
+    { label: 'Scope 1', val: s1, color: '#1D9C31' },
+    { label: 'Scope 2', val: s2, color: '#2ABD41' },
+    { label: 'Scope 3', val: s3, color: '#51D766' },
   ].filter(s => s.val > 0);
 
   let cum = 0;
@@ -45,7 +45,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
       <div className="relative">
         <svg width={160} height={160} viewBox="0 0 160 160" className="overflow-visible">
           {/* track */}
-          <circle cx={cx} cy={cy} r={R} fill="none" stroke="#302817" strokeOpacity={0.06} strokeWidth={SW} />
+          <circle cx={cx} cy={cy} r={R} fill="none" stroke="#072C0E" strokeOpacity={0.06} strokeWidth={SW} />
           {segs.map(s => {
             const f = s.val / total;
             const dash = f * C;
@@ -67,24 +67,24 @@ function DonutChart({ s1, s2, s3, total, tr }) {
         </svg>
         {/* centre label */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[22px] font-bold leading-none tracking-tight text-[#302817]">
+          <span className="text-[22px] font-bold leading-none tracking-tight text-[#072C0E]">
             {total.toFixed(1)}
           </span>
-          <span className="mt-0.5 text-[10px] font-bold text-[#302817]/40">tCO2e</span>
+          <span className="mt-0.5 text-[10px] font-bold text-[#072C0E]/40">tCO2e</span>
         </div>
       </div>
 
       {/* legend */}
       <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5">
         {[
-          { label: 'Scope 1', val: s1, color: '#3d8564' },
-          { label: 'Scope 2', val: s2, color: '#53A67F' },
-          { label: 'Scope 3', val: s3, color: '#C9C858' },
+          { label: 'Scope 1', val: s1, color: '#1D9C31' },
+          { label: 'Scope 2', val: s2, color: '#2ABD41' },
+          { label: 'Scope 3', val: s3, color: '#51D766' },
         ].filter(s => s.val > 0).map(s => (
           <div key={s.label} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
-            <span className="text-[11px] font-semibold text-[#302817]/60">{s.label}</span>
-            <span className="text-[10px] font-bold text-[#302817]/35">{s.val.toFixed(1)}t</span>
+            <span className="text-[11px] font-semibold text-[#072C0E]/60">{s.label}</span>
+            <span className="text-[10px] font-bold text-[#072C0E]/35">{s.val.toFixed(1)}t</span>
           </div>
         ))}
       </div>
@@ -123,9 +123,9 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
           >
             {/* Tooltip */}
             {isHovered && hasData && (
-              <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#302817] px-2 py-1.5 text-[10px] font-bold text-white shadow-xl">
+              <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#072C0E] px-2 py-1.5 text-[10px] font-bold text-white shadow-xl">
                 {(m.total_kg / 1000).toFixed(2)} tCO2e
-                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#302817]" />
+                <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#072C0E]" />
               </div>
             )}
             {/* Bar container */}
@@ -134,16 +134,16 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
                 className={`absolute inset-x-0 bottom-0 rounded-t-md transition-all duration-500 ${
                   hasData
                     ? isCur
-                      ? 'bg-gradient-to-t from-[#24503b] to-[#53A67F]'
+                      ? 'bg-gradient-to-t from-[#1A6126] to-[#2ABD41]'
                       : isHovered
-                      ? 'bg-gradient-to-t from-[#3d8564] to-[#C9C858]'
-                      : 'bg-gradient-to-t from-[#3d8564] to-[#53A67F]'
-                    : 'bg-[#302817]/4'
+                      ? 'bg-gradient-to-t from-[#1D9C31] to-[#51D766]'
+                      : 'bg-gradient-to-t from-[#1D9C31] to-[#2ABD41]'
+                    : 'bg-[#072C0E]/4'
                 }`}
                 style={{ height: `${hasData ? Math.max(pct, 5) : 4}%` }}
               />
             </div>
-            <span className={`text-[9px] font-bold sm:text-[10px] ${isCur ? 'text-[#302817]' : 'text-[#302817]/30'}`}>
+            <span className={`text-[9px] font-bold sm:text-[10px] ${isCur ? 'text-[#072C0E]' : 'text-[#072C0E]/30'}`}>
               {months[i]}
             </span>
           </div>
@@ -170,7 +170,7 @@ function CategoryChart({ entries, tr }) {
   if (data.length === 0) return <EmptyState label={tr ? 'Kategori verisi yok' : 'No category data'} />;
 
   const maxT = data[0].tonne;
-  const scopeColors = ['#3d8564', '#53A67F', '#C9C858', '#302817', '#C9C858', '#53A67F'];
+  const scopeColors = ['#1D9C31', '#2ABD41', '#51D766', '#072C0E', '#51D766', '#2ABD41'];
 
   return (
     <div className="space-y-3">
@@ -179,10 +179,10 @@ function CategoryChart({ entries, tr }) {
         return (
           <div key={d.cat}>
             <div className="mb-1.5 flex items-center justify-between gap-2">
-              <span className="truncate text-[11px] font-bold text-[#302817]/80">{catLabel(d.cat, tr)}</span>
-              <span className="shrink-0 text-[10px] font-bold text-[#302817]/40">{d.tonne.toFixed(2)}t</span>
+              <span className="truncate text-[11px] font-bold text-[#072C0E]/80">{catLabel(d.cat, tr)}</span>
+              <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">{d.tonne.toFixed(2)}t</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[#302817]/5">
+            <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/5">
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{ width: `${pct}%`, backgroundColor: scopeColors[i % scopeColors.length] }}
@@ -211,19 +211,19 @@ function TargetRing({ target, currentTonne, tr }) {
   const dash = progress * C;
 
   const STATUS = {
-    on_track:  { color: '#53A67F', bg: 'bg-[#53A67F]/12', text: 'text-[#3d8564]', label: { tr: 'Yolunda', en: 'On Track' } },
+    on_track:  { color: '#2ABD41', bg: 'bg-[#2ABD41]/12', text: 'text-[#1D9C31]', label: { tr: 'Yolunda', en: 'On Track' } },
     off_track: { color: '#f59e0b', bg: 'bg-amber-100',    text: 'text-amber-700', label: { tr: 'Geride',  en: 'Off Track' } },
-    succeeded: { color: '#3d8564', bg: 'bg-[#3d8564]/12', text: 'text-[#3d8564]', label: { tr: 'Başarıldı',en: 'Succeeded'} },
+    succeeded: { color: '#1D9C31', bg: 'bg-[#1D9C31]/12', text: 'text-[#1D9C31]', label: { tr: 'Başarıldı',en: 'Succeeded'} },
     failed:    { color: '#ef4444', bg: 'bg-red-100',      text: 'text-red-600',   label: { tr: 'Başarısız',en: 'Failed' } },
   };
   const s = STATUS[target.status] ?? STATUS.on_track;
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[#302817]/6 bg-white px-3 py-2.5">
+    <div className="flex items-center gap-3 rounded-xl border border-[#072C0E]/6 bg-white px-3 py-2.5">
       {/* Ring */}
       <div className="relative shrink-0">
         <svg width={80} height={80} viewBox="0 0 80 80">
-          <circle cx={cx} cy={cy} r={R} fill="none" stroke="#302817" strokeOpacity={0.06} strokeWidth={SW} />
+          <circle cx={cx} cy={cy} r={R} fill="none" stroke="#072C0E" strokeOpacity={0.06} strokeWidth={SW} />
           <circle
             cx={cx} cy={cy} r={R}
             fill="none"
@@ -236,19 +236,19 @@ function TargetRing({ target, currentTonne, tr }) {
           />
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[13px] font-bold leading-none text-[#302817]">{(progress * 100).toFixed(0)}%</span>
-          <span className="text-[9px] font-semibold text-[#302817]/40">{tr ? 'tamamlandı' : 'done'}</span>
+          <span className="text-[13px] font-bold leading-none text-[#072C0E]">{(progress * 100).toFixed(0)}%</span>
+          <span className="text-[9px] font-semibold text-[#072C0E]/40">{tr ? 'tamamlandı' : 'done'}</span>
         </div>
       </div>
       {/* Info */}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[12px] font-bold text-[#302817]">{target.title}</p>
-        <p className="text-[10px] text-[#302817]/45 mt-0.5">{target.base_year} {"→"} {target.target_year}</p>
+        <p className="truncate text-[12px] font-bold text-[#072C0E]">{target.title}</p>
+        <p className="text-[10px] text-[#072C0E]/45 mt-0.5">{target.base_year} {"→"} {target.target_year}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${s.bg} ${s.text}`}>
             {s.label[tr ? 'tr' : 'en']}
           </span>
-          <span className="text-[9px] text-[#302817]/35">-{target.target_reduction_percent}% {tr ? 'hedef' : 'target'}</span>
+          <span className="text-[9px] text-[#072C0E]/35">-{target.target_reduction_percent}% {tr ? 'hedef' : 'target'}</span>
         </div>
       </div>
     </div>
@@ -258,8 +258,8 @@ function TargetRing({ target, currentTonne, tr }) {
 // ─── Empty State ───────────────────────────────────────────────────────────
 function EmptyState({ label }) {
   return (
-    <div className="flex h-28 items-center justify-center rounded-xl bg-[#302817]/3">
-      <p className="text-xs font-semibold text-[#302817]/35">{label}</p>
+    <div className="flex h-28 items-center justify-center rounded-xl bg-[#072C0E]/3">
+      <p className="text-xs font-semibold text-[#072C0E]/35">{label}</p>
     </div>
   );
 }
@@ -267,14 +267,14 @@ function EmptyState({ label }) {
 // ─── Chart Card wrapper ────────────────────────────────────────────────────
 function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '', action }) {
   return (
-    <section className={`flex flex-col rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-[0_4px_20px_rgba(48,40,23,0.05)] sm:p-5 ${className}`}>
+    <section className={`flex flex-col rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 shadow-[0_4px_20px_rgba(7, 44, 14,0.05)] sm:p-5 ${className}`}>
       <div className="mb-4 flex items-center gap-2.5">
         <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9 ${iconBg}`}>
           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
         <div className="flex-1">
-          <h2 className="text-[13px] font-bold text-[#302817] sm:text-sm">{title}</h2>
-          {subtitle && <p className="text-[10px] text-[#302817]/40">{subtitle}</p>}
+          <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">{title}</h2>
+          {subtitle && <p className="text-[10px] text-[#072C0E]/40">{subtitle}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
@@ -288,21 +288,21 @@ function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor })
   return (
     <div className={`relative rounded-[1.25rem] border p-3.5 sm:p-4 ${
       accent
-        ? 'border-[#53A67F] bg-[#EFF4DA]'
-        : 'border-[#E2E8D8] bg-white'
+        ? 'border-[#2ABD41] bg-[#DEFAE1]'
+        : 'border-[#DEFAE1] bg-white'
     }`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#302817]/40 sm:text-[10px]">{title}</p>
+          <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/40 sm:text-[10px]">{title}</p>
           <div className="mt-1 flex items-end gap-1">
-            <span className="text-[18px] font-bold leading-none tracking-tight text-[#302817] sm:text-[22px]">{value}</span>
-            <span className="mb-0.5 text-[9px] font-bold text-[#302817]/35 sm:text-[10px]">{unit}</span>
+            <span className="text-[18px] font-bold leading-none tracking-tight text-[#072C0E] sm:text-[22px]">{value}</span>
+            <span className="mb-0.5 text-[9px] font-bold text-[#072C0E]/35 sm:text-[10px]">{unit}</span>
           </div>
-          {subtitle && <p className="mt-1 text-[9px] font-semibold text-[#302817]/40 sm:text-[10px]">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-[9px] font-semibold text-[#072C0E]/40 sm:text-[10px]">{subtitle}</p>}
         </div>
         {Icon && (
           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-8 sm:w-8 ${
-            accent ? 'bg-[#D6E4A0] text-[#5A6B28]' : 'bg-[#EBEBEB] text-[#302817]'
+            accent ? 'bg-[#B2F2BB] text-[#1A7B2A]' : 'bg-[#EBEBEB] text-[#072C0E]'
           }`}>
             <Icon className="h-3.5 w-3.5" />
           </div>
@@ -363,33 +363,33 @@ export default function DashboardOverview({
   if (isAndroidTablet) {
     return (
       <div className="space-y-4">
-        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#53A67F]">
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
             {tr ? 'Karbon çalışma alanı' : 'Carbon workspace'}
           </p>
-          <h1 className="mt-2 text-2xl font-black text-[#302817]">
+          <h1 className="mt-2 text-2xl font-black text-[#072C0E]">
             {tr ? 'Emisyon Profili' : 'Emission Profile'} Â· {selectedYear}
           </h1>
-          <p className="mt-1 text-sm text-[#302817]/55">
+          <p className="mt-1 text-sm text-[#072C0E]/55">
             {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCO2e
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-            <p className="text-xs text-[#302817]/50">Scope 1</p>
-            <p className="text-2xl font-black text-[#302817]">{s1.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
+          <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+            <p className="text-xs text-[#072C0E]/50">Scope 1</p>
+            <p className="text-2xl font-black text-[#072C0E]">{s1.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
-          <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-            <p className="text-xs text-[#302817]/50">Scope 2</p>
-            <p className="text-2xl font-black text-[#302817]">{s2.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
+          <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+            <p className="text-xs text-[#072C0E]/50">Scope 2</p>
+            <p className="text-2xl font-black text-[#072C0E]">{s2.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
-          <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-            <p className="text-xs text-[#302817]/50">Scope 3</p>
-            <p className="text-2xl font-black text-[#302817]">{s3.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
+          <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+            <p className="text-xs text-[#072C0E]/50">Scope 3</p>
+            <p className="text-2xl font-black text-[#072C0E]">{s3.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
         </div>
-        <div className="rounded-2xl border border-[#302817]/10 bg-white p-5">
-          <h2 className="text-sm font-bold text-[#302817]">{tr ? 'Başlangıç Rehberi' : 'Getting Started'}</h2>
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+          <h2 className="text-sm font-bold text-[#072C0E]">{tr ? 'Başlangıç Rehberi' : 'Getting Started'}</h2>
           <div className="mt-3 space-y-2">
             {[
               { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anketi tamamla' : 'Complete questionnaire' },
@@ -397,7 +397,7 @@ export default function DashboardOverview({
               { done: targets.length > 0, label: tr ? 'Hedef belirle' : 'Set target' },
               { done: facilityList.length > 0, label: tr ? 'Tesis ekle' : 'Add facility' },
             ].map((s, i) => (
-              <p key={i} className={`text-sm ${s.done ? 'text-[#53A67F] line-through' : 'text-[#302817]/70'}`}>
+              <p key={i} className={`text-sm ${s.done ? 'text-[#2ABD41] line-through' : 'text-[#072C0E]/70'}`}>
                 {s.done ? '✓' : `${i+1}.`} {s.label}
               </p>
             ))}
@@ -412,19 +412,19 @@ export default function DashboardOverview({
 
       {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
       {entries.length === 0 && (
-        <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 sm:p-12">
+        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 sm:p-12">
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
             {/* Icon */}
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#f0f9f0] to-[#e8f5e9] flex items-center justify-center border border-[#53A67F]/10">
-              <Layers className="h-8 w-8 text-[#53A67F]" />
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#F1FCF2] to-[#DEFAE1] flex items-center justify-center border border-[#2ABD41]/10">
+              <Layers className="h-8 w-8 text-[#2ABD41]" />
             </div>
 
             {/* Text */}
             <div>
-              <h2 className="text-[20px] font-bold text-[#1a1a1a]">
+              <h2 className="text-[20px] font-bold text-[#072C0E]">
                 {tr ? 'Henüz emisyon verisi yok' : 'No emission data yet'}
               </h2>
-              <p className="mt-2 text-[14px] text-[#302817]/50 leading-relaxed max-w-md">
+              <p className="mt-2 text-[14px] text-[#072C0E]/50 leading-relaxed max-w-md">
                 {tr
                   ? 'Verilerinizi girmenin iki yolu var: AI ile konuşarak (önerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynı yere kaydedilir.'
                   : 'Two ways to enter your data: talk to AI (recommended) or manually from this panel. Both methods save to the same database.'}
@@ -435,14 +435,14 @@ export default function DashboardOverview({
             <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
               <button
                 onClick={() => setActiveTab('ai_carbon')}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#53A67F] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#3d8564] transition"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#2ABD41] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#1D9C31] transition"
               >
                 <Sparkles className="h-4 w-4" />
                 {tr ? 'AI ile Başla' : 'Start with AI'}
               </button>
               <button
                 onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-[#e8e8e0] bg-white px-5 py-3 text-[13px] font-semibold text-[#302817]/70 hover:border-[#302817]/25 transition"
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-[#DEFAE1] bg-white px-5 py-3 text-[13px] font-semibold text-[#072C0E]/70 hover:border-[#072C0E]/25 transition"
               >
                 <Plus className="h-4 w-4" />
                 {tr ? 'Manuel Giriş' : 'Manual Entry'}
@@ -460,12 +460,12 @@ export default function DashboardOverview({
                 { step: '2', title: 'Auto Calculate', desc: 'ISO 14064-1 compliant' },
                 { step: '3', title: 'Get Report', desc: 'PDF or Excel export' },
               ]).map(({ step, title, desc }) => (
-                <div key={step} className="rounded-xl bg-[#fafaf8] border border-[#e8e8e0] p-3 text-center">
-                  <div className="h-6 w-6 rounded-full bg-[#53A67F]/10 flex items-center justify-center mx-auto mb-2">
-                    <span className="text-[10px] font-bold text-[#53A67F]">{step}</span>
+                <div key={step} className="rounded-xl bg-[#F1FCF2] border border-[#DEFAE1] p-3 text-center">
+                  <div className="h-6 w-6 rounded-full bg-[#2ABD41]/10 flex items-center justify-center mx-auto mb-2">
+                    <span className="text-[10px] font-bold text-[#2ABD41]">{step}</span>
                   </div>
-                  <p className="text-[12px] font-semibold text-[#1a1a1a]">{title}</p>
-                  <p className="text-[10px] text-[#302817]/40 mt-0.5">{desc}</p>
+                  <p className="text-[12px] font-semibold text-[#072C0E]">{title}</p>
+                  <p className="text-[10px] text-[#072C0E]/40 mt-0.5">{desc}</p>
                 </div>
               ))}
             </div>
@@ -476,24 +476,24 @@ export default function DashboardOverview({
       {/* ── SECTION HEADER (WF-03 style) ────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#302817]/35">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/35">
             {selectedYear} {tr ? 'Özet' : 'Summary'}
           </p>
-          <h1 className="mt-0.5 text-base font-bold text-[#302817] sm:text-[17px]">
+          <h1 className="mt-0.5 text-base font-bold text-[#072C0E] sm:text-[17px]">
             {tr ? 'Ana Dashboard' : 'Main Dashboard'}
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#53A67F] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#3d8564]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2ABD41] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#1D9C31]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Veri Ekle' : 'Add Data'}
           </button>
           <button
             onClick={() => setActiveTab('reporting')}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-[#302817]/10 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#302817]/60 transition hover:border-[#302817]/20"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#072C0E]/10 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#072C0E]/60 transition hover:border-[#072C0E]/20"
           >
             {tr ? 'Rapor' : 'Report'}
           </button>
@@ -502,9 +502,9 @@ export default function DashboardOverview({
 
       {/* AI insight strip  -  shown only when data exists */}
       {totalTonne > 0 && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-[#53A67F]/20 bg-[#f0f9f3]/60 px-3.5 py-2.5">
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#53A67F]" />
-          <p className="text-[11px] font-semibold leading-5 text-[#302817]/65">
+        <div className="flex items-start gap-2.5 rounded-xl border border-[#2ABD41]/20 bg-[#F1FCF2]/60 px-3.5 py-2.5">
+          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#2ABD41]" />
+          <p className="text-[11px] font-semibold leading-5 text-[#072C0E]/65">
             {tr
               ? `Toplam ${totalTonne.toFixed(1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO2e.`
               : `Total ${totalTonne.toFixed(1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO2e.`}
@@ -533,9 +533,9 @@ export default function DashboardOverview({
       {/* ── KPI CARDS ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCO2e" accent icon={Leaf} />
-        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#3d8564" />
-        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#53A67F" />
-        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#C9C858" />
+        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#1D9C31" />
+        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#2ABD41" />
+        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#51D766" />
       </div>
 
       {/* ── ROW 2: Monthly trend + Scope donut ──────────────────────── */}
@@ -546,7 +546,7 @@ export default function DashboardOverview({
           title={tr ? 'Aylık Emisyon Trendi' : 'Monthly Emission Trend'}
           subtitle={String(selectedYear)}
           icon={TrendingDown}
-          iconBg="bg-[#53A67F] text-white"
+          iconBg="bg-[#2ABD41] text-white"
         >
           <MonthlyChart monthly={monthly} selectedYear={selectedYear} tr={tr} />
         </ChartCard>
@@ -556,7 +556,7 @@ export default function DashboardOverview({
           title={tr ? 'Kapsam Dağılımı' : 'Scope Distribution'}
           subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO2e` : undefined}
           icon={Layers}
-          iconBg="bg-[#C9C858]/20 text-[#3d8564]"
+          iconBg="bg-[#51D766]/20 text-[#1D9C31]"
         >
           {totalTonne > 0 ? (
             <div className="flex h-full items-center justify-center py-1">
@@ -576,36 +576,36 @@ export default function DashboardOverview({
           title={tr ? 'Sektör Benchmarkı' : 'Sector Benchmark'}
           subtitle={tr ? 'Anonim karşılaştırma' : 'Anonymous comparison'}
           icon={BarChart2}
-          iconBg="bg-[#53A67F]/15 text-[#53A67F]"
-          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Detay ->' : 'Detail ->'}</button>}
+          iconBg="bg-[#2ABD41]/15 text-[#2ABD41]"
+          action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#2ABD41] hover:underline">{tr ? 'Detay ->' : 'Detail ->'}</button>}
         >
           {totalTonne > 0 ? (
             <div className="space-y-3">
               {/* Bar chart showing your position vs sector average */}
-              <div className="relative h-5 overflow-hidden rounded-full bg-[#302817]/6">
+              <div className="relative h-5 overflow-hidden rounded-full bg-[#072C0E]/6">
                 {/* Low zone */}
-                <div className="absolute left-0 top-0 h-full w-[36%] rounded-l-full bg-[#f0f9f3]" />
+                <div className="absolute left-0 top-0 h-full w-[36%] rounded-l-full bg-[#F1FCF2]" />
                 {/* Mid zone */}
-                <div className="absolute top-0 h-full bg-[#C9C858]/40" style={{ left: '36%', width: '28%' }} />
+                <div className="absolute top-0 h-full bg-[#51D766]/40" style={{ left: '36%', width: '28%' }} />
                 {/* High zone */}
                 <div className="absolute top-0 h-full rounded-r-full bg-amber-100" style={{ left: '64%', width: '36%' }} />
                 {/* Your position marker */}
-                <div className="absolute top-0 h-full w-0.5 bg-[#302817]" style={{ left: '48%' }}>
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#302817]">
+                <div className="absolute top-0 h-full w-0.5 bg-[#072C0E]" style={{ left: '48%' }}>
+                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#072C0E]">
                     {tr ? 'Siz' : 'You'}
                   </span>
                 </div>
                 {/* Sector avg marker */}
                 <div className="absolute top-0 h-full w-0.5 bg-amber-500/60" style={{ left: '60%' }} />
               </div>
-              <div className="flex items-center justify-between text-[10px] text-[#302817]/45">
+              <div className="flex items-center justify-between text-[10px] text-[#072C0E]/45">
                 <span>{tr ? 'Düşük' : 'Low'}</span>
-                <span className="font-semibold text-[#3d8564]">{tr ? 'Ortalamanın altındasınız' : 'Below sector average'}</span>
+                <span className="font-semibold text-[#1D9C31]">{tr ? 'Ortalamanın altındasınız' : 'Below sector average'}</span>
                 <span>{tr ? 'Yüksek' : 'High'}</span>
               </div>
               <button
                 onClick={() => setActiveTab('benchmark')}
-                className="flex w-full items-center justify-between rounded-lg bg-[#f0f9f3] px-3 py-2 text-[11px] font-semibold text-[#3d8564] transition hover:bg-[#C9C858]/30"
+                className="flex w-full items-center justify-between rounded-lg bg-[#F1FCF2] px-3 py-2 text-[11px] font-semibold text-[#1D9C31] transition hover:bg-[#51D766]/30"
               >
                 <span>{tr ? 'Tam benchmark raporu' : 'Full benchmark report'}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -613,8 +613,8 @@ export default function DashboardOverview({
             </div>
           ) : (
             <div className="flex h-20 flex-col items-center justify-center gap-1.5">
-              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Veri girilince görünür' : 'Visible once data is entered'}</p>
-              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#53A67F] hover:underline">{tr ? 'Veri ekle ->' : 'Add data ->'}</button>
+              <p className="text-[11px] font-semibold text-[#072C0E]/35">{tr ? 'Veri girilince görünür' : 'Visible once data is entered'}</p>
+              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#2ABD41] hover:underline">{tr ? 'Veri ekle ->' : 'Add data ->'}</button>
             </div>
           )}
         </ChartCard>
@@ -629,28 +629,28 @@ export default function DashboardOverview({
           <div className="space-y-1.5">
             {[
               {
-                dot: 'bg-[#53A67F]',
+                dot: 'bg-[#2ABD41]',
                 done: !!questionnaireProfile?.is_complete,
                 tr: 'CarbonIQ anketi tamamlanmadı',
                 en: 'CarbonIQ questionnaire incomplete',
                 tab: 'ai_carbon',
               },
               {
-                dot: entries.length === 0 ? 'bg-red-400' : 'bg-[#53A67F]',
+                dot: entries.length === 0 ? 'bg-red-400' : 'bg-[#2ABD41]',
                 done: entries.length > 0,
                 tr: 'Emisyon verisi eksik',
                 en: 'No emission data entered',
                 tab: 'emissions',
               },
               {
-                dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#53A67F]',
+                dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#2ABD41]',
                 done: targets.length > 0,
                 tr: 'Azaltım hedefi belirlenmedi',
                 en: 'No reduction target set',
                 tab: 'reduction',
               },
               {
-                dot: facilityList.length === 0 ? 'bg-[#302817]/25' : 'bg-[#53A67F]',
+                dot: facilityList.length === 0 ? 'bg-[#072C0E]/25' : 'bg-[#2ABD41]',
                 done: facilityList.length > 0,
                 tr: 'Tesis bilgisi eksik',
                 en: 'No facility added',
@@ -661,19 +661,19 @@ export default function DashboardOverview({
                 <button
                   key={item.en}
                   onClick={() => setActiveTab(item.tab)}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-[#302817]/4"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-[#072C0E]/4"
                 >
                   <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
-                  <span className="flex-1 text-left text-[11px] font-semibold text-[#302817]/70">{tr ? item.tr : item.en}</span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#302817]/25" />
+                  <span className="flex-1 text-left text-[11px] font-semibold text-[#072C0E]/70">{tr ? item.tr : item.en}</span>
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[#072C0E]/25" />
                 </button>
               )
             ))}
             {/* All done state */}
             {[questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
-                <CheckCircle2 className="h-6 w-6 text-[#53A67F]" />
-                <p className="text-[11px] font-semibold text-[#302817]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
+                <CheckCircle2 className="h-6 w-6 text-[#2ABD41]" />
+                <p className="text-[11px] font-semibold text-[#072C0E]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
               </div>
             )}
           </div>
@@ -684,15 +684,15 @@ export default function DashboardOverview({
           title={tr ? 'Hedefler' : 'Targets'}
           subtitle={tr ? 'Azaltım ilerleme durumu' : 'Reduction progress'}
           icon={Target}
-          iconBg="bg-[#C9C858]/20 text-[#3d8564]"
-          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#53A67F] hover:underline">{tr ? 'Tümü ->' : 'All ->'}</button>}
+          iconBg="bg-[#51D766]/20 text-[#1D9C31]"
+          action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#2ABD41] hover:underline">{tr ? 'Tümü ->' : 'All ->'}</button>}
         >
           {targets.length === 0 ? (
             <div className="flex h-24 flex-col items-center justify-center gap-2">
-              <p className="text-[11px] font-semibold text-[#302817]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
+              <p className="text-[11px] font-semibold text-[#072C0E]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
               <button
                 onClick={() => setActiveTab('reduction')}
-                className="rounded-full border border-[#53A67F]/30 px-3 py-1 text-[11px] font-bold text-[#3d8564] transition hover:bg-[#53A67F]/8"
+                className="rounded-full border border-[#2ABD41]/30 px-3 py-1 text-[11px] font-bold text-[#1D9C31] transition hover:bg-[#2ABD41]/8"
               >
                 {tr ? '+ Hedef ekle' : '+ Add target'}
               </button>
@@ -707,16 +707,16 @@ export default function DashboardOverview({
                 return (
                   <div key={t.id}>
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-[#302817]/70">{t.target_year || ' - '} {tr ? 'hedefi' : 'target'}</span>
-                      <span className="text-[11px] font-bold text-[#3d8564]">{pct}%</span>
+                      <span className="text-[11px] font-semibold text-[#072C0E]/70">{t.target_year || ' - '} {tr ? 'hedefi' : 'target'}</span>
+                      <span className="text-[11px] font-bold text-[#1D9C31]">{pct}%</span>
                     </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-[#302817]/6">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/6">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#3d8564] to-[#C9C858] transition-all duration-700"
+                        className="h-full rounded-full bg-gradient-to-r from-[#1D9C31] to-[#51D766] transition-all duration-700"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
-                    <div className="mt-0.5 flex justify-between text-[10px] text-[#302817]/35">
+                    <div className="mt-0.5 flex justify-between text-[10px] text-[#072C0E]/35">
                       <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCO2e</span>
                       <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCO2e</span>
                     </div>
@@ -724,12 +724,12 @@ export default function DashboardOverview({
                 );
               })}
               {/* Pro notification lock (WF-03) */}
-              <div className="flex items-center justify-between rounded-lg border border-[#302817]/8 bg-[#302817]/3 px-3 py-2">
-                <div className="flex items-center gap-1.5 text-[11px] text-[#302817]/45">
+              <div className="flex items-center justify-between rounded-lg border border-[#072C0E]/8 bg-[#072C0E]/3 px-3 py-2">
+                <div className="flex items-center gap-1.5 text-[11px] text-[#072C0E]/45">
                   <Lock className="h-3 w-3" />
                   <span>{tr ? 'Hatırlatma bildirimleri  -  Pro' : 'Reminder notifications  -  Pro'}</span>
                 </div>
-                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#53A67F] hover:underline">{tr ? 'Yükselt' : 'Upgrade'}</button>
+                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#2ABD41] hover:underline">{tr ? 'Yükselt' : 'Upgrade'}</button>
               </div>
             </div>
           )}
@@ -737,10 +737,10 @@ export default function DashboardOverview({
       </div>
 
       {/* ── UPGRADE BANNER (WF-03 "Pro'ya Geç") ────────────────────── */}
-      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#53A67F]/25 bg-gradient-to-r from-[#1f4030] to-[#3d8564] px-5 py-4 sm:flex-row sm:gap-4">
+      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#175022] to-[#1D9C31] px-5 py-4 sm:flex-row sm:gap-4">
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#53A67F]/20">
-            <Sparkles className="h-4 w-4 text-[#C9C858]" />
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2ABD41]/20">
+            <Sparkles className="h-4 w-4 text-[#51D766]" />
           </span>
           <div>
             <p className="text-[13px] font-bold text-white">
@@ -755,7 +755,7 @@ export default function DashboardOverview({
         </div>
         <button
           onClick={() => setActiveTab('settings')}
-          className="shrink-0 rounded-xl bg-[#53A67F] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#C9C858]"
+          className="shrink-0 rounded-xl bg-[#2ABD41] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#51D766]"
         >
           {tr ? "Pro'ya Geç ->" : "Upgrade to Pro ->"}
         </button>

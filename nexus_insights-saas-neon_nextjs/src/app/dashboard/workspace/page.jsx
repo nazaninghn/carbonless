@@ -42,26 +42,26 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-40 bg-[#302817]/40 backdrop-blur-sm" onClick={onClose} />
+        <div className="fixed inset-0 z-40 bg-[#072C0E]/40 backdrop-blur-sm" onClick={onClose} />
       )}
       <div className={`fixed right-0 top-0 bottom-0 z-50 w-full max-w-[460px] bg-white shadow-2xl flex flex-col transform transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#302817]/8">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#072C0E]/8">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#75863B]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#1D9C31]">
               <LayoutDashboard className="h-3.5 w-3.5 text-white/80" />
             </div>
             <div>
-              <p className="text-[13px] font-bold text-[#302817]">
+              <p className="text-[13px] font-bold text-[#072C0E]">
                 {tr ? 'Veri Girişi Paneli' : 'Data Entry Panel'}
               </p>
-              <p className="text-[10px] text-[#302817]/40">
+              <p className="text-[10px] text-[#072C0E]/40">
                 ISO 14064-1 · Scope 1 / 2 / 3
                 {isPreview && <span className="ml-1 text-amber-500 font-bold">· {tr ? 'Önizleme' : 'Preview'}</span>}
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#302817]/5 text-[#302817]/40 hover:text-[#302817] transition">
+          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-[#072C0E]/5 text-[#072C0E]/40 hover:text-[#072C0E] transition">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -84,7 +84,7 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
         )}
 
         {/* Category tabs */}
-        <div className="flex gap-1.5 px-4 py-3 border-b border-[#302817]/6 bg-[#FAFAF8] mt-2">
+        <div className="flex gap-1.5 px-4 py-3 border-b border-[#072C0E]/6 bg-[#F1FCF2] mt-2">
           {CATEGORIES.map(cat => {
             const Icon = cat.icon;
             const em = estimateKg(cat.id, fieldValues);
@@ -92,16 +92,16 @@ function PanelDrawer({ open, onClose, reportId, fieldValues, statuses, lang, onS
             const isA = active === cat.id;
             return (
               <button key={cat.id} onClick={() => setActive(cat.id)}
-                className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 transition ${isA ? 'bg-[#75863B] shadow-sm' : 'hover:bg-[#302817]/5'}`}>
+                className={`flex-1 flex flex-col items-center gap-1 rounded-xl py-2.5 px-1 transition ${isA ? 'bg-[#1D9C31] shadow-sm' : 'hover:bg-[#072C0E]/5'}`}>
                 <div className="relative">
-                  <Icon className={`h-4 w-4 ${isA ? 'text-[#B4BE6A]' : cat.color}`} />
+                  <Icon className={`h-4 w-4 ${isA ? 'text-[#8BEA99]' : cat.color}`} />
                   <span className={`absolute -top-0.5 -right-1 h-2 w-2 rounded-full border border-white ${
-                    st === 'complete' ? 'bg-[#75863B]' : st === 'in_progress' ? 'bg-amber-400' : 'bg-[#302817]/20'
+                    st === 'complete' ? 'bg-[#1D9C31]' : st === 'in_progress' ? 'bg-amber-400' : 'bg-[#072C0E]/20'
                   }`} />
                 </div>
-                <span className={`text-[8.5px] font-bold tracking-wide ${isA ? 'text-white' : 'text-[#302817]/40'}`}>{cat.tab}</span>
+                <span className={`text-[8.5px] font-bold tracking-wide ${isA ? 'text-white' : 'text-[#072C0E]/40'}`}>{cat.tab}</span>
                 {em !== null && (
-                  <span className={`text-[7.5px] font-bold ${isA ? 'text-[#B4BE6A]/80' : 'text-[#75863B]/60'}`}>
+                  <span className={`text-[7.5px] font-bold ${isA ? 'text-[#8BEA99]/80' : 'text-[#1D9C31]/60'}`}>
                     {em >= 1000 ? `${(em/1000).toFixed(1)}t` : `${Math.round(em)}kg`}
                   </span>
                 )}
@@ -247,26 +247,26 @@ export default function WorkspacePage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#F9F8F4]">
+      <div className="flex h-screen items-center justify-center bg-[#F1FCF2]">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-[#75863B] flex items-center justify-center animate-pulse">
+          <div className="h-10 w-10 rounded-2xl bg-[#1D9C31] flex items-center justify-center animate-pulse">
             <span className="text-white text-xl">✦</span>
           </div>
-          <span className="text-sm font-semibold text-[#302817]/40">{tr ? 'Yükleniyor…' : 'Loading…'}</span>
+          <span className="text-sm font-semibold text-[#072C0E]/40">{tr ? 'Yükleniyor…' : 'Loading…'}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-[#F9F8F4]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[#F1FCF2]">
 
       {/* ── Top bar ── */}
-      <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 border-b border-[#302817]/8 bg-white">
+      <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 border-b border-[#072C0E]/8 bg-white">
         {/* Logo */}
         <a href="/dashboard" className="flex items-center gap-2 shrink-0">
           <Image src="/carbonless.png" alt="Carbonless" width={30} height={30} className="h-7 w-7" />
-          <span className="hidden sm:block text-[13px] font-bold text-[#302817]/70">Carbonless</span>
+          <span className="hidden sm:block text-[13px] font-bold text-[#072C0E]/70">Carbonless</span>
         </a>
 
         {/* Right actions */}
@@ -278,13 +278,13 @@ export default function WorkspacePage() {
           )}
           <button
             onClick={() => setPanelOpen(true)}
-            className="flex items-center gap-1.5 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/60 transition hover:bg-[#302817]/8"
+            className="flex items-center gap-1.5 rounded-full border border-[#072C0E]/12 bg-[#072C0E]/4 px-3 py-1.5 text-[11px] font-bold text-[#072C0E]/60 transition hover:bg-[#072C0E]/8"
           >
             <LayoutDashboard className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{tr ? 'Veri Paneli' : 'Data Panel'}</span>
           </button>
           <a href="/dashboard"
-            className="flex items-center gap-1 rounded-full border border-[#302817]/12 bg-[#302817]/4 px-3 py-1.5 text-[11px] font-bold text-[#302817]/50 transition hover:bg-[#302817]/8">
+            className="flex items-center gap-1 rounded-full border border-[#072C0E]/12 bg-[#072C0E]/4 px-3 py-1.5 text-[11px] font-bold text-[#072C0E]/50 transition hover:bg-[#072C0E]/8">
             <ArrowLeft className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">{tr ? 'Geri' : 'Back'}</span>
           </a>

@@ -92,7 +92,7 @@ export default function TestLoginPage() {
           type="submit" 
           disabled={loading}
           style={{ 
-            padding: '10px 24px', background: '#4CAF50', color: 'white', 
+            padding: '10px 24px', background: '#2ABD41', color: 'white', 
             border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '14px' 
           }}
         >

@@ -148,8 +148,8 @@ export default function CompanySettings({ language }) {
   /* ─── Loading ─── */
   if (loading) {
     return (
-      <div className="flex items-center gap-2 py-4 text-sm text-[#302817]/55">
-        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#51B291]/40 border-t-[#51B291]" />
+      <div className="flex items-center gap-2 py-4 text-sm text-[#072C0E]/55">
+        <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[#2ABD41]/40 border-t-[#2ABD41]" />
         {tr ? 'Yükleniyor…' : 'Loading…'}
       </div>
     );
@@ -159,21 +159,21 @@ export default function CompanySettings({ language }) {
   if (!company) {
     if (!creating) {
       return (
-        <div className="rounded-2xl border border-[#89E789]/30 bg-[#F9EFE5]/60 p-6 text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#89E789]/20">
-            <Building2 className="h-6 w-6 text-[#51B291]" />
+        <div className="rounded-2xl border border-[#8BEA99]/30 bg-[#DEFAE1]/60 p-6 text-center">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#8BEA99]/20">
+            <Building2 className="h-6 w-6 text-[#2ABD41]" />
           </div>
-          <p className="text-sm font-bold text-[#302817]">
+          <p className="text-sm font-bold text-[#072C0E]">
             {tr ? 'Henüz şirket profili oluşturulmamış' : 'No company profile yet'}
           </p>
-          <p className="mt-1 text-xs text-[#302817]/55">
+          <p className="mt-1 text-xs text-[#072C0E]/55">
             {tr
               ? 'Tesis eklemek ve emisyon takibi yapabilmek için önce şirketinizi oluşturun.'
               : 'Create your company to start adding facilities and tracking emissions.'}
           </p>
           <button
             onClick={() => { setCreating(true); setForm({}); setError(''); }}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1a3a2e]"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#072C0E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#175022]"
           >
             <Plus className="h-4 w-4" />
             {tr ? 'Şirket Oluştur' : 'Create Company'}
@@ -185,7 +185,7 @@ export default function CompanySettings({ language }) {
     /* Create form */
     return (
       <form onSubmit={handleCreate} className="space-y-4" noValidate>
-        <p className="text-xs font-bold uppercase tracking-wide text-[#302817]/50">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#072C0E]/50">
           {tr ? 'Yeni Şirket Profili' : 'New Company Profile'}
         </p>
 
@@ -195,21 +195,21 @@ export default function CompanySettings({ language }) {
             value={field('legal_entity_name')}
             onChange={set('legal_entity_name')}
             placeholder={tr ? 'Örn. Acme Teknoloji A.Ş.' : 'e.g. Acme Technologies Ltd.'}
-            className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none"
+            className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none"
           />
         </FormField>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField label={tr ? 'Vergi No' : 'Tax Number'}>
-            <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+            <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
           </FormField>
           <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
             <input type="text" value={field('country_of_headquarters')} onChange={set('country_of_headquarters')}
-              placeholder={tr ? 'Türkiye' : 'Turkey'} className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+              placeholder={tr ? 'Türkiye' : 'Turkey'} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
           </FormField>
           <FormField label="NACE">
             <input type="text" value={field('nace_code')} onChange={set('nace_code')}
-              placeholder="e.g. C29.10" className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+              placeholder="e.g. C29.10" className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
           </FormField>
         </div>
 
@@ -220,7 +220,7 @@ export default function CompanySettings({ language }) {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1a3a2e] disabled:opacity-60"
+            className="flex items-center gap-2 rounded-xl bg-[#072C0E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#175022] disabled:opacity-60"
           >
             {saving
               ? <><Spinner />{tr ? 'Oluşturuluyor…' : 'Creating…'}</>
@@ -230,7 +230,7 @@ export default function CompanySettings({ language }) {
             type="button"
             onClick={() => { setCreating(false); setError(''); }}
             disabled={saving}
-            className="rounded-xl border border-[#302817]/15 px-4 py-2.5 text-sm text-[#302817]/70 hover:bg-[#F8F8F8] disabled:opacity-60"
+            className="rounded-xl border border-[#072C0E]/15 px-4 py-2.5 text-sm text-[#072C0E]/70 hover:bg-[#F8F8F8] disabled:opacity-60"
           >
             {tr ? 'İptal' : 'Cancel'}
           </button>
@@ -253,15 +253,15 @@ export default function CompanySettings({ language }) {
             { key: 'nace',    label: 'NACE',                               val: company.nace_code },
           ].map((f) => (
             <div key={f.key} className="rounded-xl bg-[#F8F8F8] p-3">
-              <p className="text-xs text-[#302817]/50">{f.label}</p>
-              <p className="mt-0.5 text-sm font-medium text-[#302817]">{f.val || '—'}</p>
+              <p className="text-xs text-[#072C0E]/50">{f.label}</p>
+              <p className="mt-0.5 text-sm font-medium text-[#072C0E]">{f.val || '—'}</p>
             </div>
           ))}
         </div>
 
         <button
           onClick={() => { setEditing(true); setError(''); setSuccess(''); }}
-          className="rounded-xl border border-[#51B291] px-4 py-2 text-sm font-medium text-[#51B291] hover:bg-[#51B291]/8 transition"
+          className="rounded-xl border border-[#2ABD41] px-4 py-2 text-sm font-medium text-[#2ABD41] hover:bg-[#2ABD41]/8 transition"
         >
           {tr ? 'Düzenle' : 'Edit'}
         </button>
@@ -274,16 +274,16 @@ export default function CompanySettings({ language }) {
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField label={`${tr ? 'Şirket Adı' : 'Company Name'} *`} full>
-          <input type="text" value={field('legal_entity_name')} onChange={set('legal_entity_name')} className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+          <input type="text" value={field('legal_entity_name')} onChange={set('legal_entity_name')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Vergi No' : 'Tax Number'}>
-          <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+          <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
-          <input type="text" value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+          <input type="text" value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label="NACE">
-          <input type="text" value={field('nace_code')} onChange={set('nace_code')} className="w-full rounded-xl border border-[#302817]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#51B291] focus:bg-white focus:outline-none" />
+          <input type="text" value={field('nace_code')} onChange={set('nace_code')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
       </div>
 
@@ -294,7 +294,7 @@ export default function CompanySettings({ language }) {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 rounded-xl bg-[#302817] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#1a3a2e] disabled:opacity-60"
+          className="flex items-center gap-2 rounded-xl bg-[#072C0E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#175022] disabled:opacity-60"
         >
           {saving
             ? <><Spinner />{tr ? 'Kaydediliyor…' : 'Saving…'}</>
@@ -303,7 +303,7 @@ export default function CompanySettings({ language }) {
         <button
           onClick={() => { setEditing(false); setForm(company); setError(''); setSuccess(''); }}
           disabled={saving}
-          className="rounded-xl border border-[#302817]/15 px-4 py-2.5 text-sm text-[#302817]/70 hover:bg-[#F8F8F8] disabled:opacity-60"
+          className="rounded-xl border border-[#072C0E]/15 px-4 py-2.5 text-sm text-[#072C0E]/70 hover:bg-[#F8F8F8] disabled:opacity-60"
         >
           {tr ? 'İptal' : 'Cancel'}
         </button>
@@ -316,7 +316,7 @@ export default function CompanySettings({ language }) {
 function FormField({ label, children, full = false }) {
   return (
     <div className={full ? 'sm:col-span-2' : ''}>
-      <label className="mb-1 block text-xs font-medium text-[#302817]/60">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-[#072C0E]/60">{label}</label>
       {children}
     </div>
   );

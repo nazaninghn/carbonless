@@ -57,19 +57,19 @@ const DATA_SOURCES = [
 ];
 
 const INPUT_CLS =
-  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'placeholder:text-[#302817]/25 focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
+  'w-full rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-sm text-[#072C0E] outline-none ' +
+  'placeholder:text-[#072C0E]/25 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/12 transition-colors';
 const SELECT_CLS =
-  'w-full rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-sm text-[#302817] outline-none ' +
-  'focus:border-[#89E789]/50 focus:ring-2 focus:ring-[#89E789]/12 transition-colors';
+  'w-full rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-sm text-[#072C0E] outline-none ' +
+  'focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/12 transition-colors';
 
 function SectionDivider({ children }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#302817]/35 shrink-0">
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#072C0E]/35 shrink-0">
         {children}
       </span>
-      <div className="flex-1 h-px bg-[#302817]/8" />
+      <div className="flex-1 h-px bg-[#072C0E]/8" />
     </div>
   );
 }
@@ -77,9 +77,9 @@ function SectionDivider({ children }) {
 function FieldRow({ label, hint, children }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-[11px] font-semibold text-[#302817]/55">
+      <label className="text-[11px] font-semibold text-[#072C0E]/55">
         {label}
-        {hint && <span className="ml-1 font-normal text-[#302817]/30">({hint})</span>}
+        {hint && <span className="ml-1 font-normal text-[#072C0E]/30">({hint})</span>}
       </label>
       {children}
     </div>
@@ -91,24 +91,24 @@ function ShipmentRow({ s, index, lang, onRemove }) {
   const mode = getModeData(s.mode);
   const kg = s.tkm && mode ? s.tkm * mode.ef : null;
   return (
-    <div className="flex items-start gap-2.5 rounded-xl border border-[#302817]/8 bg-white px-3 py-2.5">
+    <div className="flex items-start gap-2.5 rounded-xl border border-[#072C0E]/8 bg-white px-3 py-2.5">
       <div className="flex-1 min-w-0">
-        <p className="text-[11px] font-bold text-[#302817] truncate">
+        <p className="text-[11px] font-bold text-[#072C0E] truncate">
           #{index + 1} · {mode ? (mode.label[lang] || mode.label.en) : s.mode}
         </p>
-        <p className="text-[10px] text-[#302817]/40 mt-0.5">
+        <p className="text-[10px] text-[#072C0E]/40 mt-0.5">
           {s.cargo_t} t · {s.distance_km} km
           {s.tkm ? ` · ${s.tkm.toLocaleString()} tkm` : ''}
         </p>
       </div>
       {kg !== null && (
-        <span className="shrink-0 text-[11px] font-bold text-[#244959]">
+        <span className="shrink-0 text-[11px] font-bold text-[#175022]">
           {kg >= 1000 ? `${(kg/1000).toFixed(2)} tCO₂e` : `${kg.toFixed(0)} kgCO₂e`}
         </span>
       )}
       <button
         onClick={() => onRemove(index)}
-        className="shrink-0 flex h-6 w-6 items-center justify-center rounded-lg text-[#302817]/25 hover:bg-red-50 hover:text-red-400 transition"
+        className="shrink-0 flex h-6 w-6 items-center justify-center rounded-lg text-[#072C0E]/25 hover:bg-red-50 hover:text-red-400 transition"
       >
         <Trash2 className="h-3 w-3" />
       </button>
@@ -237,10 +237,10 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
           <Truck className="h-4.5 w-4.5 text-sky-500" />
         </div>
         <div>
-          <p className="text-[13px] font-bold text-[#302817]">
+          <p className="text-[13px] font-bold text-[#072C0E]">
             {tr ? 'Upstream Taşımacılık' : 'Upstream Transport'}
           </p>
-          <p className="text-[10px] text-[#302817]/40">
+          <p className="text-[10px] text-[#072C0E]/40">
             {tr ? 'Kapsam 3 · Kat.4 · GLEC Framework v3' : 'Scope 3 · Cat.4 · GLEC Framework v3'}
           </p>
         </div>
@@ -264,7 +264,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
       {entryMethod !== 'shipment_detail' && (
         <div className="flex flex-col gap-3">
           <SectionDivider>{tr ? 'Toplam Emisyon Girişi' : 'Direct Total Emission'}</SectionDivider>
-          <p className="text-[10.5px] text-[#302817]/45 leading-relaxed">
+          <p className="text-[10.5px] text-[#072C0E]/45 leading-relaxed">
             {tr
               ? 'GLEC raporu veya faturanızdan toplam emisyon değerini girin (kgCO₂e).'
               : 'Enter the total emission from your GLEC report or invoice (kgCO₂e).'}
@@ -281,9 +281,9 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
             />
           </FieldRow>
           {!isNaN(parsedDirectKg) && parsedDirectKg > 0 && (
-            <div className="flex items-center justify-between rounded-xl bg-[#302817]/4 border border-[#302817]/8 px-3 py-2.5">
-              <span className="text-xs text-[#302817]/50">{tr ? 'Girilecek değer' : 'Value to save'}</span>
-              <span className="text-sm font-bold text-[#302817]">
+            <div className="flex items-center justify-between rounded-xl bg-[#072C0E]/4 border border-[#072C0E]/8 px-3 py-2.5">
+              <span className="text-xs text-[#072C0E]/50">{tr ? 'Girilecek değer' : 'Value to save'}</span>
+              <span className="text-sm font-bold text-[#072C0E]">
                 {parsedDirectKg >= 1000
                   ? `${(parsedDirectKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} tCO₂e`
                   : `${parsedDirectKg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kgCO₂e`}
@@ -296,7 +296,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
       {entryMethod === 'shipment_detail' && (
         <>
           {/* Shipment form */}
-          <div className="rounded-2xl border border-[#302817]/8 bg-[#FAFAF8] p-3 flex flex-col gap-3">
+          <div className="rounded-2xl border border-[#072C0E]/8 bg-[#F1FCF2] p-3 flex flex-col gap-3">
             <SectionDivider>{tr ? 'Sevkiyat Ekle' : 'Add Shipment'}</SectionDivider>
 
             <FieldRow label={tr ? 'Taşıma modu' : 'Transport mode'}>
@@ -338,20 +338,20 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
 
             {/* Tonne-km preview */}
             {draftTkm !== null && (
-              <div className="flex items-center justify-between rounded-xl bg-white border border-[#302817]/8 px-3 py-2 text-xs">
-                <span className="text-[#302817]/45">{tr ? 'Tonne-km (otomatik)' : 'Tonne-km (auto)'}</span>
-                <span className="font-bold text-[#302817]">{draftTkm.toLocaleString(undefined, { maximumFractionDigits: 0 })} t·km</span>
+              <div className="flex items-center justify-between rounded-xl bg-white border border-[#072C0E]/8 px-3 py-2 text-xs">
+                <span className="text-[#072C0E]/45">{tr ? 'Tonne-km (otomatik)' : 'Tonne-km (auto)'}</span>
+                <span className="font-bold text-[#072C0E]">{draftTkm.toLocaleString(undefined, { maximumFractionDigits: 0 })} t·km</span>
               </div>
             )}
 
             {/* EF box */}
             {draftMode && (
-              <div className="flex overflow-hidden rounded-xl border border-[#302817]/8">
-                <div className="w-[3px] shrink-0 bg-[#244959]" />
+              <div className="flex overflow-hidden rounded-xl border border-[#072C0E]/8">
+                <div className="w-[3px] shrink-0 bg-[#175022]" />
                 <div className="flex-1 bg-white px-3 py-2.5">
-                  <p className="text-[9.5px] text-[#302817]/40 mb-0.5">GLEC Framework v3</p>
-                  <p className="text-[13px] font-bold text-[#302817]">{draftMode.ef} kgCO₂e/tonne-km</p>
-                  <p className="text-[10px] text-[#302817]/40 mt-0.5">
+                  <p className="text-[9.5px] text-[#072C0E]/40 mb-0.5">GLEC Framework v3</p>
+                  <p className="text-[13px] font-bold text-[#072C0E]">{draftMode.ef} kgCO₂e/tonne-km</p>
+                  <p className="text-[10px] text-[#072C0E]/40 mt-0.5">
                     {draftMode.label[lang] || draftMode.label.en}
                   </p>
                 </div>
@@ -365,9 +365,9 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
                 ? `${(kg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })} tCO₂e`
                 : `${kg.toLocaleString(undefined, { maximumFractionDigits: 1 })} kgCO₂e`;
               return (
-                <div className="flex items-center justify-between rounded-xl bg-[#302817]/4 border border-[#302817]/8 px-3 py-2.5">
-                  <span className="text-xs text-[#302817]/50">{tr ? 'Bu sevkiyat tahmini' : 'This shipment estimate'}</span>
-                  <span className="text-sm font-bold text-[#302817]">{display}</span>
+                <div className="flex items-center justify-between rounded-xl bg-[#072C0E]/4 border border-[#072C0E]/8 px-3 py-2.5">
+                  <span className="text-xs text-[#072C0E]/50">{tr ? 'Bu sevkiyat tahmini' : 'This shipment estimate'}</span>
+                  <span className="text-sm font-bold text-[#072C0E]">{display}</span>
                 </div>
               );
             })()}
@@ -376,7 +376,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
             <button
               onClick={addShipment}
               disabled={!canAddDraft}
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#302817]/12 py-2 text-xs font-bold text-[#302817]/40 transition hover:border-[#89E789]/50 hover:bg-[#89E789]/5 hover:text-[#302817] disabled:opacity-30"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-[#072C0E]/12 py-2 text-xs font-bold text-[#072C0E]/40 transition hover:border-[#8BEA99]/50 hover:bg-[#8BEA99]/5 hover:text-[#072C0E] disabled:opacity-30"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Sevkiyat Ekle' : 'Add Shipment'}
@@ -418,21 +418,21 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
         const previewKg  = totals.kgco2e + (canAddDraft && draftMode ? (draftTkm || 0) * draftMode.ef : 0);
         if (previewTkm === 0) return null;
         return (
-          <div className="rounded-xl bg-gradient-to-br from-[#51B291]/8 to-[#89E789]/4 border border-[#89E789]/20 px-4 py-3">
-            <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#244959] mb-1">
+          <div className="rounded-xl bg-gradient-to-br from-[#2ABD41]/8 to-[#8BEA99]/4 border border-[#8BEA99]/20 px-4 py-3">
+            <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#175022] mb-1">
               {tr ? 'Toplam Kat.4 Emisyonu (GLEC v3)' : 'Total Cat.4 Emission (GLEC v3)'}
             </p>
             <div className="flex items-baseline gap-1.5 mb-0.5">
-              <span className="text-2xl font-bold text-[#302817]">
+              <span className="text-2xl font-bold text-[#072C0E]">
                 {previewKg >= 1000
                   ? (previewKg / 1000).toLocaleString(undefined, { maximumFractionDigits: 2 })
                   : previewKg.toLocaleString(undefined, { maximumFractionDigits: 1 })}
               </span>
-              <span className="text-xs font-semibold text-[#244959]">
+              <span className="text-xs font-semibold text-[#175022]">
                 {previewKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
               </span>
             </div>
-            <p className="text-[10px] text-[#302817]/40">
+            <p className="text-[10px] text-[#072C0E]/40">
               {previewTkm.toLocaleString(undefined, { maximumFractionDigits: 0 })} tonne-km ·{' '}
               {shipments.length + (canAddDraft ? 1 : 0)} {tr ? 'sevkiyat' : 'shipment(s)'}
             </p>
@@ -453,8 +453,8 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
         disabled={(!canSave && shipments.length === 0) || saving}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
-            ? 'bg-[#51B291]/15 border border-[#51B291]/30 text-[#527A1A]'
-            : 'bg-[#244959] text-white hover:bg-[#1a3a2e] disabled:opacity-35'
+            ? 'bg-[#2ABD41]/15 border border-[#2ABD41]/30 text-[#1A7B2A]'
+            : 'bg-[#175022] text-white hover:bg-[#175022] disabled:opacity-35'
         }`}
       >
         {saving ? (

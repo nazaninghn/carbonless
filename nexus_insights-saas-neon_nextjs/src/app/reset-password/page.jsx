@@ -53,19 +53,19 @@ function ResetContent() {
 
   if (!token) {
     return (
-      <main className="min-h-screen bg-[#f9faf5] flex flex-col items-center justify-center px-4">
+      <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
         <div className="w-full max-w-md text-center">
           <div className="flex justify-center mb-8">
             <Link href="/" className="flex items-center gap-2">
               <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
-              <span className="text-[18px] font-bold text-[#1a1a1a]">Carbonless</span>
+              <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
             </Link>
           </div>
-          <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 shadow-sm">
+          <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 shadow-sm">
             <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
-            <h1 className="text-[20px] font-bold text-[#1a1a1a]">Invalid Reset Link</h1>
-            <p className="mt-2 text-[14px] text-[#302817]/50">This password reset link is invalid or missing a token.</p>
-            <Link href="/forgot-password" className="mt-4 inline-block text-[13px] font-medium text-[#4CAF50] hover:underline">
+            <h1 className="text-[20px] font-bold text-[#072C0E]">Invalid Reset Link</h1>
+            <p className="mt-2 text-[14px] text-[#072C0E]/50">This password reset link is invalid or missing a token.</p>
+            <Link href="/forgot-password" className="mt-4 inline-block text-[13px] font-medium text-[#2ABD41] hover:underline">
               Request a new reset link
             </Link>
           </div>
@@ -75,38 +75,38 @@ function ResetContent() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f9faf5] flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
-            <span className="text-[18px] font-bold text-[#1a1a1a]">Carbonless</span>
+            <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
           </Link>
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-[#e8e8e0] bg-white p-8 shadow-sm">
+        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 shadow-sm">
           {status === 'success' ? (
             <div className="text-center">
-              <div className="h-16 w-16 rounded-full bg-[#e8f5e9] flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="h-8 w-8 text-[#4CAF50]" />
+              <div className="h-16 w-16 rounded-full bg-[#DEFAE1] flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="h-8 w-8 text-[#2ABD41]" />
               </div>
-              <h1 className="text-[20px] font-bold text-[#1a1a1a]">Password Reset!</h1>
-              <p className="mt-2 text-[14px] text-[#302817]/50">{message}</p>
+              <h1 className="text-[20px] font-bold text-[#072C0E]">Password Reset!</h1>
+              <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
               <Link href="/login"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#4CAF50] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#388E3C] transition">
+                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
                 Login with New Password
               </Link>
             </div>
           ) : (
             <>
               <div className="text-center mb-6">
-                <div className="h-12 w-12 rounded-2xl bg-[#f0f9f0] flex items-center justify-center mx-auto mb-3">
-                  <LockKeyhole className="h-6 w-6 text-[#4CAF50]" />
+                <div className="h-12 w-12 rounded-2xl bg-[#F1FCF2] flex items-center justify-center mx-auto mb-3">
+                  <LockKeyhole className="h-6 w-6 text-[#2ABD41]" />
                 </div>
-                <h1 className="text-[20px] font-bold text-[#1a1a1a]">Set New Password</h1>
-                <p className="mt-1 text-[13px] text-[#302817]/50">Enter your new password below.</p>
+                <h1 className="text-[20px] font-bold text-[#072C0E]">Set New Password</h1>
+                <p className="mt-1 text-[13px] text-[#072C0E]/50">Enter your new password below.</p>
               </div>
 
               {status === 'error' && (
@@ -117,9 +117,9 @@ function ResetContent() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-[12px] font-semibold text-[#302817]/70 mb-1.5">New Password</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-[#e8e8e0] px-4 py-3 focus-within:border-[#4CAF50]/50 focus-within:ring-2 focus-within:ring-[#4CAF50]/10">
-                    <LockKeyhole className="h-4 w-4 text-[#302817]/30" />
+                  <label className="block text-[12px] font-semibold text-[#072C0E]/70 mb-1.5">New Password</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-[#DEFAE1] px-4 py-3 focus-within:border-[#2ABD41]/50 focus-within:ring-2 focus-within:ring-[#2ABD41]/10">
+                    <LockKeyhole className="h-4 w-4 text-[#072C0E]/30" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
@@ -127,18 +127,18 @@ function ResetContent() {
                       placeholder="••••••••"
                       required
                       minLength={8}
-                      className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#302817]/30"
+                      className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
                     />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="text-[#302817]/40 hover:text-[#302817]">
+                    <button type="button" onClick={() => setShowPassword(v => !v)} className="text-[#072C0E]/40 hover:text-[#072C0E]">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-semibold text-[#302817]/70 mb-1.5">Confirm Password</label>
-                  <div className="flex items-center gap-2 rounded-xl border border-[#e8e8e0] px-4 py-3 focus-within:border-[#4CAF50]/50 focus-within:ring-2 focus-within:ring-[#4CAF50]/10">
-                    <LockKeyhole className="h-4 w-4 text-[#302817]/30" />
+                  <label className="block text-[12px] font-semibold text-[#072C0E]/70 mb-1.5">Confirm Password</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-[#DEFAE1] px-4 py-3 focus-within:border-[#2ABD41]/50 focus-within:ring-2 focus-within:ring-[#2ABD41]/10">
+                    <LockKeyhole className="h-4 w-4 text-[#072C0E]/30" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password2}
@@ -146,7 +146,7 @@ function ResetContent() {
                       placeholder="••••••••"
                       required
                       minLength={8}
-                      className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#302817]/30"
+                      className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
                     />
                   </div>
                 </div>
@@ -154,7 +154,7 @@ function ResetContent() {
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full rounded-full bg-[#1a1a1a] py-3 text-[14px] font-bold text-white hover:bg-[#333] transition disabled:opacity-50"
+                  className="w-full rounded-full bg-[#072C0E] py-3 text-[14px] font-bold text-white hover:bg-[#175022] transition disabled:opacity-50"
                 >
                   {status === 'loading' ? 'Resetting...' : 'Reset Password'}
                 </button>
@@ -169,7 +169,7 @@ function ResetContent() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-[#4CAF50]" /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-[#2ABD41]" /></div>}>
       <ResetContent />
     </Suspense>
   );

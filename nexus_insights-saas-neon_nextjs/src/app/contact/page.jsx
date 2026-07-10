@@ -14,11 +14,11 @@ export default function ContactPage() {
   const setField = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));
 
   return (
-    <div className="bg-white text-[#302817] antialiased overflow-x-hidden">
+    <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
       <Header />
       <main>
         {/* Hero */}
-        <section className="pt-24 lg:pt-40 pb-16 lg:pb-28 bg-gradient-to-b from-[#F9EFE5]/40 to-white">
+        <section className="pt-24 lg:pt-40 pb-16 lg:pb-28 bg-gradient-to-b from-[#DEFAE1]/40 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto">
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-full mb-4">
@@ -28,7 +28,7 @@ export default function ContactPage() {
                 {tr ? "Hadi " : "Let's "}
                 <span className="gradient-text">{tr ? 'Konuşalım' : 'Talk'}</span>
               </h1>
-              <p className="text-lg text-[#302817]/60">
+              <p className="text-lg text-[#072C0E]/60">
                 {tr ? 'Sorularınız mı var? Bize ulaşın, en kısa sürede yanıt verelim.' : "Have questions? We'd love to hear from you."}
               </p>
             </div>
@@ -41,21 +41,21 @@ export default function ContactPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
               {/* Info Cards */}
               <div className="space-y-6">
-                <div className="bg-white rounded-2xl p-6 border border-[#302817]/8 shadow-sm">
+                <div className="bg-white rounded-2xl p-6 border border-[#072C0E]/8 shadow-sm">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
                     <Mail className="w-6 h-6 text-primary" />
                   </div>
                   <h4 className="text-lg font-semibold mb-2">{tr ? 'E-posta' : 'Email'}</h4>
                   <a href={`mailto:${t.company.email}`} className="text-primary font-medium hover:underline">{t.company.email}</a>
                 </div>
-                <div className="bg-white rounded-2xl p-6 border border-[#302817]/8 shadow-sm">
+                <div className="bg-white rounded-2xl p-6 border border-[#072C0E]/8 shadow-sm">
                   <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-4">
                     <MapPin className="w-6 h-6 text-accent" />
                   </div>
                   <h4 className="text-lg font-semibold mb-2">{tr ? 'Adres' : 'Address'}</h4>
-                  <p className="text-[#302817]/60 text-sm">{t.company.address}</p>
+                  <p className="text-[#072C0E]/60 text-sm">{t.company.address}</p>
                 </div>
-                <div className="bg-white rounded-2xl p-6 border border-[#302817]/8 shadow-sm">
+                <div className="bg-white rounded-2xl p-6 border border-[#072C0E]/8 shadow-sm">
                   <div className="w-12 h-12 bg-secondary/15 rounded-xl flex items-center justify-center mb-4">
                     <Phone className="w-6 h-6 text-accent" />
                   </div>
@@ -66,12 +66,12 @@ export default function ContactPage() {
 
               {/* Form */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-2xl p-8 border border-[#302817]/8 shadow-sm">
+                <div className="bg-white rounded-2xl p-8 border border-[#072C0E]/8 shadow-sm">
                   <h3 className="text-2xl font-bold mb-6">{tr ? 'Bize Mesaj Gönderin' : 'Send us a Message'}</h3>
                   {submitted ? (
-                    <div className="p-6 bg-[#B4BE6A]/10 border border-[#B4BE6A]/30 rounded-xl text-center">
+                    <div className="p-6 bg-[#8BEA99]/10 border border-[#8BEA99]/30 rounded-xl text-center">
                       <CheckCircle className="w-12 h-12 text-primary mx-auto mb-3" />
-                      <p className="text-[#75863B] font-medium">{tr ? 'Teşekkürler! 24 saat içinde yanıt vereceğiz.' : 'Thank you! We will respond within 24 hours.'}</p>
+                      <p className="text-[#1D9C31] font-medium">{tr ? 'Teşekkürler! 24 saat içinde yanıt vereceğiz.' : 'Thank you! We will respond within 24 hours.'}</p>
                     </div>
                   ) : (
                     <form
@@ -89,46 +89,46 @@ export default function ContactPage() {
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                          <label className="block text-sm font-medium text-[#302817]/70 mb-2">{tr ? 'Ad Soyad' : 'Full Name'} *</label>
+                          <label className="block text-sm font-medium text-[#072C0E]/70 mb-2">{tr ? 'Ad Soyad' : 'Full Name'} *</label>
                           <input
                             type="text"
                             required
                             value={form.name}
                             onChange={setField('name')}
-                            className="w-full px-4 py-3 rounded-xl border border-[#302817]/20 focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none"
+                            className="w-full px-4 py-3 rounded-xl border border-[#072C0E]/20 focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[#302817]/70 mb-2">{tr ? 'E-posta' : 'Email'} *</label>
+                          <label className="block text-sm font-medium text-[#072C0E]/70 mb-2">{tr ? 'E-posta' : 'Email'} *</label>
                           <input
                             type="email"
                             required
                             value={form.email}
                             onChange={setField('email')}
-                            className="w-full px-4 py-3 rounded-xl border border-[#302817]/20 focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none"
+                            className="w-full px-4 py-3 rounded-xl border border-[#072C0E]/20 focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none"
                           />
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#302817]/70 mb-2">{tr ? 'Konu' : 'Subject'}</label>
+                        <label className="block text-sm font-medium text-[#072C0E]/70 mb-2">{tr ? 'Konu' : 'Subject'}</label>
                         <input
                           type="text"
                           value={form.subject}
                           onChange={setField('subject')}
-                          className="w-full px-4 py-3 rounded-xl border border-[#302817]/20 focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none"
+                          className="w-full px-4 py-3 rounded-xl border border-[#072C0E]/20 focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[#302817]/70 mb-2">{tr ? 'Mesaj' : 'Message'} *</label>
+                        <label className="block text-sm font-medium text-[#072C0E]/70 mb-2">{tr ? 'Mesaj' : 'Message'} *</label>
                         <textarea
                           rows={5}
                           required
                           value={form.message}
                           onChange={setField('message')}
-                          className="w-full px-4 py-3 rounded-xl border border-[#302817]/20 focus:ring-2 focus:ring-[#95A847]/30 focus:border-[#95A847] outline-none resize-none"
+                          className="w-full px-4 py-3 rounded-xl border border-[#072C0E]/20 focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none resize-none"
                         />
                       </div>
-                      <button type="submit" className="px-8 py-3 bg-[#75863B] text-[#F9EFE5] font-semibold rounded-xl hover:bg-[#5E6B2A] transition-colors flex items-center gap-2">
+                      <button type="submit" className="px-8 py-3 bg-[#1D9C31] text-[#DEFAE1] font-semibold rounded-xl hover:bg-[#1A7B2A] transition-colors flex items-center gap-2">
                         <Send className="w-5 h-5" /> {tr ? 'Mesaj Gönder' : 'Send Message'}
                       </button>
                     </form>

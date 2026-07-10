@@ -175,8 +175,8 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
       {loading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="h-5 w-5 animate-spin text-[#244959]" />
-            <span className="text-[11px] font-semibold text-[#302817]/60">
+            <Loader2 className="h-5 w-5 animate-spin text-[#175022]" />
+            <span className="text-[11px] font-semibold text-[#072C0E]/60">
               {action === 'confirming'
                 ? (tr ? 'Rapora kaydediliyor…' : 'Saving to report…')
                 : (tr ? 'İptal ediliyor…' : 'Cancelling…')}
@@ -191,23 +191,23 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
           <CatIcon className={`h-3.5 w-3.5 ${meta.color}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-bold text-[#302817]/80 truncate">
+          <p className="text-[11px] font-bold text-[#072C0E]/80 truncate">
             {meta.label[lang] || meta.label.en}
           </p>
-          <p className="text-[9.5px] text-[#302817]/35">
+          <p className="text-[9.5px] text-[#072C0E]/35">
             {isConvFlow
               ? (tr ? 'Sohbetten toplanan veri' : 'Collected from conversation')
               : (tr ? 'AI tarafından çıkarıldı' : 'Extracted by AI')}
             {' · '}
-            <span className={confidence >= 0.85 ? 'text-[#527A1A] font-semibold' : confidence >= 0.65 ? 'text-amber-600 font-semibold' : 'text-red-500 font-semibold'}>
+            <span className={confidence >= 0.85 ? 'text-[#1A7B2A] font-semibold' : confidence >= 0.65 ? 'text-amber-600 font-semibold' : 'text-red-500 font-semibold'}>
               {Math.round(confidence * 100)}% {tr ? 'güven' : 'confidence'}
             </span>
           </p>
           {/* Confidence bar */}
-          <div className="mt-1 h-[3px] w-full rounded-full bg-[#302817]/6 overflow-hidden">
+          <div className="mt-1 h-[3px] w-full rounded-full bg-[#072C0E]/6 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                confidence >= 0.85 ? 'bg-[#244959]' :
+                confidence >= 0.85 ? 'bg-[#175022]' :
                 confidence >= 0.65 ? 'bg-amber-400' : 'bg-red-400'
               }`}
               style={{ width: `${Math.round(confidence * 100)}%` }}
@@ -218,23 +218,23 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
 
       {/* ── Hero emission number ── */}
       <div className={`mx-3 mb-3 rounded-xl ${meta.bg} border ${meta.border} px-4 py-3 text-center`}>
-        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 mb-1">
+        <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 mb-1">
           {tr ? 'Hesaplanan Emisyon' : 'Calculated Emission'}
         </p>
         {emKg === null ? (
-          <p className="text-[13px] text-[#302817]/30 py-1">
+          <p className="text-[13px] text-[#072C0E]/30 py-1">
             {tr ? 'Değerleri girin, toplam hesaplanacak' : 'Enter values to calculate total'}
           </p>
         ) : (
           <div className="flex items-baseline justify-center gap-1.5">
-            <span className="text-[32px] font-black text-[#302817] leading-none tabular-nums">
+            <span className="text-[32px] font-black text-[#072C0E] leading-none tabular-nums">
               {emValue}
             </span>
             <span className={`text-[14px] font-bold ${meta.color}`}>{emUnit}</span>
           </div>
         )}
         {tonnes && (
-          <p className="text-[10px] text-[#302817]/35 mt-0.5">{tonnes}</p>
+          <p className="text-[10px] text-[#072C0E]/35 mt-0.5">{tonnes}</p>
         )}
       </div>
 
@@ -243,7 +243,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <div className="px-3 mb-2">
           <button
             onClick={() => setShowDetails(v => !v)}
-            className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#302817]/6 transition text-[10.5px] font-semibold text-[#302817]/45"
+            className="w-full flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-[#072C0E]/6 transition text-[10.5px] font-semibold text-[#072C0E]/45"
           >
             <span>{tr ? 'Kaynak veriler' : 'Source data'}</span>
             {showDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -254,16 +254,16 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
               {(editing ? fields : detailFields).map((f) => (
                 <div
                   key={f.field_id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-[#FAFAF8] border border-[#302817]/6 px-3 py-2"
+                  className="flex items-center justify-between gap-2 rounded-lg bg-[#F1FCF2] border border-[#072C0E]/6 px-3 py-2"
                 >
-                  <span className="text-[10px] text-[#302817]/45 shrink-0">
+                  <span className="text-[10px] text-[#072C0E]/45 shrink-0">
                     {getLabel(f.field_id, f.label, lang)}
                   </span>
                   {editing ? (
                     <input
                       type={typeof f.value === 'number' ? 'number' : 'text'}
                       placeholder={typeof f.value === 'number' ? '0' : '…'}
-                      className="flex-1 min-w-0 text-right rounded-md border border-[#302817]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#302817] outline-none focus:border-[#89E789]/60 focus:ring-1 focus:ring-[#89E789]/20 max-w-[120px] ml-auto placeholder:text-[#302817]/20"
+                      className="flex-1 min-w-0 text-right rounded-md border border-[#072C0E]/12 bg-white px-2 py-0.5 text-[11px] font-semibold text-[#072C0E] outline-none focus:border-[#8BEA99]/60 focus:ring-1 focus:ring-[#8BEA99]/20 max-w-[120px] ml-auto placeholder:text-[#072C0E]/20"
                       value={editedValues[f.field_id] !== undefined ? editedValues[f.field_id] : ''}
                       onChange={e => {
                         const raw = e.target.value;
@@ -274,7 +274,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
                       }}
                     />
                   ) : (
-                    <span className="text-[11px] font-bold text-[#302817]">
+                    <span className="text-[11px] font-bold text-[#072C0E]">
                       {displayValue(f, lang)}
                     </span>
                   )}
@@ -287,11 +287,11 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
 
       {/* ── Source citation ── */}
       <div className="mx-3 mb-3 flex items-center gap-1.5">
-        <div className="h-px flex-1 bg-[#302817]/6" />
-        <span className="text-[9px] text-[#302817]/25 font-semibold">
+        <div className="h-px flex-1 bg-[#072C0E]/6" />
+        <span className="text-[9px] text-[#072C0E]/25 font-semibold">
           DEFRA 2023 / IEA 2023 / GLEC v3
         </span>
-        <div className="h-px flex-1 bg-[#302817]/6" />
+        <div className="h-px flex-1 bg-[#072C0E]/6" />
       </div>
 
       {/* ── Action buttons ── */}
@@ -299,7 +299,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <button
           onClick={handleConfirm}
           disabled={loading}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#302817] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1a3a2e] active:scale-[0.98] disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#072C0E] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#175022] active:scale-[0.98] disabled:opacity-40"
         >
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           {tr ? 'Rapora Kaydet' : 'Save to Report'}
@@ -312,7 +312,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
             setShowDetails(true);
           }}
           disabled={loading}
-          className="flex items-center gap-1 rounded-xl border border-[#302817]/10 px-3 py-2.5 text-[11px] font-bold text-[#302817]/50 transition hover:border-[#89E789]/40 hover:bg-[#89E789]/8 hover:text-[#302817] disabled:opacity-40"
+          className="flex items-center gap-1 rounded-xl border border-[#072C0E]/10 px-3 py-2.5 text-[11px] font-bold text-[#072C0E]/50 transition hover:border-[#8BEA99]/40 hover:bg-[#8BEA99]/8 hover:text-[#072C0E] disabled:opacity-40"
         >
           <Edit3 className="h-3 w-3" />
           {editing ? (tr ? 'Bitti' : 'Done') : (tr ? 'Düzenle' : 'Edit')}
@@ -321,7 +321,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <button
           onClick={handleReject}
           disabled={loading}
-          className="flex items-center justify-center h-10 w-10 rounded-xl border border-[#302817]/8 text-[#302817]/25 transition hover:border-red-200 hover:bg-red-50 hover:text-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex items-center justify-center h-10 w-10 rounded-xl border border-[#072C0E]/8 text-[#072C0E]/25 transition hover:border-red-200 hover:bg-red-50 hover:text-red-400 disabled:opacity-40 disabled:cursor-not-allowed"
           title={tr ? 'Reddet' : 'Dismiss'}
           aria-label={tr ? 'Reddet' : 'Dismiss'}
         >

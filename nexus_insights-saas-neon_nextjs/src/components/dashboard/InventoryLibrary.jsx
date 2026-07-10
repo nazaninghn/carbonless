@@ -117,7 +117,7 @@ export default function InventoryLibrary({ tr = false }) {
   if (loadingReports) {
     return (
       <div className="w-full max-w-4xl mx-auto p-8 text-center">
-        <div className="animate-spin w-8 h-8 border-4 border-[#244959]/20 border-t-[#244959] rounded-full mx-auto"></div>
+        <div className="animate-spin w-8 h-8 border-4 border-[#175022]/20 border-t-[#175022] rounded-full mx-auto"></div>
       </div>
     );
   }
@@ -126,10 +126,10 @@ export default function InventoryLibrary({ tr = false }) {
     <div className="w-full h-full min-h-0 overflow-y-auto">
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-[#244959] mb-2">
+        <h1 className="text-3xl font-bold text-[#175022] mb-2">
           {tr ? 'کتابخانه موجودیت‌های کربن' : 'Carbon Inventory Library'}
         </h1>
-        <p className="text-[#244959]/60">
+        <p className="text-[#175022]/60">
           {tr ? 'مدیریت و ادامه موجودیت‌های کربن خود' : 'Manage your carbon inventories'}
         </p>
       </div>
@@ -141,20 +141,20 @@ export default function InventoryLibrary({ tr = false }) {
       )}
 
       {/* Start New */}
-      <div className="p-6 bg-gradient-to-br from-[#89E789]/10 to-[#89E789]/5 rounded-xl border border-[#89E789]/40">
+      <div className="p-6 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-bold text-[#244959] mb-2">
+            <h2 className="text-lg font-bold text-[#175022] mb-2">
               {tr ? 'موجودیت جدید' : 'New Inventory'}
             </h2>
-            <p className="text-sm text-[#244959]/70">
+            <p className="text-sm text-[#175022]/70">
               {tr ? 'شروع یک موجودیت کربنی جدید' : 'Create a new carbon inventory'}
             </p>
           </div>
           <button
             onClick={() => setShowNamingDialog(true)}
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-3 bg-[#244959] text-white font-semibold rounded-full hover:bg-[#1a3a2e] transition disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition disabled:opacity-50"
           >
             <Plus className="w-5 h-5" />
             {tr ? 'شروع' : 'Start'}
@@ -165,20 +165,20 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Drafts */}
       {drafts.length > 0 && (
         <div>
-          <h3 className="font-bold text-[#244959] mb-4 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#244959]"></span>
+          <h3 className="font-bold text-[#175022] mb-4 flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-[#175022]"></span>
             {tr ? 'پیش‌نویس‌ها' : 'Draft Inventories'}
-            <span className="ml-2 text-sm text-[#244959]/50">({drafts.length})</span>
+            <span className="ml-2 text-sm text-[#175022]/50">({drafts.length})</span>
           </h3>
           <div className="space-y-3">
             {drafts.map(report => (
               <div
                 key={report.report_id}
-                className="flex items-center justify-between p-4 border border-[#244959]/20 rounded-lg bg-white hover:bg-[#244959]/5 transition"
+                className="flex items-center justify-between p-4 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[#244959] truncate">{report.title}</p>
-                  <div className="flex items-center gap-4 text-xs text-[#244959]/60 mt-2">
+                  <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+                  <div className="flex items-center gap-4 text-xs text-[#175022]/60 mt-2">
                     <span>{report.progress?.percent || 0}% {tr ? 'مکمل' : 'complete'}</span>
                     <span>{report.progress?.completed || 0} / {report.progress?.total || 137} {tr ? 'سوالات' : 'questions'}</span>
                     <span>{tr ? 'به‌روزرسانی' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString()}</span>
@@ -199,7 +199,7 @@ export default function InventoryLibrary({ tr = false }) {
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
-                        className="px-3 py-2 border border-[#244959]/15 text-xs font-bold text-[#244959]/60 rounded-full hover:bg-[#244959]/5 transition"
+                        className="px-3 py-2 border border-[#175022]/15 text-xs font-bold text-[#175022]/60 rounded-full hover:bg-[#175022]/5 transition"
                       >
                         {tr ? 'نه' : 'No'}
                       </button>
@@ -208,7 +208,7 @@ export default function InventoryLibrary({ tr = false }) {
                     <>
                       <button
                         onClick={() => handleContinue(report.report_id)}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"
                       >
                         <Play className="w-4 h-4" />
                         {tr ? 'ادامه' : 'Continue'}
@@ -216,7 +216,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'حذف' : 'Delete'}
-                        className="flex items-center justify-center h-9 w-9 text-[#244959]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+                        className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -232,20 +232,20 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Completed */}
       {completed.length > 0 && (
         <div>
-          <h3 className="font-bold text-[#244959] mb-4 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#89E789]"></span>
+          <h3 className="font-bold text-[#175022] mb-4 flex items-center gap-2">
+            <span className="w-3 h-3 rounded-full bg-[#8BEA99]"></span>
             {tr ? 'تکمیل‌شده' : 'Completed Inventories'}
-            <span className="ml-2 text-sm text-[#244959]/50">({completed.length})</span>
+            <span className="ml-2 text-sm text-[#175022]/50">({completed.length})</span>
           </h3>
           <div className="space-y-3">
             {completed.map(report => (
               <div
                 key={report.report_id}
-                className="flex items-center justify-between p-4 border border-[#89E789]/40 rounded-lg bg-[#89E789]/5 hover:bg-[#89E789]/10 transition"
+                className="flex items-center justify-between p-4 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[#244959] truncate">{report.title}</p>
-                  <p className="text-xs text-[#244959]/60 mt-1">
+                  <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+                  <p className="text-xs text-[#175022]/60 mt-1">
                     {report.reporting_year} • {tr ? 'تکمیل شده' : 'Completed'} {new Date(report.updated_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -264,7 +264,7 @@ export default function InventoryLibrary({ tr = false }) {
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
-                        className="px-3 py-2 border border-[#244959]/15 text-xs font-bold text-[#244959]/60 rounded-full hover:bg-[#244959]/5 transition"
+                        className="px-3 py-2 border border-[#175022]/15 text-xs font-bold text-[#175022]/60 rounded-full hover:bg-[#175022]/5 transition"
                       >
                         {tr ? 'نه' : 'No'}
                       </button>
@@ -275,7 +275,7 @@ export default function InventoryLibrary({ tr = false }) {
                         onClick={() => handleDownloadPdf(report.report_id)}
                         disabled={pdfDownloadingId === report.report_id}
                         title={tr ? 'PDF دانلود کن' : 'Download PDF'}
-                        className="flex items-center justify-center h-9 w-9 text-[#244959]/40 hover:text-[#5E7A2E] hover:bg-[#5E7A2E]/10 rounded-full transition disabled:opacity-50"
+                        className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-[#1A7B2A] hover:bg-[#1A7B2A]/10 rounded-full transition disabled:opacity-50"
                       >
                         {pdfDownloadingId === report.report_id
                           ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -283,7 +283,7 @@ export default function InventoryLibrary({ tr = false }) {
                       </button>
                       <button
                         onClick={() => handleViewReport(report.report_id)}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#244959] text-white text-sm font-semibold rounded-full hover:bg-[#1a3a2e] transition"
+                        className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"
                       >
                         <Eye className="w-4 h-4" />
                         {tr ? 'مشاهده' : 'View'}
@@ -291,7 +291,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'حذف' : 'Delete'}
-                        className="flex items-center justify-center h-9 w-9 text-[#244959]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
+                        className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -307,12 +307,12 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Empty State */}
       {drafts.length === 0 && completed.length === 0 && !loading && (
         <div className="text-center py-12">
-          <p className="text-[#244959]/60 mb-6">
+          <p className="text-[#175022]/60 mb-6">
             {tr ? 'موجودیتی وجود ندارد' : 'No inventories yet'}
           </p>
           <button
             onClick={() => setShowNamingDialog(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#244959] text-white font-semibold rounded-full hover:bg-[#1a3a2e] transition"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition"
           >
             <Plus className="w-5 h-5" />
             {tr ? 'اولین موجودیت را ایجاد کنید' : 'Create your first inventory'}
@@ -324,7 +324,7 @@ export default function InventoryLibrary({ tr = false }) {
       {showNamingDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-            <h2 className="text-lg font-bold text-[#244959] mb-4">
+            <h2 className="text-lg font-bold text-[#175022] mb-4">
               {tr ? 'نام موجودیت' : 'Inventory Name'}
             </h2>
 
@@ -338,7 +338,7 @@ export default function InventoryLibrary({ tr = false }) {
               }}
               placeholder={tr ? 'مثال: سروی سال ۱۴۰۳' : 'e.g., 2024 Emissions Audit'}
               autoFocus
-              className="w-full px-4 py-3 border border-[#244959]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#89E789] mb-4"
+              className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-4"
             />
 
             <div className="flex gap-3">
@@ -347,14 +347,14 @@ export default function InventoryLibrary({ tr = false }) {
                   setShowNamingDialog(false);
                   setSurveyName('');
                 }}
-                className="flex-1 px-4 py-3 border border-[#244959]/20 rounded-lg font-semibold text-[#244959] hover:bg-[#244959]/5 transition"
+                className="flex-1 px-4 py-3 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] hover:bg-[#175022]/5 transition"
               >
                 {tr ? 'لغو' : 'Cancel'}
               </button>
               <button
                 onClick={handleStartNew}
                 disabled={loading || !surveyName.trim()}
-                className="flex-1 px-4 py-3 bg-[#244959] rounded-lg font-semibold text-white hover:bg-[#1a3a2e] transition disabled:opacity-50"
+                className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white hover:bg-[#175022] transition disabled:opacity-50"
               >
                 {loading ? (tr ? 'در حال شروع...' : 'Starting...') : (tr ? 'شروع' : 'Start')}
               </button>

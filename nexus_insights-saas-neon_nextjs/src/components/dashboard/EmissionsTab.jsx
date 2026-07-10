@@ -27,32 +27,32 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
 
   return (
-    <div className="rounded-2xl border border-[#302817]/8 bg-white p-4 shadow-[0_2px_12px_rgba(48,40,23,0.04)]">
+    <div className="rounded-2xl border border-[#072C0E]/8 bg-white p-4 shadow-[0_2px_12px_rgba(7, 44, 14,0.04)]">
       {/* Top row */}
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-bold text-[#302817]">{name}</p>
-          <p className="mt-0.5 text-[10px] text-[#302817]/40">
+          <p className="truncate text-[13px] font-bold text-[#072C0E]">{name}</p>
+          <p className="mt-0.5 text-[10px] text-[#072C0E]/40">
             {months[entry.month - 1]} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {entry.unit}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {entry.proof_document && (
             <span title={tr ? 'Kanıt var' : 'Has proof'}>
-              <Paperclip className="h-3.5 w-3.5 text-[#51B291]" />
+              <Paperclip className="h-3.5 w-3.5 text-[#2ABD41]" />
             </span>
           )}
           <button
             onClick={() => onEdit(entry)}
             aria-label={language === 'tr' ? 'Kaydı düzenle' : 'Edit entry'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-[#51B291]/10 hover:text-[#51B291]"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-[#2ABD41]/10 hover:text-[#2ABD41]"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => onDelete(entry.id)}
             aria-label={language === 'tr' ? 'Kaydı sil' : 'Delete entry'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/30 transition hover:bg-red-50 hover:text-red-500"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-red-50 hover:text-red-500"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -60,7 +60,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
       </div>
 
       {/* Mini bar */}
-      <div className="mb-2.5 h-1.5 overflow-hidden rounded-full bg-[#302817]/5">
+      <div className="mb-2.5 h-1.5 overflow-hidden rounded-full bg-[#072C0E]/5">
         <div
           className="h-full rounded-full transition-all duration-700"
           style={{ width: `${Math.max(barPct, barPct > 0 ? 2 : 0)}%`, backgroundColor: sm.bar }}
@@ -76,14 +76,14 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
           {tr ? st.tr : st.en}
         </span>
         {entry.facility_name && (
-          <span className="rounded-full bg-[#302817]/5 px-2 py-0.5 text-[9px] font-semibold text-[#302817]/50">
+          <span className="rounded-full bg-[#072C0E]/5 px-2 py-0.5 text-[9px] font-semibold text-[#072C0E]/50">
             {entry.facility_name}
           </span>
         )}
-        <span className="ml-auto text-[12px] font-bold text-[#302817]">
-          {fmt(kg)} <span className="text-[9px] font-semibold text-[#302817]/40">kg</span>
+        <span className="ml-auto text-[12px] font-bold text-[#072C0E]">
+          {fmt(kg)} <span className="text-[9px] font-semibold text-[#072C0E]/40">kg</span>
         </span>
-        <span className="text-[11px] text-[#302817]/40">
+        <span className="text-[11px] text-[#072C0E]/40">
           {(kg / 1000).toFixed(4)} t
         </span>
       </div>
@@ -429,32 +429,32 @@ export default function EmissionsTab({
 
   // ── Shared modal classes ─────────────────────────────────────────────────
   const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md';
-  const MODAL   = 'flex max-h-[90svh] w-full flex-col overflow-hidden rounded-3xl border border-[#302817]/8 bg-white/94 shadow-[0_20px_60px_rgba(48,40,23,0.14)] backdrop-blur-2xl';
-  const FIELD   = 'h-12 w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#51B291]/15';
-  const LABEL   = 'mb-1.5 block text-xs font-bold text-[#302817]/60';
+  const MODAL   = 'flex max-h-[90svh] w-full flex-col overflow-hidden rounded-3xl border border-[#072C0E]/8 bg-white/94 shadow-[0_20px_60px_rgba(7, 44, 14,0.14)] backdrop-blur-2xl';
+  const FIELD   = 'h-12 w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
+  const LABEL   = 'mb-1.5 block text-xs font-bold text-[#072C0E]/60';
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-3 sm:space-y-4">
 
       {/* ── Hero header ───────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#302817]/10 bg-[#FDFCF9] p-4 shadow-[0_6px_24px_rgba(48,40,23,0.05)] sm:p-5">
+      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51B291]">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
               {tr ? 'Emisyon çalışma alanı' : 'Emission workspace'}
             </p>
             <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
               {tr ? 'Emisyon Yönetimi' : 'Emission Management'} · {selectedYear}
             </h1>
-            <p className="mt-0.5 text-sm text-[#302817]/55">
+            <p className="mt-0.5 text-sm text-[#072C0E]/55">
               {tr ? 'Aktivite verilerinizi girin ve yönetin' : 'Record and manage your activity data'}
             </p>
           </div>
           <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#302817] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e]"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Yeni Kayıt' : 'New Entry'}
@@ -463,8 +463,8 @@ export default function EmissionsTab({
               onClick={() => setShowScope3Form(v => !v)}
               className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-bold transition ${
                 showScope3Form
-                  ? 'border-[#51B291]/50 bg-[#51B291]/20 text-[#5A6B28] ring-2 ring-[#51B291]/15'
-                  : 'border-[#51B291]/40 bg-[#51B291]/10 text-[#244959] hover:bg-[#51B291]/18'
+                  ? 'border-[#2ABD41]/50 bg-[#2ABD41]/20 text-[#1A7B2A] ring-2 ring-[#2ABD41]/15'
+                  : 'border-[#2ABD41]/40 bg-[#2ABD41]/10 text-[#175022] hover:bg-[#2ABD41]/18'
               }`}
             >
               <Leaf className="h-3.5 w-3.5" />
@@ -472,7 +472,7 @@ export default function EmissionsTab({
             </button>
             <button
               onClick={() => setShowCustom(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#302817]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#302817]/60 transition hover:border-[#302817]/25 hover:bg-[#F9EFE5]/60"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E]/60 transition hover:border-[#072C0E]/25 hover:bg-[#DEFAE1]/60"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Özel Talep' : 'Custom Request'}
@@ -490,15 +490,15 @@ export default function EmissionsTab({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
           { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: (totKg/1000).toFixed(2), sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
-          { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#302817' },
-          { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#51B291' },
-          { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#89E789' },
+          { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
+          { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
+          { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
         ].map(k => (
-          <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#302817]/7 bg-white px-3 py-2.5">
+          <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#072C0E]/7 bg-white px-3 py-2.5">
             {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#302817]/40 sm:text-[10px]">{k.label}</p>
-            <p className="mt-1 text-[18px] font-bold leading-none text-[#302817] sm:text-xl">{k.value}</p>
-            <p className="mt-0.5 text-[9px] font-semibold text-[#302817]/35">{k.sub}</p>
+            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{k.label}</p>
+            <p className="mt-1 text-[18px] font-bold leading-none text-[#072C0E] sm:text-xl">{k.value}</p>
+            <p className="mt-0.5 text-[9px] font-semibold text-[#072C0E]/35">{k.sub}</p>
           </div>
         ))}
       </div>
@@ -506,16 +506,16 @@ export default function EmissionsTab({
       {/* ── Search + Scope filter ──────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">
         {/* Search */}
-        <div className="flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-[#302817]/10 bg-white px-3.5 py-2.5 shadow-sm">
-          <Search className="h-3.5 w-3.5 shrink-0 text-[#302817]/30" />
+        <div className="flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-[#072C0E]/10 bg-white px-3.5 py-2.5 shadow-sm">
+          <Search className="h-3.5 w-3.5 shrink-0 text-[#072C0E]/30" />
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={tr ? 'Kaynak ara…' : 'Search source…'}
             aria-label="Search emission sources"
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#302817] outline-none placeholder:text-[#302817]/30"
+            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="text-[#302817]/30 hover:text-[#302817]">
+            <button onClick={() => setSearch('')} className="text-[#072C0E]/30 hover:text-[#072C0E]">
               <X className="h-3.5 w-3.5" />
             </button>
           )}
@@ -533,8 +533,8 @@ export default function EmissionsTab({
               onClick={() => setFilterScope(p.val)}
               className={`rounded-full px-3 py-2 text-[11px] font-bold transition ${
                 filterScope === p.val
-                  ? 'bg-[#244959] text-white'
-                  : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
+                  ? 'bg-[#175022] text-white'
+                  : 'border border-[#072C0E]/10 bg-white text-[#072C0E]/60 hover:bg-[#072C0E]/5'
               }`}
             >
               {p.label} <span className="opacity-60">{p.count}</span>
@@ -551,8 +551,8 @@ export default function EmissionsTab({
             onClick={() => setFilterMonth(0)}
             className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
               filterMonth === 0
-                ? 'bg-[#244959] text-white'
-                : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
+                ? 'bg-[#175022] text-white'
+                : 'border border-[#072C0E]/10 bg-white text-[#072C0E]/60 hover:bg-[#072C0E]/5'
             }`}
           >
             {tr ? 'Tüm Aylar' : 'All Months'}
@@ -567,8 +567,8 @@ export default function EmissionsTab({
                 onClick={() => setFilterMonth(filterMonth === mo ? 0 : mo)}
                 className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition ${
                   filterMonth === mo
-                    ? 'bg-[#244959] text-white'
-                    : 'border border-[#302817]/10 bg-white text-[#302817]/60 hover:bg-[#302817]/5'
+                    ? 'bg-[#175022] text-white'
+                    : 'border border-[#072C0E]/10 bg-white text-[#072C0E]/60 hover:bg-[#072C0E]/5'
                 }`}
               >
                 {m}
@@ -583,7 +583,7 @@ export default function EmissionsTab({
           <select
             value={filterFacility}
             onChange={e => setFilterFacility(e.target.value)}
-            className="shrink-0 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[11px] font-bold text-[#302817] shadow-sm outline-none transition hover:bg-[#F9EFE5]/60"
+            className="shrink-0 rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-[11px] font-bold text-[#072C0E] shadow-sm outline-none transition hover:bg-[#DEFAE1]/60"
           >
             <option value="">{tr ? 'Tüm Tesisler' : 'All Facilities'}</option>
             {facilityList.map(f => (
@@ -596,7 +596,7 @@ export default function EmissionsTab({
         <select
           value={sortBy}
           onChange={e => setSortBy(e.target.value)}
-          className="shrink-0 rounded-xl border border-[#302817]/10 bg-white px-3 py-2 text-[11px] font-bold text-[#302817] shadow-sm outline-none transition hover:bg-[#F9EFE5]/60"
+          className="shrink-0 rounded-xl border border-[#072C0E]/10 bg-white px-3 py-2 text-[11px] font-bold text-[#072C0E] shadow-sm outline-none transition hover:bg-[#DEFAE1]/60"
         >
           <option value="month">{tr ? 'Ay ↑' : 'Month ↑'}</option>
           <option value="kg_desc">{tr ? 'CO₂e ↓' : 'CO₂e ↓'}</option>
@@ -608,14 +608,14 @@ export default function EmissionsTab({
       {/* ── Active filter summary chip ────────────────────────────────── */}
       {(filterMonth !== 0 || filterFacility || search || filterScope) && (
         <div className="flex items-center gap-2 text-[11px]">
-          <span className="text-[#302817]/40 font-semibold">
+          <span className="text-[#072C0E]/40 font-semibold">
             {tr ? 'Filtre aktif:' : 'Filtered:'}{' '}
-            <strong className="text-[#302817]">{filtered.length}</strong>
+            <strong className="text-[#072C0E]">{filtered.length}</strong>
             {' / '}{entries.length}{' '}{tr ? 'kayıt' : 'entries'}
           </span>
           <button
             onClick={() => { setSearch(''); setFilterScope(''); setFilterMonth(0); setFilterFacility(''); }}
-            className="inline-flex items-center gap-1 rounded-full border border-[#302817]/10 bg-white px-2.5 py-1 font-bold text-[#302817]/50 transition hover:border-red-200 hover:text-red-500"
+            className="inline-flex items-center gap-1 rounded-full border border-[#072C0E]/10 bg-white px-2.5 py-1 font-bold text-[#072C0E]/50 transition hover:border-red-200 hover:text-red-500"
           >
             <X className="h-3 w-3" />
             {tr ? 'Temizle' : 'Clear'}
@@ -625,19 +625,19 @@ export default function EmissionsTab({
 
       {/* ── Custom Requests list ──────────────────────────────────────── */}
       {customRequests.length > 0 && (
-        <div className="rounded-[1.5rem] border border-[#302817]/8 bg-white p-4 shadow-sm sm:p-5">
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#51B291]">
+        <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 shadow-sm sm:p-5">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">
             {tr ? 'Özel Talepler' : 'Custom Requests'}
           </p>
           <div className="space-y-2">
             {customRequests.map(cr => (
-              <div key={cr.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#302817]/6 bg-[#F8F8F8]/60 px-4 py-2.5">
+              <div key={cr.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#072C0E]/6 bg-[#F8F8F8]/60 px-4 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-semibold text-[#302817]">{cr.source_name}</p>
-                  <p className="text-[10px] text-[#302817]/45">{cr.category_name} · {cr.quantity} {cr.unit}</p>
+                  <p className="truncate text-xs font-semibold text-[#072C0E]">{cr.source_name}</p>
+                  <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {cr.quantity} {cr.unit}</p>
                 </div>
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                  cr.status === 'approved' ? 'bg-[#51B291]/12 text-[#244959]' :
+                  cr.status === 'approved' ? 'bg-[#2ABD41]/12 text-[#175022]' :
                   cr.status === 'rejected' ? 'bg-red-50 text-red-500' :
                   'bg-amber-50 text-amber-600'
                 }`}>
@@ -655,19 +655,19 @@ export default function EmissionsTab({
 
       {/* ── Empty state ────────────────────────────────────────────────── */}
       {entries.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[#302817]/8 bg-white p-12 text-center shadow-sm">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#51B291]/10 text-[#51B291]">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-12 text-center shadow-sm">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2ABD41]/10 text-[#2ABD41]">
             <Leaf className="h-7 w-7" />
           </div>
           <div>
-            <p className="text-base font-bold text-[#302817]">{tr ? 'Henüz veri yok' : 'No emission data yet'}</p>
-            <p className="mt-1 text-sm text-[#302817]/50">
+            <p className="text-base font-bold text-[#072C0E]">{tr ? 'Henüz veri yok' : 'No emission data yet'}</p>
+            <p className="mt-1 text-sm text-[#072C0E]/50">
               {tr ? 'Fatura, sayaç okuma veya ESG raporunuzdan veri ekleyin.' : 'Add data from invoices, meter readings or your ESG report.'}
             </p>
           </div>
           <button
             onClick={() => setShowAddForm(true)}
-            className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#302817] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition hover:bg-[#1a3a2e]"
+            className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition hover:bg-[#175022]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Kaydı Ekle' : 'Add First Entry'}
@@ -677,10 +677,10 @@ export default function EmissionsTab({
 
       {/* ── DESKTOP TABLE (md+) ───────────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="hidden overflow-hidden rounded-[1.5rem] border border-[#302817]/8 bg-white shadow-[0_4px_20px_rgba(48,40,23,0.04)] md:block">
+        <div className="hidden overflow-hidden rounded-[1.5rem] border border-[#072C0E]/8 bg-white shadow-[0_4px_20px_rgba(7, 44, 14,0.04)] md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
-              <thead className="border-b border-[#302817]/6 bg-[#F8F8F8]/80">
+              <thead className="border-b border-[#072C0E]/6 bg-[#F8F8F8]/80">
                 <tr>
                   {[
                     tr ? 'Kaynak' : 'Source',
@@ -694,7 +694,7 @@ export default function EmissionsTab({
                   ].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-4 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#302817]/35 ${
+                      className={`px-4 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#072C0E]/35 ${
                         i >= 3 && i <= 6 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -703,7 +703,7 @@ export default function EmissionsTab({
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#302817]/5">
+              <tbody className="divide-y divide-[#072C0E]/5">
                 {filtered.map(entry => {
                   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
                   const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
@@ -711,13 +711,13 @@ export default function EmissionsTab({
                   const barPct = maxKg > 0 ? (kg / maxKg) * 100 : 0;
                   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
                   return (
-                    <tr key={entry.id} className="group/row transition-colors hover:bg-[#F9EFE5]/40">
+                    <tr key={entry.id} className="group/row transition-colors hover:bg-[#DEFAE1]/40">
                       {/* Source */}
                       <td className="max-w-[220px] px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <span className="truncate text-[13px] font-semibold text-[#302817]">{name}</span>
+                          <span className="truncate text-[13px] font-semibold text-[#072C0E]">{name}</span>
                           {entry.proof_document && (
-                            <Paperclip className="h-3 w-3 shrink-0 text-[#51B291]" title={tr ? 'Kanıt var' : 'Has proof'} />
+                            <Paperclip className="h-3 w-3 shrink-0 text-[#2ABD41]" title={tr ? 'Kanıt var' : 'Has proof'} />
                           )}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5">
@@ -725,7 +725,7 @@ export default function EmissionsTab({
                             {tr ? st.tr : st.en}
                           </span>
                           {entry.facility_name && (
-                            <span className="text-[9px] text-[#302817]/35">{entry.facility_name}</span>
+                            <span className="text-[9px] text-[#072C0E]/35">{entry.facility_name}</span>
                           )}
                         </div>
                       </td>
@@ -736,29 +736,29 @@ export default function EmissionsTab({
                         </span>
                       </td>
                       {/* Month */}
-                      <td className="px-4 py-3 text-xs text-[#302817]/50">{months[entry.month - 1]}</td>
+                      <td className="px-4 py-3 text-xs text-[#072C0E]/50">{months[entry.month - 1]}</td>
                       {/* Quantity */}
-                      <td className="px-4 py-3 text-right text-xs font-semibold text-[#302817]/70">
-                        {fmt(entry.quantity)} <span className="text-[#302817]/30">{entry.unit}</span>
+                      <td className="px-4 py-3 text-right text-xs font-semibold text-[#072C0E]/70">
+                        {fmt(entry.quantity)} <span className="text-[#072C0E]/30">{entry.unit}</span>
                       </td>
                       {/* kg CO₂e */}
-                      <td className="px-4 py-3 text-right text-[13px] font-bold text-[#302817]">
+                      <td className="px-4 py-3 text-right text-[13px] font-bold text-[#072C0E]">
                         {fmt(kg)}
                       </td>
                       {/* tCO₂e */}
-                      <td className="px-4 py-3 text-right text-xs text-[#302817]/40">
+                      <td className="px-4 py-3 text-right text-xs text-[#072C0E]/40">
                         {(kg / 1000).toFixed(4)}
                       </td>
                       {/* Bar */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#302817]/5">
+                          <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#072C0E]/5">
                             <div
                               className="h-full rounded-full transition-all duration-700"
                               style={{ width: `${Math.max(barPct, barPct > 0 ? 2 : 0)}%`, backgroundColor: sm.bar }}
                             />
                           </div>
-                          <span className="w-8 text-right text-[9px] font-bold text-[#302817]/30">
+                          <span className="w-8 text-right text-[9px] font-bold text-[#072C0E]/30">
                             {barPct.toFixed(0)}%
                           </span>
                         </div>
@@ -769,14 +769,14 @@ export default function EmissionsTab({
                           <button
                             onClick={() => openEdit(entry)}
                             aria-label={tr ? 'Kaydı düzenle' : 'Edit entry'}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-[#51B291]/12 hover:text-[#51B291]"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-[#2ABD41]/12 hover:text-[#2ABD41]"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(entry.id)}
                             aria-label={tr ? 'Kaydı sil' : 'Delete entry'}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#302817]/35 transition hover:bg-red-50 hover:text-red-500"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-red-50 hover:text-red-500"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -787,15 +787,15 @@ export default function EmissionsTab({
                 })}
               </tbody>
               {/* Totals footer */}
-              <tfoot className="border-t-2 border-[#302817]/8 bg-[#F8F8F8]/60">
+              <tfoot className="border-t-2 border-[#072C0E]/8 bg-[#F8F8F8]/60">
                 <tr>
-                  <td colSpan={4} className="px-4 py-3 text-xs font-bold text-[#302817]/50">
+                  <td colSpan={4} className="px-4 py-3 text-xs font-bold text-[#072C0E]/50">
                     {filtered.length} {tr ? 'kayıt' : 'entries'}
                   </td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-[#302817]">
+                  <td className="px-4 py-3 text-right text-sm font-bold text-[#072C0E]">
                     {fmt(totalKg)}
                   </td>
-                  <td className="px-4 py-3 text-right text-xs font-bold text-[#302817]/60">
+                  <td className="px-4 py-3 text-right text-xs font-bold text-[#072C0E]/60">
                     {(totalKg / 1000).toFixed(3)} t
                   </td>
                   <td colSpan={2} />
@@ -821,11 +821,11 @@ export default function EmissionsTab({
             />
           ))}
           {/* Mobile totals */}
-          <div className="flex items-center justify-between rounded-xl border border-[#302817]/8 bg-white px-4 py-3">
-            <span className="text-xs font-bold text-[#302817]/40">
+          <div className="flex items-center justify-between rounded-xl border border-[#072C0E]/8 bg-white px-4 py-3">
+            <span className="text-xs font-bold text-[#072C0E]/40">
               {filtered.length} {tr ? 'kayıt' : 'entries'} · {tr ? 'Toplam' : 'Total'}
             </span>
-            <span className="text-sm font-bold text-[#302817]">
+            <span className="text-sm font-bold text-[#072C0E]">
               {fmt(totalKg)} kg · {(totalKg / 1000).toFixed(3)} t
             </span>
           </div>
@@ -834,9 +834,9 @@ export default function EmissionsTab({
 
       {/* ── No results (filtered) ─────────────────────────────────────── */}
       {entries.length > 0 && filtered.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#302817]/6 bg-white/60 py-10 text-center">
-          <p className="text-sm font-bold text-[#302817]/40">{tr ? 'Sonuç bulunamadı' : 'No results found'}</p>
-          <button onClick={() => { setSearch(''); setFilterScope(''); setFilterMonth(0); setFilterFacility(''); }} className="text-xs font-bold text-[#51B291] hover:underline">
+        <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-[#072C0E]/6 bg-white/60 py-10 text-center">
+          <p className="text-sm font-bold text-[#072C0E]/40">{tr ? 'Sonuç bulunamadı' : 'No results found'}</p>
+          <button onClick={() => { setSearch(''); setFilterScope(''); setFilterMonth(0); setFilterFacility(''); }} className="text-xs font-bold text-[#2ABD41] hover:underline">
             {tr ? 'Filtreyi temizle' : 'Clear filters'}
           </button>
         </div>
@@ -846,19 +846,19 @@ export default function EmissionsTab({
       {showAddForm && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-3xl`} role="dialog" aria-modal="true" aria-labelledby="add-entry-title">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 id="add-entry-title" className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
-                <p className="mt-0.5 text-xs text-[#302817]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
+                <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
               </div>
-              <button onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
+              <button onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="add-entry-form" onSubmit={handleAdd} className="space-y-5">
                 {/* Scope */}
                 <div className="space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#51B291]">{tr ? 'Emisyon bilgisi' : 'Emission info'}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Emisyon bilgisi' : 'Emission info'}</p>
                   <div>
                     <label className={LABEL}>Scope</label>
                     <div className="grid grid-cols-3 gap-2">
@@ -869,10 +869,10 @@ export default function EmissionsTab({
                       ].map(s => (
                         <button key={s.val} type="button"
                           onClick={() => { setSelScope(s.val); setSelCategory(''); setSelFactor(''); }}
-                          className={`rounded-2xl border px-3 py-3 text-center transition ${selScope === s.val ? 'border-[#51B291]/50 bg-[#51B291]/10 ring-2 ring-[#51B291]/15' : 'border-[#302817]/10 bg-[#F9EFE5]/40 hover:border-[#51B291]/30'}`}
+                          className={`rounded-2xl border px-3 py-3 text-center transition ${selScope === s.val ? 'border-[#2ABD41]/50 bg-[#2ABD41]/10 ring-2 ring-[#2ABD41]/15' : 'border-[#072C0E]/10 bg-[#DEFAE1]/40 hover:border-[#2ABD41]/30'}`}
                         >
                           <p className="text-xs font-bold">{s.label}</p>
-                          <p className="text-[10px] text-[#302817]/40">{s.sub}</p>
+                          <p className="text-[10px] text-[#072C0E]/40">{s.sub}</p>
                         </button>
                       ))}
                     </div>
@@ -903,16 +903,16 @@ export default function EmissionsTab({
                   )}
 
                   {selFactorObj && (
-                    <div className="rounded-2xl border border-[#51B291]/25 bg-[#51B291]/8 px-4 py-3">
-                      <p className="text-xs font-bold text-[#244959]">{tr ? 'Faktör:' : 'Factor:'} {selFactorObj.factor_kg_co2e} kg CO₂e / {selFactorObj.unit}</p>
-                      <p className="mt-0.5 text-[10px] text-[#244959]/70">⚠️ {tr ? `Miktarı ${selFactorObj.unit} cinsinden girin` : `Enter quantity in ${selFactorObj.unit}`}</p>
+                    <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
+                      <p className="text-xs font-bold text-[#175022]">{tr ? 'Faktör:' : 'Factor:'} {selFactorObj.factor_kg_co2e} kg CO₂e / {selFactorObj.unit}</p>
+                      <p className="mt-0.5 text-[10px] text-[#175022]/70">⚠️ {tr ? `Miktarı ${selFactorObj.unit} cinsinden girin` : `Enter quantity in ${selFactorObj.unit}`}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Measurement */}
-                <div className="space-y-3 border-t border-[#302817]/8 pt-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#51B291]">{tr ? 'Ölçüm' : 'Measurement'}</p>
+                <div className="space-y-3 border-t border-[#072C0E]/8 pt-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Ölçüm' : 'Measurement'}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
@@ -926,8 +926,8 @@ export default function EmissionsTab({
                     </div>
                   </div>
                   {quantity && selFactorObj && (
-                    <div className="rounded-2xl border border-[#51B291]/25 bg-[#51B291]/8 px-4 py-3">
-                      <p className="text-xs font-bold text-[#244959]">
+                    <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
+                      <p className="text-xs font-bold text-[#175022]">
                         {tr ? 'Tahmini:' : 'Estimated:'}{' '}
                         {(parseFloat(quantity) * parseFloat(selFactorObj.factor_kg_co2e)).toFixed(2)} kg CO₂e
                         {' '}({((parseFloat(quantity) * parseFloat(selFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} t)
@@ -937,8 +937,8 @@ export default function EmissionsTab({
                 </div>
 
                 {/* Facility */}
-                <div className="space-y-3 border-t border-[#302817]/8 pt-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#51B291]">{tr ? 'Tesis' : 'Facility'}</p>
+                <div className="space-y-3 border-t border-[#072C0E]/8 pt-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Tesis' : 'Facility'}</p>
                   {facilityList.length > 0 ? (
                     <select value={facility} onChange={e => setFacility(e.target.value)} className={FIELD}>
                       <option value="">{tr ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
@@ -948,7 +948,7 @@ export default function EmissionsTab({
                     <div className="rounded-2xl border border-amber-200/60 bg-amber-50/60 px-4 py-3">
                       <p className="text-xs text-amber-800">{tr ? 'Henüz tesis eklenmemiş.' : 'No facilities added yet.'}</p>
                       {setActiveTab && (
-                        <button type="button" onClick={() => { setShowAddForm(false); setActiveTab('settings'); }} className="mt-1 text-xs font-bold text-[#51B291] hover:underline">
+                        <button type="button" onClick={() => { setShowAddForm(false); setActiveTab('settings'); }} className="mt-1 text-xs font-bold text-[#2ABD41] hover:underline">
                           {tr ? '→ Ayarlar\'dan tesis ekleyin' : '→ Add facility from Settings'}
                         </button>
                       )}
@@ -957,17 +957,17 @@ export default function EmissionsTab({
                 </div>
 
                 {/* Additional */}
-                <div className="space-y-3 border-t border-[#302817]/8 pt-5">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#51B291]">{tr ? 'Ek bilgiler' : 'Additional details'}</p>
+                <div className="space-y-3 border-t border-[#072C0E]/8 pt-5">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Ek bilgiler' : 'Additional details'}</p>
                   <div>
                     <label className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
-                    <textarea value={desc} onChange={e => setDesc(e.target.value)} className="w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 py-3 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#51B291]/15" rows={2} />
+                    <textarea value={desc} onChange={e => setDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
                   </div>
                   {/* File upload */}
                   <div>
                     <label className={LABEL}>{tr ? 'Kanıt Belgesi' : 'Proof Document'}</label>
                     <div
-                      className="rounded-2xl border-2 border-dashed border-[#51B291]/30 bg-[#51B291]/4 p-5 text-center transition hover:border-[#51B291]/50 hover:bg-[#51B291]/7"
+                      className="rounded-2xl border-2 border-dashed border-[#2ABD41]/30 bg-[#2ABD41]/4 p-5 text-center transition hover:border-[#2ABD41]/50 hover:bg-[#2ABD41]/7"
                       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
                       onDrop={e => {
                         e.preventDefault();
@@ -976,8 +976,8 @@ export default function EmissionsTab({
                       }}
                     >
                       {file ? (
-                        <div className="flex items-center justify-between rounded-xl bg-[#51B291]/10 px-4 py-2.5">
-                          <span className="flex items-center gap-2 truncate text-xs font-bold text-[#244959]">
+                        <div className="flex items-center justify-between rounded-xl bg-[#2ABD41]/10 px-4 py-2.5">
+                          <span className="flex items-center gap-2 truncate text-xs font-bold text-[#175022]">
                             <FileText className="h-3.5 w-3.5 shrink-0" />{file.name}
                           </span>
                           <button type="button" onClick={() => setFile(null)} className="shrink-0 text-xs font-bold text-red-400 hover:text-red-600" aria-label={tr ? 'Dosyayı kaldır' : 'Remove file'}>✕</button>
@@ -986,11 +986,11 @@ export default function EmissionsTab({
                         <>
                           <input type="file" id="proof-upload" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={e => setFile(e.target.files[0] || null)} className="hidden" />
                           <label htmlFor="proof-upload" className="cursor-pointer">
-                            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#51B291]/15 text-[#51B291]">
+                            <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
                               <Paperclip className="h-5 w-5" />
                             </div>
-                            <p className="text-xs font-bold text-[#302817]/60">{tr ? 'Dosya bırakın veya göz atın' : 'Drop file or browse'}</p>
-                            <p className="mt-1 text-[10px] text-[#302817]/35">{tr ? 'Fatura, sayaç, ESG belgesi · max 10MB' : 'Invoice, meter reading, ESG doc · max 10MB'}</p>
+                            <p className="text-xs font-bold text-[#072C0E]/60">{tr ? 'Dosya bırakın veya göz atın' : 'Drop file or browse'}</p>
+                            <p className="mt-1 text-[10px] text-[#072C0E]/35">{tr ? 'Fatura, sayaç, ESG belgesi · max 10MB' : 'Invoice, meter reading, ESG doc · max 10MB'}</p>
                           </label>
                         </>
                       )}
@@ -1006,11 +1006,11 @@ export default function EmissionsTab({
               </form>
             </div>
 
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
-              <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+              <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
                 {tr ? 'İptal' : 'Cancel'}
               </button>
-              <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/15 transition-colors hover:bg-[#1a3a2e] disabled:opacity-60">
+              <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
                 {submitting ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save Entry')}
               </button>
             </div>
@@ -1022,12 +1022,12 @@ export default function EmissionsTab({
       {editing && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-md`} role="dialog" aria-modal="true" aria-labelledby="edit-entry-title">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <h2 id="edit-entry-title" className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
-              <button onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
+              <button onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-              <p className="mb-4 text-sm font-semibold text-[#302817]/60">
+              <p className="mb-4 text-sm font-semibold text-[#072C0E]/60">
                 {tr && editing.emission_factor_name_tr ? editing.emission_factor_name_tr : editing.emission_factor_name}
               </p>
               <form id="edit-form" onSubmit={handleEdit} className="space-y-4">
@@ -1048,13 +1048,13 @@ export default function EmissionsTab({
                 </div>
                 <div>
                   <label className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
-                  <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 py-3 text-sm font-medium text-[#302817] outline-none transition focus:ring-4 focus:ring-[#51B291]/15" rows={2} />
+                  <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
                 </div>
               </form>
             </div>
-            <div className="flex shrink-0 gap-2 border-t border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
-              <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#302817]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
-              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#302817] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#302817]/12 transition hover:bg-[#1a3a2e] disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
+            <div className="flex shrink-0 gap-2 border-t border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+              <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
+              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#072C0E] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/12 transition hover:bg-[#175022] disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
             </div>
           </div>
         </div>
@@ -1076,12 +1076,12 @@ export default function EmissionsTab({
       {showCustom && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-2xl`} role="dialog" aria-modal="true" aria-labelledby="custom-request-title">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#302817]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 id="custom-request-title" className="text-base font-bold">{tr ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
-                <p className="mt-0.5 text-xs text-[#302817]/45">{tr ? 'Listede olmayan kaynak? Admin onaylayacak.' : "Source not in the list? Admin will review."}</p>
+                <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr ? 'Listede olmayan kaynak? Admin onaylayacak.' : "Source not in the list? Admin will review."}</p>
               </div>
-              <button onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#302817]/40 hover:bg-[#302817]/5"><X className="h-4 w-4" /></button>
+              <button onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="custom-form" onSubmit={handleCustom} className="space-y-4">
@@ -1090,7 +1090,7 @@ export default function EmissionsTab({
                   <div className="grid grid-cols-3 gap-2">
                     {['scope1','scope2','scope3'].map((s, i) => (
                       <button key={s} type="button" onClick={() => setCScope(s)}
-                        className={`rounded-2xl border px-3 py-2.5 text-center transition ${cScope === s ? 'border-[#51B291]/50 bg-[#51B291]/10 ring-2 ring-[#51B291]/15' : 'border-[#302817]/10 bg-[#F9EFE5]/40 hover:border-[#51B291]/30'}`}
+                        className={`rounded-2xl border px-3 py-2.5 text-center transition ${cScope === s ? 'border-[#2ABD41]/50 bg-[#2ABD41]/10 ring-2 ring-[#2ABD41]/15' : 'border-[#072C0E]/10 bg-[#DEFAE1]/40 hover:border-[#2ABD41]/30'}`}
                       >
                         <p className="text-xs font-bold">Scope {i + 1}</p>
                       </button>
@@ -1107,7 +1107,7 @@ export default function EmissionsTab({
                 </div>
                 <div>
                   <label className={LABEL}>{tr ? 'Açıklama' : 'Description'} *</label>
-                  <textarea value={cDesc} onChange={e => setCDesc(e.target.value)} className="w-full rounded-2xl border border-[#302817]/10 bg-[#F9EFE5]/40 px-4 py-3 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#51B291]/15" rows={3} required />
+                  <textarea value={cDesc} onChange={e => setCDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={3} required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -1127,9 +1127,9 @@ export default function EmissionsTab({
                 </div>
               </form>
             </div>
-            <div className="flex shrink-0 items-center justify-between border-t border-[#302817]/8 bg-[#F8F8F8]/80 px-4 py-3 sm:px-6 sm:py-4">
-              <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#302817]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
-              <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full bg-[#302817] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-colors hover:bg-[#1a3a2e] disabled:opacity-60">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 sm:px-6 sm:py-4">
+              <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
+              <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-colors hover:bg-[#175022] disabled:opacity-60">
                 {cSaving ? '…' : (tr ? 'Talep Gönder' : 'Submit Request')}
               </button>
             </div>
