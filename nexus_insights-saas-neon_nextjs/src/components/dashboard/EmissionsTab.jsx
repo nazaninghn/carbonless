@@ -460,17 +460,6 @@ export default function EmissionsTab({
               {tr ? 'Yeni Kayıt' : 'New Entry'}
             </button>
             <button
-              onClick={() => setShowScope3Form(v => !v)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2.5 text-xs font-bold transition ${
-                showScope3Form
-                  ? 'border-[#2ABD41]/50 bg-[#2ABD41]/20 text-[#1A7B2A] ring-2 ring-[#2ABD41]/15'
-                  : 'border-[#2ABD41]/40 bg-[#2ABD41]/10 text-[#175022] hover:bg-[#2ABD41]/18'
-              }`}
-            >
-              <Leaf className="h-3.5 w-3.5" />
-              {tr ? 'Scope 3 Girişi' : 'Scope 3 Entry'}
-            </button>
-            <button
               onClick={() => setShowCustom(true)}
               className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E]/60 transition hover:border-[#072C0E]/25 hover:bg-[#DEFAE1]/60"
             >
@@ -480,11 +469,6 @@ export default function EmissionsTab({
           </div>
         </div>
       </div>
-
-      {/* ── Scope 3 Entry Form (inline, toggleable) ─────────────────── */}
-      {showScope3Form && (
-        <Scope3EntryForm language={language} fetchData={fetchData} />
-      )}
 
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
