@@ -1,3 +1,4 @@
+import logging
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,6 +8,8 @@ from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
 from .models import UserProfile
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterView(generics.CreateAPIView):
@@ -56,10 +59,15 @@ class RegisterView(generics.CreateAPIView):
                 message=message,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[user.email],
-                fail_silently=True,
+                fail_silently=False,
             )
-        except Exception:
-            pass  # Don't block registration if email fails
+        except Exception as e:
+            # Don't block registration if email fails — but log it loudly.
+            # Previously this was fail_silently=True + a bare `except: pass`,
+            # so a broken/unconfigured SMTP setup produced zero trace anywhere:
+            # the UI said "check your email" and nothing was ever sent, with
+            # no way to tell from server logs.
+            logger.error(f'Failed to send verification email to {user.email}: {e}', exc_info=True)
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
@@ -365,10 +373,10 @@ def password_reset_request(request):
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f'Failed to send password reset email to {user.email}: {e}', exc_info=True)
 
     return Response(success_msg)
 
@@ -517,10 +525,10 @@ def resend_verification(request):
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
-            fail_silently=True,
+            fail_silently=False,
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f'Failed to resend verification email to {user.email}: {e}', exc_info=True)
 
     return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new link has been sent.'})
 

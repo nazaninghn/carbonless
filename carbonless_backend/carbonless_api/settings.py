@@ -253,19 +253,26 @@ if IS_PRODUCTION:
 # ============================================
 # EMAIL CONFIGURATION
 # ============================================
-# Development: print emails to console
-# Production: use SMTP (set EMAIL_HOST, EMAIL_PORT, etc. in env)
-if IS_PRODUCTION and os.environ.get('EMAIL_HOST'):
+# Uses real SMTP whenever EMAIL_HOST is set, in ANY environment (not just
+# production) — this lets a developer test real delivery locally too.
+# Falls back to console.EmailBackend (prints to server logs, no real send)
+# only when EMAIL_HOST is absent, so registration/reset never hard-fails
+# just because email isn't configured yet.
+if os.environ.get('EMAIL_HOST'):
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_HOST = os.environ.get('EMAIL_HOST')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
     EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    EMAIL_HOST_USER = ''
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@carbonless.app')
+# Most SMTP providers (Gmail included) require the From address to match
+# the authenticated account, or they silently rewrite/reject it — default
+# to EMAIL_HOST_USER when DEFAULT_FROM_EMAIL isn't explicitly overridden.
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@carbonless.app'
 
 # Skip email verification in development (set SKIP_EMAIL_VERIFICATION=true in .env)
 # In production, remove this or set to false
