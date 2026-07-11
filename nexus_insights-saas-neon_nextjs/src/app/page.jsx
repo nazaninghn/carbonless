@@ -333,18 +333,29 @@ export default function Home() {
                 stripe with the phone mockup photo overlapping it; playful
                 typography sits lower-left on white, clear of the stripe. */}
             <div className="relative">
-              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-[#DEFAE1] shadow-[0_20px_60px_rgba(7,44,14,0.10)] px-6 sm:px-10 pt-10 sm:pt-12 pb-8 sm:pb-10">
+              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-[#DEFAE1] shadow-[0_20px_60px_rgba(7,44,14,0.10)] px-6 sm:px-10 pt-8 sm:pt-10 pb-6 sm:pb-8">
                 {/* bold vertical stripe running behind the phone */}
                 <div className="absolute top-0 bottom-24 right-[14%] w-24 sm:w-36 bg-[#2ABD41] rounded-b-[2rem]" />
 
-                {/* phone mockup photo overlapping the stripe */}
-                <div className="relative flex justify-end pr-[8%]">
-                  <Image
+                {/* phone mockup photo overlapping the stripe — carousel on click */}
+                <div className="relative flex justify-end ml-auto w-[55%] cursor-pointer select-none"
+                  onClick={() => {
+                    const imgs = ['/about-phone.png', '/about-phone2.png', '/about-phone3.png'];
+                    const el = document.getElementById('about-phone-img');
+                    if (!el) return;
+                    const curr = parseInt(el.dataset.idx || '0', 10);
+                    const next = (curr + 1) % imgs.length;
+                    el.src = imgs[next];
+                    el.dataset.idx = next;
+                  }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    id="about-phone-img"
+                    data-idx="0"
                     src="/about-phone.png"
-                    alt={lang === 'tr' ? 'Reuse Reduce Recycle — telefonda' : 'Reuse Reduce Recycle on a phone'}
-                    width={875}
-                    height={1797}
-                    className="h-72 sm:h-[400px] w-auto object-contain drop-shadow-2xl animate-float"
+                    alt={lang === 'tr' ? 'Karbon ayak izi — telefonda' : 'Carbon footprint on a phone'}
+                    className="h-80 sm:h-[440px] w-44 sm:w-[220px] object-cover rounded-[2rem] drop-shadow-2xl animate-float rotate-[6deg] transition-all duration-300"
                   />
                 </div>
 
