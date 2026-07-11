@@ -335,10 +335,10 @@ export default function Home() {
             <div className="relative">
               <div className="relative overflow-hidden rounded-[2rem] bg-white border border-[#DEFAE1] shadow-[0_20px_60px_rgba(7,44,14,0.10)] px-6 sm:px-10 pt-10 sm:pt-12 pb-8 sm:pb-10">
                 {/* bold vertical stripe running behind the phone */}
-                <div className="absolute top-0 bottom-24 right-[14%] w-24 sm:w-36 bg-[#2ABD41]" />
+                <div className="absolute top-0 bottom-24 right-[14%] w-24 sm:w-36 bg-[#2ABD41] rounded-b-[2rem]" />
 
                 {/* phone mockup photo overlapping the stripe */}
-                <div className="relative flex justify-end pr-[2%]">
+                <div className="relative flex justify-end pr-[8%]">
                   <Image
                     src="/about-phone.png"
                     alt={lang === 'tr' ? 'Reuse Reduce Recycle — telefonda' : 'Reuse Reduce Recycle on a phone'}
