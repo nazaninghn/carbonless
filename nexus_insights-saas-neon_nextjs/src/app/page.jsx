@@ -308,7 +308,7 @@ export default function Home() {
                 <p>
                   {lang === 'tr'
                     ? <>Oysa müşteriler, bankalar ve regülasyonlar aynı soruyu soruyor: ayak iziniz ne? Gerçek rakamlarla cevap verebilen şirketler kazanıyor. <strong className="text-[#072C0E] font-bold">Gerçek veri, gerçek değişim yaratır.</strong></>
-                    : <>Meanwhile customers, banks and regulators are all asking the same question: what's your footprint? The companies that can answer with real numbers win. <strong className="text-[#072C0E] font-bold">Real data creates real change.</strong></>}
+                    : <>Meanwhile customers, banks and regulators are all asking the same question: what&apos;s your footprint? The companies that can answer with real numbers win. <strong className="text-[#072C0E] font-bold">Real data creates real change.</strong></>}
                 </p>
                 <p>
                   {lang === 'tr'
