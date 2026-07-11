@@ -131,7 +131,7 @@ export default function Home() {
           {/* Nav links */}
           <div className="hidden md:flex items-center">
             {['home', 'about', 'ai'].map(key => (
-              <a key={key} href={key === 'home' ? '/' : key === 'ai' ? '/dashboard/select' : `#${key}`}
+              <a key={key} href={key === 'home' ? '/' : `#${key}`}
                 className="rounded-full px-4 py-2 text-[13.5px] font-medium text-[#072C0E]/55 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]">
                 {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkında' : 'About') : 'AI'}
               </a>
@@ -173,7 +173,7 @@ export default function Home() {
         {/* Floating nodes  -  tablet (sm-lg): 5 nodes, desktop (lg+): all */}
         <div className="hidden sm:block lg:hidden">
           <FloatingNode icon={Factory} label="Scope 1" className="top-[15%] left-[6%]" delay={0} color="text-orange-500" href="#ai" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[15%] right-[6%]" delay={0.4} color="text-purple-500" href="/dashboard/select" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[15%] right-[6%]" delay={0.4} color="text-purple-500" href="#ai" />
           <FloatingNode icon={Zap} label="Scope 2" className="top-[5%] left-[40%]" delay={1.0} color="text-yellow-600" href="#ai" />
           <FloatingNode icon={Wind} label="Scope 3" className="bottom-[20%] left-[8%]" delay={1.6} color="text-sky-500" href="#ai" />
           <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[20%] right-[8%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
@@ -185,7 +185,7 @@ export default function Home() {
           <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[6%]" delay={0.8} color="text-yellow-600" href="#ai" />
           <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[12%]" delay={1.6} color="text-sky-500" href="#ai" />
           <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[7%]" delay={2.2} color="text-blue-500" href="#ai" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[10%]" delay={0.4} color="text-purple-500" href="/dashboard/select" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[10%]" delay={0.4} color="text-purple-500" href="#ai" />
           <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[5%]" delay={1.2} color="text-[#2ABD41]" href="#ai" />
           <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[12%]" delay={2.0} color="text-emerald-600" href="#ai" />
           <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[8%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
@@ -248,18 +248,18 @@ export default function Home() {
               <div className="mt-6 sm:mt-8 space-y-4 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/65 max-w-lg">
                 <p>
                   {lang === 'tr'
-                    ? "Karbon raporlaması 20 yıldır değişmedi. Hâlâ karmaşık tablolar, pahalı danışmanlar ve kimsenin okumadığı raporlar."
-                    : "Carbon reporting hasn't changed in 20 years. It's still messy spreadsheets, expensive consultants, and reports nobody reads."}
+                    ? 'Çoğu şirket karbon ayak izini hâlâ dağınık tablolarda takip ediyor — ya da pahalı danışmanlara devredip raporu haftalarca bekliyor.'
+                    : 'Most companies still track their carbon footprint in scattered spreadsheets — or hand it to expensive consultants and wait weeks for a report.'}
                 </p>
                 <p>
                   {lang === 'tr'
-                    ? <>Oysa regülasyonlar kapıda, müşteriler soruyor ve önce harekete geçen şirketler kazanıyor — hepsi aynı yerden başlıyor: ayak izinizi bilmekten. <strong className="text-[#072C0E] font-bold">Gerçek veri, gerçek değişim yaratır.</strong></>
-                    : <>Yet regulations are here, customers are asking, and the companies that act first win — and it all starts the same way: knowing your footprint. <strong className="text-[#072C0E] font-bold">Real data creates real change.</strong></>}
+                    ? <>Oysa müşteriler, bankalar ve regülasyonlar aynı soruyu soruyor: ayak iziniz ne? Gerçek rakamlarla cevap verebilen şirketler kazanıyor. <strong className="text-[#072C0E] font-bold">Gerçek veri, gerçek değişim yaratır.</strong></>
+                    : <>Meanwhile customers, banks and regulators are all asking the same question: what's your footprint? The companies that can answer with real numbers win. <strong className="text-[#072C0E] font-bold">Real data creates real change.</strong></>}
                 </p>
                 <p>
                   {lang === 'tr'
-                    ? "Carbonless, yapay zekâ ile kurulan ilk karbon platformudur. Verinizi AI'a anlatın — hesaplasın, sınıflandırsın ve ISO 14064-1 raporunuzu sizin için oluştursun."
-                    : "Carbonless is the first AI-native carbon platform. Tell your data to the AI — it calculates, classifies, and builds your ISO 14064-1 report for you."}
+                    ? "Carbonless bu cevabı anında verir. Verinizi AI'a kendi cümlelerinizle anlatın — 188+ emisyon faktörüyle Kapsam 1, 2 ve 3 emisyonlarınızı hesaplar, denetime hazır ISO 14064-1 raporunuzu oluşturur."
+                    : "Carbonless makes that answer instant. Tell your data to the AI in plain language — it calculates your Scope 1, 2 & 3 emissions with 188+ emission factors and builds audit-ready ISO 14064-1 reports."}
                 </p>
                 <p>
                   {lang === 'tr' ? 'Misyonumuz: ' : 'Our mission: '}
@@ -269,37 +269,40 @@ export default function Home() {
                 </p>
                 <p>
                   {lang === 'tr'
-                    ? 'Tablo yok. Danışman yok. Sadece veriniz, net rakamlar ve denetime hazır raporlar.'
-                    : 'No spreadsheets. No consultants. Just your data, clear numbers, and audit-ready reports.'}
+                    ? 'Tablo yok. Bekleme yok. Sadece net rakamlar, akıllı içgörüler ve doğrudan denetçiye verebileceğiniz raporlar.'
+                    : 'No spreadsheets. No waiting. Just clear numbers, smart insights, and reports you can hand straight to an auditor.'}
                 </p>
               </div>
             </div>
 
-            {/* Right: showcase card — vertical green stripe + molecule art */}
+            {/* Right: showcase card (Dinnect sample) — bold vertical green
+                stripe with the phone mockup photo overlapping it; playful
+                typography sits lower-left on white, clear of the stripe. */}
             <div className="relative">
-              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-[#DEFAE1] shadow-[0_20px_60px_rgba(7,44,14,0.10)] px-6 sm:px-10 pt-10 sm:pt-14 pb-8 sm:pb-10">
-                {/* bold vertical stripe — ends above the typography block so
-                    the green headline below never sits green-on-green */}
-                <div className="absolute top-0 bottom-[46%] right-[18%] w-24 sm:w-32 bg-[#2ABD41]" />
+              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-[#DEFAE1] shadow-[0_20px_60px_rgba(7,44,14,0.10)] px-6 sm:px-10 pt-10 sm:pt-12 pb-8 sm:pb-10">
+                {/* bold vertical stripe running behind the phone */}
+                <div className="absolute top-0 bottom-24 right-[14%] w-24 sm:w-36 bg-[#2ABD41]" />
 
-                {/* molecule artwork overlapping the stripe */}
-                <div className="relative flex justify-end pr-[6%]">
+                {/* phone mockup photo overlapping the stripe */}
+                <div className="relative flex justify-end pr-[2%]">
                   <Image
-                    src="/carbon-hero.png"
-                    alt={lang === 'tr' ? 'Carbonless karbon molekülü' : 'Carbonless carbon molecule'}
-                    width={300}
-                    height={300}
-                    className="h-44 w-44 sm:h-60 sm:w-60 object-contain drop-shadow-2xl animate-float"
+                    src="/about-phone.png"
+                    alt={lang === 'tr' ? 'Reuse Reduce Recycle — telefonda' : 'Reuse Reduce Recycle on a phone'}
+                    width={875}
+                    height={1797}
+                    className="h-72 sm:h-[400px] w-auto object-contain drop-shadow-2xl animate-float"
                   />
                 </div>
 
-                {/* playful mixed-tone typography */}
-                <div className="relative mt-6 sm:mt-8">
+                {/* playful mixed-tone typography — pulled up beside the
+                    phone's lower half, constrained left so the green line
+                    stays on white (never green-on-green over the stripe) */}
+                <div className="relative z-10 -mt-24 sm:-mt-40 max-w-[58%]">
                   <p className="text-[30px] sm:text-[44px] font-extrabold leading-none tracking-tight text-[#072C0E]/30">Hey!</p>
-                  <p className="mt-1 text-[24px] sm:text-[34px] font-bold leading-tight tracking-tight text-[#072C0E]/45">
+                  <p className="mt-1 text-[22px] sm:text-[30px] font-bold leading-tight tracking-tight text-[#072C0E]/45">
                     {lang === 'tr' ? 'Bugünkü' : "What's your"}
                   </p>
-                  <p className="text-[34px] sm:text-[52px] font-extrabold leading-tight tracking-[-0.02em] text-[#2ABD41]">
+                  <p className="text-[30px] sm:text-[42px] font-extrabold leading-tight tracking-[-0.02em] text-[#2ABD41]">
                     {lang === 'tr' ? 'ayak izin ne?' : 'footprint today?'}
                   </p>
                 </div>
