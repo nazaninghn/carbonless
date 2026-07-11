@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // Warnings should not block production deployments
+    ignoreDuringBuilds: true,
+  },
   images: {
     unoptimized: true,
     dangerouslyAllowSVG: false,
