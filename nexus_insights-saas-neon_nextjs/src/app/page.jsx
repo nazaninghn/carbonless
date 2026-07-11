@@ -230,6 +230,90 @@ export default function Home() {
 
       </section>
 
+      {/* -- About Section (Dinnect "About Us" layout): left = big two-tone
+             heading + story copy with accent phrases; right = rounded card
+             with a bold vertical green stripe, the molecule artwork
+             overlapping it, and playful mixed-tone typography. The navbar's
+             About link (#about) lands here. -- */}
+      <section id="about" className="relative z-10 py-16 sm:py-28 bg-white">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+            {/* Left: heading + story */}
+            <div>
+              <h2 className="text-[34px] sm:text-[56px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#072C0E]">
+                {lang === 'tr' ? <>Biz <span className="text-[#2ABD41]">Kimiz?</span></> : <>About <span className="text-[#2ABD41]">Us</span></>}
+              </h2>
+
+              <div className="mt-6 sm:mt-8 space-y-4 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/65 max-w-lg">
+                <p>
+                  {lang === 'tr'
+                    ? "Karbon raporlaması 20 yıldır değişmedi. Hâlâ karmaşık tablolar, pahalı danışmanlar ve kimsenin okumadığı raporlar."
+                    : "Carbon reporting hasn't changed in 20 years. It's still messy spreadsheets, expensive consultants, and reports nobody reads."}
+                </p>
+                <p>
+                  {lang === 'tr'
+                    ? <>Oysa regülasyonlar kapıda, müşteriler soruyor ve önce harekete geçen şirketler kazanıyor — hepsi aynı yerden başlıyor: ayak izinizi bilmekten. <strong className="text-[#072C0E] font-bold">Gerçek veri, gerçek değişim yaratır.</strong></>
+                    : <>Yet regulations are here, customers are asking, and the companies that act first win — and it all starts the same way: knowing your footprint. <strong className="text-[#072C0E] font-bold">Real data creates real change.</strong></>}
+                </p>
+                <p>
+                  {lang === 'tr'
+                    ? "Carbonless, yapay zekâ ile kurulan ilk karbon platformudur. Verinizi AI'a anlatın — hesaplasın, sınıflandırsın ve ISO 14064-1 raporunuzu sizin için oluştursun."
+                    : "Carbonless is the first AI-native carbon platform. Tell your data to the AI — it calculates, classifies, and builds your ISO 14064-1 report for you."}
+                </p>
+                <p>
+                  {lang === 'tr' ? 'Misyonumuz: ' : 'Our mission: '}
+                  <strong className="font-bold text-[#2ABD41]">
+                    {lang === 'tr' ? 'Karbon Muhasebesini Basitleştirmek.' : 'Make Carbon Accounting Simple.'}
+                  </strong>
+                </p>
+                <p>
+                  {lang === 'tr'
+                    ? 'Tablo yok. Danışman yok. Sadece veriniz, net rakamlar ve denetime hazır raporlar.'
+                    : 'No spreadsheets. No consultants. Just your data, clear numbers, and audit-ready reports.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: showcase card — vertical green stripe + molecule art */}
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-[#DEFAE1] shadow-[0_20px_60px_rgba(7,44,14,0.10)] px-6 sm:px-10 pt-10 sm:pt-14 pb-8 sm:pb-10">
+                {/* bold vertical stripe — ends above the typography block so
+                    the green headline below never sits green-on-green */}
+                <div className="absolute top-0 bottom-[46%] right-[18%] w-24 sm:w-32 bg-[#2ABD41]" />
+
+                {/* molecule artwork overlapping the stripe */}
+                <div className="relative flex justify-end pr-[6%]">
+                  <Image
+                    src="/carbon-hero.png"
+                    alt={lang === 'tr' ? 'Carbonless karbon molekülü' : 'Carbonless carbon molecule'}
+                    width={300}
+                    height={300}
+                    className="h-44 w-44 sm:h-60 sm:w-60 object-contain drop-shadow-2xl animate-float"
+                  />
+                </div>
+
+                {/* playful mixed-tone typography */}
+                <div className="relative mt-6 sm:mt-8">
+                  <p className="text-[30px] sm:text-[44px] font-extrabold leading-none tracking-tight text-[#072C0E]/30">Hey!</p>
+                  <p className="mt-1 text-[24px] sm:text-[34px] font-bold leading-tight tracking-tight text-[#072C0E]/45">
+                    {lang === 'tr' ? 'Bugünkü' : "What's your"}
+                  </p>
+                  <p className="text-[34px] sm:text-[52px] font-extrabold leading-tight tracking-[-0.02em] text-[#2ABD41]">
+                    {lang === 'tr' ? 'ayak izin ne?' : 'footprint today?'}
+                  </p>
+                </div>
+
+                {/* caption */}
+                <p className="relative mt-8 sm:mt-10 text-center text-[13px] sm:text-[14px] font-medium text-[#072C0E]/40">
+                  {lang === 'tr' ? 'Önemli olanı ölçelim' : "Let's measure what matters"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* -- AI Section (like Dinnect AI) -- */}
       <section id="ai" className="relative z-10 py-16 sm:py-28 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
