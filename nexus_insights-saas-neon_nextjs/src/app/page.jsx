@@ -1,8 +1,9 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets } from 'lucide-react';
+import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Menu, X } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 /* -- Copy -- */
@@ -47,7 +48,7 @@ function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[
         <div className="absolute -top-1 -right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#2ABD41] border-2 border-white transition-transform duration-300 group-hover:scale-125" />
       </div>
       {label && (
-        <span className="hidden sm:block rounded-full border border-[#DEFAE1] bg-white/90 px-2.5 py-0.5 text-[10px] font-semibold text-[#1A7B2A] shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:border-[#2ABD41] group-hover:bg-[#2ABD41] group-hover:text-white">
+        <span className="block rounded-full border border-[#DEFAE1] bg-white/90 px-2 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-[#1A7B2A] shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:border-[#2ABD41] group-hover:bg-[#2ABD41] group-hover:text-white">
           {label}
         </span>
       )}
@@ -91,6 +92,20 @@ function ConnectionLines() {
 export default function Home() {
   const { language: lang, changeLanguage } = useLanguage();
 
+  // Mobile hamburger menu (Dinnect-style: logo | ≡ | lang on phones).
+  // The dropdown panel hangs BELOW the pill — safe because the pill has no
+  // overflow-hidden (the old clipped-dropdown bug can't recur here).
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = e => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onDown = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown); };
+  }, [menuOpen]);
+
   const t = copy[lang] ?? copy['en'];
 
   return (
@@ -118,12 +133,22 @@ export default function Home() {
              no overflow-hidden anywhere (that's what clipped the old
              language dropdown). -- */}
       <header className="pointer-events-none sticky top-0 z-50 flex w-full justify-center px-3 pt-4">
-        <nav className="pointer-events-auto flex h-14 max-w-full items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md">
+        <nav ref={menuRef} className="pointer-events-auto relative flex h-14 max-w-full items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md">
           {/* Logo */}
           <Link href="/" className="group flex shrink-0 items-center gap-2 rounded-full px-2 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
             <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
             <span className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
           </Link>
+
+          {/* Hamburger — phones/small tablets only (Dinnect: logo | ≡ | lang) */}
+          <button
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#072C0E]/60 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E]"
+          >
+            {menuOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
+          </button>
 
           {/* Divider */}
           <span className="hidden md:block mx-1 h-6 w-px bg-[#DEFAE1]" />
@@ -159,15 +184,44 @@ export default function Home() {
               {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
             </Link>
           </div>
+
+          {/* Mobile dropdown panel — hangs below the pill, never clipped
+              (no overflow-hidden on the nav) */}
+          {menuOpen && (
+            <div className="md:hidden absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-2xl border border-[#DEFAE1] bg-white shadow-[0_16px_40px_rgba(7,44,14,0.14)]">
+              {[
+                { label: lang === 'tr' ? 'Ana Sayfa' : 'Home', href: '/' },
+                { label: lang === 'tr' ? 'Hakkında' : 'About', href: '#about' },
+                { label: 'AI', href: '#ai' },
+                { label: lang === 'tr' ? 'Fiyatlandırma' : 'Pricing', href: '#pricing' },
+                { label: lang === 'tr' ? 'Giriş Yap' : 'Log In', href: '/login' },
+              ].map(item => (
+                <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
+                  className="block px-5 py-3 text-[14px] font-medium text-[#072C0E]/70 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E]">
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          )}
         </nav>
       </header>
 
       {/* -- Hero Section — pull up under the floating pill -- */}
       <section className="relative -mt-[72px] min-h-screen flex flex-col items-center justify-center px-5 sm:px-8">
 
-        {/* Connection lines background  -  tablet+ only */}
-        <div className="hidden sm:block">
-          <ConnectionLines />
+        {/* Connection lines background — all sizes (Dinnect keeps them on phones) */}
+        <ConnectionLines />
+
+        {/* Floating nodes — phone (<sm): 6-node ring around the hero, matching
+            the Dinnect mobile layout (nodes + labels stay visible, hugging the
+            edges; content stays on top via its own z-10). */}
+        <div className="sm:hidden">
+          <FloatingNode icon={Factory} label="Scope 1" className="top-[13%] left-[6%]" delay={0} color="text-orange-500" href="#ai" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[11%] right-[7%]" delay={0.4} color="text-purple-500" href="#ai" />
+          <FloatingNode icon={Zap} label="Scope 2" className="top-[30%] left-[2%]" delay={1.0} color="text-yellow-600" href="#ai" />
+          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[29%] right-[3%]" delay={1.2} color="text-[#2ABD41]" href="#ai" />
+          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[16%] left-[8%]" delay={1.6} color="text-sky-500" href="#ai" />
+          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[14%] right-[9%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
         </div>
 
         {/* Floating nodes  -  tablet (sm-lg): 5 nodes, desktop (lg+): all */}
