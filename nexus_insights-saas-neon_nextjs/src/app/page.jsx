@@ -67,7 +67,7 @@ function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[
   );
 }
 
-/* -- Connection lines SVG -- */
+/* -- Connection lines SVG (desktop/tablet) -- */
 function ConnectionLines() {
   return (
     <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.12]" viewBox="0 0 1200 700">
@@ -84,6 +84,37 @@ function ConnectionLines() {
       {/* Diagonal cross lines */}
       <line x1="300" y1="150" x2="500" y2="320" stroke="#2ABD41" strokeWidth="0.6" />
       <line x1="700" y1="150" x2="900" y2="300" stroke="#2ABD41" strokeWidth="0.6" />
+    </svg>
+  );
+}
+
+/* -- Connection lines SVG (phone) --
+   The desktop version above is hand-placed for a 1200x700 landscape
+   viewBox matching the 12-node desktop layout — on a narrow portrait
+   phone that box gets letterboxed and the lines land nowhere near the
+   actual mobile nodes (different count, different positions entirely).
+   This uses a 0-100 percentage viewBox with preserveAspectRatio="none"
+   so coordinates stretch exactly the same way the Tailwind top/left/
+   right percentage classes position the nodes themselves — endpoints
+   line up with the real node centers at any phone width/height.
+   vector-effect="non-scaling-stroke" keeps the line weight consistent
+   despite the non-uniform (x != y) scaling that requires. */
+function ConnectionLinesMobile() {
+  const S = { stroke: '#2ABD41', vectorEffect: 'non-scaling-stroke' };
+  return (
+    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.14]" viewBox="0 0 100 100" preserveAspectRatio="none">
+      {/* top band: Scope 1 -> Scope 2 (left chain), AI Engine -> Smart Report (right chain) */}
+      <line x1="11" y1="10" x2="16" y2="22" strokeWidth="1" {...S} />
+      <line x1="89" y1="10" x2="84" y2="22" strokeWidth="1" {...S} />
+      {/* bottom band: Scope 3 -> Net Zero (left chain), ISO 14064 -> ESG (right chain) */}
+      <line x1="16" y1="78" x2="11" y2="90" strokeWidth="1" {...S} />
+      <line x1="84" y1="78" x2="89" y2="90" strokeWidth="1" {...S} />
+      {/* long verticals threading each side's 4 nodes into one visible chain */}
+      <line x1="16" y1="22" x2="16" y2="78" strokeWidth="0.6" {...S} />
+      <line x1="84" y1="22" x2="84" y2="78" strokeWidth="0.6" {...S} />
+      {/* cross-diagonals for the same "network" feel as the desktop version */}
+      <line x1="11" y1="10" x2="84" y2="78" strokeWidth="0.4" {...S} />
+      <line x1="89" y1="10" x2="16" y2="78" strokeWidth="0.4" {...S} />
     </svg>
   );
 }
@@ -223,8 +254,15 @@ export default function Home() {
              in the commit message) so nothing touches the title or CTAs. -- */}
       <section className="relative -mt-[72px] min-h-[100dvh] flex flex-col items-center justify-center px-5 sm:px-8">
 
-        {/* Connection lines background — all sizes (Dinnect keeps them on phones) */}
-        <ConnectionLines />
+        {/* Connection lines background — desktop/tablet coords don't match
+            the phone's completely different node layout, so each gets its
+            own SVG (see ConnectionLinesMobile comment above) */}
+        <div className="hidden sm:block">
+          <ConnectionLines />
+        </div>
+        <div className="sm:hidden">
+          <ConnectionLinesMobile />
+        </div>
 
         {/* Floating nodes — phone (<sm): 2 rows above the title, 2 rows
             below the CTAs — mirrors Dinnect's node-band distribution
