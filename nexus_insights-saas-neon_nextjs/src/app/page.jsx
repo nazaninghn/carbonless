@@ -207,32 +207,37 @@ export default function Home() {
       </header>
 
       {/* -- Hero Section — pull up under the floating pill.
-             min-h-screen only from sm: up. On phones it was forcing the
-             section to a full 100vh box while nodes were positioned by
-             percentage against that tall box — they ended up pinned near
-             the very top/bottom edges with huge dead space around the
-             actual title/CTA in the middle ("not tidy" in the screenshot).
-             Letting the phone hero size to its own content pulls the ring
-             close around the text instead of scattering it. Measured the
-             fix in the browser: a 2-rows-above/2-rows-below layout (6
-             nodes) then collided with the title and the CTA — a compact
-             hero genuinely doesn't have room for 4 stacked nodes without
-             touching content, so phones get 4 nodes in a single top row +
-             single bottom row instead (still full labels, same live
-             hover/click behavior); tablet+ keeps the fuller 5/13-node
-             layouts where there's real space for them. -- */}
-      <section className="relative -mt-[72px] pt-28 pb-28 sm:py-0 sm:min-h-screen flex flex-col items-center justify-center px-5 sm:px-8">
+             Dinnect's own hero (checked via devtools) uses min-h-[100dvh]
+             on mobile too — full viewport, not content-fit. Their tidiness
+             comes from spreading ~8 nodes across THREE vertical bands that
+             flank the content at each level (top band near the title,
+             mid band flanking the CTA buttons, bottom band lower down),
+             not from shrinking the hero. An earlier pass here shrank the
+             hero to content-fit height instead — that only had room for
+             4 nodes hugging the very top/bottom edges, losing the
+             "surrounded" feel. Restored full-height (dvh, not vh — avoids
+             the mobile browser chrome address-bar jump) and, since
+             centered content leaves real space above and below it in a
+             full viewport, brought back 2 rows per side (8 nodes),
+             positioned from measured content geometry (see verification
+             in the commit message) so nothing touches the title or CTAs. -- */}
+      <section className="relative -mt-[72px] min-h-[100dvh] flex flex-col items-center justify-center px-5 sm:px-8">
 
         {/* Connection lines background — all sizes (Dinnect keeps them on phones) */}
         <ConnectionLines />
 
-        {/* Floating nodes — phone (<sm): single row above the title, single
-            row below the CTAs. Measured zero overlap with either. */}
+        {/* Floating nodes — phone (<sm): 2 rows above the title, 2 rows
+            below the CTAs — mirrors Dinnect's node-band distribution
+            across the full-height hero instead of edge-hugging. */}
         <div className="sm:hidden">
-          <FloatingNode icon={Factory} label="Scope 1" className="top-[2%] left-[3%]" delay={0} color="text-orange-500" href="#ai" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[2%] right-[3%]" delay={0.4} color="text-purple-500" href="#ai" />
-          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[2%] left-[3%]" delay={1.6} color="text-sky-500" href="#ai" />
-          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[2%] right-[3%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
+          <FloatingNode icon={Factory} label="Scope 1" className="top-[6%] left-[4%]" delay={0} color="text-orange-500" href="#ai" />
+          <FloatingNode icon={Brain} label="AI Engine" className="top-[6%] right-[4%]" delay={0.4} color="text-purple-500" href="#ai" />
+          <FloatingNode icon={Zap} label="Scope 2" className="top-[19%] left-[9%]" delay={1.0} color="text-yellow-600" href="#ai" />
+          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[19%] right-[9%]" delay={1.2} color="text-[#2ABD41]" href="#ai" />
+          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[19%] left-[9%]" delay={1.6} color="text-sky-500" href="#ai" />
+          <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[19%] right-[9%]" delay={2.2} color="text-blue-500" href="#ai" />
+          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[6%] left-[4%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
+          <FloatingNode icon={Leaf} label="ESG" className="bottom-[6%] right-[4%]" delay={2.4} color="text-[#2ABD41]" href="#pricing" />
         </div>
 
         {/* Floating nodes  -  tablet (sm-lg): 5 nodes, desktop (lg+): all */}
