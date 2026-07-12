@@ -152,6 +152,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 STORAGES = {
+    # Defining STORAGES at all replaces Django's defaults wholesale — it
+    # doesn't merge with them. This dict previously only had 'staticfiles',
+    # so 'default' (used by every FileField/ImageField, e.g. chat message
+    # attachments) fell through to django.core.files.storage.storages['default']
+    # with no backend registered, raising InvalidStorageError on every upload.
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
     },
