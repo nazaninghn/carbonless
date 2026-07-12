@@ -151,14 +151,14 @@ export default function RegisterPage() {
         if (loginRes.ok) activate();
       } catch {
         // Login failed  -  likely email verification required
-        router.push('/verify-email');
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
         return;
       }
 
       if (!loginRes.ok) {
         // User created but inactive (needs email verification)
         // Redirect to verify-email page instead of showing error
-        router.push('/verify-email');
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
         return;
       }
 

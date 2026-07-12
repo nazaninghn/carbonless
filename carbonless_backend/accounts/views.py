@@ -23,11 +23,11 @@ class RegisterView(generics.CreateAPIView):
         from .models import UserProfile, EmailVerificationToken
         UserProfile.objects.create(user=user, role='data_entry')
 
-        # Create verification token
+        # Create verification code
         token_obj = EmailVerificationToken.objects.create(user=user)
 
         # Send verification email
-        self._send_verification_email(user, token_obj.token)
+        self._send_verification_email(user, token_obj.code)
 
         # For development: also activate immediately if SKIP_EMAIL_VERIFICATION=true
         import os
@@ -35,20 +35,17 @@ class RegisterView(generics.CreateAPIView):
             user.is_active = True
             user.save(update_fields=['is_active'])
 
-    def _send_verification_email(self, user, token):
+    def _send_verification_email(self, user, code):
         from django.core.mail import send_mail
         from django.conf import settings
-        import os
 
-        frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-        verify_link = f"{frontend_url}/verify-email?token={token}"
-
-        subject = 'Verify your Carbonless account'
+        subject = f'{code} is your Carbonless verification code'
         message = (
             f"Hi {user.username},\n\n"
-            f"Please verify your email address by clicking the link below:\n\n"
-            f"{verify_link}\n\n"
-            f"This link expires in 24 hours.\n\n"
+            f"Your verification code is:\n\n"
+            f"    {code}\n\n"
+            f"Enter this code on the site to activate your account. "
+            f"This code expires in 24 hours.\n\n"
             f"If you didn't create this account, please ignore this email.\n\n"
             f"— Carbonless Team"
         )
@@ -491,8 +488,44 @@ def verify_email(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+def verify_email_code(request):
+    """Verify email address using the 6-digit code from the registration email"""
+    from .models import EmailVerificationToken
+
+    email = (request.data.get('email') or '').strip().lower()
+    code = (request.data.get('code') or '').strip()
+    if not email or not code:
+        return Response({'error': 'Email and code are required'}, status=400)
+
+    try:
+        token_obj = EmailVerificationToken.objects.select_related('user').get(user__email__iexact=email)
+    except EmailVerificationToken.DoesNotExist:
+        return Response({'error': 'Invalid code'}, status=400)
+
+    if token_obj.is_verified:
+        return Response({'status': 'ok', 'message': 'Email already verified'})
+
+    if token_obj.is_expired:
+        return Response({'error': 'Verification code has expired. Please request a new one.'}, status=400)
+
+    if token_obj.is_locked:
+        return Response({'error': 'Too many incorrect attempts. Please request a new code.'}, status=400)
+
+    if token_obj.code != code:
+        token_obj.register_failed_attempt()
+        remaining = token_obj.MAX_ATTEMPTS - token_obj.attempts
+        if remaining <= 0:
+            return Response({'error': 'Too many incorrect attempts. Please request a new code.'}, status=400)
+        return Response({'error': f'Incorrect code. {remaining} attempt(s) remaining.'}, status=400)
+
+    token_obj.verify()
+    return Response({'status': 'ok', 'message': 'Email verified successfully. You can now log in.'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def resend_verification(request):
-    """Resend verification email"""
+    """Resend verification code"""
     from .models import EmailVerificationToken
     email = (request.data.get('email') or '').strip().lower()
     if not email:
@@ -501,27 +534,25 @@ def resend_verification(request):
     user = User.objects.filter(email__iexact=email, is_active=False).first()
     if not user:
         # Don't reveal whether the email exists
-        return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new link has been sent.'})
+        return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new code has been sent.'})
 
-    # Delete old token and create new one
+    # Delete old token and create new one (resets both the code and attempts counter)
     EmailVerificationToken.objects.filter(user=user).delete()
     token_obj = EmailVerificationToken.objects.create(user=user)
 
     # Send email
     from django.core.mail import send_mail
     from django.conf import settings
-    import os
-
-    frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
-    verify_link = f"{frontend_url}/verify-email?token={token_obj.token}"
 
     try:
         send_mail(
-            subject='Verify your Carbonless account',
+            subject=f'{token_obj.code} is your Carbonless verification code',
             message=(
                 f"Hi {user.username},\n\n"
-                f"Please verify your email:\n{verify_link}\n\n"
-                f"This link expires in 24 hours.\n\n— Carbonless Team"
+                f"Your verification code is:\n\n"
+                f"    {token_obj.code}\n\n"
+                f"Enter this code on the site to activate your account. "
+                f"This code expires in 24 hours.\n\n— Carbonless Team"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
@@ -530,7 +561,7 @@ def resend_verification(request):
     except Exception as e:
         logger.error(f'Failed to resend verification email to {user.email}: {e}', exc_info=True)
 
-    return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new link has been sent.'})
+    return Response({'status': 'ok', 'message': 'If the email exists and is unverified, a new code has been sent.'})
 
 
 # ── Two-Factor Authentication (2FA) ─────────────────────────────────────────

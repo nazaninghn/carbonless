@@ -3,7 +3,7 @@ from .views import (
     RegisterView, UserProfileView, RateLimitedLoginView, CookieTokenRefreshView,
     notification_list, mark_notifications_read, unread_count,
     change_password, logout_view, update_profile, delete_account,
-    password_reset_request, password_reset_confirm, verify_email, resend_verification,
+    password_reset_request, password_reset_confirm, verify_email, verify_email_code, resend_verification,
     setup_2fa, confirm_2fa, disable_2fa, get_2fa_status,
 )
 
@@ -22,6 +22,7 @@ urlpatterns = [
     path('password-reset/', password_reset_request, name='password_reset_request'),
     path('password-reset-confirm/', password_reset_confirm, name='password_reset_confirm'),
     path('verify-email/', verify_email, name='verify_email'),
+    path('verify-email-code/', verify_email_code, name='verify_email_code'),
     path('resend-verification/', resend_verification, name='resend_verification'),
     # 2FA
     path('2fa/setup/', setup_2fa, name='setup_2fa'),

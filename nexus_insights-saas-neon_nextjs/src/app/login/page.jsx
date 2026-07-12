@@ -15,6 +15,7 @@ function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [maybeUnverified, setMaybeUnverified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const tr = language === 'tr';
@@ -24,6 +25,7 @@ function LoginContent() {
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setError('');
+    setMaybeUnverified(false);
     setLoading(true);
     try {
       const res = await api.login(email, password);
@@ -36,7 +38,18 @@ function LoginContent() {
         if (res.status >= 500) {
           setError(tr ? 'Sunucu hatasi. Lutfen tekrar deneyin.' : 'Server error. Please try again.');
         } else {
-          setError(data?.error || (tr ? 'Kullanici adi veya sifre hatali.' : 'Invalid username or password.'));
+          // simplejwt returns this exact message both for wrong credentials
+          // AND for a correct login on an inactive (unverified) account — it
+          // deliberately doesn't distinguish the two to avoid leaking which
+          // usernames exist. Since "account never got verified because the
+          // email never arrived" is a real, common case here, surface a
+          // verify-account link alongside the generic error instead of
+          // leaving the user stuck with no path forward.
+          const detail = data?.detail || data?.error;
+          if (detail === 'No active account found with the given credentials') {
+            setMaybeUnverified(true);
+          }
+          setError(detail || (tr ? 'Kullanici adi veya sifre hatali.' : 'Invalid username or password.'));
         }
       }
     } catch {
@@ -132,6 +145,19 @@ function LoginContent() {
             {error && (
               <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-[12px] font-medium text-red-600">
                 {error}
+                {maybeUnverified && (
+                  <div className="mt-2 border-t border-red-200 pt-2">
+                    {tr
+                      ? 'Sifre yanlissa yoksayin. Hesabiniz henuz dogrulanmadiysa: '
+                      : "If your password is correct, your account may not be verified yet. "}
+                    <NextLink
+                      href={`/verify-email?email=${encodeURIComponent(email)}`}
+                      className="font-semibold text-[#2ABD41] hover:underline"
+                    >
+                      {tr ? 'Dogrulama kodunu gir' : 'Enter verification code'}
+                    </NextLink>
+                  </div>
+                )}
               </div>
             )}
 

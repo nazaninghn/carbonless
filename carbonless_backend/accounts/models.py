@@ -113,25 +113,48 @@ class ActivityLog(models.Model):
 
 
 import uuid
+import random
 from django.utils import timezone
 from datetime import timedelta
 
 
+def _generate_verification_code():
+    """6-digit numeric code, zero-padded (e.g. '004821')"""
+    return f"{random.randint(0, 999999):06d}"
+
+
 class EmailVerificationToken(models.Model):
-    """Token for email verification after registration"""
+    """Numeric code for email verification after registration.
+
+    Kept the UUID `token` field alongside the new `code` — the old
+    link-based verify_email endpoint still keys off it — but verification
+    is now done via the 6-digit `code`, typed into the site instead of
+    clicked from an email link.
+    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='email_verification')
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    code = models.CharField(max_length=6, default=_generate_verification_code)
     created_at = models.DateTimeField(auto_now_add=True)
     verified_at = models.DateTimeField(null=True, blank=True)
+    # Brute-forcing a 6-digit code is ~1M guesses — cap attempts so the API
+    # can't be used as a guessing oracle. Exceeding this requires a resend
+    # (which also resets the counter).
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    MAX_ATTEMPTS = 5
 
     @property
     def is_expired(self):
-        """Token expires after 24 hours"""
+        """Code expires after 24 hours"""
         return timezone.now() > self.created_at + timedelta(hours=24)
 
     @property
     def is_verified(self):
         return self.verified_at is not None
+
+    @property
+    def is_locked(self):
+        return self.attempts >= self.MAX_ATTEMPTS
 
     def verify(self):
         """Mark as verified and activate the user"""
@@ -139,6 +162,10 @@ class EmailVerificationToken(models.Model):
         self.save(update_fields=['verified_at'])
         self.user.is_active = True
         self.user.save(update_fields=['is_active'])
+
+    def register_failed_attempt(self):
+        self.attempts += 1
+        self.save(update_fields=['attempts'])
 
     def __str__(self):
         status = 'verified' if self.is_verified else ('expired' if self.is_expired else 'pending')
