@@ -268,6 +268,22 @@ if os.environ.get('EMAIL_HOST'):
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     EMAIL_HOST_USER = ''
+    if IS_PRODUCTION:
+        # console.EmailBackend "succeeds" — it just prints to server stdout
+        # instead of sending — so send_mail() never raises here and the
+        # try/except around it in accounts/views.py never logs anything.
+        # Without this, a missing EMAIL_HOST on Render is invisible: users
+        # see "Check Your Email" (registration genuinely succeeded) but no
+        # mail ever leaves the server, and nothing in the logs says so.
+        import warnings
+        warnings.warn(
+            'PRODUCTION IS RUNNING WITHOUT SMTP CONFIGURED — EMAIL_HOST is '
+            'unset, so verification/reset emails are only printed to server '
+            'logs, never actually sent. Set EMAIL_HOST, EMAIL_HOST_USER, '
+            'EMAIL_HOST_PASSWORD (and EMAIL_PORT/EMAIL_USE_TLS if needed) '
+            'in the Render environment variables.',
+            RuntimeWarning,
+        )
 
 # Most SMTP providers (Gmail included) require the From address to match
 # the authenticated account, or they silently rewrite/reject it — default
