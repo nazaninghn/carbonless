@@ -32,6 +32,24 @@ const copy = {
   },
 };
 
+/* -- Hero pixel-mosaic backdrop (light Droneland-style, brand greens) --
+   Tile colors/pulses are generated with a seeded PRNG at module scope so the
+   server and client render identical markup (no hydration mismatch). */
+const MOSAIC_COLS = 24;
+const MOSAIC_ROWS = 9;
+const mosaicTiles = (() => {
+  let s = 42;
+  const rand = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
+  // Light greens on the hero cream — duplicates of the base color act as gaps
+  const palette = ['#F9FFF4', '#F9FFF4', '#F2FAE8', '#E9F5D9', '#DEF0C6', '#D1E9B2', '#C3E19E'];
+  return Array.from({ length: MOSAIC_COLS * MOSAIC_ROWS }, () => ({
+    color: palette[Math.floor(rand() * palette.length)],
+    pulse: rand() < 0.2,
+    delay: +(rand() * 6).toFixed(2),
+    duration: +(4 + rand() * 5).toFixed(2),
+  }));
+})();
+
 /* -- Floating node component --
    Interactive hero icons (Dinnect-style floating cards): squircle gradient
    tile, hover = lift + green glow + label fills green; labelled nodes are
@@ -154,6 +172,16 @@ export default function Home() {
         .animate-float:hover {
           animation-play-state: paused;
         }
+        @keyframes mosaicPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.25; }
+        }
+        .animate-mosaic {
+          animation: mosaicPulse 6s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-mosaic, .animate-float { animation: none; }
+        }
       `}} />
 
       {/* -- Navbar — Dinnect-style floating pill: detached rounded capsule
@@ -237,112 +265,103 @@ export default function Home() {
         </nav>
       </header>
 
-      {/* -- Hero Section — pull up under the floating pill.
-             Dinnect's own hero (checked via devtools) uses min-h-[100dvh]
-             on mobile too — full viewport, not content-fit. Their tidiness
-             comes from spreading ~8 nodes across THREE vertical bands that
-             flank the content at each level (top band near the title,
-             mid band flanking the CTA buttons, bottom band lower down),
-             not from shrinking the hero. An earlier pass here shrank the
-             hero to content-fit height instead — that only had room for
-             4 nodes hugging the very top/bottom edges, losing the
-             "surrounded" feel. Restored full-height (dvh, not vh — avoids
-             the mobile browser chrome address-bar jump) and, since
-             centered content leaves real space above and below it in a
-             full viewport, brought back 2 rows per side (8 nodes),
-             positioned from measured content geometry (see verification
-             in the commit message) so nothing touches the title or CTAs. -- */}
-      <section className="relative -mt-[72px] min-h-[100dvh] flex flex-col items-center justify-center px-5 sm:px-8">
-
-        {/* Connection lines background — desktop/tablet coords don't match
-            the phone's completely different node layout, so each gets its
-            own SVG (see ConnectionLinesMobile comment above) */}
-        <div className="hidden sm:block">
-          <ConnectionLines />
+      {/* -- Hero Section — Cloverly-style: centered text + map below -- */}
+      <section className="relative pt-28 sm:pt-36 pb-8 sm:pb-16 bg-[#F9FFF4]">
+        {/* -- Light pixel-mosaic backdrop above the map -- */}
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] sm:h-[560px] overflow-hidden">
+          {/* desktop: 24 columns; mobile: 10 columns so tiles stay square-ish */}
+          <div
+            className="hidden sm:grid h-full w-full opacity-70"
+            style={{ gridTemplateColumns: `repeat(${MOSAIC_COLS}, 1fr)`, gridAutoRows: '1fr' }}
+          >
+            {mosaicTiles.map((t, i) => (
+              <div
+                key={i}
+                className={t.pulse ? 'animate-mosaic' : undefined}
+                style={{ backgroundColor: t.color, animationDelay: `${t.delay}s`, animationDuration: `${t.duration}s` }}
+              />
+            ))}
+          </div>
+          <div
+            className="grid sm:hidden h-full w-full opacity-70"
+            style={{ gridTemplateColumns: 'repeat(10, 1fr)', gridAutoRows: '1fr' }}
+          >
+            {mosaicTiles.slice(0, 10 * MOSAIC_ROWS).map((t, i) => (
+              <div
+                key={i}
+                className={t.pulse ? 'animate-mosaic' : undefined}
+                style={{ backgroundColor: t.color, animationDelay: `${t.delay}s`, animationDuration: `${t.duration}s` }}
+              />
+            ))}
+          </div>
+          {/* soft white pool behind the headline + fade out before the map */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,#F9FFF4_0%,rgba(249,255,244,0.55)_45%,transparent_78%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#F9FFF4]" />
         </div>
-        <div className="sm:hidden">
-          <ConnectionLinesMobile />
-        </div>
-
-        {/* Floating nodes — phone (<sm): 2 rows above the title, 2 rows
-            below the CTAs — mirrors Dinnect's node-band distribution
-            across the full-height hero instead of edge-hugging. */}
-        <div className="sm:hidden">
-          <FloatingNode icon={Factory} label="Scope 1" className="top-[6%] left-[4%]" delay={0} color="text-orange-500" href="#ai" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[6%] right-[4%]" delay={0.4} color="text-purple-500" href="#ai" />
-          <FloatingNode icon={Zap} label="Scope 2" className="top-[19%] left-[9%]" delay={1.0} color="text-yellow-600" href="#ai" />
-          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[19%] right-[9%]" delay={1.2} color="text-[#2ABD41]" href="#ai" />
-          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[19%] left-[9%]" delay={1.6} color="text-sky-500" href="#ai" />
-          <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[19%] right-[9%]" delay={2.2} color="text-blue-500" href="#ai" />
-          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[6%] left-[4%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
-          <FloatingNode icon={Leaf} label="ESG" className="bottom-[6%] right-[4%]" delay={2.4} color="text-[#2ABD41]" href="#pricing" />
-        </div>
-
-        {/* Floating nodes  -  tablet (sm-lg): 5 nodes, desktop (lg+): all */}
-        <div className="hidden sm:block lg:hidden">
-          <FloatingNode icon={Factory} label="Scope 1" className="top-[15%] left-[6%]" delay={0} color="text-orange-500" href="#ai" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[15%] right-[6%]" delay={0.4} color="text-purple-500" href="#ai" />
-          <FloatingNode icon={Zap} label="Scope 2" className="top-[5%] left-[40%]" delay={1.0} color="text-yellow-600" href="#ai" />
-          <FloatingNode icon={Wind} label="Scope 3" className="bottom-[20%] left-[8%]" delay={1.6} color="text-sky-500" href="#ai" />
-          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[20%] right-[8%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
-        </div>
-
-        {/* All nodes on desktop */}
-        <div className="hidden lg:block">
-          <FloatingNode icon={Factory} label="Scope 1" className="top-[12%] left-[8%]" delay={0} color="text-orange-500" href="#ai" />
-          <FloatingNode icon={Zap} label="Scope 2" className="top-[35%] left-[6%]" delay={0.8} color="text-yellow-600" href="#ai" />
-          <FloatingNode icon={Wind} label="Scope 3" className="top-[58%] left-[12%]" delay={1.6} color="text-sky-500" href="#ai" />
-          <FloatingNode icon={Droplets} label="ISO 14064" className="bottom-[15%] left-[7%]" delay={2.2} color="text-blue-500" href="#ai" />
-          <FloatingNode icon={Brain} label="AI Engine" className="top-[10%] right-[10%]" delay={0.4} color="text-purple-500" href="#ai" />
-          <FloatingNode icon={Sparkles} label="Smart Report" className="top-[32%] right-[5%]" delay={1.2} color="text-[#2ABD41]" href="#ai" />
-          <FloatingNode icon={BarChart3} label="Analytics" className="top-[55%] right-[12%]" delay={2.0} color="text-emerald-600" href="#ai" />
-          <FloatingNode icon={TreePine} label="Net Zero" className="bottom-[18%] right-[8%]" delay={0.6} color="text-[#2ABD41]" href="#pricing" />
-          <FloatingNode icon={Flame} className="top-[22%] left-[22%]" delay={1.4} color="text-red-400" />
-          <FloatingNode icon={CloudSun} className="top-[18%] right-[24%]" delay={1.8} color="text-sky-400" />
-          <FloatingNode icon={Leaf} className="bottom-[28%] left-[20%]" delay={2.4} color="text-[#2ABD41]" />
-          <FloatingNode icon={Globe2} className="bottom-[22%] right-[20%]" delay={0.2} color="text-teal-500" />
-        </div>
-
-        {/* -- Center content -- */}
-        <div className="relative z-10 text-center max-w-3xl mx-auto">
-          {/* Main title */}
-          <h1 className="text-[28px] sm:text-[44px] lg:text-[72px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
+        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center">
+          <h1 className="text-[28px] sm:text-[44px] lg:text-[60px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
             {t.hero.line1}{' '}
             <span className="text-[#2ABD41]">{t.hero.highlight}</span>{' '}
             {t.hero.line2}
           </h1>
-
-          {/* Description - only render if content exists */}
-          {t.hero.desc && (
-            <p className="mt-6 text-[16px] sm:text-[18px] leading-relaxed text-[#072C0E]/55 max-w-xl mx-auto">
-              {t.hero.desc}
-            </p>
-          )}
-
-          {/* CTA Buttons */}
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full px-4 sm:px-0">
+          <p className="mt-5 sm:mt-6 text-[14px] sm:text-[16px] leading-[1.8] text-[#072C0E]/60 max-w-2xl mx-auto">
+            {lang === 'tr'
+              ? 'Carbonless AI, karbon yoğun aktivitelerinizin etkisini gerçek zamanlı hesaplar ve ISO 14064-1 uyumlu raporlar oluşturur. Hemen başlayın veya demo talep edin.'
+              : 'Carbonless AI calculates the impact of your carbon-intensive activities in real time and generates ISO 14064-1 compliant reports. Get started for free or request a demo.'}
+          </p>
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link href="/register"
-              className="flex w-full sm:w-auto items-center justify-center gap-3 rounded-full bg-[#072C0E] pl-6 pr-3 py-3 text-[13px] sm:text-[14px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#175022] transition hover:-translate-y-0.5">
-              <span>{t.hero.cta}</span>
-              <div className="h-8 w-8 rounded-full bg-[#2ABD41] flex items-center justify-center">
-                <Leaf className="h-4 w-4 text-white" />
-              </div>
+              className="flex items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 hover:bg-[#1D9C31] transition hover:-translate-y-0.5">
+              {lang === 'tr' ? 'Hesaplamaya Başla' : 'Start Calculating'}
             </Link>
-            <Link href="/login"
-              className="flex w-full sm:w-auto items-center justify-center gap-3 rounded-full border-2 border-[#DEFAE1] bg-white px-6 py-3 text-[13px] sm:text-[14px] font-bold text-[#072C0E]/70 shadow-sm hover:border-[#2ABD41]/40 hover:text-[#072C0E] transition">
-              <Brain className="h-4 w-4 text-[#2ABD41]" />
-              <span>{t.hero.demo}</span>
-            </Link>
+            <a href="#ai"
+              className="flex items-center justify-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#175022] transition hover:-translate-y-0.5">
+              {lang === 'tr' ? 'Nasıl Çalışır?' : 'See How It Works'}
+            </a>
           </div>
         </div>
-
+        {/* Map image with floating icons */}
+        <div className="mt-12 sm:mt-16 mx-auto max-w-5xl px-4">
+          {/* Inner wrapper so icon percentages map exactly onto the image */}
+          <div className="relative">
+            <Image
+              src="/hero-map.png"
+              alt={lang === 'tr' ? 'Küresel karbon ofset haritası' : 'Global carbon offset map'}
+              width={1200}
+              height={600}
+              className="w-full h-auto object-contain"
+              priority
+            />
+            {/* Floating icons — top/left are the icon centers, anchored inside green land masses.
+                Small land masses (Greenland, Europe, Brazil, Australia) get smaller circles so
+                the icon stays fully inside the green area. */}
+            {[
+              { src: '/icons/icon1.png', top: '29%', left: '14%' },               // Canada (inland, below arctic coast)
+              { src: '/icons/icon2.png', top: '40%', left: '19%' },               // USA
+              { src: '/icons/icon3.png', top: '15%', left: '33%', small: true },  // Greenland
+              { src: '/icons/icon4.png', top: '40%', left: '49%', small: true },  // Central Europe (mainland, off the Baltic)
+              { src: '/icons/icon5.png', top: '54%', left: '52%' },               // Africa
+              { src: '/icons/icon6.png', top: '31%', left: '63%' },               // Siberia (inland, below arctic coast)
+              { src: '/icons/icon7.png', top: '29%', left: '79%' },               // East Russia (inland)
+              { src: '/icons/icon8.png', top: '42%', left: '73%' },               // China
+              { src: '/icons/icon9.png', top: '67%', left: '30%', small: true },  // Brazil
+              { src: '/icons/icon10.png', top: '77%', left: '79%', small: true }, // Australia (centre of the continent)
+            ].map((icon, i) => (
+              <div
+                key={i}
+                className="absolute -translate-x-1/2 -translate-y-1/2"
+                style={{ top: icon.top, left: icon.left }}
+              >
+                <div className="animate-float" style={{ animationDelay: `${i * 0.3}s` }}>
+                  <div className={`${icon.small ? 'h-6 w-6 sm:h-9 sm:w-9' : 'h-8 w-8 sm:h-11 sm:w-11'} rounded-full bg-white shadow-lg border border-[#DEFAE1] flex items-center justify-center transition-transform duration-300 hover:scale-125 hover:shadow-xl hover:shadow-[#2ABD41]/20 cursor-pointer`}>
+                    <img src={icon.src} alt="" className={`${icon.small ? 'h-3.5 w-3.5 sm:h-5 sm:w-5' : 'h-5 w-5 sm:h-6 sm:w-6'} object-contain`} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
-
-      {/* -- About Section (Dinnect "About Us" layout): left = big two-tone
-             heading + story copy with accent phrases; right = rounded card
-             with a bold vertical green stripe, the molecule artwork
-             overlapping it, and playful mixed-tone typography. The navbar's
-             About link (#about) lands here. -- */}
       <section id="about" className="relative z-10 py-16 sm:py-28 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
