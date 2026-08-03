@@ -276,10 +276,16 @@ export default function Home() {
           { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam', tipPos: 'bottom-full mb-2' },
           { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste', tipPos: 'bottom-full mb-2' },
         ].map((corner, i) => (
-          <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}>
-            <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+          <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}
+            onClick={(e) => {
+              if (!corner.label) return;
+              const tip = e.currentTarget.querySelector('[data-tip]');
+              if (tip) { tip.classList.toggle('opacity-0'); tip.classList.toggle('opacity-100'); }
+            }}
+          >
+            <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105 active:scale-95" />
             {corner.label && (
-              <div className={`absolute left-1/2 -translate-x-1/2 ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30`}>
+              <div data-tip className={`absolute left-1/2 -translate-x-1/2 ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30`}>
                 <div className="whitespace-nowrap rounded-xl bg-[#072C0E] px-4 py-2.5 text-center shadow-xl">
                   <p className="text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
                   <p className="text-[11px] text-white/80 mt-0.5">{corner.desc}</p>
