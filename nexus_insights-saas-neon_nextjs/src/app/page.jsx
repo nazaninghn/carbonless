@@ -271,10 +271,10 @@ export default function Home() {
       <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white min-h-[80vh] flex items-center">
         {/* Corner images — animated float + click for scope info */}
         {[
-          { src: '/hero-corner1.png', pos: 'top-0 left-0', size: 'w-[30%] sm:w-[22%]', delay: '0s', label: 'Scope 1', desc: lang === 'tr' ? 'Doğrudan emisyonlar — tesisler, araçlar, yakıt yanması' : 'Direct emissions — facilities, vehicles, fuel combustion', tipPos: 'top-full mt-2' },
+          { src: '/hero-corner1.png', pos: 'top-0 left-0', size: 'w-[30%] sm:w-[22%]', delay: '0s', label: 'Scope 1', desc: lang === 'tr' ? 'Doğrudan emisyonlar — tesisler, araçlar, yakıt yanması' : 'Direct emissions — facilities, vehicles, fuel combustion', tipPos: 'left-full top-1/2 -translate-y-1/2 ml-2' },
           { src: '/hero-corner2.png', pos: 'top-0 right-0', size: 'w-[25%] sm:w-[18%]', delay: '1s', label: '', desc: '', tipPos: '' },
-          { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam', tipPos: 'bottom-full mb-2' },
-          { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste', tipPos: 'bottom-full mb-2' },
+          { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam', tipPos: 'left-full top-1/2 -translate-y-1/2 ml-2' },
+          { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste', tipPos: 'right-full top-1/2 -translate-y-1/2 mr-2' },
         ].map((corner, i) => (
           <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}
             onClick={(e) => {
@@ -285,7 +285,7 @@ export default function Home() {
           >
             <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105 active:scale-95" />
             {corner.label && (
-              <div data-tip className={`absolute left-1/2 -translate-x-1/2 ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30 max-w-[200px] sm:max-w-none`}>
+              <div data-tip className={`absolute ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30 max-w-[200px] sm:max-w-none`}>
                 <div className="rounded-xl bg-[#072C0E] px-3 py-2 sm:px-4 sm:py-2.5 text-center shadow-xl">
                   <p className="text-[11px] sm:text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
                   <p className="text-[10px] sm:text-[11px] text-white/80 mt-0.5 whitespace-normal">{corner.desc}</p>
