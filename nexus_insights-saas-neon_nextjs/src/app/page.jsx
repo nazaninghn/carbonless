@@ -285,10 +285,10 @@ export default function Home() {
           >
             <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105 active:scale-95" />
             {corner.label && (
-              <div data-tip className={`absolute left-1/2 -translate-x-1/2 ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30`}>
-                <div className="whitespace-nowrap rounded-xl bg-[#072C0E] px-4 py-2.5 text-center shadow-xl">
-                  <p className="text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
-                  <p className="text-[11px] text-white/80 mt-0.5">{corner.desc}</p>
+              <div data-tip className={`absolute left-1/2 -translate-x-1/2 ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30 max-w-[200px] sm:max-w-none`}>
+                <div className="rounded-xl bg-[#072C0E] px-3 py-2 sm:px-4 sm:py-2.5 text-center shadow-xl">
+                  <p className="text-[11px] sm:text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
+                  <p className="text-[10px] sm:text-[11px] text-white/80 mt-0.5 whitespace-normal">{corner.desc}</p>
                 </div>
               </div>
             )}
