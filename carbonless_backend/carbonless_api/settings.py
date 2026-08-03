@@ -125,6 +125,11 @@ else:
 # ============================================
 # AUTH & PASSWORD
 # ============================================
+# Google Identity Services OAuth client ID (public — also used by the frontend
+# as NEXT_PUBLIC_GOOGLE_CLIENT_ID). Must match exactly or token verification
+# in accounts.views.GoogleLoginView rejects every credential.
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
+
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator', 'OPTIONS': {'min_length': 8}},

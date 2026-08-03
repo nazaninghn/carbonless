@@ -145,6 +145,19 @@ export const api = {
     return res;
   },
 
+  googleLogin: async (credential) => {
+    const res = await fetchWithTimeout('/api/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential }),
+    });
+    if (res.ok) {
+      const d = await res.clone().json().catch(() => ({}));
+      if (d.access) setToken(d.access);
+    }
+    return res;
+  },
+
   logout: async () => {
     const token = getToken();
     try {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Menu, X } from 'lucide-react';
+import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Menu, X, Linkedin, Instagram, Youtube, Truck } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 /* -- Copy -- */
@@ -252,7 +252,9 @@ export default function Home() {
                 { label: lang === 'tr' ? 'Ana Sayfa' : 'Home', href: '/' },
                 { label: lang === 'tr' ? 'Hakkında' : 'About', href: '#about' },
                 { label: 'AI', href: '#ai' },
+                { label: lang === 'tr' ? 'Nasıl Çalışır?' : 'How it Works', href: '#how-it-works' },
                 { label: lang === 'tr' ? 'Fiyatlandırma' : 'Pricing', href: '#pricing' },
+                { label: 'FAQ', href: '#faq' },
                 { label: lang === 'tr' ? 'Giriş Yap' : 'Log In', href: '/login' },
               ].map(item => (
                 <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
@@ -265,39 +267,29 @@ export default function Home() {
         </nav>
       </header>
 
-      {/* -- Hero Section — Cloverly-style: centered text + map below -- */}
-      <section className="relative pt-28 sm:pt-36 pb-8 sm:pb-16 bg-[#F9FFF4]">
-        {/* -- Light pixel-mosaic backdrop above the map -- */}
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[440px] sm:h-[560px] overflow-hidden">
-          {/* desktop: 24 columns; mobile: 10 columns so tiles stay square-ish */}
-          <div
-            className="hidden sm:grid h-full w-full opacity-70"
-            style={{ gridTemplateColumns: `repeat(${MOSAIC_COLS}, 1fr)`, gridAutoRows: '1fr' }}
-          >
-            {mosaicTiles.map((t, i) => (
-              <div
-                key={i}
-                className={t.pulse ? 'animate-mosaic' : undefined}
-                style={{ backgroundColor: t.color, animationDelay: `${t.delay}s`, animationDuration: `${t.duration}s` }}
-              />
-            ))}
+      {/* -- Hero Section — 4 corner images + centered text -- */}
+      <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white min-h-[80vh] flex items-center">
+        {/* Corner images — animated float + click for scope info */}
+        {[
+          { src: '/hero-corner1.png', pos: 'top-0 left-0', size: 'w-[30%] sm:w-[22%]', delay: '0s', label: 'Scope 1', desc: lang === 'tr' ? 'Doğrudan emisyonlar — tesisler, araçlar, yakıt yanması' : 'Direct emissions — facilities, vehicles, fuel combustion', tipPos: 'top-full mt-2' },
+          { src: '/hero-corner2.png', pos: 'top-0 right-0', size: 'w-[25%] sm:w-[18%]', delay: '1s', label: '', desc: '', tipPos: '' },
+          { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam', tipPos: 'bottom-full mb-2' },
+          { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste', tipPos: 'bottom-full mb-2' },
+        ].map((corner, i) => (
+          <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}>
+            <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+            {corner.label && (
+              <div className={`absolute left-1/2 -translate-x-1/2 ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30`}>
+                <div className="whitespace-nowrap rounded-xl bg-[#072C0E] px-4 py-2.5 text-center shadow-xl">
+                  <p className="text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
+                  <p className="text-[11px] text-white/80 mt-0.5">{corner.desc}</p>
+                </div>
+              </div>
+            )}
           </div>
-          <div
-            className="grid sm:hidden h-full w-full opacity-70"
-            style={{ gridTemplateColumns: 'repeat(10, 1fr)', gridAutoRows: '1fr' }}
-          >
-            {mosaicTiles.slice(0, 10 * MOSAIC_ROWS).map((t, i) => (
-              <div
-                key={i}
-                className={t.pulse ? 'animate-mosaic' : undefined}
-                style={{ backgroundColor: t.color, animationDelay: `${t.delay}s`, animationDuration: `${t.duration}s` }}
-              />
-            ))}
-          </div>
-          {/* soft white pool behind the headline + fade out before the map */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_55%_at_50%_45%,#F9FFF4_0%,rgba(249,255,244,0.55)_45%,transparent_78%)]" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#F9FFF4]" />
-        </div>
+        ))}
+
+        {/* Center content */}
         <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center">
           <h1 className="text-[28px] sm:text-[44px] lg:text-[60px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
             {t.hero.line1}{' '}
@@ -306,8 +298,8 @@ export default function Home() {
           </h1>
           <p className="mt-5 sm:mt-6 text-[14px] sm:text-[16px] leading-[1.8] text-[#072C0E]/60 max-w-2xl mx-auto">
             {lang === 'tr'
-              ? 'Carbonless AI, karbon yoğun aktivitelerinizin etkisini gerçek zamanlı hesaplar ve ISO 14064-1 uyumlu raporlar oluşturur. Hemen başlayın veya demo talep edin.'
-              : 'Carbonless AI calculates the impact of your carbon-intensive activities in real time and generates ISO 14064-1 compliant reports. Get started for free or request a demo.'}
+              ? 'Carbonless AI, karbon yoğun aktivitelerinizin etkisini gerçek zamanlı hesaplar ve ISO 14064-1 uyumlu raporlar oluşturur.'
+              : 'Carbonless AI calculates the impact of your carbon-intensive activities in real time and generates ISO 14064-1 compliant reports.'}
           </p>
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link href="/register"
@@ -320,49 +312,9 @@ export default function Home() {
             </a>
           </div>
         </div>
-        {/* Map image with floating icons */}
-        <div className="mt-12 sm:mt-16 mx-auto max-w-5xl px-4">
-          {/* Inner wrapper so icon percentages map exactly onto the image */}
-          <div className="relative">
-            <Image
-              src="/hero-map.png"
-              alt={lang === 'tr' ? 'Küresel karbon ofset haritası' : 'Global carbon offset map'}
-              width={1200}
-              height={600}
-              className="w-full h-auto object-contain"
-              priority
-            />
-            {/* Floating icons — top/left are the icon centers, anchored inside green land masses.
-                Small land masses (Greenland, Europe, Brazil, Australia) get smaller circles so
-                the icon stays fully inside the green area. */}
-            {[
-              { src: '/icons/icon1.png', top: '29%', left: '14%' },               // Canada (inland, below arctic coast)
-              { src: '/icons/icon2.png', top: '40%', left: '19%' },               // USA
-              { src: '/icons/icon3.png', top: '15%', left: '33%', small: true },  // Greenland
-              { src: '/icons/icon4.png', top: '40%', left: '49%', small: true },  // Central Europe (mainland, off the Baltic)
-              { src: '/icons/icon5.png', top: '54%', left: '52%' },               // Africa
-              { src: '/icons/icon6.png', top: '31%', left: '63%' },               // Siberia (inland, below arctic coast)
-              { src: '/icons/icon7.png', top: '29%', left: '79%' },               // East Russia (inland)
-              { src: '/icons/icon8.png', top: '42%', left: '73%' },               // China
-              { src: '/icons/icon9.png', top: '67%', left: '30%', small: true },  // Brazil
-              { src: '/icons/icon10.png', top: '77%', left: '79%', small: true }, // Australia (centre of the continent)
-            ].map((icon, i) => (
-              <div
-                key={i}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
-                style={{ top: icon.top, left: icon.left }}
-              >
-                <div className="animate-float" style={{ animationDelay: `${i * 0.3}s` }}>
-                  <div className={`${icon.small ? 'h-6 w-6 sm:h-9 sm:w-9' : 'h-8 w-8 sm:h-11 sm:w-11'} rounded-full bg-white shadow-lg border border-[#DEFAE1] flex items-center justify-center transition-transform duration-300 hover:scale-125 hover:shadow-xl hover:shadow-[#2ABD41]/20 cursor-pointer`}>
-                    <img src={icon.src} alt="" className={`${icon.small ? 'h-3.5 w-3.5 sm:h-5 sm:w-5' : 'h-5 w-5 sm:h-6 sm:w-6'} object-contain`} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
-      <section id="about" className="relative z-10 py-16 sm:py-28 bg-white">
+
+      <section id="about" className="relative z-10 py-12 sm:py-20 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
@@ -413,7 +365,7 @@ export default function Home() {
                 {/* phone mockup photo overlapping the stripe — carousel on click */}
                 <div className="relative flex justify-end ml-auto w-[55%] cursor-pointer select-none"
                   onClick={() => {
-                    const imgs = ['/about-phone.png', '/about-phone2.png', '/about-phone3.png'];
+                    const imgs = ['/about-phone.png', '/about-phone2.png', '/about-phone3.png', '/about-phone4.png'];
                     const el = document.getElementById('about-phone-img');
                     if (!el) return;
                     const curr = parseInt(el.dataset.idx || '0', 10);
@@ -455,8 +407,9 @@ export default function Home() {
         </div>
       </section>
 
+
       {/* -- AI Section (like Dinnect AI) -- */}
-      <section id="ai" className="relative z-10 py-16 sm:py-28 bg-white">
+      <section id="ai" className="relative z-10 py-12 sm:py-20 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
 
@@ -523,9 +476,98 @@ export default function Home() {
         </div>
       </section>
 
+      {/* white → cream blend before How it Works */}
+      <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-white to-[#F9FFF4]" />
+
+      {/* -- How it Works — 4-step process, numbered circles on a shared
+          connector line (desktop only; the line has nothing meaningful to
+          span once the steps stack into one column on mobile). -- */}
+      <section id="how-it-works" className="relative z-10 py-12 sm:py-20 bg-[#F9FFF4]">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+              {lang === 'tr' ? 'Nasıl çalışır?' : 'How it works'}
+            </h2>
+            <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">
+              {lang === 'tr' ? 'Dört adımda, dakikalar içinde denetime hazır raporunuz.' : 'Four steps to an audit-ready report, in minutes.'}
+            </p>
+          </div>
+
+          <div className="relative grid gap-10 sm:grid-cols-4 sm:gap-6">
+            <div aria-hidden className="hidden sm:block absolute left-[12.5%] right-[12.5%] top-6 h-px bg-[#DEFAE1]" />
+
+            {[
+              {
+                icon: null, useOrb: true, num: '1',
+                title: lang === 'tr' ? 'Verinizi anlatın' : 'Tell the AI',
+                desc: lang === 'tr' ? 'Enerji, seyahat ya da satın alımlarınızı sade bir dille anlatın — tablo yok.' : 'Describe your energy use, travel, or purchases in plain language — no spreadsheets.',
+              },
+              {
+                icon: null, useOrb: true, orbStyle: 'composing', num: '2',
+                title: lang === 'tr' ? 'AI hesaplar' : 'AI calculates',
+                desc: lang === 'tr' ? "CarbonIQ, verinizi 188+ emisyon faktörüyle anında eşleştirir." : 'CarbonIQ matches your data against 188+ emission factors instantly.',
+              },
+              {
+                icon: null, useOrb: true, orbStyle: 'breathing', num: '3',
+                title: lang === 'tr' ? 'Raporunuzu alın' : 'Get your report',
+                desc: lang === 'tr' ? 'Saniyeler içinde ISO 14064-1 uyumlu, denetime hazır PDF raporu.' : 'An ISO 14064-1 compliant, audit-ready PDF report in seconds.',
+              },
+              {
+                icon: null, useOrb: true, orbStyle: 'weaving', num: '4',
+                title: lang === 'tr' ? 'Hedef belirleyin' : 'Track & reduce',
+                desc: lang === 'tr' ? 'Hedefler koyun, ilerlemenizi izleyin, ayak izinizi zamanla küçültün.' : 'Set targets, track progress, and watch your footprint shrink over time.',
+              },
+            ].map((step) => (
+              <div key={step.num} className="relative flex flex-col items-center text-center">
+                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] shadow-sm">
+                  {step.useOrb ? (
+                    <div className="relative h-6 w-6">
+                      {step.orbStyle === 'composing' ? (
+                        <>
+                          <div className="absolute inset-0 rounded-full bg-[#2ABD41]/10 animate-pulse" />
+                          <div className="absolute inset-0.5 rounded-full border border-[#2ABD41]/40 animate-spin" style={{ animationDuration: '3s' }} />
+                          <div className="absolute inset-1.5 rounded-full bg-gradient-to-tr from-[#2ABD41] to-[#8BEA99] animate-pulse" style={{ animationDuration: '1.5s' }} />
+                        </>
+                      ) : step.orbStyle === 'breathing' ? (
+                        <>
+                          <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#2ABD41]/50 animate-spin" style={{ animationDuration: '4s' }} />
+                          <div className="absolute inset-1.5 rounded-full bg-[#2ABD41]/15 animate-ping" style={{ animationDuration: '2s' }} />
+                        </>
+                      ) : step.orbStyle === 'weaving' ? (
+                        <>
+                          <div className="absolute inset-0 rounded-full border-2 border-[#2ABD41]/40 animate-pulse" />
+                          <div className="absolute inset-0 rounded-full border-l-2 border-r-2 border-transparent border-l-[#2ABD41] border-r-[#2ABD41] animate-spin" style={{ animationDuration: '2s' }} />
+                          <div className="absolute inset-1 rounded-full border-t-2 border-b-2 border-transparent border-t-[#2ABD41]/60 border-b-[#2ABD41]/60 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '3s' }} />
+                        </>
+                      ) : (
+                        <>
+                          <div className="absolute inset-0 rounded-full border-2 border-[#2ABD41]/30 border-t-[#2ABD41] animate-spin" />
+                          <div className="absolute inset-1 rounded-full border-2 border-[#2ABD41]/20 border-b-[#2ABD41] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
+                          <div className="absolute inset-2 rounded-full bg-[#2ABD41]/20" />
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <step.icon className="h-5 w-5 text-[#2ABD41]" strokeWidth={1.8} />
+                  )}
+                </div>
+                <span className="mt-3 text-[11px] font-bold uppercase tracking-wide text-[#2ABD41]/70">
+                  {lang === 'tr' ? `Adım ${step.num}` : `Step ${step.num}`}
+                </span>
+                <h3 className="mt-1 text-[16px] sm:text-[17px] font-bold text-[#072C0E]">{step.title}</h3>
+                <p className="mt-2 text-[13px] leading-[1.7] text-[#072C0E]/55 max-w-[220px]">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* cream → white blend before Pricing (Pricing's own gradient continues from white) */}
+      <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-[#F9FFF4] to-white" />
+
       {/* -- Pricing Section — fades in from the white AI section above
              (gradient over the top padding) instead of a hard border cut -- */}
-      <section id="pricing" className="relative z-10 py-16 sm:py-28 bg-gradient-to-b from-white via-[#F1FCF2] to-[#F1FCF2]">
+      <section id="pricing" className="relative z-10 py-12 sm:py-20 bg-gradient-to-b from-white via-[#F1FCF2] to-[#F1FCF2]">
         <div className="mx-auto max-w-4xl px-4 sm:px-8">
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
@@ -629,20 +671,143 @@ export default function Home() {
         </div>
       </section>
 
-      {/* -- Footer strip -- */}
-      <footer className="relative z-10 border-t border-[#DEFAE1] bg-white/80 backdrop-blur-sm py-4 sm:py-5">
-        <div className="mx-auto max-w-6xl px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
-          <div className="flex items-center gap-2">
-            <Image src="/carbonless.png" alt="Carbonless" width={16} height={16} className="h-4 w-4 object-contain" />
-            <span className="text-[11px] sm:text-[12px] font-medium text-[#072C0E]/40">&copy; 2025 Carbonless. All rights reserved.</span>
+      {/* pale mint → white blend before FAQ */}
+      <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-[#F1FCF2] to-white" />
+
+      {/* -- FAQ — native <details>/<summary> so the accordion needs no JS
+          state and stays accessible/keyboard-friendly for free. -- */}
+      <section id="faq" className="relative z-10 py-12 sm:py-20 bg-white">
+        <div className="mx-auto max-w-3xl px-4 sm:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+              {lang === 'tr' ? 'Sıkça sorulan sorular' : 'Frequently asked questions'}
+            </h2>
+            <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">
+              {lang === 'tr' ? 'Başka bir sorunuz mu var? Bize ulaşın.' : "Still have questions? We're happy to help."}
+            </p>
           </div>
-          <div className="flex gap-4">
-            <Link href="/terms" className="text-[11px] sm:text-[12px] text-[#072C0E]/40 hover:text-[#072C0E]/70 transition">
-              {lang === 'tr' ? 'Kullanım Koşulları' : 'Terms'}
-            </Link>
-            <Link href="/privacy" className="text-[11px] sm:text-[12px] text-[#072C0E]/40 hover:text-[#072C0E]/70 transition">
-              {lang === 'tr' ? 'Gizlilik' : 'Privacy'}
-            </Link>
+
+          <div className="space-y-3">
+            {(lang === 'tr' ? [
+              { q: 'Kapsam 1, 2 ve 3 emisyonları nedir?', a: 'Kapsam 1 doğrudan emisyonlarınızdır (kendi tesisleriniz, araçlarınız). Kapsam 2, satın aldığınız elektrik/ısıdan kaynaklanır. Kapsam 3 ise tedarik zinciriniz, iş seyahatleri ve ürün kullanımı gibi dolaylı emisyonları kapsar.' },
+              { q: 'Kullanmak için teknik bilgi gerekiyor mu?', a: "Hayır. Verilerinizi kendi cümlelerinizle AI'a anlatmanız yeterli — CarbonIQ geri kalanını hesaplar ve sınıflandırır." },
+              { q: 'Raporlar gerçekten denetime hazır mı?', a: 'Evet. Tüm Pro raporları ISO 14064-1 standardına uygun hazırlanır ve doğrudan denetçinize teslim edilebilir.' },
+              { q: 'İstediğim zaman iptal edebilir miyim?', a: 'Evet, Pro aboneliğinizi istediğiniz zaman iptal edebilir veya Ücretsiz plana geri dönebilirsiniz — taahhüt yok.' },
+              { q: 'Verilerim güvende mi?', a: 'Tüm veriler şifrelenir ve yalnızca sizin şirketiniz erişebilir. Verilerinizi asla üçüncü taraflarla paylaşmayız.' },
+            ] : [
+              { q: 'What are Scope 1, 2, and 3 emissions?', a: 'Scope 1 covers your direct emissions (owned facilities, vehicles). Scope 2 comes from the electricity or heat you purchase. Scope 3 covers indirect emissions across your supply chain, business travel, and product use.' },
+              { q: 'Do I need technical knowledge to use Carbonless?', a: 'No. Just describe your data to the AI in plain language — CarbonIQ handles the calculation and classification for you.' },
+              { q: 'Are the reports really audit-ready?', a: 'Yes. Every Pro report is built to the ISO 14064-1 standard and can be handed straight to your auditor.' },
+              { q: 'Can I cancel anytime?', a: 'Yes, you can cancel your Pro subscription or downgrade to Free at any time — no contracts.' },
+              { q: 'Is my data secure?', a: 'All data is encrypted and accessible only to your company. We never share your data with third parties.' },
+            ]).map((item, i) => (
+              <details key={i} className="group rounded-2xl border border-[#DEFAE1] bg-[#F9FFF4] px-5 sm:px-6 open:bg-white open:shadow-md transition-colors">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[14px] sm:text-[15px] font-bold text-[#072C0E] [&::-webkit-details-marker]:hidden">
+                  {item.q}
+                  <svg className="h-4 w-4 shrink-0 text-[#2ABD41] transition-transform duration-300 group-open:rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                  </svg>
+                </summary>
+                <p className="pb-4 sm:pb-5 text-[13px] sm:text-[14px] leading-[1.8] text-[#072C0E]/60">
+                  {item.a}
+                </p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* white → dark-green blend before the Footer — the biggest color jump
+          on the page, so it gets more height + more eased stops than the
+          other transitions to avoid a visible seam. */}
+      <div aria-hidden className="h-px bg-[#e5e5e5]" />
+
+      {/* -- Footer — Dinnect-style multi-column, in brand dark green -- */}
+      <footer className="relative z-10 bg-[#111111] text-white/85">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8 pt-12 sm:pt-16 pb-6 sm:pb-8">
+          <div className="grid grid-cols-2 gap-10 md:grid-cols-5 md:gap-8">
+
+            {/* Brand + tagline + socials */}
+            <div className="col-span-2">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white">
+                  <Image src="/carbonless.png" alt="Carbonless" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
+                </div>
+                <span className="text-[20px] font-extrabold tracking-tight">Carbonless</span>
+              </div>
+              <p className="mt-5 max-w-xs text-[13px] sm:text-[14px] leading-[1.8] text-white/55">
+                {lang === 'tr'
+                  ? 'Karbon ayak izinizi AI ile hesaplayın, ISO 14064-1 uyumlu raporlar oluşturun. Karbon muhasebesi, yeniden tasarlandı.'
+                  : 'Calculate your carbon footprint with AI and generate ISO 14064-1 compliant reports. Carbon accounting, reimagined.'}
+              </p>
+              <div className="mt-6 flex gap-3">
+                {[
+                  { icon: X, label: 'X (Twitter)' },
+                  { icon: Linkedin, label: 'LinkedIn' },
+                  { icon: Instagram, label: 'Instagram' },
+                  { icon: Youtube, label: 'YouTube' },
+                ].map(({ icon: Icon, label }) => (
+                  <a key={label} href="#" aria-label={label}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/8 border border-white/10 text-white/60 transition hover:bg-[#2ABD41] hover:border-[#2ABD41] hover:text-white">
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Product */}
+            <div>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">
+                {lang === 'tr' ? 'Ürün' : 'Product'}
+              </h4>
+              <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
+                <li><a href="#ai" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'CarbonIQ AI' : 'CarbonIQ AI'}</a></li>
+                <li><a href="#pricing" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Fiyatlandırma' : 'Pricing'}</a></li>
+                <li><Link href="/register" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Ücretsiz Başlayın' : 'Get Started Free'}</Link></li>
+                <li className="flex items-center gap-2">
+                  <span className="text-white/40">{lang === 'tr' ? 'Mobil Uygulama' : 'Mobile App'}</span>
+                  <span className="rounded-full bg-[#2ABD41]/15 px-2 py-0.5 text-[10px] font-bold text-[#2ABD41]">
+                    {lang === 'tr' ? 'Yakında' : 'Soon'}
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Company */}
+            <div>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">
+                {lang === 'tr' ? 'Şirket' : 'Company'}
+              </h4>
+              <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
+                <li><a href="#about" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Hakkımızda' : 'About Us'}</a></li>
+                <li><Link href="/login" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Giriş' : 'Login'}</Link></li>
+                <li><Link href="/register" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}</Link></li>
+              </ul>
+            </div>
+
+            {/* Legal */}
+            <div>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">
+                {lang === 'tr' ? 'Yasal' : 'Legal'}
+              </h4>
+              <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
+                <li><Link href="/privacy" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</Link></li>
+                <li><Link href="/terms" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Kullanım Koşulları' : 'Terms of Service'}</Link></li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="mt-12 sm:mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-5 sm:pt-6 sm:flex-row">
+            <span className="text-[11px] sm:text-[12px] text-white/40">&copy; 2026 Carbonless. All rights reserved.</span>
+            <div className="flex gap-6">
+              <Link href="/privacy" className="text-[11px] sm:text-[12px] text-white/40 transition hover:text-white/80">
+                {lang === 'tr' ? 'Gizlilik' : 'Privacy Policy'}
+              </Link>
+              <Link href="/terms" className="text-[11px] sm:text-[12px] text-white/40 transition hover:text-white/80">
+                {lang === 'tr' ? 'Kullanım Koşulları' : 'Terms of Service'}
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

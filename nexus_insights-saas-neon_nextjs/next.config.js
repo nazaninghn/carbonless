@@ -39,11 +39,15 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              // accounts.google.com serves the Google Identity Services script
+              // used by the "Sign in with Google" button on /login.
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com",
               "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
-              "img-src 'self' data: blob: https://images.unsplash.com",
+              "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
               "font-src 'self' data:",
               "connect-src 'self' https: http://localhost:8000 http://localhost:3000",
+              // The rendered Google button + One Tap prompt render inside an iframe.
+              "frame-src https://accounts.google.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self' mailto:",

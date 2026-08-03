@@ -116,6 +116,105 @@ class RateLimitedLoginView(TokenObtainPairView):
         return response
 
 
+@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='dispatch')
+class GoogleLoginView(generics.GenericAPIView):
+    """Sign in (or register) with a Google Identity Services ID token.
+
+    Frontend sends the `credential` JWT produced by Google's GSI button.
+    We verify it against Google's public keys + our OAuth client ID, then
+    find-or-create the Django user by email and issue the same JWT pair
+    (+ cookies) as the password login flow, so the rest of the app can't
+    tell the two auth paths apart.
+    """
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        from django.conf import settings as django_settings
+
+        credential = request.data.get('credential') or request.data.get('id_token')
+        if not credential:
+            return Response({'detail': 'Missing Google credential'}, status=400)
+
+        client_id = getattr(django_settings, 'GOOGLE_CLIENT_ID', '')
+        if not client_id:
+            logger.error('Google sign-in attempted but GOOGLE_CLIENT_ID is not configured')
+            return Response({'detail': 'Google sign-in is not configured'}, status=503)
+
+        try:
+            from google.oauth2 import id_token as google_id_token
+            from google.auth.transport import requests as google_requests
+            idinfo = google_id_token.verify_oauth2_token(
+                credential, google_requests.Request(), client_id
+            )
+        except ValueError:
+            return Response({'detail': 'Invalid or expired Google credential'}, status=401)
+        except Exception:
+            logger.exception('Unexpected error verifying Google credential')
+            return Response({'detail': 'Could not verify Google credential'}, status=502)
+
+        if idinfo.get('iss') not in ('accounts.google.com', 'https://accounts.google.com'):
+            return Response({'detail': 'Invalid token issuer'}, status=401)
+
+        email = (idinfo.get('email') or '').strip().lower()
+        if not email:
+            return Response({'detail': 'Google account has no email address'}, status=400)
+        if not idinfo.get('email_verified'):
+            return Response({'detail': 'Google email address is not verified'}, status=400)
+
+        user = User.objects.filter(email__iexact=email).first()
+        created = False
+        if user is None:
+            base_username = (email.split('@')[0] or 'user')[:25]
+            username = base_username
+            n = 1
+            while User.objects.filter(username=username).exists():
+                n += 1
+                username = f"{base_username}{n}"[:150]
+            user = User(
+                username=username,
+                email=email,
+                first_name=idinfo.get('given_name', '')[:150],
+                last_name=idinfo.get('family_name', '')[:150],
+                is_active=True,
+            )
+            user.set_unusable_password()
+            user.save()
+            UserProfile.objects.get_or_create(user=user, defaults={'role': 'data_entry'})
+            created = True
+        elif not user.is_active:
+            # Google has already verified this email — trust it and lift the
+            # "verify your email" gate an existing password signup left in place.
+            user.is_active = True
+            user.save(update_fields=['is_active'])
+
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from .models import ActivityLog
+
+        refresh = RefreshToken.for_user(user)
+        access = str(refresh.access_token)
+
+        ActivityLog.objects.create(
+            user=user, action='login',
+            detail='Signed in with Google' + (' (account created)' if created else ''),
+            ip_address=request.META.get('REMOTE_ADDR'),
+            target_type='User', target_id=str(user.id),
+        )
+
+        response = Response({'access': access, 'refresh': str(refresh), 'created': created})
+        is_secure = not django_settings.DEBUG
+        response.set_cookie(
+            'access_token', access,
+            httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
+            max_age=30 * 60, path='/',
+        )
+        response.set_cookie(
+            'refresh_token', str(refresh),
+            httponly=True, secure=is_secure, samesite='None' if is_secure else 'Lax',
+            max_age=7 * 24 * 3600, path='/',
+        )
+        return response
+
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = UserSerializer
