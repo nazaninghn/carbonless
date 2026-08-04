@@ -258,6 +258,8 @@ export const api = {
     body: JSON.stringify(data),
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
+  getPreviousCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/previous-profile/`),
+  reuseCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST' }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
   downloadQuestionnairePdf: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/pdf/?lang=${lang}`),
   listReports: () => request('/questionnaire/'),

@@ -1357,13 +1357,58 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Organizational boundary defined. We will now begin entering Scope 1 (Direct) emissions.',
       },
     },
+    next: 'SCOPE-GROUPING',
+  },
+  {
+    // Asked once per report, right before Scope 1 begins. Purely a presentation
+    // choice — it does not change which questions get asked, only whether the
+    // Scope 2 intro screen (4-GİRİŞ) is shown as its own break (see the
+    // nextId override in CarbonAIPage.jsx's submit handler) and how the
+    // progress sidebar groups the two stages (see ProgressSidebar).
+    id: 'SCOPE-GROUPING',
+    number: 36,
+    stage: 2,
+    block: '2C',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'single_select',
+    required: true,
+    reportField: 'org_boundary.scope_grouping',
+    text: {
+      tr: 'Kapsam 1 ve Kapsam 2 sorularını nasıl yanıtlamak istersiniz?',
+      en: 'How would you like to answer the Scope 1 and Scope 2 questions?',
+    },
+    helper: {
+      tr: 'Bu yalnızca soruların size sunuluş biçimini değiştirir — hangi soruların sorulacağını değiştirmez.',
+      en: 'This only changes how the questions are presented to you — it does not change which questions are asked.',
+    },
+    options: [
+      {
+        value: 'separate',
+        label: { tr: 'Ayrı ayrı (önerilen)', en: 'Separately (recommended)' },
+        description: {
+          tr: 'Kapsam 1 tamamlandıktan sonra Kapsam 2\'ye ayrı bir bölüm olarak geçilir.',
+          en: 'Scope 2 begins as its own separate section after Scope 1 is complete.',
+        },
+      },
+      {
+        value: 'combined',
+        label: { tr: 'Birlikte', en: 'Together' },
+        description: {
+          tr: 'Kapsam 1 ve Kapsam 2 aralarında ayrım yapılmadan tek bir akış olarak sorulur.',
+          en: 'Scope 1 and Scope 2 are asked as one continuous flow, with no section break in between.',
+        },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
+    },
     next: '3-GİRİŞ',
   },
 
   // ── STAGE 3 ─ Scope 1 Emissions ───────────────────────────────────────────
   {
     id: '3-GİRİŞ',
-    number: 36,
+    number: 37,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1381,7 +1426,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-0',
-    number: 37,
+    number: 38,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1417,7 +1462,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-1',
-    number: 38,
+    number: 39,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1481,7 +1526,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-1a',
-    number: 39,
+    number: 40,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1510,7 +1555,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-2',
-    number: 40,
+    number: 41,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1538,7 +1583,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-3',
-    number: 41,
+    number: 42,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1561,7 +1606,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-4',
-    number: 42,
+    number: 43,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1600,7 +1645,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-5',
-    number: 43,
+    number: 44,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1634,7 +1679,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-6',
-    number: 44,
+    number: 45,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1673,7 +1718,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-6a',
-    number: 45,
+    number: 46,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1703,7 +1748,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-EF',
-    number: 46,
+    number: 47,
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1802,7 +1847,7 @@ export const CARBONIQ_QUESTIONS = [
 
   {
     id: '3B-0',
-    number: 47,
+    number: 48,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1837,7 +1882,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-1',
-    number: 48,
+    number: 49,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1904,7 +1949,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-2',
-    number: 49,
+    number: 50,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1944,7 +1989,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-3',
-    number: 50,
+    number: 51,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -1972,7 +2017,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-4',
-    number: 51,
+    number: 52,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2004,7 +2049,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-5',
-    number: 52,
+    number: 53,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2041,7 +2086,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-6',
-    number: 53,
+    number: 54,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2080,7 +2125,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-EF',
-    number: 54,
+    number: 55,
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2179,7 +2224,7 @@ export const CARBONIQ_QUESTIONS = [
 
   {
     id: '3C-0',
-    number: 55,
+    number: 56,
     stage: 3,
     block: '3C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2207,7 +2252,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3C-1',
-    number: 56,
+    number: 57,
     stage: 3,
     block: '3C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2252,7 +2297,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3C-2',
-    number: 57,
+    number: 58,
     stage: 3,
     block: '3C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2285,7 +2330,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3C-EF',
-    number: 58,
+    number: 59,
     stage: 3,
     block: '3C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2384,7 +2429,7 @@ export const CARBONIQ_QUESTIONS = [
 
   {
     id: '3D-0',
-    number: 59,
+    number: 60,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2437,7 +2482,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3D-2',
-    number: 60,
+    number: 61,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2485,7 +2530,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3D-4',
-    number: 61,
+    number: 62,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2521,7 +2566,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3D-EF',
-    number: 62,
+    number: 63,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2550,7 +2595,7 @@ export const CARBONIQ_QUESTIONS = [
 
   {
     id: 'TY-1',
-    number: 63,
+    number: 64,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2637,7 +2682,7 @@ export const CARBONIQ_QUESTIONS = [
 
   {
     id: 'TY-2',
-    number: 64,
+    number: 65,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2668,7 +2713,7 @@ export const CARBONIQ_QUESTIONS = [
   // ── STAGE 4 ─ Scope 2 Emissions ───────────────────────────────────────────
   {
     id: '4-GİRİŞ',
-    number: 65,
+    number: 66,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2692,7 +2737,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-0',
-    number: 66,
+    number: 67,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2727,7 +2772,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-1',
-    number: 67,
+    number: 68,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2782,7 +2827,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-1a',
-    number: 68,
+    number: 69,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2819,7 +2864,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-2',
-    number: 69,
+    number: 70,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2854,7 +2899,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-2a',
-    number: 70,
+    number: 71,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2895,7 +2940,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-2b',
-    number: 71,
+    number: 72,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2933,7 +2978,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-2c',
-    number: 72,
+    number: 73,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -2975,7 +3020,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-3',
-    number: 73,
+    number: 74,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3010,7 +3055,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-3a',
-    number: 74,
+    number: 75,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3048,7 +3093,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4A-EF',
-    number: 75,
+    number: 76,
     stage: 4,
     block: '4A',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3084,7 +3129,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4B-0',
-    number: 76,
+    number: 77,
     stage: 4,
     block: '4B',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3119,7 +3164,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4B-1',
-    number: 77,
+    number: 78,
     stage: 4,
     block: '4B',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3153,7 +3198,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4B-EF',
-    number: 78,
+    number: 79,
     stage: 4,
     block: '4B',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3185,7 +3230,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '4C-1',
-    number: 79,
+    number: 80,
     stage: 4,
     block: '4C',
     isoRef: 'ISO 14064-1 §5.3',
@@ -3229,7 +3274,7 @@ export const CARBONIQ_QUESTIONS = [
   // 27 questions · #80–#106 · DOCX v3.0
   {
     id: 'K3C1-0',
-    number: 80,
+    number: 81,
     stage: 5,
     block: '5A',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3259,7 +3304,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C1-1',
-    number: 81,
+    number: 82,
     stage: 5,
     block: '5A',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3304,7 +3349,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C1-2',
-    number: 82,
+    number: 83,
     stage: 5,
     block: '5A',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3340,7 +3385,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C1-3',
-    number: 83,
+    number: 84,
     stage: 5,
     block: '5A',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3363,7 +3408,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C1-4',
-    number: 84,
+    number: 85,
     stage: 5,
     block: '5A',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3397,7 +3442,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C2-0',
-    number: 85,
+    number: 86,
     stage: 5,
     block: '5B',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3421,7 +3466,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C2-1',
-    number: 86,
+    number: 87,
     stage: 5,
     block: '5B',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3473,7 +3518,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C3-INFO',
-    number: 87,
+    number: 88,
     stage: 5,
     block: '5C',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3503,7 +3548,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C4-0',
-    number: 88,
+    number: 89,
     stage: 5,
     block: '5D',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3527,7 +3572,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C4-1',
-    number: 89,
+    number: 90,
     stage: 5,
     block: '5D',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3558,7 +3603,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C5-0',
-    number: 90,
+    number: 91,
     stage: 5,
     block: '5E',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3588,7 +3633,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C5-1',
-    number: 91,
+    number: 92,
     stage: 5,
     block: '5E',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3620,7 +3665,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C6-0',
-    number: 92,
+    number: 93,
     stage: 5,
     block: '5F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3644,7 +3689,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C6-1',
-    number: 93,
+    number: 94,
     stage: 5,
     block: '5F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3679,7 +3724,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C7-0',
-    number: 94,
+    number: 95,
     stage: 5,
     block: '5G',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3713,7 +3758,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C8-0',
-    number: 95,
+    number: 96,
     stage: 5,
     block: '5H',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3743,7 +3788,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C8-1',
-    number: 96,
+    number: 97,
     stage: 5,
     block: '5H',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3782,7 +3827,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C9-0',
-    number: 97,
+    number: 98,
     stage: 5,
     block: '5I',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3812,7 +3857,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C10-0',
-    number: 98,
+    number: 99,
     stage: 5,
     block: '5J',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3835,7 +3880,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C11-0',
-    number: 99,
+    number: 100,
     stage: 5,
     block: '5K',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3865,7 +3910,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C11-1',
-    number: 100,
+    number: 101,
     stage: 5,
     block: '5K',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3905,7 +3950,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C12-0',
-    number: 101,
+    number: 102,
     stage: 5,
     block: '5L',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3929,7 +3974,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C13-0',
-    number: 102,
+    number: 103,
     stage: 5,
     block: '5M',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3959,7 +4004,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C14-0',
-    number: 103,
+    number: 104,
     stage: 5,
     block: '5N',
     isoRef: 'ISO 14064-1 §5.4',
@@ -3983,7 +4028,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C15-0',
-    number: 104,
+    number: 105,
     stage: 5,
     block: '5O',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4012,7 +4057,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3C15-1',
-    number: 105,
+    number: 106,
     stage: 5,
     block: '5O',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4061,7 +4106,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'K3-TY',
-    number: 106,
+    number: 107,
     stage: 5,
     block: '5P',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4101,7 +4146,7 @@ export const CARBONIQ_QUESTIONS = [
   // 16 questions · #107–#122 · DOCX v3.0
   {
     id: '6-GİRİŞ',
-    number: 107,
+    number: 108,
     stage: 6,
     block: '6-GİRİŞ',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4121,7 +4166,7 @@ export const CARBONIQ_QUESTIONS = [
   // #108
   {
     id: '6A-1',
-    number: 108,
+    number: 109,
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4148,7 +4193,7 @@ export const CARBONIQ_QUESTIONS = [
   // #109
   {
     id: '6A-2',
-    number: 109,
+    number: 110,
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4179,7 +4224,7 @@ export const CARBONIQ_QUESTIONS = [
   // #110
   {
     id: '6A-3',
-    number: 110,
+    number: 111,
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4209,7 +4254,7 @@ export const CARBONIQ_QUESTIONS = [
   // #111
   {
     id: '6A-4',
-    number: 111,
+    number: 112,
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4239,7 +4284,7 @@ export const CARBONIQ_QUESTIONS = [
   // #112
   {
     id: '6A-5',
-    number: 112,
+    number: 113,
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4268,7 +4313,7 @@ export const CARBONIQ_QUESTIONS = [
   // #113
   {
     id: '6A-6',
-    number: 113,
+    number: 114,
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4297,7 +4342,7 @@ export const CARBONIQ_QUESTIONS = [
   // #114
   {
     id: '6B-OV',
-    number: 114,
+    number: 115,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4327,7 +4372,7 @@ export const CARBONIQ_QUESTIONS = [
   // #115
   {
     id: '6C-1',
-    number: 115,
+    number: 116,
     stage: 6,
     block: '6C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -4357,7 +4402,7 @@ export const CARBONIQ_QUESTIONS = [
   // #116
   {
     id: '6C-2',
-    number: 116,
+    number: 117,
     stage: 6,
     block: '6C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -4407,7 +4452,7 @@ export const CARBONIQ_QUESTIONS = [
   // #117
   {
     id: '6C-3',
-    number: 117,
+    number: 118,
     stage: 6,
     block: '6C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -4438,7 +4483,7 @@ export const CARBONIQ_QUESTIONS = [
   // #118
   {
     id: '6D-1',
-    number: 118,
+    number: 119,
     stage: 6,
     block: '6D',
     isoRef: 'ISO 14064-1 §5.1',
@@ -4467,7 +4512,7 @@ export const CARBONIQ_QUESTIONS = [
   // #119
   {
     id: '6E-1',
-    number: 119,
+    number: 120,
     stage: 6,
     block: '6E',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4498,7 +4543,7 @@ export const CARBONIQ_QUESTIONS = [
   // #120
   {
     id: '6F-1',
-    number: 120,
+    number: 121,
     stage: 6,
     block: '6F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4531,7 +4576,7 @@ export const CARBONIQ_QUESTIONS = [
   // #121
   {
     id: '6F-2',
-    number: 121,
+    number: 122,
     stage: 6,
     block: '6F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4558,7 +4603,7 @@ export const CARBONIQ_QUESTIONS = [
   // #122
   {
     id: '6F-3',
-    number: 122,
+    number: 123,
     stage: 6,
     block: '6F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4589,7 +4634,7 @@ export const CARBONIQ_QUESTIONS = [
   // #123
   {
     id: '7-GİRİŞ',
-    number: 123,
+    number: 124,
     stage: 7,
     block: '7-GİRİŞ',
     isoRef: 'ISO 14064-1 §7.5',
@@ -4608,7 +4653,7 @@ export const CARBONIQ_QUESTIONS = [
   // #124
   {
     id: '7C-1',
-    number: 124,
+    number: 125,
     stage: 7,
     block: '7C',
     isoRef: 'ISO 14064-1 §7.5',
@@ -4635,7 +4680,7 @@ export const CARBONIQ_QUESTIONS = [
   // #125
   {
     id: '7C-2',
-    number: 125,
+    number: 126,
     stage: 7,
     block: '7C',
     isoRef: 'ISO 14064-1 §7.5',
@@ -4685,7 +4730,7 @@ export const CARBONIQ_QUESTIONS = [
   // #126
   {
     id: '7A-INFO',
-    number: 126,
+    number: 127,
     stage: 7,
     block: '7A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -4704,7 +4749,7 @@ export const CARBONIQ_QUESTIONS = [
   // #127
   {
     id: '7B-INFO',
-    number: 127,
+    number: 128,
     stage: 7,
     block: '7B',
     isoRef: 'ISO 14064-1 §7.5',
@@ -4732,7 +4777,7 @@ export const CARBONIQ_QUESTIONS = [
   // #128
   {
     id: '6B-0',
-    number: 128,
+    number: 129,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4751,7 +4796,7 @@ export const CARBONIQ_QUESTIONS = [
   // #129
   {
     id: '6B-1',
-    number: 129,
+    number: 130,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4778,7 +4823,7 @@ export const CARBONIQ_QUESTIONS = [
   // #130
   {
     id: '6B-2',
-    number: 130,
+    number: 131,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4807,7 +4852,7 @@ export const CARBONIQ_QUESTIONS = [
   // #131
   {
     id: '6B-3',
-    number: 131,
+    number: 132,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4836,7 +4881,7 @@ export const CARBONIQ_QUESTIONS = [
   // #132
   {
     id: '6B-4',
-    number: 132,
+    number: 133,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4865,7 +4910,7 @@ export const CARBONIQ_QUESTIONS = [
   // #133
   {
     id: '6B-5',
-    number: 133,
+    number: 134,
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -4891,8 +4936,20 @@ export const CARBONIQ_QUESTIONS = [
   },
 ];
 
-/** Total number of questions in the inventory flow. Used for progress display. */
+/** Total number of question objects in the inventory flow.
+ *  NOT a good progress denominator on its own — it counts `type: 'info'`
+ *  screens and conditional branches most users never see. The survey UI
+ *  derives a per-user denominator instead (getApplicableQuestions). */
 export const TOTAL_QUESTIONS = CARBONIQ_QUESTIONS.length;
+
+/** Highest `number:` in the bank. Distinct from TOTAL_QUESTIONS because the
+ *  info screens carry no number — numbering runs 1..134 across 138 objects.
+ *  Use this, never TOTAL_QUESTIONS, as the denominator whenever a question's
+ *  own `number` is shown to the user ("Q 36 / 134"). */
+export const MAX_QUESTION_NUMBER = CARBONIQ_QUESTIONS.reduce(
+  (max, q) => (typeof q.number === 'number' && q.number > max ? q.number : max),
+  0,
+);
 
 export function getQuestionById(id) {
   return CARBONIQ_QUESTIONS.find((question) => question.id === id);

@@ -13,6 +13,7 @@ import { InventoryProvider, useInventory } from './InventoryWorkflow';
 import InventoryLibrary from './InventoryLibrary';
 import ReviewPage from './ReviewPage';
 import SaveDraftModal from './SaveDraftModal';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Carbon Brain orb animations (injected once via <style> in FreeChatTab)
@@ -32,6 +33,7 @@ import {
   CARBONIQ_STAGES,
   CARBONIQ_QUESTIONS,
   TOTAL_QUESTIONS,
+  MAX_QUESTION_NUMBER,
   getInitialQuestionId,
   getNextQuestionId,
   getQuestionById,
@@ -172,6 +174,94 @@ function mapAnswerForBackend(questionId, value) {
 
     default: return { answer: value };
   }
+}
+
+// Inverse of mapAnswerForBackend, for the "reuse previous Company Profile?"
+// flow — reconstructs the raw local-state value shape (what submitAnswer
+// would have stored) from a Phase-1 answer fetched from the backend
+// (previous-profile endpoint / a completed report), so:
+//   - confirming reuse can seed local `answers` with real values (not just a
+//     placeholder), in case the user navigates back into Stage 1; and
+//   - declining reuse can still pre-fill each A1-D4 input with the old value
+//     as an editable default instead of starting blank.
+// Returns undefined for anything it doesn't recognise (including all
+// non-Phase-1 question ids), so callers can safely fall back to their own default.
+function unmapPhase1Answer(questionId, backendAnswer) {
+  if (!backendAnswer || typeof backendAnswer !== 'object') return undefined;
+  switch (questionId) {
+    case 'A1': return backendAnswer.legal_name;
+    case 'A2': return backendAnswer.tax_id;
+    case 'A3': return { country: backendAnswer.country || '', city: backendAnswer.city || '' };
+    case 'A4': return backendAnswer.reporting_year != null ? String(backendAnswer.reporting_year) : undefined;
+    case 'A5': return backendAnswer.prepared_by;
+    case 'A6': {
+      const reverseMap = { internal: 'internal_strategy', legal: 'legal_obligation', voluntary: 'voluntary_disclosure', client: 'customer_request' };
+      return Array.isArray(backendAnswer.purposes) ? backendAnswer.purposes.map(v => reverseMap[v] || v) : [];
+    }
+    case 'A7': return backendAnswer.has_previous_report ? 'yes' : 'no';
+    case 'A7a': return backendAnswer.baseline_year != null ? String(backendAnswer.baseline_year) : undefined;
+    case 'B1': return backendAnswer.nace_code ? `NACE_${backendAnswer.nace_code}` : undefined;
+    case 'B2': return backendAnswer.activity_description || '';
+    case 'B3': {
+      const reverseMap = { '1-50': '1_50', '51-250': '51_250', '251-1000': '251_1000', '1001-5000': '1001_5000', '5000+': '5000_plus' };
+      return reverseMap[backendAnswer.employee_band] || backendAnswer.employee_band;
+    }
+    case 'B4': return backendAnswer.number_of_facilities != null ? String(backendAnswer.number_of_facilities) : undefined;
+    case 'B5': return Array.isArray(backendAnswer.facility_types) ? backendAnswer.facility_types : [];
+    case 'B6': {
+      const reverseMap = { '<1M': 'under_1m', '1-10M': '1m_10m', '10-100M': '10m_100m', '100M-1B': '100m_1b', '1B+': 'over_1b' };
+      return reverseMap[backendAnswer.revenue_band] || backendAnswer.revenue_band;
+    }
+    case 'C1': return backendAnswer.has_subsidiaries ? 'yes' : 'no';
+    case 'C2': return backendAnswer.has_international ? 'yes' : 'no';
+    case 'C3': return backendAnswer.has_jv_franchise ? 'yes' : 'no';
+    case 'D1': return backendAnswer.ef_database || undefined;
+    case 'D3': return backendAnswer.boundary_approach || undefined;
+    case 'D4': return backendAnswer.scope3_approach || undefined;
+    default: return undefined;
+  }
+}
+
+// An answer shows up in two different shapes depending on where it's read from:
+// live local state stores the raw widget value, but a report hydrated from the
+// backend stores whatever was PATCHed as `data` — which for most questions is
+// mapAnswerForBackend's default case, { answer: value }. This normalises either
+// shape to the raw value so callers can compare against option values directly.
+// Object-valued answers that carry no `answer` key (country_city's
+// {country, city}, compound's field map) are returned untouched.
+function readAnswerValue(answersMap, questionId) {
+  const v = answersMap?.[questionId];
+  if (v && typeof v === 'object' && !Array.isArray(v) && 'answer' in v) return v.answer;
+  return v;
+}
+
+// Evaluates a question's `conditionalShow` against the current answers.
+// Shared by the forward-skip loop in submitAnswer and the progress denominator,
+// so "is this question reachable?" is answered the same way in both places.
+function conditionalShowMatches(conditionalShow, answersMap) {
+  if (!conditionalShow) return true;
+  const { questionId, includesValue, inValues, equals } = conditionalShow;
+  const answer = readAnswerValue(answersMap, questionId);
+  if (inValues) {
+    return Array.isArray(answer) ? answer.some(a => inValues.includes(a)) : inValues.includes(answer);
+  }
+  if (equals !== undefined) return answer === equals;
+  return Array.isArray(answer) ? answer.includes(includesValue) : answer === includesValue;
+}
+
+// Questions the user will actually be asked, given what they've answered so far.
+// The raw CARBONIQ_QUESTIONS count (138) is the wrong progress denominator: 8
+// entries are `type: 'info'` screens (not questions at all) and 21 are
+// conditional branches most users never see — so a finished survey used to stall
+// around 80% and could never reach 100%. An already-answered question always
+// counts, even if its condition no longer holds, so the denominator can't shrink
+// below what the user has already done.
+function getApplicableQuestions(answersMap) {
+  return CARBONIQ_QUESTIONS.filter(q => {
+    if (q.type === 'info') return false;
+    if (q.id in answersMap) return true;
+    return conditionalShowMatches(q.conditionalShow, answersMap);
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1368,21 +1458,44 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
 // ─────────────────────────────────────────────────────────────────────────────
 function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
   const tr = lang === 'tr';
+  const scopesCombined = readAnswerValue(answers, 'SCOPE-GROUPING') === 'combined';
 
-  // O(stages × answers) — memoized so it only recomputes when answers or currentId change
-  const { stageStats, totalAnswered, pct } = useMemo(() => {
+  // O(stages × answers) — memoized so it only recomputes when answers or currentId change.
+  // When Scope 1+2 are set to "combined" (SCOPE-GROUPING), stages 3 and 4 are
+  // folded into a single "Scope 1 & 2" row — same underlying questions, just a
+  // different display grouping (see the question's own comment for why).
+  const { displayStages, stageStats, totalAnswered, applicableTotal, pct } = useMemo(() => {
     const allAnswered = Object.keys(answers);
-    const stageStats = CARBONIQ_STAGES.map(stage => {
-      const answeredInStage = allAnswered.filter(qid => {
-        const q = getQuestionById(qid);
-        return q && q.stage === stage.id;
-      });
-      return { stage, answeredCount: answeredInStage.length };
-    });
-    const totalAnswered = allAnswered.length;
-    const pct = Math.min(100, Math.round((totalAnswered / TOTAL_QUESTIONS) * 100));
-    return { stageStats, totalAnswered, pct };
-  }, [answers]);
+    // Count only real questions — info screens are stored in `answers` too (they
+    // advance via the same submit path), so including them would let the
+    // numerator outrun a denominator that excludes them.
+    const isRealQuestion = (qid) => getQuestionById(qid)?.type !== 'info';
+    const countForStage = (stageId) => allAnswered.filter(qid => {
+      const q = getQuestionById(qid);
+      return q && q.stage === stageId && q.type !== 'info';
+    }).length;
+
+    const displayStages = scopesCombined
+      ? [
+          ...CARBONIQ_STAGES.filter(s => s.id < 3),
+          { id: 'combined-3-4', stageIds: [3, 4], title: { tr: 'Kapsam 1 ve 2', en: 'Scope 1 & 2' } },
+          ...CARBONIQ_STAGES.filter(s => s.id > 4),
+        ]
+      : CARBONIQ_STAGES;
+
+    const stageStats = displayStages.map(stage => ({
+      stage,
+      answeredCount: stage.stageIds
+        ? stage.stageIds.reduce((sum, id) => sum + countForStage(id), 0)
+        : countForStage(stage.id),
+    }));
+    const totalAnswered = allAnswered.filter(isRealQuestion).length;
+    const applicableTotal = getApplicableQuestions(answers).length;
+    const pct = applicableTotal
+      ? Math.min(100, Math.round((totalAnswered / applicableTotal) * 100))
+      : 0;
+    return { displayStages, stageStats, totalAnswered, applicableTotal, pct };
+  }, [answers, scopesCombined]);
 
   return (
     <aside
@@ -1408,7 +1521,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
       <div className="border-b border-[#175022]/6 px-3 py-3">
         <div className="mb-1.5 flex items-center justify-between">
           <span className="text-[10px] font-semibold text-[#175022]/60">
-            {totalAnswered} / {TOTAL_QUESTIONS}
+            {totalAnswered} / {applicableTotal}
           </span>
           <span className="text-[10px] font-bold text-[#2ABD41]">{pct}%</span>
         </div>
@@ -1422,11 +1535,13 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
 
       {/* Stage list */}
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-        {CARBONIQ_STAGES.map(stage => {
+        {displayStages.map(stage => {
           const stat = stageStats.find(s => s.stage.id === stage.id);
           const answered = stat?.answeredCount || 0;
           const currentQ = getQuestionById(currentId);
-          const isCurrent = currentQ?.stage === stage.id;
+          const isCurrent = stage.stageIds
+            ? stage.stageIds.includes(currentQ?.stage)
+            : currentQ?.stage === stage.id;
           return (
             <div
               key={stage.id}
@@ -1814,12 +1929,105 @@ function QuestionnaireTab({
   // ✅ Edit mode: return to review after saving, not continue survey
   const [editingQuestionId, setEditingQuestionId] = useState(null);
 
+  // ✅ "Reuse previous Company Profile?" — previousProfile holds the check
+  // result (null until fetched, {available:false} if the company has none),
+  // showReuseDialog drives the confirm modal, reuseLoading guards the button
+  // while the copy-over request is in flight.
+  const [previousProfile, setPreviousProfile] = useState(null);
+  const [showReuseDialog, setShowReuseDialog] = useState(false);
+  const [reuseLoading, setReuseLoading] = useState(false);
+  const previousProfileCheckedRef = useRef(false);
+
   // reportId persistence/restore lives entirely in InventoryWorkflow.jsx now
   // (localStorage key 'carboniq_activeInventoryId') — this component is always
   // hydrated with an already-resolved reportId/answers/step from that context.
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
+  }, []);
+
+  // ✅ On a genuinely fresh report (nothing answered yet, sitting at the very
+  // first question) check whether this company already has a Company Profile
+  // saved on an earlier report, and if so, offer to reuse it instead of
+  // re-asking ~20 questions. Runs once per mount — a resumed report (any
+  // answers already present) or one that's already past A1 skips this.
+  useEffect(() => {
+    if (previousProfileCheckedRef.current) return;
+    if (!reportId || currentId !== 'A1' || Object.keys(answers).length > 0) return;
+    previousProfileCheckedRef.current = true;
+    api.getPreviousCompanyProfile(reportId)
+      .then(res => res.json())
+      .then(data => {
+        if (!isMounted.current) return;
+        setPreviousProfile(data);
+        if (data?.available) setShowReuseDialog(true);
+      })
+      .catch(e => console.error('getPreviousCompanyProfile failed:', e));
+  }, [reportId, currentId, answers]);
+
+  // ✅ Pre-fill Stage-1 (Company Profile) inputs from the previous report once
+  // the user has moved past the reuse dialog — applies whether they declined
+  // reuse (previousProfile stays populated) or no previous profile existed
+  // (previousProfile is {available:false}, so unmapPhase1Answer never matches
+  // and this is a no-op). Skipped for a question the user already answered
+  // (e.g. navigating back), so it never clobbers a real in-progress edit.
+  useEffect(() => {
+    if (!previousProfile?.answers || currentId in answers) return;
+    const prefilled = unmapPhase1Answer(currentId, previousProfile.answers[currentId]);
+    if (prefilled !== undefined) setAnswerValue(prefilled);
+  }, [currentId, previousProfile, answers]);
+
+  const handleConfirmReuseProfile = useCallback(async () => {
+    if (!reportId || reuseLoading) return;
+    setReuseLoading(true);
+    try {
+      const res = await api.reuseCompanyProfile(reportId);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setAnswers(prev => {
+          const next = { ...prev };
+          Object.entries(data.answers || {}).forEach(([stepId, backendAnswer]) => {
+            const raw = unmapPhase1Answer(stepId, backendAnswer);
+            next[stepId] = raw !== undefined ? raw : true;
+          });
+          return next;
+        });
+        const nextId = data.current_step || '2A-0';
+        const nextQ = getQuestionById(nextId);
+        setCurrentId(nextId);
+        setAnswerValue(getInitialValue(nextQ));
+        onDirtyChange?.(true);
+        // Replace the transcript rather than appending: the mount-time welcome
+        // bubble already asked question 1 (the company name), and we've just
+        // skipped past it. Appending would leave that question visibly asked
+        // but abandoned, directly above the message saying it was skipped.
+        setMessages([
+          {
+            id: `m-${++msgIdRef.current}`,
+            role: 'assistant',
+            type: 'info',
+            content: tr
+              ? '✅ Önceki şirket profiliniz kullanıldı. Şimdi organizasyon sınırınızı tanımlayalım.'
+              : "✅ Reused your previous company profile. Let's define your organizational boundary now.",
+          },
+          ...(nextQ ? [{
+            id: `m-${++msgIdRef.current}`,
+            role: 'assistant',
+            type: nextQ.type === 'info' ? 'info' : 'assistant',
+            content: nextQ.text?.[lang] || nextQ.text?.en,
+          }] : []),
+        ]);
+      }
+    } catch (e) {
+      console.error('reuseCompanyProfile failed:', e);
+    } finally {
+      setReuseLoading(false);
+      setShowReuseDialog(false);
+    }
+  }, [reportId, reuseLoading, tr, lang, onDirtyChange]);
+
+  const handleDeclineReuseProfile = useCallback(() => {
+    setShowReuseDialog(false);
   }, []);
 
   const helpSessionRef = useRef(null);
@@ -1862,8 +2070,20 @@ function QuestionnaireTab({
   const completionStageBreakdown = useMemo(() => {
     if (!completed) return [];
     const src = completedReport?.answers || answers;
-    return CARBONIQ_STAGES.map(stage => {
-      const stageQuestions = CARBONIQ_QUESTIONS.filter(q => q.stage === stage.id && q.type !== 'info');
+    const combined = readAnswerValue(src, 'SCOPE-GROUPING') === 'combined';
+    const stagesToShow = combined
+      ? [
+          ...CARBONIQ_STAGES.filter(s => s.id !== 3 && s.id !== 4 && s.id < 5),
+          { id: 'combined-3-4', stageIds: [3, 4], title: { tr: 'Kapsam 1 ve 2', en: 'Scope 1 & 2' } },
+          ...CARBONIQ_STAGES.filter(s => s.id >= 5),
+        ]
+      : CARBONIQ_STAGES;
+    // Same "applicable" rule as the live progress bar, so a completed survey
+    // reads 100% here too instead of counting branches this user never saw.
+    const applicable = getApplicableQuestions(src);
+    return stagesToShow.map(stage => {
+      const stageIds = stage.stageIds || [stage.id];
+      const stageQuestions = applicable.filter(q => stageIds.includes(q.stage));
       const answeredIds = stageQuestions.filter(q => q.id in src).map(q => q.id);
       return {
         id: stage.id,
@@ -2411,18 +2631,17 @@ function QuestionnaireTab({
       // NACE sectors; without this bypass a non-industrial user picking "3C" would
       // be silently redirected to 3D-0 instead of the section they selected.
       let nextId = getNextQuestionId(q, value);
+      // Scope 1+2 "combined" grouping (see SCOPE-GROUPING): skip the Scope 2
+      // intro screen so the two scopes read as one continuous section instead
+      // of being interrupted by a "now starting Scope 2" break.
+      if (nextId === '4-GİRİŞ' && readAnswerValue(newAnswers, 'SCOPE-GROUPING') === 'combined') {
+        nextId = getQuestionById('4-GİRİŞ')?.next || nextId;
+      }
       if (q.type !== 'section_picker') {
         while (nextId) {
           const candidate = getQuestionById(nextId);
           if (!candidate?.conditionalShow) break;
-          const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
-          const csAnswer = newAnswers[csQid];
-          const matches = csVals
-            ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
-            : csEquals !== undefined
-              ? csAnswer === csEquals
-              : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
-          if (matches) break;
+          if (conditionalShowMatches(candidate.conditionalShow, newAnswers)) break;
           nextId = candidate.next || candidate.loopNext || null;
         }
       }
@@ -2661,7 +2880,7 @@ function QuestionnaireTab({
             {currentQuestion && (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-[#175022]/40">
-                  {tr ? 'Soru' : 'Q'} {currentQuestion.number} / {TOTAL_QUESTIONS}
+                  {tr ? 'Soru' : 'Q'} {currentQuestion.number} / {MAX_QUESTION_NUMBER}
                 </span>
                 {currentQuestion.isoRef && (
                   <span className="rounded-full bg-[#8BEA99]/15 px-2 py-0.5 text-[9px] font-bold text-[#175022]">
@@ -2884,6 +3103,27 @@ function QuestionnaireTab({
         currentQuestion={currentQuestion}
         lang={lang}
         helpSessionRef={helpSessionRef}
+      />
+
+      {/* Reuse previous Company Profile? — shown once, on a genuinely fresh
+          report, when this company already has one from an earlier report. */}
+      <ConfirmDialog
+        open={showReuseDialog && !reuseLoading}
+        onConfirm={handleConfirmReuseProfile}
+        onCancel={handleDeclineReuseProfile}
+        title={tr ? 'Önceki şirket profilini kullanalım mı?' : 'Reuse your previous company profile?'}
+        message={
+          previousProfile?.reporting_year
+            ? (tr
+                ? `${previousProfile.reporting_year} raporlama yılı için kaydettiğiniz şirket bilgileri (unvan, sektör, sınır yaklaşımı vb.) bu raporda da aynı mı? Aynıysa bu ~20 soruyu atlayıp doğrudan devam edebilirsiniz.`
+                : `Is the company info you saved for reporting year ${previousProfile.reporting_year} (legal name, sector, boundary approach, etc.) still the same for this report? If so, we can skip these ~20 questions and jump straight ahead.`)
+            : (tr
+                ? 'Daha önce kaydettiğiniz şirket bilgileri bu raporda da aynı mı? Aynıysa bu ~20 soruyu atlayıp doğrudan devam edebilirsiniz.'
+                : 'Is the company info you saved before still the same for this report? If so, we can skip these ~20 questions and jump straight ahead.')
+        }
+        confirmText={tr ? 'Evet, aynı — atla' : 'Yes, same — skip'}
+        cancelText={tr ? 'Hayır, tekrar gireyim' : 'No, let me re-enter'}
+        type="warning"
       />
     </div>
   );

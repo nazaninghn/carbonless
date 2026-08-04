@@ -197,11 +197,18 @@ SIMPLE_JWT = {
 # CORS — environment-aware
 # ============================================
 if IS_DEV:
+    # 3003 is the port .claude/launch.json starts the Next.js frontend on —
+    # without it every browser call to this API fails CORS preflight in local
+    # dev (the Next.js /api/auth/* proxy routes still work, since those are
+    # same-origin, which makes the breakage look like "login works but nothing
+    # else does").
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:3003",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
+        "http://127.0.0.1:3003",
     ]
 else:
     CORS_ALLOWED_ORIGINS = []

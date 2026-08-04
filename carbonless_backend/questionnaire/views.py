@@ -5,10 +5,31 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 import logging
 
-# Fix #28: Keep in sync with the frontend questions.js question count.
-# The previous value (96) was stale — questions.js defines 133 questions.
-# Centralising the constant here makes future updates a one-line change.
-TOTAL_QUESTIONS = 133
+# Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
+# Verify with:
+#   node -e "const s=require('fs').readFileSync('src/lib/carboniq/questions.js','utf8');
+#            console.log([...s.matchAll(/^\s{4}id: '[^']+',/gm)].length)"
+TOTAL_QUESTIONS = 138
+
+
+def _progress(completed_count, status):
+    """Coarse progress for report *lists*.
+
+    This is deliberately an approximation: of the 138 question objects, 8 are
+    info screens and 21 are conditional branches whose reachability depends on
+    the user's own answers — and only the client has the question definitions
+    needed to evaluate those conditions. So the survey UI computes its own
+    exact denominator (see getApplicableQuestions in CarbonAIPage.jsx) and this
+    is just for the inventory library's summary bars.
+
+    A finished report therefore has to be special-cased to 100%, or it would
+    sit at ~80% forever purely because the user never hit the branches that
+    don't apply to them.
+    """
+    if status == CarbonReport.Status.COMPLETED:
+        return {'completed': completed_count, 'total': completed_count, 'percent': 100}
+    percent = round(completed_count / TOTAL_QUESTIONS * 100) if TOTAL_QUESTIONS else 0
+    return {'completed': completed_count, 'total': TOTAL_QUESTIONS, 'percent': percent}
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -499,11 +520,7 @@ class ReportStatusView(APIView):
                 'boundary_approach': report.boundary_approach,
                 'scope3_approach': report.scope3_approach,
                 'completed_steps': completed_steps,
-                'progress': {
-                    'completed': len(completed_steps),
-                    'total': TOTAL_QUESTIONS,
-                    'percent': round(len(completed_steps) / TOTAL_QUESTIONS * 100) if TOTAL_QUESTIONS > 0 else 0,
-                }
+                'progress': _progress(len(completed_steps), report.status),
             })
         except Exception as e:
             logger.error(f'Error in ReportStatusView: {e}', exc_info=True)
@@ -518,6 +535,123 @@ class ReportStatusView(APIView):
 
         report.delete()
         return Response(status=204)
+
+
+# ── Company Profile reuse ─────────────────────────────────────────────────────
+# "Company Profile" = Phase 1 = the A1-D4 steps (STRICT_STEPS in SubmitStepView).
+# Their answers live as individual ReportStep rows, but the meaningful values
+# also get denormalised onto CarbonReport itself by step_handlers.py — both
+# need copying for a report to look/behave as if the user answered them fresh.
+
+PHASE1_STEP_IDS = [
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+    'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+]
+
+PHASE1_REPORT_FIELDS = [
+    'reporting_year', 'prepared_by', 'purposes', 'legal_framework',
+    'voluntary_framework', 'has_previous_report', 'baseline_year',
+    'has_subsidiaries', 'has_international', 'has_jv_franchise',
+    'ef_database', 'ef_custom_source', 'ef_custom_year', 'scope2_method',
+    'boundary_approach', 'scope3_approach',
+]
+
+
+def _find_previous_profile_source(report):
+    """
+    Most recent OTHER CarbonReport for the same company that finished Phase 1
+    (has a 'D4' step — i.e. Company Profile was completed there). Any status
+    counts (draft/in_progress/completed) — per product decision, we don't
+    require the source report to itself be finished/submitted.
+    """
+    return (
+        CarbonReport.objects
+        .filter(company=report.company, steps__step_id='D4')
+        .exclude(id=report.id)
+        .order_by('-updated_at')
+        .first()
+    )
+
+
+class PreviousCompanyProfileView(APIView):
+    """GET /api/questionnaire/<report_id>/previous-profile/
+
+    Lets the frontend ask "does this company already have a completed
+    Company Profile from an earlier report?" before Phase 1 starts, so it can
+    offer to reuse it instead of re-asking ~20 questions.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        try:
+            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=404)
+
+        source = _find_previous_profile_source(report)
+        if not source:
+            return Response({'available': False})
+
+        answers = {
+            step.step_id: step.answer
+            for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS)
+        }
+
+        return Response({
+            'available': True,
+            'source_report_id': source.id,
+            'company_name': source.company.legal_entity_name,
+            'reporting_year': source.reporting_year,
+            'updated_at': source.updated_at,
+            'answers': answers,
+        })
+
+
+class ReuseCompanyProfileView(APIView):
+    """POST /api/questionnaire/<report_id>/reuse-profile/
+
+    Copies the Phase 1 (Company Profile) answers from the company's most
+    recent other report into this one, and fast-forwards current_step past
+    Phase 1 — used when the user confirms "yes, same info as before".
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, report_id):
+        try:
+            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=404)
+
+        source = _find_previous_profile_source(report)
+        if not source:
+            return Response({'error': 'No previous company profile found to reuse'}, status=404)
+
+        for field in PHASE1_REPORT_FIELDS:
+            setattr(report, field, getattr(source, field))
+        # '2A-0' is the real first Stage-2 question id (see questions.js) —
+        # more useful than the 'PHASE2' sentinel step_handlers.py normally
+        # writes here, which the frontend has no routing entry for.
+        report.current_step = '2A-0'
+        report.status = CarbonReport.Status.IN_PROGRESS
+        report.save()
+
+        answers = {}
+        for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS):
+            ReportStep.objects.update_or_create(
+                report=report,
+                step_id=step.step_id,
+                defaults={'answer': step.answer, 'is_skipped': False},
+            )
+            answers[step.step_id] = step.answer
+
+        return Response({
+            'success': True,
+            'report_id': report.id,
+            'current_step': report.current_step,
+            'source_report_id': source.id,
+            'answers': answers,
+        })
 
 
 class QuestionnairePDFView(APIView):
@@ -615,11 +749,7 @@ class ReportListView(APIView):
                 'current_step': r.current_step,
                 'created_at': r.created_at.isoformat() if r.created_at else None,
                 'updated_at': r.updated_at.isoformat() if r.updated_at else None,
-                'progress': {
-                    'completed': completed,
-                    'total': TOTAL_QUESTIONS,
-                    'percent': round(completed / TOTAL_QUESTIONS * 100) if TOTAL_QUESTIONS > 0 else 0,
-                },
+                'progress': _progress(completed, r.status),
             })
         return Response({'reports': data})
 
