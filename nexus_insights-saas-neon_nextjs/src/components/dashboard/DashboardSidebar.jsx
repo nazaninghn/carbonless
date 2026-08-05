@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
-  ClipboardCheck, ClipboardList, Bot, ChevronRight, MoreHorizontal, BarChart2, Sparkles,
+  ClipboardCheck, ClipboardList, Bot, ChevronRight, MoreHorizontal, BarChart2, Sparkles, Compass,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { key: 'benchmark',      icon: BarChart2,       tr: 'Benchmark',         en: 'Benchmark',       trS: 'Kiyas',    enS: 'Benchmark', section: 'data' },
   { key: 'review',         icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',          trS: 'Onay',     enS: 'Review',    section: 'manage' },
   { key: 'settings',       icon: Settings,        tr: 'Ayarlar',           en: 'Settings',        trS: 'Ayarlar',  enS: 'Settings',  section: 'manage' },
+  { key: 'how_it_works',   icon: Compass,         tr: 'Nasıl Çalışır?',    en: 'How it Works',    trS: 'Rehber',   enS: 'Guide',     section: 'help' },
 ];
 
 // Bottom nav shows the most-used tabs
@@ -37,6 +38,7 @@ export default function DashboardSidebar({
   const mainItems   = NAV_ITEMS.filter(i => i.section === 'main');
   const dataItems   = NAV_ITEMS.filter(i => i.section === 'data');
   const manageItems = NAV_ITEMS.filter(i => i.section === 'manage');
+  const helpItems   = NAV_ITEMS.filter(i => i.section === 'help');
 
   function renderNavItem(item) {
     const Icon = item.icon;
@@ -144,6 +146,14 @@ export default function DashboardSidebar({
                 {tr ? 'Yönetim' : 'Management'}
               </p>
               {manageItems.map(renderNavItem)}
+            </div>
+
+            {/* Help section */}
+            <div className="space-y-1">
+              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
+                {tr ? 'Yardım' : 'Help'}
+              </p>
+              {helpItems.map(renderNavItem)}
             </div>
           </nav>
 
@@ -253,19 +263,19 @@ export default function DashboardSidebar({
             onClick={() => setSidebarOpen(true)}
             className={`
               relative flex flex-1 flex-col items-center gap-0.5 py-2.5 transition
-              ${['settings', 'review', 'benchmark'].includes(activeTab) ? '' : 'opacity-50 hover:opacity-80'}
+              ${['settings', 'review', 'benchmark', 'how_it_works'].includes(activeTab) ? '' : 'opacity-50 hover:opacity-80'}
             `}
           >
-            {['settings', 'review', 'benchmark'].includes(activeTab) && (
+            {['settings', 'review', 'benchmark', 'how_it_works'].includes(activeTab) && (
               <span className="absolute left-1/2 top-0 h-0.5 w-8 -translate-x-1/2 rounded-full bg-[#072C0E]" />
             )}
             <div className="flex h-7 w-7 items-center justify-center rounded-xl">
               <MoreHorizontal className={`h-4 w-4 ${
-                ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#072C0E]' : 'text-[#072C0E]/40'
+                ['settings', 'review', 'benchmark', 'how_it_works'].includes(activeTab) ? 'text-[#072C0E]' : 'text-[#072C0E]/40'
               }`} />
             </div>
             <span className={`text-[9px] font-bold leading-none tracking-wide ${
-              ['settings', 'review', 'benchmark'].includes(activeTab) ? 'text-[#072C0E]' : 'text-[#072C0E]/35'
+              ['settings', 'review', 'benchmark', 'how_it_works'].includes(activeTab) ? 'text-[#072C0E]' : 'text-[#072C0E]/35'
             }`}>
               {tr ? 'Daha' : 'More'}
             </span>

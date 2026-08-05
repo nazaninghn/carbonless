@@ -17,6 +17,7 @@ import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
 import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
+import HowItWorksTab from '@/components/dashboard/HowItWorksTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
 import { computeLocalSummaryFromFields } from '@/lib/carboniq/emission-factors';
@@ -303,6 +304,13 @@ export default function DashboardPage() {
                 summary={effectiveSummary}
                 questionnaireProfile={questionnaireProfile}
               />
+            </ErrorBoundary>
+          )}
+
+          {/* ===== HOW IT WORKS TAB ===== */}
+          {activeTab === 'how_it_works' && (
+            <ErrorBoundary language={language}>
+              <HowItWorksTab language={language} setActiveTab={setActiveTab} />
             </ErrorBoundary>
           )}
 
