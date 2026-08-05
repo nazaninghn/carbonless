@@ -1458,7 +1458,9 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
 // ─────────────────────────────────────────────────────────────────────────────
 function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
   const tr = lang === 'tr';
-  const scopesCombined = readAnswerValue(answers, 'SCOPE-GROUPING') === 'combined';
+  // Default to combined (Scope 1 & 2 together) unless user explicitly chose 'separate'
+  const scopeGroupingAnswer = readAnswerValue(answers, 'SCOPE-GROUPING');
+  const scopesCombined = scopeGroupingAnswer !== 'separate';
 
   // O(stages × answers) — memoized so it only recomputes when answers or currentId change.
   // When Scope 1+2 are set to "combined" (SCOPE-GROUPING), stages 3 and 4 are
@@ -2070,7 +2072,7 @@ export function QuestionnaireTab({
   const completionStageBreakdown = useMemo(() => {
     if (!completed) return [];
     const src = completedReport?.answers || answers;
-    const combined = readAnswerValue(src, 'SCOPE-GROUPING') === 'combined';
+    const combined = readAnswerValue(src, 'SCOPE-GROUPING') !== 'separate';
     const stagesToShow = combined
       ? [
           ...CARBONIQ_STAGES.filter(s => s.id !== 3 && s.id !== 4 && s.id < 5),
@@ -2634,7 +2636,7 @@ export function QuestionnaireTab({
       // Scope 1+2 "combined" grouping (see SCOPE-GROUPING): skip the Scope 2
       // intro screen so the two scopes read as one continuous section instead
       // of being interrupted by a "now starting Scope 2" break.
-      if (nextId === '4-GİRİŞ' && readAnswerValue(newAnswers, 'SCOPE-GROUPING') === 'combined') {
+      if (nextId === '4-GİRİŞ' && readAnswerValue(newAnswers, 'SCOPE-GROUPING') !== 'separate') {
         nextId = getQuestionById('4-GİRİŞ')?.next || nextId;
       }
       if (q.type !== 'section_picker') {

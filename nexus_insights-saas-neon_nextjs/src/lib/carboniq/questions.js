@@ -1378,24 +1378,24 @@ export const CARBONIQ_QUESTIONS = [
       en: 'How would you like to answer the Scope 1 and Scope 2 questions?',
     },
     helper: {
-      tr: 'Bu yalnızca soruların size sunuluş biçimini değiştirir — hangi soruların sorulacağını değiştirmez.',
-      en: 'This only changes how the questions are presented to you — it does not change which questions are asked.',
+      tr: 'Kapsam 1 ve 2 birlikte sorulur (önerilen). Kapsam 3 her zaman ayrı bir bölüm olarak devam eder.',
+      en: 'Scope 1 and 2 are asked together (recommended). Scope 3 always continues as a separate section.',
     },
     options: [
       {
-        value: 'separate',
-        label: { tr: 'Ayrı ayrı (önerilen)', en: 'Separately (recommended)' },
+        value: 'combined',
+        label: { tr: 'Birlikte (önerilen)', en: 'Together (recommended)' },
         description: {
-          tr: 'Kapsam 1 tamamlandıktan sonra Kapsam 2\'ye ayrı bir bölüm olarak geçilir.',
-          en: 'Scope 2 begins as its own separate section after Scope 1 is complete.',
+          tr: 'Kapsam 1 ve Kapsam 2 aralarında ayrım yapılmadan tek bir akış olarak sorulur. Kapsam 3 ayrı kalır.',
+          en: 'Scope 1 and Scope 2 are asked as one continuous flow. Scope 3 remains separate.',
         },
       },
       {
-        value: 'combined',
-        label: { tr: 'Birlikte', en: 'Together' },
+        value: 'separate',
+        label: { tr: 'Ayrı ayrı', en: 'Separately' },
         description: {
-          tr: 'Kapsam 1 ve Kapsam 2 aralarında ayrım yapılmadan tek bir akış olarak sorulur.',
-          en: 'Scope 1 and Scope 2 are asked as one continuous flow, with no section break in between.',
+          tr: 'Kapsam 1 tamamlandıktan sonra Kapsam 2\'ye ayrı bir bölüm olarak geçilir.',
+          en: 'Scope 2 begins as its own separate section after Scope 1 is complete.',
         },
       },
     ],
