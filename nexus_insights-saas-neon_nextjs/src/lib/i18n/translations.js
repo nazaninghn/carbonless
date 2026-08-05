@@ -166,7 +166,7 @@ export const translations = {
       name: 'Carbonless',
       address: 'IT Valley - İstinye Üniversitesi Ayazağa Mahallesi, Kemerburgaz Caddesi Vadi İstanbul Park Blok 7A, No: 7B, İç Kapı No: 4 Sarıyer / İstanbul',
       phone: '+90 212 613 58 80',
-      email: 'info@carbonless.com'
+      email: 'info@carbonless.info'
     },
 
     // Scope 3 Emissions
@@ -451,7 +451,7 @@ export const translations = {
       name: 'Carbonless',
       address: 'IT Valley - İstinye University Ayazağa Mahallesi, Kemerburgaz Caddesi Vadi İstanbul Park Block 7A, No: 7B, Inner Door No: 4 Sarıyer / Istanbul',
       phone: '+90 212 613 58 80',
-      email: 'info@carbonless.com'
+      email: 'info@carbonless.info'
     },
 
     // Scope 3 Emissions

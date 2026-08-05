@@ -19,7 +19,7 @@ export const metadata = {
   keywords: 'carbon footprint calculator, ISO 14064-1, GHG Protocol, carbon accounting, AI carbon calculator, emission factors, Scope 1 2 3, ESG reporting, Carbonless',
   authors: [{ name: 'Carbonless' }],
   creator: 'Carbonless',
-  metadataBase: new URL('https://carbonless.app'),
+  metadataBase: new URL('https://carbonless.info'),
   openGraph: {
     title: 'Carbonless — AI-Powered Carbon Calculator',
     description: 'Measure, report, and reduce your company\'s carbon footprint with AI. ISO 14064-1 compliant. 188+ emission factors.',

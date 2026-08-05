@@ -17,7 +17,7 @@ def notify_report_ready(user, report_year):
             message=(
                 f"Hi {user.first_name or user.username},\n\n"
                 f"Your ISO 14064-1 carbon inventory report for {report_year} has been generated.\n\n"
-                f"Log in to download it: {settings.FRONTEND_URL or 'https://carbonless.app'}/dashboard\n\n"
+                f"Log in to download it: {settings.FRONTEND_URL or 'https://carbonless.info'}/dashboard\n\n"
                 f"— Carbonless Team"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,
@@ -39,7 +39,7 @@ def notify_target_exceeded(user, target, current_value):
                 f"Target: {target.target_value} tCO₂e\n"
                 f"Current: {current_value:.2f} tCO₂e\n"
                 f"Scope: {target.scope}\n\n"
-                f"Log in to review: {settings.FRONTEND_URL or 'https://carbonless.app'}/dashboard\n\n"
+                f"Log in to review: {settings.FRONTEND_URL or 'https://carbonless.info'}/dashboard\n\n"
                 f"— Carbonless Team"
             ),
             from_email=settings.DEFAULT_FROM_EMAIL,

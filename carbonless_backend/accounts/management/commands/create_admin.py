@@ -9,7 +9,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         username = os.environ.get('ADMIN_USERNAME', 'admin')
         password = os.environ.get('ADMIN_PASSWORD', 'admin123456')
-        email = os.environ.get('ADMIN_EMAIL', 'admin@carbonless.com')
+        email = os.environ.get('ADMIN_EMAIL', 'admin@carbonless.info')
 
         user, created = User.objects.get_or_create(
             username=username,

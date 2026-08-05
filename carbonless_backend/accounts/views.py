@@ -17,6 +17,16 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
+    def create(self, request, *args, **kwargs):
+        response = super().create(request, *args, **kwargs)
+        # Tell the client whether the code actually went out. Without this the
+        # account is created, the API returns 201, and the UI sends the user to
+        # the "enter your code" screen to wait for a mail that will never
+        # arrive — a dead end that looks like success from every angle.
+        if response.status_code == 201 and isinstance(response.data, dict):
+            response.data['email_sent'] = getattr(self, '_email_sent', True)
+        return response
+
     def perform_create(self, serializer):
         # Create user as inactive — they must verify email first
         user = serializer.save(is_active=False)
@@ -26,8 +36,8 @@ class RegisterView(generics.CreateAPIView):
         # Create verification code
         token_obj = EmailVerificationToken.objects.create(user=user)
 
-        # Send verification email
-        self._send_verification_email(user, token_obj.code)
+        # Send verification email (result surfaced to the client in create())
+        self._email_sent = self._send_verification_email(user, token_obj.code)
 
         # For development: also activate immediately if SKIP_EMAIL_VERIFICATION=true
         import os
@@ -36,6 +46,7 @@ class RegisterView(generics.CreateAPIView):
             user.save(update_fields=['is_active'])
 
     def _send_verification_email(self, user, code):
+        """Returns True if the message was handed to the mail backend."""
         from django.core.mail import send_mail
         from django.conf import settings
 
@@ -58,6 +69,7 @@ class RegisterView(generics.CreateAPIView):
                 recipient_list=[user.email],
                 fail_silently=False,
             )
+            return True
         except Exception as e:
             # Don't block registration if email fails — but log it loudly.
             # Previously this was fail_silently=True + a bare `except: pass`,
@@ -65,6 +77,7 @@ class RegisterView(generics.CreateAPIView):
             # the UI said "check your email" and nothing was ever sent, with
             # no way to tell from server logs.
             logger.error(f'Failed to send verification email to {user.email}: {e}', exc_info=True)
+            return False
 
 
 @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')

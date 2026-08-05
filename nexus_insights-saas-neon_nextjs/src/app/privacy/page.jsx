@@ -65,7 +65,7 @@ export default function PrivacyPage() {
 
             <section>
               <h2 className="mb-2 text-base font-bold text-[#072C0E]">10. Contact</h2>
-              <p>For privacy-related inquiries, contact us at <span className="font-bold text-[#2ABD41]">privacy@carbonless.com</span></p>
+              <p>For privacy-related inquiries, contact us at <span className="font-bold text-[#2ABD41]">privacy@carbonless.info</span></p>
             </section>
           </div>
         </div>

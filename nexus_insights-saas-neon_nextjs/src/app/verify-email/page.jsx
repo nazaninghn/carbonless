@@ -13,6 +13,8 @@ function VerifyContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get('email') || '';
+  // Set by the register page when the backend reported email_sent === false.
+  const mailFailed = searchParams.get('mail') === 'failed';
 
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(''));
   const [status, setStatus] = useState('idle'); // idle | verifying | success | error
@@ -139,11 +141,27 @@ function VerifyContent() {
                 <Mail className="h-8 w-8 text-amber-500" />
               </div>
               <h1 className="text-[20px] font-bold text-[#072C0E]">Enter Verification Code</h1>
-              <p className="mt-2 text-[14px] text-[#072C0E]/50">
-                {email
-                  ? <>We sent a 6-digit code to <span className="font-semibold text-[#072C0E]">{email}</span>.</>
-                  : 'We sent a 6-digit code to your email address.'}
-              </p>
+              {mailFailed ? (
+                // The server told us the mail never left. Saying "we sent a
+                // code" here would be a lie that leaves the user refreshing
+                // their inbox indefinitely.
+                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-left">
+                  <p className="text-[13px] font-semibold text-red-700">
+                    We couldn&apos;t send the verification email.
+                  </p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-red-600">
+                    Your account was created, but our mail server rejected the message. Try
+                    &quot;Resend code&quot; below — if it still fails, please contact support so we
+                    can activate your account manually.
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-2 text-[14px] text-[#072C0E]/50">
+                  {email
+                    ? <>We sent a 6-digit code to <span className="font-semibold text-[#072C0E]">{email}</span>.</>
+                    : 'We sent a 6-digit code to your email address.'}
+                </p>
+              )}
 
               <form onSubmit={handleVerify} className="mt-6">
                 <div className="flex justify-center gap-2" onPaste={handlePaste}>

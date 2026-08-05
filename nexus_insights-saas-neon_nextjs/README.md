@@ -86,7 +86,7 @@ npm start
 **Carbonless**
 - Address: IT Valley - İstinye Üniversitesi, Sarıyer / İstanbul
 - Phone: +90 212 613 58 80
-- Email: info@carbonless.com
+- Email: info@carbonless.info
 
 ## License
 

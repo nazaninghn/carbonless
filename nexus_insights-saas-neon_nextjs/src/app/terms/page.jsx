@@ -61,7 +61,7 @@ export default function TermsPage() {
 
             <section>
               <h2 className="mb-2 text-base font-bold text-[#072C0E]">9. Contact</h2>
-              <p>For questions about these Terms, please contact us at <span className="font-bold text-[#2ABD41]">legal@carbonless.com</span></p>
+              <p>For questions about these Terms, please contact us at <span className="font-bold text-[#2ABD41]">legal@carbonless.info</span></p>
             </section>
           </div>
         </div>

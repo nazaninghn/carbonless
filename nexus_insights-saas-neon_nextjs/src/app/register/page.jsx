@@ -139,6 +139,13 @@ export default function RegisterPage() {
         return; // outer finally calls setLoading(false)
       }
 
+      // The backend reports whether the verification mail actually left the
+      // server. If it didn't (SMTP down/unconfigured), sending the user to the
+      // "enter your code" screen would strand them waiting for a mail that
+      // isn't coming — so flag it and let that screen say so.
+      const regData = await regRes.json().catch(() => ({}));
+      const mailFailedParam = regData?.email_sent === false ? '&mail=failed' : '';
+
       // ── Step 2: Login via proxy (sets localStorage token + session cookie) ──
       // Must use /api/auth/login (not direct backend) so api.js stores the
       // access token in localStorage and markSessionActive() takes effect.
@@ -151,14 +158,14 @@ export default function RegisterPage() {
         if (loginRes.ok) activate();
       } catch {
         // Login failed  -  likely email verification required
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}${mailFailedParam}`);
         return;
       }
 
       if (!loginRes.ok) {
         // User created but inactive (needs email verification)
         // Redirect to verify-email page instead of showing error
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}${mailFailedParam}`);
         return;
       }
 

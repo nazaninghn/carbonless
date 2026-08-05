@@ -223,9 +223,30 @@ VERCEL_URL = os.environ.get('VERCEL_URL', '')
 if VERCEL_URL:
     CORS_ALLOWED_ORIGINS.append(f"https://{VERCEL_URL}")
 
-FRONTEND_URL = os.environ.get('FRONTEND_URL', '')
-if FRONTEND_URL:
-    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
+# Trailing slashes are a silent killer here: a browser Origin header never has
+# one, so "https://site.com/" would never match and every request would fail
+# CORS with no obvious reason. Normalise once, at the source.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', '').strip().rstrip('/')
+
+
+def _origin_variants(url):
+    """The given origin plus its www/apex counterpart.
+
+    https://example.com and https://www.example.com are different origins to
+    the browser, but a visitor can arrive at either one. Registering only the
+    one that happens to be in FRONTEND_URL is the most common cause of a CORS
+    failure that looks like it appeared out of nowhere on "the other" URL.
+    """
+    if not url:
+        return []
+    scheme, _, host = url.partition('://')
+    if not host:
+        return [url]
+    counterpart = host[4:] if host.startswith('www.') else f'www.{host}'
+    return [url, f'{scheme}://{counterpart}']
+
+
+CORS_ALLOWED_ORIGINS.extend(_origin_variants(FRONTEND_URL))
 
 # Allow any additional origins from env (comma-separated list)
 # e.g. CORS_EXTRA_ORIGINS=https://mycustomdomain.com,https://staging.example.com
@@ -238,8 +259,7 @@ CSRF_TRUSTED_ORIGINS = [
     # All Vercel preview deployments
     "https://*.vercel.app",
 ]
-if FRONTEND_URL:
-    CSRF_TRUSTED_ORIGINS.append(FRONTEND_URL)
+CSRF_TRUSTED_ORIGINS.extend(_origin_variants(FRONTEND_URL))
 if VERCEL_URL:
     CSRF_TRUSTED_ORIGINS.append(f"https://{VERCEL_URL}")
 
@@ -308,7 +328,7 @@ else:
 # Most SMTP providers (Gmail included) require the From address to match
 # the authenticated account, or they silently rewrite/reject it — default
 # to EMAIL_HOST_USER when DEFAULT_FROM_EMAIL isn't explicitly overridden.
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@carbonless.app'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@carbonless.info'
 
 # Skip email verification in development (set SKIP_EMAIL_VERIFICATION=true in .env)
 # In production, remove this or set to false
