@@ -320,6 +320,61 @@ export default function Home() {
         </div>
       </section>
 
+      {/* -- Scope 1/2/3 explainer — same card style and copy as the dashboard's
+          own "How it Works" guide, so a visitor who signs up sees a page they
+          already recognize instead of a differently-styled reintroduction. -- */}
+      <section className="relative z-10 py-12 sm:py-20 bg-white">
+        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+          <div className="text-center mb-10 sm:mb-14">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#DEFAE1] bg-[#F1FCF2] px-3 py-1 text-[11px] font-bold text-[#1A7B2A]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#2ABD41]" />
+              {lang === 'tr' ? 'GHG Protokolü' : 'GHG Protocol'}
+            </span>
+            <h2 className="mt-4 text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+              {lang === 'tr'
+                ? <>Her emisyon kaynağını <span className="text-[#2ABD41]">anlayın</span></>
+                : <>Understand every <span className="text-[#2ABD41]">emission source</span></>}
+            </h2>
+            <p className="mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50 max-w-xl mx-auto">
+              {lang === 'tr'
+                ? 'Carbonless, Kapsam 1, 2 ve 3 emisyonlarınızı AI ile otomatik olarak sınıflandırır ve hesaplar.'
+                : 'Carbonless automatically classifies and calculates your Scope 1, 2 and 3 emissions using AI.'}
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-3">
+            {[
+              {
+                icon: Factory, num: '1',
+                title: lang === 'tr' ? 'Doğrudan emisyonlar' : 'Direct emissions',
+                desc: lang === 'tr' ? 'Kendi tesisleriniz ve araçlarınızdan kaynaklanan emisyonlar.' : 'From facilities and vehicles you own or control.',
+              },
+              {
+                icon: Zap, num: '2',
+                title: lang === 'tr' ? 'Satın alınan enerji' : 'Purchased energy',
+                desc: lang === 'tr' ? 'Satın aldığınız elektrik, ısı veya buhardan kaynaklanan emisyonlar.' : 'From the electricity, heat, or steam you buy.',
+              },
+              {
+                icon: Truck, num: '3',
+                title: lang === 'tr' ? 'Tedarik zinciri' : 'Supply chain & travel',
+                desc: lang === 'tr' ? 'Tedarik zinciriniz, iş seyahatleri ve ürün kullanımından kaynaklanan dolaylı emisyonlar.' : 'Indirect emissions across your supply chain, business travel, and product use.',
+              },
+            ].map((scope) => (
+              <div key={scope.num} className="rounded-2xl border border-[#DEFAE1] bg-[#F9FFF4] p-5 sm:p-7">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[#2ABD41]/20 shadow-sm">
+                  <scope.icon className="h-5 w-5 text-[#2ABD41]" strokeWidth={1.8} />
+                </div>
+                <span className="mt-4 inline-flex h-6 items-center rounded-full bg-[#2ABD41]/10 px-2.5 text-[11px] font-bold text-[#2ABD41]">
+                  {lang === 'tr' ? `Kapsam ${scope.num}` : `Scope ${scope.num}`}
+                </span>
+                <h3 className="mt-2 text-[15px] sm:text-[16px] font-bold text-[#072C0E]">{scope.title}</h3>
+                <p className="mt-1.5 text-[13px] leading-[1.7] text-[#072C0E]/55">{scope.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section id="about" className="relative z-10 py-12 sm:py-20 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -490,7 +545,7 @@ export default function Home() {
           span once the steps stack into one column on mobile). -- */}
       <section id="how-it-works" className="relative z-10 py-12 sm:py-20 bg-[#F9FFF4]">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
-          <div className="text-center mb-12 sm:mb-16">
+          <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
               {lang === 'tr' ? 'Nasıl çalışır?' : 'How it works'}
             </h2>
@@ -499,71 +554,44 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="relative grid gap-10 sm:grid-cols-4 sm:gap-6">
-            <div aria-hidden className="hidden sm:block absolute left-[12.5%] right-[12.5%] top-6 h-px bg-[#DEFAE1]" />
+          {/* Plain numbered circles — same treatment as the dashboard's own
+              "How it Works" guide, replacing the previous per-step spinning/
+              pulsing icon animations for a calmer, more consistent brand feel. */}
+          <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-8">
+            <div className="relative grid gap-8 sm:grid-cols-4 sm:gap-6">
+              <div aria-hidden className="hidden sm:block absolute left-[12.5%] right-[12.5%] top-6 h-px bg-[#DEFAE1]" />
 
-            {[
-              {
-                icon: null, useOrb: true, num: '1',
-                title: lang === 'tr' ? 'Verinizi anlatın' : 'Tell the AI',
-                desc: lang === 'tr' ? 'Enerji, seyahat ya da satın alımlarınızı sade bir dille anlatın — tablo yok.' : 'Describe your energy use, travel, or purchases in plain language — no spreadsheets.',
-              },
-              {
-                icon: null, useOrb: true, orbStyle: 'composing', num: '2',
-                title: lang === 'tr' ? 'AI hesaplar' : 'AI calculates',
-                desc: lang === 'tr' ? "CarbonIQ, verinizi 188+ emisyon faktörüyle anında eşleştirir." : 'CarbonIQ matches your data against 188+ emission factors instantly.',
-              },
-              {
-                icon: null, useOrb: true, orbStyle: 'breathing', num: '3',
-                title: lang === 'tr' ? 'Raporunuzu alın' : 'Get your report',
-                desc: lang === 'tr' ? 'Saniyeler içinde ISO 14064-1 uyumlu, denetime hazır PDF raporu.' : 'An ISO 14064-1 compliant, audit-ready PDF report in seconds.',
-              },
-              {
-                icon: null, useOrb: true, orbStyle: 'weaving', num: '4',
-                title: lang === 'tr' ? 'Hedef belirleyin' : 'Track & reduce',
-                desc: lang === 'tr' ? 'Hedefler koyun, ilerlemenizi izleyin, ayak izinizi zamanla küçültün.' : 'Set targets, track progress, and watch your footprint shrink over time.',
-              },
-            ].map((step) => (
-              <div key={step.num} className="relative flex flex-col items-center text-center">
-                <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] shadow-sm">
-                  {step.useOrb ? (
-                    <div className="relative h-6 w-6">
-                      {step.orbStyle === 'composing' ? (
-                        <>
-                          <div className="absolute inset-0 rounded-full bg-[#2ABD41]/10 animate-pulse" />
-                          <div className="absolute inset-0.5 rounded-full border border-[#2ABD41]/40 animate-spin" style={{ animationDuration: '3s' }} />
-                          <div className="absolute inset-1.5 rounded-full bg-gradient-to-tr from-[#2ABD41] to-[#8BEA99] animate-pulse" style={{ animationDuration: '1.5s' }} />
-                        </>
-                      ) : step.orbStyle === 'breathing' ? (
-                        <>
-                          <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#2ABD41]/50 animate-spin" style={{ animationDuration: '4s' }} />
-                          <div className="absolute inset-1.5 rounded-full bg-[#2ABD41]/15 animate-ping" style={{ animationDuration: '2s' }} />
-                        </>
-                      ) : step.orbStyle === 'weaving' ? (
-                        <>
-                          <div className="absolute inset-0 rounded-full border-2 border-[#2ABD41]/40 animate-pulse" />
-                          <div className="absolute inset-0 rounded-full border-l-2 border-r-2 border-transparent border-l-[#2ABD41] border-r-[#2ABD41] animate-spin" style={{ animationDuration: '2s' }} />
-                          <div className="absolute inset-1 rounded-full border-t-2 border-b-2 border-transparent border-t-[#2ABD41]/60 border-b-[#2ABD41]/60 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '3s' }} />
-                        </>
-                      ) : (
-                        <>
-                          <div className="absolute inset-0 rounded-full border-2 border-[#2ABD41]/30 border-t-[#2ABD41] animate-spin" />
-                          <div className="absolute inset-1 rounded-full border-2 border-[#2ABD41]/20 border-b-[#2ABD41] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }} />
-                          <div className="absolute inset-2 rounded-full bg-[#2ABD41]/20" />
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <step.icon className="h-5 w-5 text-[#2ABD41]" strokeWidth={1.8} />
-                  )}
+              {[
+                {
+                  num: '1',
+                  title: lang === 'tr' ? 'Verinizi anlatın' : 'Tell the AI',
+                  desc: lang === 'tr' ? 'Enerji, seyahat ya da satın alımlarınızı sade bir dille anlatın — tablo yok.' : 'Describe your energy use, travel, or purchases in plain language — no spreadsheets.',
+                },
+                {
+                  num: '2',
+                  title: lang === 'tr' ? 'AI hesaplar' : 'AI calculates',
+                  desc: lang === 'tr' ? "CarbonIQ, verinizi 188+ emisyon faktörüyle anında eşleştirir." : 'CarbonIQ matches your data against 188+ emission factors instantly.',
+                },
+                {
+                  num: '3',
+                  title: lang === 'tr' ? 'Raporunuzu alın' : 'Get your report',
+                  desc: lang === 'tr' ? 'Saniyeler içinde ISO 14064-1 uyumlu, denetime hazır PDF raporu.' : 'An ISO 14064-1 compliant, audit-ready PDF report in seconds.',
+                },
+                {
+                  num: '4',
+                  title: lang === 'tr' ? 'Hedef belirleyin' : 'Track & reduce',
+                  desc: lang === 'tr' ? 'Hedefler koyun, ilerlemenizi izleyin, ayak izinizi zamanla küçültün.' : 'Set targets, track progress, and watch your footprint shrink over time.',
+                },
+              ].map((step) => (
+                <div key={step.num} className="relative flex flex-col items-center text-center">
+                  <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] text-[15px] font-bold text-[#2ABD41] shadow-sm">
+                    {step.num}
+                  </div>
+                  <h3 className="mt-3 text-[15px] sm:text-[16px] font-bold text-[#072C0E]">{step.title}</h3>
+                  <p className="mt-2 text-[13px] leading-[1.7] text-[#072C0E]/55 max-w-[220px]">{step.desc}</p>
                 </div>
-                <span className="mt-3 text-[11px] font-bold uppercase tracking-wide text-[#2ABD41]/70">
-                  {lang === 'tr' ? `Adım ${step.num}` : `Step ${step.num}`}
-                </span>
-                <h3 className="mt-1 text-[16px] sm:text-[17px] font-bold text-[#072C0E]">{step.title}</h3>
-                <p className="mt-2 text-[13px] leading-[1.7] text-[#072C0E]/55 max-w-[220px]">{step.desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
