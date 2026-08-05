@@ -302,9 +302,32 @@ if os.environ.get('EMAIL_HOST'):
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
     EMAIL_HOST = os.environ.get('EMAIL_HOST')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'true').lower() == 'true'
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+
+    def _env_bool(name, default):
+        """Read a boolean env var, treating blank as absent.
+
+        A key left with an empty value in a hosting dashboard is indistinguishable
+        from a typo, and reading '' as False would silently disable TLS — so an
+        empty string falls back to the default rather than to off.
+        """
+        raw = os.environ.get(name, '').strip().lower()
+        return default if raw == '' else raw in ('true', '1', 'yes', 'on')
+
+    # Port 465 wants implicit SSL; port 587 wants STARTTLS. Django refuses to
+    # start if both flags are true, and previously EMAIL_USE_SSL was read by
+    # nobody — so an SSL-only provider (common on Turkish shared hosting) would
+    # be dialled with STARTTLS and every send would fail. Treat SSL as the
+    # explicit opt-in and let it switch TLS off.
+    EMAIL_USE_SSL = _env_bool('EMAIL_USE_SSL', False)
+    EMAIL_USE_TLS = (not EMAIL_USE_SSL) and _env_bool('EMAIL_USE_TLS', True)
+
+    # send_mail runs inline during registration. Without a timeout an
+    # unreachable SMTP host holds the HTTP request open until the platform
+    # kills it, which reads to the user as the whole site hanging; with one it
+    # fails fast and the "we couldn't send the email" path takes over.
+    EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 15))
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     EMAIL_HOST_USER = ''
