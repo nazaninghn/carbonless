@@ -320,60 +320,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* -- Scope 1/2/3 explainer — same card style and copy as the dashboard's
-          own "How it Works" guide, so a visitor who signs up sees a page they
-          already recognize instead of a differently-styled reintroduction. -- */}
-      <section className="relative z-10 py-12 sm:py-20 bg-white">
-        <div className="mx-auto max-w-6xl px-4 sm:px-8">
-          <div className="text-center mb-10 sm:mb-14">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#DEFAE1] bg-[#F1FCF2] px-3 py-1 text-[11px] font-bold text-[#1A7B2A]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#2ABD41]" />
-              {lang === 'tr' ? 'GHG Protokolü' : 'GHG Protocol'}
-            </span>
-            <h2 className="mt-4 text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
-              {lang === 'tr'
-                ? <>Her emisyon kaynağını <span className="text-[#2ABD41]">anlayın</span></>
-                : <>Understand every <span className="text-[#2ABD41]">emission source</span></>}
-            </h2>
-            <p className="mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50 max-w-xl mx-auto">
-              {lang === 'tr'
-                ? 'Carbonless, Kapsam 1, 2 ve 3 emisyonlarınızı AI ile otomatik olarak sınıflandırır ve hesaplar.'
-                : 'Carbonless automatically classifies and calculates your Scope 1, 2 and 3 emissions using AI.'}
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-3">
-            {[
-              {
-                icon: Factory, num: '1',
-                title: lang === 'tr' ? 'Doğrudan emisyonlar' : 'Direct emissions',
-                desc: lang === 'tr' ? 'Kendi tesisleriniz ve araçlarınızdan kaynaklanan emisyonlar.' : 'From facilities and vehicles you own or control.',
-              },
-              {
-                icon: Zap, num: '2',
-                title: lang === 'tr' ? 'Satın alınan enerji' : 'Purchased energy',
-                desc: lang === 'tr' ? 'Satın aldığınız elektrik, ısı veya buhardan kaynaklanan emisyonlar.' : 'From the electricity, heat, or steam you buy.',
-              },
-              {
-                icon: Truck, num: '3',
-                title: lang === 'tr' ? 'Tedarik zinciri' : 'Supply chain & travel',
-                desc: lang === 'tr' ? 'Tedarik zinciriniz, iş seyahatleri ve ürün kullanımından kaynaklanan dolaylı emisyonlar.' : 'Indirect emissions across your supply chain, business travel, and product use.',
-              },
-            ].map((scope) => (
-              <div key={scope.num} className="rounded-2xl border border-[#DEFAE1] bg-[#F9FFF4] p-5 sm:p-7">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white border border-[#2ABD41]/20 shadow-sm">
-                  <scope.icon className="h-5 w-5 text-[#2ABD41]" strokeWidth={1.8} />
-                </div>
-                <span className="mt-4 inline-flex h-6 items-center rounded-full bg-[#2ABD41]/10 px-2.5 text-[11px] font-bold text-[#2ABD41]">
-                  {lang === 'tr' ? `Kapsam ${scope.num}` : `Scope ${scope.num}`}
-                </span>
-                <h3 className="mt-2 text-[15px] sm:text-[16px] font-bold text-[#072C0E]">{scope.title}</h3>
-                <p className="mt-1.5 text-[13px] leading-[1.7] text-[#072C0E]/55">{scope.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       <section id="about" className="relative z-10 py-12 sm:py-20 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
