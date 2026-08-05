@@ -2,7 +2,7 @@
 import { useState, useCallback } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
-  ClipboardCheck, Bot, ChevronRight, MoreHorizontal, BarChart2, Sparkles,
+  ClipboardCheck, ClipboardList, Bot, ChevronRight, MoreHorizontal, BarChart2, Sparkles,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -10,18 +10,19 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 
 // -- Nav items -----------------------------------------------------------------
 const NAV_ITEMS = [
-  { key: 'dashboard',  icon: LayoutDashboard, tr: 'Kontrol Paneli',    en: 'Dashboard',     trS: 'Panel',    enS: 'Home',      section: 'main' },
-  { key: 'ai_carbon',  icon: Bot,             tr: 'AI Hesaplayici',    en: 'AI Calculator', trS: 'AI',       enS: 'AI',        section: 'main' },
-  { key: 'emissions',  icon: Leaf,            tr: 'Emisyon Yönetimi',  en: 'Emissions',     trS: 'Emisyon',  enS: 'Emissions', section: 'data' },
-  { key: 'reduction',  icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',       trS: 'Hedefler', enS: 'Targets',   section: 'data' },
-  { key: 'reporting',  icon: FileText,        tr: 'Raporlama',         en: 'Reports',       trS: 'Rapor',    enS: 'Reports',   section: 'data' },
-  { key: 'benchmark',  icon: BarChart2,       tr: 'Benchmark',         en: 'Benchmark',     trS: 'Kiyas',    enS: 'Benchmark', section: 'data' },
-  { key: 'review',     icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',        trS: 'Onay',     enS: 'Review',    section: 'manage' },
-  { key: 'settings',   icon: Settings,        tr: 'Ayarlar',           en: 'Settings',      trS: 'Ayarlar',  enS: 'Settings',  section: 'manage' },
+  { key: 'dashboard',      icon: LayoutDashboard, tr: 'Kontrol Paneli',    en: 'Dashboard',       trS: 'Panel',    enS: 'Home',      section: 'main' },
+  { key: 'questionnaire',  icon: ClipboardList,   tr: 'Karbon Envanteri',  en: 'Carbon Inventory', trS: 'Envanter', enS: 'Inventory', section: 'main' },
+  { key: 'ai_carbon',      icon: Bot,             tr: 'AI Sohbet',         en: 'AI Chat',         trS: 'AI',       enS: 'AI',        section: 'main' },
+  { key: 'emissions',      icon: Leaf,            tr: 'Emisyon Yönetimi',  en: 'Emissions',       trS: 'Emisyon',  enS: 'Emissions', section: 'data' },
+  { key: 'reduction',      icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',         trS: 'Hedefler', enS: 'Targets',   section: 'data' },
+  { key: 'reporting',      icon: FileText,        tr: 'Raporlama',         en: 'Reports',         trS: 'Rapor',    enS: 'Reports',   section: 'data' },
+  { key: 'benchmark',      icon: BarChart2,       tr: 'Benchmark',         en: 'Benchmark',       trS: 'Kiyas',    enS: 'Benchmark', section: 'data' },
+  { key: 'review',         icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',          trS: 'Onay',     enS: 'Review',    section: 'manage' },
+  { key: 'settings',       icon: Settings,        tr: 'Ayarlar',           en: 'Settings',        trS: 'Ayarlar',  enS: 'Settings',  section: 'manage' },
 ];
 
 // Bottom nav shows the most-used tabs
-const BOTTOM_NAV_KEYS = ['dashboard', 'emissions', 'reporting', 'reduction', 'benchmark'];
+const BOTTOM_NAV_KEYS = ['dashboard', 'questionnaire', 'emissions', 'reporting', 'ai_carbon'];
 const BOTTOM_ITEMS = NAV_ITEMS.filter(i => BOTTOM_NAV_KEYS.includes(i.key));
 
 export default function DashboardSidebar({
@@ -41,6 +42,7 @@ export default function DashboardSidebar({
     const Icon = item.icon;
     const isActive = activeTab === item.key;
     const isAI = item.key === 'ai_carbon';
+    const isQuestionnaire = item.key === 'questionnaire';
 
     return (
       <button
@@ -52,17 +54,19 @@ export default function DashboardSidebar({
           ${isActive
             ? isAI
               ? 'bg-[#2ABD41] text-white shadow-md shadow-[#2ABD41]/20'
-              : 'bg-[#072C0E] text-white shadow-md shadow-black/10'
+              : isQuestionnaire
+                ? 'bg-[#175022] text-white shadow-md shadow-[#175022]/20'
+                : 'bg-[#072C0E] text-white shadow-md shadow-black/10'
             : 'text-[#072C0E]/60 hover:bg-[#F1FCF2] hover:text-[#072C0E]'}
         `}
       >
         <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
           isActive
             ? isAI ? 'bg-white/20' : 'bg-white/10'
-            : isAI ? 'bg-[#2ABD41]/10' : 'bg-[#072C0E]/5'
+            : isAI ? 'bg-[#2ABD41]/10' : isQuestionnaire ? 'bg-[#175022]/10' : 'bg-[#072C0E]/5'
         }`}>
           <Icon className={`h-[16px] w-[16px] ${
-            isActive ? 'text-white' : isAI ? 'text-[#2ABD41]' : 'text-[#072C0E]/50'
+            isActive ? 'text-white' : isAI ? 'text-[#2ABD41]' : isQuestionnaire ? 'text-[#175022]' : 'text-[#072C0E]/50'
           }`} />
         </div>
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
@@ -71,6 +75,11 @@ export default function DashboardSidebar({
         {isAI && !isActive && (
           <span className="rounded-full bg-[#2ABD41]/10 px-2 py-0.5 text-[9px] font-bold text-[#2ABD41]">
             AI
+          </span>
+        )}
+        {isQuestionnaire && !isActive && (
+          <span className="rounded-full bg-[#175022]/8 px-2 py-0.5 text-[9px] font-bold text-[#175022]/70">
+            ISO
           </span>
         )}
         {isActive && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />}

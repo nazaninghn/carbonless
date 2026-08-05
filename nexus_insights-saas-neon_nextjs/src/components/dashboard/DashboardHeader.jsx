@@ -14,13 +14,14 @@ import { api } from '@/lib/utils/api';
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - i);
 
 const TAB_LABELS = {
-  dashboard: { tr: 'Kontrol Paneli',    en: 'Dashboard'    },
-  emissions:  { tr: 'Emisyon Yönetimi', en: 'Emissions'    },
-  ai_carbon:  { tr: 'AI Carbon',        en: 'AI Carbon'    },
-  reduction:  { tr: 'Azaltma Hedefleri',en: 'Targets'      },
-  reporting:  { tr: 'Raporlama',        en: 'Reports'      },
-  review:     { tr: 'Onay Bekleyenler', en: 'Review'       },
-  settings:   { tr: 'Ayarlar',          en: 'Settings'     },
+  dashboard:     { tr: 'Kontrol Paneli',    en: 'Dashboard'        },
+  questionnaire: { tr: 'Karbon Envanteri',  en: 'Carbon Inventory' },
+  emissions:     { tr: 'Emisyon Yönetimi',  en: 'Emissions'        },
+  ai_carbon:     { tr: 'AI Sohbet',         en: 'AI Chat'          },
+  reduction:     { tr: 'Azaltma Hedefleri', en: 'Targets'          },
+  reporting:     { tr: 'Raporlama',         en: 'Reports'          },
+  review:        { tr: 'Onay Bekleyenler',  en: 'Review'           },
+  settings:      { tr: 'Ayarlar',           en: 'Settings'         },
 };
 
 export default function DashboardHeader({

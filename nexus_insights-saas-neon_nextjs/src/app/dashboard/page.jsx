@@ -12,6 +12,7 @@ import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
 import SettingsTab from '@/components/dashboard/SettingsTab';
 import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
+import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
@@ -231,6 +232,13 @@ export default function DashboardPage() {
                   />
                 </>
               )}
+            </ErrorBoundary>
+          )}
+
+          {/* ===== QUESTIONNAIRE TAB ===== */}
+          {activeTab === 'questionnaire' && (
+            <ErrorBoundary language={language}>
+              <QuestionnairePageTab language={language} />
             </ErrorBoundary>
           )}
 

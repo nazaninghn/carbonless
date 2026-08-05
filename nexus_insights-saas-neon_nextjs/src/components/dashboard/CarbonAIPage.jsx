@@ -1890,7 +1890,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 // library/welcome/localStorage-restore paths entirely and start the survey
 // directly. This is what makes "Continue" from InventoryLibrary a single click
 // instead of landing on this component's own (now-legacy) picker first.
-function QuestionnaireTab({
+export function QuestionnaireTab({
   language, isVisible = true,
   hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null,
   onDirtyChange = null, onExitToLibrary = null,
@@ -3889,8 +3889,6 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets, fetchData }) {
   const tr = language === 'tr';
-  const [activeTab, setActiveTab] = useState('chat');
-  const [chatMounted, setChatMounted] = useState(true);
   const [isMinimized, setIsMinimized] = useState(false);
 
   // When not visible and not minimized, hide completely
@@ -3945,7 +3943,14 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
               className="flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
             >
               <Sparkles className="h-3 w-3" />
-              {tr ? 'AI Modu' : 'AI Mode'}
+              {tr ? 'AI Sohbet' : 'AI Chat'}
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'questionnaire' } }))}
+              className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#175022]/50 hover:text-[#175022] hover:bg-[#F1FCF2] transition"
+            >
+              <ClipboardList className="h-3 w-3" />
+              {tr ? 'Envanter' : 'Inventory'}
             </button>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
@@ -3955,9 +3960,6 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
               {tr ? 'Dashboard' : 'Dashboard'}
             </button>
           </div>
-          <span className="hidden sm:block text-[10px] text-[#175022]/35">
-            {tr ? '• Her ikisi aynı veritabanına kaydeder' : '• Both save to the same database'}
-          </span>
         </div>
         {/* Close / Exit button */}
         <button
@@ -3987,30 +3989,12 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
           </div>
         </div>
 
-        {/* Center: Tab switcher */}
-        <div className="flex items-center gap-0.5 sm:gap-1 rounded-full bg-[#F1FCF2] border border-[#2ABD41]/15 p-0.5 sm:p-1">
-          <button
-            onClick={() => setActiveTab('questionnaire')}
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
-              activeTab === 'questionnaire'
-                ? 'bg-white text-[#175022] shadow-sm border border-[#2ABD41]/20'
-                : 'text-[#175022]/50 hover:text-[#175022]/80'
-            }`}
-          >
-            <ClipboardList className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span className="hidden xs:inline">{tr ? 'Anket' : 'Questionnaire'}</span>
-          </button>
-          <button
-            onClick={() => { setActiveTab('chat'); setChatMounted(true); }}
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
-              activeTab === 'chat'
-                ? 'bg-white text-[#175022] shadow-sm border border-[#2ABD41]/20'
-                : 'text-[#175022]/50 hover:text-[#175022]/80'
-            }`}
-          >
-            <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span className="hidden xs:inline">{tr ? 'AI Sohbet' : 'AI Chat'}</span>
-          </button>
+        {/* Center: title */}
+        <div className="flex items-center gap-1.5 rounded-full bg-[#F1FCF2] border border-[#2ABD41]/15 px-3 sm:px-4 py-1.5 sm:py-2">
+          <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#2ABD41]" />
+          <span className="text-[10px] sm:text-[12px] font-semibold text-[#175022]">
+            {tr ? 'AI Sohbet' : 'AI Chat'}
+          </span>
         </div>
 
         {/* Right: actions */}
@@ -4061,14 +4045,7 @@ export default function CarbonAIPage({ language = 'en', isVisible = true, summar
 
       {/* Content area */}
       <div className="flex flex-1 min-h-0 flex-col">
-        <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'questionnaire' ? 'hidden' : ''}`}>
-          <QuestionnaireTabWithWorkflow language={language} isVisible={isVisible} />
-        </div>
-        {chatMounted && (
-          <div className={`flex flex-1 min-h-0 flex-col ${activeTab !== 'chat' ? 'hidden' : ''}`}>
-            <FreeChatTab language={language} summary={summary} entries={entries} targets={targets} fetchData={fetchData} />
-          </div>
-        )}
+        <FreeChatTab language={language} summary={summary} entries={entries} targets={targets} fetchData={fetchData} />
       </div>
     </div>
     </>

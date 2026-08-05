@@ -104,11 +104,11 @@
   /* Form field — used by register/page.jsx standalone inputs, select, textarea */
   .field-premium {
     width: 100%;
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.75rem;
     border: 1px solid rgba(23, 80, 34, 0.10);
     background-color: rgba(255, 255, 255, 0.55);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: #175022;
     outline: none;
@@ -119,7 +119,7 @@
   .field-premium:focus {
     border-color: rgba(42, 189, 65, 0.60);
     background-color: rgba(255, 255, 255, 0.80);
-    box-shadow: 0 0 0 4px rgba(42, 189, 65, 0.20);
+    box-shadow: 0 0 0 3px rgba(42, 189, 65, 0.15);
   }
 
   @keyframes typingBounce {
