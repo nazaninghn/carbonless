@@ -2,6 +2,23 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '@/lib/utils/api';
+import { readAnswerValue, unmapPhase1Answer } from '@/lib/carboniq/questions';
+
+// A report resumed from the backend echoes back exactly what was PATCHed for
+// each question — { answer: value } for most questions (mapAnswerForBackend's
+// default case), but named backend fields for Phase 1 (e.g. { legal_name }).
+// Neither shape matches what a live session stores in `answers` (the raw
+// widget value), so every downstream consumer — conditionalShow checks,
+// summary tables, goBack/edit pre-fill — would silently misread a resumed
+// report until it was normalised once here, at load time.
+function normalizeHydratedAnswers(rawAnswers) {
+  const normalized = {};
+  for (const [qid, raw] of Object.entries(rawAnswers || {})) {
+    const unmapped = unmapPhase1Answer(qid, raw);
+    normalized[qid] = unmapped !== undefined ? unmapped : readAnswerValue({ [qid]: raw }, qid);
+  }
+  return normalized;
+}
 
 const InventoryContext = createContext();
 
@@ -78,7 +95,7 @@ export function InventoryProvider({ children }) {
       setInventoryTitle(data.title || `Inventory ${inventoryId}`);
       setInventoryStatus(data.status);
       setCurrentStep(data.current_step || 'A1');
-      setAnswers(data.answers || {});
+      setAnswers(normalizeHydratedAnswers(data.answers));
       setDirty(false);
       setMode('questionnaire');
 

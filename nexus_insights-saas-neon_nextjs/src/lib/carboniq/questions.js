@@ -1,3 +1,90 @@
+import { COUNTRIES } from '@/lib/data/countries';
+
+// Shared option list for every compound field that needs a real country
+// selector (2A-2, 2A-4, ...). Previously these captured "name — country" as
+// one free-text string, which meant the country could never be read back out
+// programmatically — breaking two things downstream: (1) the per-site/
+// subsidiary electricity grid EF lookup (Question Map: 2A-2-country ->
+// triggers_field site_ef_country), and (2) the advisor-approval check for an
+// overseas site being added while C2 (has_international_ops) = No (Advisor
+// Trigger rule #28). A flag emoji is intentionally omitted from the option
+// label — it renders as a missing-glyph box in some chat fonts.
+const COUNTRY_SELECT_OPTIONS = COUNTRIES.map(c => ({
+  value: c.code,
+  label: { tr: c.tr, en: c.en },
+}));
+
+// TM Kataloğu — GLEC v3 / ISO 14083 transport modes, shared by K3C4 (upstream)
+// and K3C9 (downstream) — the Question Map explicitly reuses the same catalog
+// code for both ("K3C9-mode ... TM katalog kodu (K3C4 ile aynı)").
+const TM_OPTIONS = [
+  { value: 'TM-01', label: { tr: 'TM-01 — Karayolu, HTC 40t tam dolu', en: 'TM-01 — Road, HGV 40t full load' } },
+  { value: 'TM-02', label: { tr: 'TM-02 — Karayolu, HTC 40t %50 dolu', en: 'TM-02 — Road, HGV 40t 50% load' } },
+  { value: 'TM-03', label: { tr: 'TM-03 — Karayolu, hafif ticari (≤3.5t)', en: 'TM-03 — Road, light commercial (≤3.5t)' } },
+  { value: 'TM-04', label: { tr: 'TM-04 — Denizyolu, büyük konteyner (>10.000 TEU)', en: 'TM-04 — Sea, large container (>10,000 TEU)' } },
+  { value: 'TM-05', label: { tr: 'TM-05 — Denizyolu, orta konteyner (3.000–8.000 TEU)', en: 'TM-05 — Sea, medium container (3,000–8,000 TEU)' } },
+  { value: 'TM-06', label: { tr: 'TM-06 — Denizyolu, dökme yük', en: 'TM-06 — Sea, bulk cargo' } },
+  { value: 'TM-07', label: { tr: 'TM-07 — Havayolu, kargo (uzun mesafe)', en: 'TM-07 — Air, cargo (long haul)' } },
+  { value: 'TM-08', label: { tr: 'TM-08 — Demiryolu (elektrikli)', en: 'TM-08 — Rail (electric)' } },
+  { value: 'TM-99', label: { tr: 'TM-99 — Diğer (listede yok)', en: 'TM-99 — Other (not in list)' } },
+];
+
+// WT Kataloğu — DEFRA 2023 waste types, K3C5.
+const WT_OPTIONS = [
+  { value: 'WT-01', label: { tr: 'WT-01 — Kağıt / Karton', en: 'WT-01 — Paper / Cardboard' } },
+  { value: 'WT-02', label: { tr: 'WT-02 — Plastik', en: 'WT-02 — Plastic' } },
+  { value: 'WT-03', label: { tr: 'WT-03 — Metal — Çelik', en: 'WT-03 — Metal — Steel' } },
+  { value: 'WT-04', label: { tr: 'WT-04 — Metal — Alüminyum', en: 'WT-04 — Metal — Aluminium' } },
+  { value: 'WT-05', label: { tr: 'WT-05 — Cam', en: 'WT-05 — Glass' } },
+  { value: 'WT-06', label: { tr: 'WT-06 — Organik / Gıda', en: 'WT-06 — Organic / Food' } },
+  { value: 'WT-07', label: { tr: 'WT-07 — Elektronik (WEEE)', en: 'WT-07 — Electronic (WEEE)' } },
+  { value: 'WT-08', label: { tr: 'WT-08 — Tehlikeli atık', en: 'WT-08 — Hazardous waste' } },
+  { value: 'WT-09', label: { tr: 'WT-09 — Tekstil', en: 'WT-09 — Textile' } },
+  { value: 'WT-10', label: { tr: 'WT-10 — Karma belediye atığı', en: 'WT-10 — Mixed municipal waste' } },
+  { value: 'WT-11', label: { tr: 'WT-11 — İnşaat / Yıkım', en: 'WT-11 — Construction / Demolition' } },
+  { value: 'WT-12', label: { tr: 'WT-12 — Tıbbi atık', en: 'WT-12 — Medical waste' } },
+  { value: 'WT-99', label: { tr: 'WT-99 — Diğer (listede yok)', en: 'WT-99 — Other (not in list)' } },
+];
+
+// BT Kataloğu — DEFRA 2023 + ICAO business travel modes, K3C6.
+const BT_OPTIONS = [
+  { value: 'BT-01', label: { tr: 'BT-01 — Uçak, yurt içi', en: 'BT-01 — Flight, domestic' } },
+  { value: 'BT-02', label: { tr: 'BT-02 — Uçak, kısa mesafe uluslararası (<3 saat)', en: 'BT-02 — Flight, short-haul international (<3h)' } },
+  { value: 'BT-03', label: { tr: 'BT-03 — Uçak, uzun mesafe uluslararası (>6 saat)', en: 'BT-03 — Flight, long-haul international (>6h)' } },
+  { value: 'BT-04', label: { tr: 'BT-04 — Tren, elektrikli intercity', en: 'BT-04 — Train, electric intercity' } },
+  { value: 'BT-05', label: { tr: 'BT-05 — Tren, dizelli bölgesel', en: 'BT-05 — Train, diesel regional' } },
+  { value: 'BT-06', label: { tr: 'BT-06 — Otobüs, şehirlerarası', en: 'BT-06 — Bus, intercity' } },
+  { value: 'BT-07', label: { tr: 'BT-07 — Kiralık araç', en: 'BT-07 — Rental car' } },
+  { value: 'BT-08', label: { tr: 'BT-08 — Taksi / Araç paylaşımı', en: 'BT-08 — Taxi / Ride-share' } },
+  { value: 'BT-09', label: { tr: 'BT-09 — Feribot / Gemi', en: 'BT-09 — Ferry / Ship' } },
+  { value: 'BT-10', label: { tr: 'BT-10 — Otel konaklaması', en: 'BT-10 — Hotel stay' } },
+  { value: 'BT-99', label: { tr: 'BT-99 — Diğer (listede yok)', en: 'BT-99 — Other (not in list)' } },
+];
+const BT_FLIGHT_MODES = ['BT-01', 'BT-02', 'BT-03'];
+const CABIN_CLASS_OPTIONS = [
+  { value: 'economy', label: { tr: 'Economy (1x)', en: 'Economy (1x)' } },
+  { value: 'business', label: { tr: 'Business (2.9x)', en: 'Business (2.9x)' } },
+  { value: 'first', label: { tr: 'First Class (4.0x)', en: 'First Class (4.0x)' } },
+];
+const RENTAL_FUEL_OPTIONS = [
+  { value: 'diesel', label: { tr: 'Motorin', en: 'Diesel' } },
+  { value: 'petrol', label: { tr: 'Benzin', en: 'Petrol' } },
+  { value: 'electric', label: { tr: 'Elektrik', en: 'Electric' } },
+];
+const HOTEL_CLASS_OPTIONS = [
+  { value: 'standard', label: { tr: 'Standart', en: 'Standard' } },
+  { value: 'luxury', label: { tr: 'Lüks (5 yıldız)', en: 'Luxury (5-star)' } },
+];
+
+const WASTE_DISPOSAL_OPTIONS = [
+  { value: 'landfill', label: { tr: 'Depolama (düzenli/düzensiz)', en: 'Landfill' } },
+  { value: 'recycling', label: { tr: 'Geri dönüşüm', en: 'Recycling' } },
+  { value: 'incineration', label: { tr: 'Yakma', en: 'Incineration' } },
+  { value: 'composting', label: { tr: 'Kompost', en: 'Composting' } },
+  { value: 'anaerobic_digestion', label: { tr: 'Anaerobik çürütme', en: 'Anaerobic digestion' } },
+  { value: 'licensed_contractor', label: { tr: 'Lisanslı bertaraf firması', en: 'Licensed disposal contractor' } },
+];
+
 export const CARBONIQ_STAGES = [
   {
     id: 1,
@@ -971,15 +1058,21 @@ export const CARBONIQ_QUESTIONS = [
     next: '2A-2',
   },
   {
+    // Was a single free-text field ("name — country" typed as one string).
+    // Question Map splits this into 2A-2-name (string) + 2A-2-country
+    // (select, triggers_field: site_ef_country, advisor_approval: true) —
+    // country must be a real, parseable value because it drives two things
+    // downstream: (1) which national grid EF this site's Scope 2 electricity
+    // uses, and (2) the advisor-approval check for an overseas site being
+    // added while C2 (has_international_ops) = No. Neither is possible to
+    // do reliably against free text.
     id: '2A-2',
     number: 24,
     stage: 2,
     block: '2A',
     isoRef: 'ISO 14064-1 §5.1',
-    type: 'text',
-    subtype: 'single_line',
+    type: 'compound',
     required: true,
-    maxLength: 200,
     loopSource: '2A-1',
     loopNext: '2A-3',
     reportField: 'org_boundary.facilities[N].name_country',
@@ -987,17 +1080,30 @@ export const CARBONIQ_QUESTIONS = [
       tr: '[Tesis N] Tesisin adı ve bulunduğu ülke nedir?',
       en: '[Facility N] What is the name and country of this facility?',
     },
-    placeholder: {
-      tr: 'Örn: İstanbul Genel Merkezi — Türkiye',
-      en: 'e.g. Istanbul Headquarters — Turkey',
-    },
     helper: {
-      tr: 'Tesisin tanımlayıcı adını ve bulunduğu ülkeyi girin. Bu bilgi raporun tesis tablosunda kullanılacak.',
-      en: 'Enter the identifying name of the facility and the country it is located in. This will be used in the facility table of the report.',
+      tr: 'Tesisin tanımlayıcı adını girin ve bulunduğu ülkeyi seçin. Ülke, bu tesisin elektrik şebeke emisyon faktörünü belirler.',
+      en: "Enter the facility's identifying name and select the country it is located in. Country determines this site's electricity grid emission factor.",
     },
+    fields: [
+      {
+        id: 'name',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Tesis adı', en: 'Facility name' },
+        placeholder: { tr: 'Örn: İstanbul Genel Merkezi', en: 'e.g. Istanbul Headquarters' },
+      },
+      {
+        id: 'country',
+        type: 'select',
+        required: true,
+        label: { tr: 'Ülke', en: 'Country' },
+        renderAs: 'native_select',
+        options: COUNTRY_SELECT_OPTIONS,
+      },
+    ],
     validate: {
       requiredMessage: { tr: 'Tesis adı ve ülkesi zorunludur.', en: 'Facility name and country are required.' },
-      maxLengthMessage: { tr: 'En fazla 200 karakter girilebilir.', en: 'Maximum 200 characters allowed.' },
     },
     next: '2A-3',
   },
@@ -1033,32 +1139,44 @@ export const CARBONIQ_QUESTIONS = [
     next: '2A-4',
   },
   {
+    // Same fix as 2A-2: name+country split into a real compound field
+    // instead of one free-text string, so country (2A-4-country) is a
+    // parseable value again.
     id: '2A-4',
     number: 26,
     stage: 2,
     block: '2A',
     isoRef: 'ISO 14064-1 §5.1',
-    type: 'text',
-    subtype: 'single_line',
+    type: 'compound',
     required: false,
-    maxLength: 200,
     conditionalShow: { questionId: 'C1', includesValue: 'yes' },
     reportField: 'org_boundary.subsidiaries[N].name_country',
     text: {
       tr: 'Bağlı şirket veya iştiraklerin adı ve ülkesi nedir?',
       en: 'What is the name and country of your subsidiary or affiliate?',
     },
-    placeholder: {
-      tr: 'Örn: XYZ Lojistik A.Ş. — Almanya',
-      en: 'e.g. XYZ Logistics Ltd. — Germany',
-    },
     helper: {
       tr: 'C1\'de "Evet" yanıtı verdiyseniz her bağlı şirket veya iştirak için bu soruyu yanıtlayın. Birden fazla varsa her biri için tekrarlayın.',
       en: 'If you answered "Yes" to C1, answer this question for each subsidiary or affiliate. Repeat for each one if there are multiple.',
     },
-    validate: {
-      maxLengthMessage: { tr: 'En fazla 200 karakter girilebilir.', en: 'Maximum 200 characters allowed.' },
-    },
+    fields: [
+      {
+        id: 'name',
+        type: 'text',
+        required: false,
+        maxLength: 200,
+        label: { tr: 'Bağlı şirket adı', en: 'Subsidiary name' },
+        placeholder: { tr: 'Örn: XYZ Lojistik A.Ş.', en: 'e.g. XYZ Logistics Ltd.' },
+      },
+      {
+        id: 'country',
+        type: 'select',
+        required: false,
+        label: { tr: 'Ülke', en: 'Country' },
+        renderAs: 'native_select',
+        options: COUNTRY_SELECT_OPTIONS,
+      },
+    ],
     next: '2A-5',
   },
   {
@@ -1551,6 +1669,46 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       maxLengthMessage: { tr: 'Ekipman açıklaması en fazla 150 karakter olabilir.', en: 'Equipment description must be at most 150 characters.' },
     },
+    next: '3A-2b',
+  },
+  {
+    // Question Map: 3A-2b (rf.op_control_3a, advisor_approval: true) — was
+    // entirely missing. Without it every stationary combustion source was
+    // silently assumed to be Scope 1, even when the company doesn't operate
+    // the facility (e.g. equipment at a site leased out to a tenant), which
+    // belongs in Scope 3 Category 8 (Upstream Leased Assets) instead. Mirrors
+    // the same scope-boundary pattern already used by 3B-2 for vehicles.
+    id: '3A-2b',
+    number: '40b',
+    stage: 3,
+    block: '3A',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'single_select',
+    loopSource: '3A-1',
+    loopNext: '3A-2',
+    required: true,
+    reportField: 'scope1.stationary_combustion.op_control',
+    text: {
+      tr: '[Ekipman adı] — Bu ekipmanın bulunduğu tesis üzerinde işletme kontrolünüz var mı?',
+      en: '[Equipment name] — Do you have operational control over the facility where this equipment is located?',
+    },
+    helper: {
+      tr: 'İşletme kontrolü: tesisin işletme politikalarını siz belirliyor ve günlük operasyonu siz yönetiyorsanız "Evet". Ekipman kiraya verdiğiniz veya başka bir tarafın işlettiği bir tesisteyse "Hayır" — bu durumda emisyon Kapsam 1 yerine Kapsam 3 Kategori 8\'e (Yukarı Akış Kiralanan Varlıklar) girer.',
+      en: 'Operational control: answer "Yes" if you set the facility\'s operating policies and manage day-to-day operations. If the equipment is at a facility you lease out to a tenant or that another party operates, answer "No" — this moves the emissions from Scope 1 to Scope 3 Category 8 (Upstream Leased Assets).',
+    },
+    options: [
+      { value: 'yes', label: { tr: 'Evet — işletme kontrolümüz var → Kapsam 1', en: 'Yes — we have operational control → Scope 1' }, scope: 1 },
+      { value: 'no', label: { tr: 'Hayır — başka taraf işletiyor → Kapsam 3 (Kategori 8)', en: 'No — another party operates it → Scope 3 (Category 8)' }, scope: 3 },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
+    },
+    systemMessages: {
+      no: {
+        tr: 'İşletme kontrolünüz olmadığından bu kaynak Kapsam 1\'e dahil edilmeyecek — Kapsam 3 Kategori 8 (Yukarı Akış Kiralanan Varlıklar) altında değerlendirilecek ve danışman onayına gönderilecek.',
+        en: 'Since you do not have operational control, this source will not be included in Scope 1 — it will be assessed under Scope 3 Category 8 (Upstream Leased Assets) and sent for advisor approval.',
+      },
+    },
     next: '3A-2',
   },
   {
@@ -1685,7 +1843,13 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3A-4',
-    loopNext: '3A-EF',
+    // Was 'nextByValue' routed straight to '3A-6a' — but nextByValue is never
+    // consulted while a loop question is mid-loop (submitAnswer's loop branch
+    // only reads loopNext), so that detour never fired for any fuel type.
+    // Point loopNext at 3A-6a instead: once the fuel loop finishes, the
+    // conditionalShow skip-walk shows 3A-6a only if any iteration used
+    // engineering_estimate/sector_average, else falls through to 3A-EF.
+    loopNext: '3A-6a',
     required: true,
     reportField: 'scope1.stationary_combustion.data_source',
     text: {
@@ -1710,11 +1874,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Using sector averages reduces data quality. If invoice or meter data is available, we recommend using that source.',
       },
     },
-    nextByValue: {
-      invoice_meter: '3A-EF',
-      engineering_estimate: '3A-6a',
-      sector_average: '3A-6a',
-    },
+    next: '3A-6a',
   },
   {
     id: '3A-6a',
@@ -2529,37 +2689,99 @@ export const CARBONIQ_QUESTIONS = [
     next: '3D-4',
   },
   {
+    // Question Map splits this into 3D-4-refill (required float) + 3D-4-capacity
+    // (optional float) — was one free-text field ("Dolum: 2.5 kg | Kapasite: 8 kg")
+    // that could never be read back programmatically. That blocked the zero-refill
+    // check below (Advisor Trigger #6/#7: a refill of exactly 0 needs a follow-up
+    // decision, which is impossible to detect reliably against free text).
     id: '3D-4',
     number: 62,
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
-    type: 'equipment_loop',
+    type: 'compound',
     loopSource: '3D-0',
-    loopNext: '3D-EF',
+    loopNext: '3D-4-zero-decision',
     required: true,
     reportField: 'scope1.fugitive.refill_data',
     text: {
-      tr: '[Ekipman] — Aktivite verisi: yıllık dolum miktarı veya sistem kapasitesi?',
-      en: '[Equipment] — Activity data: annual refill quantity or system capacity?',
-    },
-    placeholder: {
-      tr: 'Dolum: 2.5 kg | Kapasite: 8 kg',
-      en: 'Refill: 2.5 kg | Capacity: 8 kg',
+      tr: '[Ekipman] — Yıllık dolum miktarı ve sistem kapasitesi nedir?',
+      en: '[Equipment] — What is the annual refill quantity and system capacity?',
     },
     helper: {
-      tr: 'Yıllık dolum miktarını servis faturasından veya servis formundan alabilirsiniz — "yüklenen gaz miktarı" olarak geçer. Kapasite bilgisi kaçak oranını hesaplamak için kullanılır, opsiyoneldir.',
-      en: 'You can get the annual refill amount from the service invoice or form — it appears as "gas charged". Capacity information is used to calculate the leak rate and is optional.',
+      tr: 'Yıllık dolum miktarını servis faturasından veya servis formundan alabilirsiniz — "yüklenen gaz miktarı" olarak geçer. Bu yıl hiç dolum yapılmadıysa 0 girin. Kapasite bilgisi kaçak oranını hesaplamak için kullanılır, opsiyoneldir.',
+      en: 'You can get the annual refill amount from the service invoice or form — it appears as "gas charged". Enter 0 if no refill was done this year. Capacity information is used to calculate the leak rate and is optional.',
     },
+    fields: [
+      {
+        id: 'refill_kg',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Yıllık dolum miktarı (kg)', en: 'Annual refill quantity (kg)' },
+        placeholder: { tr: 'Örn: 2.5 (dolum yoksa 0)', en: 'e.g. 2.5 (enter 0 if none)' },
+      },
+      {
+        id: 'capacity_kg',
+        type: 'text',
+        subtype: 'numeric',
+        required: false,
+        label: { tr: 'Sistem kapasitesi (kg) — opsiyonel', en: 'System capacity (kg) — optional' },
+        placeholder: { tr: 'Örn: 8', en: 'e.g. 8' },
+      },
+    ],
     validate: {
-      requiredMessage: { tr: 'Dolum miktarı veya kapasite en az biri zorunludur.', en: 'At least one of refill amount or capacity is required.' },
+      requiredMessage: { tr: 'Lütfen yıllık dolum miktarını girin.', en: 'Please enter the annual refill quantity.' },
     },
     systemMessages: {
-      // 'selected' sentinel: fires whenever the user reaches this equipment loop question.
-      // Reminds them where to find the refill quantity on their service invoice.
+      // 'selected' sentinel: fires once either sub-field has been filled in.
+      // Reminds the user where to find the refill quantity on their service invoice.
       selected: {
         tr: 'Servis faturanızda "yüklenen gaz miktarı" veya "şarj edilen gaz" yazıyor. Bu değeri direkt kullanabilirsiniz.',
         en: 'Your service invoice shows "gas charged" or "gas loaded". You can use this value directly.',
+      },
+    },
+    next: '3D-4-zero-decision',
+  },
+  {
+    // Advisor Triggers #6/#7 (ipcc_default_leakage / zero_leakage_declaration) —
+    // a refill of exactly 0 doesn't mean "no leak", it means the user must
+    // consciously choose between a conservative IPCC default and a documented
+    // zero-leak declaration. Only shown for equipment where 3D-4's refill_kg
+    // was 0; conditionalShowMatches drills into that compound sub-field across
+    // every item in the finished 3D-0 loop (see its `field` support).
+    id: '3D-4-zero-decision',
+    number: '62a',
+    stage: 3,
+    block: '3D',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'single_select',
+    conditionalShow: { questionId: '3D-4', field: 'refill_kg', equals: 0 },
+    required: true,
+    reportField: 'scope1.fugitive.zero_refill_decision',
+    text: {
+      tr: 'Bazı ekipmanlarda yıllık dolum 0 olarak girildi. Bu kaynaklar için kaçak emisyonu nasıl hesaplansın?',
+      en: 'Annual refill was entered as 0 for some equipment. How should leakage emissions be calculated for those sources?',
+    },
+    helper: {
+      tr: 'Dolum yapılmamış olması sistemin çalışmadığı ya da hiç kaçak olmadığı anlamına gelmez. IPCC varsayılan kaçak oranı muhafazakar bir tahmindir ve genellikle önerilir. Sıfır kaçak beyanı yalnızca bakım kayıtlarıyla doğrulanabiliyorsa seçilmelidir — bu seçim danışman onayına gönderilir.',
+      en: 'Zero refill does not necessarily mean the system was not running or had no leaks. The IPCC default leak rate is a conservative estimate and is generally recommended. Only declare zero leakage if you can substantiate it with maintenance records — this choice is sent for advisor approval.',
+    },
+    options: [
+      { value: 'ipcc_default', label: { tr: 'IPCC varsayılan kaçak oranını uygula (önerilen)', en: 'Apply IPCC default leak rate (recommended)' } },
+      { value: 'zero_declared', label: { tr: 'Sıfır kaçak olduğunu beyan ediyorum (belgeli/doğrulanmış)', en: 'I declare zero leakage (documented/verified)' } },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
+    },
+    systemMessages: {
+      ipcc_default: {
+        tr: 'IPCC Tier 1 varsayılan kaçak oranı uygulanacak. Bu kayıt danışman onayına gönderilecek.',
+        en: 'The IPCC Tier 1 default leak rate will be applied. This entry will be sent for advisor approval.',
+      },
+      zero_declared: {
+        tr: 'Sıfır kaçak beyanınız kaydedildi. Bu yüksek riskli bir varsayımdır ve danışman onayına gönderilecek — destekleyici bakım kayıtlarınızı hazır bulundurun.',
+        en: 'Your zero-leakage declaration has been recorded. This is a high-risk assumption and will be sent for advisor approval — please have supporting maintenance records ready.',
       },
     },
     next: '3D-EF',
@@ -3194,6 +3416,41 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'En az bir enerji türü seçin.', en: 'Select at least one energy type.' },
     },
+    next: '4B-2',
+  },
+  {
+    // Question Map: 4B-consumption + 4B-unit (both required) — 4B-1's own text
+    // already asks "types AND annual amounts", but the UI only ever captured
+    // the type multi-select and skipped straight to 4B-EF, so no purchased
+    // heat/steam/cooling/compressed-air quantity was ever recorded.
+    id: '4B-2',
+    number: '78a',
+    stage: 4,
+    block: '4B',
+    isoRef: 'ISO 14064-1 §5.3',
+    type: 'fuel_loop',
+    loopSource: '4B-1',
+    loopNext: '4B-EF',
+    required: true,
+    reportField: 'scope2.purchased_energy_consumption',
+    text: {
+      tr: '[Enerji türü] — Yıllık tüketim miktarı nedir?',
+      en: '[Energy type] — What is the annual consumption quantity?',
+    },
+    placeholder: { tr: 'Örn: 850 GJ', en: 'Example: 850 GJ' },
+    helper: {
+      tr: 'Tedarikçi faturanızdaki yıllık toplam miktarı girin.',
+      en: 'Enter the annual total amount from your supplier invoice.',
+    },
+    units: {
+      heat: ['GJ', 'MWh'],
+      steam: ['GJ', 'MWh', 'tonnes'],
+      cooling: ['GJ', 'MWh'],
+      compressed_air: ['GJ', 'm³'],
+    },
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüketim miktarını girin.', en: 'Please enter the consumption amount.' },
+    },
     next: '4B-EF',
   },
   {
@@ -3465,12 +3722,17 @@ export const CARBONIQ_QUESTIONS = [
     nextByValue: { yes: 'K3C2-1', no: 'K3C3-INFO' },
   },
   {
+    // repeatable: a company routinely buys more than one kind of capital good
+    // in a year (e.g. a building AND machinery) — a single compound entry
+    // could only ever record one. "+ Add Another" lets the user log as many
+    // purchases as needed before confirming.
     id: 'K3C2-1',
     number: 87,
     stage: 5,
     block: '5B',
     isoRef: 'ISO 14064-1 §5.4',
     type: 'compound',
+    repeatable: true,
     required: true,
     reportField: 'scope3.cat2.items',
     text: {
@@ -3599,6 +3861,71 @@ export const CARBONIQ_QUESTIONS = [
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C5-0') — S1/S2/S3 were only ever asked which
+    // data level the user has, then jumped straight to Waste with no shipment
+    // data ever captured. Question Map: k3c4_transport_mode/load/distance are
+    // all "required" fields that this question alone can't satisfy.
+    nextByValue: { S1: 'K3C4-2', S2: 'K3C4-2', S3: 'K3C4-2b' },
+  },
+  {
+    // repeatable: a company ships via more than one mode/route over a year.
+    id: 'K3C4-2',
+    number: '90a',
+    stage: 5,
+    block: '5D',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'scope3.cat4.shipments',
+    text: {
+      tr: 'Taşıma modu, yük ve mesafe bilgisi?',
+      en: 'Transport mode, load and distance details?',
+    },
+    helper: {
+      tr: 'Her sevkiyat rotası için taşıma modunu, taşınan yükü (ton) ve mesafeyi (km) girin. Ton-km sistem tarafından otomatik hesaplanır. Doluluk oranını bilmiyorsanız boş bırakın — GLEC Tier 1 %50 varsayılanı uygulanır.',
+      en: 'Enter the transport mode, load carried (tonnes) and distance (km) for each shipment route. Tonne-km is calculated automatically. Leave load factor blank if unknown — the GLEC Tier 1 50% default will be applied.',
+    },
+    fields: [
+      { id: 'transport_mode', type: 'select', required: true, label: { tr: 'Taşıma modu', en: 'Transport mode' }, options: TM_OPTIONS },
+      { id: 'load_tonne', type: 'numeric', required: true, label: { tr: 'Yük (ton)', en: 'Load (tonnes)' } },
+      { id: 'distance_km', type: 'numeric', required: true, label: { tr: 'Mesafe (km)', en: 'Distance (km)' } },
+      { id: 'load_factor_pct', type: 'numeric', required: false, label: { tr: 'Doluluk oranı (%) — opsiyonel', en: 'Load factor (%) — optional' } },
+    ],
+    systemMessages: {
+      selected: {
+        tr: 'Doluluk oranı girilmezse GLEC Tier 1 %50 varsayılanı uygulanır — bu bir Tip A kabul kaydı oluşturur.',
+        en: 'If load factor is left blank, the GLEC Tier 1 50% default is applied — this creates a Type A assumption record.',
+      },
+    },
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    next: 'K3C5-0',
+  },
+  {
+    // S3 fallback — user only has the logistics invoice total, not per-shipment
+    // ton/km/mode data. Kept separate from K3C4-2 rather than folding a "spend"
+    // field into that compound, to avoid mixing two mutually-exclusive data
+    // models (activity-based vs. spend-based) into one entry schema.
+    id: 'K3C4-2b',
+    number: '90b',
+    stage: 5,
+    block: '5D',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'text',
+    subtype: 'numeric',
+    required: true,
+    conditionalShow: { questionId: 'K3C4-1', equals: 'S3' },
+    reportField: 'scope3.cat4.total_spend',
+    text: {
+      tr: 'Yıllık toplam lojistik/nakliye fatura tutarı nedir?',
+      en: 'What is the total annual logistics/freight invoice amount?',
+    },
+    placeholder: { tr: 'Örn: 450.000 TL', en: 'Example: 450,000 TL' },
+    helper: {
+      tr: 'Harcama bazlı tahmin (EEIO) uygulanacak — ton-km bazlı hesaptan daha az doğrudur. Mümkünse lojistik firmanızdan sevkiyat detayı istemenizi öneririz.',
+      en: 'A spend-based estimate (EEIO) will be applied — less accurate than a tonne-km calculation. We recommend requesting shipment details from your logistics provider if possible.',
+    },
+    validate: { requiredMessage: { tr: 'Lütfen tutarı girin.', en: 'Please enter the amount.' } },
     next: 'K3C5-0',
   },
   {
@@ -3654,13 +3981,71 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'S2_total', label: { tr: 'Genel toplam miktar biliyorum — Seviye 2 (karma EF)', en: 'I know total quantity only — Level 2 (blended EF)' } },
       { value: 'S3', label: { tr: 'Hiç bilgim yok — Seviye 3 (çalışan başına tahmin)', en: 'No data — Level 3 (per-employee estimate)' } },
     ],
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C6-0') — the helper text promises "we will ask
+    // for quantity and disposal method for each type" but nothing after this
+    // question ever asked for it, for any of the four data levels.
+    nextByValue: { S1: 'K3C5-2', S2_type: 'K3C5-2', S2_total: 'K3C5-2b', S3: 'K3C6-0' },
+  },
+  {
+    // repeatable — a company has more than one waste stream (paper, plastic,
+    // e-waste, ...) in a year. Covers S1 (disposal company declaration) and
+    // S2_type (known type+quantity) — both need the same per-type breakdown,
+    // S1 just has better-quality data behind the EF questions that follow.
+    id: 'K3C5-2',
+    number: '92a',
+    stage: 5,
+    block: '5E',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'scope3.cat5.waste_items',
+    text: {
+      tr: 'Atık türü, miktarı ve bertaraf yöntemi?',
+      en: 'Waste type, quantity and disposal method?',
+    },
+    helper: {
+      tr: 'Her atık türü için yıllık miktarı (kg) ve bertaraf yöntemini girin.',
+      en: 'Enter the annual quantity (kg) and disposal method for each waste type.',
+    },
+    fields: [
+      { id: 'waste_type', type: 'select', required: true, label: { tr: 'Atık türü', en: 'Waste type' }, options: WT_OPTIONS },
+      { id: 'quantity_kg', type: 'numeric', required: true, label: { tr: 'Miktar (kg)', en: 'Quantity (kg)' } },
+      { id: 'disposal_method', type: 'select', required: true, label: { tr: 'Bertaraf yöntemi', en: 'Disposal method' }, options: WASTE_DISPOSAL_OPTIONS },
+    ],
     systemMessages: {
-      metal_recycling: {
+      selected: {
         tr: 'Metal geri dönüşümü negatif emisyon üretir (alüminyum: -9.100 kg CO₂e/ton). Bu değer toplam Kapsam 3 emisyonunuzu azaltır.',
         en: 'Metal recycling produces negative emissions (aluminium: -9,100 kg CO₂e/tonne). This value reduces your total Scope 3 emissions.',
       },
     },
-    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    next: 'K3C6-0',
+  },
+  {
+    // S2_total fallback — user only knows the overall waste quantity, not a
+    // per-type breakdown. A blended DEFRA mixed-waste EF is applied.
+    id: 'K3C5-2b',
+    number: '92b',
+    stage: 5,
+    block: '5E',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'text',
+    subtype: 'numeric',
+    required: true,
+    conditionalShow: { questionId: 'K3C5-1', equals: 'S2_total' },
+    reportField: 'scope3.cat5.total_quantity_kg',
+    text: {
+      tr: 'Yıllık toplam atık miktarı nedir (kg)?',
+      en: 'What is the total annual waste quantity (kg)?',
+    },
+    placeholder: { tr: 'Örn: 12.000', en: 'Example: 12,000' },
+    helper: {
+      tr: 'Karma bertaraf DEFRA emisyon faktörü uygulanacak (467 kg CO₂e/ton). Türe göre ayrım yapabilirseniz sonuç daha doğru olur.',
+      en: 'A blended DEFRA disposal emission factor will be applied (467 kg CO₂e/tonne). Breaking this down by type would give a more accurate result.',
+    },
+    validate: { requiredMessage: { tr: 'Lütfen miktarı girin.', en: 'Please enter the quantity.' } },
     next: 'K3C6-0',
   },
   {
@@ -3709,17 +4094,85 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'S2', label: { tr: 'Mod ve mesafe bazlı veri var — Seviye 2', en: 'Mode and distance-based data available — Level 2' } },
       { value: 'S3', label: { tr: 'Sadece harcama verisi var — Seviye 3', en: 'Only spend data available — Level 3' } },
     ],
-    systemMessages: {
-      aviation_cabin: {
-        tr: 'Havayolunda kabin sınıfı emisyonu büyük etkiler: Economy 1x · Business 2.9x · First 4x (DEFRA 2023). Sınıf bilgisi bilinmiyorsa Economy varsayılanı uygulanır.',
-        en: 'Aviation cabin class has a large emission impact: Economy 1x · Business 2.9x · First 4x (DEFRA 2023). If class unknown, Economy default is applied.',
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C7-0') — the cabin-class/RFI system messages
+    // below (moved to K3C6-2) promised data that was never actually asked for.
+    nextByValue: { S1: 'K3C6-2', S2: 'K3C6-2', S3: 'K3C6-2b' },
+  },
+  {
+    // repeatable — a company has more than one trip/mode over a year.
+    id: 'K3C6-2',
+    number: '94a',
+    stage: 5,
+    block: '5F',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'scope3.cat6.trips',
+    text: {
+      tr: 'Seyahat modu, mesafe/gece sayısı, kabin sınıfı ve RFI?',
+      en: 'Travel mode, distance/nights, cabin class and RFI?',
+    },
+    helper: {
+      tr: 'Her seyahat modu için kişi-km (uçak/tren/otobüs/feribot), km (kiralık araç) veya gece sayısı (otel) girin.',
+      en: 'Enter person-km (flight/train/bus/ferry), km (rental car) or number of nights (hotel) for each travel mode.',
+    },
+    fields: [
+      { id: 'travel_mode', type: 'select', required: true, label: { tr: 'Seyahat modu', en: 'Travel mode' }, options: BT_OPTIONS },
+      { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Kişi-km / km / gece', en: 'Person-km / km / nights' } },
+      {
+        id: 'cabin_class', type: 'select', required: false,
+        conditionalOn: 'travel_mode', conditionalOnValue: BT_FLIGHT_MODES,
+        label: { tr: '[Uçuş] Kabin sınıfı', en: '[Flight] Cabin class' }, options: CABIN_CLASS_OPTIONS,
       },
-      rfi_info: {
-        tr: 'Radyatif Zorlama Faktörü (RFI=1.9x): Yüksek irtifada uçuşların ek iklim etkisini kapsar. DEFRA öneriyor, GHG Protocol zorunlu tutmuyor. Tercihini raporda belgeliyoruz.',
-        en: 'Radiative Forcing Index (RFI=1.9x): Covers the additional climate impact of high-altitude flights. DEFRA recommends, GHG Protocol does not require. Your choice is documented in the report.',
+      {
+        id: 'rfi_applied', type: 'boolean', required: false,
+        conditionalOn: 'travel_mode', conditionalOnValue: BT_FLIGHT_MODES,
+        label: { tr: '[Uçuş] RFI (radyatif zorlama, 1.9x) uygulansın mı?', en: '[Flight] Apply RFI (radiative forcing, 1.9x)?' },
+      },
+      {
+        id: 'rental_fuel', type: 'select', required: false,
+        conditionalOn: 'travel_mode', conditionalOnValue: ['BT-07'],
+        label: { tr: '[Kiralık araç] Yakıt türü', en: '[Rental car] Fuel type' }, options: RENTAL_FUEL_OPTIONS,
+      },
+      {
+        id: 'hotel_class', type: 'select', required: false,
+        conditionalOn: 'travel_mode', conditionalOnValue: ['BT-10'],
+        label: { tr: '[Otel] Kategori', en: '[Hotel] Category' }, options: HOTEL_CLASS_OPTIONS,
+      },
+    ],
+    systemMessages: {
+      selected: {
+        tr: 'Havayolunda kabin sınıfı emisyonu büyük etkiler: Economy 1x · Business 2.9x · First 4x. Sınıf bilinmiyorsa Economy varsayılanı uygulanır. RFI (1.9x), yüksek irtifa uçuşların ek iklim etkisini kapsar — DEFRA önerir, GHG Protocol zorunlu tutmaz; tercihiniz raporda belgelenir.',
+        en: 'Aviation cabin class has a large emission impact: Economy 1x · Business 2.9x · First 4x. If class is unknown, the Economy default is applied. RFI (1.9x) covers the additional climate impact of high-altitude flights — DEFRA recommends it, GHG Protocol does not require it; your choice is documented in the report.',
       },
     },
-    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    next: 'K3C7-0',
+  },
+  {
+    // S3 fallback — only total travel spend is available, no per-trip data.
+    id: 'K3C6-2b',
+    number: '94b',
+    stage: 5,
+    block: '5F',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'text',
+    subtype: 'numeric',
+    required: true,
+    conditionalShow: { questionId: 'K3C6-1', equals: 'S3' },
+    reportField: 'scope3.cat6.total_spend',
+    text: {
+      tr: 'Yıllık toplam iş seyahati harcaması nedir?',
+      en: 'What is the total annual business travel spend?',
+    },
+    placeholder: { tr: 'Örn: 180.000 TL', en: 'Example: 180,000 TL' },
+    helper: {
+      tr: 'Harcama bazlı tahmin (EEIO) uygulanacak — mod bazlı hesaptan daha az doğrudur.',
+      en: 'A spend-based estimate (EEIO) will be applied — less accurate than a mode-based calculation.',
+    },
+    validate: { requiredMessage: { tr: 'Lütfen tutarı girin.', en: 'Please enter the amount.' } },
     next: 'K3C7-0',
   },
   {
@@ -3744,16 +4197,171 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'estimate', label: { tr: 'Hayır — tahmin kullanacağız', en: 'No — we will use an estimate' } },
     ],
     systemMessages: {
-      istanbul_split: {
-        tr: 'İstanbul modal split tahmini: Özel araç %45 · Toplu taşıma %40 · Diğer %15. Ortalama mesafe: 18 km. Bu değerleri düzenleyebilirsiniz.',
-        en: 'Istanbul modal split estimate: Private car 45% · Public transport 40% · Other 15%. Average distance: 18 km. You can adjust these values.',
-      },
-      hybrid_work: {
-        tr: 'Hybrid çalışma modeli varsa ofis günleri commute EF, uzaktan günler ise DEFRA ev ofis EF (2.49 kg CO₂e/gün) uygulanır. Yıllık ofis gün sayısını belirtin.',
-        en: 'For hybrid models, commute EF applies on office days and DEFRA home office EF (2.49 kg CO₂e/day) on remote days. Specify annual office day count.',
+      // Was keyed 'istanbul_split' — not a valid option value, so it never fired.
+      // Renamed to the 'estimate' option it's actually describing.
+      estimate: {
+        tr: 'Şehir/sektör bazlı bir modal split tahmini örneği: Özel araç %45 · Toplu taşıma %40 · Diğer %15, ortalama mesafe 18 km. Aşağıdaki sorularda kendi tahmininizi girebilir veya bu değerlere yakın bir dağılım kullanabilirsiniz.',
+        en: 'An example city/sector-based modal split estimate: Private car 45% · Public transport 40% · Other 15%, average distance 18 km. You can enter your own estimate in the following questions, or use a distribution close to this.',
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C8-0') — none of the fields the helper text and
+    // system messages describe (headcount split, modal split %, distance, EV
+    // count, shuttle ownership — Question Map: 9 required/conditional fields)
+    // were ever actually asked.
+    next: 'K3C7-1',
+  },
+  {
+    id: 'K3C7-1',
+    number: '95a',
+    stage: 5,
+    block: '5G',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    reportField: 'scope3.cat7.headcount_split',
+    text: {
+      tr: 'Tam zamanlı ofis, hybrid ve uzaktan çalışan sayısı?',
+      en: 'Full-time office, hybrid and remote employee counts?',
+    },
+    helper: {
+      tr: 'Toplamı Aşama 1\'deki çalışan sayınızla yaklaşık eşleşmeli. Hybrid çalışma modeli varsa ofis günlerinde commute EF, uzaktan günlerde DEFRA ev ofis EF (2.49 kg CO₂e/gün) uygulanır.',
+      en: 'The total should roughly match your Stage 1 employee count. For hybrid employees, commute EF applies on office days and DEFRA home office EF (2.49 kg CO₂e/day) on remote days.',
+    },
+    fields: [
+      { id: 'fulltime_count', type: 'numeric', required: true, label: { tr: 'Tam zamanlı ofis çalışanı', en: 'Full-time office employees' } },
+      { id: 'hybrid_count', type: 'numeric', required: true, label: { tr: 'Hybrid çalışan', en: 'Hybrid employees' } },
+      { id: 'remote_count', type: 'numeric', required: true, label: { tr: 'Uzaktan çalışan', en: 'Remote employees' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    next: 'K3C7-2',
+  },
+  {
+    id: 'K3C7-2',
+    number: '95b',
+    stage: 5,
+    block: '5G',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'text',
+    subtype: 'numeric',
+    required: true,
+    conditionalShow: { questionId: 'K3C7-1', field: 'hybrid_count', greaterThan: 0 },
+    reportField: 'scope3.cat7.hybrid_office_days',
+    text: {
+      tr: 'Hybrid çalışanlar haftada kaç gün ofise geliyor?',
+      en: 'How many days per week do hybrid employees come to the office?',
+    },
+    placeholder: { tr: 'Örn: 3', en: 'Example: 3' },
+    helper: {
+      tr: 'Ortalama değeri girin. Bu, yıllık ofis günü sayısını hesaplamak için kullanılır.',
+      en: 'Enter the average value. This is used to calculate the annual office day count.',
+    },
+    validate: { requiredMessage: { tr: 'Lütfen ofis günü sayısını girin.', en: 'Please enter the office day count.' } },
+    next: 'K3C7-3',
+  },
+  {
+    id: 'K3C7-3',
+    number: '95c',
+    stage: 5,
+    block: '5G',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    reportField: 'scope3.cat7.modal_split',
+    text: {
+      tr: 'Ulaşım modu dağılımı (modal split)?',
+      en: 'Commute modal split?',
+    },
+    helper: {
+      tr: 'Dört değer toplamda yaklaşık %100 olmalı. Anketiniz yoksa Soru 95a\'daki örnek dağılıma yakın bir tahmin girebilirsiniz.',
+      en: 'The four values should add up to roughly 100%. If you have no survey, you can enter an estimate close to the example distribution shown earlier.',
+    },
+    fields: [
+      { id: 'car_pct', type: 'numeric', required: true, label: { tr: 'Özel araç (%)', en: 'Private car (%)' } },
+      { id: 'transit_pct', type: 'numeric', required: true, label: { tr: 'Toplu taşıma (%)', en: 'Public transport (%)' } },
+      { id: 'shuttle_pct', type: 'numeric', required: true, label: { tr: 'Servis aracı (%)', en: 'Shuttle bus (%)' } },
+      { id: 'walk_pct', type: 'numeric', required: true, label: { tr: 'Yürüme / bisiklet (%)', en: 'Walk / cycle (%)' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    next: 'K3C7-6',
+  },
+  {
+    id: 'K3C7-6',
+    number: '95d',
+    stage: 5,
+    block: '5G',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'single_select',
+    required: true,
+    conditionalShow: { questionId: 'K3C7-3', field: 'shuttle_pct', greaterThan: 0 },
+    reportField: 'scope3.cat7.shuttle_ownership',
+    text: {
+      tr: 'Servis aracının mülkiyeti nedir?',
+      en: 'What is the shuttle bus ownership?',
+    },
+    helper: {
+      tr: 'Bu, servis emisyonunun hangi kapsama gireceğini belirler: şirket mülkiyeti Kapsam 1, sözleşmeli hizmet Kategori 4, çalışan/üçüncü taraf servisi bu kategoride kalır.',
+      en: 'This determines which scope the shuttle emissions belong to: company-owned falls in Scope 1, a contracted service in Category 4, third-party/employee shuttle stays in this category.',
+    },
+    options: [
+      { value: 'company_owned', label: { tr: 'Şirkete ait araç → Kapsam 1', en: 'Company-owned vehicle → Scope 1' }, scope: 1 },
+      { value: 'contracted', label: { tr: 'Sözleşmeli nakliye firması → Kategori 4', en: 'Contracted transport company → Category 4' }, scope: 3 },
+      { value: 'third_party', label: { tr: 'Üçüncü taraf / bilinmiyor → bu kategoride kalır', en: 'Third-party / unknown → stays in this category' }, scope: 3 },
+    ],
+    systemMessages: {
+      company_owned: {
+        tr: 'Şirkete ait servis aracının yakıt tüketimi Kapsam 1\'de (3B) raporlanmalı — burada tekrar sayılmayacak.',
+        en: 'Fuel consumption for a company-owned shuttle should be reported in Scope 1 (3B) — it will not be double-counted here.',
+      },
+      contracted: {
+        tr: 'Sözleşmeli nakliye hizmeti Kategori 4\'e (Upstream Taşıma) dahil edilmelidir — çift sayımı önlemek için burada hariç tutulacak.',
+        en: 'A contracted transport service should be included in Category 4 (Upstream Transport) — it will be excluded here to avoid double counting.',
+      },
+    },
+    validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    next: 'K3C7-4',
+  },
+  {
+    id: 'K3C7-4',
+    number: '95e',
+    stage: 5,
+    block: '5G',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'text',
+    subtype: 'numeric',
+    required: true,
+    reportField: 'scope3.cat7.avg_distance_km',
+    text: {
+      tr: 'Ortalama tek yön commute mesafesi (km)?',
+      en: 'Average one-way commute distance (km)?',
+    },
+    placeholder: { tr: 'Örn: 15', en: 'Example: 15' },
+    helper: {
+      tr: 'Anketiniz varsa ortalama değeri kullanın. Yoksa şehir ortalamasına yakın bir tahmin girin (büyükşehirlerde tipik olarak 12–20 km).',
+      en: 'Use the average from your survey if available. Otherwise enter an estimate close to the city average (typically 12–20 km in large cities).',
+    },
+    validate: { requiredMessage: { tr: 'Lütfen mesafeyi girin.', en: 'Please enter the distance.' } },
+    next: 'K3C7-5',
+  },
+  {
+    id: 'K3C7-5',
+    number: '95f',
+    stage: 5,
+    block: '5G',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'text',
+    subtype: 'numeric',
+    required: false,
+    reportField: 'scope3.cat7.ev_count',
+    text: {
+      tr: 'Özel aracıyla gelen kaç çalışan elektrikli araç kullanıyor?',
+      en: 'How many employees who commute by private car use an electric vehicle?',
+    },
+    placeholder: { tr: 'Örn: 4 (yoksa 0 girin)', en: 'Example: 4 (enter 0 if none)' },
+    helper: {
+      tr: 'Elektrikli araç kullananlar için Kapsam 2\'deki şebeke emisyon faktörü uygulanır — fosil yakıtlı araçlardan daha düşük emisyon. Bilmiyorsanız boş bırakabilirsiniz.',
+      en: 'Electric vehicle users get the Scope 2 grid emission factor applied — lower emissions than fossil-fuel vehicles. You may leave this blank if unknown.',
+    },
     next: 'K3C8-0',
   },
   {
@@ -3847,15 +4455,53 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'no', label: { tr: 'Hayır', en: 'No' } },
     ],
     systemMessages: {
-      glec_info: {
+      // Was keyed 'glec_info' — not a valid option value nor the 'selected'
+      // sentinel single_select checks, so this message could never fire.
+      yes: {
         tr: 'Kat.4 ile aynı yapıyı kullanacağız: GLEC Framework emisyon faktörleri, taşıma modu ve ton-km verisi.',
         en: 'We will use the same structure as Cat.4: GLEC Framework emission factors, transport mode and tonne-km data.',
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C10-0' regardless of answer) — despite the
+    // system message promising "mode and tonne-km data" would be asked, no
+    // shipment data was ever captured for either answer.
+    nextByValue: { yes: 'K3C9-1', no: 'K3C10-0' },
+  },
+  {
+    // repeatable — same reasoning as K3C4-2 (multiple downstream shipment routes).
+    // No separate S1/S2/S3 data-level gate here: Question Map lists only
+    // k3c9_transport_mode/load/distance (no k3c9_data_level field), so this
+    // goes straight from the yes/no gate into activity data capture.
+    id: 'K3C9-1',
+    number: '98a',
+    stage: 5,
+    block: '5I',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'scope3.cat9.shipments',
+    text: {
+      tr: 'Taşıma modu, yük ve mesafe bilgisi?',
+      en: 'Transport mode, load and distance details?',
+    },
+    helper: {
+      tr: 'Her dağıtım rotası için taşıma modunu, taşınan yükü (ton) ve mesafeyi (km) girin. Ton-km sistem tarafından otomatik hesaplanır.',
+      en: 'Enter the transport mode, load carried (tonnes) and distance (km) for each distribution route. Tonne-km is calculated automatically.',
+    },
+    fields: [
+      { id: 'transport_mode', type: 'select', required: true, label: { tr: 'Taşıma modu', en: 'Transport mode' }, options: TM_OPTIONS },
+      { id: 'load_tonne', type: 'numeric', required: true, label: { tr: 'Yük (ton)', en: 'Load (tonnes)' } },
+      { id: 'distance_km', type: 'numeric', required: true, label: { tr: 'Mesafe (km)', en: 'Distance (km)' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C10-0',
   },
   {
+    // Question Map: k3c10_active is "auto" — should default to inapplicable
+    // for service-sector NACE codes rather than being asked of every user
+    // (mirrors 3C-0's existing industrial-sector gate exactly).
     id: 'K3C10-0',
     number: 99,
     stage: 5,
@@ -3863,6 +4509,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.4',
     type: 'single_select',
     required: false,
+    conditionalShow: { questionId: 'B1', inValues: ['NACE_A', 'NACE_B', 'NACE_C', 'NACE_D', 'NACE_E', 'NACE_F'] },
     reportField: 'scope3.cat10.applicable',
     text: {
       tr: 'Sattığınız ürünler müşteri tarafından daha fazla işleniyor mu?',
@@ -3970,6 +4617,37 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'no', label: { tr: 'Hayır — hizmet satıyoruz', en: 'No — we sell services' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C13-0' regardless of answer) — Question Map's
+    // k3c12_product_name/weight/composition/disposal fields were never asked.
+    nextByValue: { yes: 'K3C12-1', no: 'K3C13-0' },
+  },
+  {
+    // repeatable — a company sells more than one product line with different
+    // end-of-life profiles.
+    id: 'K3C12-1',
+    number: '102a',
+    stage: 5,
+    block: '5L',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'scope3.cat12.products',
+    text: {
+      tr: 'Ürün adı, birim ağırlığı, ana malzemesi ve bertaraf yöntemi?',
+      en: 'Product name, unit weight, primary material and disposal method?',
+    },
+    helper: {
+      tr: 'Her ürün için tipik ömür sonu bertaraf yöntemini (müşterinin çoğunlukla nasıl attığını) tahmin edin.',
+      en: 'For each product, estimate the typical end-of-life disposal method (how customers most commonly dispose of it).',
+    },
+    fields: [
+      { id: 'product_name', type: 'text', required: true, label: { tr: 'Ürün adı', en: 'Product name' }, maxLength: 100 },
+      { id: 'weight_kg', type: 'numeric', required: true, label: { tr: 'Birim ürün ağırlığı (kg)', en: 'Unit product weight (kg)' } },
+      { id: 'primary_material', type: 'select', required: true, label: { tr: 'Ana malzeme', en: 'Primary material' }, options: WT_OPTIONS },
+      { id: 'disposal_method', type: 'select', required: true, label: { tr: 'Beklenen bertaraf yöntemi', en: 'Expected disposal method' }, options: WASTE_DISPOSAL_OPTIONS },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C13-0',
   },
   {
@@ -3994,15 +4672,53 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'no', label: { tr: 'Hayır', en: 'No' } },
     ],
     systemMessages: {
-      auto_detect: {
+      // Was keyed 'auto_detect' — not a valid option value, never fired.
+      yes: {
         tr: 'Aşama 2\'de bu tesis için kiracı yönetiyor seçtiniz. Bu tesis Kategori 13 kapsamında. Kiracıdan enerji tüketim verisi alabilir misiniz?',
         en: 'In Stage 2 you selected \'tenant manages\' for this facility. It falls under Category 13. Can you obtain energy consumption data from the tenant?',
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    // Was a dead end (next: 'K3C14-0' regardless of answer) — Question Map's
+    // k3c13_asset_description field was never asked.
+    nextByValue: { yes: 'K3C13-1', no: 'K3C14-0' },
+  },
+  {
+    // repeatable — a company may lease out more than one asset.
+    id: 'K3C13-1',
+    number: '103a',
+    stage: 5,
+    block: '5M',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'scope3.cat13.assets',
+    text: {
+      tr: 'Kiraya verilen varlığın açıklaması ve kiracı veri durumu?',
+      en: 'Leased asset description and tenant data availability?',
+    },
+    helper: {
+      tr: 'Her kiraya verilen varlık için kısa bir açıklama ve kiracıdan enerji tüketim verisi alınıp alınamadığını belirtin.',
+      en: 'For each leased-out asset, provide a short description and whether energy consumption data can be obtained from the tenant.',
+    },
+    fields: [
+      { id: 'asset_description', type: 'text', required: true, label: { tr: 'Varlık açıklaması', en: 'Asset description' }, maxLength: 150 },
+      { id: 'tenant_data_available', type: 'boolean', required: true, label: { tr: 'Kiracıdan enerji verisi alınabiliyor mu?', en: 'Can energy data be obtained from tenant?' } },
+    ],
+    systemMessages: {
+      selected: {
+        tr: 'Kiracı verisi alınamıyorsa alan (m²) bazlı REEB bina tipi EF tahmini uygulanacak (Seviye 2) — Kategori 8\'deki yaklaşımla aynı.',
+        en: 'If tenant data is unavailable, a floor-area-based REEB building type EF estimate will be applied (Level 2) — same approach as Category 8.',
+      },
+    },
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C14-0',
   },
   {
+    // Question Map: k3c14_active is "auto" — "C3'ten otomatik — C3=Hayır ->
+    // False" (auto from C3, C3=No -> False). Was asked of every user
+    // regardless of whether they even reported having JVs/franchises in C3.
     id: 'K3C14-0',
     number: 104,
     stage: 5,
@@ -4010,6 +4726,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.4',
     type: 'single_select',
     required: false,
+    conditionalShow: { questionId: 'C3', equals: 'yes' },
     reportField: 'scope3.cat14.applicable',
     text: {
       tr: 'Franchise ağınızın emisyon verisi var mı?',
@@ -4056,12 +4773,16 @@ export const CARBONIQ_QUESTIONS = [
     nextByValue: { yes: 'K3C15-1', no: 'K3-TY' },
   },
   {
+    // repeatable — a diversified investment portfolio has more than one
+    // asset class (e.g. both equity and a mortgage book), same reasoning as
+    // K3C2's capital-goods fix.
     id: 'K3C15-1',
     number: 106,
     stage: 5,
     block: '5O',
     isoRef: 'ISO 14064-1 §5.4',
     type: 'compound',
+    repeatable: true,
     required: true,
     reportField: 'scope3.cat15.investments',
     text: {
@@ -4932,7 +5653,14 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lütfen kabullerinizi onaylayın.', en: 'Please confirm your assumptions.' },
     },
-    nextByValue: { confirmed: null, edit: '6B-1' },
+    // Was { confirmed: null } — null terminates the ENTIRE questionnaire
+    // (advanceToQuestion(null) marks the report complete), so a user who
+    // chose "Review Each" (the more careful, ISO-rigorous option at 6B-OV)
+    // had their report finalized here, skipping 6C (Exceptions), 6D (5%
+    // materiality), 6E (uncertainty), 6F (base year) and all of Stage 7
+    // (sign-off/report generation) — while "Approve All" correctly continued
+    // to 6C-1. The careful path was punished; the fast path worked.
+    nextByValue: { confirmed: '6C-1', edit: '6B-1' },
   },
 ];
 
@@ -4992,46 +5720,79 @@ export function getNextQuestionId(question, answer) {
   return question.next ?? null;
 }
 
+// Validates one compound entry's sub-fields against its schema. Shared by a
+// plain compound question (obj = the answer itself) and a repeatable compound
+// (obj = one entry in the items array) so the two don't drift.
+function validateCompoundFields(fields, obj, lang) {
+  for (const field of (fields || [])) {
+    if (field.required === false) continue; // explicitly optional
+    // Skip fields whose conditionalOn toggle is false/unset — they are hidden in the UI
+    // and cannot be filled by the user, so they must not fail validation.
+    // conditionalOnValue generalises this to non-boolean fields (e.g. K3C6-2's
+    // cabin_class only applies when travel_mode is a flight code).
+    if (field.conditionalOn) {
+      const condVal = obj[field.conditionalOn];
+      const condMet = field.conditionalOnValue
+        ? field.conditionalOnValue.includes(condVal)
+        : (condVal === true || condVal === 'true');
+      if (!condMet) continue;
+    }
+    const fv = obj[field.id];
+    const fempty = fv === undefined || fv === null || String(fv).trim() === '';
+    if (fempty) {
+      const flabel = field.label?.[lang] || field.label?.en || field.id;
+      return {
+        ok: false,
+        message: field.validate?.requiredMessage?.[lang]
+          || (lang === 'tr'
+            ? `"${flabel}" alanı zorunludur.`
+            : `"${flabel}" is required.`),
+      };
+    }
+    if (field.maxLength && String(fv).length > field.maxLength) {
+      const flabel = field.label?.[lang] || field.label?.en || field.id;
+      return {
+        ok: false,
+        message: lang === 'tr'
+          ? `"${flabel}" en fazla ${field.maxLength} karakter olabilir.`
+          : `"${flabel}" must be at most ${field.maxLength} characters.`,
+      };
+    }
+  }
+  return { ok: true };
+}
+
 export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en') {
   if (!question) return { ok: false, message: 'Question not found.' };
 
   // Info screens never need validation
   if (question.type === 'info') return { ok: true };
 
+  // Repeatable compound (e.g. K3C2's multiple capital-goods purchases) — the
+  // answer is { items: [...] }, each item validated against the same field
+  // schema as a single compound. The "+ Add Another / Done" UI already keeps
+  // an incomplete draft from ever reaching here, but this is the canonical
+  // check, so it must not assume that.
+  if (question.type === 'compound' && question.repeatable) {
+    const items = (value && typeof value === 'object' && Array.isArray(value.items)) ? value.items : [];
+    if (question.required && items.length === 0) {
+      return {
+        ok: false,
+        message: question.validate?.requiredMessage?.[lang]
+          || (lang === 'tr' ? 'Lütfen en az bir kayıt ekleyin.' : 'Please add at least one entry.'),
+      };
+    }
+    for (const item of items) {
+      const err = validateCompoundFields(question.fields, item || {}, lang);
+      if (!err.ok) return err;
+    }
+    return { ok: true };
+  }
+
   // compound — validate each sub-field individually
   if (question.type === 'compound') {
     const obj = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
-    for (const field of (question.fields || [])) {
-      if (field.required === false) continue; // explicitly optional
-      // Skip fields whose conditionalOn toggle is false/unset — they are hidden in the UI
-      // and cannot be filled by the user, so they must not fail validation.
-      if (field.conditionalOn) {
-        const condVal = obj[field.conditionalOn];
-        if (condVal !== true && condVal !== 'true') continue;
-      }
-      const fv = obj[field.id];
-      const fempty = fv === undefined || fv === null || String(fv).trim() === '';
-      if (fempty) {
-        const flabel = field.label?.[lang] || field.label?.en || field.id;
-        return {
-          ok: false,
-          message: field.validate?.requiredMessage?.[lang]
-            || (lang === 'tr'
-              ? `"${flabel}" alanı zorunludur.`
-              : `"${flabel}" is required.`),
-        };
-      }
-      if (field.maxLength && String(fv).length > field.maxLength) {
-        const flabel = field.label?.[lang] || field.label?.en || field.id;
-        return {
-          ok: false,
-          message: lang === 'tr'
-            ? `"${flabel}" en fazla ${field.maxLength} karakter olabilir.`
-            : `"${flabel}" must be at most ${field.maxLength} characters.`,
-        };
-      }
-    }
-    return { ok: true };
+    return validateCompoundFields(question.fields, obj, lang);
   }
 
   // country_city requires both fields to be non-empty
@@ -5155,6 +5916,14 @@ export function getSystemMessage(question, value, lang = 'en') {
     return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
   }
 
+  // Compound: sentinel 'selected' fires once any sub-field has been filled in.
+  if (question.type === 'compound') {
+    const hasValue = value && typeof value === 'object' && Object.values(value).some(v => v !== '' && v != null);
+    const msg = hasValue ? msgs['selected'] : undefined;
+    if (!msg) return null;
+    return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+  }
+
   // Country/city: key = selected country code (e.g. 'TR', 'GB', 'OTHER').
   // Sentinel 'selected' fires for any non-empty country selection.
   if (question.type === 'country_city') {
@@ -5186,6 +5955,69 @@ export function getSystemMessage(question, value, lang = 'en') {
   }
 
   return null;
+}
+
+// An answer shows up in two different shapes depending on where it's read from:
+// live local state stores the raw widget value, but a report hydrated from the
+// backend stores whatever was PATCHed as `data` — which for most questions is
+// mapAnswerForBackend's default case, { answer: value }. This normalises either
+// shape to the raw value so callers can compare against option values directly.
+// Object-valued answers that carry no `answer` key (country_city's
+// {country, city}, compound's field map) are returned untouched.
+//
+// Shared across InventoryWorkflow.jsx (hydrating a resumed report) and
+// CarbonAIPage.jsx (conditionalShow checks, display formatting, goBack/edit) —
+// lives here rather than in either component so both can import it without a
+// circular dependency (CarbonAIPage already imports from InventoryWorkflow).
+export function readAnswerValue(answersMap, questionId) {
+  const v = answersMap?.[questionId];
+  if (v && typeof v === 'object' && !Array.isArray(v) && 'answer' in v) return v.answer;
+  return v;
+}
+
+// Inverse of mapAnswerForBackend (CarbonAIPage.jsx), for the "reuse previous
+// Company Profile?" flow and for hydrating a resumed report — reconstructs the
+// raw local-state value shape (what submitAnswer would have stored) from a
+// Phase-1 answer fetched from the backend. Phase-1 (A1-D4) questions are saved
+// with named backend fields (e.g. { legal_name: value }) instead of the
+// generic { answer: value } wrapper every other question uses, so
+// readAnswerValue alone can't unwrap them — this needs the field name too.
+// Returns undefined for anything it doesn't recognise (including all
+// non-Phase-1 question ids), so callers can safely fall back to their own default.
+export function unmapPhase1Answer(questionId, backendAnswer) {
+  if (!backendAnswer || typeof backendAnswer !== 'object') return undefined;
+  switch (questionId) {
+    case 'A1': return backendAnswer.legal_name;
+    case 'A2': return backendAnswer.tax_id;
+    case 'A3': return { country: backendAnswer.country || '', city: backendAnswer.city || '' };
+    case 'A4': return backendAnswer.reporting_year != null ? String(backendAnswer.reporting_year) : undefined;
+    case 'A5': return backendAnswer.prepared_by;
+    case 'A6': {
+      const reverseMap = { internal: 'internal_strategy', legal: 'legal_obligation', voluntary: 'voluntary_disclosure', client: 'customer_request' };
+      return Array.isArray(backendAnswer.purposes) ? backendAnswer.purposes.map(v => reverseMap[v] || v) : [];
+    }
+    case 'A7': return backendAnswer.has_previous_report ? 'yes' : 'no';
+    case 'A7a': return backendAnswer.baseline_year != null ? String(backendAnswer.baseline_year) : undefined;
+    case 'B1': return backendAnswer.nace_code ? `NACE_${backendAnswer.nace_code}` : undefined;
+    case 'B2': return backendAnswer.activity_description || '';
+    case 'B3': {
+      const reverseMap = { '1-50': '1_50', '51-250': '51_250', '251-1000': '251_1000', '1001-5000': '1001_5000', '5000+': '5000_plus' };
+      return reverseMap[backendAnswer.employee_band] || backendAnswer.employee_band;
+    }
+    case 'B4': return backendAnswer.number_of_facilities != null ? String(backendAnswer.number_of_facilities) : undefined;
+    case 'B5': return Array.isArray(backendAnswer.facility_types) ? backendAnswer.facility_types : [];
+    case 'B6': {
+      const reverseMap = { '<1M': 'under_1m', '1-10M': '1m_10m', '10-100M': '10m_100m', '100M-1B': '100m_1b', '1B+': 'over_1b' };
+      return reverseMap[backendAnswer.revenue_band] || backendAnswer.revenue_band;
+    }
+    case 'C1': return backendAnswer.has_subsidiaries ? 'yes' : 'no';
+    case 'C2': return backendAnswer.has_international ? 'yes' : 'no';
+    case 'C3': return backendAnswer.has_jv_franchise ? 'yes' : 'no';
+    case 'D1': return backendAnswer.ef_database || undefined;
+    case 'D3': return backendAnswer.boundary_approach || undefined;
+    case 'D4': return backendAnswer.scope3_approach || undefined;
+    default: return undefined;
+  }
 }
 
 export function getTriggeredAssumptions(question, value) {

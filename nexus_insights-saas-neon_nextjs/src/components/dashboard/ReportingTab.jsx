@@ -1,6 +1,8 @@
 ﻿'use client';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
+import useCountUp from '@/lib/hooks/useCountUp';
+import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 import {
   CheckCircle2,
   Download,
@@ -17,6 +19,19 @@ import {
   MONTHS_EN as MONTHS_EN_SHORT,
 } from '@/lib/constants/emissions';
 
+// Shared card wrapper: entrance stagger + hover lift, same visual language as
+// the Dashboard Overview / Emissions / Targets pages.
+function ReportCard({ children, className = '', delay = 0 }) {
+  return (
+    <div
+      className={`dash-fade-up rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function ReportingTab({ language, selectedYear, summary, entries, targets, questionnaireProfile }) {
   const [pdfLoading, setPdfLoading] = useState('');
   const [dlError, setDlError] = useState('');
@@ -25,6 +40,14 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
   const s1 = summary?.scope1_tonne || 0;
   const s2 = summary?.scope2_tonne || 0;
   const s3 = summary?.scope3_tonne || 0;
+
+  // Gates the readiness bar / scope-breakdown bars / monthly-trend bars —
+  // start at 0 and grow to their real value shortly after mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
 
   // Readiness — useMemo so this is only recalculated when data actually changes,
   // not on every local state update (e.g. pdfLoading spinner toggling).
@@ -38,6 +61,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     ];
     return { checks: list, readiness: Math.round((list.filter(c => c.done).length / list.length) * 100) };
   }, [questionnaireProfile, entries.length, targets.length, totalTonne, tr]);
+  const animatedReadiness = useCountUp(readiness, 900);
 
   // Monthly chart max — computed once, not inside the render IIFE
   const monthlyMaxKg = useMemo(
@@ -121,6 +145,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
 
   return (
     <div className="space-y-4 text-[#072C0E]">
+      <style>{DASHBOARD_ANIM_STYLES}</style>
       {/* ─── Download error ─── */}
       {dlError && (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
@@ -129,7 +154,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         </div>
       )}
       {/* ─── HERO ─── */}
-      <div className="relative rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-5 shadow-sm">
+      <div className="dash-fade-up relative rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-5 shadow-sm">
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
@@ -158,19 +183,19 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 1: Readiness + AI Insights ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Report Readiness */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
+        <ReportCard delay={80}>
           <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41] transition-transform duration-300 group-hover:scale-110">
                 <Shield className="h-4 w-4" />
               </div>
               <h2 className="text-sm font-bold">{tr ? 'Rapor Hazırlığı' : 'Report Readiness'}</h2>
             </div>
-            <span className="text-2xl font-bold text-[#2ABD41]">{readiness}%</span>
+            <span className="text-2xl font-bold tabular-nums text-[#2ABD41]">{Math.round(animatedReadiness)}%</span>
           </div>
           {/* Progress ring simplified as bar */}
           <div className="mb-4 h-3 overflow-hidden rounded-full bg-[#072C0E]/6">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700" style={{ width: `${readiness}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700 ease-out" style={{ width: `${mounted ? readiness : 0}%` }} />
           </div>
           <div className="space-y-2">
             {checks.map((c) => (
@@ -182,10 +207,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               </div>
             ))}
           </div>
-        </div>
+        </ReportCard>
 
         {/* AI Insights — deep green (not brown/black) to stay on-theme with the carbon branding */}
-        <div className="rounded-[1.5rem] border border-[#175022]/80 bg-gradient-to-br from-[#175022] to-[#1A7B2A] p-5 shadow-[0_6px_20px_rgba(23, 80, 34,0.25)]">
+        <div
+          className="dash-fade-up group rounded-[1.5rem] border border-[#175022]/80 bg-gradient-to-br from-[#175022] to-[#1A7B2A] p-5 shadow-[0_6px_20px_rgba(23,80,34,0.25)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(23,80,34,0.35)]"
+          style={{ animationDelay: '140ms' }}
+        >
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#8BEA99]">
               <Sparkles className="h-4 w-4" />

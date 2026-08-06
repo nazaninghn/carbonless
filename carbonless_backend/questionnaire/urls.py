@@ -9,6 +9,8 @@ from .views import (
     PreviousCompanyProfileView,
     ReuseCompanyProfileView,
     get_report_summary,
+    pending_advisor_approvals_view,
+    approve_advisor_approval_view,
     # legacy
     start_session,
     answer_question,
@@ -36,6 +38,10 @@ urlpatterns = [
     path('<int:report_id>/pdf/', QuestionnairePDFView.as_view(), name='questionnaire-pdf'),
     path('<int:report_id>/previous-profile/', PreviousCompanyProfileView.as_view(), name='questionnaire-previous-profile'),
     path('<int:report_id>/reuse-profile/', ReuseCompanyProfileView.as_view(), name='questionnaire-reuse-profile'),
+
+    # Danışman Onayı (Advisor Approval)
+    path('advisor-approvals/pending/', pending_advisor_approvals_view, name='advisor-approvals-pending'),
+    path('advisor-approvals/<int:pk>/approve/', approve_advisor_approval_view, name='advisor-approvals-approve'),
 
     # Workspace: ReportField data layer
     path('report-fields/map/', ReportFieldMapView.as_view()),

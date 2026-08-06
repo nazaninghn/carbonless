@@ -80,7 +80,13 @@ class ReportStep(models.Model):
     report = models.ForeignKey(
         CarbonReport, on_delete=models.CASCADE, related_name='steps'
     )
-    step_id = models.CharField(max_length=10)
+    # Was max_length=10 — fine for the original short ids (e.g. '7B-INFO') but
+    # too narrow for newer follow-up questions like '3D-4-zero-decision' (18
+    # chars). Dev's SQLite silently accepts the overflow (TEXT storage, no
+    # length enforcement), but production Postgres stores this as varchar(10)
+    # and raises DataError on insert — this would have broken saving several
+    # of this session's new questions in production without ever failing locally.
+    step_id = models.CharField(max_length=50)
     answer = models.JSONField(default=dict)
     is_skipped = models.BooleanField(default=False)
     completed_at = models.DateTimeField(auto_now_add=True)
@@ -109,7 +115,7 @@ class Assumption(models.Model):
     report = models.ForeignKey(
         CarbonReport, on_delete=models.CASCADE, related_name='assumptions'
     )
-    step_id = models.CharField(max_length=10)
+    step_id = models.CharField(max_length=50)  # see ReportStep.step_id for why 50
     assumption_type = models.CharField(max_length=1, choices=AssumptionType.choices)
     auto_text = models.TextField()
     user_approved = models.BooleanField(default=False)
@@ -207,3 +213,52 @@ class PendingSuggestion(models.Model):
 
     def __str__(self):
         return f"Suggestion [{self.category}] {self.status} — report {self.report_id}"
+
+
+class AdvisorApproval(models.Model):
+    """Danışman Onayı — flags a questionnaire answer for advisor/manager review.
+
+    Created automatically by evaluate_advisor_triggers() (see advisor_triggers.py)
+    whenever a saved ReportStep answer matches one of the 32 trigger rules from
+    the client spec (custom EF override, sector average used, RFI applied, a
+    K3 category answered "No", a %5 materiality threshold exceeded, etc.).
+    Mirrors emissions.EmissionEntry's pending/approved/rejected workflow so the
+    review UI pattern (ReviewTab.jsx) can be reused for both.
+    """
+
+    class RiskLevel(models.TextChoices):
+        LOW          = 'low',          'Low'
+        MEDIUM       = 'medium',       'Medium'
+        MEDIUM_HIGH  = 'medium_high',  'Medium-High'
+        HIGH         = 'high',         'High'
+        CRITICAL     = 'critical',     'Critical'
+        WARNING      = 'warning',      'Warning'
+        POSITIVE     = 'positive',     'Positive'
+
+    class Status(models.TextChoices):
+        PENDING  = 'pending',  'Pending'
+        APPROVED = 'approved', 'Approved'
+        REJECTED = 'rejected', 'Rejected'
+
+    report        = models.ForeignKey(CarbonReport, on_delete=models.CASCADE, related_name='advisor_approvals')
+    question_id   = models.CharField(max_length=50, help_text="e.g. '3A-EF', 'K3C5-1'")
+    field_id      = models.CharField(max_length=100, help_text="Question Map field_id, e.g. 'ef.ef_3a'")
+    reason_code   = models.CharField(max_length=50, help_text="e.g. 'custom_ef_override', 'rfi_applied'")
+    trigger_category = models.CharField(max_length=30, help_text="Veri Girişi / Metodoloji / Kapsam / Belge / Tutarsızlık")
+    risk_level    = models.CharField(max_length=20, choices=RiskLevel.choices)
+    description   = models.TextField(blank=True, help_text="Human-readable context/snapshot of the triggering answer")
+    status        = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    reviewed_by   = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='advisor_reviews')
+    reviewed_at   = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # A single (report, question, reason) trigger should only ever create one
+        # flag — re-saving the same answer (e.g. editing then re-confirming) must
+        # not spam duplicate pending rows.
+        unique_together = ['report', 'question_id', 'reason_code']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"AdvisorApproval [{self.reason_code}] {self.status} — report {self.report_id}"

@@ -41,6 +41,8 @@ import {
   getSystemMessage,
   getTriggeredAssumptions,
   validateCarbonIQAnswer,
+  readAnswerValue,
+  unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -176,77 +178,50 @@ function mapAnswerForBackend(questionId, value) {
   }
 }
 
-// Inverse of mapAnswerForBackend, for the "reuse previous Company Profile?"
-// flow — reconstructs the raw local-state value shape (what submitAnswer
-// would have stored) from a Phase-1 answer fetched from the backend
-// (previous-profile endpoint / a completed report), so:
-//   - confirming reuse can seed local `answers` with real values (not just a
-//     placeholder), in case the user navigates back into Stage 1; and
-//   - declining reuse can still pre-fill each A1-D4 input with the old value
-//     as an editable default instead of starting blank.
-// Returns undefined for anything it doesn't recognise (including all
-// non-Phase-1 question ids), so callers can safely fall back to their own default.
-function unmapPhase1Answer(questionId, backendAnswer) {
-  if (!backendAnswer || typeof backendAnswer !== 'object') return undefined;
-  switch (questionId) {
-    case 'A1': return backendAnswer.legal_name;
-    case 'A2': return backendAnswer.tax_id;
-    case 'A3': return { country: backendAnswer.country || '', city: backendAnswer.city || '' };
-    case 'A4': return backendAnswer.reporting_year != null ? String(backendAnswer.reporting_year) : undefined;
-    case 'A5': return backendAnswer.prepared_by;
-    case 'A6': {
-      const reverseMap = { internal: 'internal_strategy', legal: 'legal_obligation', voluntary: 'voluntary_disclosure', client: 'customer_request' };
-      return Array.isArray(backendAnswer.purposes) ? backendAnswer.purposes.map(v => reverseMap[v] || v) : [];
-    }
-    case 'A7': return backendAnswer.has_previous_report ? 'yes' : 'no';
-    case 'A7a': return backendAnswer.baseline_year != null ? String(backendAnswer.baseline_year) : undefined;
-    case 'B1': return backendAnswer.nace_code ? `NACE_${backendAnswer.nace_code}` : undefined;
-    case 'B2': return backendAnswer.activity_description || '';
-    case 'B3': {
-      const reverseMap = { '1-50': '1_50', '51-250': '51_250', '251-1000': '251_1000', '1001-5000': '1001_5000', '5000+': '5000_plus' };
-      return reverseMap[backendAnswer.employee_band] || backendAnswer.employee_band;
-    }
-    case 'B4': return backendAnswer.number_of_facilities != null ? String(backendAnswer.number_of_facilities) : undefined;
-    case 'B5': return Array.isArray(backendAnswer.facility_types) ? backendAnswer.facility_types : [];
-    case 'B6': {
-      const reverseMap = { '<1M': 'under_1m', '1-10M': '1m_10m', '10-100M': '10m_100m', '100M-1B': '100m_1b', '1B+': 'over_1b' };
-      return reverseMap[backendAnswer.revenue_band] || backendAnswer.revenue_band;
-    }
-    case 'C1': return backendAnswer.has_subsidiaries ? 'yes' : 'no';
-    case 'C2': return backendAnswer.has_international ? 'yes' : 'no';
-    case 'C3': return backendAnswer.has_jv_franchise ? 'yes' : 'no';
-    case 'D1': return backendAnswer.ef_database || undefined;
-    case 'D3': return backendAnswer.boundary_approach || undefined;
-    case 'D4': return backendAnswer.scope3_approach || undefined;
-    default: return undefined;
-  }
-}
-
-// An answer shows up in two different shapes depending on where it's read from:
-// live local state stores the raw widget value, but a report hydrated from the
-// backend stores whatever was PATCHed as `data` — which for most questions is
-// mapAnswerForBackend's default case, { answer: value }. This normalises either
-// shape to the raw value so callers can compare against option values directly.
-// Object-valued answers that carry no `answer` key (country_city's
-// {country, city}, compound's field map) are returned untouched.
-function readAnswerValue(answersMap, questionId) {
-  const v = answersMap?.[questionId];
-  if (v && typeof v === 'object' && !Array.isArray(v) && 'answer' in v) return v.answer;
-  return v;
-}
+// unmapPhase1Answer, readAnswerValue: imported from questions.js — shared with
+// InventoryWorkflow.jsx (which normalises a resumed report's answers at
+// hydration time and would circularly import this file otherwise).
 
 // Evaluates a question's `conditionalShow` against the current answers.
 // Shared by the forward-skip loop in submitAnswer and the progress denominator,
 // so "is this question reachable?" is answered the same way in both places.
+//
+// A finished loop question (loopSource) stores its answer as an aggregate map
+// keyed by loop item — { 'natural_gas': 'sector_average', 'diesel': 'invoice_meter' }
+// for a scalar per-item answer, or { 'EQ-3D-01': {refill_kg, capacity_kg}, ... }
+// when the per-item question is itself a compound. Neither shape is a bare
+// string/array, so without unpacking them here, any conditionalShow that
+// targets a loop question can never match — which is exactly what made 3A-6a
+// (the estimation-method follow-up) unreachable. `field` lets a condition
+// drill into one compound sub-field (per loop item, or on a plain compound
+// answer) before the value/membership check runs.
 function conditionalShowMatches(conditionalShow, answersMap) {
   if (!conditionalShow) return true;
-  const { questionId, includesValue, inValues, equals } = conditionalShow;
-  const answer = readAnswerValue(answersMap, questionId);
-  if (inValues) {
-    return Array.isArray(answer) ? answer.some(a => inValues.includes(a)) : inValues.includes(answer);
+  const { questionId, field, includesValue, inValues, equals, greaterThan } = conditionalShow;
+  const raw = readAnswerValue(answersMap, questionId);
+
+  let candidates;
+  if (Array.isArray(raw)) {
+    candidates = raw;
+  } else if (raw && typeof raw === 'object') {
+    const values = Object.values(raw);
+    const isLoopOfCompounds = values.length > 0 && values.every(v => v && typeof v === 'object');
+    if (field) {
+      candidates = isLoopOfCompounds ? values.map(v => v[field]) : [raw[field]];
+    } else {
+      candidates = isLoopOfCompounds ? [] : values; // no scalar to compare without `field`
+    }
+  } else {
+    candidates = [raw];
   }
-  if (equals !== undefined) return answer === equals;
-  return Array.isArray(answer) ? answer.includes(includesValue) : answer === includesValue;
+
+  if (inValues) return candidates.some(v => inValues.includes(v));
+  if (equals !== undefined) {
+    return candidates.some(v => (typeof equals === 'number' ? Number(v) === equals : v === equals));
+  }
+  // e.g. K3C7-2 (hybrid office days) only makes sense if hybrid_count > 0.
+  if (greaterThan !== undefined) return candidates.some(v => Number(v) > greaterThan);
+  return candidates.includes(includesValue);
 }
 
 // Questions the user will actually be asked, given what they've answered so far.
@@ -270,7 +245,13 @@ function getApplicableQuestions(answersMap) {
 function normalizeAnswerValue(q, raw) {
   if (!q) return raw;
   if (q.type === 'multi_select') return Array.isArray(raw) ? raw : (raw ? [raw] : []);
-  if (q.type === 'compound') return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+  if (q.type === 'compound') {
+    if (q.repeatable) {
+      const items = (raw && typeof raw === 'object' && Array.isArray(raw.items)) ? raw.items : [];
+      return { items, draft: {} };
+    }
+    return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+  }
   return raw ?? '';
 }
 
@@ -357,12 +338,29 @@ function getInitialValue(q) {
   if (!q) return '';
   if (q.type === 'multi_select') return [];
   if (q.type === 'country_city') return { country: '', city: '' };
-  if (q.type === 'compound') return {};
+  if (q.type === 'compound') return q.repeatable ? { items: [], draft: {} } : {};
   return '';
 }
 
-function getDisplayValue(q, value, lang = 'en') {
+// isAggregate: true only when `value` is a finished loop question's answer —
+// { itemKey: perItemAnswer, ... } — as read back from `answers[q.id]` after the
+// loop completed (e.g. in BlockSummaryTable). Per-iteration call sites (the user
+// chat bubble shown while the loop is still running) pass the single item's raw
+// answer and must NOT set this, since a per-item compound answer like 3D-4's
+// {refill_kg, capacity_kg} has the same "object of scalars" shape as an
+// aggregate and would otherwise be misread as one.
+function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
   if (!q || value === undefined || value === null || value === '') return '—';
+  if (isAggregate && q.loopSource && typeof value === 'object' && !Array.isArray(value)) {
+    const sourceQ = getQuestionById(q.loopSource);
+    const entries = Object.entries(value).map(([itemKey, itemVal]) => {
+      const opt = sourceQ?.options?.find(o => o.value === itemKey);
+      const itemLabel = opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || itemKey) : itemKey;
+      const formatted = getDisplayValue(q, itemVal, lang); // recurse on the plain per-item value
+      return `${itemLabel}: ${formatted}`;
+    });
+    return entries.join(' · ') || '—';
+  }
   if (q.type === 'country_city') {
     const v = value;
     if (!v?.country) return '—';
@@ -378,6 +376,23 @@ function getDisplayValue(q, value, lang = 'en') {
   if (q.type === 'single_select' || q.type === 'year_select' || q.type === 'equipment_loop' || q.type === 'fuel_loop' || q.type === 'section_picker') {
     const opt = q.options?.find(o => o.value === value);
     return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || String(value)) : String(value);
+  }
+  if (q.type === 'compound' && q.repeatable) {
+    const items = Array.isArray(value?.items) ? value.items : (Array.isArray(value) ? value : []);
+    if (items.length === 0) return '—';
+    return items
+      .map((item, i) => {
+        const inner = Object.entries(item || {})
+          .filter(([, v]) => v !== '' && v !== undefined && v !== null)
+          .map(([k, v]) => {
+            const field = q.fields?.find(f => f.id === k);
+            const label = field?.label?.[lang] || field?.label?.en || k;
+            return `${label}: ${v}`;
+          })
+          .join(', ');
+        return `#${i + 1} ${inner}`;
+      })
+      .join(' | ');
   }
   if (q.type === 'compound') {
     if (!value || typeof value !== 'object') return '—';
@@ -560,21 +575,6 @@ function EmptyState({ onNew, tr }) {
           </h2>
         </div>
 
-        {/* Input field — prominent, centered like Dinnect */}
-        <div className="w-full max-w-md">
-          <button
-            onClick={() => onNew()}
-            className="w-full flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 sm:px-5 py-3 sm:py-4 text-left shadow-sm hover:shadow-md hover:border-[#2ABD41]/30 transition-all duration-200 group"
-          >
-            <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-[#2ABD41]/50 group-hover:text-[#2ABD41] transition" />
-            <span className="flex-1 text-[13px] sm:text-[14px] text-[#175022]/35 font-medium">
-              {tr ? 'Carbonless\'a sor...' : 'Ask Carbonless...'}
-            </span>
-            <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full bg-[#F1FCF2] border border-[#DEFAE1] flex items-center justify-center group-hover:bg-[#2ABD41] group-hover:border-[#2ABD41] transition">
-              <Send className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#175022]/30 group-hover:text-white transition" />
-            </div>
-          </button>
-        </div>
 
         {/* Suggestion chips — horizontal scrollable row like Dinnect */}
         <div className="w-full overflow-x-auto pb-2 -mx-3 px-3">
@@ -760,9 +760,13 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
       {fields.map(field => {
         // Hide fields whose conditionalOn toggle is false/unset.
         // Boolean fields store true/false; check both the boolean and the string 'true'.
+        // conditionalOnValue generalises this to non-boolean fields — e.g. K3C6-2's
+        // cabin_class only makes sense when travel_mode is one of the flight codes.
         if (field.conditionalOn) {
           const condVal = val[field.conditionalOn];
-          const condMet = condVal === true || condVal === 'true';
+          const condMet = field.conditionalOnValue
+            ? field.conditionalOnValue.includes(condVal)
+            : (condVal === true || condVal === 'true');
           if (!condMet) return null;
         }
         const fieldVal = val[field.id] ?? '';
@@ -786,6 +790,25 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
                   />
                 ))}
               </div>
+            ) : (field.type === 'select' || field.type === 'single_select') && field.renderAs === 'native_select' ? (
+              // Chips don't scale past a handful of options — a country list
+              // (70+) rendered as Chip buttons floods the chat bubble with a
+              // wall of tap targets. Fields that opt in with renderAs get the
+              // compact native <select> the dedicated CountryCityInput widget
+              // already uses elsewhere, instead.
+              <select
+                className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
+                value={fieldVal}
+                onChange={e => setField(e.target.value)}
+                disabled={disabled}
+              >
+                <option value="">{lang === 'tr' ? '— Seçin —' : '— Select —'}</option>
+                {(field.options || []).map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
+                  </option>
+                ))}
+              </select>
             ) : field.type === 'select' || field.type === 'single_select' ? (
               <div role="radiogroup" className="flex flex-wrap gap-2">
                 {(field.options || []).map(opt => (
@@ -867,33 +890,38 @@ function Scope1SummaryTable({ answers, lang, tr }) {
     return entries.map(([k, v]) => `${lbl[k] || k}: ${v}`).join(' · ');
   };
 
+  // A report resumed from the backend stores every answer as { answer: value }
+  // (see readAnswerValue) — reading answers[...] directly here meant a resumed
+  // session's Scope 1 summary always showed every category as "not skipped,
+  // no items", even after real data had been entered.
+  const ra = (qId) => readAnswerValue(answers, qId);
   const sections = [
     {
       id: '3A',
       label: tr ? 'Sabit Yanma' : 'Stationary Combustion',
-      skipped: answers['3A-0'] === 'no',
-      items: fmtList('3A-1', answers['3A-1']),
-      extra: fmtFuel(answers['3A-5']),
+      skipped: ra('3A-0') === 'no',
+      items: fmtList('3A-1', ra('3A-1')),
+      extra: fmtFuel(ra('3A-5')),
     },
     {
       id: '3B',
       label: tr ? 'Mobil Yanma' : 'Mobile Combustion',
-      skipped: answers['3B-0'] === 'no',
-      items: fmtList('3B-1', answers['3B-1']),
+      skipped: ra('3B-0') === 'no',
+      items: fmtList('3B-1', ra('3B-1')),
       extra: null,
     },
     {
       id: '3C',
       label: tr ? 'Proses Emisyonları' : 'Process Emissions',
-      skipped: answers['3C-0'] === 'no',
-      items: fmtList('3C-1', answers['3C-1']),
+      skipped: ra('3C-0') === 'no',
+      items: fmtList('3C-1', ra('3C-1')),
       extra: null,
     },
     {
       id: '3D',
       label: tr ? 'Kaçak Emisyonlar' : 'Fugitive Emissions',
-      skipped: Array.isArray(answers['3D-0']) && answers['3D-0'].every(v => v === 'none'),
-      items: fmtList('3D-0', answers['3D-0']),
+      skipped: Array.isArray(ra('3D-0')) && ra('3D-0').every(v => v === 'none'),
+      items: fmtList('3D-0', ra('3D-0')),
       extra: null,
     },
   ];
@@ -1188,6 +1216,80 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     );
   }
 
+  if (type === 'compound' && question.repeatable) {
+    // Repeatable compound (e.g. K3C2's multiple capital-goods purchases): value
+    // is { items: [...committed entries], draft: {...entry being edited} }.
+    // "+ Add Another" commits the draft and clears it for a new entry; "Done"
+    // commits the draft (if complete) and submits the whole items array.
+    const fields = question.fields || [];
+    const val = (value && typeof value === 'object' && !Array.isArray(value)) ? value : { items: [], draft: {} };
+    const items = Array.isArray(val.items) ? val.items : [];
+    const draft = (val.draft && typeof val.draft === 'object') ? val.draft : {};
+    const requiredFields = fields.filter(f => f.required !== false);
+    const isFieldsetComplete = (obj) => requiredFields.every(f => {
+      if (f.conditionalOn) {
+        const condVal = obj[f.conditionalOn];
+        const condMet = f.conditionalOnValue
+          ? f.conditionalOnValue.includes(condVal)
+          : (condVal === true || condVal === 'true');
+        if (!condMet) return true; // hidden — treat as satisfied
+      }
+      const v = obj[f.id];
+      return v !== undefined && v !== null && String(v).trim() !== '';
+    });
+    const draftFilled = isFieldsetComplete(draft);
+    const draftIsEmpty = Object.values(draft).every(v => v === '' || v === undefined || v === null);
+    const canFinish = (draftIsEmpty || draftFilled) && (items.length > 0 || draftFilled);
+    const summarize = (item) => fields
+      .filter(f => item[f.id] !== undefined && item[f.id] !== '' && item[f.id] !== null)
+      .map(f => `${f.label?.[lang] || f.label?.en || f.id}: ${item[f.id]}`)
+      .join(' · ');
+    return (
+      <div className="flex flex-col gap-4 w-full max-w-lg">
+        {items.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {items.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-between gap-2 rounded-xl border border-[#8BEA99]/40 bg-[#F1FCF2] px-3 py-2 text-xs text-[#175022]">
+                <span className="flex-1">{idx + 1}. {summarize(item)}</span>
+                <button
+                  onClick={() => onChange({ items: items.filter((_, i) => i !== idx), draft })}
+                  disabled={disabled}
+                  aria-label={tr ? 'Kaldır' : 'Remove'}
+                  className="shrink-0 rounded-full px-2 py-0.5 text-sm font-bold text-[#175022]/40 transition hover:bg-red-50 hover:text-red-500"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <CompoundInput
+          fields={fields}
+          value={draft}
+          onChange={(newDraft) => onChange({ items, draft: newDraft })}
+          lang={lang}
+          disabled={disabled}
+        />
+        <div className="flex gap-2">
+          <button
+            onClick={() => onChange({ items: [...items, draft], draft: {} })}
+            disabled={disabled || !draftFilled}
+            className="self-start rounded-full border border-[#175022]/20 px-5 py-2.5 text-sm font-bold text-[#175022] transition hover:bg-[#175022]/5 disabled:opacity-40"
+          >
+            {tr ? '+ Başka Ekle' : '+ Add Another'}
+          </button>
+          <button
+            onClick={() => onSubmit({ items: draftFilled ? [...items, draft] : items })}
+            disabled={disabled || !canFinish}
+            className="self-start rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+          >
+            {tr ? 'Tamamla →' : 'Done →'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (type === 'compound') {
     const fields = question.fields || [];
     const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
@@ -1198,7 +1300,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     const allRequiredFilled = requiredFields.every(f => {
       if (f.conditionalOn) {
         const condVal = compoundVal[f.conditionalOn];
-        if (condVal !== true && condVal !== 'true') return true; // hidden — treat as satisfied
+        const condMet = f.conditionalOnValue
+          ? f.conditionalOnValue.includes(condVal)
+          : (condVal === true || condVal === 'true');
+        if (!condMet) return true; // hidden — treat as satisfied
       }
       const v = compoundVal[f.id];
       return v !== undefined && v !== null && String(v).trim() !== '';
@@ -1419,8 +1524,13 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
           </thead>
           <tbody>
             {questions.map((q, idx) => {
-              const answer = answers[q.id];
-              const displayVal = getDisplayValue(q, answer, lang);
+              // A report resumed from the backend stores every answer as
+              // { answer: value } (mapAnswerForBackend's default PATCH shape,
+              // echoed back verbatim by the report-status endpoint) — reading
+              // answers[q.id] directly showed literally "[object Object]" for
+              // every row once a report had been reloaded/resumed even once.
+              const answer = readAnswerValue(answers, q.id);
+              const displayVal = getDisplayValue(q, answer, lang, { isAggregate: true });
               const qText = stripDocLabels(q.text?.[lang] || q.text?.en || q.id);
               return (
                 <tr key={q.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#175022]/2'}>
@@ -2117,7 +2227,7 @@ export function QuestionnaireTab({
     }
     setMessages([welcomeMsg]);
     questionMsgLenRef.current = 1;
-    setAnswerValue(normalizeAnswerValue(firstQ, answers[currentId]) ?? getInitialValue(firstQ));
+    setAnswerValue(normalizeAnswerValue(firstQ, readAnswerValue(answers, currentId)) ?? getInitialValue(firstQ));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2355,14 +2465,7 @@ export function QuestionnaireTab({
     while (nextId) {
       const candidate = getQuestionById(nextId);
       if (!candidate?.conditionalShow) break;
-      const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
-      const csAnswer = currentAnswers[csQid];
-      const matches = csVals
-        ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
-        : csEquals !== undefined
-          ? csAnswer === csEquals
-          : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
-      if (matches) break;
+      if (conditionalShowMatches(candidate.conditionalShow, currentAnswers)) break;
       nextId = candidate.next || candidate.loopNext || null;
     }
     advanceToQuestion(nextId);
@@ -2504,14 +2607,7 @@ export function QuestionnaireTab({
         while (nextId) {
           const candidate = getQuestionById(nextId);
           if (!candidate?.conditionalShow) break;
-          const { questionId: csQid, includesValue: csVal, inValues: csVals, equals: csEquals } = candidate.conditionalShow;
-          const csAnswer = finalAnswers[csQid];
-          const matches = csVals
-            ? (Array.isArray(csAnswer) ? csAnswer.some(a => csVals.includes(a)) : csVals.includes(csAnswer))
-            : csEquals !== undefined
-              ? csAnswer === csEquals
-              : (Array.isArray(csAnswer) ? csAnswer.includes(csVal) : csAnswer === csVal);
-          if (matches) break;
+          if (conditionalShowMatches(candidate.conditionalShow, finalAnswers)) break;
           nextId = candidate.next || candidate.loopNext || null;
         }
         const currLoopBlockId = getBlockId(q);
@@ -2725,7 +2821,7 @@ export function QuestionnaireTab({
       questionMsgLenRef.current = msgLen; // keep ref in sync for any further goBack
     } else {
       // Fallback for history entries that predate the msgLen format
-      const hadWarning = getQuestionWarning && getQuestionWarning(prevQ, answers[prevId], lang);
+      const hadWarning = getQuestionWarning && getQuestionWarning(prevQ, readAnswerValue(answers, prevId), lang);
       const toRemove = prevQ?.type === 'info' ? 1 : hadWarning ? 3 : 2;
       setMessages(prev => prev.slice(0, -toRemove));
     }
@@ -2744,7 +2840,7 @@ export function QuestionnaireTab({
       setAnswerValue(getInitialValue(prevQ));
     } else {
       setLoopState(null);
-      setAnswerValue(normalizeAnswerValue(prevQ, answers[prevId]) ?? getInitialValue(prevQ));
+      setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, prevId)) ?? getInitialValue(prevQ));
     }
   }, [history, answers, lang, blockSummaryState]);
 
@@ -2774,7 +2870,7 @@ export function QuestionnaireTab({
       questionMsgLenRef.current = msgLen;
     }
     const prevQ = getQuestionById(qId);
-    setAnswerValue(normalizeAnswerValue(prevQ, answers[qId]) ?? getInitialValue(prevQ));
+    setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, qId)) ?? getInitialValue(prevQ));
   }, [history, answers]);
 
   // ── proceedFromSummary ─────────────────────────────────────────────────────
@@ -3418,7 +3514,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       setSessions(prev => [session, ...prev]);
       setActiveId(session.id);
       setError('');
-      if (initialPrompt) {
+      // A file can be attached before any session exists now that the input
+      // bar is always visible (see EmptyState) — without this check, sending
+      // just a file with no typed text silently dropped the attachment,
+      // because this branch never ran and sendMessage was never called.
+      if (initialPrompt || attachedFile) {
         setMessages([]);
         // Tiny delay lets React flush the state above (activeId, messages) before
         // sendMessage reads them. sendMessage is stable (no input dep), so it is
@@ -3437,7 +3537,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       creatingSessionRef.current = false;
       if (isMountedRef.current) setCreatingSession(false);
     }
-  }, [sendMessage]); // `tr` removed — read via trRef.current
+  }, [sendMessage, attachedFile]); // `tr` removed — read via trRef.current
 
   const deleteSession = useCallback(async (id) => {
     // Guard: ignore double-clicks / rapid re-submits for the same session id
@@ -3786,7 +3886,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           )}
         </div>
 
-        <div className={`shrink-0 border-t border-[#175022]/6 px-3 pt-2 pb-2 sm:px-6 sm:pt-3 sm:pb-3 ${!activeId ? 'hidden sm:block' : ''}`}>
+        <div className="shrink-0 border-t border-[#175022]/6 px-3 pt-2 pb-2 sm:px-6 sm:pt-3 sm:pb-3">
           {/* Fix #82: mirror the backend MAX_MESSAGE_LENGTH=4000 in the UI so users
               see a warning before they hit a 400 error, not after.
               Fix #87: CHAT_CHAR_LIMIT is now a module-level constant (see top of file)

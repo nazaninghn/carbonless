@@ -236,6 +236,11 @@ export const api = {
   getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
   getPendingEntries: () => request('/emissions/pending/'),
 
+  // Danışman Onayı (Advisor Approval) — questionnaire answers flagged by the
+  // 32-rule trigger system (custom EF override, RFI applied, K3 category "No", etc.)
+  getPendingAdvisorApprovals: () => request('/questionnaire/advisor-approvals/pending/'),
+  approveAdvisorApproval: (id, action, reason) => request(`/questionnaire/advisor-approvals/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
+
   inviteMember: (data) => request('/companies/invite/', { method: 'POST', body: JSON.stringify(data) }),
   acceptInvite: (token) => request('/companies/accept-invite/', { method: 'POST', body: JSON.stringify({ token }) }),
 

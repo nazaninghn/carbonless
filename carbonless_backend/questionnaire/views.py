@@ -9,7 +9,7 @@ import logging
 # Verify with:
 #   node -e "const s=require('fs').readFileSync('src/lib/carboniq/questions.js','utf8');
 #            console.log([...s.matchAll(/^\s{4}id: '[^']+',/gm)].length)"
-TOTAL_QUESTIONS = 138
+TOTAL_QUESTIONS = 156
 
 
 def _progress(completed_count, status):
@@ -34,7 +34,8 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 from companies.models import CompanyMembership
-from .models import CarbonReport, ReportStep, QuestionnaireSession
+from .models import CarbonReport, ReportStep, QuestionnaireSession, AdvisorApproval
+from .advisor_triggers import evaluate_advisor_triggers
 from .serializers import (
     StepA1Serializer, StepA2Serializer, StepA3Serializer,
     StepA4Serializer, StepA5Serializer, StepA6Serializer,
@@ -392,6 +393,7 @@ class SubmitStepView(APIView):
                 step_id=step,
                 defaults={'answer': serializer.validated_data, 'is_skipped': False}
             )
+            evaluate_advisor_triggers(report, step, serializer.validated_data)
 
             next_step = result['next_step']
             report.current_step = next_step
@@ -418,6 +420,7 @@ class SubmitStepView(APIView):
             step_id=step,
             defaults={'answer': data if data else {}, 'is_skipped': False}
         )
+        evaluate_advisor_triggers(report, step, data)
 
         # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
         is_final_step = (
@@ -972,6 +975,75 @@ def get_report_summary(request, report_id=None):
     except Exception as e:
         logger.error(f"Get report summary failed: {e}")
         return Response({'error': str(e)}, status=500)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def pending_advisor_approvals_view(request):
+    """GET /api/questionnaire/advisor-approvals/pending/
+    List pending Danışman Onayı flags across all of the current company's
+    reports (for the ReviewTab "Onay Bekleyenler" inbox)."""
+    from companies.utils import get_current_company
+    company = get_current_company(request.user)
+    if not company:
+        return Response([])
+
+    approvals = AdvisorApproval.objects.filter(
+        report__company=company, status=AdvisorApproval.Status.PENDING
+    ).select_related('report').order_by('-created_at')
+
+    return Response([{
+        'id': a.id,
+        'report_id': a.report_id,
+        'report_title': a.report.title or f'Report {a.report_id}',
+        'question_id': a.question_id,
+        'field_id': a.field_id,
+        'reason_code': a.reason_code,
+        'trigger_category': a.trigger_category,
+        'risk_level': a.risk_level,
+        'description': a.description,
+        'created_at': a.created_at,
+    } for a in approvals])
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def approve_advisor_approval_view(request, pk):
+    """POST /api/questionnaire/advisor-approvals/<pk>/approve/
+    Approve or reject a Danışman Onayı flag (manager/admin only) — mirrors
+    emissions.approve_entry_view's role check and action contract exactly."""
+    from companies.utils import get_current_company
+    company = get_current_company(request.user)
+    if not company:
+        return Response({'error': 'No company'}, status=403)
+
+    APPROVER_ROLES = {'owner', 'admin', 'manager'}
+    membership = request.user.company_memberships.filter(
+        company=company, is_active=True
+    ).first()
+    if not membership or membership.role not in APPROVER_ROLES:
+        return Response({'error': 'Only managers and admins can approve entries'}, status=403)
+
+    try:
+        approval = AdvisorApproval.objects.get(pk=pk, report__company=company)
+    except AdvisorApproval.DoesNotExist:
+        return Response({'error': 'Entry not found'}, status=404)
+
+    action = request.data.get('action')
+    if action == 'approve':
+        approval.status = AdvisorApproval.Status.APPROVED
+        approval.reviewed_by = request.user
+        approval.reviewed_at = timezone.now()
+        approval.save()
+        return Response({'status': 'approved'})
+    elif action == 'reject':
+        approval.status = AdvisorApproval.Status.REJECTED
+        approval.reviewed_by = request.user
+        approval.reviewed_at = timezone.now()
+        approval.rejection_reason = request.data.get('reason', '')
+        approval.save()
+        return Response({'status': 'rejected'})
+    return Response({'error': 'action must be approve or reject'}, status=400)
 
 
 @api_view(['GET'])

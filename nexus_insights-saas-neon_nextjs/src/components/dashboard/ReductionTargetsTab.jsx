@@ -5,6 +5,29 @@ import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import useCountUp from '@/lib/hooks/useCountUp';
+import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
+
+// ─── KPI mini card (count-up + hover lift) — same visual language as
+// DashboardOverview/EmissionsTab's KPI cards ────────────────────────────────
+function TargetsKPI({ label, value, color, delay = 0 }) {
+  const animated = useCountUp(value, 700);
+  return (
+    <div
+      className="dash-fade-up group relative overflow-hidden rounded-xl border border-[#072C0E]/7 bg-white px-3 py-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/25"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {color && (
+        <div
+          className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ backgroundColor: color }}
+        />
+      )}
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{label}</p>
+      <p className="mt-1 text-xl font-bold leading-none tabular-nums text-[#072C0E]">{Math.round(animated)}</p>
+    </div>
+  );
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 // Evaluated at call time so the year stays correct if the app stays open past midnight
@@ -20,6 +43,15 @@ function ArcGauge({ achieved, status }) {
   const r = 46, cx = 50, cy = 54;
   const halfC = Math.PI * r; // ≈ 144.5 — half circumference
   const pct = Math.min(Math.max((achieved || 0) / 100, 0), 1);
+
+  // Draw-in: starts at 0 and animates out to `pct` shortly after mount, instead
+  // of appearing at full progress instantly (same treatment as the dashboard's
+  // donut/bar charts).
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setDrawn(true), 60);
+    return () => clearTimeout(t);
+  }, []);
 
   const trackCol = '#072C0E';
   const progCol =
@@ -41,7 +73,7 @@ function ArcGauge({ achieved, status }) {
         cx={cx} cy={cy} r={r}
         fill="none" stroke={progCol}
         strokeWidth="10" strokeLinecap="round"
-        strokeDasharray={`${pct * halfC} 10000`}
+        strokeDasharray={`${drawn ? pct * halfC : 0} 10000`}
         style={{
           transform: `rotate(180deg)`,
           transformOrigin: `${cx}px ${cy}px`,
@@ -116,7 +148,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
   const st = STATUS[tgt.status] ?? STATUS.off_track;
 
   return (
-    <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#072C0E]/10 bg-white/82 p-5 shadow-sm transition hover:shadow-[0_10px_32px_rgba(7, 44, 14,0.09)]">
+    <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#072C0E]/10 bg-white/82 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_32px_rgba(7,44,14,0.09)] hover:border-[#2ABD41]/25">
 
       {/* Title + status + actions */}
       <div className="flex items-start justify-between gap-2">
@@ -227,6 +259,14 @@ export default function ReductionTargetsTab({
   const [baseEmit,   setBaseEmit]   = useState('');
   const [reducePct,  setReducePct]  = useState('');
   const [saving,     setSaving]     = useState(false);
+
+  // Gates the overall-progress-bar grow-in — starts at 0% and animates to its
+  // real width shortly after mount, same treatment as the dashboard charts.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
 
   // ── Delete confirm state ─────────────────────────────────────────────────
   const [deleteConfirm, setDeleteConfirm] = useState(null); // stores the target id to delete
@@ -378,9 +418,10 @@ export default function ReductionTargetsTab({
 
   return (
     <div className="space-y-3 sm:space-y-4 text-[#072C0E]">
+      <style>{DASHBOARD_ANIM_STYLES}</style>
 
       {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
+      <div className="dash-fade-up relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
@@ -413,14 +454,8 @@ export default function ReductionTargetsTab({
             { label: tr ? 'Yolunda'      : 'On Track',      value: onTrack,   color: '#2ABD41' },
             { label: tr ? 'Başarılı'     : 'Succeeded',     value: succeeded, color: '#175022' },
             { label: tr ? 'Geride'       : 'Off Track',     value: offTrack,  color: '#F87171' },
-          ].map(k => (
-            <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#072C0E]/7 bg-white px-3 py-2.5">
-              {k.color && (
-                <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />
-              )}
-              <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{k.label}</p>
-              <p className="mt-1 text-xl font-bold leading-none text-[#072C0E]">{k.value}</p>
-            </div>
+          ].map((k, i) => (
+            <TargetsKPI key={k.label} label={k.label} value={k.value} color={k.color} delay={i * 60} />
           ))}
         </div>
       )}
@@ -436,8 +471,8 @@ export default function ReductionTargetsTab({
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-[#072C0E]/6">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700"
-              style={{ width: `${Math.min(parseFloat(totalReductionPct), 100)}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700 ease-out"
+              style={{ width: `${mounted ? Math.min(parseFloat(totalReductionPct), 100) : 0}%` }}
             />
           </div>
           <div className="mt-2 flex items-center gap-4 text-[10px] font-semibold text-[#072C0E]/35">

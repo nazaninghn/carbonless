@@ -142,7 +142,7 @@ export default function InventoryLibrary({ tr = false }) {
 
       {/* Start New */}
       <div className="p-6 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#175022] mb-2">
               {tr ? 'موجودیت جدید' : 'New Inventory'}
@@ -154,7 +154,7 @@ export default function InventoryLibrary({ tr = false }) {
           <button
             onClick={() => setShowNamingDialog(true)}
             disabled={loading}
-            className="flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition disabled:opacity-50"
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition disabled:opacity-50 shrink-0"
           >
             <Plus className="w-5 h-5" />
             {tr ? 'شروع' : 'Start'}
@@ -174,11 +174,11 @@ export default function InventoryLibrary({ tr = false }) {
             {drafts.map(report => (
               <div
                 key={report.report_id}
-                className="flex items-center justify-between p-4 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>
-                  <div className="flex items-center gap-4 text-xs text-[#175022]/60 mt-2">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#175022]/60 mt-2">
                     <span>{report.progress?.percent || 0}% {tr ? 'مکمل' : 'complete'}</span>
                     <span>{report.progress?.completed || 0} / {report.progress?.total || 137} {tr ? 'سوالات' : 'questions'}</span>
                     <span>{tr ? 'به‌روزرسانی' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString()}</span>
@@ -241,7 +241,7 @@ export default function InventoryLibrary({ tr = false }) {
             {completed.map(report => (
               <div
                 key={report.report_id}
-                className="flex items-center justify-between p-4 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
+                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>

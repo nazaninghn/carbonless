@@ -2,6 +2,8 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
+import useCountUp from '@/lib/hooks/useCountUp';
+import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 import {
   AlertCircle,
   AlertTriangle,
@@ -33,6 +35,15 @@ function DonutChart({ s1, s2, s3, total, tr }) {
   const C = 2 * Math.PI * R;
   const cx = 80, cy = 80;
 
+  // Draw-in: segments start fully "unfilled" (dash=0) and animate out to their
+  // real share shortly after mount, instead of just appearing at full size.
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setDrawn(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+  const animatedTotal = useCountUp(total, 900);
+
   const segs = [
     { label: 'Scope 1', val: s1, color: '#1D9C31' },
     { label: 'Scope 2', val: s2, color: '#2ABD41' },
@@ -58,9 +69,10 @@ function DonutChart({ s1, s2, s3, total, tr }) {
                 fill="none"
                 stroke={s.color}
                 strokeWidth={SW}
-                strokeDasharray={`${dash} ${C}`}
+                strokeDasharray={`${drawn ? dash : 0} ${C}`}
                 strokeLinecap="butt"
                 transform={`rotate(${rot} ${cx} ${cy})`}
+                style={{ transition: 'stroke-dasharray 0.9s cubic-bezier(0.16, 1, 0.3, 1)' }}
               />
             );
           })}
@@ -68,7 +80,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
         {/* centre label */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-[22px] font-bold leading-none tracking-tight text-[#072C0E]">
-            {total.toFixed(1)}
+            {animatedTotal.toFixed(1)}
           </span>
           <span className="mt-0.5 text-[10px] font-bold text-[#072C0E]/40">tCO2e</span>
         </div>
@@ -95,6 +107,13 @@ function DonutChart({ s1, s2, s3, total, tr }) {
 // ─── Monthly Bar Chart ─────────────────────────────────────────────────────
 function MonthlyChart({ monthly, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
+  // Grow-in: bars start flat and rise to their real height in a left-to-right
+  // cascade shortly after mount, instead of appearing at full height instantly.
+  const [grown, setGrown] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setGrown(true), 60);
+    return () => clearTimeout(t);
+  }, []);
   // Memoized so the spread+map only runs when monthly data changes, not on every hover state update
   const maxKg = useMemo(() => Math.max(...(monthly ?? []).map(m => m.total_kg), 1), [monthly]);
   const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level  -  no recreation
@@ -131,7 +150,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
             {/* Bar container */}
             <div className="relative h-36 w-full">
               <div
-                className={`absolute inset-x-0 bottom-0 rounded-t-md transition-all duration-500 ${
+                className={`absolute inset-x-0 bottom-0 rounded-t-md transition-all ${isHovered ? 'scale-x-110' : ''} ${
                   hasData
                     ? isCur
                       ? 'bg-gradient-to-t from-[#1A6126] to-[#2ABD41]'
@@ -140,10 +159,16 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
                       : 'bg-gradient-to-t from-[#1D9C31] to-[#2ABD41]'
                     : 'bg-[#072C0E]/4'
                 }`}
-                style={{ height: `${hasData ? Math.max(pct, 5) : 4}%` }}
+                style={{
+                  height: `${grown ? (hasData ? Math.max(pct, 5) : 4) : 0}%`,
+                  transitionProperty: 'height, transform, background',
+                  transitionDuration: '600ms, 200ms, 300ms',
+                  transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+                  transitionDelay: `${i * 35}ms`,
+                }}
               />
             </div>
-            <span className={`text-[9px] font-bold sm:text-[10px] ${isCur ? 'text-[#072C0E]' : 'text-[#072C0E]/30'}`}>
+            <span className={`text-[9px] font-bold sm:text-[10px] transition-colors ${isCur ? 'text-[#072C0E]' : 'text-[#072C0E]/30'}`}>
               {months[i]}
             </span>
           </div>
@@ -265,11 +290,14 @@ function EmptyState({ label }) {
 }
 
 // ─── Chart Card wrapper ────────────────────────────────────────────────────
-function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '', action }) {
+function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = '', action, delay = 0 }) {
   return (
-    <section className={`flex flex-col rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 shadow-[0_4px_20px_rgba(7, 44, 14,0.05)] sm:p-5 ${className}`}>
+    <section
+      className={`dash-fade-up group flex flex-col rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 shadow-[0_4px_20px_rgba(7,44,14,0.05)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5 ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
       <div className="mb-4 flex items-center gap-2.5">
-        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl sm:h-9 sm:w-9 ${iconBg}`}>
+        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-110 sm:h-9 sm:w-9 ${iconBg}`}>
           <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
         </div>
         <div className="flex-1">
@@ -284,24 +312,39 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
 }
 
 // ─── KPI Card ──────────────────────────────────────────────────────────────
-function KPICard({ title, value, unit, subtitle, accent, icon: Icon, topColor }) {
+// `value` is a raw number — the card animates it counting up itself, so callers
+// no longer pre-format with .toFixed() (see call sites below).
+function KPICard({ title, value, decimals = 2, unit, subtitle, accent, icon: Icon, topColor, delay = 0 }) {
+  const animated = useCountUp(value, 900);
   return (
-    <div className={`relative rounded-[1.25rem] border p-3.5 sm:p-4 ${
-      accent
-        ? 'border-[#2ABD41] bg-[#DEFAE1]'
-        : 'border-[#DEFAE1] bg-white'
-    }`}>
+    <div
+      className={`dash-fade-up group relative overflow-hidden rounded-[1.25rem] border p-3.5 transition-all duration-300 hover:-translate-y-1 sm:p-4 ${
+        accent
+          ? 'border-[#2ABD41] bg-[#DEFAE1] hover:shadow-[0_14px_30px_rgba(42,189,65,0.20)]'
+          : 'border-[#DEFAE1] bg-white hover:shadow-[0_14px_30px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/30'
+      }`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Top accent bar — brightens on hover for a subtle "alive" cue */}
+      {topColor && (
+        <div
+          className="absolute inset-x-0 top-0 h-[3px] opacity-40 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ backgroundColor: topColor }}
+        />
+      )}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/40 sm:text-[10px]">{title}</p>
           <div className="mt-1 flex items-end gap-1">
-            <span className="text-[18px] font-bold leading-none tracking-tight text-[#072C0E] sm:text-[22px]">{value}</span>
+            <span className="text-[18px] font-bold leading-none tracking-tight text-[#072C0E] tabular-nums sm:text-[22px]">
+              {animated.toFixed(decimals)}
+            </span>
             <span className="mb-0.5 text-[9px] font-bold text-[#072C0E]/35 sm:text-[10px]">{unit}</span>
           </div>
           {subtitle && <p className="mt-1 text-[9px] font-semibold text-[#072C0E]/40 sm:text-[10px]">{subtitle}</p>}
         </div>
         {Icon && (
-          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg sm:h-8 sm:w-8 ${
+          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 sm:h-8 sm:w-8 ${
             accent ? 'bg-[#B2F2BB] text-[#1A7B2A]' : 'bg-[#EBEBEB] text-[#072C0E]'
           }`}>
             <Icon className="h-3.5 w-3.5" />
@@ -360,6 +403,15 @@ export default function DashboardOverview({
     setIsAndroidTablet(isTouch && window.innerWidth >= 768);
   }, []);
 
+  // Gates the Targets progress-bar grow-in — starts at 0% and animates to its
+  // real width shortly after mount, same "alive on arrival" treatment as the
+  // donut/bar charts above.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
   if (isAndroidTablet) {
     return (
       <div className="space-y-4">
@@ -409,6 +461,7 @@ export default function DashboardOverview({
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      <style>{DASHBOARD_ANIM_STYLES}</style>
 
       {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
       {entries.length === 0 && (
@@ -502,8 +555,11 @@ export default function DashboardOverview({
 
       {/* AI insight strip  -  shown only when data exists */}
       {totalTonne > 0 && (
-        <div className="flex items-start gap-2.5 rounded-xl border border-[#2ABD41]/20 bg-[#F1FCF2]/60 px-3.5 py-2.5">
-          <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#2ABD41]" />
+        <div className="dash-fade-up flex items-start gap-2.5 rounded-xl border border-[#2ABD41]/20 bg-[#F1FCF2]/60 px-3.5 py-2.5">
+          <span className="relative mt-0.5 shrink-0">
+            <Sparkles className="h-3.5 w-3.5 text-[#2ABD41]" />
+            <span className="dash-pulse-dot absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-[#2ABD41]" />
+          </span>
           <p className="text-[11px] font-semibold leading-5 text-[#072C0E]/65">
             {tr
               ? `Toplam ${totalTonne.toFixed(1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO2e.`
@@ -532,10 +588,10 @@ export default function DashboardOverview({
 
       {/* ── KPI CARDS ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne.toFixed(2)} unit="tCO2e" accent icon={Leaf} />
-        <KPICard title="Scope 1" value={s1.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#1D9C31" />
-        <KPICard title="Scope 2" value={s2.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#2ABD41" />
-        <KPICard title="Scope 3" value={s3.toFixed(2)} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#51D766" />
+        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne} unit="tCO2e" accent icon={Leaf} delay={0} />
+        <KPICard title="Scope 1" value={s1} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#1D9C31" delay={60} />
+        <KPICard title="Scope 2" value={s2} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#2ABD41" delay={120} />
+        <KPICard title="Scope 3" value={s3} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#51D766" delay={180} />
       </div>
 
       {/* ── ROW 2: Monthly trend + Scope donut ──────────────────────── */}
@@ -547,6 +603,7 @@ export default function DashboardOverview({
           subtitle={String(selectedYear)}
           icon={TrendingDown}
           iconBg="bg-[#2ABD41] text-white"
+          delay={240}
         >
           <MonthlyChart monthly={monthly} selectedYear={selectedYear} tr={tr} />
         </ChartCard>
@@ -557,6 +614,7 @@ export default function DashboardOverview({
           subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO2e` : undefined}
           icon={Layers}
           iconBg="bg-[#51D766]/20 text-[#1D9C31]"
+          delay={300}
         >
           {totalTonne > 0 ? (
             <div className="flex h-full items-center justify-center py-1">
@@ -578,6 +636,7 @@ export default function DashboardOverview({
           icon={BarChart2}
           iconBg="bg-[#2ABD41]/15 text-[#2ABD41]"
           action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#2ABD41] hover:underline">{tr ? 'Detay ->' : 'Detail ->'}</button>}
+          delay={360}
         >
           {totalTonne > 0 ? (
             <div className="space-y-3">
@@ -625,6 +684,7 @@ export default function DashboardOverview({
           subtitle={tr ? 'Tamamlanması gerekenler' : 'Items requiring attention'}
           icon={AlertTriangle}
           iconBg="bg-amber-50 text-amber-500"
+          delay={420}
         >
           <div className="space-y-1.5">
             {[
@@ -686,6 +746,7 @@ export default function DashboardOverview({
           icon={Target}
           iconBg="bg-[#51D766]/20 text-[#1D9C31]"
           action={<button onClick={() => setActiveTab('reduction')} className="text-[11px] font-semibold text-[#2ABD41] hover:underline">{tr ? 'Tümü ->' : 'All ->'}</button>}
+          delay={480}
         >
           {targets.length === 0 ? (
             <div className="flex h-24 flex-col items-center justify-center gap-2">
@@ -712,8 +773,8 @@ export default function DashboardOverview({
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/6">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-[#1D9C31] to-[#51D766] transition-all duration-700"
-                        style={{ width: `${pct}%` }}
+                        className="h-full rounded-full bg-gradient-to-r from-[#1D9C31] to-[#51D766] transition-all duration-700 ease-out"
+                        style={{ width: `${mounted ? pct : 0}%` }}
                       />
                     </div>
                     <div className="mt-0.5 flex justify-between text-[10px] text-[#072C0E]/35">
@@ -737,9 +798,12 @@ export default function DashboardOverview({
       </div>
 
       {/* ── UPGRADE BANNER (WF-03 "Pro'ya Geç") ────────────────────── */}
-      <div className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#175022] to-[#1D9C31] px-5 py-4 sm:flex-row sm:gap-4">
+      <div
+        className="dash-fade-up group flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#175022] to-[#1D9C31] px-5 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(29,156,49,0.35)] sm:flex-row sm:gap-4"
+        style={{ animationDelay: '540ms' }}
+      >
         <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2ABD41]/20">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2ABD41]/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
             <Sparkles className="h-4 w-4 text-[#51D766]" />
           </span>
           <div>

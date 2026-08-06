@@ -9,6 +9,8 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
+import useCountUp from '@/lib/hooks/useCountUp';
+import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 import {
   SCOPE_META, STATUS_META, CATEGORY_LABELS,
   MONTHS_TR, MONTHS_EN,
@@ -16,6 +18,27 @@ import {
   MAX_UPLOAD_BYTES as MAX_FILE_BYTES,
   scopeLabel, fmt,
 } from '@/lib/constants/emissions';
+
+// ─── KPI mini card (count-up + hover lift) ─────────────────────────────────
+function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
+  const animated = useCountUp(value, 900);
+  return (
+    <div
+      className="dash-fade-up group relative overflow-hidden rounded-xl border border-[#072C0E]/7 bg-white px-3 py-2.5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/25"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {color && (
+        <div
+          className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full opacity-60 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ backgroundColor: color }}
+        />
+      )}
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{label}</p>
+      <p className="mt-1 text-[18px] font-bold leading-none tabular-nums text-[#072C0E] sm:text-xl">{animated.toFixed(decimals)}</p>
+      <p className="mt-0.5 text-[9px] font-semibold text-[#072C0E]/35">{sub}</p>
+    </div>
+  );
+}
 
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
@@ -27,7 +50,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
 
   return (
-    <div className="rounded-2xl border border-[#072C0E]/8 bg-white p-4 shadow-[0_2px_12px_rgba(7, 44, 14,0.04)]">
+    <div className="rounded-2xl border border-[#072C0E]/8 bg-white p-4 shadow-[0_2px_12px_rgba(7,44,14,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/20">
       {/* Top row */}
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -436,9 +459,10 @@ export default function EmissionsTab({
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-3 sm:space-y-4">
+      <style>{DASHBOARD_ANIM_STYLES}</style>
 
       {/* ── Hero header ───────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
+      <div className="dash-fade-up relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
@@ -473,17 +497,12 @@ export default function EmissionsTab({
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
-          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: (totKg/1000).toFixed(2), sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
-          { label: 'Scope 1', value: (s1kg/1000).toFixed(2), sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
-          { label: 'Scope 2', value: (s2kg/1000).toFixed(2), sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
-          { label: 'Scope 3', value: (s3kg/1000).toFixed(2), sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
-        ].map(k => (
-          <div key={k.label} className="relative overflow-hidden rounded-xl border border-[#072C0E]/7 bg-white px-3 py-2.5">
-            {k.color && <div className="absolute left-3 right-3 top-0 h-[3px] rounded-b-full" style={{ backgroundColor: k.color }} />}
-            <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{k.label}</p>
-            <p className="mt-1 text-[18px] font-bold leading-none text-[#072C0E] sm:text-xl">{k.value}</p>
-            <p className="mt-0.5 text-[9px] font-semibold text-[#072C0E]/35">{k.sub}</p>
-          </div>
+          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: totKg/1000, sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
+          { label: 'Scope 1', value: s1kg/1000, sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
+          { label: 'Scope 2', value: s2kg/1000, sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
+          { label: 'Scope 3', value: s3kg/1000, sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
+        ].map((k, i) => (
+          <EmissionsKPI key={k.label} label={k.label} value={k.value} sub={k.sub} color={k.color} delay={i * 60} />
         ))}
       </div>
 
