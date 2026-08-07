@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
-import OnboardingTour from '@/components/OnboardingTour';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import CommandPalette from '@/components/dashboard/CommandPalette';
@@ -340,9 +339,6 @@ export default function DashboardPage() {
         entries={entries}
         setShowAddForm={setShowAddForm}
       />
-
-      {/* Onboarding Tour */}
-      <OnboardingTour language={language} />
     </div>
     </ToastProvider>
   );

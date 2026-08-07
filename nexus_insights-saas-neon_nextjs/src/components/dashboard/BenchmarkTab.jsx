@@ -1,7 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { BarChart2, Users, TrendingDown, Info, Lock } from 'lucide-react';
+import useCountUp from '@/lib/hooks/useCountUp';
+import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 
 // ─── Static sector benchmark data (NACE-based, anonymized) ────────────────────
 // In production this would come from an API endpoint with real anonymized data.
@@ -29,8 +31,30 @@ const EMPLOYEE_BANDS = [
   { key: '1001-5000', tr: '1000+ çalışan',    en: '1000+ employees' },
 ];
 
+// ─── KPI card with count-up + staggered entrance ───────────────────────────────
+function BenchmarkKPI({ label, value, numeric, format, fallback = '—', sub, color, delay = 0 }) {
+  const animated = useCountUp(numeric ?? 0, 900);
+  const display = numeric != null ? format(animated) : (value ?? fallback);
+  return (
+    <div
+      className="dash-fade-up group rounded-xl border border-[#072C0E]/8 bg-white p-3 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_24px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/25"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <p className="text-[10px] font-semibold text-[#072C0E]/45">{label}</p>
+      <p className={`mt-1 text-lg font-bold leading-none tabular-nums ${color}`}>{display}</p>
+      <p className="mt-0.5 text-[10px] text-[#072C0E]/40">{sub}</p>
+    </div>
+  );
+}
+
 // ─── Benchmark bar (industry position visualization) ───────────────────────────
 function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setDrawn(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
   if (!yourValue || yourValue === 0) return (
     <div className="flex h-10 items-center justify-center rounded-xl bg-[#072C0E]/4">
       <p className="text-[11px] text-[#072C0E]/40">{tr ? 'Emisyon verisi girilmesi gerekiyor' : 'Enter emission data first'}</p>
@@ -68,7 +92,7 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
         <div className="absolute top-0 h-full rounded-r-full bg-red-50" style={{ left: `${p75Pct}%`, right: '0' }} />
 
         {/* Sector average marker */}
-        <div className="absolute top-0 h-full w-0.5 bg-amber-500/70" style={{ left: `${avgPct}%` }}>
+        <div className="absolute top-0 h-full w-0.5 bg-amber-500/70 transition-all duration-700 ease-out" style={{ left: `${drawn ? avgPct : 0}%` }}>
           <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] text-amber-600">
             {tr ? 'Ort.' : 'Avg'}·{avg}
           </span>
@@ -76,8 +100,8 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
 
         {/* Your position */}
         <div
-          className="absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-[#072C0E]"
-          style={{ left: `${yourPct}%` }}
+          className="absolute top-1/2 h-5 w-1 -translate-y-1/2 rounded-full bg-[#072C0E] transition-all duration-700 ease-out"
+          style={{ left: `${drawn ? yourPct : 0}%` }}
         >
           <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#072C0E]">
             {tr ? 'Siz' : 'You'}·{Math.round(yourValue)}
@@ -99,7 +123,7 @@ function BenchmarkBar({ yourValue, avg, p25, p75, tr }) {
 // ─── Opportunity row ──────────────────────────────────────────────────────────
 function OpportunityRow({ rank, title, desc, saving, locked, tr }) {
   return (
-    <div className={`flex items-start gap-3 rounded-xl border p-3 ${locked ? 'border-[#072C0E]/6 bg-[#072C0E]/2 opacity-60' : 'border-[#072C0E]/10 bg-white'}`}>
+    <div className={`flex items-start gap-3 rounded-xl border p-3 transition-all duration-300 ${locked ? 'border-[#072C0E]/6 bg-[#072C0E]/2 opacity-60' : 'border-[#072C0E]/10 bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/25'}`}>
       <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
         rank === 1 ? 'bg-[#2ABD41] text-white' :
         rank === 2 ? 'bg-[#8BEA99] text-white' :
@@ -123,6 +147,13 @@ function OpportunityRow({ rank, title, desc, saving, locked, tr }) {
 export default function BenchmarkTab({ language, summary, questionnaireProfile }) {
   const tr = language === 'tr';
   const totalTonne = summary?.total_tonne || 0;
+
+  // Gates the YoY trend bars — start at 0, grow to real value shortly after mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
 
   // Derive sector from questionnaire profile nace_code
   const naceCode   = questionnaireProfile?.nace_code || '';
@@ -161,9 +192,10 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      <style>{DASHBOARD_ANIM_STYLES}</style>
 
       {/* Section header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="dash-fade-up flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/35">
             {tr ? 'Sektör Karşılaştırması' : 'Sector Comparison'}
@@ -183,19 +215,22 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         {[
           {
             label: tr ? 'Sizin Emisyonunuz' : 'Your Emissions',
-            value: totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO₂e` : '—',
+            numeric: totalTonne > 0 ? totalTonne : null,
+            format: (v) => `${v.toFixed(1)} tCO₂e`,
             sub:   tr ? 'Bu yıl' : 'This year',
             color: 'text-[#072C0E]',
           },
           {
             label: tr ? 'Sektör Ortalaması' : 'Sector Average',
-            value: `${benchmark.avg} tCO₂e`,
+            numeric: benchmark.avg,
+            format: (v) => `${Math.round(v)} tCO₂e`,
             sub:   benchmark.label[language] || benchmark.label.en,
             color: 'text-amber-600',
           },
           {
             label: tr ? 'Ortalamanın Altında' : 'Below Average',
-            value: totalTonne > 0 ? `%${Math.abs(pctVsAvg)}` : '—',
+            numeric: totalTonne > 0 ? Math.abs(pctVsAvg) : null,
+            format: (v) => `%${Math.round(v)}`,
             sub:   pctVsAvg > 0 ? (tr ? 'Daha az emisyon ✓' : 'Less emissions ✓') : (tr ? 'Daha fazla emisyon' : 'More emissions'),
             color: pctVsAvg > 0 ? 'text-[#175022]' : 'text-red-500',
           },
@@ -205,12 +240,8 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             sub:   tr ? empBand.tr : empBand.en,
             color: 'text-[#072C0E]',
           },
-        ].map((card) => (
-          <div key={card.label} className="rounded-xl border border-[#072C0E]/8 bg-white p-3">
-            <p className="text-[10px] font-semibold text-[#072C0E]/45">{card.label}</p>
-            <p className={`mt-1 text-lg font-bold leading-none ${card.color}`}>{card.value}</p>
-            <p className="mt-0.5 text-[10px] text-[#072C0E]/40">{card.sub}</p>
-          </div>
+        ].map((card, i) => (
+          <BenchmarkKPI key={card.label} {...card} delay={i * 60} />
         ))}
       </div>
 
@@ -218,9 +249,12 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       <div className="grid grid-cols-1 gap-2.5 sm:gap-3 lg:grid-cols-[1fr_300px]">
 
         {/* Sector position */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 sm:p-5">
+        <div
+          className="dash-fade-up group rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5"
+          style={{ animationDelay: '260ms' }}
+        >
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#2ABD41]/15 sm:h-9 sm:w-9">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#2ABD41]/15 transition-transform duration-300 group-hover:scale-110 sm:h-9 sm:w-9">
               <BarChart2 className="h-4 w-4 text-[#2ABD41]" />
             </div>
             <div>
@@ -253,9 +287,12 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         </div>
 
         {/* Year-over-year trend placeholder */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 sm:p-5">
+        <div
+          className="dash-fade-up group rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5"
+          style={{ animationDelay: '320ms' }}
+        >
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#175022]/15 sm:h-9 sm:w-9">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#175022]/15 transition-transform duration-300 group-hover:scale-110 sm:h-9 sm:w-9">
               <TrendingDown className="h-4 w-4 text-[#175022]" />
             </div>
             <div>
@@ -272,7 +309,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
                 { label: tr ? 'P75 (üst çeyrek)' : 'P75 (upper quartile)', value: benchmark.p75, color: 'bg-red-100' },
                 { label: tr ? 'Sizin performansınız' : 'Your performance', value: Math.round(totalTonne), color: 'bg-[#2ABD41]' },
                 { label: tr ? 'P25 (alt çeyrek)' : 'P25 (lower quartile)', value: benchmark.p25, color: 'bg-[#DEFAE1]' },
-              ].map((row) => (
+              ].map((row, i) => (
                 <div key={row.label}>
                   <div className="mb-1 flex justify-between text-[11px]">
                     <span className="text-[#072C0E]/55">{row.label}</span>
@@ -280,8 +317,11 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/6">
                     <div
-                      className={`h-full rounded-full ${row.color} transition-all duration-700`}
-                      style={{ width: `${Math.min((row.value / (benchmark.p75 * 1.2)) * 100, 100)}%` }}
+                      className={`h-full rounded-full ${row.color} transition-all duration-700 ease-out`}
+                      style={{
+                        width: `${mounted ? Math.min((row.value / (benchmark.p75 * 1.2)) * 100, 100) : 0}%`,
+                        transitionDelay: `${i * 60}ms`,
+                      }}
                     />
                   </div>
                 </div>
@@ -296,10 +336,13 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       </div>
 
       {/* Reduction Opportunities */}
-      <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 sm:p-5">
+      <div
+        className="dash-fade-up group rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5"
+        style={{ animationDelay: '380ms' }}
+      >
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#072C0E]/8 sm:h-9 sm:w-9">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#072C0E]/8 transition-transform duration-300 group-hover:scale-110 sm:h-9 sm:w-9">
               <TrendingDown className="h-4 w-4 text-[#072C0E]/60" />
             </div>
             <div>
@@ -319,9 +362,9 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
           ))}
         </div>
         {/* Pro unlock banner */}
-        <div className="mt-3 flex items-center justify-between rounded-xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#072C0E] to-[#1A6126] px-4 py-3">
+        <div className="group/banner mt-3 flex items-center justify-between rounded-xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#072C0E] to-[#1A6126] px-4 py-3 transition-all duration-300 hover:shadow-[0_10px_28px_rgba(23,80,34,0.30)]">
           <div className="flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5 text-[#8BEA99]" />
+            <Lock className="h-3.5 w-3.5 text-[#8BEA99] transition-transform duration-300 group-hover/banner:scale-110 group-hover/banner:rotate-6" />
             <p className="text-[12px] font-semibold text-white/80">
               {tr ? 'Tüm fırsatları görmek için Pro plana geçin' : 'Upgrade to Pro to see all opportunities'}
             </p>

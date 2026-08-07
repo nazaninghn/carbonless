@@ -241,9 +241,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       {/* ─── ROW 2: Scope Breakdown + Trend ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1.2fr]">
         {/* Scope Breakdown */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
+        <ReportCard delay={200}>
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41] transition-transform duration-300 group-hover:scale-110">
               <Target className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Kapsam Dağılımı' : 'Scope Breakdown'}</h2>
@@ -261,7 +261,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
                     <span className="text-[11px] font-bold text-[#072C0E]/45">{s.pct.toFixed(0)}% · {s.val.toFixed(2)} t</span>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-[#072C0E]/6">
-                    <div className={`h-full rounded-full bg-gradient-to-r ${s.color} transition-all duration-500`} style={{ width: `${Math.min(s.pct, 100)}%` }} />
+                    <div className={`h-full rounded-full bg-gradient-to-r ${s.color} transition-all duration-700 ease-out`} style={{ width: `${mounted ? Math.min(s.pct, 100) : 0}%` }} />
                   </div>
                 </div>
               ))}
@@ -273,12 +273,12 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           ) : (
             <p className="py-8 text-center text-xs font-semibold text-[#072C0E]/35">{tr ? 'Veri yok' : 'No data'}</p>
           )}
-        </div>
+        </ReportCard>
 
         {/* Monthly Trend */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
+        <ReportCard delay={260}>
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41] text-white transition-transform duration-300 group-hover:scale-110">
               <TrendingDown className="h-4 w-4" />
             </div>
             <div>
@@ -294,7 +294,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
                 return (
                   <div key={m.month ?? i + 1} className="flex flex-1 flex-col items-center gap-1">
                     <div className="relative h-32 w-full overflow-hidden rounded-lg bg-[#2ABD41]/8">
-                      <div className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#175022] to-[#2ABD41] transition-all duration-500" style={{ height: `${Math.max(pct, m.total_kg > 0 ? 6 : 0)}%` }} />
+                      <div
+                        className="absolute bottom-0 left-0 right-0 rounded-lg bg-gradient-to-t from-[#175022] to-[#2ABD41] transition-all duration-500 ease-out hover:brightness-110"
+                        style={{
+                          height: `${mounted ? Math.max(pct, m.total_kg > 0 ? 6 : 0) : 0}%`,
+                          transitionDelay: `${i * 35}ms`,
+                        }}
+                      />
                     </div>
                     <span className="text-[10px] font-bold text-[#072C0E]/35">{label}</span>
                   </div>
@@ -304,15 +310,15 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           ) : (
             <p className="flex h-40 items-center justify-center text-xs font-semibold text-[#072C0E]/35">{tr ? 'Trend verisi yok' : 'No trend data'}</p>
           )}
-        </div>
+        </ReportCard>
       </div>
 
       {/* ─── ROW 3: Export Center + Compliance ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Export Center */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
+        <ReportCard delay={320}>
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41] transition-transform duration-300 group-hover:scale-110">
               <Download className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Dışa Aktarma' : 'Export Center'}</h2>
@@ -323,12 +329,12 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             <ExportBtn icon={Download} label="CSV Export" loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
             <ExportBtn icon={Download} label="Excel Export" loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
           </div>
-        </div>
+        </ReportCard>
 
         {/* Compliance Status */}
-        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
+        <ReportCard delay={380}>
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#175022] text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#175022] text-white transition-transform duration-300 group-hover:scale-110">
               <CheckCircle2 className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Uyumluluk Durumu' : 'Compliance Status'}</h2>
@@ -340,7 +346,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               { done: entries.some(e => e.proof_document), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
               { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
-              <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5">
+              <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5 transition-colors duration-300 hover:bg-[#DEFAE1]/60">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
@@ -348,7 +354,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               </div>
             ))}
           </div>
-        </div>
+        </ReportCard>
       </div>
 
       {/* ─── Inventory Config (if questionnaire complete) ───
@@ -359,9 +365,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
            Render whichever shape is present instead of forcing legacy field
            names onto CarbonReport data — that previously showed all '-'. */}
       {questionnaireProfile?.is_complete && (
-        <div className="rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm">
+        <ReportCard delay={440}>
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41] transition-transform duration-300 group-hover:scale-110">
               <FileText className="h-4 w-4" />
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Envanter Yapılandırması' : 'Inventory Configuration'}</h2>
@@ -384,7 +390,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               <ConfigItem label={tr ? 'Rapor Dili' : 'Report Language'} value={questionnaireProfile.report_language || '-'} />
             </div>
           )}
-        </div>
+        </ReportCard>
       )}
     </div>
   );

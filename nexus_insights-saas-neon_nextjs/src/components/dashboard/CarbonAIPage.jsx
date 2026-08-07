@@ -576,9 +576,14 @@ function EmptyState({ onNew, tr }) {
         </div>
 
 
-        {/* Suggestion chips — horizontal scrollable row like Dinnect */}
-        <div className="w-full overflow-x-auto pb-2 -mx-3 px-3">
-          <div className="flex gap-2 min-w-max">
+        {/* Suggestion chips — horizontal scrollable row like Dinnect.
+            Edge fade (mask-image) softens the hard clip at the screen edge
+            so the cut-off chip reads as "scroll for more" instead of a
+            broken/lopsided layout. */}
+        <div
+          className="w-full overflow-x-auto pb-2 -mx-3 px-3 [mask-image:linear-gradient(to_right,transparent_0,black_20px,black_calc(100%-20px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0,black_20px,black_calc(100%-20px),transparent_100%)]"
+        >
+          <div className="flex gap-2 min-w-max px-0.5">
             {suggestions.map(({ img, text, label }) => (
               <button
                 key={text}
