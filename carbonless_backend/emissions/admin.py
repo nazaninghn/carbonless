@@ -1,10 +1,11 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from unfold.admin import ModelAdmin
 from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissionRequest
 
 
 @admin.register(EmissionFactor)
-class EmissionFactorAdmin(admin.ModelAdmin):
+class EmissionFactorAdmin(ModelAdmin):
     """Full management of emission factors — add new scopes, categories, sources"""
     list_display = ['name', 'scope_badge', 'category', 'country_flag', 'unit',
                     'factor_display', 'year', 'source', 'is_default', 'is_active']
@@ -65,7 +66,7 @@ class EmissionFactorAdmin(admin.ModelAdmin):
 
 
 @admin.register(EmissionEntry)
-class EmissionEntryAdmin(admin.ModelAdmin):
+class EmissionEntryAdmin(ModelAdmin):
     list_display = ['user', 'factor_name', 'scope_badge', 'year', 'month',
                     'quantity', 'unit_display', 'co2e_display', 'facility']
     list_filter = ['year', 'month', 'emission_factor__scope', 'emission_factor__category',
@@ -96,7 +97,7 @@ class EmissionEntryAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReductionTarget)
-class ReductionTargetAdmin(admin.ModelAdmin):
+class ReductionTargetAdmin(ModelAdmin):
     list_display = ['user', 'title', 'base_year', 'target_year',
                     'target_reduction_percent', 'status']
     list_filter = ['status']
@@ -104,7 +105,7 @@ class ReductionTargetAdmin(admin.ModelAdmin):
 
 
 @admin.register(CustomEmissionRequest)
-class CustomEmissionRequestAdmin(admin.ModelAdmin):
+class CustomEmissionRequestAdmin(ModelAdmin):
     list_display = ['user', 'source_name', 'scope_badge', 'category_name',
                     'quantity', 'unit', 'status_badge', 'created_at']
     list_filter = ['status', 'scope', 'year']

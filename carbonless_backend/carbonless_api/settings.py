@@ -52,6 +52,7 @@ if RENDER_EXTERNAL_HOSTNAME:
 # APPS & MIDDLEWARE
 # ============================================
 INSTALLED_APPS = [
+    'unfold',  # Must be listed before django.contrib.admin — it overrides admin templates.
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -91,7 +92,11 @@ ROOT_URLCONF = 'carbonless_api.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        # Project-level templates/ dir is checked before app dirs, so our
+        # templates/admin/index.html override wins over unfold's own
+        # (unfold is listed before our apps in INSTALLED_APPS, so without
+        # this it would always win via APP_DIRS instead).
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -352,6 +357,74 @@ else:
 # the authenticated account, or they silently rewrite/reject it — default
 # to EMAIL_HOST_USER when DEFAULT_FROM_EMAIL isn't explicitly overridden.
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@carbonless.info'
+
+# ============================================
+# DJANGO-UNFOLD — modern admin theme
+# ============================================
+# Colors match the frontend's brand green (#2ABD41 / #175022) so the admin
+# doesn't feel like a bolted-on, unrelated tool.
+UNFOLD = {
+    'SITE_TITLE': 'Carbonless Admin',
+    'SITE_HEADER': 'Carbonless',
+    'SITE_SUBHEADER': 'Carbon Inventory Management',
+    'SITE_SYMBOL': 'eco',
+    'SHOW_HISTORY': True,
+    'SHOW_VIEW_ON_SITE': False,
+    'DASHBOARD_CALLBACK': 'carbonless_api.admin_dashboard.dashboard_callback',
+    'COLORS': {
+        'primary': {
+            '50': '240 253 244', '100': '222 250 225', '200': '187 247 208',
+            '300': '134 239 172', '400': '74 222 128', '500': '42 189 65',
+            '600': '23 80 34', '700': '21 128 61', '800': '22 101 52',
+            '900': '20 83 45', '950': '5 46 22',
+        },
+    },
+    'SIDEBAR': {
+        'show_search': True,
+        'show_all_applications': False,
+        'navigation': [
+            {
+                'title': 'Accounts',
+                'items': [
+                    {'title': 'Users', 'icon': 'person', 'link': '/admin/auth/user/'},
+                    {'title': 'Profiles', 'icon': 'badge', 'link': '/admin/accounts/userprofile/'},
+                    {'title': 'Notifications', 'icon': 'notifications', 'link': '/admin/accounts/notification/'},
+                    {'title': 'Activity Log', 'icon': 'history', 'link': '/admin/accounts/activitylog/'},
+                ],
+            },
+            {
+                'title': 'Companies',
+                'items': [
+                    {'title': 'Companies', 'icon': 'apartment', 'link': '/admin/companies/company/'},
+                    {'title': 'Facilities', 'icon': 'factory', 'link': '/admin/companies/facility/'},
+                    {'title': 'Memberships', 'icon': 'group', 'link': '/admin/companies/companymembership/'},
+                ],
+            },
+            {
+                'title': 'Emissions',
+                'items': [
+                    {'title': 'Emission Factors', 'icon': 'science', 'link': '/admin/emissions/emissionfactor/'},
+                    {'title': 'Emission Entries', 'icon': 'local_fire_department', 'link': '/admin/emissions/emissionentry/'},
+                    {'title': 'Reduction Targets', 'icon': 'target', 'link': '/admin/emissions/reductiontarget/'},
+                    {'title': 'Custom Requests', 'icon': 'rule', 'link': '/admin/emissions/customemissionrequest/'},
+                ],
+            },
+            {
+                'title': 'Questionnaire',
+                'items': [
+                    {'title': 'Sessions', 'icon': 'quiz', 'link': '/admin/questionnaire/questionnairesession/'},
+                    {'title': 'Advisor Approvals', 'icon': 'fact_check', 'link': '/admin/questionnaire/advisorapproval/'},
+                ],
+            },
+            {
+                'title': 'Subscriptions',
+                'items': [
+                    {'title': 'Subscriptions', 'icon': 'workspace_premium', 'link': '/admin/subscriptions/subscription/'},
+                ],
+            },
+        ],
+    },
+}
 
 # Skip email verification in development (set SKIP_EMAIL_VERIFICATION=true in .env)
 # In production, remove this or set to false

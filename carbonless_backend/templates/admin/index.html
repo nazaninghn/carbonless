@@ -1,0 +1,64 @@
+{% extends 'admin/base.html' %}
+
+{% load i18n unfold %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+    {% include "unfold/helpers/site_branding.html" %}
+{% endblock %}
+
+{% block content %}
+    {% component "unfold/components/container.html" %}
+
+        <div class="mb-6">
+            {% component "unfold/components/title.html" %}
+                {% blocktranslate with name=request.user.first_name|default:request.user.username %}Welcome back, {{ name }}{% endblocktranslate %}
+            {% endcomponent %}
+            {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400 mt-1" %}
+                {% blocktranslate %}Here's what's happening across Carbonless in {{ current_year }}.{% endblocktranslate %}
+            {% endcomponent %}
+        </div>
+
+        <div class="grid gap-4 grid-cols-2 lg:grid-cols-3 mb-8">
+            {% component "unfold/components/card.html" with icon="group" %}
+                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Users" %}{% endcomponent %}
+                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_users }}</div>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with icon="apartment" %}
+                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Companies" %}{% endcomponent %}
+                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_companies }}</div>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with icon="workspace_premium" %}
+                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Pro subscriptions" %}{% endcomponent %}
+                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_pro_subscriptions }}</div>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with icon="local_fire_department" %}
+                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Emission entries logged" %}{% endcomponent %}
+                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_emission_entries }}</div>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with icon="rule" href="/admin/emissions/customemissionrequest/?status__exact=pending" %}
+                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Pending custom emission requests" %}{% endcomponent %}
+                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_pending_custom_requests }}</div>
+            {% endcomponent %}
+
+            {% component "unfold/components/card.html" with icon="fact_check" href="/admin/questionnaire/advisorapproval/?status__exact=pending" %}
+                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Pending advisor approvals" %}{% endcomponent %}
+                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_pending_advisor_approvals }}</div>
+            {% endcomponent %}
+        </div>
+
+        <div class="flex flex-col lg:flex-row lg:gap-8">
+            <div class="grow">
+                {% include "unfold/helpers/app_list_default.html" %}
+            </div>
+
+            {% include "unfold/helpers/history.html" %}
+        </div>
+
+    {% endcomponent %}
+{% endblock %}

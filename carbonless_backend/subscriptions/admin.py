@@ -1,9 +1,10 @@
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from .models import Subscription
 
 
 @admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
+class SubscriptionAdmin(ModelAdmin):
     list_display = ['user', 'plan', 'status', 'is_pro', 'ai_messages_this_month', 'created_at']
     list_filter = ['plan', 'status']
     search_fields = ['user__username', 'user__email', 'stripe_customer_id']
