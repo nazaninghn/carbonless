@@ -8,6 +8,82 @@
     {% include "unfold/helpers/site_branding.html" %}
 {% endblock %}
 
+{% block extrahead %}
+    {{ block.super }}
+    {% comment %}
+    Unfold ships a pre-built Tailwind bundle (not a live compiler), so custom
+    colors/animations here are hand-written CSS rather than Tailwind utility
+    classes — those wouldn't exist in the bundle and would silently no-op.
+    {% endcomment %}
+    <style>
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        @media (min-width: 1024px) {
+            .kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        }
+        @keyframes kpiFadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .kpi-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.875rem;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgb(228 228 231);
+            background: #fff;
+            text-decoration: none;
+            animation: kpiFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+            border-color: var(--kpi-accent, rgb(212 212 216));
+        }
+        html.dark .kpi-card {
+            background: rgb(24 24 27);
+            border-color: rgb(39 39 42);
+        }
+        html.dark .kpi-card:hover {
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+        }
+        .kpi-icon {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.625rem;
+            background: var(--kpi-accent-bg);
+            color: var(--kpi-accent);
+            transition: transform 0.2s ease;
+        }
+        .kpi-card:hover .kpi-icon { transform: scale(1.08) rotate(-4deg); }
+        .kpi-icon .material-symbols-outlined { font-size: 1.375rem; }
+        .kpi-label {
+            font-size: 0.8125rem;
+            color: rgb(113 113 122);
+            margin: 0 0 0.125rem;
+        }
+        html.dark .kpi-label { color: rgb(161 161 170); }
+        .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: rgb(24 24 27);
+            line-height: 1.2;
+        }
+        html.dark .kpi-value { color: rgb(250 250 250); }
+    </style>
+{% endblock %}
+
 {% block content %}
     {% component "unfold/components/container.html" %}
 
@@ -20,36 +96,36 @@
             {% endcomponent %}
         </div>
 
-        <div class="grid gap-4 grid-cols-2 lg:grid-cols-3 mb-8">
-            {% component "unfold/components/card.html" with icon="group" %}
-                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Users" %}{% endcomponent %}
-                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_users }}</div>
-            {% endcomponent %}
+        <div class="kpi-grid">
+            <div class="kpi-card" style="--kpi-accent:#2563eb; --kpi-accent-bg:rgba(37,99,235,.12); animation-delay:0ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">group</span></span>
+                <div><p class="kpi-label">{% translate "Users" %}</p><p class="kpi-value" data-countup="{{ kpi_users }}">0</p></div>
+            </div>
 
-            {% component "unfold/components/card.html" with icon="apartment" %}
-                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Companies" %}{% endcomponent %}
-                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_companies }}</div>
-            {% endcomponent %}
+            <div class="kpi-card" style="--kpi-accent:#175022; --kpi-accent-bg:rgba(42,189,65,.14); animation-delay:60ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">apartment</span></span>
+                <div><p class="kpi-label">{% translate "Companies" %}</p><p class="kpi-value" data-countup="{{ kpi_companies }}">0</p></div>
+            </div>
 
-            {% component "unfold/components/card.html" with icon="workspace_premium" %}
-                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Pro subscriptions" %}{% endcomponent %}
-                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_pro_subscriptions }}</div>
-            {% endcomponent %}
+            <div class="kpi-card" style="--kpi-accent:#b45309; --kpi-accent-bg:rgba(234,179,8,.14); animation-delay:120ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">workspace_premium</span></span>
+                <div><p class="kpi-label">{% translate "Pro subscriptions" %}</p><p class="kpi-value" data-countup="{{ kpi_pro_subscriptions }}">0</p></div>
+            </div>
 
-            {% component "unfold/components/card.html" with icon="local_fire_department" %}
-                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Emission entries logged" %}{% endcomponent %}
-                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_emission_entries }}</div>
-            {% endcomponent %}
+            <div class="kpi-card" style="--kpi-accent:#dc2626; --kpi-accent-bg:rgba(239,68,68,.12); animation-delay:180ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">local_fire_department</span></span>
+                <div><p class="kpi-label">{% translate "Emission entries logged" %}</p><p class="kpi-value" data-countup="{{ kpi_emission_entries }}">0</p></div>
+            </div>
 
-            {% component "unfold/components/card.html" with icon="rule" href="/admin/emissions/customemissionrequest/?status__exact=pending" %}
-                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Pending custom emission requests" %}{% endcomponent %}
-                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_pending_custom_requests }}</div>
-            {% endcomponent %}
+            <a class="kpi-card" href="/admin/emissions/customemissionrequest/?status__exact=pending" style="--kpi-accent:#c2410c; --kpi-accent-bg:rgba(249,115,22,.12); animation-delay:240ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">rule</span></span>
+                <div><p class="kpi-label">{% translate "Pending custom emission requests" %}</p><p class="kpi-value" data-countup="{{ kpi_pending_custom_requests }}">0</p></div>
+            </a>
 
-            {% component "unfold/components/card.html" with icon="fact_check" href="/admin/questionnaire/advisorapproval/?status__exact=pending" %}
-                {% component "unfold/components/text.html" with class="text-base-500 dark:text-base-400" %}{% translate "Pending advisor approvals" %}{% endcomponent %}
-                <div class="font-semibold text-3xl tracking-tight dark:text-font-important-dark">{{ kpi_pending_advisor_approvals }}</div>
-            {% endcomponent %}
+            <a class="kpi-card" href="/admin/questionnaire/advisorapproval/?status__exact=pending" style="--kpi-accent:#7c3aed; --kpi-accent-bg:rgba(139,92,246,.14); animation-delay:300ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">fact_check</span></span>
+                <div><p class="kpi-label">{% translate "Pending advisor approvals" %}</p><p class="kpi-value" data-countup="{{ kpi_pending_advisor_approvals }}">0</p></div>
+            </a>
         </div>
 
         <div class="flex flex-col lg:flex-row lg:gap-8">
@@ -61,4 +137,24 @@
         </div>
 
     {% endcomponent %}
+
+    <script>
+        (function () {
+            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            document.querySelectorAll('.kpi-value[data-countup]').forEach(function (el) {
+                var target = parseInt(el.getAttribute('data-countup'), 10) || 0;
+                if (reduceMotion || target === 0) { el.textContent = target; return; }
+                var start = null;
+                var duration = 900;
+                function tick(ts) {
+                    if (!start) start = ts;
+                    var progress = Math.min((ts - start) / duration, 1);
+                    var eased = 1 - Math.pow(1 - progress, 3);
+                    el.textContent = Math.round(target * eased);
+                    if (progress < 1) requestAnimationFrame(tick);
+                }
+                requestAnimationFrame(tick);
+            });
+        })();
+    </script>
 {% endblock %}
