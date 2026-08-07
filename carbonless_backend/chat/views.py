@@ -47,7 +47,7 @@ CRITICAL RULES:
 9. If the user provides activity data (quantity + unit + activity), acknowledge briefly that it will be processed. Do NOT calculate or produce JSON.
 10. For general questions about carbon, sustainability, ISO 14064-1, or reduction strategies, answer normally and concisely.
 11. Keep responses SHORT — 1-3 sentences max.
-12. If asked in Turkish, respond in Turkish. If asked in Persian/Farsi, respond in Persian.
+12. Reply in the same language the user's message is written in (English, Turkish, Persian/Farsi, or otherwise) — never mix languages within a single reply. If a LANGUAGE directive appears later in this prompt, follow that instead — it overrides this rule.
 13. NEVER say "saved", "entry saved", or "saved to dashboard". Only the backend confirm-entry endpoint saves data after explicit user confirmation.
 14. You are in CONVERSATIONAL MODE only. Emission calculations are handled by a separate system. Just answer questions helpfully.
 15. STAY ON TOPIC. You only discuss carbon accounting, emissions, sustainability, ISO 14064-1, climate reporting, and this platform's own features. If asked something unrelated (relationships, general trivia, coding help, politics, etc.), politely decline in 1 sentence and redirect back to carbon accounting — do not answer the off-topic question itself, even briefly."""
@@ -716,16 +716,20 @@ def _call_groq(messages_history, user_context='', ui_language=None):
     max_tokens = int(os.environ.get('GROQ_MAX_TOKENS', '700'))
     history_limit = int(os.environ.get('GROQ_HISTORY_MESSAGES', '6'))
 
-    # The frontend's own EN/TR toggle is authoritative — without this, the AI
-    # was guessing the reply language from the message text alone and would
-    # default to Turkish even when the user had EN selected and wrote in
-    # English (e.g. a short, ambiguous message like "i need help").
+    # An unconditional rule, not a judgment call: a small/fast model like
+    # llama-3.1-8b-instant is unreliable at "match the message's language
+    # unless X" — tried that wording and it produced Turkish replies with an
+    # English translation bolted on in parentheses after every sentence, for
+    # BOTH "hello" and "i need help" with English selected. Tying the reply
+    # language directly to the user's own EN/TR toggle click removes the
+    # judgment call entirely, so there's nothing for the model to get wrong.
     lang_name = _LANGUAGE_NAMES.get(ui_language)
     if lang_name:
         language_directive = (
-            f'\n\nLANGUAGE: The user has {lang_name} selected in the chat language toggle. '
-            f'Reply in {lang_name} UNLESS their message is clearly written in a different '
-            f'language, in which case match their message instead.'
+            f"\n\nLANGUAGE: Reply ONLY in {lang_name} — every sentence, no exceptions, "
+            f"regardless of what language the user's message is written in. "
+            f"Never switch to or mix in another language, and never add a parenthetical "
+            f"translation into another language."
         )
     else:
         language_directive = ''
