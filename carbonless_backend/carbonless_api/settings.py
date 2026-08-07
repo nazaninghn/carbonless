@@ -155,6 +155,7 @@ USE_TZ = True
 # ============================================
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
@@ -367,6 +368,7 @@ UNFOLD = {
     'SITE_TITLE': 'Carbonless Admin',
     'SITE_HEADER': 'Carbonless',
     'SITE_SUBHEADER': 'Carbon Inventory Management',
+    'SITE_LOGO': '/static/img/logo.png',
     'SITE_SYMBOL': 'eco',
     'SHOW_HISTORY': True,
     'SHOW_VIEW_ON_SITE': False,
