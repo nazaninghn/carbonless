@@ -712,7 +712,14 @@ def _call_groq(messages_history, user_context='', ui_language=None):
         logger.error('GROQ_API_KEY not set or Groq client failed to initialise')
         return None, 'AI service not available.', 503
 
-    model = os.environ.get('GROQ_MODEL', 'llama-3.1-8b-instant')
+    # llama-3.1-8b-instant does not reliably follow the LANGUAGE directive
+    # below on short first messages ("hello", "i need help") — it defaults to
+    # Turkish regardless of the selected language. llama-3.3-70b-versatile
+    # follows it correctly every time, with no noticeable latency difference
+    # on Groq's hardware. Hardcoded as the default (not just documented via
+    # GROQ_MODEL) so production works without needing a Render dashboard env
+    # var — .env is gitignored and never reaches Render.
+    model = os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile')
     max_tokens = int(os.environ.get('GROQ_MAX_TOKENS', '700'))
     history_limit = int(os.environ.get('GROQ_HISTORY_MESSAGES', '6'))
 
