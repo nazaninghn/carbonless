@@ -178,24 +178,18 @@ export default function Home() {
       <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white min-h-[80vh] flex items-center">
         {/* Corner images — animated float + click for scope info */}
         {[
-          { src: '/hero-corner1.png', pos: 'top-0 left-0', size: 'w-[30%] sm:w-[22%]', delay: '0s', label: 'Scope 1', desc: lang === 'tr' ? 'Doğrudan emisyonlar — tesisler, araçlar, yakıt yanması' : 'Direct emissions — facilities, vehicles, fuel combustion', tipPos: 'left-full top-1/2 -translate-y-1/2 ml-2' },
-          { src: '/hero-corner2.png', pos: 'top-0 right-0', size: 'w-[25%] sm:w-[18%]', delay: '1s', label: '', desc: '', tipPos: '' },
-          { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam', tipPos: 'left-full top-1/2 -translate-y-1/2 ml-2' },
-          { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste', tipPos: 'right-full top-1/2 -translate-y-1/2 mr-2' },
+          { src: '/hero-corner1.png', pos: 'top-0 left-0', size: 'w-[30%] sm:w-[22%]', delay: '0s', label: 'Scope 1', desc: lang === 'tr' ? 'Doğrudan emisyonlar — tesisler, araçlar, yakıt yanması' : 'Direct emissions — facilities, vehicles, fuel combustion' },
+          { src: '/hero-corner2.png', pos: 'top-0 right-0', size: 'w-[25%] sm:w-[18%]', delay: '1s', label: '', desc: '' },
+          { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam' },
+          { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste' },
         ].map((corner, i) => (
-          <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}
-            onClick={(e) => {
-              if (!corner.label) return;
-              const tip = e.currentTarget.querySelector('[data-tip]');
-              if (tip) { tip.classList.toggle('opacity-0'); tip.classList.toggle('opacity-100'); }
-            }}
-          >
+          <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}>
             <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105 active:scale-95" />
             {corner.label && (
-              <div data-tip className={`absolute ${corner.tipPos} opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30 max-w-[200px] sm:max-w-none`}>
-                <div className="rounded-xl bg-[#072C0E] px-3 py-2 sm:px-4 sm:py-2.5 text-center shadow-xl">
-                  <p className="text-[11px] sm:text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
-                  <p className="text-[10px] sm:text-[11px] text-white/80 mt-0.5 whitespace-normal">{corner.desc}</p>
+              <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30">
+                <div className="rounded-xl bg-[#072C0E] px-4 py-2.5 text-center shadow-xl whitespace-nowrap">
+                  <p className="text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
+                  <p className="text-[11px] text-white/80 mt-0.5">{corner.desc}</p>
                 </div>
               </div>
             )}
@@ -396,6 +390,11 @@ export default function Home() {
       {/* white → cream blend before How it Works */}
       <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-white to-[#F9FFF4]" />
 
+      {/* Banner image between AI and How it Works */}
+      <div className="relative w-full h-[160px] sm:h-[200px] lg:h-[260px] overflow-hidden">
+        <img src="/banner.png" alt="Carbonless platform" className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105" />
+      </div>
+
       {/* -- How it Works — 4-step process, numbered circles on a shared
           connector line (desktop only; the line has nothing meaningful to
           span once the steps stack into one column on mobile). -- */}
@@ -439,12 +438,20 @@ export default function Home() {
                   desc: lang === 'tr' ? 'Hedefler koyun, ilerlemenizi izleyin, ayak izinizi zamanla küçültün.' : 'Set targets, track progress, and watch your footprint shrink over time.',
                 },
               ].map((step) => (
-                <div key={step.num} className="relative flex flex-col items-center text-center">
-                  <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] text-[15px] font-bold text-[#2ABD41] shadow-sm">
+                <div key={step.num} className="relative flex flex-col items-center text-center group cursor-pointer" onClick={() => { const el = document.getElementById(`step-detail-${step.num}`); if (el) { el.classList.toggle('max-h-0'); el.classList.toggle('max-h-40'); el.classList.toggle('opacity-0'); el.classList.toggle('opacity-100'); el.classList.toggle('mt-0'); el.classList.toggle('mt-3'); } }}>
+                  <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] text-[15px] font-bold text-[#2ABD41] shadow-sm transition-all duration-300 group-hover:bg-[#2ABD41] group-hover:text-white group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-[#2ABD41]/25">
                     {step.num}
                   </div>
-                  <h3 className="mt-3 text-[15px] sm:text-[16px] font-bold text-[#072C0E]">{step.title}</h3>
+                  <h3 className="mt-3 text-[15px] sm:text-[16px] font-bold text-[#072C0E] transition-colors group-hover:text-[#2ABD41]">{step.title}</h3>
                   <p className="mt-2 text-[13px] leading-[1.7] text-[#072C0E]/55 max-w-[220px]">{step.desc}</p>
+                  <div id={`step-detail-${step.num}`} className="max-h-0 opacity-0 mt-0 overflow-hidden transition-all duration-500 ease-in-out">
+                    <div className="bg-[#F1FCF2] border border-[#DEFAE1] rounded-xl px-4 py-3 text-[12px] text-[#072C0E]/70 leading-[1.6]">
+                      {step.num === '1' && (lang === 'tr' ? '💬 AI sohbet ekranına girin ve verilerinizi paylaşın' : '💬 Open AI chat and share your data naturally')}
+                      {step.num === '2' && (lang === 'tr' ? '⚡ 188+ emisyon faktörü ile otomatik eşleştirme' : '⚡ Auto-matching with 188+ emission factors')}
+                      {step.num === '3' && (lang === 'tr' ? '📄 PDF raporu saniyeler içinde hazır' : '📄 PDF report ready in seconds')}
+                      {step.num === '4' && (lang === 'tr' ? '📊 Dashboard\'da hedeflerinizi takip edin' : '📊 Track your goals in the dashboard')}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
