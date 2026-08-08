@@ -1,16 +1,17 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Menu, X, Linkedin, Instagram, Youtube, Truck } from 'lucide-react';
+import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Linkedin, Instagram, Youtube, Truck, X } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import Header from '@/components/Header';
 
 /* -- Copy -- */
 const copy = {
   en: {
     nav: { home: 'Home', about: 'About', features: 'Features', ai: 'AI', login: 'Login' },
     hero: {
+      kicker: 'AI Precision. Carbon Vision.',
       line1: 'Your AI-powered',
       highlight: 'carbon calculator',
       line2: 'platform.',
@@ -22,6 +23,7 @@ const copy = {
   tr: {
     nav: { home: 'Ana Sayfa', about: 'Hakkında', features: 'Özellikler', ai: 'AI', login: 'Giriş' },
     hero: {
+      kicker: 'Yapay Zeka Hassasiyeti. Karbon Vizyonu.',
       line1: 'AI destekli',
       highlight: 'karbon hesaplama',
       line2: 'platformunuz.',
@@ -139,21 +141,7 @@ function ConnectionLinesMobile() {
 
 /* -- Page -- */
 export default function Home() {
-  const { language: lang, changeLanguage } = useLanguage();
-
-  // Mobile hamburger menu (Dinnect-style: logo | ≡ | lang on phones).
-  // The dropdown panel hangs BELOW the pill — safe because the pill has no
-  // overflow-hidden (the old clipped-dropdown bug can't recur here).
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onKey = e => { if (e.key === 'Escape') setMenuOpen(false); };
-    const onDown = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onDown);
-    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown); };
-  }, [menuOpen]);
+  const { language: lang } = useLanguage();
 
   const t = copy[lang] ?? copy['en'];
 
@@ -184,88 +172,7 @@ export default function Home() {
         }
       `}} />
 
-      {/* -- Navbar — Dinnect-style floating pill: detached rounded capsule
-             centered at the top, hovering over the hero. Logo + wordmark |
-             divider | nav links | divider | lang, Log In, solid green CTA.
-             Every item has a visible hover state. The sticky wrapper is
-             pointer-events-none so content beside the pill stays clickable;
-             no overflow-hidden anywhere (that's what clipped the old
-             language dropdown). -- */}
-      <header className="pointer-events-none sticky top-0 z-50 flex w-full justify-center px-3 pt-4">
-        <nav ref={menuRef} className="pointer-events-auto relative flex h-14 max-w-full items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md">
-          {/* Logo */}
-          <Link href="/" className="group flex shrink-0 items-center gap-2 rounded-full px-2 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
-            <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
-            <span className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
-          </Link>
-
-          {/* Hamburger — phones/small tablets only (Dinnect: logo | ≡ | lang) */}
-          <button
-            onClick={() => setMenuOpen(v => !v)}
-            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={menuOpen}
-            className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#072C0E]/60 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E]"
-          >
-            {menuOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
-          </button>
-
-          {/* Divider */}
-          <span className="hidden md:block mx-1 h-6 w-px bg-[#DEFAE1]" />
-
-          {/* Nav links */}
-          <div className="hidden md:flex items-center">
-            {['home', 'about', 'ai'].map(key => (
-              <a key={key} href={key === 'home' ? '/' : `#${key}`}
-                className="rounded-full px-4 py-2 text-[13.5px] font-medium text-[#072C0E]/55 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]">
-                {key === 'home' ? (lang === 'tr' ? 'Ana Sayfa' : 'Home') : key === 'about' ? (lang === 'tr' ? 'Hakkında' : 'About') : 'AI'}
-              </a>
-            ))}
-          </div>
-
-          {/* Divider */}
-          <span className="hidden sm:block mx-1 h-6 w-px bg-[#DEFAE1]" />
-
-          {/* Lang + Log In + CTA */}
-          <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
-            <button
-              onClick={() => changeLanguage(lang === 'tr' ? 'en' : 'tr')}
-              aria-label={lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
-              className="rounded-full px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#072C0E]/50 uppercase transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]"
-            >
-              {lang === 'tr' ? 'EN' : 'TR'}
-            </button>
-            <Link href="/login"
-              className="hidden sm:block rounded-full px-3 py-1.5 text-[13px] font-medium text-[#072C0E]/60 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]">
-              {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
-            </Link>
-            <Link href="/register"
-              className="ml-0.5 rounded-full bg-[#2ABD41] px-3.5 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold text-white shadow-sm transition-all duration-200 hover:bg-[#1D9C31] hover:shadow-lg hover:shadow-[#2ABD41]/30 hover:-translate-y-0.5 whitespace-nowrap">
-              {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
-            </Link>
-          </div>
-
-          {/* Mobile dropdown panel — hangs below the pill, never clipped
-              (no overflow-hidden on the nav) */}
-          {menuOpen && (
-            <div className="md:hidden absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-2xl border border-[#DEFAE1] bg-white shadow-[0_16px_40px_rgba(7,44,14,0.14)]">
-              {[
-                { label: lang === 'tr' ? 'Ana Sayfa' : 'Home', href: '/' },
-                { label: lang === 'tr' ? 'Hakkında' : 'About', href: '#about' },
-                { label: 'AI', href: '#ai' },
-                { label: lang === 'tr' ? 'Nasıl Çalışır?' : 'How it Works', href: '#how-it-works' },
-                { label: lang === 'tr' ? 'Fiyatlandırma' : 'Pricing', href: '#pricing' },
-                { label: 'FAQ', href: '#faq' },
-                { label: lang === 'tr' ? 'Giriş Yap' : 'Log In', href: '/login' },
-              ].map(item => (
-                <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}
-                  className="block px-5 py-3 text-[14px] font-medium text-[#072C0E]/70 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E]">
-                  {item.label}
-                </a>
-              ))}
-            </div>
-          )}
-        </nav>
-      </header>
+      <Header />
 
       {/* -- Hero Section — 4 corner images + centered text -- */}
       <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white min-h-[80vh] flex items-center">
@@ -297,7 +204,10 @@ export default function Home() {
 
         {/* Center content */}
         <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center">
-          <h1 className="text-[28px] sm:text-[44px] lg:text-[60px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
+          <p className="mb-3 sm:mb-4 text-[11px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
+            {t.hero.kicker}
+          </p>
+          <h1 className="text-[28px] sm:text-[44px] lg:text-[60px] font-black leading-[1.1] tracking-[-0.045em] text-[#072C0E]">
             {t.hero.line1}{' '}
             <span className="text-[#2ABD41]">{t.hero.highlight}</span>{' '}
             {t.hero.line2}

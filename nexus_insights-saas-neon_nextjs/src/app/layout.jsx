@@ -8,7 +8,7 @@ const inter = Inter({
   // mid-word while ç/ö/ü (Latin-1, included in 'latin') stayed Inter —
   // producing the unstable mixed-font look on every Turkish page.
   subsets: ['latin', 'latin-ext'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
   display: 'swap',
   variable: '--font-inter',
 });

@@ -18,7 +18,7 @@ export default function ContactPage() {
       <Header />
       <main>
         {/* Hero */}
-        <section className="pt-24 lg:pt-40 pb-16 lg:pb-28 bg-gradient-to-b from-[#DEFAE1]/40 to-white">
+        <section className="pt-8 lg:pt-16 pb-16 lg:pb-28 bg-gradient-to-b from-[#DEFAE1]/40 to-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto">
               <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-full mb-4">

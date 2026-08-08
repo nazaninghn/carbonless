@@ -1,173 +1,120 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useLanguage } from '@/lib/i18n/LanguageContext';
-import NextLink from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import { Globe, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
+/* Section anchors live on the homepage — from any other page these links
+   land on "/" and jump to the section; from the homepage itself the browser
+   just updates the hash in place (no reload, since the path is unchanged).
+   `desktop: true` marks the curated subset shown in the horizontal pill nav
+   (About/AI/Pricing/FAQ — the highest-intent links); the mobile dropdown has
+   room to list all of them, Home included, since it's a vertical list. */
+const NAV_ITEMS = [
+  { key: 'home', hash: null, en: 'Home', tr: 'Ana Sayfa', desktop: false },
+  { key: 'about', hash: 'about', en: 'About', tr: 'Hakkında', desktop: true },
+  { key: 'ai', hash: 'ai', en: 'AI', tr: 'AI', desktop: true },
+  { key: 'how-it-works', hash: 'how-it-works', en: 'How it Works', tr: 'Nasıl Çalışır?', desktop: false },
+  { key: 'pricing', hash: 'pricing', en: 'Pricing', tr: 'Fiyatlandırma', desktop: true },
+  { key: 'faq', hash: 'faq', en: 'FAQ', tr: 'FAQ', desktop: true },
+];
+
+/* Dinnect-style floating pill navbar — shared across every page so the
+   header doesn't change identity when navigating from the homepage into
+   /about, /features or /contact. */
 export default function Header() {
-  const { language, changeLanguage, t } = useLanguage();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { language: lang, changeLanguage } = useLanguage();
 
-  // Dismiss mobile menu on Escape — consistent with all other overlays
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
   useEffect(() => {
-    if (!mobileMenuOpen) return;
-    const onKey = (e) => { if (e.key === 'Escape') setMobileMenuOpen(false); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [mobileMenuOpen]);
+    if (!menuOpen) return;
+    const onKey = e => { if (e.key === 'Escape') setMenuOpen(false); };
+    const onDown = e => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onDown); };
+  }, [menuOpen]);
+
+  const hrefFor = (hash) => (hash ? `/#${hash}` : '/');
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-xl border-b border-black/[0.04]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Logo */}
-          <NextLink href="/" className="flex items-center gap-2">
-            <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
-            <span className="text-xl font-bold text-[#072C0E]">
-              {t.brandName}
-            </span>
-          </NextLink>
-          
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8">
-            <NextLink href="/features" className="text-graphite hover:text-slate transition-colors duration-200 font-medium">
-              {t.nav.features}
-            </NextLink>
-            <NextLink href="/about" className="text-graphite hover:text-slate transition-colors duration-200 font-medium">
-              {t.nav.about}
-            </NextLink>
-            <NextLink href="/contact" className="text-graphite hover:text-slate transition-colors duration-200 font-medium">
-              {t.nav.contact}
-            </NextLink>
-          </nav>
-          
-          {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-4">
-            {/* Language Toggle */}
-            <button 
-              onClick={() => changeLanguage(language === 'tr' ? 'en' : 'tr')} 
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-mist transition-colors duration-200 text-sm font-medium text-graphite"
-            >
-              <Globe className="w-4 h-4" />
-              {language === 'tr' ? 'EN' : 'TR'}
-            </button>
-            <NextLink 
-              href="/login" 
-              className="text-graphite hover:text-slate transition-colors duration-200 font-medium"
-            >
-              {t.nav.login}
-            </NextLink>
-            <NextLink 
-              href="/register" 
-              className="relative group px-6 py-2.5 bg-gradient-to-r from-[#175022] to-[#2ABD41] text-white font-semibold rounded-xl overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-[0_0_20px_rgba(42, 189, 65,0.35)]"
-            >
-              <span className="relative z-10">{t.nav.register}</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-[#2ABD41] to-[#8BEA99] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </NextLink>
-          </div>
-          
-          {/* Mobile Menu Button */}
-          <div className="flex lg:hidden items-center gap-2">
-            {/* Language Toggle (Mobile) */}
-            <button 
-              onClick={() => changeLanguage(language === 'tr' ? 'en' : 'tr')} 
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg hover:bg-mist transition-colors duration-200 text-sm font-medium text-graphite"
-            >
-              <Globe className="w-4 h-4" />
-              {language === 'tr' ? 'EN' : 'TR'}
-            </button>
-            <button 
-              onClick={() => setMobileMenuOpen(true)} 
-              aria-label="Open menu" 
-              className="p-2 rounded-lg hover:bg-mist transition-colors duration-200"
-            >
-              <Menu className="w-6 h-6 text-graphite" />
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div 
-          onClick={() => setMobileMenuOpen(false)} 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 lg:hidden"
-        ></div>
-      )}
-      
-      {/* Mobile Menu Panel */}
-      {mobileMenuOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={language === 'tr' ? 'Gezinme menüsü' : 'Navigation menu'}
-          className="fixed inset-0 bg-white z-50 lg:hidden h-[100vh]"
+    <header className="pointer-events-none sticky top-0 z-50 flex w-full justify-center px-3 pt-4">
+      <nav ref={menuRef} className="pointer-events-auto relative flex h-14 max-w-full items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md">
+        {/* Logo */}
+        <Link href="/" className="group flex shrink-0 items-center gap-2 rounded-full px-2 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
+          <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 sm:h-8 sm:w-8 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
+          <span className="text-[15px] sm:text-[16px] font-bold tracking-tight text-[#072C0E]">Carbonless</span>
+        </Link>
+
+        {/* Hamburger — the curated desktop nav is short enough to show from md up */}
+        <button
+          onClick={() => setMenuOpen(v => !v)}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={menuOpen}
+          className="md:hidden flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[#072C0E]/60 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E]"
         >
-          <div className="flex flex-col h-full">
-            {/* Mobile Menu Header */}
-            <div className="flex items-center justify-between h-16 lg:h-20 px-6 border-b border-black/[0.04]">
-              <NextLink href="/" className="flex items-center gap-2">
-                <Image src="/carbonless.png" alt="Carbonless" width={56} height={56} className="h-14 w-auto" />
-                <span className="text-xl font-bold text-[#072C0E]">
-                  {t.brandName}
-                </span>
-              </NextLink>
-              <button 
-                onClick={() => setMobileMenuOpen(false)} 
-                aria-label="Close menu" 
-                className="p-2 rounded-lg hover:bg-mist transition-colors duration-200"
-              >
-                <X className="w-6 h-6 text-graphite" />
-              </button>
-            </div>
-            
-            {/* Mobile Menu Links */}
-            <nav className="flex-1 p-4 space-y-2">
-              <NextLink 
-                href="/features" 
-                className="block px-4 py-3 text-graphite hover:bg-mist rounded-xl font-medium transition-colors duration-200"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t.nav.features}
-              </NextLink>
-              <NextLink 
-                href="/about" 
-                className="block px-4 py-3 text-graphite hover:bg-mist rounded-xl font-medium transition-colors duration-200"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t.nav.about}
-              </NextLink>
-              <NextLink 
-                href="/contact" 
-                className="block px-4 py-3 text-graphite hover:bg-mist rounded-xl font-medium transition-colors duration-200"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t.nav.contact}
-              </NextLink>
-            </nav>
-            
-            {/* Mobile Menu Footer */}
-            <div className="p-4 border-t border-black/[0.04] space-y-3">
-              <NextLink 
-                href="/login" 
-                className="block w-full px-6 py-3 text-center text-graphite border border-black/[0.08] rounded-xl font-semibold hover:bg-mist transition-colors duration-200"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t.nav.login}
-              </NextLink>
-              <NextLink 
-                href="/register" 
-                className="block w-full px-6 py-3 text-center bg-gradient-to-r from-[#175022] to-[#2ABD41] text-white font-semibold rounded-xl hover:shadow-[0_0_20px_rgba(42, 189, 65,0.35)] transition-all duration-200"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {t.nav.register}
-              </NextLink>
-            </div>
-          </div>
+          {menuOpen ? <X className="h-4.5 w-4.5" /> : <Menu className="h-4.5 w-4.5" />}
+        </button>
+
+        {/* Divider */}
+        <span className="hidden md:block mx-1 h-6 w-px bg-[#DEFAE1]" />
+
+        {/* Nav links — curated subset; the full list still lives in the
+            mobile dropdown below and in the footer, nothing is removed */}
+        <div className="hidden md:flex items-center">
+          {NAV_ITEMS.filter(item => item.desktop).map(item => (
+            <a
+              key={item.key}
+              href={hrefFor(item.hash)}
+              className="whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-medium text-[#072C0E]/55 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]"
+            >
+              {lang === 'tr' ? item.tr : item.en}
+            </a>
+          ))}
         </div>
-      )}
+
+        {/* Divider */}
+        <span className="hidden sm:block mx-1 h-6 w-px bg-[#DEFAE1]" />
+
+        {/* Lang + Log In + CTA */}
+        <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+          <button
+            onClick={() => changeLanguage(lang === 'tr' ? 'en' : 'tr')}
+            aria-label={lang === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
+            className="rounded-full px-2 sm:px-2.5 py-1.5 text-[11px] sm:text-[12px] font-semibold text-[#072C0E]/50 uppercase transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]"
+          >
+            {lang === 'tr' ? 'EN' : 'TR'}
+          </button>
+          <Link href="/login"
+            className="hidden sm:block rounded-full px-3 py-1.5 text-[13px] font-medium text-[#072C0E]/60 transition-all duration-200 hover:bg-[#F1FCF2] hover:text-[#072C0E]">
+            {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
+          </Link>
+          <Link href="/register"
+            className="ml-0.5 rounded-full bg-[#2ABD41] px-3.5 sm:px-5 py-2 text-[11px] sm:text-[13px] font-bold text-white shadow-sm transition-all duration-200 hover:bg-[#1D9C31] hover:shadow-lg hover:shadow-[#2ABD41]/30 hover:-translate-y-0.5 whitespace-nowrap">
+            {lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}
+          </Link>
+        </div>
+
+        {/* Mobile dropdown panel — hangs below the pill, never clipped
+            (no overflow-hidden on the nav) */}
+        {menuOpen && (
+          <div className="md:hidden absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-2xl border border-[#DEFAE1] bg-white shadow-[0_16px_40px_rgba(7,44,14,0.14)]">
+            {NAV_ITEMS.map(item => (
+              <a key={item.key} href={hrefFor(item.hash)} onClick={() => setMenuOpen(false)}
+                className="block px-5 py-3 text-[14px] font-medium text-[#072C0E]/70 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E]">
+                {lang === 'tr' ? item.tr : item.en}
+              </a>
+            ))}
+            <a href="/login" onClick={() => setMenuOpen(false)}
+              className="block px-5 py-3 text-[14px] font-medium text-[#072C0E]/70 transition-colors hover:bg-[#F1FCF2] hover:text-[#072C0E] border-t border-[#DEFAE1]">
+              {lang === 'tr' ? 'Giriş Yap' : 'Log In'}
+            </a>
+          </div>
+        )}
+      </nav>
     </header>
   );
 }
