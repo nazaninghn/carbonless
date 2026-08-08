@@ -392,7 +392,7 @@ export default function Home() {
 
       {/* Banner image between AI and How it Works */}
       <div className="relative w-full overflow-hidden">
-        <img src="/banner.png" alt="Carbonless platform" className="w-full h-auto object-cover transition-transform duration-700 hover:scale-105" />
+        <img src="/banner.png" alt="Carbonless platform" className="w-full h-auto object-cover animate-float transition-transform duration-700 hover:scale-105" />
       </div>
 
       {/* -- How it Works — 4-step process, numbered circles on a shared
