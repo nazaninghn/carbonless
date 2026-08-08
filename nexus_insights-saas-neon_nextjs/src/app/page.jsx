@@ -391,8 +391,8 @@ export default function Home() {
       <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-white to-[#F9FFF4]" />
 
       {/* Banner image between AI and How it Works */}
-      <div className="relative w-full h-[160px] sm:h-[200px] lg:h-[260px] overflow-hidden">
-        <img src="/banner.png" alt="Carbonless platform" className="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105" />
+      <div className="relative w-full overflow-hidden">
+        <img src="/banner.png" alt="Carbonless platform" className="w-full h-auto object-cover transition-transform duration-700 hover:scale-105" />
       </div>
 
       {/* -- How it Works — 4-step process, numbered circles on a shared
