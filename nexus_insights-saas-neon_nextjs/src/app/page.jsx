@@ -269,7 +269,7 @@ export default function Home() {
             <span className="block text-[#1a1a1a]">
               {t.hero.line1}
             </span>
-            <span className="block" style={{ WebkitTextStroke: 'clamp(1px, 0.2vw, 2px) #2ABD41', WebkitTextFillColor: 'transparent' }}>
+            <span className="block text-[#2ABD41]">
               {t.hero.highlight}
             </span>
             <span className="block text-[#1a1a1a]">
