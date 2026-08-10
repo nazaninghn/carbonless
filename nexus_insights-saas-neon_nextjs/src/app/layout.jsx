@@ -47,6 +47,8 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/carbonless.png" />
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
+        {/* Trying General Sans for the hero headline — Fontshare CDN */}
+        <link href="https://api.fontshare.com/v2/css?f[]=general-sans@700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-inter antialiased min-h-screen overflow-x-hidden">
         <LanguageProvider>
