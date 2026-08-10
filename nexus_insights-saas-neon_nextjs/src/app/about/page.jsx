@@ -4,7 +4,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
-import { ArrowRight, CheckCircle, Leaf, Shield, BarChart3, Globe, Target, Users } from 'lucide-react';
+import { ArrowRight, Leaf, Shield, BarChart3, Globe } from 'lucide-react';
 
 export default function AboutPage() {
   const { language } = useLanguage();
@@ -12,150 +12,83 @@ export default function AboutPage() {
 
   return (
     <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
-      <Header />
+      <Header wide />
       <main>
-        {/* Hero */}
-        <section className="pt-8 lg:pt-16 pb-16 lg:pb-28 bg-gradient-to-b from-[#DEFAE1]/40 to-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto">
-              <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary text-sm font-medium rounded-full mb-4">
-                {tr ? 'Hakkımızda' : 'About Us'}
-              </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
-                {tr ? 'Karbon Yönetimini ' : 'Making Carbon Management '}
-                <span className="gradient-text">{tr ? 'Herkes İçin Erişilebilir' : 'Accessible to Everyone'}</span>
-              </h1>
-              <p className="text-lg text-[#072C0E]/60">
-                {tr
-                  ? 'Carbonless, ISO 14064-1 standardına uygun karbon envanteri oluşturmayı kolaylaştıran bir SaaS platformudur.'
-                  : 'Carbonless is a SaaS platform that simplifies creating carbon inventories compliant with ISO 14064-1.'}
-              </p>
-            </div>
-          </div>
-        </section>
-
         {/* Mission */}
-        <section className="py-20 lg:py-28">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <section className="py-12 sm:py-20 lg:py-28">
+          <div className="max-w-6xl mx-auto px-4 sm:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               <div>
-                <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+                <h2 className="text-[28px] sm:text-[40px] lg:text-[56px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E] mb-5 sm:mb-6">
                   {tr ? 'Misyonumuz' : 'Our Mission'}
                 </h2>
-                <p className="text-lg text-[#072C0E]/60 mb-6">
+                <p className="text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/60 mb-4 sm:mb-6">
                   {tr
                     ? 'Carbonless, İstinye Üniversitesi IT Valley bünyesinde geliştirilen bir akademik karbon ayak izi hesaplama platformudur. Amacımız, şirketlerin sera gazı emisyonlarını ISO 14064-1 ve GHG Protocol standartlarına uygun şekilde ölçmelerini, raporlamalarını ve azaltmalarını sağlamaktır.'
                     : 'Carbonless is an academic carbon footprint calculation platform developed at İstinye University IT Valley. Our mission is to help companies measure, report, and reduce their greenhouse gas emissions in compliance with ISO 14064-1 and GHG Protocol standards.'}
                 </p>
-                <p className="text-lg text-[#072C0E]/60">
+                <p className="text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/60">
                   {tr
                     ? 'Türkiye ve global emisyon faktörleri ile desteklenen sistemimiz, ATOM KABLO ISO 14064-1, Defra 2024, IPCC 2019 ve ulusal veriler kullanmaktadır.'
                     : 'Our system is supported by Turkey and global emission factors, using ATOM KABLO ISO 14064-1, Defra 2024, IPCC 2019, and national data sources.'}
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { icon: Leaf, val: 'ISO 14064-1', label: tr ? 'Uyumlu' : 'Compliant' },
-                  { icon: BarChart3, val: '131+', label: tr ? 'Emisyon Faktörü' : 'Emission Factors' },
-                  { icon: Globe, val: '2', label: tr ? 'Ülke Desteği' : 'Country Support' },
-                  { icon: Shield, val: 'GHG', label: tr ? 'Protokol Uyumlu' : 'Protocol Compliant' },
-                ].map((s) => (
-                  <div key={s.val} className="bg-[#DEFAE1]/40 rounded-xl p-6 text-center">
-                    <s.icon className="w-8 h-8 text-primary mx-auto mb-3" />
-                    <p className="text-2xl font-bold text-[#072C0E]">{s.val}</p>
-                    <p className="text-sm text-[#072C0E]/60">{s.label}</p>
-                  </div>
-                ))}
+              <div className="group flex items-center justify-center">
+                <img src="/about-img.png" alt="About Carbonless" className="w-[240px] sm:w-[300px] lg:w-[380px] h-auto transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:-translate-y-2 animate-[float_4s_ease-in-out_infinite]" />
               </div>
             </div>
           </div>
         </section>
 
-        {/* What We Offer */}
-        <section className="py-20 lg:py-28 bg-[#DEFAE1]/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-                {tr ? 'Neler Sunuyoruz' : 'What We Offer'}
+        {/* Parent company */}
+        <section className="py-12 sm:py-16 lg:py-24 bg-[#DEFAE1]/20">
+          <div className="max-w-5xl mx-auto px-4 sm:px-8">
+            <div className="text-center mb-8 sm:mb-10">
+              <h2 className="text-[26px] sm:text-[36px] lg:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+                {tr ? 'Carbonless Network\'ün Bir Parçasıyız' : 'Part of the Carbonless Network'}
               </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                {
-                  icon: Target,
-                  title: tr ? 'Karbon Envanteri' : 'Carbon Inventory',
-                  desc: tr ? 'Scope 1, 2 ve 3 emisyonlarınızı ISO 14064-1 standardına uygun olarak hesaplayın ve raporlayın.' : 'Calculate and report your Scope 1, 2, and 3 emissions in compliance with ISO 14064-1.',
-                },
-                {
-                  icon: BarChart3,
-                  title: tr ? 'Akıllı Raporlama' : 'Smart Reporting',
-                  desc: tr ? 'PDF ve CSV formatında profesyonel raporlar oluşturun. Türkçe ve İngilizce dil desteği.' : 'Generate professional reports in PDF and CSV. Turkish and English language support.',
-                },
-                {
-                  icon: Users,
-                  title: tr ? 'Anket Sihirbazı' : 'Questionnaire Wizard',
-                  desc: tr ? 'ISO 14064-1 uyumlu chatbot ile envanter yapılandırmanızı kolayca belirleyin.' : 'Easily configure your inventory setup with our ISO 14064-1 compliant chatbot wizard.',
-                },
-              ].map((f) => (
-                <div key={f.title} className="bg-white rounded-2xl p-8 shadow-sm border border-[#072C0E]/8">
-                  <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-                    <f.icon className="w-7 h-7 text-primary" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3 text-[#072C0E]">{f.title}</h3>
-                  <p className="text-[#072C0E]/60">{f.desc}</p>
-                </div>
-              ))}
+            <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/65 text-center">
+              <p>
+                {tr
+                  ? 'Carbonless Network, karbonsuz bir gezegen için işletim sistemini inşa ediyor. Karbon, modern ekonominin en kritik metriklerinden biri haline geldi — ancak bunu yönetecek altyapı hâlâ dağınık ve opak.'
+                  : 'Carbonless Network is building the operating system for a carbonless planet. Carbon has become one of the most critical metrics of the modern economy — yet the infrastructure to manage it remains fragmented and opaque.'}
+              </p>
+              <p>
+                {tr
+                  ? 'Teknoloji, şeffaflık ve ağ etkilerini bir araya getirerek kuruluşların karbon etkisini sorunsuzca ölçmesini, yönetmesini ve ortadan kaldırmasını sağlıyoruz.'
+                  : 'By combining technology, transparency, and network effects, we enable organizations to seamlessly measure, manage, and eliminate their carbon impact.'}
+              </p>
+              <p className="font-semibold text-[#072C0E]">
+                {tr
+                  ? 'Hedefimiz: Karbon görünürlüğünü evrensel, azaltmayı kaçınılmaz ve karbonsuz geleceği ölçeklenebilir kılmak.'
+                  : 'Our goal: Make carbon visibility universal, reduction inevitable, and a carbonless future scalable.'}
+              </p>
+            </div>
+            <div className="mt-8 sm:mt-10 text-center">
+              <a
+                href="https://www.carbonless.network/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#072C0E] text-white text-[14px] font-bold rounded-full hover:bg-[#175022] transition-all hover:-translate-y-0.5 shadow-lg"
+              >
+                carbonless.network
+                <ArrowRight className="w-4 h-4" />
+              </a>
             </div>
           </div>
         </section>
 
-        {/* Standards */}
-        <section className="py-20 lg:py-28">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-3xl mx-auto mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6">
-                {tr ? 'Desteklenen Standartlar ve Kaynaklar' : 'Supported Standards & Sources'}
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[
-                { name: 'ISO 14064-1:2018', desc: tr ? 'Sera gazı envanteri standardı' : 'GHG inventory standard' },
-                { name: 'GHG Protocol', desc: tr ? 'Kurumsal standart' : 'Corporate standard' },
-                { name: 'Defra/DESNZ 2024', desc: tr ? 'UK dönüşüm faktörleri' : 'UK conversion factors' },
-                { name: 'IPCC 2019 + AR6', desc: tr ? 'Küresel ısınma potansiyeli' : 'Global warming potential' },
-                { name: 'ATOM KABLO', desc: tr ? 'ISO 14064-1 proje verileri' : 'ISO 14064-1 project data' },
-                { name: 'ICAO 2025', desc: tr ? 'Havacılık emisyonları' : 'Aviation emissions' },
-                { name: 'Turkey National', desc: tr ? 'Ulusal enerji verileri' : 'National energy data' },
-                { name: 'Turkey Fleet 2025', desc: tr ? 'Araç filosu verileri' : 'Vehicle fleet data' },
-              ].map((s) => (
-                <div key={s.name} className="flex items-start gap-3 p-4 bg-[#DEFAE1]/30 rounded-lg">
-                  <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-[#072C0E]">{s.name}</p>
-                    <p className="text-xs text-[#072C0E]/50">{s.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="py-20 lg:py-28 bg-gradient-to-r from-primary via-secondary to-accent">
-          <div className="max-w-4xl mx-auto px-4 text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
-              {tr ? 'Karbon Ayak İzinizi Ölçmeye Başlayın' : 'Start Measuring Your Carbon Footprint'}
-            </h2>
-            <p className="text-lg text-white/80 mb-8">
-              {tr ? 'Ücretsiz hesap oluşturun ve ISO 14064-1 uyumlu karbon envanterinizi oluşturmaya başlayın.' : 'Create a free account and start building your ISO 14064-1 compliant carbon inventory.'}
-            </p>
-            <NextLink href="/register" className="inline-block px-8 py-4 bg-white text-primary font-semibold rounded-xl hover:bg-[#DEFAE1] transition-colors shadow-lg">
-              {tr ? 'Ücretsiz Başla' : 'Get Started Free'}
-            </NextLink>
-          </div>
-        </section>
       </main>
       <Footer />
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+      `}} />
     </div>
   );
 }
+

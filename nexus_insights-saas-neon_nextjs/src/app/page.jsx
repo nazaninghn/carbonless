@@ -1,10 +1,12 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Linkedin, Instagram, Youtube, Truck, X } from 'lucide-react';
+import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, CloudSun, Wind, Flame, Droplets, Truck } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Header from '@/components/Header';
+import Footer from '@/components/Footer';
 
 /* -- Copy -- */
 const copy = {
@@ -33,6 +35,17 @@ const copy = {
     },
   },
 };
+
+/* -- Hero hands — each hangs from the header and reveals a one-line benefit
+   tip on click/tap (no hover-only interaction, since touch devices have no
+   hover). Kept as short, punchy claims tied to the product, not literal
+   captions of the stock photos, since the icons themselves are generic. */
+const HAND_TIPS = [
+  { key: 'recycle', src: '/hand-recycle.png', alt: { en: 'Recycling', tr: 'Geri dönüşüm' }, tip: { en: 'Cut your carbon footprint', tr: 'Karbon ayak izinizi azaltın' } },
+  { key: 'globe', src: '/hand-globe.png', alt: { en: 'Global impact', tr: 'Küresel etki' }, tip: { en: 'ISO 14064-1 compliant reporting', tr: 'ISO 14064-1 uyumlu raporlama' } },
+  { key: 'plant', src: '/hand-plant.png', alt: { en: 'Nature', tr: 'Doğa' }, tip: { en: 'Nature-based emission tracking', tr: 'Doğa temelli emisyon takibi' } },
+  { key: 'bulb', src: '/hand-bulb.png', alt: { en: 'Idea', tr: 'Fikir' }, tip: { en: 'AI-powered insights', tr: 'Yapay zeka destekli içgörüler' } },
+];
 
 /* -- Hero pixel-mosaic backdrop (light Droneland-style, brand greens) --
    Tile colors/pulses are generated with a seeded PRNG at module scope so the
@@ -145,6 +158,17 @@ export default function Home() {
 
   const t = copy[lang] ?? copy['en'];
 
+  // Hero hand tooltips — click/tap toggles the benefit tip; clicking
+  // elsewhere closes it, same pattern as the header's mobile dropdown.
+  const [activeHand, setActiveHand] = useState(null);
+  const handsRowRef = useRef(null);
+  useEffect(() => {
+    if (activeHand === null) return;
+    const onDown = e => { if (handsRowRef.current && !handsRowRef.current.contains(e.target)) setActiveHand(null); };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [activeHand]);
+
   return (
     <main className="min-h-screen bg-white relative overflow-hidden">
 
@@ -167,51 +191,97 @@ export default function Home() {
         .animate-mosaic {
           animation: mosaicPulse 6s ease-in-out infinite;
         }
+        @keyframes handDrop {
+          0% { transform: translateY(-36px); opacity: 0; }
+          100% { transform: translateY(0); opacity: 1; }
+        }
+        .animate-hand-drop {
+          animation: handDrop 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes tipIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .animate-tip-in {
+          /* opacity-only: a transform here would fight the -translate-x-1/2
+             utility already positioning this element, wiping out centering */
+          animation: tipIn 0.15s ease-out forwards;
+        }
         @media (prefers-reduced-motion: reduce) {
-          .animate-mosaic, .animate-float { animation: none; }
+          .animate-mosaic, .animate-float, .animate-hand-drop, .animate-tip-in { animation: none; opacity: 1; }
         }
       `}} />
 
-      <Header />
+      <Header wide />
 
-      {/* -- Hero Section — 4 corner images + centered text -- */}
-      <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 bg-white min-h-[80vh] flex items-center">
-        {/* Corner images — animated float + click for scope info */}
-        {[
-          { src: '/hero-corner1.png', pos: 'top-0 left-0', size: 'w-[30%] sm:w-[22%]', delay: '0s', label: 'Scope 1', desc: lang === 'tr' ? 'Doğrudan emisyonlar — tesisler, araçlar, yakıt yanması' : 'Direct emissions — facilities, vehicles, fuel combustion' },
-          { src: '/hero-corner2.png', pos: 'top-0 right-0', size: 'w-[25%] sm:w-[18%]', delay: '1s', label: '', desc: '' },
-          { src: '/hero-corner3.png', pos: 'bottom-0 left-0', size: 'w-[28%] sm:w-[20%]', delay: '2s', label: 'Scope 2', desc: lang === 'tr' ? 'Satın alınan enerji — elektrik, ısı, buhar' : 'Purchased energy — electricity, heat, steam' },
-          { src: '/hero-corner4.png', pos: 'bottom-0 right-0', size: 'w-[30%] sm:w-[22%]', delay: '0.5s', label: 'Scope 3', desc: lang === 'tr' ? 'Dolaylı emisyonlar — tedarik zinciri, iş seyahati, atık' : 'Indirect emissions — supply chain, business travel, waste' },
-        ].map((corner, i) => (
-          <div key={i} className={`absolute ${corner.pos} ${corner.size} animate-float group cursor-pointer z-10`} style={{ animationDelay: corner.delay }}>
-            <img src={corner.src} alt={corner.label} className="w-full h-auto object-contain transition-transform duration-300 group-hover:scale-105 active:scale-95" />
-            {corner.label && (
-              <div className="hidden lg:block absolute left-full top-1/2 -translate-y-1/2 ml-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-30">
-                <div className="rounded-xl bg-[#072C0E] px-4 py-2.5 text-center shadow-xl whitespace-nowrap">
-                  <p className="text-[12px] font-bold text-[#2ABD41]">{corner.label}</p>
-                  <p className="text-[11px] text-white/80 mt-0.5">{corner.desc}</p>
-                </div>
+      {/* -- Hero Section — 4 hands hang from the header, text sits below -- */}
+      <section className="relative pt-0 pb-10 sm:pb-16 bg-white">
+        {/* Hands — attached flush to the header above. Capped by max-HEIGHT
+            (not width) so the row's total vertical footprint is predictable
+            regardless of each photo's own aspect ratio — the bulb hand is a
+            much taller crop than the others, and letting it drive height off
+            a width cap was pushing the headline below the fold on shorter
+            viewports. Height-capped, they still keep their natural ratio and
+            silhouette variety, just without one column blowing up the row. */}
+        <div ref={handsRowRef} className="relative z-10 mx-auto max-w-5xl px-6 sm:px-10">
+          <div className="flex items-start justify-center gap-4 sm:gap-10">
+            {HAND_TIPS.map((hand, i) => (
+              <div
+                key={hand.key}
+                className="relative flex flex-1 justify-center opacity-0 animate-hand-drop"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveHand(v => (v === hand.key ? null : hand.key))}
+                  aria-expanded={activeHand === hand.key}
+                  className="relative cursor-pointer"
+                >
+                  <img
+                    src={hand.src}
+                    alt={hand.alt[lang] ?? hand.alt.en}
+                    className="w-auto h-auto max-h-[110px] sm:max-h-[150px] lg:max-h-[170px] object-contain object-top drop-shadow-xl transition-transform duration-300 hover:scale-105 active:scale-95"
+                  />
+
+                  {/* Overlaid on the image's own bottom edge — not appended
+                      below it — so it never needs extra vertical space and
+                      can't collide with the kicker/headline that sits right
+                      underneath at the tight mobile spacing. */}
+                  {activeHand === hand.key && (
+                    <div className="absolute inset-x-0.5 bottom-1 z-30 rounded-lg bg-[#072C0E]/95 px-1.5 py-1.5 text-center shadow-xl animate-tip-in">
+                      <p className="text-[9px] sm:text-[11px] font-bold leading-tight text-[#2ABD41]">
+                        {hand.tip[lang] ?? hand.tip.en}
+                      </p>
+                    </div>
+                  )}
+                </button>
               </div>
-            )}
+            ))}
           </div>
-        ))}
+        </div>
 
-        {/* Center content */}
-        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center">
-          <p className="mb-3 sm:mb-4 text-[11px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
+        {/* Center content — pulled up snug under the hands */}
+        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center mt-3 sm:mt-5">
+          <p className="mb-2 sm:mb-3 text-[11px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
             {t.hero.kicker}
           </p>
-          <h1 className="text-[28px] sm:text-[44px] lg:text-[60px] font-black leading-[1.1] tracking-[-0.045em] text-[#072C0E]">
-            {t.hero.line1}{' '}
-            <span className="text-[#2ABD41]">{t.hero.highlight}</span>{' '}
-            {t.hero.line2}
+          <h1 className="text-[32px] sm:text-[52px] lg:text-[72px] uppercase leading-[0.95] tracking-[-0.04em] text-center" style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>
+            <span className="block text-[#1a1a1a]">
+              {t.hero.line1}
+            </span>
+            <span className="block" style={{ WebkitTextStroke: '1.5px #2ABD41', WebkitTextFillColor: 'transparent' }}>
+              {t.hero.highlight}
+            </span>
+            <span className="block text-[#1a1a1a]">
+              {t.hero.line2}
+            </span>
           </h1>
-          <p className="mt-5 sm:mt-6 text-[14px] sm:text-[16px] leading-[1.8] text-[#072C0E]/60 max-w-2xl mx-auto">
+          <p className="mt-3 sm:mt-4 text-[14px] sm:text-[16px] leading-[1.8] text-[#072C0E]/60 max-w-2xl mx-auto">
             {lang === 'tr'
               ? 'Carbonless AI, karbon yoğun aktivitelerinizin etkisini gerçek zamanlı hesaplar ve ISO 14064-1 uyumlu raporlar oluşturur.'
               : 'Carbonless AI calculates the impact of your carbon-intensive activities in real time and generates ISO 14064-1 compliant reports.'}
           </p>
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <Link href="/register"
               className="flex items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 hover:bg-[#1D9C31] transition hover:-translate-y-0.5">
               {lang === 'tr' ? 'Hesaplamaya Başla' : 'Start Calculating'}
@@ -229,7 +299,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-            {/* Left: heading + story */}
+            {/* Left: heading + short teaser */}
             <div>
               <h2 className="text-[34px] sm:text-[56px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#072C0E]">
                 {lang === 'tr' ? <>Biz <span className="text-[#2ABD41]">Kimiz?</span></> : <>About <span className="text-[#2ABD41]">Us</span></>}
@@ -238,31 +308,21 @@ export default function Home() {
               <div className="mt-6 sm:mt-8 space-y-4 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/65 max-w-lg">
                 <p>
                   {lang === 'tr'
-                    ? 'Çoğu şirket karbon ayak izini hâlâ dağınık tablolarda takip ediyor — ya da pahalı danışmanlara devredip raporu haftalarca bekliyor.'
-                    : 'Most companies still track their carbon footprint in scattered spreadsheets — or hand it to expensive consultants and wait weeks for a report.'}
+                    ? 'Karbonsuz bir gezegen için altyapı inşa ediyoruz. Karbon, ekonominin en kritik göstergesi haline geldi — ama yönetim araçları hâlâ dağınık.'
+                    : 'We are building the infrastructure for a carbonless planet. Carbon has become the economy\'s most critical metric — yet management tools remain fragmented.'}
                 </p>
                 <p>
                   {lang === 'tr'
-                    ? <>Oysa müşteriler, bankalar ve regülasyonlar aynı soruyu soruyor: ayak iziniz ne? Gerçek rakamlarla cevap verebilen şirketler kazanıyor. <strong className="text-[#072C0E] font-bold">Gerçek veri, gerçek değişim yaratır.</strong></>
-                    : <>Meanwhile customers, banks and regulators are all asking the same question: what&apos;s your footprint? The companies that can answer with real numbers win. <strong className="text-[#072C0E] font-bold">Real data creates real change.</strong></>}
-                </p>
-                <p>
-                  {lang === 'tr'
-                    ? "Carbonless bu cevabı anında verir. Verinizi AI'a kendi cümlelerinizle anlatın — 188+ emisyon faktörüyle Kapsam 1, 2 ve 3 emisyonlarınızı hesaplar, denetime hazır ISO 14064-1 raporunuzu oluşturur."
-                    : "Carbonless makes that answer instant. Tell your data to the AI in plain language — it calculates your Scope 1, 2 & 3 emissions with 188+ emission factors and builds audit-ready ISO 14064-1 reports."}
-                </p>
-                <p>
-                  {lang === 'tr' ? 'Misyonumuz: ' : 'Our mission: '}
-                  <strong className="font-bold text-[#2ABD41]">
-                    {lang === 'tr' ? 'Karbon Muhasebesini Basitleştirmek.' : 'Make Carbon Accounting Simple.'}
-                  </strong>
-                </p>
-                <p>
-                  {lang === 'tr'
-                    ? 'Tablo yok. Bekleme yok. Sadece net rakamlar, akıllı içgörüler ve doğrudan denetçiye verebileceğiniz raporlar.'
-                    : 'No spreadsheets. No waiting. Just clear numbers, smart insights, and reports you can hand straight to an auditor.'}
+                    ? 'Carbonless, teknoloji ve şeffaflığı birleştirerek şirketlerin emisyonlarını ölçmesini, raporlamasını ve azaltmasını kolaylaştırır.'
+                    : 'Carbonless combines technology and transparency to make it easy for companies to measure, report, and reduce their emissions.'}
                 </p>
               </div>
+
+              {/* CTA — links to full About page */}
+              <Link href="/about"
+                className="mt-8 sm:mt-10 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg hover:bg-[#175022] transition hover:-translate-y-0.5">
+                {lang === 'tr' ? 'Daha Fazla' : 'Learn More'}
+              </Link>
             </div>
 
             {/* Right: showcase card (Dinnect sample) — bold vertical green
@@ -320,7 +380,7 @@ export default function Home() {
 
 
       {/* -- AI Section (like Dinnect AI) -- */}
-      <section id="ai" className="relative z-10 py-12 sm:py-20 bg-white">
+      <section id="ai" className="relative z-10 pt-12 sm:pt-20 pb-0 bg-white">
         <div className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
 
@@ -331,37 +391,13 @@ export default function Home() {
               </h2>
               <p className="mt-4 sm:mt-5 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/55 max-w-md">
                 {lang === 'tr'
-                  ? 'Tüm karbon hesaplama ihtiyaçlarınız için tek AI. Emisyon verilerinizi söyleyin, biz hesaplayalım, raporlayalım ve azaltma stratejileri önerelim.'
-                  : 'One AI for all your carbon needs. Tell us your emission data  -  we calculate, report, and suggest reduction strategies. Powered by CarbonIQ engine.'}
+                  ? 'Verilerinizi doğal dilde anlatın — AI saniyeler içinde emisyonlarınızı hesaplar, sınıflandırır ve denetime hazır rapor oluşturur. Tablo doldurmak tarihe karıştı.'
+                  : 'Describe your data in plain language — the AI calculates, classifies, and builds audit-ready reports in seconds. Spreadsheets are history.'}
               </p>
 
-              {/* Feature list */}
-              <div className="mt-8 space-y-4">
-                {(lang === 'tr' ? [
-                  'AI destekli emisyon hesaplama ve sınıflandırma',
-                  'ISO 14064-1 uyumlu otomatik rapor oluşturma',
-                  'Doğal dil ile veri girişi  -  sadece konuşun',
-                  'Saniyeler içinde karbon ayak izi analizi',
-                ] : [
-                  'AI-driven emission calculation and classification',
-                  'ISO 14064-1 compliant automated report generation',
-                  'Natural language data entry  -  just talk',
-                  'Carbon footprint analysis generated in seconds',
-                ]).map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="h-7 w-7 rounded-lg bg-[#F1FCF2] border border-[#2ABD41]/15 flex items-center justify-center shrink-0">
-                      <svg className="h-3.5 w-3.5 text-[#2ABD41]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <span className="text-[14px] text-[#072C0E]/70 font-medium">{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA */}
-              <Link href="/register"
-                className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg hover:bg-[#175022] transition hover:-translate-y-0.5">
+              {/* CTA — link to AI page */}
+              <Link href="/ai"
+                className="mt-8 sm:mt-10 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg hover:bg-[#175022] transition hover:-translate-y-0.5">
                 {lang === 'tr' ? 'Daha Fazla' : 'Learn More'}
               </Link>
             </div>
@@ -387,80 +423,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* white → cream blend before How it Works */}
-      <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-white to-[#F9FFF4]" />
-
-      {/* Banner image between AI and How it Works */}
-      <div className="relative w-full overflow-hidden">
-        <img src="/banner.png" alt="Carbonless platform" className="w-full h-auto object-cover animate-float transition-transform duration-700 hover:scale-105" />
-      </div>
-
-      {/* -- How it Works — 4-step process, numbered circles on a shared
-          connector line (desktop only; the line has nothing meaningful to
-          span once the steps stack into one column on mobile). -- */}
-      <section id="how-it-works" className="relative z-10 py-12 sm:py-20 bg-[#F9FFF4]">
-        <div className="mx-auto max-w-6xl px-4 sm:px-8">
-          <div className="text-center mb-10 sm:mb-14">
-            <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
-              {lang === 'tr' ? 'Nasıl çalışır?' : 'How it works'}
-            </h2>
-            <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">
-              {lang === 'tr' ? 'Dört adımda, dakikalar içinde denetime hazır raporunuz.' : 'Four steps to an audit-ready report, in minutes.'}
-            </p>
-          </div>
-
-          {/* Plain numbered circles — same treatment as the dashboard's own
-              "How it Works" guide, replacing the previous per-step spinning/
-              pulsing icon animations for a calmer, more consistent brand feel. */}
-          <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-8">
-            <div className="relative grid gap-8 sm:grid-cols-4 sm:gap-6">
-              <div aria-hidden className="hidden sm:block absolute left-[12.5%] right-[12.5%] top-6 h-px bg-[#DEFAE1]" />
-
-              {[
-                {
-                  num: '1',
-                  title: lang === 'tr' ? 'Verinizi anlatın' : 'Tell the AI',
-                  desc: lang === 'tr' ? 'Enerji, seyahat ya da satın alımlarınızı sade bir dille anlatın — tablo yok.' : 'Describe your energy use, travel, or purchases in plain language — no spreadsheets.',
-                },
-                {
-                  num: '2',
-                  title: lang === 'tr' ? 'AI hesaplar' : 'AI calculates',
-                  desc: lang === 'tr' ? "CarbonIQ, verinizi 188+ emisyon faktörüyle anında eşleştirir." : 'CarbonIQ matches your data against 188+ emission factors instantly.',
-                },
-                {
-                  num: '3',
-                  title: lang === 'tr' ? 'Raporunuzu alın' : 'Get your report',
-                  desc: lang === 'tr' ? 'Saniyeler içinde ISO 14064-1 uyumlu, denetime hazır PDF raporu.' : 'An ISO 14064-1 compliant, audit-ready PDF report in seconds.',
-                },
-                {
-                  num: '4',
-                  title: lang === 'tr' ? 'Hedef belirleyin' : 'Track & reduce',
-                  desc: lang === 'tr' ? 'Hedefler koyun, ilerlemenizi izleyin, ayak izinizi zamanla küçültün.' : 'Set targets, track progress, and watch your footprint shrink over time.',
-                },
-              ].map((step) => (
-                <div key={step.num} className="relative flex flex-col items-center text-center group cursor-pointer" onClick={() => { const el = document.getElementById(`step-detail-${step.num}`); if (el) { el.classList.toggle('max-h-0'); el.classList.toggle('max-h-40'); el.classList.toggle('opacity-0'); el.classList.toggle('opacity-100'); el.classList.toggle('mt-0'); el.classList.toggle('mt-3'); } }}>
-                  <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] text-[15px] font-bold text-[#2ABD41] shadow-sm transition-all duration-300 group-hover:bg-[#2ABD41] group-hover:text-white group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-[#2ABD41]/25">
-                    {step.num}
-                  </div>
-                  <h3 className="mt-3 text-[15px] sm:text-[16px] font-bold text-[#072C0E] transition-colors group-hover:text-[#2ABD41]">{step.title}</h3>
-                  <p className="mt-2 text-[13px] leading-[1.7] text-[#072C0E]/55 max-w-[220px]">{step.desc}</p>
-                  <div id={`step-detail-${step.num}`} className="max-h-0 opacity-0 mt-0 overflow-hidden transition-all duration-500 ease-in-out">
-                    <div className="bg-[#F1FCF2] border border-[#DEFAE1] rounded-xl px-4 py-3 text-[12px] text-[#072C0E]/70 leading-[1.6]">
-                      {step.num === '1' && (lang === 'tr' ? '💬 AI sohbet ekranına girin ve verilerinizi paylaşın' : '💬 Open AI chat and share your data naturally')}
-                      {step.num === '2' && (lang === 'tr' ? '⚡ 188+ emisyon faktörü ile otomatik eşleştirme' : '⚡ Auto-matching with 188+ emission factors')}
-                      {step.num === '3' && (lang === 'tr' ? '📄 PDF raporu saniyeler içinde hazır' : '📄 PDF report ready in seconds')}
-                      {step.num === '4' && (lang === 'tr' ? '📊 Dashboard\'da hedeflerinizi takip edin' : '📊 Track your goals in the dashboard')}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* cream → white blend before Pricing (Pricing's own gradient continues from white) */}
-      <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-[#F9FFF4] to-white" />
+      <div aria-hidden className="h-8 sm:h-10 bg-gradient-to-b from-white to-white" />
 
       {/* -- Pricing Section — fades in from the white AI section above
              (gradient over the top padding) instead of a hard border cut -- */}
@@ -619,95 +583,7 @@ export default function Home() {
           other transitions to avoid a visible seam. */}
       <div aria-hidden className="h-px bg-[#e5e5e5]" />
 
-      {/* -- Footer — Dinnect-style multi-column, in brand dark green -- */}
-      <footer className="relative z-10 bg-[#111111] text-white/85">
-        <div className="mx-auto max-w-6xl px-4 sm:px-8 pt-12 sm:pt-16 pb-6 sm:pb-8">
-          <div className="grid grid-cols-2 gap-10 md:grid-cols-5 md:gap-8">
-
-            {/* Brand + tagline + socials */}
-            <div className="col-span-2">
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white">
-                  <Image src="/carbonless.png" alt="Carbonless" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
-                </div>
-                <span className="text-[20px] font-extrabold tracking-tight">Carbonless</span>
-              </div>
-              <p className="mt-5 max-w-xs text-[13px] sm:text-[14px] leading-[1.8] text-white/55">
-                {lang === 'tr'
-                  ? 'Karbon ayak izinizi AI ile hesaplayın, ISO 14064-1 uyumlu raporlar oluşturun. Karbon muhasebesi, yeniden tasarlandı.'
-                  : 'Calculate your carbon footprint with AI and generate ISO 14064-1 compliant reports. Carbon accounting, reimagined.'}
-              </p>
-              <div className="mt-6 flex gap-3">
-                {[
-                  { icon: X, label: 'X (Twitter)' },
-                  { icon: Linkedin, label: 'LinkedIn' },
-                  { icon: Instagram, label: 'Instagram' },
-                  { icon: Youtube, label: 'YouTube' },
-                ].map(({ icon: Icon, label }) => (
-                  <a key={label} href="#" aria-label={label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/8 border border-white/10 text-white/60 transition hover:bg-[#2ABD41] hover:border-[#2ABD41] hover:text-white">
-                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.8} />
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Product */}
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">
-                {lang === 'tr' ? 'Ürün' : 'Product'}
-              </h4>
-              <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
-                <li><a href="#ai" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'CarbonIQ AI' : 'CarbonIQ AI'}</a></li>
-                <li><a href="#pricing" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Fiyatlandırma' : 'Pricing'}</a></li>
-                <li><Link href="/register" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Ücretsiz Başlayın' : 'Get Started Free'}</Link></li>
-                <li className="flex items-center gap-2">
-                  <span className="text-white/40">{lang === 'tr' ? 'Mobil Uygulama' : 'Mobile App'}</span>
-                  <span className="rounded-full bg-[#2ABD41]/15 px-2 py-0.5 text-[10px] font-bold text-[#2ABD41]">
-                    {lang === 'tr' ? 'Yakında' : 'Soon'}
-                  </span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">
-                {lang === 'tr' ? 'Şirket' : 'Company'}
-              </h4>
-              <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
-                <li><a href="#about" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Hakkımızda' : 'About Us'}</a></li>
-                <li><Link href="/login" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Giriş' : 'Login'}</Link></li>
-                <li><Link href="/register" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Hesap Oluştur' : 'Create Account'}</Link></li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-white/40">
-                {lang === 'tr' ? 'Yasal' : 'Legal'}
-              </h4>
-              <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
-                <li><Link href="/privacy" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Gizlilik Politikası' : 'Privacy Policy'}</Link></li>
-                <li><Link href="/terms" className="text-white/75 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Kullanım Koşulları' : 'Terms of Service'}</Link></li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="mt-12 sm:mt-16 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-5 sm:pt-6 sm:flex-row">
-            <span className="text-[11px] sm:text-[12px] text-white/40">&copy; 2026 Carbonless. All rights reserved.</span>
-            <div className="flex gap-6">
-              <Link href="/privacy" className="text-[11px] sm:text-[12px] text-white/40 transition hover:text-white/80">
-                {lang === 'tr' ? 'Gizlilik' : 'Privacy Policy'}
-              </Link>
-              <Link href="/terms" className="text-[11px] sm:text-[12px] text-white/40 transition hover:text-white/80">
-                {lang === 'tr' ? 'Kullanım Koşulları' : 'Terms of Service'}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 }
