@@ -265,7 +265,7 @@ export default function Home() {
           <p className="mb-2 sm:mb-3 text-[11px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
             {t.hero.kicker}
           </p>
-          <h1 className="text-[32px] sm:text-[52px] lg:text-[72px] uppercase leading-[1.1] sm:leading-[1.05] lg:leading-[0.95] tracking-[-0.04em] text-center" style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>
+          <h1 className="text-[32px] sm:text-[52px] lg:text-[72px] uppercase leading-[1.1] sm:leading-[1.05] lg:leading-[0.95] tracking-[-0.01em] text-center" style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700 }}>
             <span className="block text-[#1a1a1a]">
               {t.hero.line1}
             </span>
