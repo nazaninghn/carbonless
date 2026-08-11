@@ -98,7 +98,7 @@ export default function DashboardHeader({
   }, [unreadCount, notifications, setUnreadCount]);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-[#DEFAE1] bg-white px-3 py-2.5 sm:px-4 lg:px-5">
+    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-[#DEFAE1] bg-white px-3 sm:px-4 lg:px-5">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
         {/* Left: sidebar toggle (mobile only) — logo/brand removed, the
             sidebar already shows the Carbonless logo, so this header used to
