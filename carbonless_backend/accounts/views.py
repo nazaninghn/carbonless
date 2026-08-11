@@ -68,6 +68,22 @@ class RegisterView(generics.CreateAPIView):
         from .models import UserProfile, EmailVerificationToken
         UserProfile.objects.create(user=user, role='data_entry')
 
+        # Auto-create a default company for the user so they can immediately
+        # use AI chat and save emissions without manual setup.
+        from companies.models import Company, CompanyMembership
+        company = Company.objects.create(
+            legal_entity_name=f"{user.username}'s Company",
+            tax_number='—',
+            country_of_headquarters='Not set',
+            countries_of_operation='Not set',
+            nace_code='',
+            main_activity_description='Not set',
+            number_of_employees='1-10',
+            annual_turnover_range='Not set',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+
         # Create verification code
         token_obj = EmailVerificationToken.objects.create(user=user)
 
@@ -228,6 +244,21 @@ class GoogleLoginView(generics.GenericAPIView):
             user.set_unusable_password()
             user.save()
             UserProfile.objects.get_or_create(user=user, defaults={'role': 'data_entry'})
+            # Auto-create a default company for Google sign-up users
+            from companies.models import Company, CompanyMembership
+            if not CompanyMembership.objects.filter(user=user).exists():
+                company = Company.objects.create(
+                    legal_entity_name=f"{user.username}'s Company",
+                    tax_number='—',
+                    country_of_headquarters='Not set',
+                    countries_of_operation='Not set',
+                    nace_code='',
+                    main_activity_description='Not set',
+                    number_of_employees='1-10',
+                    annual_turnover_range='Not set',
+                    number_of_facilities=1,
+                )
+                CompanyMembership.objects.create(user=user, company=company, role='owner')
             created = True
         elif not user.is_active:
             # Google has already verified this email — trust it and lift the
