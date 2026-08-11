@@ -59,7 +59,7 @@ export default function QuestionnairePageTab({ language }) {
   const tr = language === 'tr';
 
   return (
-    <div className="flex flex-col h-full min-h-[calc(100vh-140px)]">
+    <div className="flex flex-col h-[calc(100vh-140px)]">
       {/* Header */}
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">

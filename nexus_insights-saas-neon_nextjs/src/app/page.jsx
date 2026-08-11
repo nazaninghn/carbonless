@@ -345,14 +345,17 @@ export default function Home() {
                     el.dataset.idx = next;
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    id="about-phone-img"
-                    data-idx="0"
-                    src="/about-phone.png"
-                    alt={lang === 'tr' ? 'Karbon ayak izi — telefonda' : 'Carbon footprint on a phone'}
-                    className="h-80 sm:h-[440px] w-44 sm:w-[220px] object-cover rounded-[2rem] drop-shadow-2xl animate-float rotate-[6deg] transition-all duration-300"
-                  />
+                  {/* Fixed-size container ensures all images display at same dimensions */}
+                  <div className="w-[176px] h-[320px] sm:w-[220px] sm:h-[440px] overflow-hidden rounded-[2rem] drop-shadow-2xl animate-float rotate-[6deg]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      id="about-phone-img"
+                      data-idx="0"
+                      src="/about-phone.png"
+                      alt={lang === 'tr' ? 'Karbon ayak izi — telefonda' : 'Carbon footprint on a phone'}
+                      className="w-full h-full object-cover object-top transition-all duration-300"
+                    />
+                  </div>
                 </div>
 
                 {/* playful mixed-tone typography — pulled up beside the
