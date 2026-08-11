@@ -469,7 +469,7 @@ export default function DashboardOverview({
         <div className="rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 pb-8 sm:p-10 sm:pb-12 overflow-hidden">
           {/* Scope 1/2/3 explainer — custom image */}
           <div className="dash-fade-up mb-6">
-            <img src="/scope-diagram.png" alt="GHG Protocol Scopes" className="w-full h-auto rounded-xl" />
+            <img src="/scope-diagram.png" alt="GHG Protocol Scopes" className="w-[70%] sm:w-[60%] max-w-[500px] h-auto rounded-xl mx-auto" />
           </div>
 
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
