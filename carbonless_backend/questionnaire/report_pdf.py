@@ -27,7 +27,7 @@ from django.db.models import Sum
 
 from emissions.report_pdf import (
     _fonts, _styles, _tbl_style, _total_row_style, _fmt, _fmt4, _pct,
-    _ReportDocTemplate,
+    _ReportDocTemplate, _scope_pie_chart,
     BRAND_DARK, OLIVE, OLIVE_DARK, OLIVE_LIGHT, CREAM, CREAM_LIGHT,
     GRAY_50, GRAY_100, GRAY_200, GRAY_400, GRAY_600, GRAY_800, WHITE,
     SCOPE1_COLOR, SCOPE1_BG, SCOPE2_COLOR, SCOPE2_BG, SCOPE3_COLOR, SCOPE3_BG,
@@ -394,6 +394,11 @@ def generate_questionnaire_report(report: CarbonReport, lang='en') -> bytes:
         sct.setStyle(_tbl_style(fn, fnb))
         sct.setStyle(_total_row_style(fnb))
         E.append(sct)
+
+        pie = _scope_pie_chart(s1, s2, s3, fn)
+        if pie:
+            E.append(Spacer(1, 6 * mm))
+            E.append(pie)
     else:
         E.append(Paragraph(
             'Bu raporlama yılı için henüz ölçülen emisyon verisi bulunmamaktadır. Anket, kuruluşun '

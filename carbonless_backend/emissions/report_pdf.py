@@ -25,6 +25,11 @@ from reportlab.platypus import (
     Paragraph, Spacer, Table, TableStyle, PageBreak,
     HRFlowable, NextPageTemplate
 )
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.piecharts import Pie
+from reportlab.graphics.charts.linecharts import HorizontalLineChart
+from reportlab.graphics.charts.legends import Legend
+from reportlab.graphics.widgets.markers import makeMarker
 from django.db.models import Sum
 from .models import EmissionEntry, CustomEmissionRequest, ReductionTarget
 try:
@@ -68,8 +73,22 @@ WHITE = colors.white
 _font_tried = False
 _font_registered = False  # True only when CF/CFB are actually registered
 
+# Bundled in the repo (emissions/fonts/) so PDF text — Turkish characters and
+# subscript/superscript glyphs like the "₂" in "CO₂e" — renders identically
+# everywhere, instead of depending on whatever font happens to exist on the
+# host OS at a hardcoded path. Fix: neither Windows' Arial nor a bare-bones
+# Linux container without fonts-dejavu-core installed has a glyph for U+2082
+# (subscript 2) — it silently fell back through _FONT_CANDIDATES to the
+# Helvetica base-14 font, which has no Unicode coverage at all beyond
+# WinAnsi, rendering "CO₂e" as a missing-glyph tofu box. DejaVu Sans covers
+# both the subscript block and full Turkish (ş, ğ, ç, ö, ü, İ, ı).
+_BUNDLED_FONT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fonts')
+
 _FONT_CANDIDATES = [
-    # Linux / Render (Ubuntu)
+    # Bundled — always present regardless of host OS, checked first.
+    (os.path.join(_BUNDLED_FONT_DIR, 'DejaVuSans.ttf'),
+     os.path.join(_BUNDLED_FONT_DIR, 'DejaVuSans-Bold.ttf')),
+    # System-font fallbacks, kept in case the bundled files are ever missing.
     ('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
      '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'),
     ('/usr/share/fonts/dejavu/DejaVuSans.ttf',
@@ -214,6 +233,106 @@ def _fmt(v):
 
 def _fmt4(v):
     return f'{v:,.4f}'
+
+
+# ═══════════════════════════════════════════════════════
+# CHARTS — real vector charts via reportlab.graphics, replacing the earlier
+# "fake bar" approach (colored Table cells sized proportionally). Both draw
+# directly into the platypus story as Drawing flowables.
+# ═══════════════════════════════════════════════════════
+
+def _scope_pie_chart(s1, s2, s3, fn, width_mm=170, height_mm=78):
+    """Donut-style pie of the Scope 1/2/3 split, with a side legend showing
+    tCO2e + percentage per scope. Returns None if there's nothing to draw
+    (all-zero) so callers can skip the section cleanly."""
+    total = s1 + s2 + s3
+    if total <= 0:
+        return None
+
+    slices = [
+        ('Scope 1', s1, SCOPE1_COLOR),
+        ('Scope 2', s2, SCOPE2_COLOR),
+        ('Scope 3', s3, SCOPE3_COLOR),
+    ]
+    # Zero-value scopes render as a degenerate 0-degree wedge — drop them so
+    # the pie only ever shows slices that actually exist.
+    slices = [s for s in slices if s[1] > 0]
+
+    d = Drawing(width_mm * mm, height_mm * mm)
+
+    pie = Pie()
+    pie.x = 8 * mm
+    pie.y = 6 * mm
+    pie.width = 62 * mm
+    pie.height = 62 * mm
+    pie.data = [val for _, val, _ in slices]
+    pie.labels = [f'{val/total*100:.0f}%' for _, val, _ in slices]
+    pie.simpleLabels = 1
+    pie.sideLabels = 0
+    pie.slices.strokeWidth = 1.2
+    pie.slices.strokeColor = WHITE
+    pie.slices.fontName = fn
+    pie.slices.fontSize = 8
+    pie.slices.fontColor = WHITE
+    # Default labelRadius (1.2) places labels OUTSIDE the wedge on the blank
+    # canvas — invisible against white fontColor. Pull them inside the slice.
+    pie.slices.labelRadius = 0.68
+    for i, (_, _, clr) in enumerate(slices):
+        pie.slices[i].fillColor = clr
+    d.add(pie)
+
+    legend = Legend()
+    legend.x = 88 * mm
+    legend.y = 58 * mm
+    legend.dx = 7
+    legend.dy = 7
+    legend.dxTextSpace = 4
+    legend.fontName = fn
+    legend.fontSize = 9
+    legend.deltay = 14
+    legend.alignment = 'left'
+    legend.colorNamePairs = [
+        (clr, f'{lbl}   {val/1000:,.2f} tCO₂e  ({val/total*100:.1f}%)')
+        for lbl, val, clr in slices
+    ]
+    d.add(legend)
+    return d
+
+
+def _monthly_trend_chart(monthly_kg, months, fn, width_mm=170, height_mm=68):
+    """Line chart of monthly tCO2e totals. Returns None when every month is
+    zero (nothing meaningful to plot)."""
+    if not any(m > 0 for m in monthly_kg):
+        return None
+
+    values_t = [m / 1000 for m in monthly_kg]
+    max_v = max(values_t) or 1
+
+    d = Drawing(width_mm * mm, height_mm * mm)
+
+    chart = HorizontalLineChart()
+    chart.x = 14 * mm
+    chart.y = 10 * mm
+    chart.width = (width_mm - 22) * mm
+    chart.height = (height_mm - 18) * mm
+    chart.data = [values_t]
+    chart.categoryAxis.categoryNames = months
+    chart.categoryAxis.labels.fontName = fn
+    chart.categoryAxis.labels.fontSize = 6.5
+    chart.valueAxis.valueMin = 0
+    chart.valueAxis.valueMax = max_v * 1.2
+    chart.valueAxis.labels.fontName = fn
+    chart.valueAxis.labels.fontSize = 7
+    chart.valueAxis.labelTextFormat = '%0.1f'
+    chart.lines[0].strokeColor = OLIVE_DARK
+    chart.lines[0].strokeWidth = 2
+    chart.lines[0].symbol = makeMarker('FilledCircle')
+    chart.lines[0].symbol.strokeColor = OLIVE_DARK
+    chart.lines[0].symbol.fillColor = OLIVE_DARK
+    chart.lines[0].symbol.size = 4
+    chart.joinedLines = 1
+    d.add(chart)
+    return d
 
 
 # ═══════════════════════════════════════════════════════
@@ -551,24 +670,11 @@ def generate_report(user, year, lang='tr'):
     E.append(st)
     E.append(Spacer(1, 8*mm))
 
-    # Visual bars
-    if total_kg > 0:
+    # Visual distribution \u2014 real pie chart with side legend
+    pie = _scope_pie_chart(s1, s2, s3, fn)
+    if pie:
         E.append(Paragraph('2.1 ' + ('G\u00f6rsel Da\u011f\u0131l\u0131m' if tr else 'Visual Distribution'), S['h2']))
-        for label, val, clr in [('Scope 1', s1, SCOPE1_COLOR), ('Scope 2', s2, SCOPE2_COLOR), ('Scope 3', s3, SCOPE3_COLOR)]:
-            p = val / total_kg * 100
-            bar_w = max(p * 1.4, 4)
-            E.append(Paragraph(f'<b>{label}</b>  \u2014  {val/1000:,.2f} tCO\u2082e  ({p:.1f}%)', S['body']))
-            bar = Table([['']],  colWidths=[bar_w*mm], rowHeights=[6*mm])
-            bar.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, -1), clr),
-                ('ROUNDEDCORNERS', [3, 3, 3, 3]),
-                ('LEFTPADDING', (0, 0), (-1, -1), 0),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 0),
-                ('TOPPADDING', (0, 0), (-1, -1), 0),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
-            ]))
-            E.append(bar)
-            E.append(Spacer(1, 4*mm))
+        E.append(pie)
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
@@ -684,6 +790,10 @@ def generate_report(user, year, lang='tr'):
     # ════════════════════════════════════════════════
     E.append(Paragraph('4. ' + ('Ayl\u0131k Trend' if tr else 'Monthly Trend'), S['h1']))
     if any(m > 0 for m in monthly):
+        trend_chart = _monthly_trend_chart(monthly, months, fn)
+        if trend_chart:
+            E.append(trend_chart)
+            E.append(Spacer(1, 3*mm))
         mt_data = [
             [''] + months,
             ['tCO\u2082e'] + [f'{m/1000:,.3f}' if m > 0 else '\u2014' for m in monthly],
