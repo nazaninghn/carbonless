@@ -59,7 +59,7 @@ export default function QuestionnairePageTab({ language }) {
   const tr = language === 'tr';
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)]">
+    <div className="flex flex-1 flex-col min-h-0">
       {/* Header */}
       <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export default function QuestionnairePageTab({ language }) {
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 min-h-0 rounded-2xl border border-[#DEFAE1] bg-white overflow-hidden shadow-sm">
+      <div className="flex flex-1 min-h-0 flex-col rounded-2xl border border-[#DEFAE1] bg-white overflow-hidden shadow-sm">
         <InventoryProvider>
           <QuestionnaireContent language={language} />
         </InventoryProvider>

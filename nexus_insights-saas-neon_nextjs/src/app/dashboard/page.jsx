@@ -170,7 +170,7 @@ export default function DashboardPage() {
 
   return (
     <ToastProvider>
-    <div className="dashboard-android-fix min-h-screen bg-[#F1FCF2] text-[#072C0E] flex font-inter">
+    <div className="dashboard-android-fix h-screen overflow-hidden bg-[#F1FCF2] text-[#072C0E] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar
         language={language}
@@ -183,7 +183,7 @@ export default function DashboardPage() {
       />
 
       {/* Main */}
-      <div className="min-w-0 max-w-full flex-1 flex flex-col min-h-screen">
+      <div className="min-w-0 max-w-full flex-1 flex flex-col min-h-0">
         <DashboardHeader
           language={language}
           activeTab={activeTab}
@@ -198,7 +198,7 @@ export default function DashboardPage() {
           onLanguageChange={changeLanguage}
         />
 
-        <main className={`w-full min-w-0 max-w-full flex-1 overflow-x-hidden ${
+        <main className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden ${
           activeTab === 'ai_carbon' ? 'p-2 pb-20 sm:p-2 sm:pb-20 lg:p-3 lg:pb-3' : 'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
         }`}>
           {/* Slim top bar  -  only on very first load, no layout shift */}
@@ -207,7 +207,7 @@ export default function DashboardPage() {
               <div className="h-full animate-[shimmer_1s_ease-in-out_infinite] bg-[#2ABD41] rounded-full" style={{ width: '40%' }} />
             </div>
           )}
-          <div className="mx-auto w-full min-w-0 max-w-[1380px] overflow-x-hidden">
+          <div className="mx-auto w-full min-w-0 max-w-[1380px] h-full flex flex-col min-h-0 overflow-x-hidden">
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
