@@ -467,9 +467,9 @@ export default function DashboardOverview({
       {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
       {entries.length === 0 && (
         <div className="rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 pb-8 sm:p-10 sm:pb-12 overflow-hidden">
-          {/* Scope 1/2/3 explainer — the welcome visual, full card width */}
+          {/* Scope 1/2/3 explainer — custom image */}
           <div className="dash-fade-up mb-6">
-            <ScopeFlowDiagram tr={tr} />
+            <img src="/scope-diagram.png" alt="GHG Protocol Scopes" className="w-full h-auto rounded-xl" />
           </div>
 
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
