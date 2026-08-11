@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
+import ScopeFlowDiagram from './ScopeFlowDiagram';
 import {
   AlertCircle,
   AlertTriangle,
@@ -465,45 +466,52 @@ export default function DashboardOverview({
 
       {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
       {entries.length === 0 && (
-        <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 sm:p-12">
-          <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
-            {/* Icon */}
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-[#F1FCF2] to-[#DEFAE1] flex items-center justify-center border border-[#2ABD41]/10">
-              <Layers className="h-8 w-8 text-[#2ABD41]" />
-            </div>
+        <div className="rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 pb-8 sm:p-10 sm:pb-12 overflow-hidden">
+          {/* Scope 1/2/3 explainer — the welcome visual, full card width */}
+          <div className="dash-fade-up mb-6">
+            <ScopeFlowDiagram tr={tr} />
+          </div>
 
+          <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
             {/* Text */}
-            <div>
-              <h2 className="text-[20px] font-bold text-[#072C0E]">
-                {tr ? 'Henüz emisyon verisi yok' : 'No emission data yet'}
+            <div className="dash-fade-up" style={{ animationDelay: '60ms' }}>
+              <h2 className="text-[21px] font-bold text-[#072C0E]">
+                {tr
+                  ? 'Karbon ayak izinizi birlikte çıkaralım'
+                  : "Let's map out your carbon footprint"}
               </h2>
               <p className="mt-2 text-[14px] text-[#072C0E]/50 leading-relaxed max-w-md">
                 {tr
-                  ? 'Verilerinizi girmenin iki yolu var: AI ile konuşarak (önerilen) veya bu panelden manuel olarak. Her iki yolda da veriler aynı yere kaydedilir.'
-                  : 'Two ways to enter your data: talk to AI (recommended) or manually from this panel. Both methods save to the same database.'}
+                  ? 'İlk verinizi girin, gerisini biz hesaplayalım. AI ile konuşarak (önerilen) veya bu panelden manuel olarak — her iki yol da aynı yere kaydedilir.'
+                  : "Log your first entry and we'll take it from there. Talk to AI (recommended) or add it manually — both save to the same place."}
               </p>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm">
+            {/* Action buttons — two equal ghost pills, icon in a colored badge */}
+            <div className="dash-fade-up flex flex-col sm:flex-row gap-3 w-full max-w-sm" style={{ animationDelay: '120ms' }}>
               <button
                 onClick={() => setActiveTab('ai_carbon')}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#2ABD41] px-5 py-3 text-[13px] font-bold text-white shadow-sm hover:bg-[#1D9C31] transition"
+                className="flex-1 flex items-center justify-center gap-2 rounded-full border border-[#2ABD41] bg-[#F1FCF2] px-5 py-3 text-[13px] font-semibold text-[#175022] hover:bg-[#DEFAE1] transition"
               >
-                <Sparkles className="h-4 w-4" />
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#2ABD41] text-white">
+                  <Sparkles className="h-3 w-3" />
+                </span>
                 {tr ? 'AI ile Başla' : 'Start with AI'}
               </button>
               <button
                 onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-                className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-[#DEFAE1] bg-white px-5 py-3 text-[13px] font-semibold text-[#072C0E]/70 hover:border-[#072C0E]/25 transition"
+                className="flex-1 flex items-center justify-center gap-2 rounded-full border border-[#DEFAE1] bg-white px-5 py-3 text-[13px] font-semibold text-[#072C0E] hover:border-[#072C0E]/25 transition"
               >
-                <Plus className="h-4 w-4" />
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#F1FCF2] text-[#175022]">
+                  <Plus className="h-3 w-3" />
+                </span>
                 {tr ? 'Manuel Giriş' : 'Manual Entry'}
               </button>
             </div>
 
-            {/* How it works */}
-            <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
+            {/* How it works — connected as a journey (dotted line + arrows)
+                instead of three disconnected boxes. */}
+            <div className="dash-fade-up flex flex-col sm:flex-row items-stretch gap-0 w-full mt-2" style={{ animationDelay: '180ms' }}>
               {(tr ? [
                 { step: '1', title: 'Veri Girin', desc: 'AI\'a söyleyin veya formdan girin' },
                 { step: '2', title: 'Otomatik Hesaplama', desc: 'ISO 14064-1 uyumlu hesap' },
@@ -512,13 +520,20 @@ export default function DashboardOverview({
                 { step: '1', title: 'Enter Data', desc: 'Tell AI or use the form' },
                 { step: '2', title: 'Auto Calculate', desc: 'ISO 14064-1 compliant' },
                 { step: '3', title: 'Get Report', desc: 'PDF or Excel export' },
-              ]).map(({ step, title, desc }) => (
-                <div key={step} className="rounded-xl bg-[#F1FCF2] border border-[#DEFAE1] p-3 text-center">
-                  <div className="h-6 w-6 rounded-full bg-[#2ABD41]/10 flex items-center justify-center mx-auto mb-2">
-                    <span className="text-[10px] font-bold text-[#2ABD41]">{step}</span>
+              ]).map(({ step, title, desc }, i, arr) => (
+                <div key={step} className="flex items-stretch flex-1">
+                  <div className="flex-1 rounded-xl bg-[#F1FCF2] border border-[#DEFAE1] p-3 text-center">
+                    <div className="h-6 w-6 rounded-full bg-[#2ABD41]/10 flex items-center justify-center mx-auto mb-2">
+                      <span className="text-[10px] font-bold text-[#2ABD41]">{step}</span>
+                    </div>
+                    <p className="text-[12px] font-semibold text-[#072C0E]">{title}</p>
+                    <p className="text-[10px] text-[#072C0E]/40 mt-0.5">{desc}</p>
                   </div>
-                  <p className="text-[12px] font-semibold text-[#072C0E]">{title}</p>
-                  <p className="text-[10px] text-[#072C0E]/40 mt-0.5">{desc}</p>
+                  {i < arr.length - 1 && (
+                    <div className="hidden sm:flex items-center justify-center px-1.5 shrink-0">
+                      <ChevronRight className="h-4 w-4 text-[#2ABD41]/40" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
