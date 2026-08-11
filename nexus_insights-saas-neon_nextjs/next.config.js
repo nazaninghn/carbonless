@@ -45,7 +45,11 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
               "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
               "font-src 'self' data:",
-              "connect-src 'self' https: http://localhost:8000 http://localhost:3000",
+              // Scoped to the actual backend origin — previously "https:" allowed
+              // fetch/XHR to ANY https host, which would let a future XSS
+              // exfiltrate data (e.g. the localStorage access token) to an
+              // attacker-controlled domain instead of being contained here.
+              "connect-src 'self' https://carbonless-api-kxsy.onrender.com http://localhost:8000 http://localhost:3000",
               // The rendered Google button + One Tap prompt render inside an iframe.
               "frame-src https://accounts.google.com",
               "frame-ancestors 'none'",
