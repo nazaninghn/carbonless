@@ -2268,7 +2268,15 @@ export function QuestionnaireTab({
   // from the previous Confirm click would persist indefinitely.
   useEffect(() => {
     if (currentQuestion) {
-      const existing = answersRef.current[currentId];
+      // Mid-loop, answers[currentId] holds the FINISHED loop's aggregate
+      // ({ itemKey: perItemAnswer, ... }) — not this item's value. Reading it
+      // directly here would dump that raw object into the text input (rendering
+      // as "[object Object]") whenever a stale aggregate from an earlier pass
+      // through the loop is still sitting in `answers`. Pull the per-item value
+      // from loopState.collected instead while a loop is actively running.
+      const existing = (loopState && loopState.questionId === currentId)
+        ? loopState.collected[loopState.items[loopState.currentIndex]]
+        : answersRef.current[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
       setValidationError('');
       setShowValidationError(false); // always clear stale inline error when question changes

@@ -3506,6 +3506,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'confirmed', label: { tr: 'Onayla — Kapsam 2 tamamlandı', en: 'Confirm — Scope 2 complete' } },
       { value: 'edit', label: { tr: 'Düzenle — Bir tesisin verisini değiştirmek istiyorum', en: 'Edit — I want to change a site\'s data' } },
       { value: 'add_source', label: { tr: 'Kaynak ekle — Gözden kaçan bir enerji kaynağı var', en: 'Add source — I missed an energy source' } },
+      { value: 'skip_to_report', label: { tr: 'Raporu şimdi oluştur — eksik olacak ama Kapsam 3 isteğe bağlı olduğu için sorun değil', en: "Generate my report now — it won't be complete, but that's fine since Scope 3 is optional" } },
     ],
     systemMessages: {
       confirmed: {
@@ -3516,6 +3517,10 @@ export const CARBONIQ_QUESTIONS = [
         tr: 'Not: Kapsam 2 verilerinizden Kapsam 3 Kategori 3 (enerji ilişkili emisyonlar) otomatik hesaplanacak. Ayrıca veri girmenize gerek yok.',
         en: 'Note: Scope 3 Category 3 (energy-related emissions) will be automatically calculated from your Scope 2 data. No additional data entry is required.',
       },
+      skip_to_report: {
+        tr: 'Anlaşıldı — Kapsam 3 (değer zinciri emisyonları) atlandı. Raporunuz Kapsam 3 verisi olmadan, yani eksik olarak oluşturulacak — ISO 14064-1 kapsamında Kapsam 3 raporlaması isteğe bağlı olduğu için bu tamamen normal. İstediğiniz zaman geri dönüp Kapsam 3\'ü tamamlayabilirsiniz. Şimdi son adımlara — hariç tutmalar, kabuller ve ISO uyum kontrollerine geçiyoruz.',
+        en: "Got it — Scope 3 (value chain emissions) has been skipped. Your report will be generated without Scope 3 data, so it won't be complete — that's expected and fine, since Scope 3 reporting is optional under ISO 14064-1. You can come back and finish Scope 3 anytime. Moving to the final steps now — exclusions, assumptions and ISO compliance checks.",
+      },
     },
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
@@ -3524,6 +3529,7 @@ export const CARBONIQ_QUESTIONS = [
       confirmed: 'K3C1-0',
       edit: '4A-0',
       add_source: '4A-0',
+      skip_to_report: '6-GİRİŞ',
     },
   },
 
