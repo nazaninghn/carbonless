@@ -51,6 +51,26 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
 
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Quantity must be greater than zero.')
+        # Sanity ceiling, not a real-world limit — guards against a typo'd or
+        # malicious value silently corrupting calculated_co2e_kg totals and
+        # downstream ISO 14064-1 reports.
+        if value > 1_000_000_000_000:
+            raise serializers.ValidationError('Quantity is unrealistically large — please check the value.')
+        return value
+
+    def validate_facility(self, value):
+        if value is None:
+            return value
+        from companies.utils import get_current_company
+        request = self.context.get('request')
+        company = get_current_company(request.user) if request else None
+        if not company or value.company_id != company.id:
+            raise serializers.ValidationError('Facility not found.')
+        return value
+
 
 class ReductionTargetSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,3 +98,20 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
             'user', 'status', 'admin_notes', 'approved_factor_kg_co2e',
             'calculated_co2e_kg', 'linked_entry', 'created_at', 'updated_at'
         ]
+
+    def validate_quantity(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Quantity must be greater than zero.')
+        if value > 1_000_000_000_000:
+            raise serializers.ValidationError('Quantity is unrealistically large — please check the value.')
+        return value
+
+    def validate_facility(self, value):
+        if value is None:
+            return value
+        from companies.utils import get_current_company
+        request = self.context.get('request')
+        company = get_current_company(request.user) if request else None
+        if not company or value.company_id != company.id:
+            raise serializers.ValidationError('Facility not found.')
+        return value

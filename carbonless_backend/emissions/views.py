@@ -357,18 +357,34 @@ def bulk_import_view(request):
     errors = []
     for i, item in enumerate(data):
         try:
-            factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
+            from decimal import Decimal, InvalidOperation
+            try:
+                qty = Decimal(str(item['quantity']))
+            except (InvalidOperation, TypeError, ValueError):
+                raise ValueError(f"Invalid quantity: {item.get('quantity')!r}")
+            if qty <= 0:
+                raise ValueError('Quantity must be greater than zero.')
+            if qty > Decimal('1000000000000'):
+                raise ValueError('Quantity is unrealistically large — please check the value.')
+
             # Fix #48: facility is a ForeignKey — passing an empty string raised
             # ValueError on every row.  Use facility_id and coerce '' / None to None.
+            facility_id = item.get('facility') or None
+            if facility_id:
+                from companies.models import Facility
+                if not Facility.objects.filter(id=facility_id, company=company).exists():
+                    raise ValueError('Facility not found.')
+
+            factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
             entry = EmissionEntry(
                 user=request.user,
                 company=company,
                 emission_factor=factor,
                 year=item.get('year', 2026),
                 month=item.get('month', 1),
-                quantity=item['quantity'],
+                quantity=qty,
                 description=item.get('description', ''),
-                facility_id=item.get('facility') or None,
+                facility_id=facility_id,
             )
             entry.save()
             created += 1

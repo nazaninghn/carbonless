@@ -182,6 +182,11 @@ def resolve_factor_and_amount(activity_type, quantity, unit):
         return None, None, None, f'Invalid quantity: {quantity!r}.'
     if qty <= 0:
         return None, None, None, 'Quantity must be greater than zero.'
+    # Sanity ceiling — not a real-world limit, just a guard against a typo'd
+    # or malicious value (e.g. "1e15") silently corrupting a company's
+    # calculated_co2e_kg totals and downstream reports.
+    if qty > Decimal('1000000000000'):
+        return None, None, None, 'Quantity is unrealistically large — please check the value.'
 
     norm_unit_for_mass = (unit or '').strip().lower()
     factor, norm_unit, error = resolve_factor(activity_type, unit)
