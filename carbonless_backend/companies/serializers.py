@@ -23,7 +23,11 @@ class FacilitySerializer(serializers.ModelSerializer):
         model = Facility
         fields = ['id', 'company', 'name', 'address', 'city', 'country',
                   'facility_type', 'is_active', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        # 'company' is set server-side from the requester's own membership
+        # (see FacilityListCreateView.perform_create) — it must never be
+        # settable by the client, or a PATCH could reassign a facility to a
+        # company the user has no relationship with.
+        read_only_fields = ['id', 'created_at', 'company']
 
 
 class CompanyMembershipSerializer(serializers.ModelSerializer):
@@ -34,4 +38,9 @@ class CompanyMembershipSerializer(serializers.ModelSerializer):
         model = CompanyMembership
         fields = ['id', 'company', 'user', 'username', 'user_email',
                   'role', 'is_active', 'invited_by', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        # 'company' and 'user' must never be client-writable: this serializer
+        # backs CompanyMembershipUpdateView, and a PATCH with a different
+        # company/user id would let an admin move their own membership into
+        # an arbitrary company they were never invited to (full tenant
+        # takeover), or hijack another user's membership row.
+        read_only_fields = ['id', 'created_at', 'company', 'user']

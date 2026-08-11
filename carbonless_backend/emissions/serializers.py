@@ -56,7 +56,10 @@ class ReductionTargetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReductionTarget
         fields = '__all__'
-        read_only_fields = ['user', 'created_at']
+        # 'company' is set server-side from the requester's own membership
+        # (see ReductionTargetViewSet.perform_create) — must stay read-only
+        # or a PATCH could reassign a target to an unrelated company.
+        read_only_fields = ['user', 'company', 'created_at']
 
 
 class CustomEmissionRequestSerializer(serializers.ModelSerializer):

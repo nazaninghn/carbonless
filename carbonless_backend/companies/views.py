@@ -105,9 +105,9 @@ from .models import CompanyInvite
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, HasCompanyAdminRole])
 def invite_member(request):
-    """Invite a user to current company"""
+    """Invite a user to current company (owner/admin only)"""
     company = get_current_company(request.user)
     if not company:
         return Response({'error': 'No company'}, status=403)
@@ -150,6 +150,17 @@ def accept_invite(request):
     # Fix #30: Reject expired invites (is_expired handles legacy None rows safely)
     if invite.is_expired:
         return Response({'error': 'This invite has expired. Please request a new one.'}, status=410)
+
+    # Security fix: an invite is only valid for the email it was addressed
+    # to. Without this check, anyone who obtains a valid token (e.g. the
+    # inviter themselves, since invite_member echoes it back in the response)
+    # could accept it with a different account and join the company under
+    # that invite's role, regardless of which address it was sent to.
+    if request.user.email.strip().lower() != invite.email.strip().lower():
+        return Response(
+            {'error': 'This invite was sent to a different email address. Please log in with that account.'},
+            status=403,
+        )
 
     CompanyMembership.objects.get_or_create(
         company=invite.company, user=request.user,
