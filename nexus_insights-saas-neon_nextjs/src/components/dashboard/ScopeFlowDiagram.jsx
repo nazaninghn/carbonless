@@ -44,14 +44,14 @@ function ColumnArrow({ label, sub, tone, items, delay }) {
       <p className="text-[11px] font-bold text-[#072C0E]">{label}</p>
       <p className="text-[8px] font-bold uppercase tracking-wide text-[#072C0E]/40">{sub}</p>
       <div
-        className="relative mt-1.5 flex flex-col-reverse items-center gap-2.5 px-2 pb-3 pt-5"
+        className="scope-arrow-pulse relative mt-1.5 flex flex-col-reverse items-center gap-2.5 px-2 pb-3 pt-5"
         style={{
           background: bg,
           clipPath: 'polygon(50% 0%, 100% 14%, 78% 14%, 78% 100%, 22% 100%, 22% 14%, 0% 14%)',
         }}
       >
         {items.map(({ icon: Icon, en, tr: trLabel }, i) => (
-          <div key={i} className="flex w-[76px] flex-col items-center gap-1 text-center">
+          <div key={i} className="scope-icon-bounce flex w-[76px] flex-col items-center gap-1 text-center cursor-pointer">
             <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: text }} />
             <p className="text-[8.5px] font-medium leading-[1.15]" style={{ color: text }}>
               {trLabel ?? en}
@@ -132,6 +132,16 @@ export default function ScopeFlowDiagram({ tr = false }) {
           0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
           50% { transform: translateY(-7px) scale(1.04); opacity: 1; }
         }
+        @keyframes scopeArrowPulse {
+          0%, 100% { transform: scaleY(1); }
+          50% { transform: scaleY(1.02); }
+        }
+        @keyframes scopeIconBounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+        .scope-arrow-pulse { animation: scopeArrowPulse 3s ease-in-out infinite; }
+        .scope-icon-bounce:hover { animation: scopeIconBounce 0.6s ease-in-out; }
         @media (prefers-reduced-motion: reduce) {
           .scope-diagram-root * { animation: none !important; }
         }
