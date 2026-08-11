@@ -11,12 +11,7 @@ from .views import (
     get_report_summary,
     pending_advisor_approvals_view,
     approve_advisor_approval_view,
-    # legacy
-    start_session,
-    answer_question,
-    get_sessions,
     reset_session,
-    get_profile,
 )
 from .workspace_views import (
     ReportFieldMapView,
@@ -46,11 +41,4 @@ urlpatterns = [
     # Workspace: ReportField data layer
     path('report-fields/map/', ReportFieldMapView.as_view()),
     path('report-fields/bulk-upsert/', ReportFieldBulkUpsertView.as_view()),
-
-    # Legacy (keep for existing chatbot)
-    path('legacy/start/', start_session, name='questionnaire-start'),
-    path('legacy/answer/', answer_question, name='questionnaire-answer'),
-    path('legacy/sessions/', get_sessions, name='questionnaire-sessions'),
-    path('legacy/reset/', reset_session, name='questionnaire-reset'),
-    path('legacy/profile/', get_profile, name='questionnaire-profile'),
 ]

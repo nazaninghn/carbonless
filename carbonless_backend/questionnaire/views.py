@@ -62,7 +62,13 @@ STEP_SERIALIZERS = {
 
 
 def extract_profile(session):
-    """Extract structured profile from legacy QuestionnaireSession"""
+    """
+    Read-only helper: reconstructs a display profile from a completed legacy
+    QuestionnaireSession. The legacy creation/answering endpoints are gone,
+    but sessions completed under that flow before the cutover still exist in
+    the DB, and emissions.views.emission_summary falls back to this to render
+    those companies' profile data in ReportingTab instead of showing blanks.
+    """
     answers = session.answers or {}
     profile = {'is_complete': session.is_complete, 'session_id': session.pk}
 
@@ -563,14 +569,21 @@ PHASE1_REPORT_FIELDS = [
 
 def _find_previous_profile_source(report):
     """
-    Most recent OTHER CarbonReport for the same company that finished Phase 1
-    (has a 'D4' step — i.e. Company Profile was completed there). Any status
-    counts (draft/in_progress/completed) — per product decision, we don't
-    require the source report to itself be finished/submitted.
+    Most recent OTHER CarbonReport for the same company that has ANY Phase 1
+    (Company Profile) step answered. Any status counts (draft/in_progress/
+    completed) — per product decision, we don't require the source report to
+    itself be finished/submitted.
+
+    Previously this required the exact 'D4' step (the last Phase 1 question),
+    so a report that had answered most of Phase 1 but not reached that final
+    question — e.g. one resumed mid-way, or one seeded/imported without a
+    full step trail — was invisible to the reuse-profile offer even though it
+    clearly had reusable company data. Matching on any PHASE1_STEP_IDS entry
+    is a much lower bar and reflects what the feature is actually for.
     """
     return (
         CarbonReport.objects
-        .filter(company=report.company, steps__step_id='D4')
+        .filter(company=report.company, steps__step_id__in=PHASE1_STEP_IDS)
         .exclude(id=report.id)
         .order_by('-updated_at')
         .first()
@@ -757,167 +770,10 @@ class ReportListView(APIView):
         return Response({'reports': data})
 
 
-# ── Legacy views (backward compat) ──────────────────────────────────────────
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def start_session(request):
-    from .flow import get_question
-
-    # Resume incomplete session if it exists
-    existing_incomplete = QuestionnaireSession.objects.filter(user=request.user, is_complete=False).first()
-    if existing_incomplete:
-        lang = request.data.get('lang', 'tr')
-        q = get_question(existing_incomplete.current_question, lang)
-        return Response({
-            'session_id': existing_incomplete.pk,
-            'question': q,
-            'answers': existing_incomplete.answers,
-            'warnings': existing_incomplete.warnings,
-            'resumed': True,
-        })
-
-    # No incomplete session exists — create brand new one
-    # (This handles both: first-time users AND users starting fresh after completion)
-    session = QuestionnaireSession.objects.create(user=request.user)
-    lang = request.data.get('lang', 'tr')
-    q = get_question('S1', lang)
-    return Response({
-        'session_id': session.pk,
-        'question': q,
-        'answers': {},
-        'warnings': [],
-        'resumed': False,
-    })
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def answer_question(request):
-    from .flow import get_question, process_answer
-    session_id = request.data.get('session_id')
-    question_id = request.data.get('question_id')
-    answer_data = request.data.get('answer', {})
-    lang = request.data.get('lang', 'tr')
-
-    try:
-        session = QuestionnaireSession.objects.get(pk=session_id, user=request.user)
-    except QuestionnaireSession.DoesNotExist:
-        return Response({'error': 'Session not found'}, status=404)
-
-    if session.is_complete:
-        return Response({'error': 'Session already complete'}, status=400)
-
-    session.answers[question_id] = answer_data
-    result = process_answer(session.answers, question_id, answer_data)
-
-    if result.get('error'):
-        return Response(result, status=400)
-
-    if result['warnings']:
-        session.warnings = session.warnings + result['warnings']
-
-    if result['is_complete']:
-        session.is_complete = True
-        session.completed_at = timezone.now()
-        session.current_question = 'DONE'
-
-        # Generate report and sync dashboard
-        try:
-            from .report_generator import generate_report_from_session
-            report = generate_report_from_session(session, request.user)
-            if report:
-                logger.info(f"Report generated for user {request.user.id}, report {report.id}")
-        except Exception as e:
-            logger.warning(f"Report generation failed: {e}")
-    else:
-        session.current_question = result['next_question']
-
-    session.save()
-
-    response = {
-        'session_id': session.pk,
-        'warnings': result['warnings'],
-        'is_complete': result['is_complete'],
-        'all_warnings': session.warnings,
-    }
-
-    if not result['is_complete']:
-        response['question'] = get_question(result['next_question'], lang)
-    else:
-        response['summary'] = session.answers
-        # Add report summary with results and dashboard link (ALWAYS provide, no exceptions)
-        report_summary = None
-        try:
-            from .report_generator import build_report_summary
-            # Don't call generate_report_from_session again — it was already called above!
-            # Just fetch the report that was created
-            from companies.utils import get_current_company
-            from questionnaire.models import CarbonReport
-            company = get_current_company(request.user)
-
-            if company:
-                reporting_year = timezone.now().year
-                report = CarbonReport.objects.filter(
-                    company=company,
-                    status=CarbonReport.Status.COMPLETED
-                ).order_by('-created_at').first()
-
-                if report:
-                    report_summary = build_report_summary(report, request.user)
-                    response['report_id'] = report.id
-                    logger.info(f"✅ Report retrieved for user {request.user.id}: {report.id}")
-                else:
-                    # Report not in DB yet? Use minimal
-                    logger.warning(f"No report found in DB for user {request.user.id}")
-                    report_summary = {
-                        'status': 'Complete ✅',
-                        'message': '✅ Questionnaire complete! You can now log emissions via Chat.'
-                    }
-            else:
-                logger.warning(f"No company for user {request.user.id}")
-                report_summary = {
-                    'status': 'Complete ✅',
-                    'message': '✅ Questionnaire complete! Set up company and log emissions via Chat.'
-                }
-        except Exception as e:
-            logger.error(f"Report summary retrieval FAILED: {e}", exc_info=True)
-            report_summary = {
-                'status': 'Complete ✅',
-                'message': '✅ Questionnaire complete! You can now log emissions via Chat.'
-            }
-
-        # ALWAYS add report_summary to response
-        if report_summary:
-            response['report_summary'] = report_summary
-
-        response['next_action'] = {
-            'message': '✅ Questionnaire Complete!',
-            'subtitle': 'Ready to log emissions via Chat?',
-            'action': 'open_chat',
-            'link': '/app/chat'
-        }
-
-    return Response(response)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_sessions(request):
-    sessions = QuestionnaireSession.objects.filter(user=request.user)
-    data = [{
-        'id': s.pk, 'started_at': s.started_at, 'completed_at': s.completed_at,
-        'is_complete': s.is_complete, 'current_question': s.current_question,
-        'answers': s.answers, 'warnings': s.warnings,
-    } for s in sessions]
-    return Response(data)
-
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def reset_session(request):
     """Reset/delete current session (complete or incomplete) and start fresh."""
-    from .flow import get_question
     from .models import CarbonReport
 
     # Delete ALL legacy sessions (both incomplete and complete)
@@ -1044,21 +900,3 @@ def approve_advisor_approval_view(request, pk):
         approval.save()
         return Response({'status': 'rejected'})
     return Response({'error': 'action must be approve or reject'}, status=400)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_profile(request):
-    session = QuestionnaireSession.objects.filter(user=request.user, is_complete=True).first()
-    if not session:
-        incomplete = QuestionnaireSession.objects.filter(user=request.user, is_complete=False).first()
-        if incomplete:
-            return Response({
-                'status': 'incomplete',
-                'current_question': incomplete.current_question,
-                'progress': list(incomplete.answers.keys()),
-            })
-        return Response({'status': 'not_started'})
-    profile = extract_profile(session)
-    profile['status'] = 'complete'
-    return Response(profile)
