@@ -12,12 +12,47 @@ from .models import UserProfile
 logger = logging.getLogger(__name__)
 
 
+def _blacklist_all_user_tokens(user):
+    """Revoke every outstanding refresh token for a user.
+
+    Used after a password change/reset so a stolen refresh token (e.g. via
+    XSS, or a device the user no longer trusts) can't keep minting new
+    access tokens for up to 7 days after the password that was supposed to
+    lock it out has changed. Mirrors the single-token blacklist already done
+    in logout_view, just applied to every session at once.
+    """
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+    for token in OutstandingToken.objects.filter(user=user):
+        BlacklistedToken.objects.get_or_create(token=token)
+
+
+@method_decorator(ratelimit(key='ip', rate='10/h', method='POST', block=True), name='create')
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     serializer_class = RegisterSerializer
 
     def create(self, request, *args, **kwargs):
+        # Security fix: respond identically whether or not this email is
+        # already registered, so registration can't be used to enumerate
+        # accounts (mirrors password_reset_request's "always 200" approach).
+        # A distinct 400 "Email already exists" here let anyone check anyone
+        # else's email/account existence for free. No account is created for
+        # an already-registered email — this just skips straight to the same
+        # response shape a real signup returns.
+        email = (request.data.get('email') or '').strip().lower()
+        if email and User.objects.filter(email__iexact=email).exists():
+            return Response(
+                {
+                    'username': request.data.get('username', ''),
+                    'email': email,
+                    'first_name': request.data.get('first_name', ''),
+                    'last_name': request.data.get('last_name', ''),
+                    'email_sent': True,
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
         response = super().create(request, *args, **kwargs)
         # Tell the client whether the code actually went out. Without this the
         # account is created, the API returns 201, and the UI sends the user to
@@ -321,6 +356,9 @@ def change_password(request):
         return Response({'error': '; '.join(e.messages)}, status=400)
     request.user.set_password(new_password)
     request.user.save()
+    # A stolen refresh token must stop working the moment the password that
+    # was meant to invalidate access actually changes — see _blacklist_all_user_tokens.
+    _blacklist_all_user_tokens(request.user)
     from .models import ActivityLog
     ActivityLog.objects.create(
         user=request.user, action='password_changed',
@@ -328,7 +366,7 @@ def change_password(request):
         ip_address=request.META.get('REMOTE_ADDR'),
         target_type='User', target_id=str(request.user.id),
     )
-    return Response({'status': 'ok', 'message': 'Password changed successfully'})
+    return Response({'status': 'ok', 'message': 'Password changed successfully. Please log in again.'})
 
 
 @api_view(['POST'])
@@ -441,6 +479,7 @@ def update_profile(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@ratelimit(key='ip', rate='10/h', method='POST', block=True)
 def password_reset_request(request):
     """Send password reset email with a unique token link"""
     from .models import PasswordResetToken
@@ -531,6 +570,9 @@ def password_reset_confirm(request):
     token_obj.user.set_password(new_password)
     token_obj.user.save()
     token_obj.use()
+    # See _blacklist_all_user_tokens — a reset implies the old password (and
+    # any session opened under it) should no longer be trusted.
+    _blacklist_all_user_tokens(token_obj.user)
 
     # Log the action
     from .models import ActivityLog
@@ -636,6 +678,7 @@ def verify_email_code(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@ratelimit(key='ip', rate='10/h', method='POST', block=True)
 def resend_verification(request):
     """Resend verification code"""
     from .models import EmailVerificationToken

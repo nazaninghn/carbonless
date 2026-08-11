@@ -5,6 +5,8 @@ import json
 import logging
 import os
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django_ratelimit.decorators import ratelimit
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -438,6 +440,7 @@ class ReportFieldBulkUpsertView(APIView):
         return Response({'updated': updated, 'count': len(updated)})
 
 
+@method_decorator(ratelimit(key='user', rate='20/m', method='POST', block=True), name='post')
 class WorkspaceChatView(APIView):
     """
     POST /api/chat/workspace/

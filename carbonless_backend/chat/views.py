@@ -6,6 +6,7 @@ from django.db.models import Count
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django_ratelimit.decorators import ratelimit
 from .models import ChatSession, ChatMessage
 from .local_parser import try_local_emission_parse, try_guided_draft_parse
 from .nlu_extractor import extract_emission_intent
@@ -1336,6 +1337,12 @@ def session_detail(request, session_id):
 # ── Send message ──────────────────────────────────────────────────────────────
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+# Each message can trigger up to two paid Groq calls (NLU extraction +
+# conversational reply) with no other cost guard in this path (the
+# subscription-based can_send_ai_message check below is currently disabled).
+# Rate-limit per user, not per IP, so this can't be bypassed by IP rotation
+# and doesn't collateral-block other users on the same NAT/office network.
+@ratelimit(key='user', rate='20/m', method='POST', block=True)
 def send_message(request, session_id):
     try:
         session = ChatSession.objects.get(id=session_id, user=request.user)
