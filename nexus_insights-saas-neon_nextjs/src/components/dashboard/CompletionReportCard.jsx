@@ -103,7 +103,7 @@ export default function CompletionReportCard({
             )}
             <p className="text-sm text-[#175022]/70 mb-4">
               {tr
-                ? 'گزارش کربن شما به موفقیت ایجاد شد. جزئیات کامل را در زیر مرور کنید.'
+                ? 'Karbon raporunuz başarıyla oluşturuldu. Tüm ayrıntıları aşağıda inceleyin.'
                 : 'Your carbon report has been successfully created. Review the full details below.'}
             </p>
 

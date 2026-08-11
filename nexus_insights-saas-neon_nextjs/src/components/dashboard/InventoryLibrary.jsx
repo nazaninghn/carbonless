@@ -127,10 +127,10 @@ export default function InventoryLibrary({ tr = false }) {
     <div className="w-full max-w-4xl mx-auto p-6 space-y-8">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-[#175022] mb-2">
-          {tr ? 'کتابخانه موجودیت‌های کربن' : 'Carbon Inventory Library'}
+          {tr ? 'Karbon Envanter Kütüphanesi' : 'Carbon Inventory Library'}
         </h1>
         <p className="text-[#175022]/60">
-          {tr ? 'مدیریت و ادامه موجودیت‌های کربن خود' : 'Manage your carbon inventories'}
+          {tr ? 'Karbon envanterlerinizi yönetin' : 'Manage your carbon inventories'}
         </p>
       </div>
 
@@ -145,10 +145,10 @@ export default function InventoryLibrary({ tr = false }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-[#175022] mb-2">
-              {tr ? 'موجودیت جدید' : 'New Inventory'}
+              {tr ? 'Yeni Envanter' : 'New Inventory'}
             </h2>
             <p className="text-sm text-[#175022]/70">
-              {tr ? 'شروع یک موجودیت کربنی جدید' : 'Create a new carbon inventory'}
+              {tr ? 'Yeni bir karbon envanteri oluşturun' : 'Create a new carbon inventory'}
             </p>
           </div>
           <button
@@ -157,7 +157,7 @@ export default function InventoryLibrary({ tr = false }) {
             className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition disabled:opacity-50 shrink-0"
           >
             <Plus className="w-5 h-5" />
-            {tr ? 'شروع' : 'Start'}
+            {tr ? 'Başla' : 'Start'}
           </button>
         </div>
       </div>
@@ -308,14 +308,14 @@ export default function InventoryLibrary({ tr = false }) {
       {drafts.length === 0 && completed.length === 0 && !loading && (
         <div className="text-center py-12">
           <p className="text-[#175022]/60 mb-6">
-            {tr ? 'موجودیتی وجود ندارد' : 'No inventories yet'}
+            {tr ? 'Henüz envanter yok' : 'No inventories yet'}
           </p>
           <button
             onClick={() => setShowNamingDialog(true)}
             className="inline-flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition"
           >
             <Plus className="w-5 h-5" />
-            {tr ? 'اولین موجودیت را ایجاد کنید' : 'Create your first inventory'}
+            {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
           </button>
         </div>
       )}
@@ -325,7 +325,7 @@ export default function InventoryLibrary({ tr = false }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
             <h2 className="text-lg font-bold text-[#175022] mb-4">
-              {tr ? 'نام موجودیت' : 'Inventory Name'}
+              {tr ? 'Envanter Adı' : 'Inventory Name'}
             </h2>
 
             <input
@@ -356,7 +356,7 @@ export default function InventoryLibrary({ tr = false }) {
                 disabled={loading || !surveyName.trim()}
                 className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white hover:bg-[#175022] transition disabled:opacity-50"
               >
-                {loading ? (tr ? 'در حال شروع...' : 'Starting...') : (tr ? 'شروع' : 'Start')}
+                {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
               </button>
             </div>
           </div>

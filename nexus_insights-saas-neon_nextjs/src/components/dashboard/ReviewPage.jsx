@@ -42,7 +42,7 @@ export default function ReviewPage({ tr = false }) {
       });
 
       if (!res.ok) {
-        alert(tr ? 'خطا در ذخیره' : 'Error saving');
+        alert(tr ? 'Kaydetme hatası' : 'Error saving');
         return;
       }
 
@@ -50,7 +50,7 @@ export default function ReviewPage({ tr = false }) {
       setEditingQuestionId(null);
       setDirty(true);
     } catch (e) {
-      alert(tr ? 'خطای اتصال' : 'Connection error');
+      alert(tr ? 'Bağlantı hatası' : 'Connection error');
       console.error('Save edit error:', e);
     } finally {
       setSaving(false);
@@ -66,14 +66,14 @@ export default function ReviewPage({ tr = false }) {
           className="flex items-center gap-2 px-4 py-2 text-[#175022] hover:bg-[#175022]/10 rounded-lg transition"
         >
           <ChevronLeft className="w-5 h-5" />
-          {tr ? 'بازگشت' : 'Back'}
+          {tr ? 'Geri' : 'Back'}
         </button>
         <div>
           <h1 className="text-2xl font-bold text-[#175022]">
-            {tr ? 'بررسی پاسخ‌ها' : 'Review Answers'}
+            {tr ? 'Yanıtları İncele' : 'Review Answers'}
           </h1>
           <p className="text-sm text-[#175022]/60">
-            {answeredQuestions.length} {tr ? 'سوال پاسخ‌داده‌شده' : 'questions answered'}
+            {answeredQuestions.length} {tr ? 'soru yanıtlandı' : 'questions answered'}
           </p>
         </div>
       </div>
