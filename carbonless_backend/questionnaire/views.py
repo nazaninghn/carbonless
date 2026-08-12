@@ -419,8 +419,22 @@ class SubmitStepView(APIView):
                 'suggested_ef': result.get('suggested_ef'),
             })
 
-        # Generic step: store any step answer as raw JSON without strict validation.
-        # Covers B1-B6, C1-C3, D1-D4, Stage 2-7 questions (2A-0 … 7B-INFO).
+        # Generic step: covers Stage 2-7 questions (2A-0 … 7B-INFO). Validated
+        # against the extracted CarbonIQ schema (type/options/units/bounds) so
+        # a numeric question can't be saved as garbage text, a select can't be
+        # saved with a value outside its option list, etc. — this used to be
+        # enforced only client-side.
+        from .carboniq_validation import validate_generic_step
+        is_valid, validation_error = validate_generic_step(step, data)
+        if not is_valid:
+            return Response({
+                'success': False,
+                'step': step,
+                'next_step': step,
+                'error': validation_error,
+                'bot_messages': [f'❌ {validation_error}'],
+            }, status=400)
+
         ReportStep.objects.update_or_create(
             report=report,
             step_id=step,
