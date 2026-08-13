@@ -2573,6 +2573,15 @@ export function QuestionnaireTab({
       isSubmittingRef.current = true;
       const saveRes = await saveStepToBackend(currentId, newCollected, reportId);
 
+      // Backend rejected the answer (e.g. failed server-side format
+      // validation) — stay on this question so the user can fix it, instead
+      // of silently advancing past bad data. saveStepToBackend already set
+      // saveError for display.
+      if (!saveRes.success) {
+        isSubmittingRef.current = false;
+        return;
+      }
+
       // ✅ Check if backend says survey is completed
       if (saveRes.success && (saveRes.data?.completed === true || saveRes.data?.next_step === null)) {
         setCompleted(true);
@@ -2659,6 +2668,16 @@ export function QuestionnaireTab({
     // tiny gap where both guards are false simultaneously.
     isSubmittingRef.current = true;
     const saveRes = await saveStepToBackend(currentId, value, reportId);
+
+    // Backend rejected the answer (e.g. failed server-side format
+    // validation) — stay on this question so the user can fix it, instead
+    // of silently advancing past bad data. saveStepToBackend already set
+    // saveError for display.
+    if (!saveRes.success) {
+      isSubmittingRef.current = false;
+      setIsTyping(false);
+      return;
+    }
 
     // ✅ If in edit mode, just save and return to review (don't continue survey)
     if (editingQuestionId && saveRes.success) {

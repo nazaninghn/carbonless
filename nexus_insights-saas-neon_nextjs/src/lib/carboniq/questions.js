@@ -5847,6 +5847,24 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     };
   }
 
+  // subtype/type 'numeric' quantity fields (e.g. prices, consumption amounts)
+  // allow decimals and an optional trailing unit ("1500 kWh") — unlike
+  // numericOnly above, which is strict integer digits (e.g. tax IDs). Without
+  // this, garbage text like "ttt" passed straight through to the backend.
+  if (!question.numericOnly && (question.subtype === 'numeric' || question.type === 'numeric') && !question.exactLength) {
+    const s = String(value).trim();
+    const spaceIdx = s.indexOf(' ');
+    const amountStr = spaceIdx === -1 ? s : s.slice(0, spaceIdx);
+    if (!/^-?\d+(\.\d+)?$/.test(amountStr)) {
+      return {
+        ok: false,
+        message:
+          question.validate?.formatMessage?.[lang] ||
+          (lang === 'tr' ? 'Lütfen geçerli bir sayı girin.' : 'Please enter a valid number.'),
+      };
+    }
+  }
+
   if (question.exactLength && String(value).length !== question.exactLength) {
     return {
       ok: false,
