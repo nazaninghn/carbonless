@@ -227,7 +227,7 @@ export default function RegisterPage() {
   const progress = Math.round(((currentSection - 1) / 2) * 100);
 
   return (
-    <main className="relative min-h-screen bg-white text-[#072C0E]">
+    <main className="relative min-h-screen bg-[#F9FFF4] text-[#072C0E]">
 
       <header className="relative z-20 mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
