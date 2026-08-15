@@ -37,6 +37,32 @@ function fmt(n, d = 1) {
   return parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d });
 }
 
+// tgt.status is a stored field the backend never recalculates — it stays
+// whatever it was on creation (default 'on_track') forever regardless of
+// real progress. Derive the real status from current emissions vs. the
+// target's own base/target figures instead, so the badge (and the summary
+// KPI counts below) reflect actual progress.
+function computeTargetStatus(tgt, currentKg) {
+  const baseKg = parseFloat(tgt.base_emissions_kg) || 0;
+  const reducePct = parseFloat(tgt.target_reduction_percent) || 0;
+  const targetKg = baseKg * (1 - reducePct / 100);
+  const neededKg = baseKg - targetKg;
+  const achievedKg = Math.max(baseKg - currentKg, 0);
+  const achievedPct = neededKg > 0 ? Math.min((achievedKg / neededKg) * 100, 100) : 0;
+  const timeElapsedPct = Math.min(Math.max(
+    ((currentYear() - tgt.base_year) / Math.max(tgt.target_year - tgt.base_year, 1)) * 100,
+    0
+  ), 100);
+
+  // currentKg <= 0 means no emissions have been logged for this company at
+  // all yet — mathematically that reads as "100% reduced", but it's really
+  // "no data", not genuine success. Don't claim succeeded/failed off an
+  // empty dataset; fall back to the time-based on_track/off_track read.
+  if (currentKg > 0 && achievedPct >= 100) return 'succeeded';
+  if (currentYear() > tgt.target_year) return currentKg > 0 ? 'failed' : 'off_track';
+  return achievedPct >= timeElapsedPct ? 'on_track' : 'off_track';
+}
+
 // ─── Arc Gauge (top-half semicircle) ──────────────────────────────────────────
 // cx=50, cy=54, r=46 → top of arc at y=8; viewBox "0 0 100 54" shows top half only
 function ArcGauge({ achieved, status }) {
@@ -144,8 +170,9 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
     on_track:  { bg: 'bg-[#2ABD41]/12', text: 'text-[#175022]', label: tr ? 'Yolunda' : 'On Track' },
     succeeded: { bg: 'bg-[#175022]/15', text: 'text-[#175022]', label: tr ? 'Başarılı' : 'Succeeded' },
     off_track: { bg: 'bg-red-50',       text: 'text-red-500',   label: tr ? 'Geride'   : 'Off Track' },
+    failed:    { bg: 'bg-red-100',      text: 'text-red-700',   label: tr ? 'Başarısız' : 'Failed' },
   };
-  const st = STATUS[tgt.status] ?? STATUS.off_track;
+  const st = STATUS[computeTargetStatus(tgt, currentKg)];
 
   return (
     <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#072C0E]/10 bg-white/82 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_32px_rgba(7,44,14,0.09)] hover:border-[#2ABD41]/25">
@@ -402,16 +429,18 @@ export default function ReductionTargetsTab({
   const { onTrack, succeeded, offTrack, totalReductionPct } = useMemo(() => {
     let onTrack = 0, succeeded = 0, offTrack = 0, sumPct = 0;
     for (const t of targets) {
-      if (t.status === 'on_track')  onTrack++;
-      else if (t.status === 'succeeded') succeeded++;
-      else if (t.status === 'off_track') offTrack++;
+      // computeTargetStatus, not the stale t.status field — see its comment.
+      const computed = computeTargetStatus(t, currentKg);
+      if (computed === 'on_track')  onTrack++;
+      else if (computed === 'succeeded') succeeded++;
+      else if (computed === 'off_track' || computed === 'failed') offTrack++;
       sumPct += parseFloat(t.target_reduction_percent) || 0;
     }
     const totalReductionPct = targets.length > 0
       ? (sumPct / targets.length).toFixed(0)
       : 0;
     return { onTrack, succeeded, offTrack, totalReductionPct };
-  }, [targets]);
+  }, [targets, currentKg]);
 
   const FIELD = 'h-12 w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
   const LABEL = 'mb-1.5 block text-xs font-bold text-[#072C0E]/60';
