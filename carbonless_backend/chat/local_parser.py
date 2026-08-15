@@ -161,6 +161,41 @@ def normalise_unit(unit: str) -> str:
     return UNIT_SYNONYMS.get(unit, unit)
 
 
+_THOUSANDS_GROUP_RE = re.compile(r'^\d{1,3}[.,]\d{3}$')
+
+
+def parse_localized_number(raw: str) -> float:
+    """Parse a user-typed quantity that may use either '.' or ',' as the
+    thousands/decimal separator, without guessing wrong on the extremely
+    common "15.000" (Turkish: fifteen thousand) / "15,000" (English:
+    fifteen thousand) case.
+
+    Before this, every call site here did a blind `.replace(',', '.')`,
+    which silently turned "15.000 kWh" into 15.0 kWh — a 1000x
+    understatement with no error, since the string is still valid float
+    syntax. Verified live: try_local_emission_parse('15.000 kWh ...')
+    returned quantity=15.0 pre-fix.
+    """
+    s = raw.strip()
+    if ',' in s and '.' in s:
+        # Both present — whichever comes last is the real decimal point;
+        # the earlier one(s) are thousands grouping. Handles "1.234.567,89"
+        # (Turkish) and "1,234,567.89" (English) alike.
+        if s.rfind(',') > s.rfind('.'):
+            s = s.replace('.', '').replace(',', '.')
+        else:
+            s = s.replace(',', '')
+    elif _THOUSANDS_GROUP_RE.match(s):
+        # A single separator followed by exactly 3 digits and nothing else
+        # — "15.000" or "15,000" — is thousands grouping in both
+        # conventions; a genuine decimal quantity essentially never has
+        # exactly 3 trailing digits in casual chat input.
+        s = s.replace('.', '').replace(',', '')
+    else:
+        s = s.replace(',', '.')
+    return float(s)
+
+
 # ── Question / analysis detection ────────────────────────────────────────────
 
 _QUESTION_WORDS = [
@@ -224,12 +259,12 @@ def try_local_emission_parse(text: str) -> dict | None:
     if not activity_type:
         return None
 
-    quantity = match.group('quantity').replace(',', '.')
+    quantity = parse_localized_number(match.group('quantity'))
     unit = normalise_unit(match.group('unit'))
 
     return {
         'fuel_type': activity_type,
-        'quantity': float(quantity),
+        'quantity': quantity,
         'unit': unit,
         'month': datetime.now(timezone.utc).month,
         'year': datetime.now(timezone.utc).year,
@@ -255,7 +290,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
     km_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*km\b', t)
 
     if has_truck and km_match:
-        quantity = float(km_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(km_match.group('quantity'))
 
         # If fuel is already mentioned, the normal parser should handle it
         has_fuel = any(fuel in t for fuel in [
@@ -275,7 +310,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
     # ── Flight: needs haul type ───────────────────────────────────────────
     has_flight = any(word in t for word in ['flight', 'fly', 'flew', 'uçuş', 'پرواز'])
     if has_flight and km_match:
-        quantity = float(km_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(km_match.group('quantity'))
         has_haul = any(h in t for h in ['domestic', 'short', 'medium', 'long', 'iç hat', 'kısa', 'orta', 'uzun'])
         if not has_haul:
             return {
@@ -291,7 +326,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
     has_freight = any(word in t for word in ['freight', 'cargo', 'shipment', 'yük', 'حمل'])
     tkm_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*(?:tonne-km|tkm)\b', t)
     if has_freight and tkm_match:
-        quantity = float(tkm_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(tkm_match.group('quantity'))
         has_mode = any(m in t for m in ['truck', 'rail', 'sea', 'air', 'road', 'ocean', 'ship', 'train'])
         if not has_mode:
             return {
@@ -307,7 +342,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
     has_waste = any(word in t for word in ['waste', 'atık', 'زباله', 'پسماند'])
     kg_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*kg\b', t)
     if has_waste and kg_match:
-        quantity = float(kg_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(kg_match.group('quantity'))
         has_method = any(m in t for m in ['landfill', 'recycle', 'recyclable', 'compost', 'incineration', 'organic'])
         if not has_method:
             return {
@@ -322,7 +357,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
     # ── Commuting: needs transport mode ───────────────────────────────────
     has_commute = any(word in t for word in ['commut', 'commute', 'commuting', 'işe gidiş', 'رفت‌وآمد'])
     if has_commute and km_match:
-        quantity = float(km_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(km_match.group('quantity'))
         has_mode = any(m in t for m in ['car', 'bus', 'train', 'araba', 'otobüs', 'tren'])
         if not has_mode:
             return {
@@ -338,7 +373,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
     has_water = any(word in t for word in ['water', 'su', 'آب'])
     m3_match = re.search(r'(?P<quantity>\d+(?:[.,]\d+)?)\s*(?:m3|m³)\b', t)
     if has_water and m3_match:
-        quantity = float(m3_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(m3_match.group('quantity'))
         has_type = any(tp in t for tp in ['supply', 'treatment', 'wastewater', 'atıksu', 'arıtma', 'تصفیه'])
         if not has_type:
             return {
@@ -356,7 +391,7 @@ def try_guided_draft_parse(text: str) -> dict | None:
         'ماشین', 'خودرو', 'اتومبیل', 'araba', 'araç',
     ])
     if has_car and km_match:
-        quantity = float(km_match.group('quantity').replace(',', '.'))
+        quantity = parse_localized_number(km_match.group('quantity'))
         has_fuel = any(fuel in t for fuel in [
             'diesel', 'petrol', 'gasoline', 'benzin', 'lpg', 'natural gas', 'electric', 'hybrid',
         ])
