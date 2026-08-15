@@ -7,8 +7,55 @@ step-by-step guided-question logic used by the chat flow.
 
 import copy
 import logging
+import re
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
+
+_MONTH_NAMES = {
+    'jan': 1, 'january': 1, 'feb': 2, 'february': 2, 'mar': 3, 'march': 3,
+    'apr': 4, 'april': 4, 'may': 5, 'jun': 6, 'june': 6, 'jul': 7, 'july': 7,
+    'aug': 8, 'august': 8, 'sep': 9, 'sept': 9, 'september': 9, 'oct': 10,
+    'october': 10, 'nov': 11, 'november': 11, 'dec': 12, 'december': 12,
+}
+
+
+def resolve_period(value) -> tuple[int, int] | None:
+    """Parse a period answer (quick-reply value or free text) into
+    (month, year). Returns None if it can't be confidently parsed — the
+    guided flow re-asks rather than guessing a date the user didn't give."""
+    if not value:
+        return None
+    now = datetime.now(timezone.utc)
+    s = str(value).strip().lower()
+
+    if s in ('this_month', 'this month', 'current_month', 'current month'):
+        return now.month, now.year
+    if s in ('last_month', 'last month', 'previous_month', 'previous month'):
+        month = now.month - 1 or 12
+        year = now.year - 1 if now.month == 1 else now.year
+        return month, year
+
+    # "2024-03" / "2024/03"
+    m = re.match(r'^(\d{4})[-/](\d{1,2})$', s)
+    if m:
+        year, month = int(m.group(1)), int(m.group(2))
+        return (month, year) if 1 <= month <= 12 else None
+
+    # "03/2024" / "03-2024"
+    m = re.match(r'^(\d{1,2})[-/](\d{4})$', s)
+    if m:
+        month, year = int(m.group(1)), int(m.group(2))
+        return (month, year) if 1 <= month <= 12 else None
+
+    # "march 2024" / "mar 2024" / "march"
+    m = re.match(r'^([a-zA-Z]+)\s*(\d{4})?$', s)
+    if m and m.group(1) in _MONTH_NAMES:
+        month = _MONTH_NAMES[m.group(1)]
+        year = int(m.group(2)) if m.group(2) else now.year
+        return month, year
+
+    return None
 
 # ---------------------------------------------------------------------------
 # Calculation schemas
@@ -17,7 +64,7 @@ logger = logging.getLogger(__name__)
 CALCULATION_SCHEMAS = {
     "stationary_fuel": {
         "scope": "1",
-        "required": ["fuel_type", "quantity", "unit"],
+        "required": ["fuel_type", "quantity", "unit", "period"],
         "questions": {
             "fuel_type": {
                 "text": "What type of fuel was burned?",
@@ -31,11 +78,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit is the quantity in?",
                 "quick_replies": ["kWh", "litres", "kg", "m3", "therms"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "vehicle_distance": {
         "scope": "1",
-        "required": ["vehicle_type", "fuel_type", "quantity", "unit"],
+        "required": ["vehicle_type", "fuel_type", "quantity", "unit", "period"],
         "questions": {
             "vehicle_type": {
                 "text": "What type of vehicle?",
@@ -61,11 +112,15 @@ CALCULATION_SCHEMAS = {
                 "text": "Is the distance per vehicle or total fleet distance?",
                 "quick_replies": ["per_vehicle", "fleet_total"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "electricity": {
         "scope": "2",
-        "required": ["quantity", "unit"],
+        "required": ["quantity", "unit", "period"],
         "questions": {
             "quantity": {
                 "text": "How much electricity was consumed?",
@@ -75,11 +130,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["kWh", "MWh"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "purchased_energy": {
         "scope": "2",
-        "required": ["activity_type", "quantity", "unit"],
+        "required": ["activity_type", "quantity", "unit", "period"],
         "questions": {
             "activity_type": {
                 "text": "What type of purchased energy?",
@@ -93,11 +152,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["kWh", "MWh", "GJ"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "waste": {
         "scope": "3",
-        "required": ["waste_method", "quantity", "unit"],
+        "required": ["waste_method", "quantity", "unit", "period"],
         "questions": {
             "waste_method": {
                 "text": "How was the waste treated?",
@@ -111,11 +174,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["tonnes", "kg"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "flight": {
         "scope": "3",
-        "required": ["flight_type", "quantity", "unit"],
+        "required": ["flight_type", "quantity", "unit", "period"],
         "questions": {
             "flight_type": {
                 "text": "What type of flight?",
@@ -129,11 +196,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["km", "miles", "passenger_km"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "freight": {
         "scope": "3",
-        "required": ["transport_mode", "quantity", "unit"],
+        "required": ["transport_mode", "quantity", "unit", "period"],
         "questions": {
             "transport_mode": {
                 "text": "What transport mode for freight?",
@@ -147,11 +218,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["tonne_km", "kg_km"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "commuting": {
         "scope": "3",
-        "required": ["commute_mode", "quantity", "unit"],
+        "required": ["commute_mode", "quantity", "unit", "period"],
         "questions": {
             "commute_mode": {
                 "text": "What mode of commuting?",
@@ -165,11 +240,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["km", "miles"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "water": {
         "scope": "3",
-        "required": ["water_type", "quantity", "unit"],
+        "required": ["water_type", "quantity", "unit", "period"],
         "questions": {
             "water_type": {
                 "text": "What type of water usage?",
@@ -183,11 +262,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["m3", "litres"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "purchased_goods": {
         "scope": "3",
-        "required": ["material_type", "quantity", "unit"],
+        "required": ["material_type", "quantity", "unit", "period"],
         "questions": {
             "material_type": {
                 "text": "What type of material/goods?",
@@ -201,11 +284,15 @@ CALCULATION_SCHEMAS = {
                 "text": "What unit?",
                 "quick_replies": ["kg", "tonnes"],
             },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
+            },
         },
     },
     "refrigerant": {
         "scope": "1",
-        "required": ["refrigerant_type", "quantity", "unit"],
+        "required": ["refrigerant_type", "quantity", "unit", "period"],
         "questions": {
             "refrigerant_type": {
                 "text": "What type of refrigerant?",
@@ -218,6 +305,10 @@ CALCULATION_SCHEMAS = {
             "unit": {
                 "text": "What unit?",
                 "quick_replies": ["kg"],
+            },
+            "period": {
+                "text": "Which month and year was this for?",
+                "quick_replies": ["this_month", "last_month"],
             },
         },
     },
@@ -378,6 +469,11 @@ def get_next_question_field(family: str, draft: dict) -> str | None:
         return None
 
     for field in schema["required"]:
+        if field == "period":
+            if not (draft.get("activity_month") and draft.get("activity_year")):
+                logger.debug("[registry] Required field missing: period, returning it")
+                return field
+            continue
         if not draft.get(field):
             logger.debug(f"[registry] Required field missing: {field}, returning it")
             return field
@@ -458,6 +554,16 @@ def prepare_guided_draft(nlu_data: dict) -> dict:
 def apply_guided_answer(draft: dict, field: str, value) -> dict:
     """Apply a user's answer to the guided draft, returning the updated draft."""
     updated = dict(draft)
+
+    if field == "period":
+        # Not a literal draft key — resolves into activity_month/activity_year.
+        # If it can't be parsed, leave both unset so the guided flow re-asks
+        # instead of silently guessing a date the user didn't actually give.
+        resolved = resolve_period(value)
+        if resolved:
+            updated["activity_month"], updated["activity_year"] = resolved
+        return updated
+
     # Normalize the value if it's a string
     if isinstance(value, str):
         value = VALUE_ALIASES.get(value.lower().strip(), value)

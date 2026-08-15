@@ -3296,6 +3296,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   const fileInputRef = useRef(null);
   // Prevents double-click duplicates on save button
   const [savingMessageId, setSavingMessageId] = useState(null);
+  // Period overrides for pending entries whose date wasn't extracted from the
+  // chat message — keyed by `${msg.id}-${idx}`, value { month, year }. The
+  // backend silently defaults to the current month when it doesn't know the
+  // real date, so the confirm card must let the user correct it before save.
+  const [periodOverrides, setPeriodOverrides] = useState({});
   // Mirrors creatingSessionRef so the "New Chat" buttons can be disabled while
   // the createChatSession request is in-flight (refs don't trigger re-renders).
   const [creatingSession, setCreatingSession] = useState(false);
@@ -3834,6 +3839,42 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                 Source: Registered factor — {pe.factor_reference || pe.factor_source_label}
                               </div>
                             )}
+                            {/* The bot couldn't tell which month/year this was for from the
+                                message — force an explicit choice instead of silently saving
+                                it under the current month. */}
+                            {!pe.date_extracted && (() => {
+                              const key = `${msg.id}-${idx}`;
+                              const override = periodOverrides[key] || { month: pe.month, year: pe.year };
+                              const monthNames = tr
+                                ? ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
+                                : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                              const thisYear = new Date().getFullYear();
+                              return (
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <span className="text-[10px] font-semibold text-[#175022]/60">
+                                    {tr ? '⚠️ Dönem (tahmin edilemedi):' : '⚠️ Period (could not be determined):'}
+                                  </span>
+                                  <select
+                                    value={override.month}
+                                    onChange={(e) => setPeriodOverrides(prev => ({ ...prev, [key]: { ...override, month: Number(e.target.value) } }))}
+                                    className="rounded-md border border-[#175022]/15 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#175022]"
+                                  >
+                                    {monthNames.map((name, i) => (
+                                      <option key={i} value={i + 1}>{name}</option>
+                                    ))}
+                                  </select>
+                                  <select
+                                    value={override.year}
+                                    onChange={(e) => setPeriodOverrides(prev => ({ ...prev, [key]: { ...override, year: Number(e.target.value) } }))}
+                                    className="rounded-md border border-[#175022]/15 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#175022]"
+                                  >
+                                    {[thisYear, thisYear - 1, thisYear - 2].map(y => (
+                                      <option key={y} value={y}>{y}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
@@ -3843,8 +3884,10 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                             setSavingMessageId(msg.id);
                             try {
                               let lastStatus = 'approved';
-                              for (const pe of msg.pending_entries) {
-                                const res = await api.confirmEmissionEntry(pe);
+                              for (const [idx, pe] of msg.pending_entries.entries()) {
+                                const override = periodOverrides[`${msg.id}-${idx}`];
+                                const peToSave = override ? { ...pe, month: override.month, year: override.year } : pe;
+                                const res = await api.confirmEmissionEntry(peToSave);
                                 const data = await res.json().catch(() => ({}));
                                 if (!res.ok) {
                                   setError(data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));

@@ -46,12 +46,35 @@ CRITICAL RULES:
 7. The backend is the source of truth for factors, calculations, saving, and dashboard totals.
 8. Do NOT produce emission_entry JSON blocks. The system has a separate NLU extractor and calculator that handles all emission data processing automatically.
 9. If the user provides activity data (quantity + unit + activity), acknowledge briefly that it will be processed. Do NOT calculate or produce JSON.
-10. For general questions about carbon, sustainability, ISO 14064-1, or reduction strategies, answer normally and concisely.
-11. Keep responses SHORT — 1-3 sentences max.
+10. For questions about carbon, sustainability, ISO 14064-1, or reduction strategies — especially "what is Scope 1/2/3" or "which scope does X belong to" — answer using the SCOPE KNOWLEDGE reference below. Explain in plain, friendly language a non-expert can follow: avoid jargon, use short everyday examples relevant to a business, and never just recite a formal definition with no explanation of what it means in practice.
+11. Keep data-entry acknowledgments SHORT — 1-3 sentences. Conceptual/educational answers (explaining a scope, a category, or a term) may run up to ~5 sentences if needed for clarity, but stay plain and conversational, never academic or listy unless the user asked for a list.
 12. Reply in the same language the user's message is written in (English, Turkish, Persian/Farsi, or otherwise) — never mix languages within a single reply. If a LANGUAGE directive appears later in this prompt, follow that instead — it overrides this rule.
 13. NEVER say "saved", "entry saved", or "saved to dashboard". Only the backend confirm-entry endpoint saves data after explicit user confirmation.
 14. You are in CONVERSATIONAL MODE only. Emission calculations are handled by a separate system. Just answer questions helpfully.
-15. STAY ON TOPIC. You only discuss carbon accounting, emissions, sustainability, ISO 14064-1, climate reporting, and this platform's own features. If asked something unrelated (relationships, general trivia, coding help, politics, etc.), politely decline in 1 sentence and redirect back to carbon accounting — do not answer the off-topic question itself, even briefly."""
+15. STAY ON TOPIC. You only discuss carbon accounting, emissions, sustainability, ISO 14064-1, climate reporting, and this platform's own features. If asked something unrelated (relationships, general trivia, coding help, politics, etc.), politely decline in 1 sentence and redirect back to carbon accounting — do not answer the off-topic question itself, even briefly.
+16. After answering a conceptual/educational question (not a data-entry acknowledgment), end with a brief, friendly follow-up in the user's language — e.g. "Do you have any other questions?" — so the conversation feels like a helpful guide, not a one-shot lookup."""
+
+
+def _build_scope_knowledge_prompt():
+    """
+    Plain-language GHG Protocol / ISO 14064-1 scope knowledge for the AI's
+    conversational answers — distinct from _build_scope3_category_prompt(),
+    which is machine-facing (activity_type keys + units for the calculator).
+    This block is what lets the AI actually TEACH a user what a scope means
+    and give business-relevant examples, instead of relying on its own
+    unguided general knowledge (which can be imprecise or inconsistent with
+    how this platform categorizes things).
+    """
+    return """
+
+SCOPE KNOWLEDGE (use this to explain scopes/categories in your own words, plainly):
+Scope 1 — Direct emissions from sources the company owns or controls: fuel burned in owned boilers/furnaces, company-owned vehicles, and fugitive refrigerant leaks from AC/cooling equipment. Example: "your delivery vans burning diesel" is Scope 1.
+Scope 2 — Indirect emissions from purchased energy the company uses but doesn't generate: electricity, steam, heating, or cooling bought from a utility. Example: "the electricity bill for your office" is Scope 2.
+Scope 3 — All other indirect emissions across the value chain, split into 15 GHG Protocol categories, upstream (things that happen to get the company's inputs ready) and downstream (what happens after the company's product/service leaves):
+  Upstream: purchased goods & services, capital goods, fuel/energy-related activities not already in Scope 1/2, upstream transportation & distribution, waste generated in operations, business travel, employee commuting, upstream leased assets.
+  Downstream: downstream transportation & distribution, processing of sold products, use of sold products, end-of-life treatment of sold products, downstream leased assets, franchises, investments.
+Scope 3 is usually the largest share of a company's footprint but the hardest to measure — if a user asks "why is Scope 3 so big/complicated," that's normal and expected, not a mistake in their data.
+If a user describes an activity and asks which scope it belongs to, reason from ownership/control (Scope 1), purchased energy (Scope 2), or value-chain relationship (Scope 3) — don't guess at random."""
 
 
 # The activity→slug map, unit resolution, and factor lookup are shared with the
@@ -407,6 +430,9 @@ def _quick_reply_label(value):
         'fleet_total': 'Total for all vehicles',
         'total': 'Total for all vehicles',
 
+        'this_month': '📅 This month',
+        'last_month': '📅 Last month',
+
         'cancel': '❌ Cancel',
     }
 
@@ -748,7 +774,7 @@ def _call_groq(messages_history, user_context='', ui_language=None):
         language_directive = ''
 
     system_prompt = (
-        BASE_SYSTEM_PROMPT + language_directive
+        BASE_SYSTEM_PROMPT + language_directive + _build_scope_knowledge_prompt()
         + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
     )
 
