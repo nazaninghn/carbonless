@@ -18,6 +18,14 @@ class UserProfile(models.Model):
     language_preference = models.CharField(max_length=5, default='tr', choices=[('tr', 'Türkçe'), ('en', 'English')])
     notify_approvals = models.BooleanField(default=True)
     notify_system = models.BooleanField(default=True)
+    # Which company this user is currently viewing/working in, for users with
+    # more than one active CompanyMembership (e.g. invited into a second
+    # company while still owning their own). Falls back to the earliest
+    # active membership when unset — see companies.utils.get_current_company.
+    active_company = models.ForeignKey(
+        'companies.Company', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='+',
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 

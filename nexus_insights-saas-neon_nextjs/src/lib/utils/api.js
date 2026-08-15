@@ -243,6 +243,8 @@ export const api = {
 
   inviteMember: (data) => request('/companies/invite/', { method: 'POST', body: JSON.stringify(data) }),
   acceptInvite: (token) => request('/companies/accept-invite/', { method: 'POST', body: JSON.stringify({ token }) }),
+  getMyCompanies: () => request('/companies/my-companies/'),
+  switchCompany: (companyId) => request('/companies/switch/', { method: 'POST', body: JSON.stringify({ company_id: companyId }) }),
 
   changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),
   updateProfile: (data) => request('/accounts/update-profile/', { method: 'PATCH', body: JSON.stringify(data) }),

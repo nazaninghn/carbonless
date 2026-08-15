@@ -1,12 +1,14 @@
 ﻿'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
   ClipboardCheck, ClipboardList, Bot, ChevronRight, MoreHorizontal, BarChart2, Sparkles, Compass,
+  Building2, ChevronsUpDown, Check, Loader2,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { api } from '@/lib/utils/api';
 
 // -- Nav items -----------------------------------------------------------------
 const NAV_ITEMS = [
@@ -30,7 +32,42 @@ export default function DashboardSidebar({
   language, activeTab, setActiveTab, user, sidebarOpen, setSidebarOpen, onLogout,
 }) {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [companies, setCompanies] = useState([]);
+  const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+  const [switchingId, setSwitchingId] = useState(null);
   const tr = language === 'tr';
+
+  // Only relevant for users with more than one active company membership
+  // (e.g. accepted an invite while still owning their own company) — most
+  // users have exactly one, so this stays invisible for them.
+  useEffect(() => {
+    let cancelled = false;
+    api.getMyCompanies()
+      .then(res => res.ok ? res.json() : [])
+      .then(data => { if (!cancelled) setCompanies(Array.isArray(data) ? data : []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
+  const currentCompany = companies.find(c => c.is_current);
+
+  const handleSwitchCompany = useCallback(async (companyId) => {
+    if (switchingId) return;
+    setSwitchingId(companyId);
+    try {
+      const res = await api.switchCompany(companyId);
+      if (res.ok) {
+        // Full reload so every already-fetched piece of dashboard/emissions/
+        // questionnaire state re-fetches under the new company context —
+        // partial in-place refresh would risk stale data mixing between
+        // companies.
+        window.location.reload();
+      }
+    } finally {
+      setSwitchingId(null);
+      setShowCompanyMenu(false);
+    }
+  }, [switchingId]);
 
   const closeSidebar = useCallback(() => setSidebarOpen(false), [setSidebarOpen]);
   const navigate     = useCallback((key) => { setActiveTab(key); closeSidebar(); }, [setActiveTab, closeSidebar]);
@@ -171,6 +208,47 @@ export default function DashboardSidebar({
                 <p className="truncate text-[11px] text-[#072C0E]/40">{user?.email || ''}</p>
               </div>
             </div>
+
+            {/* Company switcher — only shown for users with access to more
+                than one company (e.g. their own + one they were invited into) */}
+            {companies.length > 1 && (
+              <div className="relative mb-2">
+                <button
+                  onClick={() => setShowCompanyMenu(v => !v)}
+                  className="flex w-full items-center gap-2 rounded-lg border border-[#DEFAE1] px-3 py-2 text-left transition hover:bg-[#F1FCF2]"
+                >
+                  <Building2 className="h-3.5 w-3.5 shrink-0 text-[#072C0E]/40" />
+                  <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-[#072C0E]">
+                    {currentCompany?.name || (tr ? 'Şirket seç' : 'Select company')}
+                  </span>
+                  <ChevronsUpDown className="h-3 w-3 shrink-0 text-[#072C0E]/30" />
+                </button>
+
+                {showCompanyMenu && (
+                  <div className="absolute bottom-full left-0 z-10 mb-1 w-full rounded-lg border border-[#DEFAE1] bg-white py-1 shadow-lg">
+                    {companies.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleSwitchCompany(c.id)}
+                        disabled={switchingId !== null}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] font-medium text-[#072C0E] transition hover:bg-[#F1FCF2] disabled:opacity-50"
+                      >
+                        {switchingId === c.id ? (
+                          <Loader2 className="h-3 w-3 shrink-0 animate-spin text-[#072C0E]/40" />
+                        ) : c.is_current ? (
+                          <Check className="h-3 w-3 shrink-0 text-[#2ABD41]" />
+                        ) : (
+                          <span className="h-3 w-3 shrink-0" />
+                        )}
+                        <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                        <span className="shrink-0 text-[9px] uppercase text-[#072C0E]/30">{c.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-red-500/70 transition hover:bg-red-50 hover:text-red-600"

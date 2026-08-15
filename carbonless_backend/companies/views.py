@@ -168,4 +168,55 @@ def accept_invite(request):
     )
     invite.accepted = True
     invite.save()
+
+    # Switch the user straight into the company they just joined — without
+    # this, someone who already has their own (e.g. auto-created on signup)
+    # company stays stuck viewing that one everywhere in the app and can
+    # never actually see the company they were invited to work in.
+    from .utils import get_current_company
+    request.user.profile.active_company = invite.company
+    request.user.profile.save(update_fields=['active_company'])
+
     return Response({'status': 'ok', 'company': invite.company.legal_entity_name})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_companies(request):
+    """List every company the user has an active membership in, so the
+    frontend can offer a switcher for users who belong to more than one."""
+    memberships = (
+        request.user.company_memberships
+        .filter(is_active=True)
+        .select_related('company')
+        .order_by('created_at')
+    )
+    current = get_current_company(request.user)
+    return Response([
+        {
+            'id': m.company.id,
+            'name': m.company.legal_entity_name,
+            'role': m.role,
+            'is_current': current is not None and m.company_id == current.id,
+        }
+        for m in memberships
+    ])
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def switch_company(request):
+    """Switch which company the user is currently viewing/working in."""
+    company_id = request.data.get('company_id')
+    if not company_id:
+        return Response({'error': 'company_id is required'}, status=400)
+
+    membership = request.user.company_memberships.filter(
+        company_id=company_id, is_active=True
+    ).select_related('company').first()
+    if not membership:
+        return Response({'error': "You don't have access to that company."}, status=403)
+
+    request.user.profile.active_company = membership.company
+    request.user.profile.save(update_fields=['active_company'])
+    return Response({'status': 'ok', 'company': membership.company.legal_entity_name})
