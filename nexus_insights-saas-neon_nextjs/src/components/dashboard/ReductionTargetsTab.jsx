@@ -5,6 +5,7 @@ import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 
@@ -353,8 +354,8 @@ export default function ReductionTargetsTab({
         title,
         base_year: parseInt(baseYear),
         target_year: parseInt(tgtYear),
-        base_emissions_kg: parseFloat(baseEmit) * 1000,
-        target_reduction_percent: parseFloat(reducePct),
+        base_emissions_kg: parseLocalizedNumber(baseEmit) * 1000,
+        target_reduction_percent: parseLocalizedNumber(reducePct),
       });
       if (res.ok) {
         setShowForm(false); resetForm(); fetchData();
@@ -387,8 +388,8 @@ export default function ReductionTargetsTab({
         title: editTitle,
         base_year: parseInt(editBaseYear),
         target_year: parseInt(editTgtYear),
-        base_emissions_kg: parseFloat(editBaseEmit) * 1000,
-        target_reduction_percent: parseFloat(editReducePct),
+        base_emissions_kg: parseLocalizedNumber(editBaseEmit) * 1000,
+        target_reduction_percent: parseLocalizedNumber(editReducePct),
       });
       if (res.ok) {
         setEditTarget(null); fetchData();
@@ -672,13 +673,13 @@ export default function ReductionTargetsTab({
                     <div className="mt-2 flex items-center gap-3">
                       <div className="text-center">
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
-                        <p className="text-sm font-bold">{fmt(parseFloat(editBaseEmit))} t</p>
+                        <p className="text-sm font-bold">{fmt(parseLocalizedNumber(editBaseEmit))} t</p>
                       </div>
                       <div className="flex-1 text-center text-xs font-bold text-[#175022]">→ -{editReducePct}% →</div>
                       <div className="text-center">
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
                         <p className="text-sm font-bold text-[#175022]">
-                          {fmt(parseFloat(editBaseEmit) * (1 - parseFloat(editReducePct) / 100))} t
+                          {fmt(parseLocalizedNumber(editBaseEmit) * (1 - parseLocalizedNumber(editReducePct) / 100))} t
                         </p>
                       </div>
                     </div>
@@ -797,7 +798,7 @@ export default function ReductionTargetsTab({
                     <div className="mt-2 flex items-center gap-3">
                       <div className="text-center">
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
-                        <p className="text-sm font-bold">{fmt(parseFloat(baseEmit))} t</p>
+                        <p className="text-sm font-bold">{fmt(parseLocalizedNumber(baseEmit))} t</p>
                       </div>
                       <div className="flex-1 text-center text-xs font-bold text-[#175022]">
                         → -{reducePct}% →
@@ -805,7 +806,7 @@ export default function ReductionTargetsTab({
                       <div className="text-center">
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
                         <p className="text-sm font-bold text-[#175022]">
-                          {fmt(parseFloat(baseEmit) * (1 - parseFloat(reducePct) / 100))} t
+                          {fmt(parseLocalizedNumber(baseEmit) * (1 - parseLocalizedNumber(reducePct) / 100))} t
                         </p>
                       </div>
                     </div>

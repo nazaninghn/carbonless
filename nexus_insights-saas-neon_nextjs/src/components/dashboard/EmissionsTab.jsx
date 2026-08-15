@@ -8,6 +8,7 @@ import {
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
@@ -345,7 +346,7 @@ export default function EmissionsTab({
       setFormError(tr ? 'Lütfen emisyon kaynağı seçin.' : 'Please select an emission source.');
       return;
     }
-    if (!quantity || parseFloat(quantity) <= 0) {
+    if (!quantity || parseLocalizedNumber(quantity) <= 0) {
       setFormError(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
       return;
     }
@@ -358,7 +359,7 @@ export default function EmissionsTab({
         fd.append('emission_factor', parseInt(selFactor));
         fd.append('year', selectedYear);
         fd.append('month', parseInt(month));
-        fd.append('quantity', quantity);
+        fd.append('quantity', parseLocalizedNumber(quantity));
         fd.append('description', desc);
         if (facility) fd.append('facility', facility);
         fd.append('proof_document', file);
@@ -367,7 +368,7 @@ export default function EmissionsTab({
         // Fix 24A: coerce empty string to null — Django FK rejects '' but accepts null
         res = await api.createEntry({
           emission_factor: parseInt(selFactor), year: selectedYear,
-          month: parseInt(month), quantity: parseFloat(quantity), description: desc,
+          month: parseInt(month), quantity: parseLocalizedNumber(quantity), description: desc,
           facility: facility || null,
         });
       }
@@ -415,7 +416,7 @@ export default function EmissionsTab({
     try {
       // Fix 24B: coerce empty string to null — Django FK rejects '' but accepts null
       const res = await api.updateEntry(editing.id, {
-        quantity: editQty, description: editDesc, facility: editFacility || null,
+        quantity: parseLocalizedNumber(editQty), description: editDesc, facility: editFacility || null,
       });
       if (res.ok) {
         setEditing(null); fetchData();
@@ -443,7 +444,7 @@ export default function EmissionsTab({
     try {
       const res = await api.createCustomRequest({
         scope: cScope, category_name: cCat, source_name: cSrc,
-        description: cDesc, unit: cUnit, quantity: cQty,
+        description: cDesc, unit: cUnit, quantity: parseLocalizedNumber(cQty),
         year: selectedYear, month: parseInt(cMonth),
       });
       if (res.ok) {
@@ -972,8 +973,8 @@ export default function EmissionsTab({
                     <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
                       <p className="text-xs font-bold text-[#175022]">
                         {tr ? 'Tahmini:' : 'Estimated:'}{' '}
-                        {(parseFloat(quantity) * parseFloat(selFactorObj.factor_kg_co2e)).toFixed(2)} kg CO₂e
-                        {' '}({((parseFloat(quantity) * parseFloat(selFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} t)
+                        {(parseLocalizedNumber(quantity) * parseFloat(selFactorObj.factor_kg_co2e)).toFixed(2)} kg CO₂e
+                        {' '}({((parseLocalizedNumber(quantity) * parseFloat(selFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} t)
                       </p>
                     </div>
                   )}
