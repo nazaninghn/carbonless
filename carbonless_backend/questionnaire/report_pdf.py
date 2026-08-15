@@ -377,19 +377,19 @@ def generate_questionnaire_report(report: CarbonReport, lang='en') -> bytes:
 
         E.append(Paragraph(
             f"{cname} için {year} yılına ait {entry_count} emisyon kaydı tespit edilmiştir. "
-            f"Toplam emisyon {total_kg/1000:,.2f} tCO₂e olarak hesaplanmıştır."
+            f"Toplam emisyon {_fmt(total_kg/1000, tr)} tCO₂e olarak hesaplanmıştır."
             if tr else
             f"{entry_count} emission entries were identified for {cname} in reporting year {year}. "
-            f"Total emissions are calculated at {total_kg/1000:,.2f} tCO₂e.",
+            f"Total emissions are calculated at {_fmt(total_kg/1000, tr)} tCO₂e.",
             S['body']))
         E.append(Spacer(1, 5 * mm))
 
         scope_tbl = [
             ['Scope', 'kg CO₂e', 'tCO₂e', '%'],
-            ['Scope 1', _fmt(s1), _fmt4(s1 / 1000), _pct(s1, total_kg)],
-            ['Scope 2', _fmt(s2), _fmt4(s2 / 1000), _pct(s2, total_kg)],
-            ['Scope 3', _fmt(s3), _fmt4(s3 / 1000), _pct(s3, total_kg)],
-            ['TOPLAM' if tr else 'TOTAL', _fmt(total_kg), _fmt4(total_kg / 1000), '100%'],
+            ['Scope 1', _fmt(s1, tr), _fmt4(s1 / 1000, tr), _pct(s1, total_kg)],
+            ['Scope 2', _fmt(s2, tr), _fmt4(s2 / 1000, tr), _pct(s2, total_kg)],
+            ['Scope 3', _fmt(s3, tr), _fmt4(s3 / 1000, tr), _pct(s3, total_kg)],
+            ['TOPLAM' if tr else 'TOTAL', _fmt(total_kg, tr), _fmt4(total_kg / 1000, tr), '100%'],
         ]
         sct = Table(scope_tbl, colWidths=[30 * mm, 40 * mm, 35 * mm, 20 * mm])
         sct.setStyle(_tbl_style(fn, fnb))
@@ -421,7 +421,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en') -> bytes:
             ]))
             E.append(warn_box)
 
-        pie = _scope_pie_chart(s1, s2, s3, fn)
+        pie = _scope_pie_chart(s1, s2, s3, fn, tr=tr)
         if pie:
             E.append(Spacer(1, 6 * mm))
             E.append(pie)

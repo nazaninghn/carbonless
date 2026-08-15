@@ -233,11 +233,25 @@ def _total_row_style(fnb):
 def _pct(v, total):
     return f'{v/total*100:.1f}%' if total > 0 else '0.0%'
 
-def _fmt(v):
-    return f'{v:,.2f}'
+def _localize_num(s, tr):
+    """Swap '.'/',' in an already-formatted number string when tr=True.
 
-def _fmt4(v):
-    return f'{v:,.4f}'
+    Python's `:,` format spec always produces US/international style
+    (comma=thousands, period=decimal) — "15,000.00" — regardless of report
+    language. Turkish convention is the opposite (period=thousands,
+    comma=decimal): "15.000,00". Every PDF report was previously rendering
+    US-style numbers even when the user selected a fully-Turkish report,
+    which reads as a different number under Turkish convention.
+    """
+    if not tr:
+        return s
+    return s.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
+
+def _fmt(v, tr=False):
+    return _localize_num(f'{v:,.2f}', tr)
+
+def _fmt4(v, tr=False):
+    return _localize_num(f'{v:,.4f}', tr)
 
 
 # ═══════════════════════════════════════════════════════
@@ -246,7 +260,7 @@ def _fmt4(v):
 # directly into the platypus story as Drawing flowables.
 # ═══════════════════════════════════════════════════════
 
-def _scope_pie_chart(s1, s2, s3, fn, width_mm=170, height_mm=78):
+def _scope_pie_chart(s1, s2, s3, fn, tr=False, width_mm=170, height_mm=78):
     """Donut-style pie of the Scope 1/2/3 split, with a side legend showing
     tCO2e + percentage per scope. Returns None if there's nothing to draw
     (all-zero) so callers can skip the section cleanly."""
@@ -297,7 +311,7 @@ def _scope_pie_chart(s1, s2, s3, fn, width_mm=170, height_mm=78):
     legend.deltay = 14
     legend.alignment = 'left'
     legend.colorNamePairs = [
-        (clr, f'{lbl}   {val/1000:,.2f} tCO₂e  ({val/total*100:.1f}%)')
+        (clr, f'{lbl}   {_localize_num(f"{val/1000:,.2f}", tr)} tCO₂e  ({val/total*100:.1f}%)')
         for lbl, val, clr in slices
     ]
     d.add(legend)
@@ -602,7 +616,7 @@ def generate_report(user, year, lang='tr'):
     E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=4*mm))
     E.append(Paragraph(
         f"{_tent}: {entry_count}  \u2022  "
-        f"{_tem}: {total_t:,.2f} tCO\u2082e  \u2022  "
+        f"{_tem}: {_fmt(total_t, tr)} tCO\u2082e  \u2022  "
         f"{_gen}: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
         S['body_sm']))
     E.append(PageBreak())
@@ -616,7 +630,7 @@ def generate_report(user, year, lang='tr'):
 
     # Total KPI - large centered
     kpi_main = Table([
-        [Paragraph(f'{total_t:,.2f}', S['big_num'])],
+        [Paragraph(_fmt(total_t, tr), S['big_num'])],
         [Paragraph(('TOPLAM EM\u0130SYONLAR' if tr else 'TOTAL EMISSIONS') + ' (tCO\u2082e)', S['big_label'])],
     ], colWidths=[150*mm])
     kpi_main.setStyle(TableStyle([
@@ -632,9 +646,9 @@ def generate_report(user, year, lang='tr'):
 
     # 3 scope cards
     scope_cards = Table([
-        [Paragraph(f'{s1/1000:,.2f}', S['kpi_num']),
-         Paragraph(f'{s2/1000:,.2f}', S['kpi_num']),
-         Paragraph(f'{s3/1000:,.2f}', S['kpi_num'])],
+        [Paragraph(_fmt(s1/1000, tr), S['kpi_num']),
+         Paragraph(_fmt(s2/1000, tr), S['kpi_num']),
+         Paragraph(_fmt(s3/1000, tr), S['kpi_num'])],
         [Paragraph('Scope 1 (tCO\u2082e)', S['kpi_label']),
          Paragraph('Scope 2 (tCO\u2082e)', S['kpi_label']),
          Paragraph('Scope 3 (tCO\u2082e)', S['kpi_label'])],
@@ -694,10 +708,10 @@ def generate_report(user, year, lang='tr'):
 
     scope_tbl = [
         ['Scope', 'A\u00e7\u0131klama' if tr else 'Description', 'kg CO\u2082e', 'tCO\u2082e', '%'],
-        ['Scope 1', 'Do\u011frudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1), _fmt4(s1/1000), _pct(s1, total_kg)],
-        ['Scope 2', 'Enerji Dolayl\u0131' if tr else 'Energy Indirect', _fmt(s2), _fmt4(s2/1000), _pct(s2, total_kg)],
-        ['Scope 3', 'Di\u011fer Dolayl\u0131' if tr else 'Other Indirect', _fmt(s3), _fmt4(s3/1000), _pct(s3, total_kg)],
-        ['TOPLAM' if tr else 'TOTAL', '', _fmt(total_kg), _fmt4(total_t), '100%'],
+        ['Scope 1', 'Do\u011frudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1, tr), _fmt4(s1/1000, tr), _pct(s1, total_kg)],
+        ['Scope 2', 'Enerji Dolayl\u0131' if tr else 'Energy Indirect', _fmt(s2, tr), _fmt4(s2/1000, tr), _pct(s2, total_kg)],
+        ['Scope 3', 'Di\u011fer Dolayl\u0131' if tr else 'Other Indirect', _fmt(s3, tr), _fmt4(s3/1000, tr), _pct(s3, total_kg)],
+        ['TOPLAM' if tr else 'TOTAL', '', _fmt(total_kg, tr), _fmt4(total_t, tr), '100%'],
     ]
     st = Table(scope_tbl, colWidths=[22*mm, 52*mm, 32*mm, 28*mm, 16*mm])
     st.setStyle(_tbl_style(fn, fnb))
@@ -706,7 +720,7 @@ def generate_report(user, year, lang='tr'):
     E.append(Spacer(1, 8*mm))
 
     # Visual distribution \u2014 real pie chart with side legend
-    pie = _scope_pie_chart(s1, s2, s3, fn)
+    pie = _scope_pie_chart(s1, s2, s3, fn, tr=tr)
     E.append(Paragraph('2.1 ' + ('G\u00f6rsel Da\u011f\u0131l\u0131m' if tr else 'Visual Distribution'), S['h2']))
     if pie:
         E.append(pie)
@@ -742,9 +756,9 @@ def generate_report(user, year, lang='tr'):
                 t = float(c['total'])
                 data.append([
                     cl.get(c['emission_factor__category'], c['emission_factor__category']),
-                    _fmt(t), _fmt4(t/1000), _pct(t, total_kg)
+                    _fmt(t, tr), _fmt4(t/1000, tr), _pct(t, total_kg)
                 ])
-            data.append(['Alt Toplam' if tr else 'Subtotal', _fmt(scope_total), _fmt4(scope_total/1000), _pct(scope_total, total_kg)])
+            data.append(['Alt Toplam' if tr else 'Subtotal', _fmt(scope_total, tr), _fmt4(scope_total/1000, tr), _pct(scope_total, total_kg)])
             ct = Table(data, colWidths=[62*mm, 32*mm, 28*mm, 16*mm])
             ct.setStyle(_tbl_style(fn, fnb, scope_color))
             ct.setStyle(_total_row_style(fnb))
@@ -810,8 +824,8 @@ def generate_report(user, year, lang='tr'):
             str(ghg_num),
             name_en,
             name_tr,
-            _fmt(cat_total),
-            _fmt4(cat_total / 1000),
+            _fmt(cat_total, tr),
+            _fmt4(cat_total / 1000, tr),
         ])
 
     # Add total row
@@ -819,8 +833,8 @@ def generate_report(user, year, lang='tr'):
         '',
         'TOPLAM' if tr else 'TOTAL',
         '',
-        _fmt(s3_total_for_breakdown),
-        _fmt4(s3_total_for_breakdown / 1000),
+        _fmt(s3_total_for_breakdown, tr),
+        _fmt4(s3_total_for_breakdown / 1000, tr),
     ])
 
     s3_tbl = Table(s3_breakdown_rows, colWidths=[8*mm, 50*mm, 50*mm, 28*mm, 22*mm])
@@ -841,7 +855,7 @@ def generate_report(user, year, lang='tr'):
             E.append(Spacer(1, 3*mm))
         mt_data = [
             [''] + months,
-            ['tCO\u2082e'] + [f'{m/1000:,.3f}' if m > 0 else '\u2014' for m in monthly],
+            ['tCO\u2082e'] + [_localize_num(f'{m/1000:,.3f}', tr) if m > 0 else '\u2014' for m in monthly],
         ]
         mt = Table(mt_data, colWidths=[16*mm] + [12.5*mm]*12)
         mt.setStyle(TableStyle([
@@ -863,7 +877,7 @@ def generate_report(user, year, lang='tr'):
         max_m = max(range(12), key=lambda i: monthly[i])
         if monthly[max_m] > 0:
             E.append(Paragraph(
-                f"\u25cf {_peak}: <b>{months[max_m]}</b> ({monthly[max_m]/1000:,.3f} tCO\u2082e)",
+                f"\u25cf {_peak}: <b>{months[max_m]}</b> ({_localize_num(f'{monthly[max_m]/1000:,.3f}', tr)} tCO\u2082e)",
                 S['body']))
     else:
         E.append(Paragraph('Ayl\u0131k veri bulunmamaktad\u0131r.' if tr else 'No monthly data available.', S['body']))
@@ -877,7 +891,7 @@ def generate_report(user, year, lang='tr'):
         fd = [['Tesis' if tr else 'Facility', 'kg CO\u2082e', 'tCO\u2082e', '%']]
         for f in fac_data:
             t = float(f['total'])
-            fd.append([f['facility__name'] or '\u2014', _fmt(t), _fmt4(t/1000), _pct(t, total_kg)])
+            fd.append([f['facility__name'] or '\u2014', _fmt(t, tr), _fmt4(t/1000, tr), _pct(t, total_kg)])
         ft = Table(fd, colWidths=[62*mm, 32*mm, 28*mm, 16*mm])
         ft.setStyle(_tbl_style(fn, fnb, OLIVE))
         E.append(ft)
@@ -900,8 +914,8 @@ def generate_report(user, year, lang='tr'):
             rows.append([
                 nm, ef.scope.replace('scope', 'S'),
                 months[e.month-1] if 1 <= e.month <= 12 else str(e.month),
-                f'{float(e.quantity):,.1f}', ef.unit,
-                f'{float(ef.factor_kg_co2e):.4f}', _fmt(float(e.calculated_co2e_kg)),
+                _localize_num(f'{float(e.quantity):,.1f}', tr), ef.unit,
+                f'{float(ef.factor_kg_co2e):.4f}', _fmt(float(e.calculated_co2e_kg), tr),
             ])
         dt = Table(rows, colWidths=[42*mm, 10*mm, 10*mm, 20*mm, 13*mm, 18*mm, 28*mm])
         dt.setStyle(_tbl_style(fn, fnb))
@@ -915,7 +929,7 @@ def generate_report(user, year, lang='tr'):
         cr_rows = [['Kaynak' if tr else 'Source', 'Scope', 'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit', 'kg CO\u2082e']]
         for cr in custom_qs:
             cr_rows.append([cr.source_name[:35], cr.scope.replace('scope', 'S'),
-                           f'{float(cr.quantity):,.1f}', cr.unit, _fmt(float(cr.calculated_co2e_kg))])
+                           _localize_num(f'{float(cr.quantity):,.1f}', tr), cr.unit, _fmt(float(cr.calculated_co2e_kg), tr)])
         crt = Table(cr_rows, colWidths=[50*mm, 15*mm, 25*mm, 20*mm, 30*mm])
         crt.setStyle(_tbl_style(fn, fnb, SCOPE2_COLOR))
         E.append(crt)
