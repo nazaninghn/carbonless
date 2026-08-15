@@ -265,7 +265,7 @@ def _create_entry_from_questionnaire(user, company, emission_data):
 
 class StartReportView(APIView):
     """POST /api/questionnaire/start/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def post(self, request):
         # Subscription gate temporarily disabled — all users can access questionnaire
@@ -502,8 +502,8 @@ class SubmitStepView(APIView):
 
 
 class ReportStatusView(APIView):
-    """GET /api/questionnaire/<report_id>/"""
-    permission_classes = [IsAuthenticated]
+    """GET /api/questionnaire/<report_id>/ — also handles DELETE."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def get(self, request, report_id):
         try:
@@ -650,7 +650,7 @@ class ReuseCompanyProfileView(APIView):
     recent other report into this one, and fast-forwards current_step past
     Phase 1 — used when the user confirms "yes, same info as before".
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def post(self, request, report_id):
         try:
@@ -723,7 +723,7 @@ class QuestionnairePDFView(APIView):
 
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def patch(self, request, report_id):
         try:
@@ -790,7 +790,7 @@ class ReportListView(APIView):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, NotAuditorForWrites])
 def reset_session(request):
     """Reset/delete current session (complete or incomplete) and start fresh."""
     from .models import CarbonReport
