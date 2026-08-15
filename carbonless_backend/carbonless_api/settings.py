@@ -77,6 +77,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'carbonless_api.middleware.ContentSecurityPolicyMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -190,6 +191,14 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
+    # BrowsableAPIRenderer is a DRF default that renders every endpoint as an
+    # interactive HTML page with forms — useful in dev, but unnecessary
+    # attack surface (and API structure disclosure) in production, where
+    # nothing but the Next.js frontend talks to this API.
+    'DEFAULT_RENDERER_CLASSES': (
+        ('rest_framework.renderers.JSONRenderer', 'rest_framework.renderers.BrowsableAPIRenderer')
+        if DEBUG else ('rest_framework.renderers.JSONRenderer',)
+    ),
 }
 
 SIMPLE_JWT = {

@@ -3,6 +3,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from django_ratelimit.decorators import ratelimit
+from django.utils.decorators import method_decorator
 import logging
 
 # Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
@@ -340,6 +342,7 @@ class StartReportView(APIView):
         }, status=201)
 
 
+@method_decorator(ratelimit(key='user', rate='60/m', method='PATCH', block=True), name='patch')
 class SubmitStepView(APIView):
     """PATCH /api/questionnaire/<report_id>/step/"""
     permission_classes = [IsAuthenticated]
