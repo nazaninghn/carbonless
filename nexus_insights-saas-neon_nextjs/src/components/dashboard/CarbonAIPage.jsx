@@ -3908,6 +3908,16 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                 ? ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
                                 : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                               const thisYear = new Date().getFullYear();
+                              // The AI may have extracted a year further back than the
+                              // usual 3-year window (e.g. year found but not month, from
+                              // "in 2020 we used...") — without this, the <select>'s value
+                              // wouldn't match any <option>, silently desyncing what's
+                              // shown from what would actually be saved.
+                              const yearOptions = [thisYear, thisYear - 1, thisYear - 2];
+                              if (override.year && !yearOptions.includes(override.year)) {
+                                yearOptions.push(override.year);
+                                yearOptions.sort((a, b) => b - a);
+                              }
                               return (
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <span className="text-[10px] font-semibold text-[#175022]/60">
@@ -3927,7 +3937,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                     onChange={(e) => setPeriodOverrides(prev => ({ ...prev, [key]: { ...override, year: Number(e.target.value) } }))}
                                     className="rounded-md border border-[#175022]/15 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#175022]"
                                   >
-                                    {[thisYear, thisYear - 1, thisYear - 2].map(y => (
+                                    {yearOptions.map(y => (
                                       <option key={y} value={y}>{y}</option>
                                     ))}
                                   </select>
