@@ -173,6 +173,18 @@ class RateLimitedLoginView(TokenObtainPairView):
                     ip_address=request.META.get('REMOTE_ADDR'),
                     target_type='User', target_id=str(user.id),
                 )
+                # Auto-fix: create company for legacy users who don't have one
+                from companies.models import Company, CompanyMembership
+                if not CompanyMembership.objects.filter(user=user).exists():
+                    company = Company.objects.create(
+                        legal_entity_name=f"{user.username}'s Company",
+                        tax_number='—', country_of_headquarters='Not set',
+                        countries_of_operation='Not set', nace_code='',
+                        main_activity_description='Not set',
+                        number_of_employees='1-10', annual_turnover_range='Not set',
+                        number_of_facilities=1,
+                    )
+                    CompanyMembership.objects.create(user=user, company=company, role='owner')
 
             # Always return tokens in body for cross-origin compatibility
             # Cookie is also set as secondary auth layer

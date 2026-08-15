@@ -566,8 +566,18 @@ def _complete_guided_draft(session, draft):
     # Factor not found — tell the user
     return _assistant_response(
         session,
-        f"Sorry, I couldn't find a registered emission factor for that activity ({family}). "
-        "Please try providing the data in a different format.",
+        f"I couldn't match that activity to a registered emission factor.\n\n"
+        f"**Here's what I can calculate:**\n"
+        f"• ⛽ Fuel: diesel, petrol, LPG, natural gas, coal (liters/kg/m³/kWh)\n"
+        f"• ⚡ Electricity: kWh or MWh\n"
+        f"• 🚗 Vehicles: distance in km (car, van, truck, motorcycle)\n"
+        f"• ✈️ Flights: domestic, short/long haul (km)\n"
+        f"• 🚛 Freight: road, rail, sea, air (tonne-km)\n"
+        f"• 🗑️ Waste: landfill, recycling, incineration (tonnes/kg)\n"
+        f"• 💧 Water: supply or treatment (m³)\n"
+        f"• 🏭 Purchased goods: paper, plastic, metals (kg/tonnes)\n"
+        f"• 🚌 Employee commuting: car, bus, train (km)\n\n"
+        f"Try something like: *'500 liters diesel last month'* or *'14000 kwh electricity in June'*",
         source='nlu_calculator',
     )
 
@@ -1705,7 +1715,11 @@ def send_message(request, session_id):
 
     # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
     if _get_groq_client() is None:
-        return Response({'error': 'AI service not available.'}, status=503)
+        return Response({
+            'error': 'AI service is temporarily unavailable. You can still use the dashboard to manually add emissions.',
+            'content': '⚠️ AI service is temporarily unavailable. Please try again in a few minutes, or use the Emissions tab to add data manually.',
+            'role': 'assistant',
+        }, status=503)
 
     # Fetch user's real emission data to give AI full context
     user_context = _get_user_emission_context(request.user)

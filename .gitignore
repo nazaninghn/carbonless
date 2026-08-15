@@ -8,3 +8,5 @@ db.sqlite3
 .env
 .env.local
 .claude/
+carbonless_backend/staticfiles/
+carbonless_backend/media/
