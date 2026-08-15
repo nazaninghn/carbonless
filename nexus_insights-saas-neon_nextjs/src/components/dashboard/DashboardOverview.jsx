@@ -655,7 +655,13 @@ export default function DashboardOverview({
         >
           {totalTonne > 0 ? (
             <div className="space-y-3">
-              {/* Bar chart showing your position vs sector average */}
+              {/* This mini chart used a fixed 48%/60% marker position and a
+                  fixed "Below sector average" claim regardless of the user's
+                  actual data — misleadingly definitive, since there's no real
+                  sourced industry dataset behind it yet (see BenchmarkTab.jsx's
+                  disclaimer for the full-page version of this same issue).
+                  Kept as a purely illustrative bar (no position marker, no
+                  comparative verdict) until real sector data is connected. */}
               <div className="relative h-5 overflow-hidden rounded-full bg-[#072C0E]/6">
                 {/* Low zone */}
                 <div className="absolute left-0 top-0 h-full w-[36%] rounded-l-full bg-[#F1FCF2]" />
@@ -663,18 +669,10 @@ export default function DashboardOverview({
                 <div className="absolute top-0 h-full bg-[#51D766]/40" style={{ left: '36%', width: '28%' }} />
                 {/* High zone */}
                 <div className="absolute top-0 h-full rounded-r-full bg-amber-100" style={{ left: '64%', width: '36%' }} />
-                {/* Your position marker */}
-                <div className="absolute top-0 h-full w-0.5 bg-[#072C0E]" style={{ left: '48%' }}>
-                  <span className="absolute -top-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] font-bold text-[#072C0E]">
-                    {tr ? 'Siz' : 'You'}
-                  </span>
-                </div>
-                {/* Sector avg marker */}
-                <div className="absolute top-0 h-full w-0.5 bg-amber-500/60" style={{ left: '60%' }} />
               </div>
               <div className="flex items-center justify-between text-[10px] text-[#072C0E]/45">
                 <span>{tr ? 'Düşük' : 'Low'}</span>
-                <span className="font-semibold text-[#1D9C31]">{tr ? 'Ortalamanın altındasınız' : 'Below sector average'}</span>
+                <span className="font-semibold text-[#072C0E]/40">{tr ? 'Örnek karşılaştırma' : 'Sample comparison'}</span>
                 <span>{tr ? 'Yüksek' : 'High'}</span>
               </div>
               <button
