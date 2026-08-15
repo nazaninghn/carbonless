@@ -38,6 +38,8 @@ Extract emission-related intent from the user message and return exactly this st
   "water_type": "potable | wastewater | null",
   "material_type": "<string or null>",
   "refrigerant_type": "<string or null>",
+  "activity_month": <1-12 integer or null>,
+  "activity_year": <4-digit integer or null>,
   "missing_required": [],
   "ambiguous_fields": [],
   "confidence": <0.0–1.0>
@@ -47,6 +49,7 @@ Rules:
 - mode = "calculation" when the user wants to calculate or log an emission.
 - mode = "general_question" when the user is asking a conceptual question about carbon/emissions.
 - mode = "unknown" when intent is unclear.
+- activity_month/activity_year: extract the time period the activity refers to if mentioned (e.g. "last month" = previous month, "in January" = month 1, "in 2024" = year 2024). Leave null if no time reference is given.
 - missing_required lists field names that are needed for calculation but absent from the message.
 - ambiguous_fields lists field names whose values are unclear or could be interpreted multiple ways.
 - confidence reflects how certain you are about the extraction (0 = no idea, 1 = perfectly clear).
@@ -91,6 +94,8 @@ DEFAULT_NLU = {
     "water_type": None,
     "material_type": None,
     "refrigerant_type": None,
+    "activity_month": None,
+    "activity_year": None,
     "missing_required": [],
     "ambiguous_fields": [],
     "confidence": 0.0,

@@ -344,13 +344,18 @@ def _map_registry_entry_to_factor_entry(registry_entry):
         }
         activity_type = material_map.get(raw_activity, raw_activity)
 
+    # Use extracted month/year from NLU if available, otherwise None (frontend will ask)
+    extracted_month = registry_entry.get('month')
+    extracted_year = registry_entry.get('year')
+
     return {
         'fuel_type': activity_type,
         'quantity': registry_entry.get('quantity'),
         'unit': unit,
-        'month': datetime.now(timezone.utc).month,
-        'year': datetime.now(timezone.utc).year,
+        'month': extracted_month if extracted_month else datetime.now(timezone.utc).month,
+        'year': extracted_year if extracted_year else datetime.now(timezone.utc).year,
         'description': registry_entry.get('description') or f'AI Chat: {activity_type}',
+        'date_extracted': bool(extracted_month or extracted_year),
     }
 
 
@@ -813,6 +818,7 @@ def _build_pending_entries_from_data(emission_blocks):
         month = entry_data.get('month', datetime.now(timezone.utc).month)
         year = entry_data.get('year', datetime.now(timezone.utc).year)
         description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
+        date_extracted = entry_data.get('date_extracted', False)
 
         factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit)
         if factor and co2e_kg is not None:
@@ -833,6 +839,7 @@ def _build_pending_entries_from_data(emission_blocks):
                 'factor_source_label': factor.get_source_display() if hasattr(factor, 'get_source_display') else getattr(factor, 'source', ''),
                 'factor_reference': getattr(factor, 'reference', ''),
                 'scope': factor.scope,
+                'date_extracted': date_extracted,
             })
         elif err:
             logger.warning('Local emission resolve failed: %s', err)
@@ -847,10 +854,18 @@ def _build_pending_entries_text(pending_entries):
         activity = pe.get('fuel_type', '').replace('_', ' ').title()
         raw_source = pe.get('factor_source_label') or pe.get('factor_source') or ''
         source_label = f'Registered factor — {raw_source}' if raw_source else 'Registered emission factor'
+        
+        # Show period info
+        month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        month = pe.get('month', 1)
+        year = pe.get('year', datetime.now(timezone.utc).year)
+        period_label = f"{month_names[month-1]} {year}" if month and year else ''
+        date_note = '' if pe.get('date_extracted') else '\n📅 *Period: current month (you can change before saving)*'
+        
         confirmations.append(
             f"✅ **{scope_label}: {activity} result**\n"
             f"**{pe['co2e_kg']:,.2f} kgCO₂e** ({pe['co2e_tonne']:.2f} tCO₂e)\n"
-            f"Source: {source_label}"
+            f"Source: {source_label}{date_note}"
         )
     return '\n\n'.join(confirmations)
 
@@ -1549,10 +1564,23 @@ def confirm_entry(request):
     """
     Save a pending emission entry that was calculated but not yet saved.
     Frontend sends the pending_entry data after user confirms.
+    Accepts optional month/year override from the user's date selection.
     """
     entry_data = request.data
     if not entry_data or not entry_data.get('fuel_type') or not entry_data.get('quantity'):
         return Response({'error': 'Invalid entry data.'}, status=400)
+
+    # Allow frontend to override month/year (user picks activity date in confirm card)
+    if entry_data.get('month'):
+        try:
+            entry_data['month'] = int(entry_data['month'])
+        except (TypeError, ValueError):
+            pass
+    if entry_data.get('year'):
+        try:
+            entry_data['year'] = int(entry_data['year'])
+        except (TypeError, ValueError):
+            pass
 
     entry, err = _create_emission_from_chat(request.user, entry_data)
     if err:
@@ -1566,6 +1594,8 @@ def confirm_entry(request):
         'co2e_kg': float(entry.calculated_co2e_kg),
         'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
         'scope': entry.emission_factor.scope if entry.emission_factor else '',
+        'month': entry.month,
+        'year': entry.year,
         'status': entry.status,
         'entry_status': entry.status,
     }, status=201)

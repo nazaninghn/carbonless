@@ -445,7 +445,7 @@ def prepare_guided_draft(nlu_data: dict) -> dict:
         "fuel_type", "vehicle_type", "vehicle_count", "quantity", "unit",
         "distance_basis", "waste_method", "transport_mode", "flight_type",
         "commute_mode", "water_type", "material_type", "refrigerant_type",
-        "activity_type",
+        "activity_type", "activity_month", "activity_year",
     ]
     for field in field_mappings:
         val = nlu_data.get(field)
@@ -592,5 +592,11 @@ def draft_to_entry_data(draft: dict) -> dict:
     elif family == "refrigerant":
         entry["activity_type"] = draft.get("refrigerant_type", "R-410A")
         entry["refrigerant_type"] = draft.get("refrigerant_type")
+
+    # Pass through extracted month/year from NLU (if available)
+    if draft.get("activity_month"):
+        entry["month"] = draft["activity_month"]
+    if draft.get("activity_year"):
+        entry["year"] = draft["activity_year"]
 
     return entry
