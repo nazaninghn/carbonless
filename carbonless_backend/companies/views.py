@@ -18,12 +18,12 @@ class CompanyCreateView(generics.CreateAPIView):
         )
 
 
-from .permissions import IsCompanyMember, HasCompanyAdminRole
+from .permissions import IsCompanyMember, HasCompanyAdminRole, NotAuditorForWrites
 
 
 class CompanyDetailView(generics.RetrieveUpdateAPIView):
     serializer_class = CompanySerializer
-    permission_classes = (IsAuthenticated, IsCompanyMember)
+    permission_classes = (IsAuthenticated, IsCompanyMember, NotAuditorForWrites)
 
     def get_object(self):
         company = get_current_company(self.request.user)
@@ -35,7 +35,7 @@ class CompanyDetailView(generics.RetrieveUpdateAPIView):
 
 class FacilityListCreateView(generics.ListCreateAPIView):
     serializer_class = FacilitySerializer
-    permission_classes = (IsAuthenticated, IsCompanyMember)
+    permission_classes = (IsAuthenticated, IsCompanyMember, NotAuditorForWrites)
 
     def get_queryset(self):
         company = get_current_company(self.request.user)
@@ -48,7 +48,7 @@ class FacilityListCreateView(generics.ListCreateAPIView):
 
 class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = FacilitySerializer
-    permission_classes = (IsAuthenticated, IsCompanyMember)
+    permission_classes = (IsAuthenticated, IsCompanyMember, NotAuditorForWrites)
 
     def get_queryset(self):
         company = get_current_company(self.request.user)

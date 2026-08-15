@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from django.db.models import Count
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from companies.permissions import NotAuditorForWrites
 from rest_framework.response import Response
 from django_ratelimit.decorators import ratelimit
 from .models import ChatSession, ChatMessage
@@ -1730,7 +1731,7 @@ def send_message(request, session_id):
 
 # ── Confirm and save pending emission entry ───────────────────────────────────
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, NotAuditorForWrites])
 def confirm_entry(request):
     """
     Save a pending emission entry that was calculated but not yet saved.

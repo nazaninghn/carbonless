@@ -12,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
+from companies.permissions import NotAuditorForWrites
 
 from .models import CarbonReport, ReportField, PendingSuggestion
 from emissions.models import EmissionEntry
@@ -527,7 +528,7 @@ class WorkspaceChatView(APIView):
 
 class SuggestionConfirmView(APIView):
     """POST /api/chat/suggestions/{id}/confirm/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def post(self, request, suggestion_id):
         try:

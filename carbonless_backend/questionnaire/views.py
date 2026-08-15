@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
+from companies.permissions import NotAuditorForWrites
 import logging
 
 # Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
@@ -345,7 +346,7 @@ class StartReportView(APIView):
 @method_decorator(ratelimit(key='user', rate='60/m', method='PATCH', block=True), name='patch')
 class SubmitStepView(APIView):
     """PATCH /api/questionnaire/<report_id>/step/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def patch(self, request, report_id):
         try:

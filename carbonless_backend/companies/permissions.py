@@ -1,4 +1,4 @@
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 from .utils import get_current_company
 
 
@@ -41,3 +41,33 @@ class HasCompanyAdminRole(BasePermission):
             .first()
         )
         return membership is not None and membership.role in self.allowed_roles
+
+
+class NotAuditorForWrites(BasePermission):
+    """Blocks write methods (POST/PUT/PATCH/DELETE) for the 'auditor' role.
+
+    Every role-description surface in the product (TeamManagement.jsx's role
+    list) describes 'auditor' as "View only — cannot modify data", but this
+    was never actually enforced server-side anywhere — every data-writing
+    endpoint (emission entries, facilities, questionnaire steps, ...) only
+    checked IsAuthenticated + company membership, not role. Verified live: an
+    auditor could freely create emission entries and facilities via direct
+    API calls despite the UI never offering them any way to do so. GET/HEAD/
+    OPTIONS are always allowed — auditors still need read access, that part
+    already worked correctly.
+    """
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        if not request.user.is_authenticated:
+            return False
+        company = get_current_company(request.user)
+        if company is None:
+            return False
+        membership = (
+            request.user.company_memberships
+            .filter(is_active=True, company=company)
+            .first()
+        )
+        return membership is not None and membership.role != 'auditor'

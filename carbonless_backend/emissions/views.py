@@ -18,6 +18,7 @@ except ImportError:
     SCOPE3_CATEGORIES = {}
     SCOPE3_GHG_NUMBER = {}
 from companies.utils import get_current_company
+from companies.permissions import NotAuditorForWrites
 
 
 class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
@@ -47,7 +48,7 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
 class EmissionEntryViewSet(viewsets.ModelViewSet):
     """CRUD for emission entries — fully company-scoped via membership"""
     serializer_class = EmissionEntrySerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company
@@ -101,7 +102,7 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
 class ReductionTargetViewSet(viewsets.ModelViewSet):
     """CRUD for reduction targets — fully company-scoped"""
     serializer_class = ReductionTargetSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company
@@ -118,7 +119,7 @@ class ReductionTargetViewSet(viewsets.ModelViewSet):
 class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
     """User submits custom emission requests — fully company-scoped"""
     serializer_class = CustomEmissionRequestSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company
@@ -339,7 +340,7 @@ def generate_report_view(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, NotAuditorForWrites])
 def bulk_import_view(request):
     """Import emission entries from CSV/JSON data.
     Expects: [{"factor_id": 1, "year": 2026, "month": 1, "quantity": 100, "description": "", "facility": ""}]
