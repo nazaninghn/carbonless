@@ -394,7 +394,15 @@ def _map_registry_entry_to_factor_entry(registry_entry):
         'month': extracted_month if extracted_month else datetime.now(timezone.utc).month,
         'year': extracted_year if extracted_year else datetime.now(timezone.utc).year,
         'description': registry_entry.get('description') or f'AI Chat: {activity_type}',
-        'date_extracted': bool(extracted_month or extracted_year),
+        # Both month AND year must be present to count as "extracted" — a
+        # message that only gives a year ("in 2023 we used...") still gets
+        # its month silently guessed as the current one, and the user needs
+        # to see the "current month, you can change before saving" note for
+        # that, not have it suppressed because *a* date field happened to be
+        # found. Was `bool(extracted_month or extracted_year)` — verified
+        # live: year=2023/month=None produced date_extracted=True, silently
+        # claiming full extraction while guessing the month.
+        'date_extracted': bool(extracted_month and extracted_year),
     }
 
 
