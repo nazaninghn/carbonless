@@ -206,8 +206,21 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         </div>
         <div className="flex items-center gap-2 text-[11px] text-[#072C0E]/45">
           <Users className="h-3.5 w-3.5" />
-          <span>{benchmark.count} {tr ? 'şirket · GDPR uyumlu anonim veri' : 'companies · GDPR-compliant anonymous data'}</span>
+          <span>{benchmark.count} {tr ? 'şirket' : 'companies'}</span>
         </div>
+      </div>
+
+      {/* Placeholder-data disclaimer — SECTOR_BENCHMARKS below is illustrative
+          sample data, not a real, sourced industry dataset. Without this, the
+          "Excellent"/"High emissions" verdicts read as authoritative claims
+          about the user's real standing versus their sector. */}
+      <div className="dash-fade-up flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-snug text-amber-800">
+        <Info className="h-3.5 w-3.5 shrink-0 translate-y-0.5" />
+        <span>
+          {tr
+            ? 'Bu bölümdeki sektör karşılaştırma rakamları örnek/gösterim amaçlıdır, gerçek bir pazar veri setinden alınmamıştır. Gerçek sektör verisi eklendiğinde bu bölüm güncellenecektir.'
+            : 'The sector comparison figures on this page are illustrative sample data, not sourced from a real market dataset yet. This section will be updated once real sector data is connected.'}
+        </span>
       </div>
 
       {/* KPI row */}
