@@ -40,6 +40,12 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'country', 'year', 'month', 'quantity',
             'calculated_co2e_kg', 'calculated_co2e_tonne',
             'factor_year_used', 'source_dataset',
+            # Audit trail: the factor value/source actually used at calculation
+            # time, frozen on first save — distinct from factor_year_used /
+            # source_dataset above, which read the *live* EmissionFactor row
+            # and would silently show a different value if that row is ever
+            # corrected or re-pointed after this entry was calculated.
+            'factor_value_snapshot', 'factor_source_snapshot',
             'description', 'facility', 'facility_name',
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
@@ -49,6 +55,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'calculated_co2e_kg', 'facility_name', 'proof_document',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at',
+            'factor_value_snapshot', 'factor_source_snapshot',
         ]
 
     def validate_quantity(self, value):
