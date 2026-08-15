@@ -123,6 +123,17 @@ export function useDashboardData(selectedYear) {
     return () => { fetchGen.current++; };
   }, [fetchData]);
 
+  // Chat-driven saves (CarbonAIPage) dispatch this after confirm-entry succeeds,
+  // since the chat panel and the dashboard/emissions tabs are separate mounted
+  // components with no other shared state — without this listener, saving an
+  // entry via chat left the dashboard showing stale totals until the user
+  // manually navigated away and back.
+  useEffect(() => {
+    const handler = () => fetchData();
+    window.addEventListener('carbonless:emissions-updated', handler);
+    return () => window.removeEventListener('carbonless:emissions-updated', handler);
+  }, [fetchData]);
+
   return {
     ...state,       // includes state.unreadCount
     setUnreadCount,
