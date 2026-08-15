@@ -127,53 +127,93 @@ ACTIVITY_TO_SLUG = {
     ('water_water_treatment', 'm3'): 'water-treatment',
 }
 
-# Same-quantity unit synonyms — only exact dimensional equivalents (litre == liters,
-# tonne == 1000 kg). Anything requiring a fuel-specific conversion (e.g. m³ → GJ,
-# which depends on calorific value) must NOT be added here; it belongs in
-# ACTIVITY_TO_SLUG as its own real, registered unit instead of a guessed conversion.
+# Same-quantity unit synonyms — pure spelling/notation normalization, no scaling
+# (litre and liters are literally the same quantity). Anything requiring a
+# fuel-specific conversion (e.g. m³ → GJ, which depends on calorific value)
+# must NOT be added here; it belongs in ACTIVITY_TO_SLUG as its own real,
+# registered unit instead of a guessed conversion.
 UNIT_SYNONYMS = {
     'm³': 'm3', 'm^3': 'm3',
     'litre': 'liters', 'liter': 'liters', 'l': 'liters',
     'pkm': 'km', 'tkm': 'tonne-km',
 }
 
+# Fixed, real-world dimensional conversions: qty_in_to_unit = qty_in_from_unit * multiplier.
+# Applied only when the FROM unit has no registered factor for the activity but
+# the TO unit does — e.g. a user reports "5 MWh" for an activity only registered
+# in kWh. Every multiplier here is an exact physical/SI conversion, not a
+# fuel-specific energy-content guess (those still belong in ACTIVITY_TO_SLUG as
+# their own registered unit). US gallon and US ton (short ton) are used, since
+# that's the more common casual-English usage this system's users default to.
+UNIT_CONVERSIONS = {
+    ('g', 'kg'): Decimal('0.001'),
+    ('lb', 'kg'): Decimal('0.45359237'),
+    ('lbs', 'kg'): Decimal('0.45359237'),
+    ('tonne', 'kg'): Decimal('1000'),
+    ('wh', 'kwh'): Decimal('0.001'),
+    ('mwh', 'kwh'): Decimal('1000'),
+    ('gwh', 'kwh'): Decimal('1000000'),
+    ('mile', 'km'): Decimal('1.609344'),
+    ('miles', 'km'): Decimal('1.609344'),
+    ('gallon', 'liters'): Decimal('3.785411784'),
+    ('gallons', 'liters'): Decimal('3.785411784'),
+}
+
+
+def _resolve_unit_and_multiplier(activity_type, raw_unit):
+    """
+    Finds a registered unit for (activity_type, raw_unit), trying the unit
+    as-is (after spelling normalization) first, then any real dimensional
+    conversion that lands on a registered unit for this activity.
+    Returns (matched_unit, multiplier) or (None, None) if nothing matches —
+    multiplier is 1 when no scaling was needed.
+    """
+    norm_unit = UNIT_SYNONYMS.get(raw_unit, raw_unit)
+    if (activity_type, norm_unit) in ACTIVITY_TO_SLUG:
+        return norm_unit, Decimal('1')
+
+    for (from_unit, to_unit), mult in UNIT_CONVERSIONS.items():
+        if from_unit == norm_unit and (activity_type, to_unit) in ACTIVITY_TO_SLUG:
+            return to_unit, mult
+    return None, None
+
 
 def resolve_factor(activity_type, unit):
     """
     Resolves (activity_type, unit) to a real EmissionFactor, preferring the
-    Turkey-specific row and falling back to global. Returns (factor, normalized_unit, error).
+    Turkey-specific row and falling back to global.
+    Returns (factor, normalized_unit, quantity_multiplier, error) — multiplier
+    is 1 unless a dimensional conversion (e.g. MWh -> kWh) was needed to reach
+    a registered unit.
     """
     activity_type = (activity_type or '').strip().lower().replace(' ', '_')
     raw_unit = (unit or '').strip().lower().replace(' ', '')
-    norm_unit = UNIT_SYNONYMS.get(raw_unit, raw_unit)
 
-    # Same-quantity mass conversion (tonne -> kg) when only the kg slug is registered
-    if norm_unit == 'tonne' and (activity_type, 'kg') in ACTIVITY_TO_SLUG:
-        norm_unit = 'kg'
-
-    slug = ACTIVITY_TO_SLUG.get((activity_type, norm_unit))
-    if not slug:
+    norm_unit, multiplier = _resolve_unit_and_multiplier(activity_type, raw_unit)
+    if not norm_unit:
         supported = sorted({u for (a, u) in ACTIVITY_TO_SLUG if a == activity_type})
         if supported:
-            return None, norm_unit, (
+            return None, raw_unit, None, (
                 f"No registered emission factor for '{activity_type}' in unit '{unit}'. "
                 f"This activity is only available in: {', '.join(supported)}."
             )
-        return None, norm_unit, f"'{activity_type}' is not a supported activity type yet."
+        return None, raw_unit, None, f"'{activity_type}' is not a supported activity type yet."
 
+    slug = ACTIVITY_TO_SLUG[(activity_type, norm_unit)]
     factor = (
         EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
         or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
     )
     if not factor:
-        return None, norm_unit, f"No active emission factor found for '{activity_type}' ({unit})."
-    return factor, norm_unit, None
+        return None, norm_unit, None, f"No active emission factor found for '{activity_type}' ({unit})."
+    return factor, norm_unit, multiplier, None
 
 
 def resolve_factor_and_amount(activity_type, quantity, unit):
     """
-    Resolves (activity_type, unit) to a real factor AND normalizes quantity for any
-    same-dimension conversion (e.g. tonne -> kg) the resolved unit required.
+    Resolves (activity_type, unit) to a real factor AND normalizes quantity for
+    any dimensional conversion (e.g. tonne -> kg, MWh -> kWh, mile -> km,
+    gallon -> liters) the resolved unit required.
     Returns (factor, normalized_quantity, co2e_kg, error).
     """
     try:
@@ -188,12 +228,12 @@ def resolve_factor_and_amount(activity_type, quantity, unit):
     if qty > Decimal('1000000000000'):
         return None, None, None, 'Quantity is unrealistically large — please check the value.'
 
-    norm_unit_for_mass = (unit or '').strip().lower()
-    factor, norm_unit, error = resolve_factor(activity_type, unit)
+    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit)
     if error:
         return None, None, None, error
-    if norm_unit_for_mass == 'tonne' and norm_unit == 'kg':
-        qty = qty * 1000
+
+    if multiplier and multiplier != 1:
+        qty = qty * multiplier
 
     return factor, qty, qty * factor.factor_kg_co2e, None
 
