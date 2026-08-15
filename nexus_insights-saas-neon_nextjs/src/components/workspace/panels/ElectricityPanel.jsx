@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Zap } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 // Location-based grid emission factors (kgCO2e/kWh) — matches the backend's
 // EmissionFactor rows (carbonless_backend/emissions/seed_data.py) so a
@@ -94,9 +95,9 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
 
   // ── Calculated emission estimate ─────────────────────────────────
   const emissionKg = (() => {
-    const kwh = parseFloat(String(consumptionKwh).replace(',', '.'));
-    const ren = parseFloat(String(renewableOnSite).replace(',', '.')) || 0;
-    const ef  = parseFloat(String(emissionFactor).replace(',', '.'));
+    const kwh = parseLocalizedNumber(consumptionKwh);
+    const ren = parseLocalizedNumber(renewableOnSite) || 0;
+    const ef  = parseLocalizedNumber(emissionFactor);
     if (isNaN(kwh) || isNaN(ef) || ef <= 0) return null;
     const netKwh = Math.max(kwh - ren, 0);
     return netKwh * ef;
@@ -114,7 +115,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
     setSaveError('');
     try {
       const toNum = (v) => {
-        const n = parseFloat(String(v).replace(',', '.'));
+        const n = parseLocalizedNumber(v);
         return isNaN(n) ? v : n;
       };
       await saveReportFields(reportId, [

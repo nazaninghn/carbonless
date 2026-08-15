@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Truck, Plus, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 // GLEC Framework v3 / DEFRA 2023 — kgCO2e per tonne-km
 const TRANSPORT_MODES = [
@@ -148,8 +149,8 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
   }, [fieldValues]);
 
   const draftMode   = getModeData(draft.mode);
-  const draftCargo  = parseFloat(String(draft.cargo_t).replace(',', '.'));
-  const draftDist   = parseFloat(String(draft.distance_km).replace(',', '.'));
+  const draftCargo  = parseLocalizedNumber(draft.cargo_t);
+  const draftDist   = parseLocalizedNumber(draft.distance_km);
   const draftTkm    = !isNaN(draftCargo) && !isNaN(draftDist) ? draftCargo * draftDist : null;
   const canAddDraft = !isNaN(draftCargo) && !isNaN(draftDist) && draftCargo > 0 && draftDist > 0;
 
@@ -176,7 +177,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
     return acc;
   }, { tkm: 0, kgco2e: 0 });
 
-  const parsedDirectKg = parseFloat(String(directTotalKg).replace(',', '.'));
+  const parsedDirectKg = parseLocalizedNumber(directTotalKg);
   const canSave = shipments.length > 0
     || canAddDraft
     || (entryMethod !== 'shipment_detail' && !isNaN(parsedDirectKg) && parsedDirectKg > 0);

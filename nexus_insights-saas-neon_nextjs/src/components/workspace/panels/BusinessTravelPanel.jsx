@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Briefcase, Plane, Train, Car, Plus, Trash2 } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
 import { getEmissionFactor } from '@/lib/carboniq/emission-factors';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 // Factors come from the shared, backend-aligned table — see emission-factors.js
 // kg CO₂e per passenger-km (air/rail) or per vehicle-km (car)
@@ -106,11 +107,11 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
   // Live emission calculation
   const breakdown = [
     ...AIR_MODES.map(m => {
-      const pkm = parseFloat(String(airVals[m.id]).replace(',', '.'));
+      const pkm = parseLocalizedNumber(airVals[m.id]);
       return { label: m.label[lang] || m.label.en, ef: m.ef, km: pkm, unit: 'pkm' };
     }),
     ...GROUND_MODES.map(m => {
-      const km = parseFloat(String(groundVals[m.id]).replace(',', '.'));
+      const km = parseLocalizedNumber(groundVals[m.id]);
       return { label: m.label[lang] || m.label.en, ef: m.ef, km, unit: m.unit };
     }),
   ].filter(b => !isNaN(b.km) && b.km > 0);
@@ -131,11 +132,11 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
       const fields = [
         ...AIR_MODES.map(m => ({
           field_id: m.field,
-          value: parseFloat(String(airVals[m.id]).replace(',', '.')) || null,
+          value: parseLocalizedNumber(airVals[m.id]) || null,
         })).filter(f => f.value !== null && !isNaN(f.value)),
         ...GROUND_MODES.map(m => ({
           field_id: m.field,
-          value: parseFloat(String(groundVals[m.id]).replace(',', '.')) || null,
+          value: parseLocalizedNumber(groundVals[m.id]) || null,
         })).filter(f => f.value !== null && !isNaN(f.value)),
         { field_id: 'rf.k5.total_emission_kgco2e', value: Math.round(totalKg) },
       ];
@@ -198,7 +199,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
               </div>
             </div>
             {(() => {
-              const pkm = parseFloat(String(airVals[mode.id]).replace(',', '.'));
+              const pkm = parseLocalizedNumber(airVals[mode.id]);
               if (isNaN(pkm) || pkm <= 0) return null;
               const kg = pkm * mode.ef;
               return (
@@ -251,7 +252,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                 </div>
               </div>
               {(() => {
-                const km = parseFloat(String(groundVals[mode.id]).replace(',', '.'));
+                const km = parseLocalizedNumber(groundVals[mode.id]);
                 if (isNaN(km) || km <= 0) return null;
                 const kg = km * mode.ef;
                 return (

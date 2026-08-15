@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle2, Loader2, Flame } from 'lucide-react';
 import { saveReportFields } from '@/lib/workspace/api';
 import { getEmissionFactor, EF_SOURCE } from '@/lib/carboniq/emission-factors';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 const FUEL_OPTIONS = [
   { value: 'natural_gas', label: { tr: 'Doğalgaz', en: 'Natural Gas' } },
@@ -96,7 +97,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
   // Calculate emission estimate
   const emissionKg = (() => {
     const ef = lookupEf(fuelType, unit);
-    const qty = parseFloat(String(consumption).replace(',', '.'));
+    const qty = parseLocalizedNumber(consumption);
     if (!ef || isNaN(qty)) return null;
     return qty * ef;
   })();
@@ -114,7 +115,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
     try {
       await saveReportFields(reportId, [
         { field_id: 'rf.3a.fuel_type',   value: fuelType },
-        { field_id: 'rf.3a.consumption', value: parseFloat(String(consumption).replace(',', '.')) || consumption },
+        { field_id: 'rf.3a.consumption', value: parseLocalizedNumber(consumption) || consumption },
         { field_id: 'rf.3a.unit',        value: unit },
         { field_id: 'rf.3a.facility',    value: facility },
       ], 'dashboard');

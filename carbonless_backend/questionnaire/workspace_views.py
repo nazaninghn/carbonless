@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import status
 from companies.permissions import NotAuditorForWrites
+from chat.local_parser import parse_localized_number
 
 from .models import CarbonReport, ReportField, PendingSuggestion
 from emissions.models import EmissionEntry
@@ -225,9 +226,13 @@ def _coerce_value(new_val, original_val):
     This prevents '16000' (str) being stored instead of 16000 (int).
     """
     if isinstance(original_val, (int, float)) and isinstance(new_val, str):
-        stripped = new_val.strip().replace(',', '.')
+        # parse_localized_number distinguishes a thousands separator from a
+        # decimal point — the old blind `.replace(',', '.')` here turned
+        # "15.000" (a user typing fifteen thousand, Turkish-style) into
+        # 15.0, and "15,000" into the same wrong 15.0 via the same path.
         try:
-            return int(stripped) if '.' not in stripped else float(stripped)
+            parsed = parse_localized_number(new_val.strip())
+            return int(parsed) if parsed.is_integer() else parsed
         except (ValueError, TypeError):
             pass
     return new_val
