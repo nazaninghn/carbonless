@@ -838,7 +838,15 @@ def _session_to_dict(session, include_messages=False):
         msgs = list(session.messages.order_by('-created_at')[:100])
         msgs.reverse()
         data['messages'] = [
-            {'id': m.id, 'role': m.role, 'content': m.content, 'created_at': m.created_at, 'ui': m.ui or {}}
+            {
+                'id': m.id, 'role': m.role, 'content': m.content,
+                'created_at': m.created_at, 'ui': m.ui or {},
+                # Never the raw /media/ URL — that's DEBUG-only and served with
+                # no access control. download_attachment below is the only
+                # authenticated, ownership-checked way to fetch the file.
+                'attachment_name': m.attachment_name or None,
+                'has_attachment': bool(m.attachment),
+            }
             for m in msgs
         ]
     return data
@@ -1390,6 +1398,87 @@ def session_detail(request, session_id):
     return Response(_session_to_dict(session, include_messages=True))
 
 
+# Magic-byte signatures for every extension in ALLOWED_ATTACHMENT_EXTENSIONS —
+# the extension check alone lets a renamed executable through as "malware.pdf".
+# No python-magic/libmagic dependency needed: these are the well-known file
+# signatures for exactly the formats this app accepts, checked against the
+# first bytes actually read from the upload, not the client-supplied name.
+_PDF_SIG = b'%PDF-'
+_PNG_SIG = b'\x89PNG\r\n\x1a\n'
+_JPEG_SIG = b'\xff\xd8\xff'
+_ZIP_SIG = b'PK\x03\x04'  # xlsx/docx are ZIP containers
+_OLE2_SIG = b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'  # legacy xls/doc
+
+_ATTACHMENT_SIGNATURES = {
+    '.pdf': [_PDF_SIG],
+    '.png': [_PNG_SIG],
+    '.jpg': [_JPEG_SIG],
+    '.jpeg': [_JPEG_SIG],
+    '.xlsx': [_ZIP_SIG],
+    '.docx': [_ZIP_SIG],
+    '.xls': [_OLE2_SIG],
+    '.doc': [_OLE2_SIG],
+    # .csv / .txt have no reliable magic bytes — validated as "looks like
+    # text" below instead (rejects a renamed binary/executable).
+}
+
+
+def _looks_like_binary(head):
+    """Crude but effective: real text files (csv/txt) essentially never
+    contain a null byte in their first bytes; executables and other binaries
+    almost always do somewhere in the first few hundred bytes."""
+    return b'\x00' in head
+
+
+def _validate_attachment_content(attachment, ext):
+    """Reads the first bytes of the upload and checks them against the
+    expected magic bytes for `ext`, rather than trusting the filename alone.
+    Returns an error string, or None if the content matches.
+    """
+    head = attachment.read(16)
+    attachment.seek(0)  # rewind — the caller still needs to save the full file
+
+    signatures = _ATTACHMENT_SIGNATURES.get(ext)
+    if signatures:
+        if not any(head.startswith(sig) for sig in signatures):
+            return f'File content does not match a valid {ext} file.'
+        return None
+
+    # csv / txt — reject anything that looks like a renamed binary.
+    if _looks_like_binary(head):
+        return f'File content does not look like a valid {ext} text file.'
+    return None
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_attachment(request, message_id):
+    """
+    Serves a chat attachment via Django's own file storage (works the same in
+    DEBUG and production, unlike the raw /media/ URL — see carbonless_api/
+    urls.py, which only serves that path when DEBUG=True and applies no
+    access control at all when it does). Scoped to session__user=request.user
+    so one user can never fetch another's attachment by guessing/incrementing
+    the message id.
+    """
+    try:
+        message = ChatMessage.objects.select_related('session').get(
+            id=message_id, session__user=request.user,
+        )
+    except ChatMessage.DoesNotExist:
+        return Response({'error': 'Attachment not found'}, status=404)
+
+    if not message.attachment:
+        return Response({'error': 'This message has no attachment'}, status=404)
+
+    from django.http import FileResponse
+    return FileResponse(
+        message.attachment.open('rb'),
+        as_attachment=True,
+        filename=message.attachment_name or message.attachment.name.rsplit('/', 1)[-1],
+    )
+
+
 # ── Send message ──────────────────────────────────────────────────────────────
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -1431,6 +1520,12 @@ def send_message(request, session_id):
         ext = os.path.splitext(attachment.name)[1].lower()
         if ext not in allowed_extensions:
             return Response({'error': f'File type {ext} not supported.'}, status=400)
+        # The extension alone is just the client-supplied filename — verify
+        # the actual bytes match, so a renamed executable can't pass as
+        # "malware.pdf".
+        content_error = _validate_attachment_content(attachment, ext)
+        if content_error:
+            return Response({'error': content_error}, status=400)
         attachment_name = attachment.name
 
     # Subscription-based AI rate limiting — DISABLED until payment system is connected
