@@ -7,7 +7,13 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name')
-        read_only_fields = ('id',)
+        # email/username are never user-editable through this serializer — the
+        # real profile-update endpoint (accounts.views.update_profile) already
+        # deliberately excludes both. Without this, UserProfileView's PATCH
+        # let any authenticated user silently rewrite their own account email
+        # to one they control with zero verification, then use forgot-password
+        # to fully take over the account — verified live before this fix.
+        read_only_fields = ('id', 'username', 'email')
 
 
 class RegisterSerializer(serializers.ModelSerializer):
