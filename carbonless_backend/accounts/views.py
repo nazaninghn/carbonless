@@ -354,7 +354,14 @@ def mark_notifications_read(request):
     """Mark all or specific notifications as read"""
     ids = request.data.get('ids')
     if ids:
-        Notification.objects.filter(user=request.user, id__in=ids).update(is_read=True)
+        # `ids` is client-supplied — a non-list (e.g. a bare string, which
+        # Django/Python would iterate character-by-character into id__in)
+        # or a list with non-numeric entries previously crashed this
+        # endpoint with an unhandled 500 instead of just skipping bad values.
+        if not isinstance(ids, list):
+            return Response({'error': 'ids must be a list'}, status=400)
+        valid_ids = [i for i in ids if isinstance(i, int) or (isinstance(i, str) and i.isdigit())]
+        Notification.objects.filter(user=request.user, id__in=valid_ids).update(is_read=True)
     else:
         Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return Response({'status': 'ok'})
