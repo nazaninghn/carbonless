@@ -192,6 +192,13 @@ def _handle_subscription_deleted(sub_data):
         sub.stripe_subscription_id = ''
         sub.save()
         logger.info('User %s downgraded to Free (subscription canceled)', sub.user.username)
+        from accounts.models import Notification
+        Notification.objects.create(
+            user=sub.user, notification_type='system',
+            title='Subscription ended',
+            message='Your Pro subscription has ended and your account is now on the Free plan.',
+            link='/dashboard',
+        )
     except Subscription.DoesNotExist:
         pass
 
@@ -204,5 +211,15 @@ def _handle_payment_failed(invoice_data):
         sub.status = Subscription.Status.PAST_DUE
         sub.save()
         logger.warning('Payment failed for user %s', sub.user.username)
+        # Previously silent — the user only found out by happening to check
+        # their subscription status page. A failed charge is exactly the kind
+        # of event that should surface proactively, before access is lost.
+        from accounts.models import Notification
+        Notification.objects.create(
+            user=sub.user, notification_type='system',
+            title='Payment failed',
+            message='We could not process your last payment. Please update your payment method to keep your Pro access.',
+            link='/dashboard',
+        )
     except Subscription.DoesNotExist:
         pass
