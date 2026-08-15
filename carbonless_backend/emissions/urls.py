@@ -20,6 +20,7 @@ urlpatterns = [
     path('docs/', views.api_docs_view, name='api-docs'),
     path('export-all/', views.export_all_view, name='emission-export-all'),
     path('entries/<int:pk>/approve/', views.approve_entry_view, name='emission-approve'),
+    path('entries/<int:pk>/proof/', views.download_proof_document, name='emission-proof-download'),
     path('by-facility/', views.by_facility_view, name='emission-by-facility'),
     path('pending/', views.pending_entries_view, name='emission-pending'),
     path('export-excel/', views.export_excel_view, name='emission-export-excel'),

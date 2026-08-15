@@ -40,6 +40,34 @@ function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
   );
 }
 
+// ─── Proof document download ────────────────────────────────────────────────
+// The paperclip icon used to be a presence indicator only — proof_document
+// on the entry serializer is a raw /media/ URL, which is DEBUG-only and
+// unauthenticated when Django does serve it (see carbonless_api/urls.py),
+// and never served at all in production. This calls the dedicated,
+// ownership-checked download endpoint instead.
+async function downloadProofDocument(entryId) {
+  try {
+    const res = await api.downloadProofDocument(entryId);
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const filename = match?.[1] || 'proof';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
   const tr = language === 'tr';
@@ -61,9 +89,14 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {entry.proof_document && (
-            <span title={tr ? 'Kanıt var' : 'Has proof'}>
-              <Paperclip className="h-3.5 w-3.5 text-[#2ABD41]" />
-            </span>
+            <button
+              type="button"
+              onClick={() => downloadProofDocument(entry.id)}
+              title={tr ? 'Kanıtı indir' : 'Download proof'}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#2ABD41] transition hover:bg-[#2ABD41]/10"
+            >
+              <Paperclip className="h-3.5 w-3.5" />
+            </button>
           )}
           <button
             onClick={() => onEdit(entry)}
@@ -720,7 +753,14 @@ export default function EmissionsTab({
                         <div className="flex items-center gap-2">
                           <span className="truncate text-[13px] font-semibold text-[#072C0E]">{name}</span>
                           {entry.proof_document && (
-                            <Paperclip className="h-3 w-3 shrink-0 text-[#2ABD41]" title={tr ? 'Kanıt var' : 'Has proof'} />
+                            <button
+                              type="button"
+                              onClick={() => downloadProofDocument(entry.id)}
+                              title={tr ? 'Kanıtı indir' : 'Download proof'}
+                              className="shrink-0 text-[#2ABD41] transition hover:text-[#1D9C31]"
+                            >
+                              <Paperclip className="h-3 w-3" />
+                            </button>
                           )}
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5">

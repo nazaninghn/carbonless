@@ -553,6 +553,35 @@ def export_all_view(request):
     })
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_proof_document(request, pk):
+    """
+    Serves an emission entry's proof document via Django's own file storage
+    (works the same in DEBUG and production, unlike the raw /media/ URL —
+    only served when DEBUG=True and with no access control at all when it
+    is). Scoped to the requester's own company so one company's proof
+    documents can never be fetched by guessing/incrementing the entry id.
+    """
+    company = get_current_company(request.user)
+    try:
+        entry = EmissionEntry.objects.get(pk=pk, company=company) if company else None
+    except EmissionEntry.DoesNotExist:
+        entry = None
+    if not entry:
+        return Response({'error': 'Entry not found'}, status=404)
+
+    if not entry.proof_document:
+        return Response({'error': 'This entry has no proof document'}, status=404)
+
+    from django.http import FileResponse
+    return FileResponse(
+        entry.proof_document.open('rb'),
+        as_attachment=True,
+        filename=entry.proof_document.name.rsplit('/', 1)[-1],
+    )
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def approve_entry_view(request, pk):

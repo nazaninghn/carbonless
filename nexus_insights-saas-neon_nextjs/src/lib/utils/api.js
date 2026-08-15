@@ -233,6 +233,7 @@ export const api = {
   downloadExcel: (year) => request(`/emissions/export-excel/?year=${year}`),
 
   approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
+  downloadProofDocument: (entryId) => request(`/emissions/entries/${entryId}/proof/`),
   getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
   getPendingEntries: () => request('/emissions/pending/'),
 
@@ -290,6 +291,7 @@ export const api = {
     });
   },
   confirmEmissionEntry: (entryData) => request('/chat/confirm-entry/', { method: 'POST', body: JSON.stringify(entryData) }),
+  downloadChatAttachment: (messageId) => request(`/chat/messages/${messageId}/attachment/`),
 };
 
 /**

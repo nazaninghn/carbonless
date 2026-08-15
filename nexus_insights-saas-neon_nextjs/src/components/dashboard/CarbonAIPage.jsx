@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 import {
   Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
-  ClipboardList, RotateCcw, X, Paperclip, FileText,
+  ClipboardList, RotateCcw, X, Paperclip, FileText, Download,
   HelpCircle, CheckCircle2, Menu, BarChart3,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
@@ -3304,6 +3304,32 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // Mirrors creatingSessionRef so the "New Chat" buttons can be disabled while
   // the createChatSession request is in-flight (refs don't trigger re-renders).
   const [creatingSession, setCreatingSession] = useState(false);
+  const [downloadingAttachmentId, setDownloadingAttachmentId] = useState(null);
+
+  const handleDownloadAttachment = useCallback(async (msg) => {
+    if (downloadingAttachmentId) return;
+    setDownloadingAttachmentId(msg.id);
+    try {
+      const res = await api.downloadChatAttachment(msg.id);
+      if (!res.ok) {
+        setError(tr ? 'Dosya indirilemedi.' : 'Could not download the file.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = msg.attachment_name || 'attachment';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    } catch {
+      setError(tr ? 'Bağlantı hatası.' : 'Connection error.');
+    } finally {
+      setDownloadingAttachmentId(null);
+    }
+  }, [downloadingAttachmentId, tr]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
@@ -3446,7 +3472,12 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
     // displayOverride lets quick-reply buttons show a user-friendly label in
     // the chat bubble while still sending the raw value to the backend.
     const displayContent = file ? (content || `📎 ${file.name}`) : (displayOverride || content);
-    setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent }]);
+    setMessages(prev => [...prev, {
+      id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent,
+      // Known client-side before the request even completes — the badge
+      // shouldn't have to wait for a page reload to appear.
+      has_attachment: !!file, attachment_name: file?.name || null,
+    }]);
 
     try {
       // trRef mirrors the chat's own EN/TR toggle (independent of the outer app
@@ -3779,6 +3810,34 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
               {messages.map((msg) => (
                 <div key={msg.id}>
                   <Bubble role={msg.role} content={msg.content} />
+                  {/* ── Attachment download badge ──
+                      A just-sent message only has its local `m-N` placeholder id
+                      until the session is reloaded from the backend (send_message's
+                      response describes the AI reply, not the user message that
+                      carried the attachment) — the real numeric id the download
+                      endpoint needs isn't available yet, so show a pending state
+                      instead of a button that would 404. */}
+                  {msg.has_attachment && (
+                    typeof msg.id === 'number' ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDownloadAttachment(msg)}
+                        disabled={downloadingAttachmentId === msg.id}
+                        className="ml-9 mt-1.5 flex items-center gap-1.5 rounded-full border border-[#175022]/15 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#175022]/70 shadow-sm transition hover:border-[#2ABD41]/40 hover:text-[#175022] disabled:opacity-50"
+                      >
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="max-w-[220px] truncate">{msg.attachment_name || 'attachment'}</span>
+                        {downloadingAttachmentId === msg.id
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Download className="h-3 w-3" />}
+                      </button>
+                    ) : (
+                      <div className="ml-9 mt-1.5 flex items-center gap-1.5 rounded-full border border-[#175022]/10 bg-[#175022]/5 px-3 py-1.5 text-[11px] font-semibold text-[#175022]/40">
+                        <FileText className="h-3.5 w-3.5" />
+                        <span className="max-w-[220px] truncate">{msg.attachment_name || 'attachment'}</span>
+                      </div>
+                    )
+                  )}
                   {/* ── Quick reply buttons ── */}
                   {msg.role === 'assistant' && msg.ui?.quick_replies?.length > 0 && !msg.entriesSaved && !msg.quickReplyUsed && (
                     <div className="ml-9 mt-3 flex flex-wrap gap-2">
