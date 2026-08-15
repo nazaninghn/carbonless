@@ -61,6 +61,10 @@ _MESSAGES = {
         'en': '{prefix}Expected a number, got {value!r}.',
         'tr': '{prefix}Bir sayı bekleniyor, girilen: {value!r}.',
     },
+    'negative_not_allowed': {
+        'en': '{prefix}Expected a non-negative number, got {value!r}.',
+        'tr': '{prefix}Negatif olmayan bir sayı bekleniyor, girilen: {value!r}.',
+    },
     'unrecognized_unit': {
         'en': '{prefix}Unrecognized unit {unit!r} — expected one of {units}.',
         'tr': '{prefix}Tanınmayan birim {unit!r} — beklenen: {units}.',
@@ -211,6 +215,13 @@ def _validate_text_value(value, q, errors_prefix='', lang='en'):
             return None
         if not _is_valid_number(amount):
             return _msg(lang, 'expected_number', prefix=errors_prefix, value=value)
+        # Every numeric question in this questionnaire is a physical quantity
+        # (facility count, fuel consumption, distance, floor area, ...) — none
+        # of them are legitimately negative. Emission-factor-level negative
+        # values (e.g. metal recycling credits) are applied internally by the
+        # calculation engine, never typed in by the user.
+        if float(amount) < 0:
+            return _msg(lang, 'negative_not_allowed', prefix=errors_prefix, value=value)
         if units and unit is not None and unit not in units:
             return _msg(lang, 'unrecognized_unit', prefix=errors_prefix, unit=unit, units=sorted(units))
         return None
