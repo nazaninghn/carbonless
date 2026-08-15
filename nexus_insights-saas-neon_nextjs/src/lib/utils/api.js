@@ -256,9 +256,9 @@ export const api = {
     body: JSON.stringify({ title, force_new: forceNew })
   }),
   resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
-  submitReportStep: (reportId, step, data) => request(`/questionnaire/${reportId}/step/`, {
+  submitReportStep: (reportId, step, data, language) => request(`/questionnaire/${reportId}/step/`, {
     method: 'PATCH',
-    body: JSON.stringify({ step, data }),
+    body: JSON.stringify({ step, data, language }),
   }),
   saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
     method: 'PATCH',

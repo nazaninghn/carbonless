@@ -2340,7 +2340,7 @@ export function QuestionnaireTab({
     if (!rid_) return { success: true, data: {} };
     try {
       const backendData = mapAnswerForBackend(questionId, value);
-      const res = await api.submitReportStep(rid_, questionId, backendData);
+      const res = await api.submitReportStep(rid_, questionId, backendData, lang);
 
       // Guard: component may have unmounted while the save request was in-flight
       if (!isMounted.current) return { success: false, data: {} };
@@ -2404,7 +2404,7 @@ export function QuestionnaireTab({
           role: 'assistant',
           type: 'info',
           content: tr
-            ? `✅ تبریک! تمام سوالات تکمیل شدند. گزارش شما در زیر نمایش داده می‌شود.`
+            ? `✅ Tebrikler! Tüm sorular tamamlandı. Raporunuz aşağıda görüntüleniyor.`
             : `✅ Congratulations! All questions completed. Your report is displayed below.`,
         }];
       });
@@ -2590,7 +2590,7 @@ export function QuestionnaireTab({
           role: 'assistant',
           type: 'info',
           content: tr
-            ? `✅ تبریک! تمام سوالات تکمیل شدند.`
+            ? `✅ Tebrikler! Tüm sorular tamamlandı.`
             : `✅ Congratulations! All questions completed.`,
         }]);
         // Fetch report
@@ -2696,7 +2696,7 @@ export function QuestionnaireTab({
         role: 'assistant',
         type: 'info',
         content: tr
-          ? `✅ تبریک! تمام سوالات تکمیل شدند.`
+          ? `✅ Tebrikler! Tüm sorular tamamlandı.`
           : `✅ Congratulations! All questions completed.`,
       }]);
       // Fetch report

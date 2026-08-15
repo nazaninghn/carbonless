@@ -27,6 +27,14 @@ therefore validates the *format* of whatever's present, but only enforces
 not distinguishable from an in-progress one here — so required-ness inside a
 loop is intentionally not enforced item-by-item. It IS still enforced for the
 loop's own top-level answer (must have at least one entry when required).
+
+Bilingual errors: the app is TR/EN throughout (see BASE_SYSTEM_PROMPT's
+LANGUAGE directive in chat/views.py and every `tr ? ... : ...` string in the
+frontend) — a Turkish-selected user hitting a validation error should see
+Turkish, not raw English. _msg() below is the single place every error
+string is generated, keyed off the `lang` threaded through every validation
+function, so this file can't silently drift back to English-only messages
+the way the old per-string f-strings did.
 """
 import json
 import re
@@ -39,6 +47,78 @@ _schema_cache = None
 # just a guard against a typo'd or malicious value ("1e15") passing as "numeric".
 _MAX_NUMERIC = 1_000_000_000_000
 _NUMBER_RE = re.compile(r'^-?\d+(\.\d+)?$')
+
+_MESSAGES = {
+    'required': {
+        'en': '{prefix}This field is required.',
+        'tr': '{prefix}Bu alan zorunludur.',
+    },
+    'exact_digits': {
+        'en': '{prefix}Expected exactly {n} digits, got {value!r}.',
+        'tr': '{prefix}Tam olarak {n} rakam bekleniyor, girilen: {value!r}.',
+    },
+    'expected_number': {
+        'en': '{prefix}Expected a number, got {value!r}.',
+        'tr': '{prefix}Bir sayı bekleniyor, girilen: {value!r}.',
+    },
+    'unrecognized_unit': {
+        'en': '{prefix}Unrecognized unit {unit!r} — expected one of {units}.',
+        'tr': '{prefix}Tanınmayan birim {unit!r} — beklenen: {units}.',
+    },
+    'exceeds_max_length': {
+        'en': '{prefix}Text exceeds max length of {n} characters.',
+        'tr': '{prefix}Metin en fazla {n} karakter olabilir.',
+    },
+    'exact_length': {
+        'en': '{prefix}Expected exactly {n} characters.',
+        'tr': '{prefix}Tam olarak {n} karakter bekleniyor.',
+    },
+    'invalid_option': {
+        'en': '{prefix}{value!r} is not a valid option.',
+        'tr': '{prefix}{value!r} geçerli bir seçenek değil.',
+    },
+    'invalid_year': {
+        'en': '{prefix}Expected a 4-digit year, got {value!r}.',
+        'tr': '{prefix}4 haneli bir yıl bekleniyor, girilen: {value!r}.',
+    },
+    'year_min': {
+        'en': '{prefix}Year must be >= {n}.',
+        'tr': '{prefix}Yıl {n} veya daha büyük olmalıdır.',
+    },
+    'year_max': {
+        'en': '{prefix}Year must be <= {n}.',
+        'tr': '{prefix}Yıl {n} veya daha küçük olmalıdır.',
+    },
+    'expected_list': {
+        'en': '{prefix}Expected a list of selected options.',
+        'tr': '{prefix}Seçilen seçeneklerin bir listesi bekleniyor.',
+    },
+    'invalid_options_list': {
+        'en': '{prefix}Invalid option(s): {bad}.',
+        'tr': '{prefix}Geçersiz seçenek(ler): {bad}.',
+    },
+    'expected_country_city': {
+        'en': '{prefix}Expected country and city.',
+        'tr': '{prefix}Ülke ve şehir bekleniyor.',
+    },
+    'expected_object': {
+        'en': '{prefix}Expected an object with fields {fields}.',
+        'tr': '{prefix}Şu alanları içeren bir nesne bekleniyor: {fields}.',
+    },
+    'field_required': {
+        'en': '{prefix}Field {fid!r} is required.',
+        'tr': '{prefix}{fid!r} alanı zorunludur.',
+    },
+    'expected_entries_list': {
+        'en': 'Expected a list of entries.',
+        'tr': 'Bir kayıt listesi bekleniyor.',
+    },
+}
+
+
+def _msg(lang, key, **kwargs):
+    template = _MESSAGES[key].get(lang) or _MESSAGES[key]['en']
+    return template.format(**kwargs)
 
 
 def _load_schema():
@@ -111,7 +191,7 @@ def _is_numeric_field(q):
     )
 
 
-def _validate_text_value(value, q, errors_prefix=''):
+def _validate_text_value(value, q, errors_prefix='', lang='en'):
     """Validates a single non-empty scalar answer against a 'text' (or
     text-like) field schema entry. Returns an error string, or None if
     valid/effectively-empty (e.g. a unit chip pre-selected with no amount
@@ -122,7 +202,7 @@ def _validate_text_value(value, q, errors_prefix=''):
         exact_len = q.get('exactLength')
         if exact_len:
             if not re.match(rf'^\d{{{exact_len}}}$', s.strip()):
-                return f'{errors_prefix}Expected exactly {exact_len} digits, got {value!r}.'
+                return _msg(lang, 'exact_digits', prefix=errors_prefix, n=exact_len, value=value)
             return None
 
         units = _flatten_units(q.get('units'))
@@ -130,21 +210,21 @@ def _validate_text_value(value, q, errors_prefix=''):
         if _is_empty(amount):
             return None
         if not _is_valid_number(amount):
-            return f'{errors_prefix}Expected a number, got {value!r}.'
+            return _msg(lang, 'expected_number', prefix=errors_prefix, value=value)
         if units and unit is not None and unit not in units:
-            return f'{errors_prefix}Unrecognized unit {unit!r} — expected one of {sorted(units)}.'
+            return _msg(lang, 'unrecognized_unit', prefix=errors_prefix, unit=unit, units=sorted(units))
         return None
 
     max_len = q.get('maxLength')
     if max_len and len(s) > max_len:
-        return f'{errors_prefix}Text exceeds max length of {max_len} characters.'
+        return _msg(lang, 'exceeds_max_length', prefix=errors_prefix, n=max_len)
     exact_len = q.get('exactLength')
     if exact_len and len(s) != exact_len:
-        return f'{errors_prefix}Expected exactly {exact_len} characters.'
+        return _msg(lang, 'exact_length', prefix=errors_prefix, n=exact_len)
     return None
 
 
-def _validate_scalar_against_question(value, q, errors_prefix=''):
+def _validate_scalar_against_question(value, q, errors_prefix='', lang='en'):
     """Dispatch by q['type'] for a single (non-loop, non-compound) value.
     Empty values always pass here — required-ness is the caller's job."""
     if _is_empty(value):
@@ -162,55 +242,55 @@ def _validate_scalar_against_question(value, q, errors_prefix=''):
         options = q.get('options')
         if options:
             if str(value) not in [str(o) for o in options]:
-                return f'{errors_prefix}{value!r} is not a valid option.'
+                return _msg(lang, 'invalid_option', prefix=errors_prefix, value=value)
         elif qtype == 'year_select':
             if not re.match(r'^\d{4}$', str(value).strip()):
-                return f'{errors_prefix}Expected a 4-digit year, got {value!r}.'
+                return _msg(lang, 'invalid_year', prefix=errors_prefix, value=value)
             year = int(value)
             min_y, max_y = q.get('minYear'), q.get('maxYear')
             if min_y and year < min_y:
-                return f'{errors_prefix}Year must be >= {min_y}.'
+                return _msg(lang, 'year_min', prefix=errors_prefix, n=min_y)
             if max_y and year > max_y:
-                return f'{errors_prefix}Year must be <= {max_y}.'
+                return _msg(lang, 'year_max', prefix=errors_prefix, n=max_y)
         return None
 
     if qtype == 'multi_select':
         if not isinstance(value, list):
-            return f'{errors_prefix}Expected a list of selected options.'
+            return _msg(lang, 'expected_list', prefix=errors_prefix)
         options = q.get('options')
         if options:
             allowed = {str(o) for o in options}
             bad = [v for v in value if str(v) not in allowed]
             if bad:
-                return f'{errors_prefix}Invalid option(s): {bad}.'
+                return _msg(lang, 'invalid_options_list', prefix=errors_prefix, bad=bad)
         return None
 
     if qtype == 'country_city':
         if not isinstance(value, dict):
-            return f'{errors_prefix}Expected {{country, city}}.'
+            return _msg(lang, 'expected_country_city', prefix=errors_prefix)
         return None
 
     # text / equipment_loop / fuel_loop items with no options fall through to
     # the same numeric-or-text rules as a plain text field.
-    return _validate_text_value(value, q, errors_prefix)
+    return _validate_text_value(value, q, errors_prefix, lang)
 
 
-def _validate_compound_item(obj, fields, prefix='', enforce_required=True):
+def _validate_compound_item(obj, fields, prefix='', enforce_required=True, lang='en'):
     if not isinstance(obj, dict):
-        return f'{prefix}Expected an object with fields {list(fields)}.'
+        return _msg(lang, 'expected_object', prefix=prefix, fields=list(fields))
     for fid, f in fields.items():
         v = obj.get(fid)
         if _is_empty(v):
             if enforce_required and f.get('required', True):
-                return f'{prefix}Field {fid!r} is required.'
+                return _msg(lang, 'field_required', prefix=prefix, fid=fid)
             continue
-        err = _validate_scalar_against_question(v, f, f'{prefix}Field {fid!r}: ')
+        err = _validate_scalar_against_question(v, f, f"{prefix}Field {fid!r}: ", lang)
         if err:
             return err
     return None
 
 
-def _validate_compound(value, q):
+def _validate_compound(value, q, lang='en'):
     fields = {f['id']: f for f in (q.get('fields') or [])}
     # A loop-sourced compound is asked once per item and the frontend may
     # save mid-loop progress — don't hard-require every sub-field the way a
@@ -224,7 +304,7 @@ def _validate_compound(value, q):
             # A single compound instance (its own keys match this compound's
             # fields), not a dict keyed by loop item — e.g. a loopSource
             # compound answered directly rather than as {itemKey: {...}}.
-            return _validate_compound_item(value, fields, enforce_required=enforce_required)
+            return _validate_compound_item(value, fields, enforce_required=enforce_required, lang=lang)
         elif isinstance(value, dict):
             # Aggregate keyed by loop item (same convention as equipment_loop
             # / fuel_loop) rather than a flat {items: [...]} list.
@@ -232,17 +312,17 @@ def _validate_compound(value, q):
         else:
             items = value if isinstance(value, list) else None
         if not isinstance(items, list):
-            return 'Expected a list of entries.'
+            return _msg(lang, 'expected_entries_list')
         for i, item in enumerate(items):
-            err = _validate_compound_item(item, fields, f'Item {i}: ', enforce_required)
+            err = _validate_compound_item(item, fields, f'Item {i}: ', enforce_required, lang)
             if err:
                 return err
         return None
 
-    return _validate_compound_item(value, fields, enforce_required=True)
+    return _validate_compound_item(value, fields, enforce_required=True, lang=lang)
 
 
-def _validate_loop_aggregate(value, q):
+def _validate_loop_aggregate(value, q, lang='en'):
     """Answers for any loopSource question (equipment_loop/fuel_loop, or a
     plain single_select/multi_select/text asked once per loop item) arrive as
     a per-item dict — see saveStepToBackend, which posts the full `collected`
@@ -250,15 +330,19 @@ def _validate_loop_aggregate(value, q):
     empty items (not yet reached in the loop) are fine."""
     if isinstance(value, dict):
         for item_key, item_val in value.items():
-            err = _validate_scalar_against_question(item_val, q, f'Item {item_key!r}: ')
+            err = _validate_scalar_against_question(item_val, q, f'Item {item_key!r}: ', lang)
             if err:
                 return err
         return None
-    return _validate_scalar_against_question(value, q)
+    return _validate_scalar_against_question(value, q, lang=lang)
 
 
-def validate_generic_step(step_id, data):
+def validate_generic_step(step_id, data, lang='en'):
     """Validates a generic (non-STRICT_STEPS) step answer.
+
+    `lang` ('en' or 'tr') controls the language of the returned error
+    message — the app is TR/EN bilingual throughout, so a Turkish-selected
+    user should never see a raw English validation error.
 
     Returns (True, None) if valid, or if step_id/type isn't in the schema
     (unknown steps pass through rather than hard-failing — this validator's
@@ -281,16 +365,16 @@ def validate_generic_step(step_id, data):
 
     if _is_empty(value):
         if q.get('required'):
-            return False, 'This field is required.'
+            return False, _msg(lang, 'required', prefix='')
         return True, None
 
     qtype = q.get('type')
     if qtype == 'compound':
-        err = _validate_compound(value, q)
+        err = _validate_compound(value, q, lang)
     elif qtype in ('equipment_loop', 'fuel_loop') or q.get('loopSource'):
-        err = _validate_loop_aggregate(value, q)
+        err = _validate_loop_aggregate(value, q, lang)
     else:
-        err = _validate_scalar_against_question(value, q)
+        err = _validate_scalar_against_question(value, q, lang=lang)
 
     if err:
         return False, err

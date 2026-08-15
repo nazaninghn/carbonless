@@ -425,7 +425,8 @@ class SubmitStepView(APIView):
         # saved with a value outside its option list, etc. — this used to be
         # enforced only client-side.
         from .carboniq_validation import validate_generic_step
-        is_valid, validation_error = validate_generic_step(step, data)
+        lang = request.data.get('language') or 'en'
+        is_valid, validation_error = validate_generic_step(step, data, lang=lang)
         if not is_valid:
             return Response({
                 'success': False,
