@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
+from chat.local_parser import parse_localized_number
 import logging
 
 # Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
@@ -148,9 +149,14 @@ def _extract_emission_from_step(step_id, data, report):
     if not quantity:
         return None
 
-    # Try to parse as number
+    # Try to parse as number. parse_localized_number distinguishes a
+    # thousands separator from a decimal point (e.g. "15.000" typed by a
+    # Turkish user means 15000, not 15) — the old `.replace(',', '')` here
+    # stripped commas unconditionally and left a literal "15.000" as-is,
+    # silently creating a real EmissionEntry with a quantity 1000x too
+    # small, and no error since the string was still valid float syntax.
     try:
-        qty = float(str(quantity).replace(',', '').replace(' ', ''))
+        qty = parse_localized_number(str(quantity).replace(' ', '').strip())
     except (ValueError, TypeError):
         return None
 
