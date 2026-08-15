@@ -251,6 +251,8 @@
 
 **تکمیل بعدی همین بخش**: با یه sweep کامل‌تر روی `questionnaire/views.py`، ۵ endpoint نویسنده‌ی دیگه هم پیدا شد که همون مشکل رو داشتن و جا مونده بودن از فیکس اول: `StartReportView` (شروع گزارش جدید)، `ReportStatusView` (که علاوه بر GET، متد DELETE هم داره — حذف کل یه inventory)، `ReuseCompanyProfileView`، `SaveDraftView`، و `reset_session`. همه با همون `NotAuditorForWrites` رفع شدن. تست زنده‌ی بعد از فیکس: شروع گزارش جدید، حذف گزارش، ذخیره‌ی draft، و reset session همه برای Auditor حالا ۴۰۳ می‌گیرن؛ خوندن وضعیت گزارش (GET) همچنان ۲۰۰ می‌مونه. `calculate_view` (محاسبه‌ی پیش‌نمایش بدون ذخیره) عمداً دست‌نخورده موند چون واقعاً چیزی رو تغییر نمی‌ده. ۹۱ تست بک‌اند دوباره بدون رگرشن پاس شدن.
 
+**آخرین تکمیل**: یه sweep کامل روی بقیه‌ی فایل‌ها (`companies/views.py`, `chat/views.py`, `workspace_views.py`) هم انجام شد. `companies/views.py` و `chat/views.py` تمیز بودن (endpointهای باقی‌مونده یا شخصی/self-service بودن مثل session چت خود کاربر، یا از قبل با `HasCompanyAdminRole` محافظت می‌شدن). ولی توی `workspace_views.py` یه مورد دیگه پیدا شد: **`ReportFieldBulkUpsertView`** (`POST /api/questionnaire/report-fields/bulk-upsert/` — ویرایش دستی فیلدهای گزارش از تب Workspace) هم فقط `IsAuthenticated` داشت. رفع و با تست زنده تایید شد: Auditor حالا ۴۰۳ می‌گیره، خوندن نقشه‌ی فیلدها (GET) همچنان ۲۰۰ می‌مونه. با این، این sweep کامل حساب می‌شه — هر write endpoint واقعی روی داده‌ی company (emissions, facilities, targets, custom requests, questionnaire, workspace fields) الان درست پشت `NotAuditorForWrites` هست.
+
 ---
 
 هر بخش رو که بخوای شروع کنم بگو (مثلاً "بخش ۲" یا "بخش ۴")، همونجوری که بخش ۱ رو بررسی کردم — واقعاً کد رو می‌خونم، تست زنده می‌گیرم، و اگه باگ بود درستش می‌کنم.

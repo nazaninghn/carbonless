@@ -402,7 +402,7 @@ class ReportFieldMapView(APIView):
 
 class ReportFieldBulkUpsertView(APIView):
     """POST /api/questionnaire/report-fields/bulk-upsert/"""
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
     def post(self, request):
         report_id = request.data.get('report')
