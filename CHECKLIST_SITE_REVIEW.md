@@ -41,7 +41,8 @@
 * CSP header دامنه‌ی backend رو دقیق مشخص کنه، نه wildcard باز.
 * Django و پکیج‌های حساس (djangorestframework, simplejwt) نسخه‌ی بدون CVE شناخته‌شده باشن.
 
-## 🟡 5. جداسازی چندمستأجری (Multi-tenancy)
+## 🟡 5. جداسازی چندمستأجری (Multi-tenancy) — بررسی شد ✅
+(باگ جدی پیدا شد: کارمند دعوت‌شده هیچ‌وقت company درست رو نمی‌دید. رفع شد: profile.active_company + auto-switch روی accept-invite + endpoint سوییچ + دکمه توی سایدبار)
 
 * یه کاربر با company membership غیرفعال نتونه به داده‌ی اون company دسترسی داشته باشه.
 * عوض کردن company فعال (active membership) بین دو company واقعاً context رو عوض کنه، نه cache قدیمی نشون بده.
