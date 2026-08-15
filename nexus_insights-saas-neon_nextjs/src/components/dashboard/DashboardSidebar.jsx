@@ -203,7 +203,7 @@ export default function DashboardSidebar({
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[13px] font-bold text-[#072C0E]">
-                  {user?.username || 'User'}
+                  {user?.username || (tr ? 'Kullanıcı' : 'User')}
                 </p>
                 <p className="truncate text-[11px] text-[#072C0E]/40">{user?.email || ''}</p>
               </div>
@@ -254,7 +254,7 @@ export default function DashboardSidebar({
               className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-red-500/70 transition hover:bg-red-50 hover:text-red-600"
             >
               <LogOut className="h-3.5 w-3.5" />
-              {tr ? 'Çikis' : 'Logout'}
+              {tr ? 'Çıkış' : 'Logout'}
             </button>
           </div>
         </div>
@@ -264,7 +264,7 @@ export default function DashboardSidebar({
       {sidebarOpen && (
         <button
           type="button"
-          aria-label="Close sidebar"
+          aria-label={tr ? 'Kenar çubuğunu kapat' : 'Close sidebar'}
           onClick={closeSidebar}
           className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
         />
@@ -272,7 +272,7 @@ export default function DashboardSidebar({
 
       {/* ------------------- MOBILE BOTTOM NAV -------------------------- */}
       <nav
-        aria-label="Mobile navigation"
+        aria-label={tr ? 'Mobil gezinme' : 'Mobile navigation'}
         className="
           fixed bottom-0 left-0 right-0 z-40
           border-t border-[#DEFAE1]
@@ -367,10 +367,10 @@ export default function DashboardSidebar({
         type="danger"
         title={tr ? 'Oturumu kapat' : 'Sign out'}
         message={tr
-          ? 'Hesabinizdan çikis yapilacak. Devam etmek istiyor musunuz?'
+          ? 'Hesabınızdan çıkış yapılacak. Devam etmek istiyor musunuz?'
           : 'You will be signed out of your account. Do you want to continue?'}
-        confirmText={tr ? 'Çikis yap' : 'Sign out'}
-        cancelText={tr ? 'Iptal' : 'Cancel'}
+        confirmText={tr ? 'Çıkış yap' : 'Sign out'}
+        cancelText={tr ? 'İptal' : 'Cancel'}
         onConfirm={() => { setShowLogoutConfirm(false); onLogout(); }}
         onCancel={() => setShowLogoutConfirm(false)}
       />

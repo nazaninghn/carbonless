@@ -163,7 +163,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
             {tr ? 'İş Seyahati' : 'Business Travel'}
           </p>
           <p className="text-[10px] text-[#072C0E]/40">
-            Kapsam 3 · K5 · ISO 14064-1 §5.4
+            {tr ? 'Kapsam 3 · K5 · ISO 14064-1 §5.4' : 'Scope 3 · K5 · ISO 14064-1 §5.4'}
           </p>
         </div>
       </div>

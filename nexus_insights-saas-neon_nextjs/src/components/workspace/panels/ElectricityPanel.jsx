@@ -284,7 +284,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
         </div>
 
         {/* EF box — shown when factor is set */}
-        {emissionFactor && parseFloat(emissionFactor) > 0 && (
+        {emissionFactor && parseLocalizedNumber(emissionFactor) > 0 && (
           <div className="flex overflow-hidden rounded-xl border border-[#072C0E]/8">
             <div className="w-[3px] shrink-0 bg-[#175022]" />
             <div className="flex-1 bg-[#F1FCF2] px-3 py-2.5">
@@ -292,7 +292,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
                 {emissionFactorSource || (tr ? 'Özel faktör' : 'Custom factor')}
               </p>
               <p className="text-[13px] font-bold text-[#072C0E]">
-                {parseFloat(emissionFactor).toFixed(3)} kgCO₂e/kWh
+                {parseLocalizedNumber(emissionFactor).toFixed(3)} kgCO₂e/kWh
               </p>
               <p className="text-[10px] text-[#175022] mt-0.5">
                 {tr ? 'Lokasyon bazlı' : 'Location-based'}
@@ -308,11 +308,11 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
           <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#175022] mb-1">
             {tr ? 'Tahmini Kapsam 2 Emisyonu' : 'Estimated Scope 2 Emission'}
           </p>
-          {renewableOnSite && parseFloat(renewableOnSite) > 0 && (
+          {renewableOnSite && parseLocalizedNumber(renewableOnSite) > 0 && (
             <p className="text-[10px] text-[#072C0E]/40 mb-0.5">
               {tr
-                ? `Net: ${Math.max(parseFloat(consumptionKwh) - parseFloat(renewableOnSite), 0).toLocaleString()} kWh (sahada üretim düşüldü)`
-                : `Net: ${Math.max(parseFloat(consumptionKwh) - parseFloat(renewableOnSite), 0).toLocaleString()} kWh (after on-site generation)`}
+                ? `Net: ${Math.max(parseLocalizedNumber(consumptionKwh) - parseLocalizedNumber(renewableOnSite), 0).toLocaleString()} kWh (sahada üretim düşüldü)`
+                : `Net: ${Math.max(parseLocalizedNumber(consumptionKwh) - parseLocalizedNumber(renewableOnSite), 0).toLocaleString()} kWh (after on-site generation)`}
             </p>
           )}
           <div className="flex items-baseline gap-1.5">

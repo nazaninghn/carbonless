@@ -43,7 +43,11 @@ export function InventoryProvider({ children }) {
   const exitActionRef = useRef(null);
 
   // ✅ Start new inventory
-  const startNewInventory = useCallback(async (name) => {
+  // `tr` is optional (defaults to false/English) — this provider has no
+  // language of its own, callers pass it through so the one hardcoded
+  // fallback below (when the backend doesn't return its own error text)
+  // isn't stuck in English regardless of the selected language.
+  const startNewInventory = useCallback(async (name, tr = false) => {
     setLoading(true);
     setError('');
     try {
@@ -52,7 +56,7 @@ export function InventoryProvider({ children }) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error || 'Could not start inventory');
+        setError(data.error || (tr ? 'Envanter başlatılamadı' : 'Could not start inventory'));
         return false;
       }
 

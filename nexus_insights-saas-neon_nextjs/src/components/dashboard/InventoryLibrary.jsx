@@ -48,7 +48,7 @@ export default function InventoryLibrary({ tr = false }) {
       return;
     }
 
-    const success = await startNewInventory(surveyName.trim());
+    const success = await startNewInventory(surveyName.trim(), tr);
     if (success) {
       setSurveyName('');
       setShowNamingDialog(false);

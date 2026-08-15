@@ -321,7 +321,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
                 <input
                   type="number" min="0" step="0.01"
                   className={INPUT_CLS}
-                  placeholder="e.g. 45"
+                  placeholder={tr ? 'Örn: 45' : 'e.g. 45'}
                   value={draft.cargo_t}
                   onChange={e => setDraft(d => ({ ...d, cargo_t: e.target.value }))}
                 />
@@ -330,7 +330,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
                 <input
                   type="number" min="0"
                   className={INPUT_CLS}
-                  placeholder="e.g. 1200"
+                  placeholder={tr ? 'Örn: 1200' : 'e.g. 1200'}
                   value={draft.distance_km}
                   onChange={e => setDraft(d => ({ ...d, distance_km: e.target.value }))}
                 />

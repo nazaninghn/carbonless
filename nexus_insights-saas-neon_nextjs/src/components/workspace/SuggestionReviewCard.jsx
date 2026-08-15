@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useState } from 'react';
 import { CheckCircle2, X, Edit3, Loader2, Flame, Zap, Truck, Briefcase, ChevronDown, ChevronUp } from 'lucide-react';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 // ── Category meta ──────────────────────────────────────────────────────────────
 const CAT_META = {
@@ -268,7 +269,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
                       onChange={e => {
                         const raw = e.target.value;
                         const val = typeof f.value === 'number'
-                          ? (raw === '' ? '' : (!isNaN(parseFloat(raw)) ? parseFloat(raw) : raw))
+                          ? (raw === '' ? '' : (!isNaN(parseLocalizedNumber(raw)) ? parseLocalizedNumber(raw) : raw))
                           : raw;
                         setEditedValues(prev => ({ ...prev, [f.field_id]: val }));
                       }}

@@ -60,7 +60,7 @@ const CONFIG = {
 };
 
 // ─── Single Toast ─────────────────────────────────────────────────────────────
-function Toast({ id, type, message, duration, onDismiss }) {
+function Toast({ id, type, message, duration, onDismiss, language }) {
   const [in_,    setIn]    = useState(false);
   const [out,    setOut]   = useState(false);
   const [paused, setPaused] = useState(false);
@@ -117,7 +117,7 @@ function Toast({ id, type, message, duration, onDismiss }) {
         <button
           onClick={dismiss}
           className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full opacity-35 transition-opacity hover:opacity-70 ${text}`}
-          aria-label="Dismiss"
+          aria-label={language === 'tr' ? 'Kapat' : 'Dismiss'}
         >
           <X className="h-3 w-3" />
         </button>
@@ -144,7 +144,7 @@ function Toast({ id, type, message, duration, onDismiss }) {
 }
 
 // ─── Container (fixed, stacked) ───────────────────────────────────────────────
-function ToastContainer({ toasts, onDismiss }) {
+function ToastContainer({ toasts, onDismiss, language }) {
   return (
     <>
       {/* bottom-20 on mobile keeps toasts above the fixed bottom nav (h-16 + safe-area)
@@ -161,7 +161,7 @@ function ToastContainer({ toasts, onDismiss }) {
         aria-atomic="false"
       >
         {toasts.map(t => (
-          <Toast key={t.id} {...t} onDismiss={onDismiss} />
+          <Toast key={t.id} {...t} onDismiss={onDismiss} language={language} />
         ))}
       </div>
     </>
@@ -169,7 +169,7 @@ function ToastContainer({ toasts, onDismiss }) {
 }
 
 // ─── Provider ─────────────────────────────────────────────────────────────────
-export function ToastProvider({ children }) {
+export function ToastProvider({ children, language }) {
   const [toasts, setToasts] = useState([]);
 
   const dismiss = useCallback((id) => {
@@ -196,7 +196,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastCtx.Provider value={toast}>
       {children}
-      <ToastContainer toasts={toasts} onDismiss={dismiss} />
+      <ToastContainer toasts={toasts} onDismiss={dismiss} language={language} />
     </ToastCtx.Provider>
   );
 }

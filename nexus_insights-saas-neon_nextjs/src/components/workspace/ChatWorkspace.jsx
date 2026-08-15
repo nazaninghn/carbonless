@@ -1487,7 +1487,7 @@ export function ChatWorkspace({
         {error && (
           <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
             <span className="flex-1">{error}</span>
-            <button onClick={() => setError('')} className="shrink-0 hover:text-red-800 transition" aria-label="Dismiss error">
+            <button onClick={() => setError('')} className="shrink-0 hover:text-red-800 transition" aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'}>
               <X className="h-3 w-3" />
             </button>
           </div>

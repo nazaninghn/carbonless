@@ -27,8 +27,16 @@ export default class ErrorBoundary extends Component {
 
   render() {
     if (this.state.hasError) {
-      const title   = this.props.fallbackTitle   || 'Something went wrong';
-      const message = this.props.fallbackMessage || 'An unexpected error occurred. Please refresh the page or try again.';
+      // Every current call site (app/dashboard/page.jsx, x10) passes
+      // `language` but not fallbackTitle/fallbackMessage — meaning
+      // every dashboard tab, if it ever crashes, showed this hardcoded
+      // English text to Turkish users regardless of their selected
+      // language. Real, live gap (not dead-code like ConfirmDialog's
+      // equivalent), since a render crash is exactly the kind of thing
+      // that does happen in production.
+      const tr = this.props.language === 'tr';
+      const title   = this.props.fallbackTitle   || (tr ? 'Bir şeyler ters gitti' : 'Something went wrong');
+      const message = this.props.fallbackMessage || (tr ? 'Beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin veya tekrar deneyin.' : 'An unexpected error occurred. Please refresh the page or try again.');
 
       return (
         <div className="flex flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-red-200/70 bg-red-50/60 p-12 text-center shadow-[0_4px_16px_rgba(220,38,38,0.06)]">

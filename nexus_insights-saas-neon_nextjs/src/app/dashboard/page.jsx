@@ -169,7 +169,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <ToastProvider>
+    <ToastProvider language={language}>
     <div className="dashboard-android-fix h-screen overflow-hidden bg-[#F1FCF2] text-[#072C0E] flex font-inter">
       {/* Sidebar */}
       <DashboardSidebar

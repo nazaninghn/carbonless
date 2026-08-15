@@ -209,7 +209,7 @@ export default function CompanySettings({ language }) {
           </FormField>
           <FormField label="NACE">
             <input type="text" value={field('nace_code')} onChange={set('nace_code')}
-              placeholder="e.g. C29.10" className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+              placeholder={tr ? 'Örn. C29.10' : 'e.g. C29.10'} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
           </FormField>
         </div>
 

@@ -5,6 +5,7 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Leaf, ChevronDown, RotateCcw, Send } from 'lucide-react';
 import { MONTHS_TR, MONTHS_EN } from '@/lib/constants/emissions';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 /**
  * Scope3EntryForm – cascading form for all 15 Scope 3 categories + water.
@@ -100,7 +101,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
       return;
     }
 
-    const qty = parseFloat(quantity);
+    const qty = parseLocalizedNumber(quantity);
     if (isNaN(qty) || qty <= 0) {
       toast.warning(tr ? 'Miktar sıfırdan büyük olmalı' : 'Quantity must be greater than zero');
       return;

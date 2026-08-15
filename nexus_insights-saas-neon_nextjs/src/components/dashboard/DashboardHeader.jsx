@@ -107,7 +107,7 @@ export default function DashboardHeader({
           <button
             onClick={() => setSidebarOpen(true)}
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#072C0E]/50 hover:bg-[#F1FCF2] lg:hidden"
-            aria-label="Open sidebar"
+            aria-label={tr ? 'Kenar çubuğunu aç' : 'Open sidebar'}
           >
             <Menu className="h-4 w-4" />
           </button>

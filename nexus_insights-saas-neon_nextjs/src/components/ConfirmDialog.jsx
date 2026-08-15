@@ -2,7 +2,12 @@
 import { useEffect } from 'react';
 import { AlertTriangle, LogOut } from 'lucide-react';
 
-export default function ConfirmDialog({ open, onConfirm, onCancel, title, message, confirmText, cancelText, type = 'warning' }) {
+export default function ConfirmDialog({ open, onConfirm, onCancel, title, message, confirmText, cancelText, type = 'warning', language = 'en' }) {
+  // Every current caller passes confirmText/cancelText explicitly, so this
+  // fallback never actually fires today — but it's a latent bug for any
+  // future caller that forgets to, since it silently shows English
+  // regardless of the selected language otherwise.
+  const tr = language === 'tr';
   // Dismiss on Escape key — consistent with every other modal in the app
   useEffect(() => {
     if (!open) return;
@@ -40,13 +45,13 @@ export default function ConfirmDialog({ open, onConfirm, onCancel, title, messag
             onClick={onCancel}
             className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-3 text-sm font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
           >
-            {cancelText || 'Cancel'}
+            {cancelText || (tr ? 'İptal' : 'Cancel')}
           </button>
           <button
             onClick={onConfirm}
             className={`flex-1 rounded-full py-3 text-sm font-bold text-white shadow-lg transition-colors ${type === 'danger' ? 'bg-red-500 shadow-red-500/20 hover:bg-red-600' : 'bg-[#072C0E] shadow-[#072C0E]/15 hover:bg-[#175022]'}`}
           >
-            {confirmText || 'Confirm'}
+            {confirmText || (tr ? 'Onayla' : 'Confirm')}
           </button>
         </div>
       </div>

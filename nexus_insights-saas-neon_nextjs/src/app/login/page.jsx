@@ -11,6 +11,24 @@ import { api, markSessionActive } from '@/lib/utils/api';
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
+// The Django backend (and Simple-JWT's own default serializer) returns
+// English error prose, not error codes — `detail` below was being shown
+// to the user verbatim regardless of selected language, bypassing the
+// tr/en branching entirely for any login failure with a specific
+// message. Maps the known, stable strings; anything not in this map
+// still falls back to the raw text (better than silently swallowing a
+// real error), but at least the common cases are translated.
+const KNOWN_BACKEND_ERRORS_TR = {
+  'No active account found with the given credentials': 'Girilen bilgilerle eşleşen aktif bir hesap bulunamadı.',
+  'Invalid credentials': 'Kullanıcı adı veya şifre hatalı.',
+  'This account is inactive.': 'Bu hesap devre dışı.',
+};
+
+function translateBackendError(detail, tr) {
+  if (!tr || !detail) return detail;
+  return KNOWN_BACKEND_ERRORS_TR[detail] || detail;
+}
+
 function LoginContent() {
   const { t, language, changeLanguage } = useLanguage();
   const router = useRouter();
@@ -43,10 +61,10 @@ function LoginContent() {
         completeLogin();
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(data?.error || (tr ? 'Google ile giris basarisiz oldu.' : 'Google sign-in failed.'));
+        setError(translateBackendError(data?.error, tr) || (tr ? 'Google ile giriş başarısız oldu.' : 'Google sign-in failed.'));
       }
     } catch {
-      setError(tr ? 'Sunucu baglanti hatasi' : 'Server connection error');
+      setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
     } finally { setLoading(false); }
   }, [tr, completeLogin]);
 
@@ -84,17 +102,17 @@ function LoginContent() {
       } else {
         const data = await res.json().catch(() => ({}));
         if (res.status >= 500) {
-          setError(tr ? 'Sunucu hatasi. Lutfen tekrar deneyin.' : 'Server error. Please try again.');
+          setError(tr ? 'Sunucu hatası. Lütfen tekrar deneyin.' : 'Server error. Please try again.');
         } else {
           const detail = data?.detail || data?.error;
           if (detail === 'No active account found with the given credentials') {
             setMaybeUnverified(true);
           }
-          setError(detail || (tr ? 'Kullanici adi veya sifre hatali.' : 'Invalid username or password.'));
+          setError(translateBackendError(detail, tr) || (tr ? 'Kullanıcı adı veya şifre hatalı.' : 'Invalid username or password.'));
         }
       }
     } catch {
-      setError(tr ? 'Sunucu baglanti hatasi' : 'Server connection error');
+      setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
     } finally { setLoading(false); }
   }, [email, password, tr, completeLogin]);
 
@@ -186,9 +204,9 @@ function LoginContent() {
                   {error}
                   {maybeUnverified && (
                     <div className="mt-2 border-t border-red-200 pt-2">
-                      {tr ? 'Hesabiniz henuz dogrulanmadiysa: ' : "Your account may not be verified yet. "}
+                      {tr ? 'Hesabınız henüz doğrulanmadıysa: ' : "Your account may not be verified yet. "}
                       <NextLink href={`/verify-email?email=${encodeURIComponent(email)}`} className="font-semibold text-[#2ABD41] hover:underline">
-                        {tr ? 'Dogrulama kodunu gir' : 'Enter verification code'}
+                        {tr ? 'Doğrulama kodunu gir' : 'Enter verification code'}
                       </NextLink>
                     </div>
                   )}
@@ -196,7 +214,7 @@ function LoginContent() {
               )}
 
               <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-5 py-4 text-[14px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 transition hover:bg-[#1D9C31] hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0">
-                {loading ? (tr ? 'Giris yapiliyor...' : 'Signing in...') : t.login.title}
+                {loading ? (tr ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                 {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>
             </form>

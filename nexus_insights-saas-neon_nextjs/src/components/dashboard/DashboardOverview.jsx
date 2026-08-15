@@ -421,7 +421,7 @@ export default function DashboardOverview({
             {tr ? 'Karbon çalışma alanı' : 'Carbon workspace'}
           </p>
           <h1 className="mt-2 text-2xl font-black text-[#072C0E]">
-            {tr ? 'Emisyon Profili' : 'Emission Profile'} Â· {selectedYear}
+            {tr ? 'Emisyon Profili' : 'Emission Profile'} · {selectedYear}
           </h1>
           <p className="mt-1 text-sm text-[#072C0E]/55">
             {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCO2e

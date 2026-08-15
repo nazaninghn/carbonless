@@ -77,7 +77,7 @@ export default function TeamManagement({ language }) {
         toast.success(tr ? `Davet gönderildi: ${data.email}` : `Invite sent to ${data.email}`);
         setInviteEmail('');
       } else {
-        let msg = 'Error';
+        let msg = tr ? 'Hata' : 'Error';
         try { const err = await res.json(); msg = err.error || msg; } catch {}
         toast.error(msg);
       }
