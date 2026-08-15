@@ -597,6 +597,24 @@ def build_guided_ui(family: str, draft: dict) -> dict:
         except (TypeError, ValueError):
             question_text = "Is the distance total for all vehicles or per vehicle?"
 
+    # Dynamic period quick replies: show all 12 months + year selection
+    if next_field == "period":
+        now = datetime.now(timezone.utc)
+        month_names = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                       'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+        period_replies = ["this_month", "last_month"]
+        for m in range(1, 13):
+            period_replies.append(f"{month_names[m-1]} {now.year}")
+        for m in range(1, 13):
+            period_replies.append(f"{month_names[m-1]} {now.year - 1}")
+        return {
+            "complete": False,
+            "field": next_field,
+            "question": question_text,
+            "quick_replies": period_replies,
+            "draft": draft,
+        }
+
     return {
         "complete": False,
         "field": next_field,
