@@ -91,7 +91,8 @@
 
 ---
 
-## 🔴 11. پرداخت و اشتراک (Stripe Subscriptions) — هنوز بررسی نشده
+## 🔴 11. پرداخت و اشتراک (Stripe Subscriptions) — بررسی شد ✅
+(checkout قیمت رو سمت سرور از env var می‌گیره، دستکاری کلاینت ممکن نیست. webhook امضا رو واقعاً چک می‌کنه. portal فقط subscription خود کاربره. هیچ endpoint نوشتنی‌ای برای عوض کردن plan نیست. دو تا Notification گم‌شده (payment failed, subscription ended) پیدا و اضافه شد. نکته: فعلاً هیچ فیچری واقعاً بر اساس plan محدود نمی‌شه — enforcement عمداً غیرفعاله تا وصل بشه)
 
 * checkout session با پلن/قیمت درست ساخته بشه، دستکاری قیمت سمت کلاینت ممکن نباشه.
 * webhook امضا (signature) رو واقعاً چک کنه، نه فقط body رو trust کنه.
