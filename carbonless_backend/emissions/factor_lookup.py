@@ -136,6 +136,7 @@ UNIT_SYNONYMS = {
     'm³': 'm3', 'm^3': 'm3',
     'litre': 'liters', 'liter': 'liters', 'l': 'liters',
     'pkm': 'km', 'tkm': 'tonne-km',
+    'kw': 'kwh', 'kilowatt': 'kwh', 'kilowatthour': 'kwh', 'kilowatthours': 'kwh',
 }
 
 # Fixed, real-world dimensional conversions: qty_in_to_unit = qty_in_from_unit * multiplier.

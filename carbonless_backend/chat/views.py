@@ -285,6 +285,13 @@ def _normalise_nlu_unit(unit):
         'tonne km': 'tonne-km',
         'tkm': 'tonne-km',
         'kwh': 'kwh',
+        'kw': 'kwh',
+        'kwh/month': 'kwh',
+        'kilowatt': 'kwh',
+        'kilowatt-hour': 'kwh',
+        'kilowatt-hours': 'kwh',
+        'kilowatt hours': 'kwh',
+        'mwh': 'kwh',
     }
 
     return unit_map.get(u, u)
