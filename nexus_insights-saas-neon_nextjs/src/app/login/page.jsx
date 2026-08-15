@@ -230,7 +230,7 @@ function LoginContent() {
           </div>
         </div>
 
-        <p className="text-[11px] text-[#072C0E]/30">&copy; 2026 Carbonless</p>
+        <p className="text-[11px] text-[#072C0E]/30">&copy; {new Date().getFullYear()} Carbonless</p>
       </div>
 
       {/* Right — Illustration shown at its natural 5:4 ratio, no background card
