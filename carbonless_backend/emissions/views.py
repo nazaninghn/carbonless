@@ -380,7 +380,10 @@ def bulk_import_view(request):
                 user=request.user,
                 company=company,
                 emission_factor=factor,
-                year=item.get('year', 2026),
+                # Same hardcoded-year bug already fixed elsewhere in this file
+                # (see Fix #63) — a 2026 default silently misdates every row
+                # that omits "year" once the calendar moves past this year.
+                year=item.get('year') or datetime.now().year,
                 month=item.get('month', 1),
                 quantity=qty,
                 description=item.get('description', ''),
