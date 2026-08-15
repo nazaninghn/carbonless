@@ -307,31 +307,48 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         # Add role info
         try:
             profile = user.profile
-            data['role'] = profile.role
-            data['role_display'] = profile.get_role_display()
-            data['phone'] = profile.phone
-            data['department'] = profile.department
-            data['language_preference'] = profile.language_preference
-            data['notify_approvals'] = profile.notify_approvals
-            data['notify_system'] = profile.notify_system
-            data['permissions'] = {
-                'can_edit_entries': profile.can_edit_entries,
-                'can_manage_users': profile.can_manage_users,
-                'can_approve_requests': profile.can_approve_requests,
-                'can_generate_reports': profile.can_generate_reports,
-            }
         except UserProfile.DoesNotExist:
             # Auto-create profile with data_entry role
-            # Admin role is assigned when user creates a company
             profile = UserProfile.objects.create(user=user, role='data_entry')
-            data['role'] = 'data_entry'
-            data['role_display'] = 'Data Entry'
-            data['permissions'] = {
-                'can_edit_entries': profile.can_edit_entries,
-                'can_manage_users': profile.can_manage_users,
-                'can_approve_requests': profile.can_approve_requests,
-                'can_generate_reports': profile.can_generate_reports,
-            }
+
+        data['phone'] = profile.phone
+        data['department'] = profile.department
+        data['language_preference'] = profile.language_preference
+        data['notify_approvals'] = profile.notify_approvals
+        data['notify_system'] = profile.notify_system
+
+        # Bug fix: role/permissions were being read from UserProfile.role,
+        # which is set to 'data_entry' at profile creation and never updated
+        # again anywhere in the codebase (verified — no other assignment
+        # exists). The real, authoritative, per-company role has always
+        # lived on CompanyMembership.role (that's what every actual
+        # authorization check in the app uses, e.g. HasCompanyAdminRole),
+        # so every user — including company owners — saw themselves
+        # mislabeled "Data Entry" here with all management permissions
+        # showing as false, regardless of their real role. Derive both from
+        # the real membership for the user's current company instead.
+        from companies.utils import get_current_company
+        from companies.models import CompanyMembership
+        company = get_current_company(user)
+        membership = (
+            CompanyMembership.objects.filter(user=user, company=company, is_active=True).first()
+            if company else None
+        )
+        role = membership.role if membership else profile.role
+        MANAGE_ROLES = {'owner', 'admin'}
+        APPROVE_ROLES = {'owner', 'admin', 'manager'}
+        EDIT_ROLES = {'owner', 'admin', 'manager', 'data_entry'}
+        REPORT_ROLES = {'owner', 'admin', 'manager', 'auditor'}
+        data['role'] = role
+        data['role_display'] = (
+            dict(CompanyMembership.ROLE_CHOICES).get(role, role.replace('_', ' ').title())
+        )
+        data['permissions'] = {
+            'can_edit_entries': role in EDIT_ROLES,
+            'can_manage_users': role in MANAGE_ROLES,
+            'can_approve_requests': role in APPROVE_ROLES,
+            'can_generate_reports': role in REPORT_ROLES,
+        }
         return Response(data)
 
 
