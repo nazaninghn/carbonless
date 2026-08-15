@@ -92,13 +92,13 @@ export default function ReviewPage({ tr = false }) {
               <tr>
                 <th className="text-left px-6 py-3 font-semibold text-[#175022]">#</th>
                 <th className="text-left px-6 py-3 font-semibold text-[#175022]">
-                  {tr ? 'سوال' : 'Question'}
+                  {tr ? 'Soru' : 'Question'}
                 </th>
                 <th className="text-left px-6 py-3 font-semibold text-[#175022]">
-                  {tr ? 'پاسخ' : 'Answer'}
+                  {tr ? 'Cevap' : 'Answer'}
                 </th>
                 <th className="text-right px-6 py-3 font-semibold text-[#175022]">
-                  {tr ? 'عمل' : 'Action'}
+                  {tr ? 'İşlem' : 'Action'}
                 </th>
               </tr>
             </thead>
@@ -134,7 +134,7 @@ export default function ReviewPage({ tr = false }) {
                         className="flex items-center gap-1 px-3 py-2 bg-[#175022] text-white text-xs font-bold rounded-full hover:bg-[#175022] transition disabled:opacity-50"
                       >
                         <Save className="w-3 h-3" />
-                        {tr ? 'ذخیره' : 'Save'}
+                        {tr ? 'Kaydet' : 'Save'}
                       </button>
                     ) : (
                       <button
@@ -155,7 +155,7 @@ export default function ReviewPage({ tr = false }) {
       {answeredQuestions.length === 0 && (
         <div className="text-center py-12">
           <p className="text-[#175022]/60">
-            {tr ? 'هنوز پاسخی وجود ندارد' : 'No answers yet'}
+            {tr ? 'Henüz cevap yok' : 'No answers yet'}
           </p>
         </div>
       )}

@@ -44,7 +44,7 @@ export default function InventoryLibrary({ tr = false }) {
 
   const handleStartNew = async () => {
     if (!surveyName.trim()) {
-      alert(tr ? 'نام را وارد کنید' : 'Please enter a name');
+      alert(tr ? 'Lütfen bir isim girin' : 'Please enter a name');
       return;
     }
 
@@ -167,7 +167,7 @@ export default function InventoryLibrary({ tr = false }) {
         <div>
           <h3 className="font-bold text-[#175022] mb-4 flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#175022]"></span>
-            {tr ? 'پیش‌نویس‌ها' : 'Draft Inventories'}
+            {tr ? 'Taslaklar' : 'Draft Inventories'}
             <span className="ml-2 text-sm text-[#175022]/50">({drafts.length})</span>
           </h3>
           <div className="space-y-3">
@@ -179,29 +179,29 @@ export default function InventoryLibrary({ tr = false }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#175022]/60 mt-2">
-                    <span>{report.progress?.percent || 0}% {tr ? 'مکمل' : 'complete'}</span>
-                    <span>{report.progress?.completed || 0} / {report.progress?.total || 137} {tr ? 'سوالات' : 'questions'}</span>
-                    <span>{tr ? 'به‌روزرسانی' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString()}</span>
+                    <span>{report.progress?.percent || 0}% {tr ? 'tamamlandı' : 'complete'}</span>
+                    <span>{report.progress?.completed || 0} / {report.progress?.total || 137} {tr ? 'soru' : 'questions'}</span>
+                    <span>{tr ? 'Güncelleme' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString()}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {confirmDeleteId === report.report_id ? (
                     <>
                       <span className="text-xs font-bold text-red-500">
-                        {tr ? 'حذف شود؟' : 'Delete?'}
+                        {tr ? 'Silinsin mi?' : 'Delete?'}
                       </span>
                       <button
                         onClick={() => handleDelete(report.report_id)}
                         disabled={deletingId === report.report_id}
                         className="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-full hover:bg-red-600 transition disabled:opacity-50"
                       >
-                        {tr ? 'بله' : 'Yes'}
+                        {tr ? 'Evet' : 'Yes'}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
                         className="px-3 py-2 border border-[#175022]/15 text-xs font-bold text-[#175022]/60 rounded-full hover:bg-[#175022]/5 transition"
                       >
-                        {tr ? 'نه' : 'No'}
+                        {tr ? 'Hayır' : 'No'}
                       </button>
                     </>
                   ) : (
@@ -211,11 +211,11 @@ export default function InventoryLibrary({ tr = false }) {
                         className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"
                       >
                         <Play className="w-4 h-4" />
-                        {tr ? 'ادامه' : 'Continue'}
+                        {tr ? 'Devam Et' : 'Continue'}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
-                        title={tr ? 'حذف' : 'Delete'}
+                        title={tr ? 'Sil' : 'Delete'}
                         className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -234,7 +234,7 @@ export default function InventoryLibrary({ tr = false }) {
         <div>
           <h3 className="font-bold text-[#175022] mb-4 flex items-center gap-2">
             <span className="w-3 h-3 rounded-full bg-[#8BEA99]"></span>
-            {tr ? 'تکمیل‌شده' : 'Completed Inventories'}
+            {tr ? 'Tamamlanan Envanterler' : 'Completed Inventories'}
             <span className="ml-2 text-sm text-[#175022]/50">({completed.length})</span>
           </h3>
           <div className="space-y-3">
@@ -246,27 +246,27 @@ export default function InventoryLibrary({ tr = false }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>
                   <p className="text-xs text-[#175022]/60 mt-1">
-                    {report.reporting_year} • {tr ? 'تکمیل شده' : 'Completed'} {new Date(report.updated_at).toLocaleDateString()}
+                    {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.updated_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {confirmDeleteId === report.report_id ? (
                     <>
                       <span className="text-xs font-bold text-red-500">
-                        {tr ? 'حذف شود؟' : 'Delete?'}
+                        {tr ? 'Silinsin mi?' : 'Delete?'}
                       </span>
                       <button
                         onClick={() => handleDelete(report.report_id)}
                         disabled={deletingId === report.report_id}
                         className="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-full hover:bg-red-600 transition disabled:opacity-50"
                       >
-                        {tr ? 'بله' : 'Yes'}
+                        {tr ? 'Evet' : 'Yes'}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(null)}
                         className="px-3 py-2 border border-[#175022]/15 text-xs font-bold text-[#175022]/60 rounded-full hover:bg-[#175022]/5 transition"
                       >
-                        {tr ? 'نه' : 'No'}
+                        {tr ? 'Hayır' : 'No'}
                       </button>
                     </>
                   ) : (
@@ -274,7 +274,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => handleDownloadPdf(report.report_id)}
                         disabled={pdfDownloadingId === report.report_id}
-                        title={tr ? 'PDF دانلود کن' : 'Download PDF'}
+                        title={tr ? 'PDF İndir' : 'Download PDF'}
                         className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-[#1A7B2A] hover:bg-[#1A7B2A]/10 rounded-full transition disabled:opacity-50"
                       >
                         {pdfDownloadingId === report.report_id
@@ -286,11 +286,11 @@ export default function InventoryLibrary({ tr = false }) {
                         className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"
                       >
                         <Eye className="w-4 h-4" />
-                        {tr ? 'مشاهده' : 'View'}
+                        {tr ? 'Görüntüle' : 'View'}
                       </button>
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
-                        title={tr ? 'حذف' : 'Delete'}
+                        title={tr ? 'Sil' : 'Delete'}
                         className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-red-600 hover:bg-red-50 rounded-full transition"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -336,7 +336,7 @@ export default function InventoryLibrary({ tr = false }) {
                 if (e.key === 'Enter') handleStartNew();
                 if (e.key === 'Escape') setShowNamingDialog(false);
               }}
-              placeholder={tr ? 'مثال: سروی سال ۱۴۰۳' : 'e.g., 2024 Emissions Audit'}
+              placeholder={tr ? 'Örnek: 2024 Emisyon Denetimi' : 'e.g., 2024 Emissions Audit'}
               autoFocus
               className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-4"
             />
@@ -349,7 +349,7 @@ export default function InventoryLibrary({ tr = false }) {
                 }}
                 className="flex-1 px-4 py-3 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] hover:bg-[#175022]/5 transition"
               >
-                {tr ? 'لغو' : 'Cancel'}
+                {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 onClick={handleStartNew}

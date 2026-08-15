@@ -96,7 +96,7 @@ export default function CompletionReportCard({
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-lg font-bold text-[#175022] mb-1">
-              {tr ? '✅ سروی تکمیل شد!' : '✅ Survey Completed!'}
+              {tr ? '✅ Anket Tamamlandı!' : '✅ Survey Completed!'}
             </h3>
             {report.title && (
               <p className="text-sm font-semibold text-[#175022]/80 mb-2 truncate">{report.title}</p>
@@ -111,35 +111,35 @@ export default function CompletionReportCard({
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 p-4 bg-white/60 rounded-lg">
               {report.reporting_year && (
                 <div>
-                  <p className="text-xs text-[#175022]/50">{tr ? 'سال گزارش' : 'Reporting Year'}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'Raporlama Yılı' : 'Reporting Year'}</p>
                   <p className="font-bold text-[#175022]">{report.reporting_year}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs text-[#175022]/50">{tr ? 'وضعیت' : 'Status'}</p>
-                <p className="font-bold text-[#1A7B2A]">{tr ? 'تکمیل شده' : 'Completed'}</p>
+                <p className="text-xs text-[#175022]/50">{tr ? 'Durum' : 'Status'}</p>
+                <p className="font-bold text-[#1A7B2A]">{tr ? 'Tamamlandı' : 'Completed'}</p>
               </div>
               {totalQuestions > 0 && (
                 <div>
-                  <p className="text-xs text-[#175022]/50">{tr ? 'سوالات' : 'Questions'}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'Sorular' : 'Questions'}</p>
                   <p className="font-bold text-[#175022]">{totalAnswered}/{totalQuestions}</p>
                 </div>
               )}
               {report.ef_database && (
                 <div>
-                  <p className="text-xs text-[#175022]/50">{tr ? 'پایگاه فاکتور' : 'EF Database'}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'EF Veritabanı' : 'EF Database'}</p>
                   <p className="font-bold text-[#175022]">{resolveLabel(EF_DATABASE_LABELS, report.ef_database, tr) || report.ef_database}</p>
                 </div>
               )}
               {report.boundary_approach && (
                 <div>
-                  <p className="text-xs text-[#175022]/50">{tr ? 'مرز سازمانی' : 'Org. Boundary'}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'Organizasyonel Sınır' : 'Org. Boundary'}</p>
                   <p className="font-bold text-[#175022]">{resolveLabel(BOUNDARY_LABELS, report.boundary_approach, tr) || report.boundary_approach}</p>
                 </div>
               )}
               {report.scope3_approach && (
                 <div>
-                  <p className="text-xs text-[#175022]/50">{tr ? 'رویکرد کاپسام ۳' : 'Scope 3 Approach'}</p>
+                  <p className="text-xs text-[#175022]/50">{tr ? 'Kapsam 3 Yaklaşımı' : 'Scope 3 Approach'}</p>
                   <p className="font-bold text-[#175022]">{resolveLabel(SCOPE3_APPROACH_LABELS, report.scope3_approach, tr) || report.scope3_approach}</p>
                 </div>
               )}
@@ -161,7 +161,7 @@ export default function CompletionReportCard({
       {stageBreakdown.length > 0 && (
         <div className="mb-6 p-5 bg-white rounded-xl border border-[#175022]/10">
           <h4 className="text-sm font-bold text-[#175022] mb-3">
-            {tr ? 'خلاصه بخش‌ها' : 'Section Summary'}
+            {tr ? 'Bölüm Özeti' : 'Section Summary'}
           </h4>
           <div className="space-y-2.5">
             {stageBreakdown.map(stage => {
@@ -186,7 +186,7 @@ export default function CompletionReportCard({
         <div className="mb-6 p-5 bg-blue-50 rounded-xl border border-blue-200">
           <h4 className="flex items-center gap-2 text-sm font-bold text-blue-900 mb-3">
             <AlertTriangle className="w-4 h-4" />
-            {tr ? `فرضیات ISO 14064-1 (${assumptions.length})` : `ISO 14064-1 Assumptions (${assumptions.length})`}
+            {tr ? `ISO 14064-1 Varsayımları (${assumptions.length})` : `ISO 14064-1 Assumptions (${assumptions.length})`}
           </h4>
           <ul className="space-y-1.5">
             {assumptions.slice(0, 8).map((a, i) => {
@@ -198,7 +198,7 @@ export default function CompletionReportCard({
             })}
             {assumptions.length > 8 && (
               <li className="text-xs text-blue-800/60 italic">
-                {tr ? `+ ${assumptions.length - 8} مورد دیگر` : `+ ${assumptions.length - 8} more`}
+                {tr ? `+ ${assumptions.length - 8} tane daha` : `+ ${assumptions.length - 8} more`}
               </li>
             )}
           </ul>
@@ -219,28 +219,28 @@ export default function CompletionReportCard({
           className="flex items-center justify-center gap-2 px-6 py-3 bg-[#1A7B2A] text-white font-semibold rounded-full hover:bg-[#1A6126] transition flex-1 disabled:opacity-50"
         >
           {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-          {pdfLoading ? (tr ? 'در حال آماده‌سازی...' : 'Preparing PDF...') : (tr ? 'دانلود گزارش PDF' : 'Download PDF Report')}
+          {pdfLoading ? (tr ? 'Hazırlanıyor...' : 'Preparing PDF...') : (tr ? 'PDF Raporu İndir' : 'Download PDF Report')}
         </button>
         <button
           onClick={onStartNew}
           className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition flex-1"
         >
           <RotateCcw className="w-4 h-4" />
-          {tr ? 'سروی جدید' : 'New Survey'}
+          {tr ? 'Yeni Anket' : 'New Survey'}
         </button>
         <button
           onClick={onViewFull}
           className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-[#175022] text-[#175022] font-semibold rounded-full hover:bg-[#175022]/5 transition flex-1"
         >
           <Download className="w-4 h-4" />
-          {tr ? 'مشاهده گزارش کامل' : 'View Full Report'}
+          {tr ? 'Tam Raporu Görüntüle' : 'View Full Report'}
         </button>
       </div>
 
       {/* Additional Info */}
       <p className="text-xs text-[#175022]/50 text-center mt-4">
         {tr
-          ? 'می‌توانید هر زمان به گزارش‌های خود از طریق بخش "گزارش‌ها" دسترسی داشته باشید.'
+          ? 'Raporlarınıza istediğiniz zaman "Raporlar" bölümünden erişebilirsiniz.'
           : 'You can access all your reports anytime from the Reports section.'}
       </p>
     </div>
