@@ -31,6 +31,7 @@ from emissions.report_pdf import (
     BRAND_DARK, OLIVE, OLIVE_DARK, OLIVE_LIGHT, CREAM, CREAM_LIGHT,
     GRAY_50, GRAY_100, GRAY_200, GRAY_400, GRAY_600, GRAY_800, WHITE,
     SCOPE1_COLOR, SCOPE1_BG, SCOPE2_COLOR, SCOPE2_BG, SCOPE3_COLOR, SCOPE3_BG,
+    WARN_AMBER, WARN_BG,
     _CAT,
 )
 from .step_handlers import NACE_CLUSTER
@@ -394,6 +395,31 @@ def generate_questionnaire_report(report: CarbonReport, lang='en') -> bytes:
         sct.setStyle(_tbl_style(fn, fnb))
         sct.setStyle(_total_row_style(fnb))
         E.append(sct)
+
+        # A scope reading exactly zero while others have real data almost
+        # always means it hasn't been measured yet, not that it's genuinely
+        # nil — flag it so a reader doesn't mistake "0" for a complete figure.
+        missing_scopes = [
+            label for label, val in (('Scope 1', s1), ('Scope 2', s2), ('Scope 3', s3)) if val <= 0
+        ]
+        if missing_scopes:
+            E.append(Spacer(1, 4 * mm))
+            missing_list = ', '.join(missing_scopes)
+            warn_text = (
+                f"⚠ EKSİK: {missing_list} için bu dönemde veri kaydedilmemiş."
+                if tr else
+                f"⚠ INCOMPLETE: No data recorded for {missing_list} in this period."
+            )
+            warn_box = Table([[Paragraph(warn_text, S['warning'])]], colWidths=[125 * mm])
+            warn_box.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), WARN_BG),
+                ('BOX', (0, 0), (-1, -1), 0.8, WARN_AMBER),
+                ('TOPPADDING', (0, 0), (-1, -1), 6),
+                ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+                ('LEFTPADDING', (0, 0), (-1, -1), 8),
+                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ]))
+            E.append(warn_box)
 
         pie = _scope_pie_chart(s1, s2, s3, fn)
         if pie:

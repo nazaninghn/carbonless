@@ -64,6 +64,9 @@ SCOPE2_BG = colors.HexColor('#DEFAE1')
 SCOPE3_COLOR = BRAND_DARK
 SCOPE3_BG = colors.HexColor('#F1FCF2')
 
+WARN_AMBER = colors.HexColor('#B45309')
+WARN_BG = colors.HexColor('#FEF3C7')
+
 WHITE = colors.white
 
 
@@ -182,6 +185,8 @@ def _styles():
     S['h3'] = ParagraphStyle('h3', fontName=fnb, fontSize=10, textColor=GRAY_600, spaceBefore=6, spaceAfter=3, leading=13)
     S['body'] = ParagraphStyle('body', fontName=fn, fontSize=9.5, textColor=GRAY_800, spaceAfter=4, leading=14)
     S['body_sm'] = ParagraphStyle('body_sm', fontName=fn, fontSize=8.5, textColor=GRAY_600, spaceAfter=3, leading=12)
+    S['warning'] = ParagraphStyle('warning', fontName=fnb, fontSize=9, textColor=WARN_AMBER, spaceAfter=4, leading=13)
+    S['no_data'] = ParagraphStyle('no_data', fontName=fn, fontSize=9, textColor=GRAY_400, spaceAfter=4, leading=13)
     S['small'] = ParagraphStyle('small', fontName=fn, fontSize=7.5, textColor=GRAY_400, spaceAfter=2, leading=10)
     S['footer'] = ParagraphStyle('footer', fontName=fn, fontSize=7, textColor=GRAY_400, alignment=TA_CENTER)
     S['big_num'] = ParagraphStyle('bn', fontName=fnb, fontSize=48, textColor=BRAND_DARK, alignment=TA_CENTER, leading=54)
@@ -650,6 +655,36 @@ def generate_report(user, year, lang='tr'):
         ('ROUNDEDCORNERS', [3, 3, 3, 3]),
     ]))
     E.append(scope_cards)
+
+    # A scope reading exactly zero for the whole period is unusual — almost
+    # always means it hasn't been measured yet (e.g. Scope 3 skipped to
+    # generate the report early), not that the company genuinely emits
+    # nothing there. Flag it clearly so a reader doesn't mistake "0" for a
+    # real, complete figure.
+    missing_scopes = [
+        label for label, val in (('Scope 1', s1), ('Scope 2', s2), ('Scope 3', s3)) if val <= 0
+    ]
+    if missing_scopes:
+        E.append(Spacer(1, 4*mm))
+        missing_list = ', '.join(missing_scopes)
+        warn_text = (
+            f"⚠ EKSİK RAPOR: {missing_list} için bu dönemde veri "
+            f"kaydedilmemiş. Aşağıdaki rakamlar eksik olabilir."
+            if tr else
+            f"⚠ INCOMPLETE REPORT: No data recorded for {missing_list} in this period. "
+            f"Figures below may be incomplete."
+        )
+        warn_box = Table([[Paragraph(warn_text, S['warning'])]], colWidths=[159*mm])
+        warn_box.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), WARN_BG),
+            ('BOX', (0, 0), (-1, -1), 0.8, WARN_AMBER),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ]))
+        E.append(warn_box)
+
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
@@ -672,9 +707,15 @@ def generate_report(user, year, lang='tr'):
 
     # Visual distribution \u2014 real pie chart with side legend
     pie = _scope_pie_chart(s1, s2, s3, fn)
+    E.append(Paragraph('2.1 ' + ('G\u00f6rsel Da\u011f\u0131l\u0131m' if tr else 'Visual Distribution'), S['h2']))
     if pie:
-        E.append(Paragraph('2.1 ' + ('G\u00f6rsel Da\u011f\u0131l\u0131m' if tr else 'Visual Distribution'), S['h2']))
         E.append(pie)
+    else:
+        E.append(Paragraph(
+            'Bu d\u00f6nem i\u00e7in kaydedilmi\u015f emisyon verisi yok \u2014 g\u00f6sterilecek bir da\u011f\u0131l\u0131m yok.'
+            if tr else
+            'No emissions recorded for this period \u2014 nothing to chart yet.',
+            S['no_data']))
     E.append(PageBreak())
 
     # ════════════════════════════════════════════════
@@ -689,6 +730,10 @@ def generate_report(user, year, lang='tr'):
         ]:
             scope_cats = [c for c in cats if c['emission_factor__scope'] == scope_key]
             if not scope_cats:
+                E.append(Paragraph(scope_label, S['h2']))
+                E.append(Paragraph(
+                    'Bu dönem için veri kaydedilmemiş.' if tr else 'No data recorded for this period.',
+                    S['no_data']))
                 continue
             E.append(Paragraph(scope_label, S['h2']))
             data = [['Kategori' if tr else 'Category', 'kg CO\u2082e', 'tCO\u2082e', '%']]
