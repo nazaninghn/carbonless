@@ -246,7 +246,7 @@ export default function RegisterPage() {
             <div className="rounded-2xl border border-[#072C0E]/10 bg-white/55 p-3 shadow-lg shadow-[#072C0E]/6 backdrop-blur-2xl">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51D766]">Carbonless onboarding</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51D766]">{tr ? 'Carbonless katılım' : 'Carbonless onboarding'}</p>
                   <h1 className="mt-1.5 text-[16px] font-bold tracking-[-0.03em] text-[#072C0E]">{t.register.title}</h1>
                   <p className="mt-1 text-[11px] leading-5 text-[#072C0E]/60">{t.register.subtitle}</p>
                 </div>

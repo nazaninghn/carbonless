@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { CheckCircle2, XCircle, Loader2, Mail } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 const CODE_LENGTH = 6;
@@ -15,6 +16,8 @@ function VerifyContent() {
   const email = searchParams.get('email') || '';
   // Set by the register page when the backend reported email_sent === false.
   const mailFailed = searchParams.get('mail') === 'failed';
+  const { language } = useLanguage();
+  const tr = language === 'tr';
 
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(''));
   const [status, setStatus] = useState('idle'); // idle | verifying | success | error
@@ -68,16 +71,16 @@ function VerifyContent() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || 'Email verified successfully!');
+        setMessage(data.message || (tr ? 'E-posta başarıyla doğrulandı!' : 'Email verified successfully!'));
       } else {
         setStatus('error');
-        setMessage(data.error || 'Verification failed.');
+        setMessage(data.error || (tr ? 'Doğrulama başarısız.' : 'Verification failed.'));
         setDigits(Array(CODE_LENGTH).fill(''));
         inputRefs.current[0]?.focus();
       }
     } catch {
       setStatus('error');
-      setMessage('Connection error. Please try again.');
+      setMessage(tr ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
     }
   };
 
@@ -128,11 +131,11 @@ function VerifyContent() {
               <div className="h-16 w-16 rounded-full bg-[#DEFAE1] flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="h-8 w-8 text-[#2ABD41]" />
               </div>
-              <h1 className="text-[20px] font-bold text-[#072C0E]">Email Verified!</h1>
+              <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'E-posta Doğrulandı!' : 'Email Verified!'}</h1>
               <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
               <Link href="/login"
                 className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
-                Continue to Login
+                {tr ? 'Girişe Devam Et' : 'Continue to Login'}
               </Link>
             </>
           ) : (
@@ -140,26 +143,28 @@ function VerifyContent() {
               <div className="h-16 w-16 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
                 <Mail className="h-8 w-8 text-amber-500" />
               </div>
-              <h1 className="text-[20px] font-bold text-[#072C0E]">Enter Verification Code</h1>
+              <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Doğrulama Kodunu Girin' : 'Enter Verification Code'}</h1>
               {mailFailed ? (
                 // The server told us the mail never left. Saying "we sent a
                 // code" here would be a lie that leaves the user refreshing
                 // their inbox indefinitely.
                 <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-left">
                   <p className="text-[13px] font-semibold text-red-700">
-                    We couldn&apos;t send the verification email.
+                    {tr ? 'Doğrulama e-postasını gönderemedik.' : "We couldn't send the verification email."}
                   </p>
                   <p className="mt-1 text-[12px] leading-relaxed text-red-600">
-                    Your account was created, but our mail server rejected the message. Try
-                    &quot;Resend code&quot; below — if it still fails, please contact support so we
-                    can activate your account manually.
+                    {tr
+                      ? 'Hesabınız oluşturuldu, ancak posta sunucumuz mesajı reddetti. Aşağıdaki "Kodu tekrar gönder" seçeneğini deneyin — yine başarısız olursa, hesabınızı manuel olarak etkinleştirmemiz için lütfen destek ekibiyle iletişime geçin.'
+                      : 'Your account was created, but our mail server rejected the message. Try "Resend code" below — if it still fails, please contact support so we can activate your account manually.'}
                   </p>
                 </div>
               ) : (
                 <p className="mt-2 text-[14px] text-[#072C0E]/50">
                   {email
-                    ? <>We sent a 6-digit code to <span className="font-semibold text-[#072C0E]">{email}</span>.</>
-                    : 'We sent a 6-digit code to your email address.'}
+                    ? (tr
+                        ? <>6 haneli kod <span className="font-semibold text-[#072C0E]">{email}</span> adresine gönderildi.</>
+                        : <>We sent a 6-digit code to <span className="font-semibold text-[#072C0E]">{email}</span>.</>)
+                    : (tr ? 'E-posta adresinize 6 haneli bir kod gönderdik.' : 'We sent a 6-digit code to your email address.')}
                 </p>
               )}
 
@@ -188,7 +193,7 @@ function VerifyContent() {
                 )}
                 {status === 'verifying' && (
                   <p className="mt-3 flex items-center justify-center gap-2 text-[13px] text-[#072C0E]/50">
-                    <Loader2 className="h-4 w-4 animate-spin" /> Verifying...
+                    <Loader2 className="h-4 w-4 animate-spin" /> {tr ? 'Doğrulanıyor...' : 'Verifying...'}
                   </p>
                 )}
 
@@ -197,7 +202,7 @@ function VerifyContent() {
                   disabled={code.length !== CODE_LENGTH || status === 'verifying'}
                   className="mt-5 w-full rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white transition hover:bg-[#1D9C31] disabled:opacity-40"
                 >
-                  Verify
+                  {tr ? 'Doğrula' : 'Verify'}
                 </button>
               </form>
 
@@ -206,13 +211,17 @@ function VerifyContent() {
                 disabled={resendState === 'sending' || !email}
                 className="mt-4 text-[13px] font-medium text-[#2ABD41] hover:underline disabled:opacity-50"
               >
-                {resendState === 'sending' ? 'Sending...' : resendState === 'sent' ? 'Code sent — check your email' : "Didn't get a code? Resend"}
+                {resendState === 'sending'
+                  ? (tr ? 'Gönderiliyor...' : 'Sending...')
+                  : resendState === 'sent'
+                    ? (tr ? 'Kod gönderildi — e-postanızı kontrol edin' : 'Code sent — check your email')
+                    : (tr ? 'Kod almadınız mı? Tekrar gönder' : "Didn't get a code? Resend")}
               </button>
 
               <div className="mt-6">
                 <Link href="/login"
                   className="inline-flex items-center gap-2 rounded-full border-2 border-[#DEFAE1] px-6 py-3 text-[14px] font-semibold text-[#072C0E]/70 hover:border-[#072C0E]/30 transition">
-                  Back to Login
+                  {tr ? 'Girişe Dön' : 'Back to Login'}
                 </Link>
               </div>
             </>
