@@ -3838,8 +3838,71 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                       </div>
                     )
                   )}
-                  {/* ── Quick reply buttons ── */}
+                  {/* ── Quick reply buttons / Period dropdown ── */}
                   {msg.role === 'assistant' && msg.ui?.quick_replies?.length > 0 && !msg.entriesSaved && !msg.quickReplyUsed && (
+                    (() => {
+                      // If this is a period question, show month/year dropdowns instead of buttons
+                      const isPeriod = msg.ui.quick_replies.some(o => (o.value || o) === 'this_month') && msg.ui.quick_replies.length > 5;
+                      if (isPeriod) {
+                        const monthNames = tr
+                          ? ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık']
+                          : ['January','February','March','April','May','June','July','August','September','October','November','December'];
+                        const thisYear = new Date().getFullYear();
+                        const years = [thisYear, thisYear - 1, thisYear - 2, thisYear - 3];
+                        return (
+                          <div className="ml-9 mt-3 flex flex-wrap items-center gap-2">
+                            <select
+                              id={`period-month-${msg.id}`}
+                              defaultValue={new Date().getMonth() + 1}
+                              className="rounded-lg border border-[#2ABD41]/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#175022] shadow-sm"
+                            >
+                              {monthNames.map((name, i) => (
+                                <option key={i} value={i + 1}>{name}</option>
+                              ))}
+                            </select>
+                            <select
+                              id={`period-year-${msg.id}`}
+                              defaultValue={thisYear}
+                              className="rounded-lg border border-[#2ABD41]/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#175022] shadow-sm"
+                            >
+                              {years.map(y => (
+                                <option key={y} value={y}>{y}</option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const month = document.getElementById(`period-month-${msg.id}`)?.value;
+                                const year = document.getElementById(`period-year-${msg.id}`)?.value;
+                                const monthShort = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][parseInt(month)-1];
+                                const value = `${monthShort} ${year}`;
+                                const label = `${monthNames[parseInt(month)-1]} ${year}`;
+                                setMessages(prev => prev.map(m =>
+                                  m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: label } : m
+                                ));
+                                sendMessage(value, null, label);
+                              }}
+                              className="rounded-full bg-[#2ABD41] px-5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1D9C31]"
+                            >
+                              {tr ? 'Onayla' : 'Confirm'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMessages(prev => prev.map(m =>
+                                  m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: '❌ Cancelled' } : m
+                                ));
+                                sendMessage('cancel', null, '❌ Cancel');
+                              }}
+                              className="rounded-full border border-red-200 px-4 py-2 text-[12px] font-semibold text-red-500 transition hover:bg-red-50"
+                            >
+                              {tr ? 'İptal' : 'Cancel'}
+                            </button>
+                          </div>
+                        );
+                      }
+                      // Normal quick reply buttons
+                      return (
                     <div className="ml-9 mt-3 flex flex-wrap gap-2">
                       {msg.ui.quick_replies.map((option, idx) => (
                         <button
@@ -3857,7 +3920,6 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                               sendMessage('cancel', null, '❌ Cancel');
                               return;
                             }
-                            // Mark this message's quick replies as used
                             setMessages(prev => prev.map(m =>
                               m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: option.label } : m
                             ));
@@ -3869,6 +3931,8 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                         </button>
                       ))}
                     </div>
+                      );
+                    })()
                   )}
                   {/* ── Selected reply indicator ── */}
                   {msg.quickReplyUsed && msg.selectedReply && (
