@@ -269,6 +269,7 @@ def try_local_emission_parse(text: str) -> dict | None:
         'month': datetime.now(timezone.utc).month,
         'year': datetime.now(timezone.utc).year,
         'description': f'AI Chat: {activity_type} {quantity} {unit}',
+        'date_extracted': False,
     }
 
 
