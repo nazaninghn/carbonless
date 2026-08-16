@@ -537,6 +537,7 @@ function EmptyState({ onNew, tr }) {
     { img: '/icons/targets.png', text: 'Karbon azaltma hedefleri nasıl belirlenir?', label: 'Hedefler' },
     { img: '/icons/efficiency.png', text: 'Enerji verimliliği önerileri', label: 'Verimlilik' },
     { img: '/icons/calculator.png', text: 'Emisyon faktörlerini hesapla', label: 'Hesaplama' },
+    { img: '/icons/scopes.png', text: 'How i must write for calc...', label: '📖 Rehber', isGuide: true },
   ] : [
     { img: '/icons/scopes.png', text: "What's the difference between Scope 1, 2, and 3?", label: 'Scopes' },
     { img: '/icons/analytics.png', text: "What's my biggest emission source?", label: 'Analytics' },
@@ -544,7 +545,10 @@ function EmptyState({ onNew, tr }) {
     { img: '/icons/targets.png', text: "How do I set carbon reduction targets?", label: 'Targets' },
     { img: '/icons/efficiency.png', text: "Energy efficiency recommendations", label: 'Efficiency' },
     { img: '/icons/calculator.png', text: "Calculate my emission factors", label: 'Calculator' },
+    { img: '/icons/scopes.png', text: 'How i must write for calc...', label: '📖 Guide', isGuide: true },
   ];
+
+  const [showGuide, setShowGuide] = useState(false);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-6 pb-4 sm:pb-6">
@@ -584,18 +588,58 @@ function EmptyState({ onNew, tr }) {
           className="w-full overflow-x-auto pb-2 -mx-3 px-3 [mask-image:linear-gradient(to_right,transparent_0,black_20px,black_calc(100%-20px),transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0,black_20px,black_calc(100%-20px),transparent_100%)]"
         >
           <div className="flex gap-2 min-w-max px-0.5">
-            {suggestions.map(({ img, text, label }) => (
+            {suggestions.map(({ img, text, label, isGuide }) => (
               <button
                 key={text}
-                onClick={() => onNew(text)}
-                className="flex items-center gap-1.5 sm:gap-2 rounded-full border border-[#DEFAE1] bg-white px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-medium text-[#175022]/60 shadow-sm whitespace-nowrap hover:border-[#2ABD41]/30 hover:bg-[#F1FCF2] hover:text-[#175022] transition-all duration-200 active:scale-[0.97]"
+                onClick={() => isGuide ? setShowGuide(true) : onNew(text)}
+                className={`flex items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-medium shadow-sm whitespace-nowrap transition-all duration-200 active:scale-[0.97] ${isGuide ? 'border-[#2ABD41] bg-[#F1FCF2] text-[#175022] hover:bg-[#2ABD41] hover:text-white' : 'border-[#DEFAE1] bg-white text-[#175022]/60 hover:border-[#2ABD41]/30 hover:bg-[#F1FCF2] hover:text-[#175022]'}`}
               >
-                <Image src={img} alt={label} width={18} height={18} className="h-4 w-4 sm:h-[18px] sm:w-[18px] object-contain" />
+                {!isGuide && <Image src={img} alt={label} width={18} height={18} className="h-4 w-4 sm:h-[18px] sm:w-[18px] object-contain" />}
                 <span>{label}</span>
               </button>
             ))}
           </div>
         </div>
+
+        {/* Guide Modal */}
+        {showGuide && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4" onClick={() => setShowGuide(false)}>
+            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-[#DEFAE1]" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[16px] font-bold text-[#072C0E]">{tr ? '📖 Nasıl Yazmalıyım?' : '📖 How to Write Prompts'}</h3>
+                <button onClick={() => setShowGuide(false)} className="text-[#072C0E]/40 hover:text-[#072C0E] text-xl">✕</button>
+              </div>
+              <p className="text-[13px] text-[#072C0E]/60 mb-4">{tr ? 'Miktar + birim + faaliyet türü yazın. Örnekler:' : 'Write: quantity + unit + activity type. Examples:'}</p>
+              <div className="space-y-2.5">
+                {(tr ? [
+                  { emoji: '⚡', text: '"14.000 kWh elektrik kullandık"' },
+                  { emoji: '⛽', text: '"500 litre dizel yakıt yaktık"' },
+                  { emoji: '🚗', text: '"Araçlarımız 5.000 km yol yaptı"' },
+                  { emoji: '✈️', text: '"İstanbul-Londra uçtuk"' },
+                  { emoji: '🗑️', text: '"2 ton atığı çöpe gönderdik"' },
+                  { emoji: '🔥', text: '"1000 m³ doğalgaz kullandık"' },
+                  { emoji: '💧', text: '"100 m³ su tükettik"' },
+                  { emoji: '🚛', text: '"10.000 ton-km kamyon taşımacılığı"' },
+                ] : [
+                  { emoji: '⚡', text: '"We used 14,000 kWh of electricity"' },
+                  { emoji: '⛽', text: '"We burned 500 liters of diesel"' },
+                  { emoji: '🚗', text: '"Our vehicles drove 5,000 km"' },
+                  { emoji: '✈️', text: '"Flight from Istanbul to London"' },
+                  { emoji: '🗑️', text: '"2 tonnes of waste to landfill"' },
+                  { emoji: '🔥', text: '"1000 m³ of natural gas"' },
+                  { emoji: '💧', text: '"100 m³ water consumption"' },
+                  { emoji: '🚛', text: '"10,000 tonne-km truck freight"' },
+                ]).map((ex, i) => (
+                  <div key={i} className="flex items-center gap-2.5 bg-[#F9FFF4] rounded-lg px-3 py-2.5">
+                    <span className="text-[16px]">{ex.emoji}</span>
+                    <span className="text-[13px] text-[#072C0E]/70 font-medium">{ex.text}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-[11px] text-[#072C0E]/40">{tr ? 'AI eksik bilgiyi sorar — sadece bildiklerinizi yazın.' : "AI will ask for missing info — just write what you know."}</p>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
