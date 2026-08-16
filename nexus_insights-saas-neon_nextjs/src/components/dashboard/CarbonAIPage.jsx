@@ -3595,8 +3595,8 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       } else {
         // Inject a local welcome greeting — shown immediately, not persisted to API.
         const welcome = trRef.current
-          ? `Merhaba! Ben **CarbonIQ** — karbon muhasebesi ve sera gazı raporlaması konusunda uzman AI asistanınızım.\n\nISO 14064-1 uyumlu envanter oluşturma, Kapsam 1/2/3 hesaplamaları, emisyon faktörü seçimi ve azaltma hedefleri gibi konularda size yardımcı olabilirim.\n\nBugün nasıl bir konuda destek almak istersiniz?`
-          : `Hello! I'm **CarbonIQ** — your AI assistant specialized in carbon accounting and greenhouse gas reporting.\n\nI can help with ISO 14064-1 inventory creation, Scope 1/2/3 calculations, emission factor selection, reduction targets, and more.\n\nWhat would you like to work on today?`;
+          ? `Merhaba! Ben **CarbonIQ** — karbon hesaplama asistanınızım.\n\nBana verilerinizi söyleyin, ben hesaplayayım. Örneğin:\n\n• "14.000 kWh elektrik kullandık"\n• "500 litre dizel yakıt yaktık"\n• "5000 km araç kullandık"\n• "2 ton atığı çöpe gönderdik"\n• "İstanbul-Ankara uçtuk"\n\nSadece miktarı ve türü yazın, gerisini ben halledeyim! 🌱`
+          : `Hello! I'm **CarbonIQ** — your carbon calculator assistant.\n\nTell me your activity data and I'll calculate the emissions. For example:\n\n• "We used 14,000 kWh of electricity"\n• "Our vehicles drove 5,000 km"\n• "We burned 500 liters of diesel"\n• "2 tonnes of waste to landfill"\n• "Flight from Istanbul to London"\n\nJust type the amount and activity — I'll handle the rest! 🌱`;
         setMessages([{ id: `welcome-${session.id}`, role: 'assistant', content: welcome }]);
       }
     } catch {
