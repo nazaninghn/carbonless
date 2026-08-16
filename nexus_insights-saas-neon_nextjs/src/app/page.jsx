@@ -152,6 +152,46 @@ function ConnectionLinesMobile() {
   );
 }
 
+/* -- Scroll reveal — wraps a section's content so it fades + slides up into
+   view as the user scrolls to it, instead of just appearing instantly. Fires
+   once (doesn't re-hide scrolling back up, which reads as jittery) and skips
+   the animation entirely for prefers-reduced-motion, matching the pattern
+   already used for the hero's other animations in this same file. */
+function Reveal({ children, className = '', delay = 0 }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setVisible(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -10% 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-700 ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'} ${className}`}
+      style={{ transitionDelay: visible ? `${delay}ms` : '0ms' }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* -- Page -- */
 export default function Home() {
   const { language: lang } = useLanguage();
@@ -296,7 +336,7 @@ export default function Home() {
 
 
       <section id="about" className="relative z-10 py-12 sm:py-20 bg-white">
-        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+        <Reveal className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
             {/* Left: heading + short teaser */}
@@ -378,13 +418,13 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
 
       {/* -- AI Section (like Dinnect AI) -- */}
       <section id="ai" className="relative z-10 pt-12 sm:pt-20 pb-0 bg-white">
-        <div className="mx-auto max-w-6xl px-4 sm:px-8">
+        <Reveal className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
 
             {/* Left: Text */}
@@ -423,7 +463,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* cream → white blend before Pricing (Pricing's own gradient continues from white) */}
@@ -432,7 +472,7 @@ export default function Home() {
       {/* -- Pricing Section — fades in from the white AI section above
              (gradient over the top padding) instead of a hard border cut -- */}
       <section id="pricing" className="relative z-10 py-12 sm:py-20 bg-gradient-to-b from-white via-[#F1FCF2] to-[#F1FCF2]">
-        <div className="mx-auto max-w-4xl px-4 sm:px-8">
+        <Reveal className="mx-auto max-w-4xl px-4 sm:px-8">
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
@@ -532,7 +572,7 @@ export default function Home() {
               </Link>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* pale mint → white blend before FAQ */}
@@ -541,7 +581,7 @@ export default function Home() {
       {/* -- FAQ — native <details>/<summary> so the accordion needs no JS
           state and stays accessible/keyboard-friendly for free. -- */}
       <section id="faq" className="relative z-10 py-12 sm:py-20 bg-white">
-        <div className="mx-auto max-w-3xl px-4 sm:px-8">
+        <Reveal className="mx-auto max-w-3xl px-4 sm:px-8">
           <div className="text-center mb-10 sm:mb-14">
             <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
               {lang === 'tr' ? 'Sıkça sorulan sorular' : 'Frequently asked questions'}
@@ -578,7 +618,7 @@ export default function Home() {
               </details>
             ))}
           </div>
-        </div>
+        </Reveal>
       </section>
 
       {/* white → dark-green blend before the Footer — the biggest color jump
