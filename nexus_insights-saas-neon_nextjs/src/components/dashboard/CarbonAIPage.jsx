@@ -6,7 +6,7 @@ import {
   Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ClipboardList, RotateCcw, X, Paperclip, FileText, Download,
   HelpCircle, CheckCircle2, Menu, BarChart3, BookOpen,
-  Zap, Fuel, Car, Plane, Flame, Droplets, Truck,
+  Zap, Fuel, Car, Plane, Flame, Droplets, Truck, Calendar, Save, AlertCircle, Pencil, Check,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import CompletionReportCard from './CompletionReportCard';
@@ -786,7 +786,7 @@ function Chip({ label, selected, onClick, multi, disabled }) {
           : 'border-[#175022]/12 bg-white text-[#175022]/70 hover:border-[#8BEA99]/50 hover:bg-[#8BEA99]/8 hover:text-[#175022]'
       }`}
     >
-      {multi && selected && <span className="mr-1" aria-hidden="true">✓</span>}
+      {multi && selected && <Check className="mr-1 inline h-3 w-3" strokeWidth={3} aria-hidden="true" />}
       {label}
     </button>
   );
@@ -1588,8 +1588,8 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
       </div>
       <p className="mb-3 text-xs text-[#175022]/55">
         {tr
-          ? 'Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa ✏ butonunu kullanın.'
-          : 'Your answers for this section are below. Use ✏ to edit any answer before continuing.'}
+          ? 'Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa **Düzenle** butonunu kullanın.'
+          : 'Your answers for this section are below. Use **Edit** to change any answer before continuing.'}
       </p>
       <div className="overflow-x-auto rounded-xl border border-[#175022]/8 mb-4">
         <table className="w-full text-xs">
@@ -1623,9 +1623,10 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
                   <td className="px-3 py-2 text-right">
                     <button
                       onClick={() => onEdit(q.id)}
-                      className="rounded-lg border border-[#175022]/12 px-2 py-1 text-[10px] font-bold text-[#175022]/50 transition hover:border-[#8BEA99]/40 hover:bg-[#8BEA99]/8 hover:text-[#175022]"
+                      className="flex items-center gap-1 rounded-lg border border-[#175022]/12 px-2 py-1 text-[10px] font-bold text-[#175022]/50 transition hover:border-[#8BEA99]/40 hover:bg-[#8BEA99]/8 hover:text-[#175022]"
                     >
-                      ✏ {tr ? 'Düzenle' : 'Edit'}
+                      <Pencil className="h-2.5 w-2.5" strokeWidth={2.5} />
+                      {tr ? 'Düzenle' : 'Edit'}
                     </button>
                   </td>
                 </tr>
@@ -2719,8 +2720,8 @@ export function QuestionnaireTab({
             role: 'assistant',
             type: 'info',
             content: tr
-              ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa ✏ butonunu, devam etmek için **Devam Et** butonunu kullanın.`
-              : `This section is complete! Review your answers below. Use ✏ to edit or click **Continue** to proceed.`,
+              ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa **Düzenle** butonunu, devam etmek için **Devam Et** butonunu kullanın.`
+              : `This section is complete! Review your answers below. Use **Edit** to change an answer or click **Continue** to proceed.`,
           }]);
         } else {
           initLoopOrAdvance(nextId, finalAnswers);
@@ -2893,8 +2894,8 @@ export function QuestionnaireTab({
             role: 'assistant',
             type: 'info',
             content: tr
-              ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa ✏ butonunu, devam etmek için **Devam Et** butonunu kullanın.`
-              : `This section is complete! Review your answers below. Use ✏ to edit or click **Continue** to proceed.`,
+              ? `Bu bölüm tamamlandı! Yanıtlarınızı aşağıda görebilirsiniz. Düzenlemek istediğiniz varsa **Düzenle** butonunu, devam etmek için **Devam Et** butonunu kullanın.`
+              : `This section is complete! Review your answers below. Use **Edit** to change an answer or click **Continue** to proceed.`,
           }]);
         } else {
           initLoopOrAdvance(nextId, newAnswers);
@@ -3198,13 +3199,14 @@ export function QuestionnaireTab({
               </div>
             )}
             {saveSuccess && (
-              <div role="status" aria-live="polite" className="rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-700">
-                {tr ? '✓ Kaydedildi' : '✓ Saved'}
+              <div role="status" aria-live="polite" className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-2.5 text-xs font-semibold text-green-700">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
+                {tr ? 'Kaydedildi' : 'Saved'}
               </div>
             )}
             {saveError && (
               <div role="alert" aria-live="assertive" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-700 flex items-center gap-2">
-                <span className="shrink-0">⚠</span>
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                 <span>{saveError}</span>
               </div>
             )}
@@ -3252,7 +3254,7 @@ export function QuestionnaireTab({
                     so the error disappears as soon as the user fills the field correctly. */}
                 {showValidationError && validationError && currentQuestion && !validateCarbonIQAnswer(currentQuestion, answerValue, answers, lang).ok && (
                   <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
-                    <span className="shrink-0">⚠</span>
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                     <span>{validationError}</span>
                   </div>
                 )}
@@ -3549,7 +3551,12 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
     setError('');
     // displayOverride lets quick-reply buttons show a user-friendly label in
     // the chat bubble while still sending the raw value to the backend.
-    const displayContent = file ? (content || `📎 ${file.name}`) : (displayOverride || content);
+    // No emoji-prefixed filename here — has_attachment below already renders
+    // a proper icon+filename badge under the bubble, so duplicating the name
+    // with a 📎 prefix in the bubble text just repeats it inconsistently.
+    const displayContent = file
+      ? (content || (trRef.current ? 'Dosya eklendi' : 'File attached'))
+      : (displayOverride || content);
     setMessages(prev => [...prev, {
       id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent,
       // Known client-side before the request even completes — the badge
@@ -3928,54 +3935,68 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                         const thisYear = new Date().getFullYear();
                         const years = [thisYear, thisYear - 1, thisYear - 2, thisYear - 3];
                         return (
-                          <div className="ml-9 mt-3 flex flex-wrap items-center gap-2">
-                            <select
-                              id={`period-month-${msg.id}`}
-                              defaultValue={new Date().getMonth() + 1}
-                              className="rounded-lg border border-[#2ABD41]/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#175022] shadow-sm"
-                            >
-                              {monthNames.map((name, i) => (
-                                <option key={i} value={i + 1}>{name}</option>
-                              ))}
-                            </select>
-                            <select
-                              id={`period-year-${msg.id}`}
-                              defaultValue={thisYear}
-                              className="rounded-lg border border-[#2ABD41]/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#175022] shadow-sm"
-                            >
-                              {years.map(y => (
-                                <option key={y} value={y}>{y}</option>
-                              ))}
-                            </select>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const month = document.getElementById(`period-month-${msg.id}`)?.value;
-                                const year = document.getElementById(`period-year-${msg.id}`)?.value;
-                                const monthShort = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][parseInt(month)-1];
-                                const value = `${monthShort} ${year}`;
-                                const label = `${monthNames[parseInt(month)-1]} ${year}`;
-                                setMessages(prev => prev.map(m =>
-                                  m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: label } : m
-                                ));
-                                sendMessage(value, null, label);
-                              }}
-                              className="rounded-full bg-[#2ABD41] px-5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1D9C31]"
-                            >
-                              {tr ? 'Onayla' : 'Confirm'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setMessages(prev => prev.map(m =>
-                                  m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: '❌ Cancelled' } : m
-                                ));
-                                sendMessage('cancel', null, '❌ Cancel');
-                              }}
-                              className="rounded-full border border-red-200 px-4 py-2 text-[12px] font-semibold text-red-500 transition hover:bg-red-50"
-                            >
-                              {tr ? 'İptal' : 'Cancel'}
-                            </button>
+                          <div className="ml-9 mt-3 max-w-sm rounded-2xl border border-[#2ABD41]/20 bg-gradient-to-br from-[#F1FCF2] to-white p-3.5 shadow-sm">
+                            <div className="mb-2.5 flex items-center gap-2">
+                              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#2ABD41]/15 text-[#2ABD41]">
+                                <Calendar className="h-3.5 w-3.5" strokeWidth={2.25} />
+                              </div>
+                              <span className="text-[12px] font-bold text-[#175022]">
+                                {tr ? 'Hangi dönem?' : 'Which period?'}
+                              </span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <select
+                                id={`period-month-${msg.id}`}
+                                defaultValue={new Date().getMonth() + 1}
+                                className="rounded-lg border border-[#2ABD41]/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#175022] shadow-sm"
+                              >
+                                {monthNames.map((name, i) => (
+                                  <option key={i} value={i + 1}>{name}</option>
+                                ))}
+                              </select>
+                              <select
+                                id={`period-year-${msg.id}`}
+                                defaultValue={thisYear}
+                                className="rounded-lg border border-[#2ABD41]/30 bg-white px-3 py-2 text-[13px] font-semibold text-[#175022] shadow-sm"
+                              >
+                                {years.map(y => (
+                                  <option key={y} value={y}>{y}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="mt-2.5 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const month = document.getElementById(`period-month-${msg.id}`)?.value;
+                                  const year = document.getElementById(`period-year-${msg.id}`)?.value;
+                                  const monthShort = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'][parseInt(month)-1];
+                                  const value = `${monthShort} ${year}`;
+                                  const label = `${monthNames[parseInt(month)-1]} ${year}`;
+                                  setMessages(prev => prev.map(m =>
+                                    m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: label } : m
+                                  ));
+                                  sendMessage(value, null, label);
+                                }}
+                                className="flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1D9C31]"
+                              >
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                {tr ? 'Onayla' : 'Confirm'}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMessages(prev => prev.map(m =>
+                                    m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: tr ? 'İptal edildi' : 'Cancelled' } : m
+                                  ));
+                                  sendMessage('cancel', null, tr ? 'İptal' : 'Cancel');
+                                }}
+                                className="flex items-center gap-1.5 rounded-full border border-red-200 px-4 py-2 text-[12px] font-semibold text-red-500 transition hover:bg-red-50"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                {tr ? 'İptal' : 'Cancel'}
+                              </button>
+                            </div>
                           </div>
                         );
                       }
@@ -3993,9 +4014,9 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                             }
                             if (option.kind === 'cancel') {
                               setMessages(prev => prev.map(m =>
-                                m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: '❌ Cancelled' } : m
+                                m.id === msg.id ? { ...m, quickReplyUsed: true, selectedReply: tr ? 'İptal edildi' : 'Cancelled' } : m
                               ));
-                              sendMessage('cancel', null, '❌ Cancel');
+                              sendMessage('cancel', null, tr ? 'İptal' : 'Cancel');
                               return;
                             }
                             setMessages(prev => prev.map(m =>
@@ -4014,16 +4035,22 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                   )}
                   {/* ── Selected reply indicator ── */}
                   {msg.quickReplyUsed && msg.selectedReply && (
-                    <div className="ml-9 mt-2 text-[11px] font-semibold text-[#2ABD41]">
-                      Selected: {msg.selectedReply} ✓
+                    <div className="ml-9 mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-[#2ABD41]">
+                      <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      {(tr ? 'Seçildi: ' : 'Selected: ') + msg.selectedReply}
                     </div>
                   )}
                   {/* ── Save confirmation section ── */}
                   {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
                     <div className="ml-9 mt-3 rounded-2xl border border-[#2ABD41]/20 bg-gradient-to-br from-[#F1FCF2] to-white p-4 shadow-sm">
-                      <p className="text-[13px] font-bold text-[#175022] mb-3">
-                        {tr ? '💾 Bu sonucu dashboard\'a kaydet?' : '💾 Save this result to your dashboard?'}
-                      </p>
+                      <div className="mb-3 flex items-center gap-2">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#2ABD41]/15 text-[#2ABD41]">
+                          <Save className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        </div>
+                        <p className="text-[13px] font-bold text-[#175022]">
+                          {tr ? "Bu sonucu dashboard'a kaydet?" : 'Save this result to your dashboard?'}
+                        </p>
+                      </div>
                       {/* Show clean result summary */}
                       <div className="mb-3 space-y-2">
                         {msg.pending_entries.map((pe, idx) => (
@@ -4061,9 +4088,10 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                 yearOptions.sort((a, b) => b - a);
                               }
                               return (
-                                <div className="mt-2 flex items-center gap-1.5">
-                                  <span className="text-[10px] font-semibold text-[#175022]/60">
-                                    {tr ? '⚠️ Dönem (tahmin edilemedi):' : '⚠️ Period (could not be determined):'}
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-2 border border-amber-100">
+                                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2.25} />
+                                  <span className="text-[10px] font-semibold text-amber-700">
+                                    {tr ? 'Dönem tahmin edilemedi:' : 'Period could not be determined:'}
                                   </span>
                                   <select
                                     value={override.month}
@@ -4141,7 +4169,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                     <div className="ml-9 mt-2 rounded-xl bg-[#F1FCF2] border border-[#2ABD41]/20 px-4 py-2.5">
                       <div className="flex items-center gap-2 text-[12px] font-semibold text-[#2ABD41]">
                         <CheckCircle2 className="h-4 w-4" />
-                        {tr ? 'Dashboard\'a kaydedildi ✓' : 'Saved to dashboard ✓'}
+                        {tr ? 'Dashboard\'a kaydedildi' : 'Saved to dashboard'}
                       </div>
                       <div className="mt-1 text-[10px] text-[#1A7B2A]">
                         {msg.entryStatus === 'approved'
