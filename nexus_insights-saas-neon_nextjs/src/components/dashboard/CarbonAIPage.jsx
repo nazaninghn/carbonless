@@ -5,7 +5,8 @@ import Image from 'next/image';
 import {
   Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
   ClipboardList, RotateCcw, X, Paperclip, FileText, Download,
-  HelpCircle, CheckCircle2, Menu, BarChart3,
+  HelpCircle, CheckCircle2, Menu, BarChart3, BookOpen,
+  Zap, Fuel, Car, Plane, Flame, Droplets, Truck,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import CompletionReportCard from './CompletionReportCard';
@@ -537,7 +538,7 @@ function EmptyState({ onNew, tr }) {
     { img: '/icons/targets.png', text: 'Karbon azaltma hedefleri nasıl belirlenir?', label: 'Hedefler' },
     { img: '/icons/efficiency.png', text: 'Enerji verimliliği önerileri', label: 'Verimlilik' },
     { img: '/icons/calculator.png', text: 'Emisyon faktörlerini hesapla', label: 'Hesaplama' },
-    { img: '/icons/scopes.png', text: 'How i must write for calc...', label: '📖 Rehber', isGuide: true },
+    { text: 'How i must write for calc...', label: 'Rehber', isGuide: true },
   ] : [
     { img: '/icons/scopes.png', text: "What's the difference between Scope 1, 2, and 3?", label: 'Scopes' },
     { img: '/icons/analytics.png', text: "What's my biggest emission source?", label: 'Analytics' },
@@ -545,7 +546,7 @@ function EmptyState({ onNew, tr }) {
     { img: '/icons/targets.png', text: "How do I set carbon reduction targets?", label: 'Targets' },
     { img: '/icons/efficiency.png', text: "Energy efficiency recommendations", label: 'Efficiency' },
     { img: '/icons/calculator.png', text: "Calculate my emission factors", label: 'Calculator' },
-    { img: '/icons/scopes.png', text: 'How i must write for calc...', label: '📖 Guide', isGuide: true },
+    { text: 'How i must write for calc...', label: 'Guide', isGuide: true },
   ];
 
   const [showGuide, setShowGuide] = useState(false);
@@ -594,7 +595,9 @@ function EmptyState({ onNew, tr }) {
                 onClick={() => isGuide ? setShowGuide(true) : onNew(text)}
                 className={`flex items-center gap-1.5 sm:gap-2 rounded-full border px-3 sm:px-4 py-2 sm:py-2.5 text-[11px] sm:text-[12px] font-medium shadow-sm whitespace-nowrap transition-all duration-200 active:scale-[0.97] ${isGuide ? 'border-[#2ABD41] bg-[#F1FCF2] text-[#175022] hover:bg-[#2ABD41] hover:text-white' : 'border-[#DEFAE1] bg-white text-[#175022]/60 hover:border-[#2ABD41]/30 hover:bg-[#F1FCF2] hover:text-[#175022]'}`}
               >
-                {!isGuide && <Image src={img} alt={label} width={18} height={18} className="h-4 w-4 sm:h-[18px] sm:w-[18px] object-contain" />}
+                {isGuide
+                  ? <BookOpen className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={2.25} />
+                  : <Image src={img} alt={label} width={18} height={18} className="h-4 w-4 sm:h-[18px] sm:w-[18px] object-contain" />}
                 <span>{label}</span>
               </button>
             ))}
@@ -603,40 +606,71 @@ function EmptyState({ onNew, tr }) {
 
         {/* Guide Modal */}
         {showGuide && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4" onClick={() => setShowGuide(false)}>
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-[#DEFAE1]" onClick={e => e.stopPropagation()}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[16px] font-bold text-[#072C0E]">{tr ? '📖 Nasıl Yazmalıyım?' : '📖 How to Write Prompts'}</h3>
-                <button onClick={() => setShowGuide(false)} className="text-[#072C0E]/40 hover:text-[#072C0E] text-xl">✕</button>
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
+            onClick={() => setShowGuide(false)}
+          >
+            <div
+              className="w-full max-w-lg rounded-[1.5rem] bg-white p-6 shadow-2xl border border-[#DEFAE1] animate-[cbFadeUp_0.25s_ease-out_both]"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
+                    <BookOpen className="h-4 w-4" strokeWidth={2.25} />
+                  </div>
+                  <h3 className="text-[16px] font-bold text-[#072C0E] tracking-tight">
+                    {tr ? 'Nasıl Yazmalıyım?' : 'How to Write Prompts'}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowGuide(false)}
+                  aria-label={tr ? 'Kapat' : 'Close'}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#072C0E]/35 transition hover:bg-[#072C0E]/6 hover:text-[#072C0E]"
+                >
+                  <X className="h-4 w-4" strokeWidth={2.25} />
+                </button>
               </div>
-              <p className="text-[13px] text-[#072C0E]/60 mb-4">{tr ? 'Miktar + birim + faaliyet türü yazın. Örnekler:' : 'Write: quantity + unit + activity type. Examples:'}</p>
-              <div className="space-y-2.5">
+              <p className="text-[13px] text-[#072C0E]/55 mb-4 ml-[46px]">
+                {tr ? 'Miktar + birim + faaliyet türü yazın. Örnekler:' : 'Write: quantity + unit + activity type. Examples:'}
+              </p>
+              <div className="space-y-2">
                 {(tr ? [
-                  { emoji: '⚡', text: '"14.000 kWh elektrik kullandık"' },
-                  { emoji: '⛽', text: '"500 litre dizel yakıt yaktık"' },
-                  { emoji: '🚗', text: '"Araçlarımız 5.000 km yol yaptı"' },
-                  { emoji: '✈️', text: '"İstanbul-Londra uçtuk"' },
-                  { emoji: '🗑️', text: '"2 ton atığı çöpe gönderdik"' },
-                  { emoji: '🔥', text: '"1000 m³ doğalgaz kullandık"' },
-                  { emoji: '💧', text: '"100 m³ su tükettik"' },
-                  { emoji: '🚛', text: '"10.000 ton-km kamyon taşımacılığı"' },
+                  { icon: Zap, text: '"14.000 kWh elektrik kullandık"' },
+                  { icon: Fuel, text: '"500 litre dizel yakıt yaktık"' },
+                  { icon: Car, text: '"Araçlarımız 5.000 km yol yaptı"' },
+                  { icon: Plane, text: '"İstanbul-Londra uçtuk"' },
+                  { icon: Trash2, text: '"2 ton atığı çöpe gönderdik"' },
+                  { icon: Flame, text: '"1000 m³ doğalgaz kullandık"' },
+                  { icon: Droplets, text: '"100 m³ su tükettik"' },
+                  { icon: Truck, text: '"10.000 ton-km kamyon taşımacılığı"' },
                 ] : [
-                  { emoji: '⚡', text: '"We used 14,000 kWh of electricity"' },
-                  { emoji: '⛽', text: '"We burned 500 liters of diesel"' },
-                  { emoji: '🚗', text: '"Our vehicles drove 5,000 km"' },
-                  { emoji: '✈️', text: '"Flight from Istanbul to London"' },
-                  { emoji: '🗑️', text: '"2 tonnes of waste to landfill"' },
-                  { emoji: '🔥', text: '"1000 m³ of natural gas"' },
-                  { emoji: '💧', text: '"100 m³ water consumption"' },
-                  { emoji: '🚛', text: '"10,000 tonne-km truck freight"' },
-                ]).map((ex, i) => (
-                  <div key={i} className="flex items-center gap-2.5 bg-[#F9FFF4] rounded-lg px-3 py-2.5">
-                    <span className="text-[16px]">{ex.emoji}</span>
-                    <span className="text-[13px] text-[#072C0E]/70 font-medium">{ex.text}</span>
+                  { icon: Zap, text: '"We used 14,000 kWh of electricity"' },
+                  { icon: Fuel, text: '"We burned 500 liters of diesel"' },
+                  { icon: Car, text: '"Our vehicles drove 5,000 km"' },
+                  { icon: Plane, text: '"Flight from Istanbul to London"' },
+                  { icon: Trash2, text: '"2 tonnes of waste to landfill"' },
+                  { icon: Flame, text: '"1000 m³ of natural gas"' },
+                  { icon: Droplets, text: '"100 m³ water consumption"' },
+                  { icon: Truck, text: '"10,000 tonne-km truck freight"' },
+                ]).map(({ icon: Icon, text }, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 rounded-xl bg-[#F9FFF4] px-3 py-2.5 transition-colors hover:bg-[#F1FCF2]"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#2ABD41]/12 text-[#2ABD41]">
+                      <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    </div>
+                    <span className="text-[13px] text-[#072C0E]/70 font-medium">{text}</span>
                   </div>
                 ))}
               </div>
-              <p className="mt-4 text-[11px] text-[#072C0E]/40">{tr ? 'AI eksik bilgiyi sorar — sadece bildiklerinizi yazın.' : "AI will ask for missing info — just write what you know."}</p>
+              <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#072C0E]/3 px-3 py-2.5">
+                <Sparkles className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#2ABD41]" />
+                <p className="text-[11px] leading-5 text-[#072C0E]/45">
+                  {tr ? 'AI eksik bilgiyi sorar — sadece bildiklerinizi yazın.' : "AI will ask for missing info — just write what you know."}
+                </p>
+              </div>
             </div>
           </div>
         )}
