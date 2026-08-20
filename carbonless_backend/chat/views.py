@@ -785,15 +785,21 @@ def _call_groq(messages_history, user_context='', ui_language=None):
         logger.error('GROQ_API_KEY not set or Groq client failed to initialise')
         return None, 'AI service not available.', 503
 
-    # llama-3.1-8b-instant does not reliably follow the LANGUAGE directive
-    # below on short first messages ("hello", "i need help") — it defaults to
-    # Turkish regardless of the selected language. llama-3.3-70b-versatile
-    # follows it correctly every time, with no noticeable latency difference
-    # on Groq's hardware. Hardcoded as the default (not just documented via
-    # GROQ_MODEL) so production works without needing a Render dashboard env
-    # var — .env is gitignored and never reaches Render.
-    model = os.environ.get('GROQ_MODEL', 'llama-3.3-70b-versatile')
-    max_tokens = int(os.environ.get('GROQ_MAX_TOKENS', '700'))
+    # Groq deprecated/removed llama-3.3-70b-versatile and llama-3.1-8b-instant
+    # from this account's model catalog (verified live: client.models.list()
+    # no longer includes either — every chat message was failing with a 404
+    # NotFoundError, caught by the generic except-branch below and shown to
+    # users as "AI service temporarily unavailable"). openai/gpt-oss-120b is
+    # the closest available replacement in size/quality. It's a reasoning
+    # model — completion_tokens includes a separate internal "thinking" pass
+    # before the actual answer, so max_tokens needs real headroom above what
+    # a direct-answer model like the old Llama needed, or long reasoning can
+    # eat the whole budget and leave nothing for the visible answer.
+    # Hardcoded as the default (not just documented via GROQ_MODEL) so
+    # production works without needing a Render dashboard env var — .env is
+    # gitignored and never reaches Render.
+    model = os.environ.get('GROQ_MODEL', 'openai/gpt-oss-120b')
+    max_tokens = int(os.environ.get('GROQ_MAX_TOKENS', '1200'))
     history_limit = int(os.environ.get('GROQ_HISTORY_MESSAGES', '6'))
 
     # An unconditional rule, not a judgment call: a small/fast model like

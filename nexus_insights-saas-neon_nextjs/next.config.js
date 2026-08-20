@@ -42,9 +42,16 @@ const nextConfig = {
               // accounts.google.com serves the Google Identity Services script
               // used by the "Sign in with Google" button on /login.
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com",
-              "style-src 'self' 'unsafe-inline'",       // Tailwind requires unsafe-inline
+              // fonts.googleapis.com/api.fontshare.com serve the CSS that
+              // @font-face-declares Space Grotesk / General Sans (see the
+              // <link rel="stylesheet"> tags in app/layout.jsx); their actual
+              // font FILES are then fetched from fonts.gstatic.com /
+              // cdn.fontshare.com — both were missing here, so the browser
+              // blocked the stylesheets outright and the whole page silently
+              // fell back to the default font with a CSP violation logged.
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com",
               "img-src 'self' data: blob: https://images.unsplash.com https://*.googleusercontent.com",
-              "font-src 'self' data:",
+              "font-src 'self' data: https://fonts.gstatic.com https://cdn.fontshare.com",
               // Scoped to the actual backend origin — previously "https:" allowed
               // fetch/XHR to ANY https host, which would let a future XSS
               // exfiltrate data (e.g. the localStorage access token) to an

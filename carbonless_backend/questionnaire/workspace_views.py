@@ -477,7 +477,9 @@ class WorkspaceChatView(APIView):
 
         try:
             completion = client.chat.completions.create(
-                model='llama-3.3-70b-versatile',
+                # llama-3.3-70b-versatile was removed from Groq's model
+                # catalog — see chat/views.py's _call_groq for the full story.
+                model='openai/gpt-oss-120b',
                 messages=[
                     {'role': 'system', 'content': system},
                     {'role': 'user', 'content': message},

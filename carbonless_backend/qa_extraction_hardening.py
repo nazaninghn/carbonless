@@ -25,7 +25,7 @@ GROQ_KEY = os.environ.get('GROQ_API_KEY', '')
 LIVE_MODE = bool(GROQ_KEY)
 
 if LIVE_MODE:
-    print(f'{B}MODE: LIVE — real Groq calls (llama-3.3-70b-versatile){E}')
+    print(f'{B}MODE: LIVE — real Groq calls (openai/gpt-oss-120b){E}')
 else:
     print(f'{W}MODE: ANALYSIS — no API key set. Showing expected/risk classification only.')
     print(f'      To run live: set GROQ_API_KEY=gsk_... before running this script.{E}')

@@ -188,8 +188,14 @@ def extract_emission_intent(user_text: str) -> dict:
         result["_source"] = "default"
         return result
 
-    model = os.getenv("GROQ_NLU_MODEL", "llama-3.1-8b-instant").strip()
-    max_tokens = int(os.getenv("GROQ_NLU_MAX_TOKENS", "450"))
+    # llama-3.1-8b-instant was removed from Groq's model catalog (see
+    # chat/views.py's _call_groq for the full story) — openai/gpt-oss-20b is
+    # the closest available fast/small model for this latency-sensitive path.
+    model = os.getenv("GROQ_NLU_MODEL", "openai/gpt-oss-20b").strip()
+    # Bumped from 450 — openai/gpt-oss-20b is a reasoning model, so part of
+    # the budget goes to an internal "thinking" pass before the JSON answer,
+    # unlike the old direct-answer Llama model this replaced.
+    max_tokens = int(os.getenv("GROQ_NLU_MAX_TOKENS", "700"))
     use_json_mode = os.getenv("GROQ_NLU_JSON_MODE", "true").strip().lower() not in (
         "false", "0", "no",
     )
