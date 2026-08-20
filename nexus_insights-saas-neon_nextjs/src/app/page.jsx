@@ -13,10 +13,10 @@ const copy = {
   en: {
     nav: { home: 'Home', about: 'About', features: 'Features', ai: 'AI', login: 'Login' },
     hero: {
-      kicker: 'AI Precision. Carbon Vision.',
-      line1: 'Your AI-powered',
-      highlight: 'carbon calculator',
-      line2: 'platform.',
+      kicker: 'Carbon Accounting, Made Simple.',
+      line1: "Measure your company's",
+      highlight: 'carbon footprint.',
+      line2: 'Simply.',
       desc: '',
       cta: 'Get Started Free',
       demo: 'Request Demo',
@@ -25,10 +25,10 @@ const copy = {
   tr: {
     nav: { home: 'Ana Sayfa', about: 'Hakkında', features: 'Özellikler', ai: 'AI', login: 'Giriş' },
     hero: {
-      kicker: 'Yapay Zeka Hassasiyeti. Karbon Vizyonu.',
-      line1: 'AI destekli',
-      highlight: 'karbon hesaplama',
-      line2: 'platformunuz.',
+      kicker: 'Karbon Muhasebesi, Basitleştirildi.',
+      line1: 'Şirketinizin',
+      highlight: 'karbon ayak izini',
+      line2: 'kolayca ölçün.',
       desc: '',
       cta: 'Ücretsiz Başlayın',
       demo: 'Demo Talep Et',
@@ -300,12 +300,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Center content — pulled up snug under the hands */}
-        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center mt-3 sm:mt-5">
-          <p className="mb-2 sm:mb-3 text-[11px] sm:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
+        {/* Center content — pulled up snug under the hands. Every piece here
+            (kicker/headline/subtext/buttons) scales together at the same
+            breakpoints so the block reads as one coherent, proportioned
+            unit at any size — not just the headline growing on its own. */}
+        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center mt-2 sm:mt-4">
+          <p className="mb-1.5 sm:mb-2 text-[10px] sm:text-[12px] xl:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
             {t.hero.kicker}
           </p>
-          <h1 className="text-[32px] sm:text-[52px] lg:text-[72px] uppercase leading-[1.1] sm:leading-[1.05] lg:leading-[0.95] tracking-[-0.01em] text-center" style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700 }}>
+          <h1 className="text-[26px] sm:text-[38px] lg:text-[50px] xl:text-[62px] uppercase leading-[1.15] sm:leading-[1.1] tracking-[-0.01em] text-center" style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700 }}>
             <span className="block text-[#1a1a1a]">
               {t.hero.line1}
             </span>
@@ -316,18 +319,18 @@ export default function Home() {
               {t.hero.line2}
             </span>
           </h1>
-          <p className="mt-3 sm:mt-4 text-[14px] sm:text-[16px] leading-[1.8] text-[#072C0E]/60 max-w-2xl mx-auto">
+          <p className="mt-2.5 sm:mt-3 xl:mt-4 text-[13px] sm:text-[15px] xl:text-[16px] leading-[1.7] text-[#072C0E]/60 max-w-2xl mx-auto">
             {lang === 'tr'
-              ? 'Carbonless AI, karbon yoğun aktivitelerinizin etkisini gerçek zamanlı hesaplar ve ISO 14064-1 uyumlu raporlar oluşturur.'
-              : 'Carbonless AI calculates the impact of your carbon-intensive activities in real time and generates ISO 14064-1 compliant reports.'}
+              ? 'Carbonless, şirketinizin faaliyet verilerini —elektrik, yakıt, seyahat ve satın alımlar gibi— Kapsam 1, 2 ve 3 genelinde net bir karbon ayak izine dönüştürür.'
+              : "Carbonless turns your company's activity data—like electricity, fuel, travel, and purchases—into a clear carbon footprint across Scope 1, 2 & 3."}
           </p>
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+          <div className="mt-4 sm:mt-5 xl:mt-7 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3">
             <Link href="/register"
-              className="flex items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 hover:bg-[#1D9C31] transition hover:-translate-y-0.5">
-              {lang === 'tr' ? 'Hesaplamaya Başla' : 'Start Calculating'}
+              className="flex items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-8 xl:px-9 py-3.5 xl:py-4 text-[14px] xl:text-[15px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 hover:bg-[#1D9C31] transition hover:-translate-y-0.5">
+              {lang === 'tr' ? 'Karbon Ayak İzinizi Hesaplayın' : 'Calculate Your Carbon Footprint'}
             </Link>
             <a href="#ai"
-              className="flex items-center justify-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#175022] transition hover:-translate-y-0.5">
+              className="flex items-center justify-center gap-2 rounded-full bg-[#072C0E] px-8 xl:px-9 py-3.5 xl:py-4 text-[14px] xl:text-[15px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#175022] transition hover:-translate-y-0.5">
               {lang === 'tr' ? 'Nasıl Çalışır?' : 'See How It Works'}
             </a>
           </div>
