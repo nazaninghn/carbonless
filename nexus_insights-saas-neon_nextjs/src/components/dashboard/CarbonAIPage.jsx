@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 import {
   Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
-  ClipboardList, RotateCcw, X, Paperclip, FileText, Download,
+  ClipboardList, RotateCcw, X, FileText, Download,
   HelpCircle, CheckCircle2, Menu, BarChart3, BookOpen,
   Zap, Fuel, Car, Plane, Flame, Droplets, Truck, Calendar, Save, AlertCircle, Pencil, Check,
 } from 'lucide-react';
@@ -3371,9 +3371,6 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // On mobile starts closed; desktop opens automatically
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState('');
-  // File attachment state
-  const [attachedFile, setAttachedFile] = useState(null);
-  const fileInputRef = useRef(null);
   // Prevents double-click duplicates on save button
   const [savingMessageId, setSavingMessageId] = useState(null);
   // Period overrides for pending entries whose date wasn't extracted from the
@@ -3535,33 +3532,23 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
     // recreated on every keystroke, causing unnecessary re-renders.
     const content = (text || inputValueRef.current).trim();
     const sessionId = sid || activeId;
-    const file = attachedFile;
     // Fix #101: use sendingRef (synchronous, same-tick) instead of `sending` state
     // so the guard fires immediately without waiting for a re-render.
-    if ((!content && !file) || !sessionId || sendingRef.current) return;
+    if (!content || !sessionId || sendingRef.current) return;
 
     // Only clear input if no override text was passed (quick reply buttons pass text directly)
     if (!text) {
       setInput('');
       inputValueRef.current = '';
     }
-    setAttachedFile(null);
     sendingRef.current = true;
     setSending(true);
     setError('');
     // displayOverride lets quick-reply buttons show a user-friendly label in
     // the chat bubble while still sending the raw value to the backend.
-    // No emoji-prefixed filename here — has_attachment below already renders
-    // a proper icon+filename badge under the bubble, so duplicating the name
-    // with a 📎 prefix in the bubble text just repeats it inconsistently.
-    const displayContent = file
-      ? (content || (trRef.current ? 'Dosya eklendi' : 'File attached'))
-      : (displayOverride || content);
+    const displayContent = displayOverride || content;
     setMessages(prev => [...prev, {
       id: `m-${++msgIdRef.current}`, role: 'user', content: displayContent,
-      // Known client-side before the request even completes — the badge
-      // shouldn't have to wait for a page reload to appear.
-      has_attachment: !!file, attachment_name: file?.name || null,
     }]);
 
     try {
@@ -3569,17 +3556,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       // language) — send it so the backend replies in the language actually
       // selected in this chat, instead of guessing from the message text alone.
       const currentLang = trRef.current ? 'tr' : 'en';
-      let res;
-      if (file) {
-        // Use FormData for file upload
-        const formData = new FormData();
-        formData.append('content', content || '');
-        formData.append('attachment', file);
-        formData.append('language', currentLang);
-        res = await api.sendChatMessageWithFile(sessionId, formData);
-      } else {
-        res = await api.sendChatMessage(sessionId, content, currentLang);
-      }
+      const res = await api.sendChatMessage(sessionId, content, currentLang);
       if (!isMountedRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -3612,7 +3589,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
         inputRef.current?.focus();
       }
     }
-  }, [activeId, attachedFile, fetchData]);
+  }, [activeId, fetchData]);
 
   const startNew = useCallback(async (initialPrompt = '') => {
     // ── Calculate button: show local guide instead of calling the API ──
@@ -3667,11 +3644,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       setSessions(prev => [session, ...prev]);
       setActiveId(session.id);
       setError('');
-      // A file can be attached before any session exists now that the input
-      // bar is always visible (see EmptyState) — without this check, sending
-      // just a file with no typed text silently dropped the attachment,
-      // because this branch never ran and sendMessage was never called.
-      if (initialPrompt || attachedFile) {
+      if (initialPrompt) {
         setMessages([]);
         // Tiny delay lets React flush the state above (activeId, messages) before
         // sendMessage reads them. sendMessage is stable (no input dep), so it is
@@ -3690,7 +3663,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       creatingSessionRef.current = false;
       if (isMountedRef.current) setCreatingSession(false);
     }
-  }, [sendMessage, attachedFile]); // `tr` removed — read via trRef.current
+  }, [sendMessage]); // `tr` removed — read via trRef.current
 
   const deleteSession = useCallback(async (id) => {
     // Guard: ignore double-clicks / rapid re-submits for the same session id
@@ -4216,44 +4189,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                     ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
                     : 'border-[#175022]/10 focus-within:border-[#8BEA99]/50 focus-within:ring-[#8BEA99]/12'
                 }`}>
-                  {/* File upload button */}
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept=".pdf,.csv,.xlsx,.xls,.doc,.docx,.txt,.png,.jpg,.jpeg"
-                    onChange={e => {
-                      const f = e.target.files?.[0];
-                      if (f) {
-                        if (f.size > 10 * 1024 * 1024) {
-                          setError(tr ? 'Dosya çok büyük (maks 10MB)' : 'File too large (max 10MB)');
-                          return;
-                        }
-                        setAttachedFile(f);
-                      }
-                      e.target.value = '';
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={sending || creatingSession}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#175022]/30 transition hover:text-[#175022] hover:bg-[#175022]/10 disabled:opacity-30"
-                    title={tr ? 'Dosya ekle' : 'Attach file'}
-                  >
-                    <Paperclip className="h-4 w-4" />
-                  </button>
                   <div className="flex-1 min-w-0">
-                    {/* Attached file indicator */}
-                    {attachedFile && (
-                      <div className="flex items-center gap-2 mb-1.5 rounded-lg bg-[#DEFAE1] border border-[#8BEA99]/30 px-2.5 py-1.5">
-                        <FileText className="h-3.5 w-3.5 shrink-0 text-[#175022]" />
-                        <span className="text-[11px] font-medium text-[#175022]/70 truncate">{attachedFile.name}</span>
-                        <button onClick={() => setAttachedFile(null)} className="shrink-0 ml-auto text-[#175022]/30 hover:text-red-500 transition">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
                     <textarea
                       ref={inputRef}
                       value={input}
@@ -4275,7 +4211,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                       if (!activeId) startNew(input);
                       else sendMessage();
                     }}
-                    disabled={(!input.trim() && !attachedFile) || sending || creatingSession || charOver}
+                    disabled={!input.trim() || sending || creatingSession || charOver}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {(sending || creatingSession)
