@@ -4040,10 +4040,10 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                 Source: Registered factor — {pe.factor_reference || pe.factor_source_label}
                               </div>
                             )}
-                            {/* The bot couldn't tell which month/year this was for from the
-                                message — force an explicit choice instead of silently saving
-                                it under the current month. */}
-                            {!pe.date_extracted && (() => {
+                            {/* Always shown — the user confirms the period explicitly
+                                every time, even when the AI extracted a date from the
+                                message, rather than silently trusting the extraction. */}
+                            {(() => {
                               const key = `${msg.id}-${idx}`;
                               const override = periodOverrides[key] || { month: pe.month, year: pe.year };
                               const monthNames = tr
@@ -4060,11 +4060,23 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                 yearOptions.push(override.year);
                                 yearOptions.sort((a, b) => b - a);
                               }
+                              // Confident extraction gets a neutral confirm prompt;
+                              // an unrecognized/missing date keeps the amber warning
+                              // so the user notices it's a guess, not a read-back.
+                              const boxClass = pe.date_extracted
+                                ? 'mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-[#F1FCF2] px-2.5 py-2 border border-[#2ABD41]/20'
+                                : 'mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-2 border border-amber-100';
                               return (
-                                <div className="mt-2 flex flex-wrap items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-2 border border-amber-100">
-                                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2.25} />
-                                  <span className="text-[10px] font-semibold text-amber-700">
-                                    {tr ? 'Dönem tahmin edilemedi:' : 'Period could not be determined:'}
+                                <div className={boxClass}>
+                                  {pe.date_extracted ? (
+                                    <Calendar className="h-3.5 w-3.5 shrink-0 text-[#2ABD41]" strokeWidth={2.25} />
+                                  ) : (
+                                    <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2.25} />
+                                  )}
+                                  <span className={`text-[10px] font-semibold ${pe.date_extracted ? 'text-[#1A7B2A]' : 'text-amber-700'}`}>
+                                    {pe.date_extracted
+                                      ? (tr ? 'Dönemi onayla:' : 'Confirm period:')
+                                      : (tr ? 'Dönem tahmin edilemedi:' : 'Period could not be determined:')}
                                   </span>
                                   <select
                                     value={override.month}

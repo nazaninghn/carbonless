@@ -232,6 +232,50 @@ def detect_activity_type(text: str) -> str | None:
     return None
 
 
+# ── Date detection ────────────────────────────────────────────────────────────
+
+_MONTH_NAMES = {
+    'jan': 1, 'january': 1, 'feb': 2, 'february': 2, 'mar': 3, 'march': 3,
+    'apr': 4, 'april': 4, 'may': 5, 'jun': 6, 'june': 6, 'jul': 7, 'july': 7,
+    'aug': 8, 'august': 8, 'sep': 9, 'sept': 9, 'september': 9, 'oct': 10,
+    'october': 10, 'nov': 11, 'november': 11, 'dec': 12, 'december': 12,
+}
+_MONTH_NAME_PATTERN = '|'.join(_MONTH_NAMES.keys())
+
+
+def _extract_date_from_text(text: str) -> tuple[int, int] | None:
+    """Find an explicit month(+year) mention in *text*, e.g. 'in June 2025',
+    'for 03/2024', or '2025-06'. Returns None if no date phrase is found —
+    callers should fall back to the current month rather than guess."""
+    t = text.lower()
+
+    m = re.search(r'\b(\d{4})[-/](\d{1,2})\b', t)
+    if m:
+        year, month = int(m.group(1)), int(m.group(2))
+        if 1 <= month <= 12:
+            return month, year
+
+    m = re.search(r'\b(\d{1,2})[-/](\d{4})\b', t)
+    if m:
+        month, year = int(m.group(1)), int(m.group(2))
+        if 1 <= month <= 12:
+            return month, year
+
+    m = re.search(rf'\b({_MONTH_NAME_PATTERN})\b(?:\s*(\d{{4}}))?', t)
+    if m:
+        name, year_str = m.group(1), m.group(2)
+        # "may" alone is too easily the modal verb ("we may add more data")
+        # rather than the month — only trust it when a year makes the intent
+        # unambiguous, e.g. "may 2025".
+        if name == 'may' and not year_str:
+            return None
+        month = _MONTH_NAMES[name]
+        year = int(year_str) if year_str else datetime.now(timezone.utc).year
+        return month, year
+
+    return None
+
+
 # ── Main entry point ─────────────────────────────────────────────────────────
 
 def try_local_emission_parse(text: str) -> dict | None:
@@ -261,15 +305,16 @@ def try_local_emission_parse(text: str) -> dict | None:
 
     quantity = parse_localized_number(match.group('quantity'))
     unit = normalise_unit(match.group('unit'))
+    extracted_date = _extract_date_from_text(text)
 
     return {
         'fuel_type': activity_type,
         'quantity': quantity,
         'unit': unit,
-        'month': datetime.now(timezone.utc).month,
-        'year': datetime.now(timezone.utc).year,
+        'month': extracted_date[0] if extracted_date else datetime.now(timezone.utc).month,
+        'year': extracted_date[1] if extracted_date else datetime.now(timezone.utc).year,
         'description': f'AI Chat: {activity_type} {quantity} {unit}',
-        'date_extracted': False,
+        'date_extracted': extracted_date is not None,
     }
 
 
