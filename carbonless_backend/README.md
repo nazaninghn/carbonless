@@ -58,7 +58,10 @@ python manage.py seed_emission_factors
 
 - Python 3.12 (`runtime.txt`)
 - Build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
-- Start command: `gunicorn carbonless_api.wsgi:application`
+- Start command: `gunicorn carbonless_api.wsgi:application --workers 2 --timeout 60`
+  (2 workers fits the Starter plan's 0.5 CPU / 512MB — more workers would
+  contend for the half core rather than add capacity; 60s timeout gives
+  Groq-backed AI endpoints room to finish instead of being killed early)
 - Set all env vars above in Render dashboard
 
 ## Architecture
