@@ -3646,6 +3646,16 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       setError('');
       if (initialPrompt) {
         setMessages([]);
+        // startNew's only 3 call sites all pass either the textarea's own
+        // current value or nothing — never canned/foreign text — so it's
+        // always safe to clear the input here. Without this, the first
+        // message of a brand-new chat sent the text (visible in the reply)
+        // but left it sitting in the textbox, because sendMessage() below
+        // only clears input for its *own* no-arg calls, not when it's
+        // handed text explicitly (that branch exists so quick-reply clicks
+        // don't wipe an unrelated draft the user was mid-typing).
+        setInput('');
+        inputValueRef.current = '';
         // Tiny delay lets React flush the state above (activeId, messages) before
         // sendMessage reads them. sendMessage is stable (no input dep), so it is
         // safe to omit from this dep array.
