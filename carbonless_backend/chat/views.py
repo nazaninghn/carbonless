@@ -14,7 +14,7 @@ from .nlu_extractor import extract_emission_intent
 from .calculation_registry import (
     normalize_nlu, get_schema, prepare_guided_draft,
     apply_guided_answer, build_guided_ui, is_ready_to_calculate,
-    draft_to_entry_data,
+    draft_to_entry_data, UNSUPPORTED_FAMILIES,
 )
 from emissions.factor_lookup import create_entry_from_activity, get_emission_factor_reference
 
@@ -285,13 +285,17 @@ def _normalise_nlu_unit(unit):
         'tonne km': 'tonne-km',
         'tkm': 'tonne-km',
         'kwh': 'kwh',
-        'kw': 'kwh',
         'kwh/month': 'kwh',
-        'kilowatt': 'kwh',
         'kilowatt-hour': 'kwh',
         'kilowatt-hours': 'kwh',
         'kilowatt hours': 'kwh',
-        'mwh': 'kwh',
+        # 'kw'/'kilowatt' (power, not energy) and 'mwh' are deliberately NOT
+        # collapsed to 'kwh' here — kW isn't the same quantity as kWh at all,
+        # and 1 MWh = 1000 kWh, so relabeling 'mwh' as 'kwh' without scaling
+        # the quantity would silently undercount by 1000x. factor_lookup.py's
+        # own UNIT_CONVERSIONS table already converts 'mwh' -> 'kwh' correctly
+        # (multiplying the quantity by 1000) — it just needs to actually see
+        # 'mwh', not have it pre-collapsed away here first.
     }
 
     return unit_map.get(u, u)
@@ -517,8 +521,14 @@ def _assistant_response(session, text, pending_entries=None, ui=None, source='nl
     return Response(resp)
 
 
-def _ask_guided_question(session, family, draft):
-    """Ask the next guided question for an NLU-triggered draft."""
+def _ask_guided_question(session, family, draft, unrecognized_field=None):
+    """Ask the next guided question for an NLU-triggered draft.
+
+    unrecognized_field: if the caller just tried to apply an answer that got
+    rejected (e.g. an ambiguous/invalid unit) and is re-asking the same
+    field, pass its name so the question makes clear the previous answer
+    wasn't understood, instead of silently repeating the exact same prompt.
+    """
     guided_ui = build_guided_ui(family, draft)
 
     if guided_ui.get('complete'):
@@ -537,7 +547,10 @@ def _ask_guided_question(session, family, draft):
     session.save(update_fields=['state', 'updated_at'])
 
     ui = {'quick_replies': quick_replies, 'flow': f'nlu_{family}'}
-    text = f"I can calculate this, but I need one more detail.\n\n**{question_text}**"
+    if unrecognized_field == field:
+        text = f"I didn't recognize that — could you pick one of these?\n\n**{question_text}**"
+    else:
+        text = f"I can calculate this, but I need one more detail.\n\n**{question_text}**"
     return _assistant_response(session, text, ui=ui, source='nlu_guided')
 
 
@@ -622,9 +635,16 @@ def _handle_nlu_guided_reply(request, session, content):
     # Use build_guided_ui which uses get_next_question_field (includes distance_basis logic)
     guided_ui = build_guided_ui(family, clean_draft)
 
+    # apply_guided_answer() silently leaves `field` unset if the answer didn't
+    # validate (e.g. an ambiguous unit like "kw" for electricity) — detect
+    # that here so the re-ask can tell the user their answer wasn't
+    # understood, instead of repeating the exact same question with no
+    # explanation.
+    unrecognized_field = field if field != 'period' and not clean_draft.get(field) else None
+
     if not guided_ui.get('complete'):
         # More fields needed — ask next question
-        return _ask_guided_question(session, family, clean_draft)
+        return _ask_guided_question(session, family, clean_draft, unrecognized_field=unrecognized_field)
 
     # All fields collected — calculate
     return _complete_guided_draft(session, clean_draft)
@@ -672,6 +692,29 @@ def _handle_groq_nlu_result(session, nlu_result, original_text=None):
     family = normalized.get('activity_family')
     if not family:
         return None
+
+    # purchased_energy/refrigerant have zero registered emission factors for
+    # any value yet — say so immediately instead of walking the user through
+    # several guided questions (quantity, unit, period) only to fail with a
+    # confusing "no registered factor" error at the very last step.
+    if family in UNSUPPORTED_FAMILIES:
+        return _assistant_response(
+            session,
+            "I can't calculate that yet — purchased energy (steam/heating/cooling) "
+            "and refrigerant/fugitive emissions aren't supported by a registered "
+            "factor in this system right now.\n\n"
+            "**Here's what I can calculate:**\n"
+            "• ⛽ Fuel: diesel, petrol, LPG, natural gas, coal (liters/kg/m³/kWh)\n"
+            "• ⚡ Electricity: kWh or MWh\n"
+            "• 🚗 Vehicles: distance in km (car, van, truck, motorcycle)\n"
+            "• ✈️ Flights: domestic, short/long haul (km)\n"
+            "• 🚛 Freight: road, rail, sea, air (tonne-km)\n"
+            "• 🗑️ Waste: landfill, recycling, incineration (tonnes/kg)\n"
+            "• 💧 Water: supply or treatment (m³)\n"
+            "• 🏭 Purchased goods: paper, plastic, metals (kg/tonnes)\n"
+            "• 🚌 Employee commuting: car, bus, train (km)",
+            source='nlu_calculator',
+        )
 
     logger.debug(f"[NLU] family={family}, original_text='{original_text}', nlu_vehicle_count={nlu_result.get('vehicle_count')}")
 

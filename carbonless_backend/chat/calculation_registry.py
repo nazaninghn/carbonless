@@ -189,12 +189,16 @@ CALCULATION_SCHEMAS = {
                 "quick_replies": ["domestic", "short_haul", "long_haul", "international"],
             },
             "quantity": {
-                "text": "What distance or how many passenger-km?",
+                "text": "What distance was flown?",
                 "quick_replies": ["500", "1000", "5000", "10000"],
             },
             "unit": {
+                # "passenger_km" removed — no flight factor is registered in
+                # that unit (only km), so offering it as an option always
+                # dead-ended in "no registered factor" (found while auditing
+                # every schema unit option across scopes 1/2/3).
                 "text": "What unit?",
-                "quick_replies": ["km", "miles", "passenger_km"],
+                "quick_replies": ["km", "miles"],
             },
             "period": {
                 "text": "Which month and year was this for?",
@@ -399,10 +403,15 @@ VALUE_ALIASES = {
     "litre": "litres",
     "cubic_meters": "m3",
     "cubic_metres": "m3",
+    "m³": "m3",
+    "m^3": "m3",
     "metric_tons": "tonnes",
     "metric_tonnes": "tonnes",
     "ton": "tonnes",
+    "tons": "tonnes",
     "tonne": "tonnes",
+    "l": "litres",
+    "lt": "litres",
     # Waste method aliases
     "landfilling": "landfill",
     "incinerated": "incineration",
@@ -440,6 +449,17 @@ def normalize_nlu(nlu_data: dict) -> dict:
         val = result.get(field)
         if val and isinstance(val, str):
             result[field] = VALUE_ALIASES.get(val.lower().strip(), val)
+
+    # Reject an ambiguous/guessed unit instead of silently trusting it — e.g.
+    # the NLU model (or the user's raw text) saying "kw" for electricity is a
+    # POWER unit, not the kWh ENERGY unit this schema actually expects, and
+    # treating them as interchangeable would silently calculate against the
+    # wrong quantity. Clearing it here makes get_next_question_field() see
+    # "unit" as missing, so the guided flow asks explicitly rather than
+    # guessing.
+    result_family = result.get("activity_family")
+    if result_family and result.get("unit") and not is_valid_unit(result_family, result["unit"], result):
+        result["unit"] = None
 
     return result
 
@@ -509,12 +529,69 @@ def get_question_text(family: str, field: str) -> str:
     return schema["questions"][field]["text"]
 
 
-def get_quick_replies(family: str, field: str) -> list:
-    """Return suggested quick-reply options for a field."""
+# Ground truth for which of stationary_fuel's generic unit options actually
+# have a registered factor for each specific fuel — cross-checked against
+# emissions/factor_lookup.py's ACTIVITY_TO_SLUG. The schema's "unit" question
+# can't offer a single static list for every fuel (e.g. "kg" only resolves
+# for coal, "kWh" doesn't resolve for coal at all) without dead-ending some
+# combinations in "no registered factor" — found while auditing every schema
+# unit option across scopes 1/2/3.
+STATIONARY_FUEL_UNITS = {
+    "natural_gas": ["kWh", "m3"],
+    "diesel": ["kWh", "litres"],
+    "lpg": ["litres"],
+    "fuel_oil": ["litres"],
+    "coal": ["kg"],
+}
+
+# Families with zero registered emission factors for any value — the guided
+# flow would otherwise walk the user through several questions only to fail
+# at the very last step. Surfaced explicitly instead of silently dead-ending.
+UNSUPPORTED_FAMILIES = {"purchased_energy", "refrigerant"}
+
+
+def get_quick_replies(family: str, field: str, draft: dict | None = None) -> list:
+    """Return suggested quick-reply options for a field.
+
+    For stationary_fuel's "unit" field, narrows the options to what's
+    actually registered for the fuel_type already chosen in *draft* (see
+    STATIONARY_FUEL_UNITS) instead of the same generic list for every fuel.
+    """
     schema = get_schema(family)
     if not schema or field not in schema["questions"]:
         return []
-    return schema["questions"][field].get("quick_replies", [])
+    replies = schema["questions"][field].get("quick_replies", [])
+    if family == "stationary_fuel" and field == "unit" and draft:
+        fuel_type = draft.get("fuel_type")
+        narrowed = STATIONARY_FUEL_UNITS.get(fuel_type)
+        if narrowed:
+            return narrowed
+    return replies
+
+
+def _canonical_unit(unit) -> str | None:
+    """Normalize a unit string for comparison, applying the same aliases
+    used elsewhere so 'kWh'/'kwh'/'KWH' all compare equal."""
+    if not unit:
+        return None
+    s = str(unit).strip().lower()
+    return VALUE_ALIASES.get(s, s).lower()
+
+
+def is_valid_unit(family: str, unit, draft: dict | None = None) -> bool:
+    """Check whether *unit* is one of the schema's recognized units for
+    *family*. Used to reject ambiguous/guessed units — e.g. "kw" is a power
+    unit, not the "kWh" energy unit the electricity schema expects — rather
+    than silently treating them as equivalent. When *draft* is given and the
+    family is stationary_fuel, validates against the fuel-specific list
+    (see STATIONARY_FUEL_UNITS) rather than the generic one."""
+    valid_units = get_quick_replies(family, "unit", draft)
+    if not valid_units:
+        return True  # family has no unit question — nothing to validate
+    canonical = _canonical_unit(unit)
+    if canonical is None:
+        return False
+    return canonical in {_canonical_unit(v) for v in valid_units}
 
 
 # ---------------------------------------------------------------------------
@@ -567,6 +644,16 @@ def apply_guided_answer(draft: dict, field: str, value) -> dict:
     # Normalize the value if it's a string
     if isinstance(value, str):
         value = VALUE_ALIASES.get(value.lower().strip(), value)
+
+    if field == "unit":
+        family = updated.get("activity_family")
+        if family and not is_valid_unit(family, value, updated):
+            # Don't store an unrecognized/ambiguous unit (e.g. "kw" typed in
+            # answer to "What unit?" for electricity) — leave it unset so
+            # get_next_question_field() asks again instead of calculating
+            # against a unit the schema doesn't actually support.
+            return updated
+
     updated[field] = value
     return updated
 
@@ -619,7 +706,7 @@ def build_guided_ui(family: str, draft: dict) -> dict:
         "complete": False,
         "field": next_field,
         "question": question_text,
-        "quick_replies": get_quick_replies(family, next_field),
+        "quick_replies": get_quick_replies(family, next_field, draft),
         "draft": draft,
     }
 

@@ -52,6 +52,7 @@ Rules:
 - activity_month/activity_year: extract the time period the activity refers to if mentioned (e.g. "last month" = previous month, "in January" = month 1, "in 2024" = year 2024). Leave null if no time reference is given.
 - missing_required lists field names that are needed for calculation but absent from the message.
 - ambiguous_fields lists field names whose values are unclear or could be interpreted multiple ways.
+- unit: return exactly what the user wrote, never silently "correct" or guess it. If the user writes "kw" for electricity, return unit="kw" as-is — do NOT infer they meant "kWh". kW (power) and kWh (energy) are different physical quantities; downstream code decides whether an ambiguous unit needs to be asked about, so guessing here would hide a real ambiguity from the user.
 - confidence reflects how certain you are about the extraction (0 = no idea, 1 = perfectly clear).
 
 Examples:

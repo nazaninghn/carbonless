@@ -136,7 +136,10 @@ UNIT_SYNONYMS = {
     'm³': 'm3', 'm^3': 'm3',
     'litre': 'liters', 'liter': 'liters', 'l': 'liters',
     'pkm': 'km', 'tkm': 'tonne-km',
-    'kw': 'kwh', 'kilowatt': 'kwh', 'kilowatthour': 'kwh', 'kilowatthours': 'kwh',
+    # 'kw' and bare 'kilowatt' are deliberately NOT here — kW is a power
+    # (rate) unit, not the kWh energy unit these factors are registered in,
+    # and treating them as the same quantity would silently miscalculate.
+    'kilowatthour': 'kwh', 'kilowatthours': 'kwh',
 }
 
 # Fixed, real-world dimensional conversions: qty_in_to_unit = qty_in_from_unit * multiplier.
@@ -158,6 +161,14 @@ UNIT_CONVERSIONS = {
     ('miles', 'km'): Decimal('1.609344'),
     ('gallon', 'liters'): Decimal('3.785411784'),
     ('gallons', 'liters'): Decimal('3.785411784'),
+    # water schema offers "litres" as a unit option, but water factors are
+    # only registered in m3 — without this, every litres-based water entry
+    # failed with "no registered factor" (found while auditing all schema
+    # unit options across scopes 1/2/3).
+    ('liters', 'm3'): Decimal('0.001'),
+    # freight schema offers "kg_km" as a unit option, but freight factors are
+    # only registered in tonne-km (same audit as above).
+    ('kg_km', 'tonne-km'): Decimal('0.001'),
 }
 
 
