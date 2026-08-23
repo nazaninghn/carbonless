@@ -1728,8 +1728,18 @@ def send_message(request, session_id):
     # Gated by _might_be_emission_entry: general questions skip this Groq
     # round-trip entirely and go straight to the conversational call below,
     # cutting response latency roughly in half for non-data-entry messages.
+    # nlu_hard_failure tracks "we couldn't even ask" (rate limit / API error /
+    # unparsable response) as distinct from "we asked and it's genuinely not
+    # a calculation" — only the former should block the conversational
+    # fallback below (see comment at its use site).
+    nlu_hard_failure = False
     if not attachment and _might_be_emission_entry(content):
-        nlu_result = extract_emission_intent(content)
+        # history's last entry is this same message (it was saved to the DB
+        # and re-fetched above) — pass everything before it as context so a
+        # bare follow-up like "1400 kw" can be tied to an activity named in
+        # an earlier turn ("I use a refrigerator") instead of being judged
+        # on its own.
+        nlu_result = extract_emission_intent(content, history=history[:-1])
         nlu_source = nlu_result.get('_source', 'default')
 
         # Only use NLU result if Groq actually responded successfully
@@ -1737,8 +1747,12 @@ def send_message(request, session_id):
             nlu_response = _handle_groq_nlu_result(session, nlu_result, content)
             if nlu_response:
                 return nlu_response
+        else:
+            nlu_hard_failure = True
 
     # ─── 2.5) LEGACY GUIDED DRAFT: fallback if NLU didn't handle it ───────
+    # Local regex-based, no Groq involved — still worth trying even if the
+    # NLU call above hard-failed, since this path doesn't depend on it.
     if not attachment:
         guided_draft = try_guided_draft_parse(content)
         if guided_draft:
@@ -1761,6 +1775,32 @@ def send_message(request, session_id):
                 'ui': ai_msg.ui,
                 'source': 'guided_flow',
             })
+
+    # ─── 2.75) NLU HARD FAILURE: be honest instead of faking progress ─────
+    # Without this, a message that looked like activity data but couldn't be
+    # classified (Groq rate-limited or errored) fell through to the plain
+    # conversational reply below — which has no idea a calculation was even
+    # attempted, so it improvises a friendly-sounding but ungrounded answer
+    # ("Got it, I'll process that...") that never actually asks for the
+    # missing unit/date or offers to save. Verified live: this was the exact
+    # cause of a chat that walked through several turns without ever
+    # reaching a real calculation.
+    if nlu_hard_failure:
+        clean_text = (
+            "I'm having trouble processing that right now (temporary AI service hiccup). "
+            "Could you try sending it again in a moment?"
+        )
+        ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
+        session.save(update_fields=['updated_at'])
+        return Response({
+            'id': ai_msg.id,
+            'role': 'assistant',
+            'content': clean_text,
+            'created_at': ai_msg.created_at,
+            'session_title': session.title,
+            'pending_entries': [],
+            'source': 'nlu_hard_failure',
+        })
 
     # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
     if _get_groq_client() is None:

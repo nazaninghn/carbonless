@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+import time
 
 import requests
 
@@ -54,6 +55,7 @@ Rules:
 - ambiguous_fields lists field names whose values are unclear or could be interpreted multiple ways.
 - unit: return exactly what the user wrote, never silently "correct" or guess it. If the user writes "kw" for electricity, return unit="kw" as-is — do NOT infer they meant "kWh". kW (power) and kWh (energy) are different physical quantities; downstream code decides whether an ambiguous unit needs to be asked about, so guessing here would hide a real ambiguity from the user.
 - confidence reflects how certain you are about the extraction (0 = no idea, 1 = perfectly clear).
+- If earlier turns are included before the latest user message, use them ONLY to resolve what the latest message refers to — e.g. an earlier message names an activity ("I use a refrigerator") and the latest message gives just a bare number ("1400 kw"). In that case extract the COMBINED intent (activity_family from the earlier turn, quantity/unit from the latest one) instead of treating the latest message in isolation, which would otherwise return low confidence or a null activity_family for what is actually a clear, continued statement.
 
 Examples:
 
@@ -169,9 +171,19 @@ def _post_groq(
 # Public API
 # ---------------------------------------------------------------------------
 
-def extract_emission_intent(user_text: str) -> dict:
+def extract_emission_intent(user_text: str, history: list | None = None) -> dict:
     """
     Call Groq to extract structured emission intent from *user_text*.
+
+    history: optional list of {"role": "user"|"assistant", "content": str}
+    dicts for the turns preceding *user_text* in this conversation (oldest
+    first, NOT including user_text itself). Without this, a short follow-up
+    like "1400 kw" sent right after "I use a refrigerator" gets classified
+    in total isolation — often landing at low confidence or a null
+    activity_family, since nothing in "1400 kw" alone says what it's for —
+    and silently falls through to the plain conversational reply instead of
+    the real calculation flow. Passing recent history lets the model tie
+    the bare number back to the activity named earlier.
 
     Returns a dict matching DEFAULT_NLU structure, with an added ``_source``
     field indicating how the result was produced:
@@ -193,28 +205,54 @@ def extract_emission_intent(user_text: str) -> dict:
     # chat/views.py's _call_groq for the full story) — openai/gpt-oss-20b is
     # the closest available fast/small model for this latency-sensitive path.
     model = os.getenv("GROQ_NLU_MODEL", "openai/gpt-oss-20b").strip()
-    # Bumped from 450 — openai/gpt-oss-20b is a reasoning model, so part of
-    # the budget goes to an internal "thinking" pass before the JSON answer,
-    # unlike the old direct-answer Llama model this replaced.
-    max_tokens = int(os.getenv("GROQ_NLU_MAX_TOKENS", "700"))
+    # Bumped from 450, then from 700 — openai/gpt-oss-20b is a reasoning
+    # model, so part of the budget goes to an internal "thinking" pass
+    # before the JSON answer, unlike the old direct-answer Llama model this
+    # replaced. Now that history context is included (see below), prompts
+    # are longer and the model reasons more, so 700 wasn't always enough —
+    # verified live: with history included, json_object mode sometimes spent
+    # the entire 700/1200-token budget on reasoning and returned an empty
+    # completion, failing Groq's own JSON validation.
+    max_tokens = int(os.getenv("GROQ_NLU_MAX_TOKENS", "1500"))
     use_json_mode = os.getenv("GROQ_NLU_JSON_MODE", "true").strip().lower() not in (
         "false", "0", "no",
     )
 
-    messages = [
-        {"role": "system", "content": NLU_SYSTEM_PROMPT},
-        {"role": "user", "content": user_text},
-    ]
+    messages = [{"role": "system", "content": NLU_SYSTEM_PROMPT}]
+    if history:
+        # Last few turns only — enough to resolve a short follow-up, not so
+        # much that this latency-sensitive fast-path call pays for a long
+        # conversation's full token cost on every single message.
+        messages.extend(history[-6:])
+    messages.append({"role": "user", "content": user_text})
 
     # --- First attempt (with json_object mode if enabled) ---
     try:
         resp = _post_groq(api_key, model, messages, max_tokens, use_json_mode)
 
         if resp.status_code == 429:
-            logger.warning("Groq rate limit hit (429). Returning default NLU.")
-            result = dict(DEFAULT_NLU)
-            result["_source"] = "rate_limited"
-            return result
+            # Groq's per-minute limits are tight on the free tier, and a burst
+            # of messages in one conversation can trip it transiently — one
+            # short retry clears most of these invisibly instead of forcing
+            # the caller to fall back to a plain chat reply that can't
+            # actually calculate anything (verified live: without this, a
+            # rate-limited NLU call silently degraded the whole conversation
+            # into ungrounded small talk that never asked for the missing
+            # unit/date or offered to save).
+            retry_after = resp.headers.get("Retry-After")
+            try:
+                wait_s = min(float(retry_after), 5) if retry_after else 2.0
+            except ValueError:
+                wait_s = 2.0
+            logger.warning("Groq rate limit hit (429). Retrying once after %.1fs.", wait_s)
+            time.sleep(wait_s)
+            resp = _post_groq(api_key, model, messages, max_tokens, use_json_mode)
+
+            if resp.status_code == 429:
+                logger.warning("Groq rate limit hit again after retry. Returning default NLU.")
+                result = dict(DEFAULT_NLU)
+                result["_source"] = "rate_limited"
+                return result
 
         if resp.status_code == 400 and use_json_mode:
             # Some model/payload combinations reject json_object mode — retry without it
