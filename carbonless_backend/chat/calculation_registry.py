@@ -72,7 +72,9 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "How much fuel was consumed?",
-                "quick_replies": ["100", "500", "1000", "5000"],
+                # No quick-reply numbers — quantity is a precise measurement
+                # the user must type themselves, not pick off a guessed list.
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit is the quantity in?",
@@ -98,7 +100,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "What distance was covered?",
-                "quick_replies": ["50", "100", "500", "1000"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit is the distance in?",
@@ -124,7 +126,7 @@ CALCULATION_SCHEMAS = {
         "questions": {
             "quantity": {
                 "text": "How much electricity was consumed?",
-                "quick_replies": ["500", "1000", "5000", "10000"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -146,7 +148,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "How much energy was purchased?",
-                "quick_replies": ["100", "500", "1000", "5000"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -168,7 +170,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "How much waste?",
-                "quick_replies": ["0.5", "1", "5", "10"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -190,7 +192,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "What distance was flown?",
-                "quick_replies": ["500", "1000", "5000", "10000"],
+                "quick_replies": [],
             },
             "unit": {
                 # "passenger_km" removed — no flight factor is registered in
@@ -216,7 +218,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "What quantity (tonne-km)?",
-                "quick_replies": ["100", "500", "1000", "5000"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -238,7 +240,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "What distance commuted?",
-                "quick_replies": ["10", "20", "50", "100"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -260,7 +262,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "How much water?",
-                "quick_replies": ["10", "50", "100", "500"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -282,7 +284,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "What quantity?",
-                "quick_replies": ["10", "100", "500", "1000"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
@@ -304,7 +306,7 @@ CALCULATION_SCHEMAS = {
             },
             "quantity": {
                 "text": "How much refrigerant was released?",
-                "quick_replies": ["0.5", "1", "2", "5"],
+                "quick_replies": [],
             },
             "unit": {
                 "text": "What unit?",
