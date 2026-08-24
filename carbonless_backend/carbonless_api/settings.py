@@ -377,7 +377,7 @@ UNFOLD = {
     'SITE_TITLE': 'Carbonless Admin',
     'SITE_HEADER': 'Carbonless',
     'SITE_SUBHEADER': 'Carbon Inventory Management',
-    'SITE_LOGO': '/static/img/logo.png',
+    'SITE_LOGO': '/static/img/carbonless.png',
     'SITE_SYMBOL': 'eco',
     'SHOW_HISTORY': True,
     'SHOW_VIEW_ON_SITE': False,
