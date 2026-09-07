@@ -126,7 +126,7 @@ def get_available_countries():
     """Returns supported countries."""
     return {
         'global': 'Global average / Defra 2024 + IPCC',
-        'turkey': 'Turkey (Türkiye) – ATOM KABLO / national mix',
+        'turkey': 'Turkey (Türkiye) – ISO 14064-1 verified / national mix',
     }
 
 

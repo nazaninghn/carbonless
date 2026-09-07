@@ -29,8 +29,8 @@ export default function AboutPage() {
                 </p>
                 <p className="text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/60">
                   {tr
-                    ? 'Türkiye ve global emisyon faktörleri ile desteklenen sistemimiz, ATOM KABLO ISO 14064-1, Defra 2024, IPCC 2019 ve ulusal veriler kullanmaktadır.'
-                    : 'Our system is supported by Turkey and global emission factors, using ATOM KABLO ISO 14064-1, Defra 2024, IPCC 2019, and national data sources.'}
+                    ? 'Türkiye ve global emisyon faktörleri ile desteklenen sistemimiz, ISO 14064-1 doğrulanmış envanter, Defra 2024, IPCC 2019 ve ulusal veriler kullanmaktadır.'
+                    : 'Our system is supported by Turkey and global emission factors, using ISO 14064-1 verified inventory data, Defra 2024, IPCC 2019, and national data sources.'}
                 </p>
               </div>
               <div className="group flex items-center justify-center">

@@ -275,7 +275,7 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
               <input
                 type="text"
                 className={INPUT_CLS}
-                placeholder={tr ? 'Örn: ATOM KABLO ISO 14064-1' : 'e.g. ATOM KABLO ISO 14064-1'}
+                placeholder={tr ? 'Örn: Elektrik faturası, ulusal şebeke raporu' : 'e.g. Utility invoice, national grid report'}
                 value={emissionFactorSource}
                 onChange={e => setEmissionFactorSource(e.target.value)}
               />

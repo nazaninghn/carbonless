@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class EmissionFactor(models.Model):
-    """Emission factors from Defra 2024, IPCC 2006/2019, ATOM KABLO, Turkey-specific"""
+    """Emission factors from Defra 2024, IPCC 2006/2019, Turkey ISO 14064-1 verified inventory, Turkey-specific"""
 
     SCOPE_CHOICES = [
         ('scope1', 'Scope 1 - Direct'),
@@ -61,7 +61,7 @@ class EmissionFactor(models.Model):
         ('ipcc_2006', 'IPCC 2006'),
         ('ipcc_2019', 'IPCC 2019 + AR6 GWP'),
         ('turkey_grid', 'Turkey Grid/National'),
-        ('atom_kablo', 'ATOM KABLO ISO 14064-1'),
+        ('atom_kablo', 'Turkey ISO 14064-1 verified inventory'),
         ('icao', 'ICAO'),
         ('turkey_fleet', 'Turkey Fleet'),
         ('generic', 'Generic/Estimated'),

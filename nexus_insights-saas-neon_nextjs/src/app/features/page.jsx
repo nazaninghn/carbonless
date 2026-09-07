@@ -18,7 +18,7 @@ export default function FeaturesPage() {
     { icon: MessageCircle, title: tr ? 'ISO 14064-1 Envanter Sihirbazı' : 'ISO 14064-1 Questionnaire Wizard', desc: tr ? 'Chatbot ile envanter yapılandırmanızı 9 soruda belirleyin. Raporlama dönemi, baz yıl, faktör kaynağı ve daha fazlası.' : 'Configure your inventory in 9 questions via chatbot. Reporting period, base year, factor source and more.' },
     { icon: BarChart3, title: tr ? 'Görsel Dashboard' : 'Visual Dashboard', desc: tr ? 'Scope dağılımı, aylık trend, kategori kırılımı ile emisyonlarınızı anlık takip edin.' : 'Track emissions in real-time with scope distribution, monthly trends, and category breakdown.' },
     { icon: FileText, title: tr ? 'PDF ve CSV Raporlama' : 'PDF & CSV Reporting', desc: tr ? 'ISO 14064-1 uyumlu profesyonel raporlar. Türkçe ve İngilizce dil desteği.' : 'Professional ISO 14064-1 compliant reports. Turkish and English language support.' },
-    { icon: Globe, title: tr ? 'Çoklu Ülke Desteği' : 'Multi-Country Support', desc: tr ? 'Türkiye (ATOM KABLO, ulusal veriler) ve Global (Defra, IPCC) emisyon faktörleri.' : 'Turkey (ATOM KABLO, national data) and Global (Defra, IPCC) emission factors.' },
+    { icon: Globe, title: tr ? 'Çoklu Ülke Desteği' : 'Multi-Country Support', desc: tr ? 'Türkiye (ISO 14064-1 doğrulanmış envanter, ulusal veriler) ve Global (Defra, IPCC) emisyon faktörleri.' : 'Turkey (ISO 14064-1 verified inventory, national data) and Global (Defra, IPCC) emission factors.' },
     { icon: Target, title: tr ? 'Azaltma Hedefleri' : 'Reduction Targets', desc: tr ? 'Karbon azaltma hedeflerinizi belirleyin ve ilerlemenizi takip edin.' : 'Set carbon reduction targets and track your progress.' },
     { icon: TrendingDown, title: tr ? 'Yıl Karşılaştırma' : 'Year-over-Year Comparison', desc: tr ? 'Emisyonlarınızı yıllar arasında karşılaştırın ve trendleri analiz edin.' : 'Compare emissions across years and analyze trends.' },
     { icon: Upload, title: tr ? 'Toplu Veri İçe Aktarma' : 'Bulk Data Import', desc: tr ? 'CSV/JSON formatında toplu emisyon verisi yükleyin.' : 'Upload bulk emission data in CSV/JSON format.' },
@@ -79,7 +79,7 @@ export default function FeaturesPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {[
                 'Defra/DESNZ 2024', 'IPCC 2006', 'IPCC 2019 + AR6 GWP',
-                'ATOM KABLO ISO 14064-1', 'Turkey National Grid', 'Turkey Fleet 2025',
+                'Turkey ISO 14064-1 Verified Inventory', 'Turkey National Grid', 'Turkey Fleet 2025',
                 'ICAO 2025', 'Generic/Estimated'
               ].map((s) => (
                 <div key={s} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-[#072C0E]/8">

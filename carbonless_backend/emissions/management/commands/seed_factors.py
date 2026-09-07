@@ -4,7 +4,7 @@ from emissions.seed_data import EMISSION_FACTORS
 
 
 class Command(BaseCommand):
-    help = 'Seed emission factors from Defra 2024, IPCC, ATOM KABLO, Turkey-specific'
+    help = 'Seed emission factors from Defra 2024, IPCC, Turkey ISO 14064-1 verified inventory, Turkey-specific'
 
     def handle(self, *args, **options):
         created = 0

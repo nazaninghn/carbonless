@@ -75,12 +75,12 @@ export const EMISSION_FACTORS = {
 export const EF_SOURCE = {
   natural_gas: 'DEFRA 2024', diesel: 'IPCC 2006', lpg: 'DEFRA 2024',
   fuel_oil: 'IPCC 2006', coal: 'IPCC 2006', biomass: 'DEFRA 2024',
-  electricity: 'ATOM KABLO ISO 14064-1 2023',
+  electricity: 'Turkey ISO 14064-1 verified inventory',
   flight_domestic: 'Turkish Airlines 2025', flight_short_haul: 'GHG Protocol',
   flight_long_haul: 'GHG Protocol', rail_travel: 'TCDD',
-  car_rental: 'ATOM KABLO ISO 14064-1 2023',
-  road_hgv: 'ATOM KABLO ISO 14064-1 2023', road_lgv: 'ATOM KABLO ISO 14064-1 2023',
-  sea_bulk: 'ATOM KABLO ISO 14064-1 2023',
+  car_rental: 'Turkey ISO 14064-1 verified inventory',
+  road_hgv: 'Turkey ISO 14064-1 verified inventory', road_lgv: 'Turkey ISO 14064-1 verified inventory',
+  sea_bulk: 'Turkey ISO 14064-1 verified inventory',
   rail_freight: 'GHG Protocol', air_freight: 'GHG Protocol',
 };
 
