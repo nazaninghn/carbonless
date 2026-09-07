@@ -179,6 +179,17 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# The login form's "Username or Email" field (and the frontend, which sends
+# the typed value as both `username` and `email`) promises either works —
+# but Simple JWT's token endpoint only ever authenticates via `username`.
+# This backend adds an email fallback so typing your email actually logs
+# you in instead of failing with Simple JWT's generic "No active account
+# found" error, which the frontend misreads as an unverified account.
+AUTHENTICATION_BACKENDS = [
+    'accounts.backends.EmailOrUsernameModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 # ============================================
 # REST FRAMEWORK & JWT
 # ============================================
