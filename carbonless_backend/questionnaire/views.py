@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
 from chat.local_parser import parse_localized_number
 import logging
+import time
 
 # Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
 # Verify with:
@@ -37,9 +38,45 @@ def _progress(completed_count, status):
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+from django.db import IntegrityError, OperationalError, transaction
 from companies.models import CompanyMembership
 from .models import CarbonReport, ReportStep, QuestionnaireSession, AdvisorApproval
 from .advisor_triggers import evaluate_advisor_triggers
+
+
+def _save_report_step(report, step_id, answer, is_skipped=False):
+    """update_or_create for ReportStep, safe against the same step being
+    submitted twice at once (a double-tap, or a client-side retry racing the
+    original request — both real, observed in production).
+
+    ReportStep has unique_together = ['report', 'step_id']. Plain
+    update_or_create() first checks for an existing row and only inserts if
+    none is found — classic check-then-act, not atomic. Two concurrent
+    requests for a step that doesn't exist yet can both pass that check and
+    both attempt to INSERT: one succeeds, the other hits the unique
+    constraint (IntegrityError on Postgres) or SQLite's writer lock
+    (OperationalError: database is locked) — previously unhandled, so it
+    surfaced as a raw 500 and the frontend showed a bare "Save failed" with
+    no way for the user to recover except retrying into the same race again.
+
+    On conflict, retry the whole operation a few times with a short backoff
+    rather than immediately reading the row: on SQLite the other writer's
+    transaction may not have committed yet at the instant this one's insert
+    is rejected, so an immediate .get() can itself raise DoesNotExist. A
+    short retry loop is safe either way — update_or_create is idempotent.
+    """
+    last_exc = None
+    for attempt in range(5):
+        try:
+            with transaction.atomic():
+                return ReportStep.objects.update_or_create(
+                    report=report, step_id=step_id,
+                    defaults={'answer': answer, 'is_skipped': is_skipped},
+                )
+        except (IntegrityError, OperationalError) as exc:
+            last_exc = exc
+            time.sleep(0.05 * (attempt + 1))
+    raise last_exc
 from .serializers import (
     StepA1Serializer, StepA2Serializer, StepA3Serializer,
     StepA4Serializer, StepA5Serializer, StepA6Serializer,
@@ -404,11 +441,7 @@ class SubmitStepView(APIView):
                     'warnings': result.get('warnings', [])
                 })
 
-            ReportStep.objects.update_or_create(
-                report=report,
-                step_id=step,
-                defaults={'answer': serializer.validated_data, 'is_skipped': False}
-            )
+            _save_report_step(report, step, serializer.validated_data)
             evaluate_advisor_triggers(report, step, serializer.validated_data)
 
             next_step = result['next_step']
@@ -446,11 +479,7 @@ class SubmitStepView(APIView):
                 'bot_messages': [f'❌ {validation_error}'],
             }, status=400)
 
-        ReportStep.objects.update_or_create(
-            report=report,
-            step_id=step,
-            defaults={'answer': data if data else {}, 'is_skipped': False}
-        )
+        _save_report_step(report, step, data if data else {})
         evaluate_advisor_triggers(report, step, data)
 
         # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
