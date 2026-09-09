@@ -3455,18 +3455,25 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // without nulling, leaving a dangling non-null value in the ref).
   //
   // ✅ Skip entirely when there's no active session (EmptyState is showing).
-  // This effect used to fire on every mount regardless of activeId — with
-  // EmptyState's centered content plus the container's pb-48 bottom padding,
-  // scrollHeight was taller than the viewport, so this scrolled straight past
-  // the "Hi, there" greeting to the mostly-blank bottom on first open. The
-  // user always had to scroll back up manually to see the welcome screen.
+  // This effect used to fire on every mount regardless of activeId, scrolling
+  // straight past the "Hi, there" greeting on first open and forcing the user
+  // to scroll back up to see the welcome screen. EmptyState centres itself in
+  // the available height, so there is nothing to scroll to in that state.
   useEffect(() => {
     if (!activeId) return;
     if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     scrollTimerRef.current = setTimeout(() => {
       scrollTimerRef.current = null;
       if (!isMountedRef.current || !scrollRef.current) return;
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+      // Smooth scrolling is skipped outright while the document is hidden, so a
+      // reply that lands in a backgrounded tab left the chat parked at the top:
+      // the scrollTo ran, reported no error, and moved nothing. Animate only
+      // when the page is actually visible and jump instantly otherwise, so the
+      // newest message is always in view on return.
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: document.visibilityState === 'visible' ? 'smooth' : 'auto',
+      });
     }, 50);
     return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
   }, [messages, sending, activeId]);
@@ -3857,10 +3864,13 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
           </div>
         )}
 
-        {/* pb-48 reserves breathing room above the fixed input bar for a scrolled
-            message list — not needed (and actively harmful, see effect above)
-            when EmptyState is centering itself in the full available height. */}
-        <div ref={scrollRef} className={`flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5 ${activeId ? 'pb-48 sm:pb-48' : ''}`}>
+        {/* No bottom padding here: the input bar below is a normal flex sibling
+            (shrink-0), not a fixed overlay, so this container's height already
+            stops above it and nothing needs to be reserved. The pb-48 that used
+            to be here — stacked on the list's own pb-40 — added ~352px of dead
+            space that the scroll-to-bottom effect then scrolled into, parking a
+            short conversation entirely above the viewport. */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
           {!activeId ? (
             <EmptyState onNew={startNew} tr={tr} />
           ) : loadingMessages ? (
@@ -3874,7 +3884,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
               </p>
             </div>
           ) : (
-            <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 pb-40">
+            <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
               {messages.map((msg) => (
                 <div key={msg.id}>
                   <Bubble role={msg.role} content={msg.content} />
