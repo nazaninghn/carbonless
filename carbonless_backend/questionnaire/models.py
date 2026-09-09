@@ -36,7 +36,13 @@ class CarbonReport(models.Model):
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT
     )
-    current_step = models.CharField(max_length=10, default='A1')
+    # Holds a question id, so it must fit the longest one the questionnaire can
+    # reach — same reason ReportStep.step_id is 50. At 10 this silently worked
+    # on SQLite (which ignores varchar limits) but raised DataError on Postgres
+    # for the two ids longer than 10 chars — 'SCOPE-GROUPING' (14) and
+    # '3D-4-zero-decision' (18) — surfacing as a 500 that hard-blocked the
+    # questionnaire at Q36 with no way past it.
+    current_step = models.CharField(max_length=50, default='A1')
 
     # 1A
     reporting_year = models.IntegerField(null=True, blank=True)
