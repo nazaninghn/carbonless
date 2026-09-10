@@ -1249,6 +1249,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
               label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
               selected={vals.includes(opt.value)}
               onClick={() => toggle(opt.value)}
+              // Every other answer type forwards `disabled`; this one dropped it,
+              // so its chips stayed live while a save was in flight and toggles
+              // made during that window were lost when the answer re-initialised.
+              disabled={disabled}
               multi
             />
           ))}
@@ -2235,6 +2239,19 @@ export function QuestionnaireTab({
   // Synchronous mutex — prevents a second submitAnswer call from passing the
   // isTyping guard during the await saveStepToBackend network window.
   const isSubmittingRef = useRef(false);
+  // Render-visible twin of the mutex above. The ref alone is what makes the
+  // re-entry guard correct (a state update is async, so a second click could
+  // slip through before it lands), but a ref changing does not re-render, so
+  // for the whole network round-trip the chips stayed enabled while
+  // submitAnswer silently dropped every click on the mutex — the answer just
+  // "did nothing" and users clicked again and again. Disabling the input on
+  // this makes that window visible instead of dead.
+  const [submitting, setSubmitting] = useState(false);
+  // Always move the two together; call this instead of assigning the ref.
+  const markSubmitting = useCallback((busy) => {
+    isSubmittingRef.current = busy;
+    setSubmitting(busy);
+  }, []);
   // Prevents a rapid double-click on "Start / Continue Inventory" from firing
   // two concurrent POST /questionnaire/start/ requests, which would create
   // duplicate reports on the backend.
@@ -2617,11 +2634,11 @@ export function QuestionnaireTab({
 
         // Save collected-so-far to backend — clear mutex AFTER setIsTyping(true)
         // to eliminate the window where both guards are simultaneously false.
-        isSubmittingRef.current = true;
+        markSubmitting(true);
         await saveStepToBackend(currentId, newCollected, reportId);
 
         setIsTyping(true);
-        isSubmittingRef.current = false;
+        markSubmitting(false);
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
         typingTimerRef.current = setTimeout(() => {
           typingTimerRef.current = null;
@@ -2649,7 +2666,7 @@ export function QuestionnaireTab({
       setLoopState(null);
 
       // Clear mutex AFTER setIsTyping(true) to eliminate mutex gap (same as normal path).
-      isSubmittingRef.current = true;
+      markSubmitting(true);
       const saveRes = await saveStepToBackend(currentId, newCollected, reportId);
 
       // Backend rejected the answer (e.g. failed server-side format
@@ -2657,7 +2674,7 @@ export function QuestionnaireTab({
       // of silently advancing past bad data. saveStepToBackend already set
       // saveError for display.
       if (!saveRes.success) {
-        isSubmittingRef.current = false;
+        markSubmitting(false);
         return;
       }
 
@@ -2680,7 +2697,7 @@ export function QuestionnaireTab({
             .then(data => { setCompletedReport(data); setReportLoading(false); })
             .catch(e => { console.error('Failed to fetch report:', e); setReportLoading(false); });
         }
-        isSubmittingRef.current = false;
+        markSubmitting(false);
         return;
       }
 
@@ -2691,7 +2708,7 @@ export function QuestionnaireTab({
       if (newAssumptions.length > 0) setAssumptions(prev => [...prev, ...newAssumptions]);
 
       setIsTyping(true);
-      isSubmittingRef.current = false;
+      markSubmitting(false);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
       typingTimerRef.current = setTimeout(() => {
         typingTimerRef.current = null;
@@ -2745,7 +2762,7 @@ export function QuestionnaireTab({
     // Save to backend — lock out further submits until save completes;
     // isSubmittingRef is cleared AFTER setIsTyping(true) to avoid the
     // tiny gap where both guards are false simultaneously.
-    isSubmittingRef.current = true;
+    markSubmitting(true);
     const saveRes = await saveStepToBackend(currentId, value, reportId);
 
     // Backend rejected the answer (e.g. failed server-side format
@@ -2753,7 +2770,7 @@ export function QuestionnaireTab({
     // of silently advancing past bad data. saveStepToBackend already set
     // saveError for display.
     if (!saveRes.success) {
-      isSubmittingRef.current = false;
+      markSubmitting(false);
       setIsTyping(false);
       return;
     }
@@ -2761,7 +2778,7 @@ export function QuestionnaireTab({
     // ✅ If in edit mode, just save and return to review (don't continue survey)
     if (editingQuestionId && saveRes.success) {
       setEditingQuestionId(null);
-      isSubmittingRef.current = false;
+      markSubmitting(false);
       setIsTyping(false);
       // Stay in completed view - user can re-review table
       return;
@@ -2786,7 +2803,7 @@ export function QuestionnaireTab({
           .then(data => { setCompletedReport(data); setReportLoading(false); })
           .catch(e => { console.error('Failed to fetch report:', e); setReportLoading(false); });
       }
-      isSubmittingRef.current = false;
+      markSubmitting(false);
       return;
     }
 
@@ -2804,7 +2821,7 @@ export function QuestionnaireTab({
     // Show typing — reset mutex only AFTER setIsTyping(true) so there is
     // never a window where both isSubmitting and isTyping are false.
     setIsTyping(true);
-    isSubmittingRef.current = false;
+    markSubmitting(false);
 
     // Cancel any previous timer that hasn't fired yet
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
@@ -2902,7 +2919,7 @@ export function QuestionnaireTab({
         }
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance]);
+  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting]);
 
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
@@ -2910,7 +2927,7 @@ export function QuestionnaireTab({
     if (history.length === 0) return;
     // Cancel any in-flight typing timer so its callback can't post stale bubbles
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
-    isSubmittingRef.current = false;
+    markSubmitting(false);
     setIsTyping(false);
     setValidationError('');
     setShowValidationError(false);
@@ -2953,7 +2970,7 @@ export function QuestionnaireTab({
       setLoopState(null);
       setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, prevId)) ?? getInitialValue(prevQ));
     }
-  }, [history, answers, lang, blockSummaryState]);
+  }, [history, answers, lang, blockSummaryState, markSubmitting]);
 
   // ── jumpToQuestion ─────────────────────────────────────────────────────────
   // Called when the user clicks "Edit" in a BlockSummaryTable row.
@@ -2965,7 +2982,7 @@ export function QuestionnaireTab({
     const msgLen = typeof entry === 'object' ? entry.msgLen : null;
 
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
-    isSubmittingRef.current = false;
+    markSubmitting(false);
     setIsTyping(false);
     // ✅ KEEP blockSummaryState — don't disappear the review table!
     setHistory(history.slice(0, histIdx));
@@ -2982,7 +2999,7 @@ export function QuestionnaireTab({
     }
     const prevQ = getQuestionById(qId);
     setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, qId)) ?? getInitialValue(prevQ));
-  }, [history, answers]);
+  }, [history, answers, markSubmitting]);
 
   // ── proceedFromSummary ─────────────────────────────────────────────────────
   const proceedFromSummary = useCallback(() => {
@@ -3004,7 +3021,7 @@ export function QuestionnaireTab({
     // Cancel any in-flight typing animation so it can't post stale bubbles
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
-    isSubmittingRef.current = false;
+    markSubmitting(false);
 
     // Tell backend to reset the session so a new one can be created
     try {
@@ -3038,7 +3055,7 @@ export function QuestionnaireTab({
     // next inventory now. Unmounts this component before the started=false
     // update above could ever paint the (now-removed) internal picker.
     onExitToLibrary?.();
-  }, [onExitToLibrary]);
+  }, [onExitToLibrary, markSubmitting]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   // This component is only ever mounted hydrated (with started=true from the
@@ -3250,7 +3267,7 @@ export function QuestionnaireTab({
                   onChange={v => { setAnswerValue(v); setValidationError(''); setShowValidationError(false); }}
                   onSubmit={submitAnswer}
                   lang={lang}
-                  disabled={isTyping}
+                  disabled={isTyping || submitting}
                   currentLoopItem={
                     loopState && loopState.questionId === currentId
                       ? loopState.items[loopState.currentIndex]
