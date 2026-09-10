@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Play, Eye, MoreVertical, Trash2, FileText, Loader2 } from 'lucide-react';
+import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Loader2 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
 
@@ -86,27 +86,35 @@ export default function InventoryLibrary({ tr = false }) {
     }
   };
 
-  const handleDownloadPdf = async (reportId) => {
+  // `kind` selects which document: the full ISO 14064-1 inventory report, or
+  // the short questionnaire profile. Both stream a PDF blob back the same way.
+  const handleDownloadPdf = async (reportId, kind = 'profile') => {
     if (pdfDownloadingId) return;
-    setPdfDownloadingId(reportId);
+    const lang = tr ? 'tr' : 'en';
+    setPdfDownloadingId(`${reportId}:${kind}`);
+    let url;
     try {
-      const res = await api.downloadQuestionnairePdf(reportId, tr ? 'tr' : 'en');
+      const res = kind === 'iso'
+        ? await api.downloadIsoReport(reportId, lang)
+        : await api.downloadQuestionnairePdf(reportId, lang);
       if (!res.ok) {
         console.error('Failed to generate PDF:', res.status);
         return;
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `carbon_inventory_profile_${reportId}_${tr ? 'tr' : 'en'}.pdf`;
+      a.download = kind === 'iso'
+        ? `iso14064-1_inventory_report_${reportId}_${lang}.pdf`
+        : `carbon_inventory_profile_${reportId}_${lang}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
     } catch (e) {
       console.error('Failed to download PDF:', e);
     } finally {
+      if (url) setTimeout(() => URL.revokeObjectURL(url), 30_000);
       setPdfDownloadingId(null);
     }
   };
@@ -272,12 +280,24 @@ export default function InventoryLibrary({ tr = false }) {
                   ) : (
                     <>
                       <button
-                        onClick={() => handleDownloadPdf(report.report_id)}
-                        disabled={pdfDownloadingId === report.report_id}
-                        title={tr ? 'PDF İndir' : 'Download PDF'}
+                        onClick={() => handleDownloadPdf(report.report_id, 'iso')}
+                        disabled={!!pdfDownloadingId}
+                        title={tr ? 'ISO 14064-1 Envanter Raporu İndir'
+                                  : 'Download ISO 14064-1 inventory report'}
+                        className="flex items-center justify-center h-9 w-9 text-[#175022]/60 hover:text-[#175022] hover:bg-[#175022]/10 rounded-full transition disabled:opacity-50"
+                      >
+                        {pdfDownloadingId === `${report.report_id}:iso`
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <FileBadge className="w-4 h-4" />}
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPdf(report.report_id, 'profile')}
+                        disabled={!!pdfDownloadingId}
+                        title={tr ? 'Envanter profili (özet) indir'
+                                  : 'Download inventory profile (summary)'}
                         className="flex items-center justify-center h-9 w-9 text-[#175022]/40 hover:text-[#1A7B2A] hover:bg-[#1A7B2A]/10 rounded-full transition disabled:opacity-50"
                       >
-                        {pdfDownloadingId === report.report_id
+                        {pdfDownloadingId === `${report.report_id}:profile`
                           ? <Loader2 className="w-4 h-4 animate-spin" />
                           : <FileText className="w-4 h-4" />}
                       </button>

@@ -49,6 +49,32 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     return () => clearTimeout(t);
   }, []);
 
+  // The ISO 14064-1 inventory report is keyed to a CarbonReport, while every
+  // other export on this tab is keyed to a year, so the matching report has to
+  // be looked up before that download can be offered. A completed inventory
+  // wins over a draft for the same year; if none exists the button explains
+  // that rather than appearing and then failing.
+  const [isoReportId, setIsoReportId] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.listReports();
+        if (!res.ok) return;
+        const data = await res.json().catch(() => ({}));
+        // This endpoint answers {reports: [...]} — not a bare array and not the
+        // DRF {results: [...]} envelope. InventoryLibrary reads it the same way.
+        const list = Array.isArray(data) ? data : (data.reports ?? data.results ?? []);
+        const forYear = list.filter(r => String(r.reporting_year) === String(selectedYear));
+        const pick = forYear.find(r => r.status === 'completed') || forYear[0] || null;
+        if (!cancelled) setIsoReportId(pick ? (pick.report_id ?? pick.id) : null);
+      } catch {
+        if (!cancelled) setIsoReportId(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedYear]);
+
   // Readiness — useMemo so this is only recalculated when data actually changes,
   // not on every local state update (e.g. pdfLoading spinner toggling).
   const { checks, readiness } = useMemo(() => {
@@ -76,7 +102,16 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     setDlError('');
     try {
       let res;
-      if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
+      if (type === 'iso') {
+        if (!isoReportId) {
+          setDlError(tr
+            ? `${selectedYear} yılı için tamamlanmış bir envanter bulunamadı. Önce Karbon Envanteri anketini doldurun.`
+            : `No inventory found for ${selectedYear}. Complete the Carbon Inventory questionnaire first.`);
+          return;
+        }
+        res = await api.downloadIsoReport(isoReportId, lang);
+      }
+      else if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
       else if (type === 'csv') res = await api.downloadCsv(selectedYear);
       else res = await api.downloadExcel(selectedYear);
 
@@ -90,7 +125,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       const u = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = u;
-      a.download = type === 'pdf'
+      a.download = type === 'iso'
+        ? `iso14064-1_inventory_report_${selectedYear}_${lang}.pdf`
+        : type === 'pdf'
         ? `carbonless_report_${selectedYear}_${lang}.pdf`
         : type === 'csv'
         ? `emissions_${selectedYear}.csv`
@@ -104,7 +141,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     } finally {
       setPdfLoading('');
     }
-  }, [selectedYear, pdfLoading, tr]); // pdfLoading added — read inside guard
+  }, [selectedYear, pdfLoading, tr, isoReportId]); // pdfLoading added — read inside guard
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so the GPU-heavy complex view is never rendered to screen on Android tablets.
@@ -133,7 +170,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           <p className="text-xs text-[#072C0E]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
           <p className="text-3xl font-black text-[#072C0E]">{totalTonne.toFixed(2)} tCO₂e</p>
         </div>
+        {dlError && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
+            {dlError}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
+          <button onClick={() => handleDownload('iso', 'tr')} className="col-span-2 rounded-2xl bg-[#072C0E] p-4 text-center text-sm font-bold text-white">ISO 14064-1 {tr ? '(TR)' : '(EN)'}</button>
           <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">PDF TR</button>
           <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">PDF EN</button>
           <button onClick={() => handleDownload('csv', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">CSV</button>
@@ -168,7 +211,11 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
+            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
+              <Shield className="h-3.5 w-3.5" />
+              {pdfLoading?.startsWith('iso') ? '...' : 'ISO 14064-1'}
+            </button>
+            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading === 'pdftr' ? '...' : 'PDF TR'}
             </button>
@@ -324,8 +371,13 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             <h2 className="text-sm font-bold">{tr ? 'Dışa Aktarma' : 'Export Center'}</h2>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <ExportBtn icon={FileText} label="ISO PDF (TR)" loading={pdfLoading === 'pdftr'} onClick={() => handleDownload('pdf', 'tr')} />
-            <ExportBtn icon={FileText} label="ISO PDF (EN)" loading={pdfLoading === 'pdfen'} onClick={() => handleDownload('pdf', 'en')} />
+            {/* The full inventory report — what a verifier asks for. The two
+                buttons below it are the shorter emissions summary, which is
+                why these are labelled by document rather than both "ISO PDF". */}
+            <ExportBtn icon={Shield} label="ISO 14064-1 (TR)" loading={pdfLoading === 'isotr'} onClick={() => handleDownload('iso', 'tr')} />
+            <ExportBtn icon={Shield} label="ISO 14064-1 (EN)" loading={pdfLoading === 'isoen'} onClick={() => handleDownload('iso', 'en')} />
+            <ExportBtn icon={FileText} label={tr ? 'Emisyon Özeti (TR)' : 'Emissions Summary (TR)'} loading={pdfLoading === 'pdftr'} onClick={() => handleDownload('pdf', 'tr')} />
+            <ExportBtn icon={FileText} label={tr ? 'Emisyon Özeti (EN)' : 'Emissions Summary (EN)'} loading={pdfLoading === 'pdfen'} onClick={() => handleDownload('pdf', 'en')} />
             <ExportBtn icon={Download} label="CSV Export" loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
             <ExportBtn icon={Download} label="Excel Export" loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
           </div>

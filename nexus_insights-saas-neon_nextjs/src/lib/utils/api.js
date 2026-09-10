@@ -270,6 +270,10 @@ export const api = {
   reuseCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST' }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
   downloadQuestionnairePdf: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/pdf/?lang=${lang}`),
+  // The full ISO 14064-1:2018 inventory report (six categories, boundaries,
+  // methodology, significance and uncertainty) — distinct from the short
+  // questionnaire profile above.
+  downloadIsoReport: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/iso-report/?lang=${lang}`),
   listReports: () => request('/questionnaire/'),
 
   // Chat sessions

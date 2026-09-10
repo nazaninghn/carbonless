@@ -40,32 +40,43 @@ export default function CompletionReportCard({
   onStartNew,
   onViewFull
 }) {
-  const [pdfLoading, setPdfLoading] = useState(false);
+  // Which download is in flight, if any — the two reports share one handler,
+  // so a single boolean would grey out both buttons whichever was clicked.
+  const [downloading, setDownloading] = useState(null); // 'profile' | 'iso' | null
   const [pdfError, setPdfError] = useState('');
 
-  const handleDownloadPdf = async () => {
-    if (pdfLoading || !report?.report_id) return;
-    setPdfLoading(true);
+  const download = async (kind) => {
+    if (downloading || !report?.report_id) return;
+    const lang = tr ? 'tr' : 'en';
+    setDownloading(kind);
     setPdfError('');
+    let url;
     try {
-      const res = await api.downloadQuestionnairePdf(report.report_id, tr ? 'tr' : 'en');
+      const res = kind === 'iso'
+        ? await api.downloadIsoReport(report.report_id, lang)
+        : await api.downloadQuestionnairePdf(report.report_id, lang);
       if (!res.ok) {
         setPdfError(tr ? 'PDF oluşturulamadı.' : 'Could not generate PDF.');
         return;
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `carbon_inventory_profile_${report.report_id}_${tr ? 'tr' : 'en'}.pdf`;
+      a.download = kind === 'iso'
+        ? `iso14064-1_inventory_report_${report.report_id}_${lang}.pdf`
+        : `carbon_inventory_profile_${report.report_id}_${lang}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
     } catch {
       setPdfError(tr ? 'Bağlantı hatası.' : 'Connection error.');
     } finally {
-      setPdfLoading(false);
+      // Revoking in `finally` rather than after a timeout means the blob is
+      // released even when the click above throws, instead of being held for
+      // the full timeout on a page the user may never leave.
+      if (url) setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      setDownloading(null);
     }
   };
 
@@ -211,15 +222,31 @@ export default function CompletionReportCard({
         </div>
       )}
 
+      {/* The ISO report is the deliverable a verifier asks for, so it leads. */}
+      <button
+        onClick={() => download('iso')}
+        disabled={!!downloading}
+        className="flex items-center justify-center gap-2 w-full px-6 py-3 mb-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#0F3A18] transition disabled:opacity-50"
+      >
+        {downloading === 'iso'
+          ? <Loader2 className="w-4 h-4 animate-spin" />
+          : <FileText className="w-4 h-4" />}
+        {downloading === 'iso'
+          ? (tr ? 'Rapor hazırlanıyor…' : 'Preparing report…')
+          : (tr ? 'ISO 14064-1 Envanter Raporu İndir' : 'Download ISO 14064-1 Inventory Report')}
+      </button>
+
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row gap-3 w-full">
         <button
-          onClick={handleDownloadPdf}
-          disabled={pdfLoading}
+          onClick={() => download('profile')}
+          disabled={!!downloading}
           className="flex items-center justify-center gap-2 px-6 py-3 bg-[#1A7B2A] text-white font-semibold rounded-full hover:bg-[#1A6126] transition flex-1 disabled:opacity-50"
         >
-          {pdfLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-          {pdfLoading ? (tr ? 'Hazırlanıyor...' : 'Preparing PDF...') : (tr ? 'PDF Raporu İndir' : 'Download PDF Report')}
+          {downloading === 'profile' ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+          {downloading === 'profile'
+            ? (tr ? 'Hazırlanıyor...' : 'Preparing PDF...')
+            : (tr ? 'Envanter Profili (Özet)' : 'Inventory Profile (Summary)')}
         </button>
         <button
           onClick={onStartNew}
