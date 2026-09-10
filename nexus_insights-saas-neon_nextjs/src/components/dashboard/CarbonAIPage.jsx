@@ -3231,8 +3231,17 @@ export function QuestionnaireTab({
         </div>
 
         {/* Input bar — shown if no block summary OR in edit mode (editingQuestionId set) */}
+        {/* Scrolls once it outgrows the space left for it. This used to be a
+            plain shrink-0 block with no height cap and no overflow, which is
+            fine for a text field or a few chips but not for a question like
+            Q39 (~30 equipment options): the chips wrap into more rows than the
+            window has room for, and because the block can neither shrink nor
+            scroll, the "Confirm" button below them is pushed off-screen with
+            no way to reach it — the questionnaire simply cannot be advanced.
+            min-h-0 is what actually lets a flex child shrink below its content
+            height; without it overflow-y-auto here would never engage. */}
         {!completed && (!blockSummaryState || editingQuestionId) && (
-          <div className="shrink-0 border-t border-[#175022]/6 px-4 py-3 sm:px-6">
+          <div className="min-h-0 shrink overflow-y-auto border-t border-[#175022]/6 px-4 py-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
               <div className="flex flex-col gap-2">
                 <AnswerInput
