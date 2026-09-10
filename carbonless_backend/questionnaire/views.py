@@ -756,6 +756,48 @@ class QuestionnairePDFView(APIView):
         return response
 
 
+class ISOInventoryReportView(APIView):
+    """GET /api/questionnaire/<report_id>/iso-report/?lang=en|tr
+
+    The full ISO 14064-1:2018 GHG inventory report — organisational
+    information, boundaries, methodology, exclusions and assumptions, the
+    inventory table itself and the per-category analyses, laid out in the
+    six-category structure the standard uses.
+
+    Distinct from the two narrower PDFs: /pdf/ above is the qualitative
+    questionnaire profile, and /emissions/report/ is the Scope 1/2/3
+    quantified summary.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        try:
+            report = CarbonReport.objects.select_related('company').get(
+                id=report_id, created_by=request.user
+            )
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
+        try:
+            from .iso_report_pdf import generate_iso_report
+            pdf_bytes = generate_iso_report(report, lang)
+        except Exception as e:
+            logger.error(
+                f'ISO 14064-1 report generation failed for report {report_id}: {e}',
+                exc_info=True,
+            )
+            return Response({'error': f'Report generation failed: {e}'}, status=500)
+
+        from django.http import HttpResponse
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        year = report.reporting_year or ''
+        response['Content-Disposition'] = (
+            f'attachment; filename="iso14064-1_inventory_report_{year}_{lang}.pdf"'
+        )
+        return response
+
+
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]

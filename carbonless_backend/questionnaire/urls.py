@@ -6,6 +6,7 @@ from .views import (
     ReportListView,
     SaveDraftView,
     QuestionnairePDFView,
+    ISOInventoryReportView,
     PreviousCompanyProfileView,
     ReuseCompanyProfileView,
     get_report_summary,
@@ -31,6 +32,7 @@ urlpatterns = [
     path('<int:report_id>/step/', SubmitStepView.as_view()),
     path('<int:report_id>/draft/', SaveDraftView.as_view(), name='questionnaire-save-draft'),
     path('<int:report_id>/pdf/', QuestionnairePDFView.as_view(), name='questionnaire-pdf'),
+    path('<int:report_id>/iso-report/', ISOInventoryReportView.as_view(), name='questionnaire-iso-report'),
     path('<int:report_id>/previous-profile/', PreviousCompanyProfileView.as_view(), name='questionnaire-previous-profile'),
     path('<int:report_id>/reuse-profile/', ReuseCompanyProfileView.as_view(), name='questionnaire-reuse-profile'),
 
