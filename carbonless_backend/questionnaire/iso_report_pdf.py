@@ -31,6 +31,9 @@ from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph, Spacer, Table, PageBreak, KeepTogether, NextPageTemplate,
 )
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.piecharts import Pie
+from reportlab.graphics.charts.legends import Legend
 
 from emissions.models import EmissionEntry, CustomEmissionRequest
 from emissions.report_pdf import (
@@ -80,6 +83,23 @@ ISO_CATEGORY_OF = {
 }
 
 ROMAN = {1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI'}
+
+# 100-year global warming potentials, IPCC AR6 (2021), WG1 Chapter 7 Table 7.15.
+# The seeded factors are already expressed in CO2e and state "AR6 GWP" in their
+# own references, so these are the constants behind the numbers in this report
+# rather than a second, independent set — an ISO inventory has to declare them.
+GWP_AR6 = [
+    ('CO₂',     'Carbon dioxide',      'Karbondioksit',        '1'),
+    ('CH₄',     'Methane (fossil)',    'Metan (fosil)',        '29.8'),
+    ('N₂O',     'Nitrous oxide',       'Diazot monoksit',      '273'),
+    ('HFC-134a', 'Hydrofluorocarbon',  'Hidroflorokarbon',     '1,530'),
+    ('HFC-32',  'Hydrofluorocarbon',   'Hidroflorokarbon',     '771'),
+    ('HFC-125', 'Hydrofluorocarbon',   'Hidroflorokarbon',     '3,740'),
+    ('R-410A',  'HFC blend',           'HFC karışımı',         '2,256'),
+    ('R-404A',  'HFC blend',           'HFC karışımı',         '4,728'),
+    ('SF₆',     'Sulphur hexafluoride', 'Kükürt heksaflorür',  '25,200'),
+    ('NF₃',     'Nitrogen trifluoride', 'Azot triflorür',      '17,400'),
+]
 
 
 def iso_category_for(scope, category):
@@ -165,6 +185,13 @@ T = {
               'tr': 'Önemli dolaylı emisyonların değerlendirilmesi'},
     't_loc': {'en': 'Emissions by category for the highest-emitting locations',
               'tr': 'En yüksek emisyonlu tesislerin kategori bazında emisyonları'},
+    't_cat_bars': {'en': 'Category shares of the inventory',
+                   'tr': 'Kategorilerin envanter içindeki payları'},
+    't_gwp': {'en': 'Global warming potential values used',
+              'tr': 'Kullanılan küresel ısınma potansiyeli değerleri'},
+    't_act': {'en': 'Greenhouse gas emissions by activity type',
+              'tr': 'Sera gazı emisyonlarının faaliyet türüne göre dağılımı'},
+    's4_act': {'en': 'Activity-Based Assessment', 'tr': 'Faaliyet Bazlı Değerlendirme'},
 
     # Column headers
     'c_field': {'en': 'Field', 'tr': 'Alan'},
@@ -356,6 +383,14 @@ def _gather(report, lang):
         by_scope[cr.scope] = by_scope.get(cr.scope, 0.0) + kg
         total_kg += kg
 
+    # Emissions rolled up by activity type (stationary combustion, purchased
+    # electricity, business travel, …). The sample report devotes a figure to
+    # each activity; this is the same cut of the data, independent of which ISO
+    # category an activity happens to fall in.
+    by_activity = {}
+    for r in sources.values():
+        by_activity[r['category']] = by_activity.get(r['category'], 0.0) + r['kg']
+
     # Per-facility, per-category matrix for section 4.2
     facilities = {}
     for e in entries:
@@ -373,6 +408,7 @@ def _gather(report, lang):
         'entry_count': entries.count(),
         'sources': sorted(sources.values(), key=lambda r: (r['iso_cat'], -r['kg'])),
         'by_category': by_category,
+        'by_activity': by_activity,
         'by_scope': by_scope,
         'total_kg': total_kg,
         'total_t': total_kg / 1000.0,
@@ -479,6 +515,91 @@ def _bar_row_chart(rows, total, S, lang, max_rows=10):
         ('LEFTPADDING', (1, 0), (1, -1), 0),
     ])
     return tbl
+
+
+# Enough distinct fills for the six ISO categories plus the activity split,
+# kept in the report's own palette rather than reportlab's default primaries.
+# Ordered so neighbouring slices never land on adjacent shades: the brand's
+# OLIVE (#2ABD41) and OLIVE_DARK (#1D9C31) are close enough to read as one
+# colour in a 6pt legend swatch, so they are deliberately separated here.
+PIE_COLORS = [
+    BRAND_DARK,                      # near-black green
+    OLIVE,                           # brand green
+    OLIVE_LIGHT,                     # pale green
+    colors.HexColor('#4E6B22'),      # olive
+    colors.HexColor('#1D9C31'),      # mid green
+    colors.HexColor('#B9CE8A'),      # sage
+    GRAY_600,
+    colors.HexColor('#0F5C1C'),      # deep green
+    GRAY_400,
+    colors.HexColor('#D8E3C0'),
+]
+
+
+def _pie_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
+    """Donut-style pie with a side legend, for the distribution figures.
+
+    `rows` is [(label, value_kg), ...]. Slices worth nothing are dropped —
+    reportlab renders a zero value as a degenerate wedge, and in an inventory
+    an empty category is a specific claim that a sliver would misrepresent.
+    Anything past `max_slices` is folded into a single "Other" slice so a long
+    tail of small sources cannot make the legend illegible.
+    """
+    tr = lang == 'tr'
+    live = [(lbl, val) for lbl, val in rows if val and val > 0]
+    if not live:
+        return None
+    live.sort(key=lambda r: -r[1])
+    if len(live) > max_slices:
+        head, tail = live[:max_slices], live[max_slices:]
+        live = head + [('Other' if lang == 'en' else 'Diğer', sum(v for _, v in tail))]
+    total = sum(v for _, v in live)
+    if total <= 0:
+        return None
+
+    d = Drawing(width_mm * mm, height_mm * mm)
+    pie = Pie()
+    pie.x, pie.y = 6 * mm, 4 * mm
+    pie.width = pie.height = 48 * mm
+    pie.data = [v for _, v in live]
+    # A wedge narrower than ~7 % is thinner than its own label, so the text
+    # spills over the neighbouring slice. Those stay unlabelled — the legend
+    # carries the exact tonnage and percentage for every slice regardless.
+    pie.labels = [f'{v / total * 100:.0f}%' if v / total >= 0.07 else '' for _, v in live]
+    pie.simpleLabels = 1
+    pie.sideLabels = 0
+    pie.slices.strokeWidth = 1.2
+    pie.slices.strokeColor = WHITE
+    pie.slices.fontName = S['fn']
+    pie.slices.fontSize = 7.5
+    pie.slices.fontColor = WHITE
+    pie.slices.labelRadius = 0.66
+    for i in range(len(live)):
+        pie.slices[i].fillColor = PIE_COLORS[i % len(PIE_COLORS)]
+    d.add(pie)
+
+    legend = Legend()
+    legend.x = 60 * mm
+    # Centre the legend block against the pie rather than pinning it to the top,
+    # so a two-entry chart doesn't leave the right-hand side visibly empty.
+    rows_h = len(live) * 11
+    legend.y = min((height_mm - 4) * mm, (height_mm * mm + rows_h) / 2)
+    legend.dx = legend.dy = 6
+    legend.dxTextSpace = 5
+    legend.fontName = S['fn']
+    legend.fontSize = 7.5
+    legend.deltay = 11
+    # 'right' puts the colour swatch first and the text after it; the default
+    # ('left') trails the swatch behind the label, which reads as a stray mark.
+    legend.alignment = 'right'
+    legend.columnMaximum = max_slices + 1
+    legend.colorNamePairs = [
+        (PIE_COLORS[i % len(PIE_COLORS)],
+         f'{lbl[:38]}  —  {_fmt(v / 1000.0, tr)} t  ({_localize_num(f"{v / total * 100:.1f}", tr)} %)')
+        for i, (lbl, v) in enumerate(live)
+    ]
+    d.add(legend)
+    return d
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1028,6 +1149,15 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     tbl.setStyle(st)
     E.append(_caption(S, TBL, t('t_scope', lang), lang))
     E.append(tbl)
+
+    scope_pie = _pie_chart(
+        [(t('direct', lang), D['by_scope'].get('scope1', 0.0)),
+         (t('indirect', lang), D['total_kg'] - D['by_scope'].get('scope1', 0.0))],
+        S, lang)
+    if scope_pie is not None:
+        E.append(Spacer(1, 4*mm))
+        E.append(scope_pie)
+        E.append(_fig_caption(S, FIG, t('t_scope', lang), lang))
     E.append(Spacer(1, 5*mm))
 
     # By ISO category
@@ -1056,11 +1186,46 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     E.append(_caption(S, TBL, t('t_cat', lang), lang))
     E.append(tbl)
 
+    # A pie for the share-of-total reading, then the proportional bars beneath
+    # it: the pie answers "where does the inventory sit", the bars stay
+    # readable when several categories are small enough to be slivers.
+    cat_pie = _pie_chart(cat_rows, S, lang)
+    if cat_pie is not None:
+        E.append(Spacer(1, 4*mm))
+        E.append(cat_pie)
+        E.append(_fig_caption(S, FIG, t('t_cat', lang), lang))
     chart = _bar_row_chart(cat_rows, D['total_kg'], S, lang)
     if chart is not None:
         E.append(Spacer(1, 4*mm))
         E.append(chart)
-        E.append(_fig_caption(S, FIG, t('t_cat', lang), lang))
+        E.append(_fig_caption(S, FIG, t('t_cat_bars', lang), lang))
+    E.append(PageBreak())
+
+    # Global warming potentials — the constants the CO₂e figures above rest on.
+    gwp_data = [[Paragraph(f'<b>{"Greenhouse gas" if lang == "en" else "Sera gazı"}</b>', S['body_sm']),
+                 Paragraph(f'<b>{"Description" if lang == "en" else "Açıklama"}</b>', S['body_sm']),
+                 Paragraph(f'<b>{"GWP (100-yr)" if lang == "en" else "KIP (100 yıl)"}</b>', S['body_sm'])]]
+    for symbol, name_en, name_tr, gwp in GWP_AR6:
+        gwp_data.append([
+            Paragraph(symbol, S['body_sm']),
+            Paragraph(name_en if lang == 'en' else name_tr, S['body_sm']),
+            Paragraph(_localize_num(gwp, tr), S['body_sm']),
+        ])
+    gwp_tbl = Table(gwp_data, colWidths=[34*mm, 96*mm, 40*mm], hAlign='LEFT', repeatRows=1)
+    gst = _tbl_style(fn, fnb)
+    gst.add('ALIGN', (0, 0), (1, -1), 'LEFT')
+    gst.add('ALIGN', (2, 0), (2, -1), 'RIGHT')
+    gwp_tbl.setStyle(gst)
+    E.append(_caption(S, TBL, t('t_gwp', lang), lang))
+    E.append(gwp_tbl)
+    E.append(Paragraph(
+        'Source: IPCC Sixth Assessment Report (AR6, 2021), 100-year values. Every '
+        'emission factor applied in this inventory is expressed in CO₂ equivalent '
+        'using these potentials.'
+        if lang == 'en' else
+        'Kaynak: IPCC Altıncı Değerlendirme Raporu (AR6, 2021), 100 yıllık değerler. '
+        'Bu envanterde uygulanan tüm emisyon faktörleri, bu potansiyeller kullanılarak '
+        'CO₂ eşdeğeri cinsinden ifade edilmiştir.', S['small']))
     E.append(PageBreak())
 
     # Per-category detail
@@ -1106,16 +1271,22 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         E.append(_caption(S, TBL, f'{t("t_ef", lang)} — {ROMAN[cat]}', lang))
         E.append(tbl)
 
-        chart = _bar_row_chart(
-            [(f'{cat_label(r["category"], lang)} — {r["name"]}', r['kg']) for r in rows],
-            D['by_category'][cat], S, lang)
+        src_rows = [(f'{cat_label(r["category"], lang)} — {r["name"]}', r['kg']) for r in rows]
+        cat_caption = (f'{t("c_cat", lang).rstrip(".")} {ROMAN[cat]} — '
+                       f'{ISO_CATEGORY_NAMES[cat][lang]}')
+        # Only worth a pie once there is more than one source to compare; with
+        # a single source it would be a full circle restating the table.
+        if len([r for r in src_rows if r[1] > 0]) > 1:
+            pie = _pie_chart(src_rows, S, lang)
+            if pie is not None:
+                E.append(Spacer(1, 3*mm))
+                E.append(pie)
+                E.append(_fig_caption(S, FIG, cat_caption, lang))
+        chart = _bar_row_chart(src_rows, D['by_category'][cat], S, lang)
         if chart is not None:
             E.append(Spacer(1, 3*mm))
             E.append(chart)
-            E.append(_fig_caption(
-                S, FIG,
-                f'{t("c_cat", lang).rstrip(".")} {ROMAN[cat]} — '
-                f'{ISO_CATEGORY_NAMES[cat][lang]}', lang))
+            E.append(_fig_caption(S, FIG, cat_caption, lang))
         E.append(Spacer(1, 5*mm))
     E.append(PageBreak())
 
@@ -1261,8 +1432,60 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'envanter kayıtları belgelenip arşivlenir ve on yıl saklanır.'])))
     E.append(PageBreak())
 
-    # 4.2 Location evaluation
-    E.append(Paragraph('4.2   ' + t('s4_2', lang), S['h2']))
+    # 4.2 Activity-based assessment — the same inventory cut by what the
+    # organisation actually does, rather than by ISO category. An activity can
+    # straddle categories (fuel appears under both combustion and transport),
+    # so this is the view that answers "which activity should we act on first".
+    E.append(Paragraph('4.2   ' + t('s4_act', lang), S['h2']))
+    acts = D.get('by_activity') or {}
+    live_acts = [(cat_label(k, lang), v) for k, v in acts.items() if v > 0]
+    if live_acts:
+        live_acts.sort(key=lambda kv: -kv[1])
+        biggest, biggest_kg = live_acts[0]
+        E.append(Paragraph(
+            (f'Emissions are spread across {len(live_acts)} activity types. The largest '
+             f'is {biggest.lower()}, at {_fmt(biggest_kg / 1000.0, tr)} t CO₂e '
+             f'({pct(biggest_kg / 1000.0)} % of the inventory).')
+            if lang == 'en' else
+            (f'Emisyonlar {len(live_acts)} faaliyet türüne dağılmaktadır. En büyüğü '
+             f'{biggest.lower()} olup {_fmt(biggest_kg / 1000.0, tr)} t CO₂e '
+             f'(envanterin %{pct(biggest_kg / 1000.0)}’i) düzeyindedir.'), S['body']))
+
+        data = [[Paragraph(f'<b>{"Activity type" if lang == "en" else "Faaliyet türü"}</b>', S['body_sm']),
+                 Paragraph(f'<b>{t("c_pct", lang)}</b>', S['body_sm']),
+                 Paragraph(f'<b>{t("c_total", lang)}</b>', S['body_sm'])]]
+        for label, v in live_acts:
+            data.append([Paragraph(label, S['body_sm']),
+                         Paragraph(pct(v / 1000.0), S['body_sm']),
+                         Paragraph(f'{_fmt(v / 1000.0, tr)} t CO₂e', S['body_sm'])])
+        data.append([Paragraph(f'<b>{t("total", lang)}</b>', S['body_sm']),
+                     Paragraph(_localize_num('100.00', tr), S['body_sm']),
+                     Paragraph(f'<b>{_fmt(total_t, tr)} t CO₂e</b>', S['body_sm'])])
+        tbl = Table(data, colWidths=[92*mm, 30*mm, 48*mm], hAlign='LEFT', repeatRows=1)
+        st = _tbl_style(fn, fnb)
+        st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+        st.add('BACKGROUND', (0, -1), (-1, -1), CREAM)
+        st.add('LINEABOVE', (0, -1), (-1, -1), 1.2, OLIVE)
+        tbl.setStyle(st)
+        E.append(_caption(S, TBL, t('t_act', lang), lang))
+        E.append(tbl)
+
+        act_pie = _pie_chart(live_acts, S, lang)
+        if act_pie is not None:
+            E.append(Spacer(1, 4*mm))
+            E.append(act_pie)
+            E.append(_fig_caption(S, FIG, t('t_act', lang), lang))
+        act_bars = _bar_row_chart(live_acts, D['total_kg'], S, lang, max_rows=14)
+        if act_bars is not None:
+            E.append(Spacer(1, 4*mm))
+            E.append(act_bars)
+            E.append(_fig_caption(S, FIG, t('t_act', lang), lang))
+    else:
+        E.append(Paragraph(t('none_recorded', lang), S['no_data']))
+    E.append(PageBreak())
+
+    # 4.3 Location evaluation
+    E.append(Paragraph('4.3   ' + t('s4_2', lang), S['h2']))
     facs = D['facilities']
     if facs:
         ordered = sorted(facs.items(), key=lambda kv: -sum(kv[1].values()))
