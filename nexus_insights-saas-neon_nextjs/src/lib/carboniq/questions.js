@@ -6028,7 +6028,12 @@ export function unmapPhase1Answer(questionId, backendAnswer) {
       const reverseMap = { internal: 'internal_strategy', legal: 'legal_obligation', voluntary: 'voluntary_disclosure', client: 'customer_request' };
       return Array.isArray(backendAnswer.purposes) ? backendAnswer.purposes.map(v => reverseMap[v] || v) : [];
     }
-    case 'A7': return backendAnswer.has_previous_report ? 'yes' : 'no';
+    case 'A7': {
+      const hp = backendAnswer.has_previous_report;
+      if (hp === true) return 'yes';
+      if (hp === false) return 'no';
+      return 'skip'; // null — distinct from a real 'no', see mapAnswerForBackend
+    }
     case 'A7a': return backendAnswer.baseline_year != null ? String(backendAnswer.baseline_year) : undefined;
     case 'B1': return backendAnswer.nace_code ? `NACE_${backendAnswer.nace_code}` : undefined;
     case 'B2': return backendAnswer.activity_description || '';

@@ -12,8 +12,17 @@ STEP_FLOW = {
     'B4': 'B5', 'B5': 'B6', 'B6': 'C1',
     'C1': 'C2', 'C2': 'C3', 'C3': 'D1',
     'D1': 'D3', 'D3': 'D4',
-    'D4': 'PHASE2',
+    'D4': '2A-0',
 }
+
+# Ordered so callers can tell forward progress from a backward re-submit
+# (e.g. editing an earlier answer via the review table's Edit button) —
+# see SubmitStepView.patch's use of this for the current_step rewind guard.
+STRICT_STEP_ORDER = [
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+    'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+]
 
 EF_MAP = {
     'TR': 'DEFRA_TUIK', 'TURKEY': 'DEFRA_TUIK',
@@ -492,7 +501,12 @@ def handle_D4(report, data):
     report.status = 'in_progress'
     report.save()
     return {
-        'next_step': 'PHASE2',
+        # '2A-0' is the real first Stage-2 question id — the frontend has no
+        # routing entry for a 'PHASE2' sentinel (see ReuseCompanyProfileView
+        # for the same fix applied to the profile-reuse path). Resuming a
+        # report saved right after D4 used to land on a blank screen because
+        # report.current_step was set to this value verbatim.
+        'next_step': '2A-0',
         'message': f"Scope 3: {approach}",
         'warnings': [],
         'phase_complete': True,

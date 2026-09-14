@@ -133,9 +133,16 @@ function mapAnswerForBackend(questionId, value) {
         'internal_strategy': 'internal', 'legal_obligation': 'legal',
         'voluntary_disclosure': 'voluntary', 'customer_request': 'client', 'skip': 'skip',
       };
-      return { purposes: Array.isArray(value) ? value.filter(v => v !== 'skip').map(v => purposeMap[v] || v) : [] };
+      // 'skip' is itself a valid StepA6Serializer choice (VALID_PURPOSES
+      // includes it) — filtering it out before sending used to drop it
+      // silently, so re-opening A6 via Edit after picking "I want to skip"
+      // showed nothing selected instead of that choice still checked.
+      return { purposes: Array.isArray(value) ? value.map(v => purposeMap[v] || v) : [] };
     }
-    case 'A7': return { has_previous_report: value === 'yes' };
+    // 'skip' maps to null (the field is nullable), distinct from a real 'no'
+    // — collapsing both to false used to make a resumed/edited A7 show "No"
+    // selected after the user had actually picked "I want to skip".
+    case 'A7': return { has_previous_report: value === 'skip' ? null : value === 'yes' };
     case 'A7a': { const y = parseInt(value, 10); return { baseline_year: Number.isNaN(y) ? null : y }; }
 
     // ── Phase 1 continuation (B / C / D) ──────────────────────────────────────

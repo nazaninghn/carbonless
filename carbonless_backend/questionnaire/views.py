@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
 from chat.local_parser import parse_localized_number
 import logging
+import re
 import time
 
 # Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
@@ -86,7 +87,7 @@ from .serializers import (
     StepC1Serializer, StepC2Serializer, StepC3Serializer,
     StepD1Serializer, StepD3Serializer, StepD4Serializer,
 )
-from .step_handlers import handle_step
+from .step_handlers import handle_step, STRICT_STEP_ORDER
 
 STEP_SERIALIZERS = {
     'A1': StepA1Serializer, 'A2': StepA2Serializer,
@@ -163,6 +164,21 @@ def extract_profile(session):
     return profile
 
 
+# A units-bearing questionnaire answer is typed as "1200 kWh" / "15.000 m³"
+# in one string — split the leading numeric part from the trailing unit so
+# it can go through parse_localized_number. Unit is optional; a bare number
+# just returns ('1200', '').
+_QTY_UNIT_RE = re.compile(r'^\s*([\d.,]+)\s*([^\d,.\s][^\s]*)?\s*$')
+
+
+def _split_amount_unit(raw):
+    s = str(raw).strip()
+    m = _QTY_UNIT_RE.match(s)
+    if not m:
+        return s, ''
+    return m.group(1), (m.group(2) or '').strip()
+
+
 def _extract_emission_from_step(step_id, data, report):
     """
     Check if a questionnaire step contains consumption data that should create
@@ -179,29 +195,50 @@ def _extract_emission_from_step(step_id, data, report):
         return None
 
     # Direct consumption data (most common pattern from frontend questionnaire)
-    quantity = (
+    raw_quantity = (
         data.get('consumption') or data.get('quantity') or
         data.get('answer') or data.get('value')
     )
-    if not quantity:
+    if not raw_quantity:
         return None
 
-    # Try to parse as number. parse_localized_number distinguishes a
-    # thousands separator from a decimal point (e.g. "15.000" typed by a
-    # Turkish user means 15000, not 15) — the old `.replace(',', '')` here
-    # stripped commas unconditionally and left a literal "15.000" as-is,
-    # silently creating a real EmissionEntry with a quantity 1000x too
-    # small, and no error since the string was still valid float syntax.
-    try:
-        qty = parse_localized_number(str(quantity).replace(' ', '').strip())
-    except (ValueError, TypeError):
-        return None
+    # Real consumption questions submit one of two shapes, neither of which
+    # is the flat number this function used to assume — verified live, both
+    # silently produced saved_entry=None on every real submission:
+    #   - loopSource questions (per-facility/per-equipment, e.g. 4A-1,
+    #     4A-1a) send a dict {itemKey: "amount unit"}, one item per
+    #     facility/equipment (see CarbonAIPage.jsx's loop `collected` map).
+    #   - non-loop questions send a single "amount unit" string, e.g.
+    #     "1200 kWh" — the unit is typed inline, not a separate field.
+    # Normalise to a list of raw item strings either way, then split each
+    # into its numeric part + unit and sum same-question items into one
+    # entry (parse_localized_number distinguishes a thousands separator
+    # from a decimal point, e.g. Turkish "15.000" == 15000 not 15).
+    if isinstance(raw_quantity, dict):
+        items = list(raw_quantity.values())
+    elif isinstance(raw_quantity, list):
+        items = raw_quantity
+    else:
+        items = [raw_quantity]
+
+    qty = 0.0
+    parsed_unit = ''
+    for item in items:
+        amount_str, item_unit = _split_amount_unit(item)
+        try:
+            item_qty = parse_localized_number(amount_str)
+        except (ValueError, TypeError):
+            continue
+        if item_qty <= 0:
+            continue
+        qty += item_qty
+        parsed_unit = parsed_unit or item_unit
 
     if qty <= 0:
         return None
 
     fuel_type = data.get('fuel_type', '')
-    unit = data.get('unit', '')
+    unit = data.get('unit', '') or parsed_unit
 
     # Determine scope/category based on step pattern
     if step_id.startswith('3A'):
@@ -445,9 +482,26 @@ class SubmitStepView(APIView):
             evaluate_advisor_triggers(report, step, serializer.validated_data)
 
             next_step = result['next_step']
-            report.current_step = next_step
-            if next_step == 'PHASE2':
-                report.status = CarbonReport.Status.IN_PROGRESS
+            # Only move current_step forward. Re-submitting an earlier step
+            # (e.g. via the review table's per-question Edit button, reachable
+            # at any point after that step's block is complete) used to
+            # unconditionally overwrite current_step with ITS next_step,
+            # rewinding the resume pointer even though nothing past it was
+            # lost — a save-and-exit right after such an edit then forced the
+            # user to click through every already-answered question again.
+            # `current_idx is None` means current_step has already left the
+            # strict A-D flow (a Phase-2 id, or 'DONE') — never let a strict-
+            # step edit pull it back.
+            current_idx = (
+                STRICT_STEP_ORDER.index(report.current_step)
+                if report.current_step in STRICT_STEP_ORDER else None
+            )
+            next_idx = (
+                STRICT_STEP_ORDER.index(next_step)
+                if next_step in STRICT_STEP_ORDER else len(STRICT_STEP_ORDER)
+            )
+            if current_idx is not None and next_idx > current_idx:
+                report.current_step = next_step
             report.save()
 
             return Response({
@@ -490,6 +544,36 @@ class SubmitStepView(APIView):
         )
 
         if is_final_step:
+            # Completion used to be gated purely on "was 7B-INFO answered
+            # 'done'", with no check that anything came before it. Verified
+            # live: PATCHing a brand-new report (nothing saved but the
+            # auto-created A1) straight to 7B-INFO/'done' instantly marked it
+            # COMPLETED and both PDF exports generated successfully for an
+            # essentially empty report. Exact per-user question counts can't
+            # be replicated here (only the frontend's getApplicableQuestions
+            # knows which of the ~130 Phase-2 questions apply after
+            # conditional branches — see _progress()'s docstring above), so
+            # this is a floor, not an exact check: Phase 1 must have actually
+            # finished (handle_D4 flips status to IN_PROGRESS) and a
+            # meaningful number of Phase-2 answers must exist.
+            PHASE1_STEP_IDS = {
+                'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+                'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+                'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+            }
+            MIN_PHASE2_STEPS = 15
+            phase2_count = report.steps.exclude(step_id__in=PHASE1_STEP_IDS).count()
+            if report.status == CarbonReport.Status.DRAFT or phase2_count < MIN_PHASE2_STEPS:
+                return Response({
+                    'success': False,
+                    'step': step,
+                    'next_step': step,
+                    'error': 'This inventory cannot be marked complete yet — required questions have not been answered.',
+                    'bot_messages': [
+                        '❌ This inventory cannot be marked complete yet — required questions have not been answered.'
+                    ],
+                }, status=400)
+
             report.status = CarbonReport.Status.COMPLETED
             report.current_step = 'DONE'
             report.save(update_fields=['status', 'current_step', 'updated_at'])
