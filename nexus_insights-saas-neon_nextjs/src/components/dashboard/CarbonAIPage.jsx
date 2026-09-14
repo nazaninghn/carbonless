@@ -2479,9 +2479,23 @@ export function QuestionnaireTab({
 
       return { success: true, data: respData };
     } catch (e) {
+      // Log before swallowing. This catch reports every failure as the same
+      // "Connection error" — a real network drop, the 30 s request timeout
+      // against a cold backend, and a bug in mapAnswerForBackend all look
+      // identical to the user, and discarding `e` left nothing to tell them
+      // apart from a bug report either.
+      console.error(`Failed to save step ${questionId} of report ${rid_}:`, e);
       if (isMounted.current) {
         setSaveSuccess(false);
-        setSaveError(lang === 'tr' ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
+        const timedOut = e?.name === 'AbortError';
+        setSaveError(
+          lang === 'tr'
+            ? (timedOut
+                ? 'Sunucu yanıt vermedi. Lütfen tekrar deneyin.'
+                : 'Bağlantı hatası. Lütfen tekrar deneyin.')
+            : (timedOut
+                ? 'The server did not respond in time. Please try again.'
+                : 'Connection error. Please try again.'));
       }
       return { success: false, data: {} };
     }
@@ -2648,17 +2662,30 @@ export function QuestionnaireTab({
       if (nextIndex < items.length) {
         // More items to ask — stay on same question, advance index
         const nextLabel = itemLabels[nextIndex] || items[nextIndex] || `#${nextIndex + 1}`;
+
+        // Save collected-so-far BEFORE advancing the item index. This used to
+        // advance first and then discard saveStepToBackend's result entirely,
+        // so a save that failed — a dropped connection, or the 30 s request
+        // timeout against a cold backend — moved the loop on to the next item
+        // anyway. The user got a red "Connection error" banner while the
+        // question advanced underneath it, and the answer for that item was
+        // never persisted. Staying put on failure matches what the final-item
+        // path and the non-loop path already do, and lets the user retry.
+        markSubmitting(true);
+        const loopSave = await saveStepToBackend(currentId, newCollected, reportId);
+        if (!loopSave.success) {
+          markSubmitting(false);
+          return;
+        }
+
         // Functional updater: spreads the latest state after the async saveStepToBackend
         // await rather than the closure-captured value, guarding against any future
         // concurrent mutation even though isSubmittingRef currently prevents it.
         setLoopState(prev => prev ? { ...prev, currentIndex: nextIndex, collected: newCollected } : null);
         setAnswerValue(getInitialValue(q));
 
-        // Save collected-so-far to backend — clear mutex AFTER setIsTyping(true)
-        // to eliminate the window where both guards are simultaneously false.
-        markSubmitting(true);
-        await saveStepToBackend(currentId, newCollected, reportId);
-
+        // Clear the mutex AFTER setIsTyping(true) to eliminate the window where
+        // both guards are simultaneously false.
         setIsTyping(true);
         markSubmitting(false);
         if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
