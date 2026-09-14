@@ -2349,6 +2349,16 @@ export function QuestionnaireTab({
     return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
   }, [messages, isTyping]);
 
+  // Which question the current answerValue was initialised for. Until this
+  // catches up with currentId the answer controls belong to the question the
+  // user is leaving, not the one on screen, so they must not accept input.
+  const [answerForId, setAnswerForId] = useState(currentId);
+  // Ref twin, for the same reason the submit mutex has one: disabling the
+  // controls is a render away, so a click already in flight can still reach
+  // submitAnswer with the outgoing question's value.
+  const answerForIdRef = useRef(currentId);
+  useEffect(() => { answerForIdRef.current = answerForId; }, [answerForId]);
+
   // Keep a ref so the init effect can read the latest answers without being
   // re-triggered on every setAnswers call (which would race with submitAnswer).
   const answersRef = useRef(answers);
@@ -2374,6 +2384,14 @@ export function QuestionnaireTab({
         ? loopState.collected[loopState.items[loopState.currentIndex]]
         : answersRef.current[currentId];
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
+      // Marks answerValue as belonging to THIS question. React usually runs
+      // this effect before the browser paints, but on a transcript this long
+      // the new question's options can paint first, leaving a window where they
+      // are clickable while answerValue still holds the previous question's
+      // answer. A click landing there was applied to the outgoing value and
+      // then wiped by the setAnswerValue above — the selection simply did not
+      // appear, and the user clicked again. See the `answerReady` gate below.
+      setAnswerForId(currentId);
       setValidationError('');
       setShowValidationError(false); // always clear stale inline error when question changes
     }
@@ -2585,6 +2603,10 @@ export function QuestionnaireTab({
     const q = getQuestionById(currentId);
     if (!q || isTyping) return;
     if (isSubmittingRef.current) return;
+    // answerValue still belongs to the question being left — submitting now
+    // would file the outgoing answer against the incoming question. An
+    // override (a chip that passes its own value) is safe and exempt.
+    if (overrideValue === undefined && answerForIdRef.current !== currentId) return;
 
     const raw = overrideValue !== undefined ? overrideValue : answerValue;
     const value = normalizeAnswerValue(q, raw);
@@ -3267,7 +3289,7 @@ export function QuestionnaireTab({
                   onChange={v => { setAnswerValue(v); setValidationError(''); setShowValidationError(false); }}
                   onSubmit={submitAnswer}
                   lang={lang}
-                  disabled={isTyping || submitting}
+                  disabled={isTyping || submitting || answerForId !== currentId}
                   currentLoopItem={
                     loopState && loopState.questionId === currentId
                       ? loopState.items[loopState.currentIndex]
