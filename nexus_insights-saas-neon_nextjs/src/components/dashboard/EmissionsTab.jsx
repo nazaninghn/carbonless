@@ -412,6 +412,14 @@ export default function EmissionsTab({
     if (!editing) return;
     // Fix 30B: code-level guard — prevents stale-state double-submit
     if (editSaving) return;
+    // Same guard as handleAdd's — this form's quantity input had no min="0"
+    // and no pre-submit check, so an entry could be edited down to 0 or a
+    // negative quantity (silently rejected by the backend as a raw
+    // "Update failed" toast instead of this friendly message).
+    if (!editQty || parseLocalizedNumber(editQty) <= 0) {
+      toast.error(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
+      return;
+    }
     setEditSaving(true);
     try {
       // Fix 24B: coerce empty string to null — Django FK rejects '' but accepts null
@@ -440,6 +448,12 @@ export default function EmissionsTab({
     e.preventDefault();
     // Fix 30C: code-level guard — prevents stale-state double-submit
     if (cSaving) return;
+    // Same guard as handleAdd's — this form's quantity input had no min="0"
+    // and no pre-submit check.
+    if (!cQty || parseLocalizedNumber(cQty) <= 0) {
+      toast.error(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
+      return;
+    }
     setCSaving(true);
     try {
       const res = await api.createCustomRequest({
@@ -1077,7 +1091,7 @@ export default function EmissionsTab({
               <form id="edit-form" onSubmit={handleEdit} className="space-y-4">
                 <div>
                   <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({editing.unit})</label>
-                  <input type="number" step="any" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
+                  <input type="number" step="any" min="0" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
                 </div>
                 <div>
                   <label className={LABEL}>{tr ? 'Tesis' : 'Facility'}</label>
@@ -1160,7 +1174,7 @@ export default function EmissionsTab({
                   </div>
                   <div>
                     <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} *</label>
-                    <input type="number" step="any" value={cQty} onChange={e => setCQty(e.target.value)} className={FIELD} required />
+                    <input type="number" step="any" min="0" value={cQty} onChange={e => setCQty(e.target.value)} className={FIELD} required />
                   </div>
                 </div>
                 <div>
