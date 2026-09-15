@@ -3147,7 +3147,12 @@ export function QuestionnaireTab({
       />
 
       {/* Main area */}
-      <div className="flex flex-1 min-w-0 flex-col">
+      {/* min-h-0 is required here — without it this flex column can't shrink
+          below its content height, so the chat messages div's flex-1
+          overflow-y-auto below never actually engages: instead of scrolling,
+          older messages just get clipped by the parent's overflow-hidden as
+          the conversation grows past the visible area. */}
+      <div className="flex flex-1 min-w-0 min-h-0 flex-col">
         {/* Sub-header */}
         <div className="flex shrink-0 items-center gap-2 border-b border-[#175022]/6 px-4 py-2">
           {!sidebarOpen && (
