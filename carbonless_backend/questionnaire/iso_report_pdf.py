@@ -26,23 +26,122 @@ from datetime import datetime
 
 from django.db.models import Sum
 from reportlab.lib import colors
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
+    BaseDocTemplate, Frame, PageTemplate, TableStyle,
     Paragraph, Spacer, Table, PageBreak, KeepTogether, NextPageTemplate,
 )
-from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.shapes import Drawing, String
 from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.charts.legends import Legend
 
 from emissions.models import EmissionEntry, CustomEmissionRequest
-from emissions.report_pdf import (
-    _ReportDocTemplate, _styles, _tbl_style, _total_row_style,
-    _fmt, _localize_num,
-    BRAND_DARK, OLIVE, OLIVE_DARK, OLIVE_LIGHT, CREAM, CREAM_LIGHT,
-    GRAY_200, GRAY_400, GRAY_600, WHITE,
-)
+# Only pure infrastructure/formatting is reused from the shared module — font
+# registration (bundled DejaVu Sans, full Turkish/subscript coverage) and
+# locale-aware number formatting are not visual-design concerns. Every color,
+# style and chart/table/page-chrome helper below is defined locally so this
+# report's "modern minimal" redesign is independent of the other two PDFs
+# (emissions/report_pdf.py, questionnaire/report_pdf.py) that also import
+# from emissions.report_pdf — neither of those is touched by this file.
+from emissions.report_pdf import _fonts, _fmt, _localize_num
 from .models import CarbonReport, ReportStep
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MODERN-MINIMAL DESIGN SYSTEM
+# One accent color, generous white space, hairline rules instead of solid
+# color blocks. Distinct from — and independent of — the bold brand-green
+# chrome the other two PDF reports use.
+# ═══════════════════════════════════════════════════════════════════════════
+INK = colors.HexColor('#1A1F1C')          # headings, body text
+ACCENT = colors.HexColor('#1D9C31')       # the one accent — hairlines, h2, chart primary
+ACCENT_DARK = colors.HexColor('#146B22')  # donut center label / emphasis
+ACCENT_SOFT = colors.HexColor('#EAF5EC')  # total-row / highlight backgrounds
+MUTED = colors.HexColor('#5B635C')        # secondary text, captions
+FAINT = colors.HexColor('#98A098')        # footer, page numbers
+LINE = colors.HexColor('#E3E7E3')         # hairline rules, table borders
+PAPER = colors.white
+
+# Back-compat aliases: the ~1000 lines of section-building code below only
+# ever reference these bare names (never emissions.report_pdf's values
+# directly), so redefining them here restyles the whole report without
+# touching that content-building code.
+BRAND_DARK, OLIVE, OLIVE_DARK, OLIVE_LIGHT = INK, ACCENT, ACCENT_DARK, ACCENT_SOFT
+CREAM, CREAM_LIGHT = ACCENT_SOFT, colors.HexColor('#F6FAF7')
+GRAY_200, GRAY_400, GRAY_600, WHITE = LINE, FAINT, MUTED, PAPER
+
+
+def _styles():
+    """Typographic scale for the report — left-aligned editorial cover,
+    a single accent color reserved for h2/hairlines/badges rather than
+    spread across headings."""
+    fn, fnb = _fonts()
+    return {
+        'fn': fn, 'fnb': fnb,
+        'cover_company': ParagraphStyle('cover_company', fontName=fn, fontSize=11,
+                                         textColor=MUTED, alignment=TA_LEFT, leading=14),
+        'cover_badge': ParagraphStyle('cover_badge', fontName=fnb, fontSize=9,
+                                       textColor=ACCENT, alignment=TA_LEFT, leading=12),
+        'cover_title': ParagraphStyle('cover_title', fontName=fnb, fontSize=30,
+                                       textColor=INK, alignment=TA_LEFT, leading=35),
+        'cover_sub': ParagraphStyle('cover_sub', fontName=fn, fontSize=12,
+                                     textColor=MUTED, alignment=TA_LEFT, leading=16),
+        'cover_date': ParagraphStyle('cover_date', fontName=fn, fontSize=9,
+                                      textColor=FAINT, alignment=TA_LEFT, leading=13),
+        'h1': ParagraphStyle('h1', fontName=fnb, fontSize=16, textColor=INK,
+                              spaceBefore=14, spaceAfter=8, leading=20),
+        'h2': ParagraphStyle('h2', fontName=fnb, fontSize=11, textColor=ACCENT,
+                              spaceBefore=10, spaceAfter=5, leading=14),
+        'h3': ParagraphStyle('h3', fontName=fnb, fontSize=9.5, textColor=MUTED,
+                              spaceBefore=6, spaceAfter=3, leading=12),
+        'body': ParagraphStyle('body', fontName=fn, fontSize=9.5, textColor=INK,
+                                spaceAfter=4, leading=14.5),
+        'body_sm': ParagraphStyle('body_sm', fontName=fn, fontSize=8.5, textColor=INK,
+                                   spaceAfter=3, leading=12),
+        'warning': ParagraphStyle('warning', fontName=fnb, fontSize=9,
+                                   textColor=colors.HexColor('#B45309'), spaceAfter=4, leading=13),
+        'no_data': ParagraphStyle('no_data', fontName=fn, fontSize=9, textColor=FAINT,
+                                   spaceAfter=4, leading=13),
+        'small': ParagraphStyle('small', fontName=fn, fontSize=7.5, textColor=MUTED,
+                                 spaceAfter=2, leading=10),
+        'toc': ParagraphStyle('toc', fontName=fn, fontSize=11, textColor=INK,
+                               spaceBefore=7, spaceAfter=7, leading=16),
+        'quote': ParagraphStyle('quote', fontName=fn, fontSize=9, textColor=MUTED,
+                                 leftIndent=12, spaceAfter=4, leading=13),
+    }
+
+
+def _tbl_style(fn, fnb, hdr_color=None):
+    """White header row with a single accent rule underneath, hairline
+    rules between body rows — no solid color band, no zebra striping.
+    `hdr_color` is accepted for call-site compatibility but unused."""
+    return TableStyle([
+        ('FONTNAME', (0, 0), (-1, 0), fnb),
+        ('FONTNAME', (0, 1), (-1, -1), fn),
+        ('FONTSIZE', (0, 0), (-1, 0), 8.5),
+        ('FONTSIZE', (0, 1), (-1, -1), 8),
+        ('TEXTCOLOR', (0, 0), (-1, 0), INK),
+        ('LINEBELOW', (0, 0), (-1, 0), 1, ACCENT),
+        ('LINEBELOW', (0, 1), (-1, -2), 0.4, LINE),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+    ])
+
+
+def _total_row_style(fnb):
+    return TableStyle([
+        ('BACKGROUND', (0, -1), (-1, -1), ACCENT_SOFT),
+        ('FONTNAME', (0, -1), (-1, -1), fnb),
+        ('LINEABOVE', (0, -1), (-1, -1), 1.2, ACCENT),
+    ])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -498,9 +597,8 @@ def _bar_row_chart(rows, total, S, lang, max_rows=10):
         if pct <= 0:
             bar = Paragraph('', S['body_sm'])
         else:
-            bar = Table([['']], colWidths=[max(0.6, pct / 100 * 70)*mm], rowHeights=[3.6*mm],
-                        style=[('BACKGROUND', (0, 0), (-1, -1), OLIVE),
-                               ('BOX', (0, 0), (-1, -1), 0, OLIVE)])
+            bar = Table([['']], colWidths=[max(0.6, pct / 100 * 70)*mm], rowHeights=[2.8*mm],
+                        style=[('BACKGROUND', (0, 0), (-1, -1), OLIVE)])
         data.append([
             Paragraph(label, S['body_sm']),
             bar,
@@ -517,27 +615,22 @@ def _bar_row_chart(rows, total, S, lang, max_rows=10):
     return tbl
 
 
-# Enough distinct fills for the six ISO categories plus the activity split,
-# kept in the report's own palette rather than reportlab's default primaries.
-# Ordered so neighbouring slices never land on adjacent shades: the brand's
-# OLIVE (#2ABD41) and OLIVE_DARK (#1D9C31) are close enough to read as one
-# colour in a 6pt legend swatch, so they are deliberately separated here.
-PIE_COLORS = [
-    BRAND_DARK,                      # near-black green
-    OLIVE,                           # brand green
-    OLIVE_LIGHT,                     # pale green
-    colors.HexColor('#4E6B22'),      # olive
-    colors.HexColor('#1D9C31'),      # mid green
-    colors.HexColor('#B9CE8A'),      # sage
-    GRAY_600,
-    colors.HexColor('#0F5C1C'),      # deep green
-    GRAY_400,
-    colors.HexColor('#D8E3C0'),
+# A short, deliberately monochrome-plus-neutral ramp (one hue, several
+# tints, two neutrals for the tail) rather than a ten-color near-rainbow —
+# reads as "modern minimal" and stays legible in a 6pt legend swatch.
+CHART_PALETTE = [
+    ACCENT,                           # #1D9C31 primary
+    colors.HexColor('#0F5C1C'),       # deep green
+    colors.HexColor('#6FB37E'),       # sage
+    colors.HexColor('#B7C9BA'),       # pale sage-gray
+    GRAY_600,                         # gray-green (= MUTED)
+    colors.HexColor('#D7DDD8'),       # near-white gray (tail/"Other")
 ]
 
 
-def _pie_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
-    """Donut-style pie with a side legend, for the distribution figures.
+def _donut_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
+    """Donut chart with the total centered in the hole and a side legend,
+    for the distribution figures.
 
     `rows` is [(label, value_kg), ...]. Slices worth nothing are dropped —
     reportlab renders a zero value as a degenerate wedge, and in an inventory
@@ -561,6 +654,7 @@ def _pie_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
     pie = Pie()
     pie.x, pie.y = 6 * mm, 4 * mm
     pie.width = pie.height = 48 * mm
+    pie.innerRadiusFraction = 0.62
     pie.data = [v for _, v in live]
     # A wedge narrower than ~7 % is thinner than its own label, so the text
     # spills over the neighbouring slice. Those stay unlabelled — the legend
@@ -573,10 +667,22 @@ def _pie_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
     pie.slices.fontName = S['fn']
     pie.slices.fontSize = 7.5
     pie.slices.fontColor = WHITE
-    pie.slices.labelRadius = 0.66
+    # With an inner radius, labels sit inside the ring itself (between the
+    # inner and outer edge) rather than near the pie center.
+    pie.slices.labelRadius = 0.85
     for i in range(len(live)):
-        pie.slices[i].fillColor = PIE_COLORS[i % len(PIE_COLORS)]
+        pie.slices[i].fillColor = CHART_PALETTE[i % len(CHART_PALETTE)]
     d.add(pie)
+
+    # Total, centered in the donut's hole — two short lines (number, unit)
+    # rather than one long formatted string, so it fits the hole at any
+    # magnitude without touching the ring.
+    cx, cy = (pie.x + pie.width / 2), (pie.y + pie.height / 2)
+    d.add(String(cx, cy + 3, _localize_num(f'{total / 1000.0:,.1f}', tr),
+                  fontName=S['fnb'], fontSize=10.5, fillColor=ACCENT_DARK,
+                  textAnchor='middle'))
+    d.add(String(cx, cy - 7, 't CO₂e', fontName=S['fn'], fontSize=6.5,
+                  fillColor=MUTED, textAnchor='middle'))
 
     legend = Legend()
     legend.x = 60 * mm
@@ -594,12 +700,73 @@ def _pie_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
     legend.alignment = 'right'
     legend.columnMaximum = max_slices + 1
     legend.colorNamePairs = [
-        (PIE_COLORS[i % len(PIE_COLORS)],
+        (CHART_PALETTE[i % len(CHART_PALETTE)],
          f'{lbl[:38]}  —  {_fmt(v / 1000.0, tr)} t  ({_localize_num(f"{v / total * 100:.1f}", tr)} %)')
         for i, (lbl, v) in enumerate(live)
     ]
     d.add(legend)
     return d
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PAGE CHROME — modern minimal: hairline rules, no solid color bars or
+# corner decoration. Defined locally (not shared with the other two PDF
+# reports, which keep their bolder brand-forward chrome).
+# ═══════════════════════════════════════════════════════════════════════════
+class _ReportDocTemplate(BaseDocTemplate):
+    def __init__(self, buf, company_name, year, lang, **kw):
+        super().__init__(buf, **kw)
+        self.company_name = company_name
+        self.year = year
+        self.lang = lang
+
+        frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
+        frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
+
+        self.addPageTemplates([
+            PageTemplate(id='cover', frames=[frame_cover], onPage=self._cover_page),
+            PageTemplate(id='content', frames=[frame_body], onPage=self._content_page),
+        ])
+
+    def _cover_page(self, canvas, doc):
+        fn, fnb = _fonts()
+        w, h = A4
+        # A single thin rule frames a small wordmark row — no color blocks,
+        # no corner decoration, no panel behind the title.
+        canvas.setStrokeColor(ACCENT)
+        canvas.setLineWidth(0.75)
+        canvas.line(20*mm, h-22*mm, w-20*mm, h-22*mm)
+        canvas.setFont(fnb, 8)
+        canvas.setFillColor(ACCENT)
+        canvas.drawString(20*mm, h-19*mm, 'CARBONLESS')
+        canvas.setFont(fn, 8)
+        canvas.setFillColor(FAINT)
+        canvas.drawRightString(w-20*mm, h-19*mm, 'ISO 14064-1:2018')
+
+    def _content_page(self, canvas, doc):
+        fn, fnb = _fonts()
+        w, h = A4
+        # Header — a hairline rule, small left wordmark, small right meta.
+        canvas.setStrokeColor(LINE)
+        canvas.setLineWidth(0.6)
+        canvas.line(20*mm, h-15*mm, w-20*mm, h-15*mm)
+        canvas.setFont(fnb, 7.5)
+        canvas.setFillColor(ACCENT)
+        canvas.drawString(20*mm, h-13*mm, 'CARBONLESS')
+        canvas.setFont(fn, 7)
+        canvas.setFillColor(FAINT)
+        canvas.drawRightString(w-20*mm, h-13*mm, f'ISO 14064-1 · {self.company_name} · {self.year}')
+        # Footer — hairline rule, centered page number, no box/fill.
+        canvas.setStrokeColor(LINE)
+        canvas.setLineWidth(0.4)
+        canvas.line(20*mm, 15*mm, w-20*mm, 15*mm)
+        canvas.setFont(fn, 7)
+        canvas.setFillColor(FAINT)
+        page_num = doc.page - 1
+        label = 'Sayfa' if self.lang == 'tr' else 'Page'
+        canvas.drawCentredString(w/2, 10*mm, f'{label} {page_num}')
+        canvas.drawString(20*mm, 10*mm, 'Carbonless Platform')
+        canvas.drawRightString(w-20*mm, 10*mm, datetime.now().strftime('%d.%m.%Y'))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1150,7 +1317,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     E.append(_caption(S, TBL, t('t_scope', lang), lang))
     E.append(tbl)
 
-    scope_pie = _pie_chart(
+    scope_pie = _donut_chart(
         [(t('direct', lang), D['by_scope'].get('scope1', 0.0)),
          (t('indirect', lang), D['total_kg'] - D['by_scope'].get('scope1', 0.0))],
         S, lang)
@@ -1189,7 +1356,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     # A pie for the share-of-total reading, then the proportional bars beneath
     # it: the pie answers "where does the inventory sit", the bars stay
     # readable when several categories are small enough to be slivers.
-    cat_pie = _pie_chart(cat_rows, S, lang)
+    cat_pie = _donut_chart(cat_rows, S, lang)
     if cat_pie is not None:
         E.append(Spacer(1, 4*mm))
         E.append(cat_pie)
@@ -1277,7 +1444,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         # Only worth a pie once there is more than one source to compare; with
         # a single source it would be a full circle restating the table.
         if len([r for r in src_rows if r[1] > 0]) > 1:
-            pie = _pie_chart(src_rows, S, lang)
+            pie = _donut_chart(src_rows, S, lang)
             if pie is not None:
                 E.append(Spacer(1, 3*mm))
                 E.append(pie)
@@ -1470,7 +1637,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         E.append(_caption(S, TBL, t('t_act', lang), lang))
         E.append(tbl)
 
-        act_pie = _pie_chart(live_acts, S, lang)
+        act_pie = _donut_chart(live_acts, S, lang)
         if act_pie is not None:
             E.append(Spacer(1, 4*mm))
             E.append(act_pie)
