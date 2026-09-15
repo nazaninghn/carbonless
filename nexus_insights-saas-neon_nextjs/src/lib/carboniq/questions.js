@@ -5882,11 +5882,22 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     };
   }
 
+  // fuel_loop/equipment_loop questions that collect a free-text quantity
+  // (question.units defined, e.g. 3A-5's "annual consumption quantity") render
+  // the same amount+unit text input as a 'numeric' question (CarbonAIPage's
+  // AnswerInput falls through to it once `options` is empty), but were never
+  // flagged as numeric here — so "ttt" passed straight to the backend for
+  // those. Loop questions that render as a chip select instead (options.length
+  // > 0, e.g. 3C-2's measurement-method picker) are unaffected.
+  const isLoopQuantity =
+    (question.type === 'fuel_loop' || question.type === 'equipment_loop') &&
+    question.units && !(question.options && question.options.length);
+
   // subtype/type 'numeric' quantity fields (e.g. prices, consumption amounts)
   // allow decimals and an optional trailing unit ("1500 kWh") — unlike
   // numericOnly above, which is strict integer digits (e.g. tax IDs). Without
   // this, garbage text like "ttt" passed straight through to the backend.
-  if (!question.numericOnly && (question.subtype === 'numeric' || question.type === 'numeric') && !question.exactLength) {
+  if (!question.numericOnly && (question.subtype === 'numeric' || question.type === 'numeric' || isLoopQuantity) && !question.exactLength) {
     const s = String(value).trim();
     const spaceIdx = s.indexOf(' ');
     const amountStr = spaceIdx === -1 ? s : s.slice(0, spaceIdx);

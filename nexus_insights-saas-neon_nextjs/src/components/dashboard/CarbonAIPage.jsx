@@ -1486,7 +1486,11 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <input
           className="flex-1 rounded-xl border border-[#175022]/12 bg-white px-4 py-2.5 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
           type="text"
-          inputMode={subtype === 'numeric' ? 'numeric' : 'text'}
+          inputMode={
+            subtype === 'numeric' || type === 'numeric' ||
+            ((type === 'fuel_loop' || type === 'equipment_loop') && question.units)
+              ? 'numeric' : 'text'
+          }
           value={amountStr}
           onChange={e => onChange(
             shouldCombineUnit ? `${e.target.value} ${selectedUnit}` : e.target.value
