@@ -2513,7 +2513,13 @@ export const CARBONIQ_QUESTIONS = [
     stage: 3,
     block: '3C',
     isoRef: 'ISO 14064-1 §5.2',
-    type: 'equipment_loop',
+    // Was an equipment_loop question whose text/placeholder asked for BOTH
+    // production quantity and measurement method, but `options` (added for
+    // the method chips) makes AnswerInput render chips only — the quantity
+    // could never actually be typed in, so "50,000" from the placeholder was
+    // never collectible. Split into a compound so the quantity is a real
+    // required numeric field, same fix as 3A-2/3B-3.
+    type: 'compound',
     loopSource: '3C-1',
     loopNext: '3C-EF',
     required: true,
@@ -2522,21 +2528,33 @@ export const CARBONIQ_QUESTIONS = [
       tr: '[Proses adı] — Üretim miktarı ve ölçüm yöntemi nedir?',
       en: '[Process name] — What is the production quantity and measurement method?',
     },
-    placeholder: {
-      tr: 'Miktar: 50.000 | Birim: ton/yıl | Ölçüm: Periyodik ölçüm',
-      en: 'Quantity: 50,000 | Unit: tonne/year | Measurement: Periodic measurement',
-    },
     helper: {
       tr: 'Birim proses tipine göre otomatik belirlendi. Ölçüm yöntemi IPCC Tier seviyesini ve dolayısıyla veri kalitesini belirler.',
       en: 'Unit is automatically determined based on process type. Measurement method determines the IPCC Tier level and thus data quality.',
     },
-    options: [
-      { value: 'cems_tier3', label: { tr: 'Sürekli ölçüm sistemi (CEMS) — Tier 3 (en doğru)', en: 'Continuous emission monitoring (CEMS) — Tier 3 (most accurate)' }, tier: 3 },
-      { value: 'periodic_tier2', label: { tr: 'Periyodik ölçüm — Tier 2', en: 'Periodic measurement — Tier 2' }, tier: 2 },
-      { value: 'calculation_tier1', label: { tr: 'Hesaplama / tahmin — Tier 1', en: 'Calculation / estimate — Tier 1' }, tier: 1 },
+    fields: [
+      {
+        id: 'quantity',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Üretim miktarı', en: 'Production quantity' },
+        placeholder: { tr: 'Örn: 50.000', en: 'e.g. 50,000' },
+      },
+      {
+        id: 'method',
+        type: 'select',
+        required: true,
+        label: { tr: 'Ölçüm yöntemi', en: 'Measurement method' },
+        options: [
+          { value: 'cems_tier3', label: { tr: 'Sürekli ölçüm sistemi (CEMS) — Tier 3 (en doğru)', en: 'Continuous emission monitoring (CEMS) — Tier 3 (most accurate)' }, tier: 3 },
+          { value: 'periodic_tier2', label: { tr: 'Periyodik ölçüm — Tier 2', en: 'Periodic measurement — Tier 2' }, tier: 2 },
+          { value: 'calculation_tier1', label: { tr: 'Hesaplama / tahmin — Tier 1', en: 'Calculation / estimate — Tier 1' }, tier: 1 },
+        ],
+      },
     ],
     validate: {
-      requiredMessage: { tr: 'Lütfen ölçüm yöntemini seçin.', en: 'Please select the measurement method.' },
+      requiredMessage: { tr: 'Üretim miktarı ve ölçüm yöntemi zorunludur.', en: 'Production quantity and measurement method are required.' },
     },
     next: '3C-EF',
   },
@@ -2698,7 +2716,12 @@ export const CARBONIQ_QUESTIONS = [
     stage: 3,
     block: '3D',
     isoRef: 'ISO 14064-1 §5.2',
-    type: 'equipment_loop',
+    // Was an equipment_loop question whose text/placeholder asked for unit
+    // count, site AND gas type, but `options` (added for the gas-type chips)
+    // makes AnswerInput render chips only — count and site could never
+    // actually be typed in. Split into a compound so all three are real
+    // fields, same fix as 3A-2/3B-3/3C-2.
+    type: 'compound',
     loopSource: '3D-0',
     loopNext: '3D-4',
     required: true,
@@ -2707,23 +2730,43 @@ export const CARBONIQ_QUESTIONS = [
       tr: '[Ekipman adı] — Adet, tesis ve soğutucu/gaz türü nedir?',
       en: '[Equipment] — Number of units, site, and refrigerant/gas type?',
     },
-    placeholder: {
-      tr: 'Adet: 8 | Tesis: İstanbul | Gaz: R-410A',
-      en: 'Count: 8 | Site: Istanbul | Gas: R-410A',
-    },
     helper: {
       tr: 'Gaz türü ekipman tipine göre önerildi. Emin değilseniz klima veya soğutma servis fişinizi kontrol edin — gaz türü orada yazıyor.',
       en: 'Gas type was suggested based on equipment type. If unsure, check your AC or refrigeration service receipt — the gas type is listed there.',
     },
-    options: [
-      { value: 'R410A', label: { tr: 'R-410A (GWP: 2.088)', en: 'R-410A (GWP: 2,088)' }, gwp: 2088 },
-      { value: 'R32', label: { tr: 'R-32 (GWP: 675)', en: 'R-32 (GWP: 675)' }, gwp: 675 },
-      { value: 'R22', label: { tr: 'R-22 (GWP: 1.810) — aşamalı kaldırılıyor', en: 'R-22 (GWP: 1,810) — being phased out' }, gwp: 1810 },
-      { value: 'R134a', label: { tr: 'R-134a (GWP: 1.430)', en: 'R-134a (GWP: 1,430)' }, gwp: 1430 },
-      { value: 'R404A', label: { tr: 'R-404A (GWP: 3.922) — yüksek GWP', en: 'R-404A (GWP: 3,922) — high GWP' }, gwp: 3922 },
-      { value: 'R1234yf', label: { tr: 'R-1234yf (GWP: 4) — düşük GWP', en: 'R-1234yf (GWP: 4) — low GWP' }, gwp: 4 },
-      { value: 'SF6', label: { tr: 'SF₆ (GWP: 23.500) — çok yüksek GWP', en: 'SF₆ (GWP: 23,500) — very high GWP' }, gwp: 23500 },
-      { value: 'unknown', label: { tr: 'Bilinmiyor — sistem konservatif değer uygular', en: 'Unknown — system applies conservative value' }, gwp: null },
+    fields: [
+      {
+        id: 'unit_count',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Adet', en: 'Number of units' },
+        placeholder: { tr: 'Örn: 8', en: 'e.g. 8' },
+      },
+      {
+        id: 'site',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Tesis', en: 'Site' },
+        placeholder: { tr: 'Örn: İstanbul', en: 'e.g. Istanbul' },
+      },
+      {
+        id: 'gas_type',
+        type: 'select',
+        required: true,
+        label: { tr: 'Soğutucu / gaz türü', en: 'Refrigerant / gas type' },
+        options: [
+          { value: 'R410A', label: { tr: 'R-410A (GWP: 2.088)', en: 'R-410A (GWP: 2,088)' }, gwp: 2088 },
+          { value: 'R32', label: { tr: 'R-32 (GWP: 675)', en: 'R-32 (GWP: 675)' }, gwp: 675 },
+          { value: 'R22', label: { tr: 'R-22 (GWP: 1.810) — aşamalı kaldırılıyor', en: 'R-22 (GWP: 1,810) — being phased out' }, gwp: 1810 },
+          { value: 'R134a', label: { tr: 'R-134a (GWP: 1.430)', en: 'R-134a (GWP: 1,430)' }, gwp: 1430 },
+          { value: 'R404A', label: { tr: 'R-404A (GWP: 3.922) — yüksek GWP', en: 'R-404A (GWP: 3,922) — high GWP' }, gwp: 3922 },
+          { value: 'R1234yf', label: { tr: 'R-1234yf (GWP: 4) — düşük GWP', en: 'R-1234yf (GWP: 4) — low GWP' }, gwp: 4 },
+          { value: 'SF6', label: { tr: 'SF₆ (GWP: 23.500) — çok yüksek GWP', en: 'SF₆ (GWP: 23,500) — very high GWP' }, gwp: 23500 },
+          { value: 'unknown', label: { tr: 'Bilinmiyor — sistem konservatif değer uygular', en: 'Unknown — system applies conservative value' }, gwp: null },
+        ],
+      },
     ],
     validate: {
       requiredMessage: { tr: 'Adet, tesis ve gaz türü zorunludur.', en: 'Count, site and gas type are required.' },
@@ -6067,10 +6110,16 @@ export function getSystemMessage(question, value, lang = 'en') {
     return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
   }
 
-  // Compound: sentinel 'selected' fires once any sub-field has been filled in.
+  // Compound: a sub-field's value can key a message directly (e.g. 3D-2's
+  // gas_type field driving SF6/R404A-specific warnings, same convention as
+  // single_select) — checked before the 'selected' sentinel, which fires
+  // once any sub-field has been filled in, for compounds with no per-value
+  // messages of their own.
   if (question.type === 'compound') {
-    const hasValue = value && typeof value === 'object' && Object.values(value).some(v => v !== '' && v != null);
-    const msg = hasValue ? msgs['selected'] : undefined;
+    const values = value && typeof value === 'object' ? Object.values(value) : [];
+    const hasValue = values.some(v => v !== '' && v != null);
+    const keyedMsg = values.map(v => msgs[v]).find(m => m !== undefined);
+    const msg = keyedMsg ?? (hasValue ? msgs['selected'] : undefined);
     if (!msg) return null;
     return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
   }

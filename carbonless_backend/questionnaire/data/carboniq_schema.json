@@ -1701,7 +1701,7 @@
   },
   "3C-2": {
     "id": "3C-2",
-    "type": "equipment_loop",
+    "type": "compound",
     "subtype": null,
     "required": true,
     "numericOnly": false,
@@ -1711,15 +1711,36 @@
     "maxYear": null,
     "minValue": null,
     "maxValue": null,
-    "options": [
-      "cems_tier3",
-      "periodic_tier2",
-      "calculation_tier1"
-    ],
+    "options": null,
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": [
+      {
+        "id": "quantity",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "options": null
+      },
+      {
+        "id": "method",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "options": [
+          "cems_tier3",
+          "periodic_tier2",
+          "calculation_tier1"
+        ]
+      }
+    ]
   },
   "3C-EF": {
     "id": "3C-EF",
@@ -1844,7 +1865,7 @@
   },
   "3D-2": {
     "id": "3D-2",
-    "type": "equipment_loop",
+    "type": "compound",
     "subtype": null,
     "required": true,
     "numericOnly": false,
@@ -1854,20 +1875,51 @@
     "maxYear": null,
     "minValue": null,
     "maxValue": null,
-    "options": [
-      "R410A",
-      "R32",
-      "R22",
-      "R134a",
-      "R404A",
-      "R1234yf",
-      "SF6",
-      "unknown"
-    ],
+    "options": null,
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": [
+      {
+        "id": "unit_count",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "options": null
+      },
+      {
+        "id": "site",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "options": null
+      },
+      {
+        "id": "gas_type",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "options": [
+          "R410A",
+          "R32",
+          "R22",
+          "R134a",
+          "R404A",
+          "R1234yf",
+          "SF6",
+          "unknown"
+        ]
+      }
+    ]
   },
   "3D-4": {
     "id": "3D-4",
