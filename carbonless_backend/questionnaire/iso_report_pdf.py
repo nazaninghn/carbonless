@@ -22,6 +22,7 @@ is rendered as an explicit "not declared" line rather than invented — an
 inventory report is an assurance document, so a blank has to read as a blank.
 """
 import io
+import os
 from datetime import datetime
 
 from django.db.models import Sum
@@ -34,9 +35,16 @@ from reportlab.platypus import (
     BaseDocTemplate, Frame, PageTemplate, TableStyle,
     Paragraph, Spacer, Table, PageBreak, KeepTogether, NextPageTemplate,
 )
-from reportlab.graphics.shapes import Drawing, String
+from reportlab.graphics.shapes import Drawing, String, Rect, Line
 from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.charts.legends import Legend
+
+# The brand mark — same PNG served as the site favicon (nexus_insights.../
+# public/carbonless.png references this file by content, not by path; this
+# copy lives alongside the Django static files). Referenced by absolute path
+# so report generation doesn't depend on collectstatic having run.
+LOGO_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'img', 'carbonless.png')
 
 from emissions.models import EmissionEntry, CustomEmissionRequest
 # Only pure infrastructure/formatting is reused from the shared module — font
@@ -270,6 +278,8 @@ T = {
     't_org': {'en': 'Organisational information', 'tr': 'Kurumsal bilgiler'},
     't_roles': {'en': 'Greenhouse gas inventory report contact roles',
                 'tr': 'Sera gazı envanter raporu iletişim rolleri'},
+    't_orgchart': {'en': 'Greenhouse gas reporting structure',
+                   'tr': 'Sera gazı raporlama yapısı'},
     't_fac': {'en': 'Greenhouse gas inventory report facility boundaries',
               'tr': 'Sera gazı envanter raporu tesis sınırları'},
     't_src': {'en': 'Greenhouse gas inventory report data sources',
@@ -615,6 +625,49 @@ def _bar_row_chart(rows, total, S, lang, max_rows=10):
     return tbl
 
 
+def _org_chart(roles, prepared, S, width_mm=170, height_mm=54):
+    """A minimal three-tier reporting-line diagram — senior management,
+    then the sustainability officer, then environmental engineer / data
+    owners side by side — mirroring the same four roles already declared
+    in Table 2 (`roles`, in fixed order: officer, data owners, engineer,
+    senior management). No data beyond what that table already states."""
+    fn, fnb = S['fn'], S['fnb']
+    d = Drawing(width_mm * mm, height_mm * mm)
+    sust, data_owners, env_eng, senior = (r[0] for r in roles)
+
+    def box(cx, cy, w, h, lines):
+        d.add(Rect(cx - w/2, cy - h/2, w, h, rx=2*mm, ry=2*mm,
+                    fillColor=ACCENT_SOFT, strokeColor=ACCENT, strokeWidth=0.8))
+        line_h = 8
+        start_y = cy + line_h * (len(lines) - 1) / 2 - 2.6
+        for i, (text, bold, size, color) in enumerate(lines):
+            d.add(String(cx, start_y - i * line_h, text,
+                          fontName=(fnb if bold else fn), fontSize=size,
+                          fillColor=color, textAnchor='middle'))
+
+    cx_mid = width_mm / 2 * mm
+    top_y = height_mm * mm - 7 * mm
+    mid_y = height_mm * mm - 25 * mm
+    bot_y = 7 * mm
+    left_x, right_x = 40 * mm, (width_mm - 40) * mm
+
+    d.add(Line(cx_mid, top_y - 5.5*mm, cx_mid, mid_y + 6.5*mm, strokeColor=LINE, strokeWidth=1))
+    branch_y = mid_y - 6.5*mm
+    d.add(Line(cx_mid, mid_y - 6.5*mm, cx_mid, branch_y, strokeColor=LINE, strokeWidth=1))
+    d.add(Line(left_x, branch_y, right_x, branch_y, strokeColor=LINE, strokeWidth=1))
+    d.add(Line(left_x, branch_y, left_x, bot_y + 5.5*mm, strokeColor=LINE, strokeWidth=1))
+    d.add(Line(right_x, branch_y, right_x, bot_y + 5.5*mm, strokeColor=LINE, strokeWidth=1))
+
+    box(cx_mid, top_y, 62*mm, 11*mm, [(senior, True, 7.5, INK)])
+    mid_lines = [(sust, True, 7.5, INK)]
+    if prepared:
+        mid_lines.append((prepared, False, 6.5, MUTED))
+    box(cx_mid, mid_y, 78*mm, 13*mm, mid_lines)
+    box(left_x, bot_y, 66*mm, 11*mm, [(env_eng, True, 7, INK)])
+    box(right_x, bot_y, 66*mm, 11*mm, [(data_owners, True, 7, INK)])
+    return d
+
+
 # A short, deliberately monochrome-plus-neutral ramp (one hue, several
 # tints, two neutrals for the tail) rather than a ten-color near-rainbow —
 # reads as "modern minimal" and stays legible in a 6pt legend swatch.
@@ -728,6 +781,17 @@ class _ReportDocTemplate(BaseDocTemplate):
             PageTemplate(id='content', frames=[frame_body], onPage=self._content_page),
         ])
 
+    @staticmethod
+    def _draw_logo(canvas, x, y, size):
+        """Draw the brand mark at (x, y)-bottom-left, `size` square. Silently
+        skipped if the asset can't be read — a missing decorative logo must
+        never break report generation."""
+        try:
+            canvas.drawImage(LOGO_PATH, x, y, width=size, height=size,
+                              mask='auto', preserveAspectRatio=True)
+        except Exception:
+            pass
+
     def _cover_page(self, canvas, doc):
         fn, fnb = _fonts()
         w, h = A4
@@ -736,12 +800,18 @@ class _ReportDocTemplate(BaseDocTemplate):
         canvas.setStrokeColor(ACCENT)
         canvas.setLineWidth(0.75)
         canvas.line(20*mm, h-22*mm, w-20*mm, h-22*mm)
+        self._draw_logo(canvas, 20*mm, h-20.5*mm, 5*mm)
         canvas.setFont(fnb, 8)
         canvas.setFillColor(ACCENT)
-        canvas.drawString(20*mm, h-19*mm, 'CARBONLESS')
+        canvas.drawString(27*mm, h-19*mm, 'CARBONLESS')
         canvas.setFont(fn, 8)
         canvas.setFillColor(FAINT)
         canvas.drawRightString(w-20*mm, h-19*mm, 'ISO 14064-1:2018')
+        # A larger mark above the title block, on the content frame's own
+        # left margin — the one clearly "branded" element on an otherwise
+        # unadorned cover. Sits in the whitespace between the header rule
+        # and where the flowable content (company name, title) starts.
+        self._draw_logo(canvas, 20*mm, h-46*mm, 16*mm)
 
     def _content_page(self, canvas, doc):
         fn, fnb = _fonts()
@@ -750,9 +820,10 @@ class _ReportDocTemplate(BaseDocTemplate):
         canvas.setStrokeColor(LINE)
         canvas.setLineWidth(0.6)
         canvas.line(20*mm, h-15*mm, w-20*mm, h-15*mm)
+        self._draw_logo(canvas, 20*mm, h-13.8*mm, 3.6*mm)
         canvas.setFont(fnb, 7.5)
         canvas.setFillColor(ACCENT)
-        canvas.drawString(20*mm, h-13*mm, 'CARBONLESS')
+        canvas.drawString(25*mm, h-13*mm, 'CARBONLESS')
         canvas.setFont(fn, 7)
         canvas.setFillColor(FAINT)
         canvas.drawRightString(w-20*mm, h-13*mm, f'ISO 14064-1 · {self.company_name} · {self.year}')
@@ -940,6 +1011,9 @@ def _section1(E, S, D, report, lang, TBL, FIG):
     rt.setStyle(st)
     E.append(_caption(S, TBL, t('t_roles', lang), lang))
     E.append(rt)
+    E.append(Spacer(1, 5*mm))
+    E.append(_org_chart(roles, prepared, S))
+    E.append(_fig_caption(S, FIG, t('t_orgchart', lang), lang))
     E.append(Spacer(1, 5*mm))
 
     # 1.3 Target users
