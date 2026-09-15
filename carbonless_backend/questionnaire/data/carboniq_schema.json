@@ -1093,7 +1093,7 @@
   },
   "3A-2": {
     "id": "3A-2",
-    "type": "equipment_loop",
+    "type": "compound",
     "subtype": null,
     "required": true,
     "numericOnly": false,
@@ -1107,7 +1107,28 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": [
+      {
+        "id": "unit_count",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "options": null
+      },
+      {
+        "id": "site",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "options": null
+      }
+    ]
   },
   "3A-3": {
     "id": "3A-3",
@@ -1421,7 +1442,7 @@
   },
   "3B-3": {
     "id": "3B-3",
-    "type": "equipment_loop",
+    "type": "compound",
     "subtype": null,
     "required": true,
     "numericOnly": false,
@@ -1435,7 +1456,38 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": [
+      {
+        "id": "unit_count",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "options": null
+      },
+      {
+        "id": "site",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "options": null
+      },
+      {
+        "id": "size_band",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 100,
+        "options": null
+      }
+    ]
   },
   "3B-4": {
     "id": "3B-4",

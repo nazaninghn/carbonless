@@ -1725,7 +1725,12 @@ export const CARBONIQ_QUESTIONS = [
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
-    type: 'equipment_loop',
+    // Was a single equipment_loop free-text field ("Adet: 2 | Tesis: İstanbul
+    // Ofisi") — nothing stopped a user typing non-numeric text into the count
+    // ("a" was accepted as-is), and the count could never be read back out
+    // programmatically. Split into a compound, same fix as 2A-2 (name+country)
+    // and 3D-4 (refill+capacity).
+    type: 'compound',
     loopSource: '3A-1',
     loopNext: '3A-3',
     required: true,
@@ -1734,14 +1739,28 @@ export const CARBONIQ_QUESTIONS = [
       tr: '[Ekipman adı] — Kaç adet ve hangi tesiste?',
       en: '[Equipment name] — How many units and at which site?',
     },
-    placeholder: {
-      tr: 'Adet: 2 | Tesis: İstanbul Ofisi',
-      en: 'Count: 2 | Site: Istanbul Office',
-    },
     helper: {
       tr: 'Aynı türde birden fazla ekipmanınız varsa adedi girin. Farklı tesislerdeyse her tesis için ayrı kayıt oluşturabilirsiniz.',
       en: 'If you have multiple units of the same type, enter the count. If at different sites, you can create separate records for each site.',
     },
+    fields: [
+      {
+        id: 'unit_count',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Adet', en: 'Number of units' },
+        placeholder: { tr: 'Örn: 2', en: 'e.g. 2' },
+      },
+      {
+        id: 'site',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Tesis', en: 'Site' },
+        placeholder: { tr: 'Örn: İstanbul Ofisi', en: 'e.g. Istanbul Office' },
+      },
+    ],
     validate: {
       requiredMessage: { tr: 'Adet ve tesis zorunludur.', en: 'Count and site are required.' },
     },
@@ -2161,7 +2180,10 @@ export const CARBONIQ_QUESTIONS = [
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
-    type: 'equipment_loop',
+    // Was a single equipment_loop free-text field ("Adet: 5 | Tesis: İstanbul
+    // | Boyut: Orta") — nothing stopped a user typing non-numeric text into
+    // the count. Split into a compound, same fix as 3A-2/2A-2/3D-4.
+    type: 'compound',
     loopSource: '3B-1',
     loopNext: '3B-4',
     required: true,
@@ -2170,14 +2192,36 @@ export const CARBONIQ_QUESTIONS = [
       tr: '[Araç tipi] — Adet, tesis ve büyüklük/tonaj bandı nedir?',
       en: '[Vehicle type] — How many units, at which site, and what size/tonnage band?',
     },
-    placeholder: {
-      tr: 'Adet: 5 | Tesis: İstanbul | Boyut: Orta (1.4–2.0L)',
-      en: 'Count: 5 | Site: Istanbul | Size: Medium (1.4–2.0L)',
-    },
     helper: {
       tr: 'Büyüklük/tonaj DEFRA emisyon faktörü tablosunda doğru sütunu seçmek için gerekli. Binek araçlar için motor hacmi, ticari araçlar için GVW (brüt araç ağırlığı) kullanılır.',
       en: 'Size/tonnage is needed to select the correct column in the DEFRA emission factor table. Engine displacement for passenger cars, GVW (Gross Vehicle Weight) for commercial vehicles.',
     },
+    fields: [
+      {
+        id: 'unit_count',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Adet', en: 'Number of units' },
+        placeholder: { tr: 'Örn: 5', en: 'e.g. 5' },
+      },
+      {
+        id: 'site',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Tesis', en: 'Site' },
+        placeholder: { tr: 'Örn: İstanbul', en: 'e.g. Istanbul' },
+      },
+      {
+        id: 'size_band',
+        type: 'text',
+        required: true,
+        maxLength: 100,
+        label: { tr: 'Büyüklük / tonaj bandı', en: 'Size / tonnage band' },
+        placeholder: { tr: 'Örn: Orta (1.4–2.0L)', en: 'e.g. Medium (1.4–2.0L)' },
+      },
+    ],
     validate: {
       requiredMessage: { tr: 'Adet ve tesis zorunludur.', en: 'Count and site are required.' },
     },
