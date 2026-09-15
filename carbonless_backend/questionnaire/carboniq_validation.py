@@ -65,6 +65,14 @@ _MESSAGES = {
         'en': '{prefix}Expected a non-negative number, got {value!r}.',
         'tr': '{prefix}Negatif olmayan bir sayı bekleniyor, girilen: {value!r}.',
     },
+    'below_min_value': {
+        'en': '{prefix}Value must be at least {n}, got {value!r}.',
+        'tr': '{prefix}Değer en az {n} olmalıdır, girilen: {value!r}.',
+    },
+    'above_max_value': {
+        'en': '{prefix}Value must be at most {n}, got {value!r}.',
+        'tr': '{prefix}Değer en fazla {n} olmalıdır, girilen: {value!r}.',
+    },
     'unrecognized_unit': {
         'en': '{prefix}Unrecognized unit {unit!r} — expected one of {units}.',
         'tr': '{prefix}Tanınmayan birim {unit!r} — beklenen: {units}.',
@@ -222,6 +230,16 @@ def _validate_text_value(value, q, errors_prefix='', lang='en'):
         # calculation engine, never typed in by the user.
         if float(amount) < 0:
             return _msg(lang, 'negative_not_allowed', prefix=errors_prefix, value=value)
+        # min/maxValue (e.g. 2A-1's "at least 1 facility", 2B's "equity share
+        # 0-100") were defined in questions.js's `validate` block and checked
+        # by the frontend but never extracted into carboniq_schema.json, so a
+        # request that skipped the browser entirely had nothing enforcing them.
+        min_v, max_v = q.get('minValue'), q.get('maxValue')
+        amount_num = float(amount)
+        if min_v is not None and amount_num < min_v:
+            return _msg(lang, 'below_min_value', prefix=errors_prefix, n=min_v, value=value)
+        if max_v is not None and amount_num > max_v:
+            return _msg(lang, 'above_max_value', prefix=errors_prefix, n=max_v, value=value)
         if units and unit is not None and unit not in units:
             return _msg(lang, 'unrecognized_unit', prefix=errors_prefix, unit=unit, units=sorted(units))
         return None

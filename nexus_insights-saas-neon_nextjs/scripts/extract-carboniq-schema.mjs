@@ -59,6 +59,8 @@ try {
       maxLength: q.maxLength || null,
       minYear: q.minYear || null,
       maxYear: q.maxYear || null,
+      minValue: q.validate?.minValue ?? null,
+      maxValue: q.validate?.maxValue ?? null,
       options: Array.isArray(q.options) ? q.options.map(o => o.value) : null,
       units: q.units || null,
       repeatable: !!q.repeatable,

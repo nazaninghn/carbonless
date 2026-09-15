@@ -5772,6 +5772,33 @@ function validateCompoundFields(fields, obj, lang) {
           : `"${flabel}" must be at most ${field.maxLength} characters.`,
       };
     }
+    // Numeric compound sub-fields (distance, weight, quantity, spend amount,
+    // etc.) were only checked for "non-empty" — a user could type "abc" into
+    // "Distance (km)" and the Confirm/Done button never blocked it; the
+    // backend's carboniq_validation.py rejects it, but with a raw technical
+    // message instead of this file's friendly inline error. Mirror the
+    // backend's number format + non-negative rule here so bad input is
+    // caught before it ever leaves the browser.
+    if (field.type === 'numeric' || field.subtype === 'numeric') {
+      const flabel = field.label?.[lang] || field.label?.en || field.id;
+      const s = String(fv).trim();
+      if (!/^-?\d+(\.\d+)?$/.test(s)) {
+        return {
+          ok: false,
+          message: lang === 'tr'
+            ? `"${flabel}" için geçerli bir sayı girin.`
+            : `Please enter a valid number for "${flabel}".`,
+        };
+      }
+      if (Number(s) < 0) {
+        return {
+          ok: false,
+          message: lang === 'tr'
+            ? `"${flabel}" negatif olmayan bir sayı olmalıdır.`
+            : `"${flabel}" must be a non-negative number.`,
+        };
+      }
+    }
   }
   return { ok: true };
 }
@@ -5869,6 +5896,43 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
         message:
           question.validate?.formatMessage?.[lang] ||
           (lang === 'tr' ? 'Lütfen geçerli bir sayı girin.' : 'Please enter a valid number.'),
+      };
+    }
+    // Every numeric question here is a physical quantity (consumption, area,
+    // distance, spend, ...) — none are legitimately negative. The backend
+    // (carboniq_validation.py) already rejects negatives; check it here too
+    // so the user sees the friendly inline message instead of a round trip.
+    if (Number(amountStr) < 0) {
+      return {
+        ok: false,
+        message:
+          question.validate?.formatMessage?.[lang] ||
+          (lang === 'tr' ? 'Negatif olmayan bir sayı girin.' : 'Please enter a non-negative number.'),
+      };
+    }
+    // question.validate.minValue/maxValue (e.g. 2A-1's "at least 1 facility",
+    // 2B's "equity share 0-100") were defined on ~a dozen questions but never
+    // actually read by this validator — a user could submit 0 facilities or
+    // a 150% equity share and nothing caught it. rangeMessage covers both
+    // bounds set together; min/maxValueMessage cover a single bound.
+    const { minValue, maxValue } = question.validate || {};
+    const amountNum = Number(amountStr);
+    if (minValue !== undefined && amountNum < minValue) {
+      return {
+        ok: false,
+        message:
+          question.validate?.rangeMessage?.[lang] ||
+          question.validate?.minValueMessage?.[lang] ||
+          (lang === 'tr' ? `Değer en az ${minValue} olmalıdır.` : `Value must be at least ${minValue}.`),
+      };
+    }
+    if (maxValue !== undefined && amountNum > maxValue) {
+      return {
+        ok: false,
+        message:
+          question.validate?.rangeMessage?.[lang] ||
+          question.validate?.maxValueMessage?.[lang] ||
+          (lang === 'tr' ? `Değer en fazla ${maxValue} olmalıdır.` : `Value must be at most ${maxValue}.`),
       };
     }
   }

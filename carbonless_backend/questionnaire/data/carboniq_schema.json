@@ -9,6 +9,8 @@
     "maxLength": 200,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -25,6 +27,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -41,6 +45,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "TR",
       "GB",
@@ -63,6 +69,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "2020",
       "2021",
@@ -87,6 +95,8 @@
     "maxLength": 100,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -103,6 +113,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "internal_strategy",
       "legal_obligation",
@@ -125,6 +137,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no",
@@ -145,6 +159,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "2015",
       "2016",
@@ -173,6 +189,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "NACE_A",
       "NACE_B",
@@ -209,6 +227,8 @@
     "maxLength": 200,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -225,6 +245,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "1_50",
       "51_250",
@@ -247,6 +269,8 @@
     "maxLength": 6,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -263,6 +287,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "office",
       "factory",
@@ -287,6 +313,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "under_1m",
       "1m_10m",
@@ -310,6 +338,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -329,6 +359,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -348,6 +380,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -367,6 +401,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "DEFRA_TUIK",
       "DEFRA",
@@ -389,6 +425,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -405,6 +443,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "operational_control",
       "financial_control",
@@ -425,6 +465,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "materiality",
       "full"
@@ -444,6 +486,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -460,6 +504,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": 1,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -476,6 +522,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -585,6 +633,8 @@
     "maxLength": 200,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -601,6 +651,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -710,6 +762,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": 0,
+    "maxValue": 100,
     "options": null,
     "units": [
       "%"
@@ -728,6 +782,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -747,6 +803,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "central_mgmt",
       "local_mgmt",
@@ -767,6 +825,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -786,6 +846,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -805,6 +867,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": 0,
+    "maxValue": 100,
     "options": null,
     "units": [
       "%"
@@ -823,6 +887,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "no_control",
       "no_data",
@@ -846,6 +912,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "very_low",
       "low",
@@ -867,6 +935,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes_next_year",
       "yes_future",
@@ -887,6 +957,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "combined",
       "separate"
@@ -906,6 +978,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -922,6 +996,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -941,6 +1017,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "EQ-3A-01",
       "EQ-3A-02",
@@ -984,6 +1062,8 @@
     "maxLength": 150,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1000,6 +1080,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1019,6 +1101,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1035,6 +1119,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": [
       "kW",
@@ -1057,6 +1143,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "natural_gas",
       "fuel_oil",
@@ -1081,6 +1169,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": {
       "natural_gas": [
@@ -1126,6 +1216,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "invoice_meter",
       "engineering_estimate",
@@ -1146,6 +1238,8 @@
     "maxLength": 300,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1162,6 +1256,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1181,6 +1277,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1244,6 +1342,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1263,6 +1363,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "EQ-3B-01",
       "EQ-3B-02",
@@ -1304,6 +1406,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "owned",
       "financial_lease",
@@ -1325,6 +1429,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1341,6 +1447,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "euro_3",
       "euro_4",
@@ -1363,6 +1471,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "diesel",
       "petrol",
@@ -1385,6 +1495,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "fuel_litres",
       "annual_km",
@@ -1405,6 +1517,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1424,6 +1538,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1487,6 +1603,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1506,6 +1624,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "EQ-3C-01",
       "EQ-3C-02",
@@ -1537,6 +1657,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "cems_tier3",
       "periodic_tier2",
@@ -1557,6 +1679,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1576,6 +1700,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1639,6 +1765,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "EQ-3D-01",
       "EQ-3D-02",
@@ -1672,6 +1800,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "R410A",
       "R32",
@@ -1697,6 +1827,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1734,6 +1866,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "ipcc_default",
       "zero_declared"
@@ -1753,6 +1887,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "AR6",
       "AR4"
@@ -1772,6 +1908,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "confirmed",
       "edit",
@@ -1792,6 +1930,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "3A-0",
       "3B-0",
@@ -1813,6 +1953,8 @@
     "maxLength": 300,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1829,6 +1971,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1845,6 +1989,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1864,6 +2010,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": [
       "kWh",
@@ -1883,6 +2031,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1899,6 +2049,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "no",
       "yes"
@@ -1918,6 +2070,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -1937,6 +2091,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1953,6 +2109,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -1990,6 +2148,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2009,6 +2169,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2056,6 +2218,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2075,6 +2239,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2094,6 +2260,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "heat",
       "steam",
@@ -2115,6 +2283,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": {
       "heat": [
@@ -2149,6 +2319,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2168,6 +2340,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "confirmed",
       "edit",
@@ -2189,6 +2363,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2208,6 +2384,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "SC-01",
       "SC-02",
@@ -2237,6 +2415,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": [
       "TL",
@@ -2257,6 +2437,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2276,6 +2458,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2295,6 +2479,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2314,6 +2500,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -2384,6 +2572,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "confirmed",
       "custom"
@@ -2403,6 +2593,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2422,6 +2614,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "S1",
       "S2",
@@ -2442,6 +2636,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -2509,6 +2705,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2525,6 +2723,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2544,6 +2744,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "S1",
       "S2_type",
@@ -2565,6 +2767,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -2633,6 +2837,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2649,6 +2855,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -2668,6 +2876,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "S1",
       "S2",
@@ -2688,6 +2898,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -2788,6 +3000,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2804,6 +3018,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "survey",
       "estimate"
@@ -2823,6 +3039,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2870,6 +3088,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2886,6 +3106,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2943,6 +3165,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "company_owned",
       "contracted",
@@ -2963,6 +3187,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2979,6 +3205,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -2995,6 +3223,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3014,6 +3244,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3077,6 +3309,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3096,6 +3330,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -3153,6 +3389,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3172,6 +3410,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3191,6 +3431,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3269,6 +3511,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3288,6 +3532,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -3366,6 +3612,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3385,6 +3633,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -3422,6 +3672,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no",
@@ -3442,6 +3694,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3461,6 +3715,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": true,
@@ -3546,6 +3802,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "confirmed",
       "edit",
@@ -3566,6 +3824,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3582,6 +3842,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "none_flagged"
@@ -3601,6 +3863,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "not_controlled",
       "no_data",
@@ -3624,6 +3888,8 @@
     "maxLength": 500,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3640,6 +3906,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "lt1",
       "1_5",
@@ -3662,6 +3930,8 @@
     "maxLength": 400,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3678,6 +3948,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "ok",
       "go_back"
@@ -3697,6 +3969,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "approve_all",
       "review_detail"
@@ -3716,6 +3990,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "none",
       "ef_deviation",
@@ -3738,6 +4014,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3785,6 +4063,8 @@
     "maxLength": 400,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3801,6 +4081,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "ok",
       "go_back"
@@ -3820,6 +4102,8 @@
     "maxLength": 600,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3836,6 +4120,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "none",
       "merger",
@@ -3860,6 +4146,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "yes",
       "no"
@@ -3879,6 +4167,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "recalculate_full",
       "recalculate_partial",
@@ -3899,6 +4189,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3915,6 +4207,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "all_complete",
       "fix_missing"
@@ -3934,6 +4228,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3983,6 +4279,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -3999,6 +4297,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "view_assumptions",
       "done"
@@ -4018,6 +4318,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -4034,6 +4336,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "approve_all",
       "review_each"
@@ -4053,6 +4357,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "overestimate",
       "underestimate",
@@ -4074,6 +4380,8 @@
     "maxLength": 400,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -4090,6 +4398,8 @@
     "maxLength": 400,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": null,
     "units": null,
     "repeatable": false,
@@ -4106,6 +4416,8 @@
     "maxLength": null,
     "minYear": null,
     "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
     "options": [
       "confirmed",
       "edit"
