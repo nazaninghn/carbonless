@@ -35,7 +35,7 @@ from reportlab.platypus import (
     BaseDocTemplate, Frame, PageTemplate, TableStyle,
     Paragraph, Spacer, Table, PageBreak, KeepTogether, NextPageTemplate,
 )
-from reportlab.graphics.shapes import Drawing, String, Rect, Line
+from reportlab.graphics.shapes import Drawing, String, Rect, Line, Polygon
 from reportlab.graphics.charts.piecharts import Pie
 from reportlab.graphics.charts.legends import Legend
 
@@ -237,6 +237,9 @@ T = {
     'report_issued': {'en': 'Report issued', 'tr': 'Rapor tarihi'},
     'revision': {'en': 'Revision', 'tr': 'Revizyon'},
     'contents': {'en': 'Contents', 'tr': 'İçindekiler'},
+    'intro': {'en': 'Introduction', 'tr': 'Giriş'},
+    't_flow': {'en': 'Greenhouse gas accounting and reporting workflow',
+               'tr': 'Sera gazı hesaplama ve raporlama iş akışı'},
 
     # Section titles
     's1': {'en': 'ORGANISATIONAL INFORMATION AND INTRODUCTION',
@@ -247,6 +250,8 @@ T = {
     's1_3': {'en': 'Target Users', 'tr': 'Hedef Kullanıcılar'},
     's1_4': {'en': 'Standards and Documents Used',
              'tr': 'Kullanılan Standartlar ve Dokümanlar'},
+    's1_4_1': {'en': 'The ISO 14064 Family of Standards',
+               'tr': 'ISO 14064 Standart Ailesi'},
     's1_5': {'en': 'Principles', 'tr': 'İlkeler'},
     's2': {'en': 'DEFINITIONS AND ABBREVIATIONS', 'tr': 'TANIMLAR VE KISALTMALAR'},
     's2_1': {'en': 'Definitions', 'tr': 'Tanımlar'},
@@ -273,6 +278,11 @@ T = {
                'tr': 'Sera Gazı Envanteri Kalite Yönetim Sistemi'},
     's4_2': {'en': 'Evaluation of Emissions by Location and Activity',
              'tr': 'Emisyonların Tesis ve Faaliyet Bazında Değerlendirilmesi'},
+    's4_trend': {'en': 'Year-on-Year Comparison', 'tr': 'Yıllar Arası Karşılaştırma'},
+    't_trend': {'en': 'Total greenhouse gas emissions by year',
+                'tr': 'Yıllara göre toplam sera gazı emisyonları'},
+    't_cov': {'en': 'Coverage of activity data across facilities',
+              'tr': 'Faaliyet verisinin tesisler arasındaki kapsamı'},
 
     # Table captions
     't_org': {'en': 'Organisational information', 'tr': 'Kurumsal bilgiler'},
@@ -382,6 +392,42 @@ CATEGORY_LABELS = {
 }
 
 
+# Option labels for the section-6 single-select questions (questionnaire
+# `6A-*`/`6C-*` steps). The questionnaire only stores the selected option's
+# code (e.g. 'not_controlled'), not display text, so the report has to carry
+# its own copy of the same labels the intake UI uses
+# (nexus_insights.../src/lib/carboniq/questions.js) to render prose instead
+# of raw codes.
+EXCLUSION_REASON_LABELS = {
+    'not_controlled': {'en': 'outside operational control', 'tr': 'operasyonel kontrol dışında'},
+    'no_data': {'en': 'data inaccessible', 'tr': 'veri erişilemez'},
+    'materiality': {'en': 'below the materiality threshold (<5 %)',
+                    'tr': 'materyalite eşiğinin altında (<%5)'},
+    'legal': {'en': 'a legal or regulatory barrier', 'tr': 'yasal veya idari bir engel'},
+    'technical': {'en': 'a technical limitation', 'tr': 'teknik bir sınırlama'},
+    'other': {'en': 'other', 'tr': 'diğer'},
+}
+EXCLUSION_BAND_LABELS = {
+    'lt1': {'en': '<1 % of the inventory (negligible)', 'tr': "envanterin <%1'i (ihmal edilebilir)"},
+    '1_5': {'en': '1-5 % of the inventory (low impact)', 'tr': "envanterin %1-5'i (düşük etki)"},
+    '5_10': {'en': '5-10 % of the inventory (medium impact)',
+              'tr': "envanterin %5-10'u (orta etki)"},
+    '10_20': {'en': '10-20 % of the inventory (high impact)',
+               'tr': "envanterin %10-20'si (yüksek etki)"},
+    'gt20': {'en': '>20 % of the inventory (critical)', 'tr': "envanterin >%20'si (kritik)"},
+}
+EXCEPTION_TYPE_LABELS = {
+    'ef_deviation': {'en': 'a different emission factor was used than the declared database',
+                     'tr': 'beyan edilen veri tabanından farklı bir emisyon faktörü kullanılmıştır'},
+    'boundary_deviation': {'en': 'a deviation from the declared organisational boundary',
+                           'tr': 'beyan edilen organizasyon sınırından bir sapma vardır'},
+    'methodology_deviation': {'en': 'a deviation from the declared calculation methodology',
+                              'tr': 'beyan edilen hesaplama metodolojisinden bir sapma vardır'},
+    'multiple': {'en': 'multiple exceptions to the declared methodology apply',
+                'tr': 'beyan edilen metodolojiye ilişkin birden fazla istisna geçerlidir'},
+}
+
+
 def t(key, lang):
     return T.get(key, {}).get(lang, T.get(key, {}).get('en', key))
 
@@ -404,6 +450,23 @@ def _answers(report):
     }
 
 
+def _raw_answer(answers, step_id):
+    """The stored value for one questionnaire step, wrapper stripped.
+
+    Single-value question types (single_select, text, …) are persisted as
+    ``{'answer': <value>}`` — a single-key envelope, not a compound answer
+    with several named fields — so it has to be unwrapped before the value
+    underneath (a plain code like ``'none_flagged'`` or a nested dict for a
+    per-item text question) can be used. Only that one wrapper shape is
+    unwrapped; genuine compound answers (several distinct field ids) are
+    left as a dict for `_answer_text` to join.
+    """
+    raw = answers.get(step_id)
+    if isinstance(raw, dict) and set(raw.keys()) == {'answer'}:
+        return raw['answer']
+    return raw
+
+
 def _answer_text(answers, step_id, lang, default=None):
     """Render one questionnaire answer as display text.
 
@@ -411,7 +474,7 @@ def _answer_text(answers, step_id, lang, default=None):
     and multi-select, compound and repeatable question types — so this has to
     cope with strings, lists and dicts rather than assuming one shape.
     """
-    raw = answers.get(step_id)
+    raw = _raw_answer(answers, step_id)
     if raw is None or raw == '' or raw == []:
         return default if default is not None else t('not_declared', lang)
     if isinstance(raw, dict):
@@ -500,15 +563,37 @@ def _gather(report, lang):
     for r in sources.values():
         by_activity[r['category']] = by_activity.get(r['category'], 0.0) + r['kg']
 
-    # Per-facility, per-category matrix for section 4.2
+    # Per-facility, per-category matrix for section 4.2, and per-facility,
+    # per-activity-type for the activity-level location breakdowns in 4.3
+    # (the same cut the sample report devotes a figure to for each activity —
+    # "which facility drives this activity's emissions" rather than "which
+    # category is this facility's biggest").
     facilities = {}
+    facility_activity = {}
     for e in entries:
         name = e.facility.name if e.facility else None
         if not name:
             continue
         iso_cat = iso_category_for(e.emission_factor.scope, e.emission_factor.category)
+        kg = float(e.calculated_co2e_kg or 0)
         fac = facilities.setdefault(name, {c: 0.0 for c in ROMAN})
-        fac[iso_cat] += float(e.calculated_co2e_kg or 0)
+        fac[iso_cat] += kg
+        act_key = e.emission_factor.category
+        fa = facility_activity.setdefault(act_key, {})
+        fa[name] = fa.get(name, 0.0) + kg
+
+    # Totals by year, across every year the company has activity data for —
+    # not just the reporting year — so the base-year comparison the
+    # methodology section already describes (clause 3.2) can actually be
+    # shown rather than just asserted.
+    year_totals = {}
+    if company:
+        for row in (EmissionEntry.objects.filter(company=company)
+                    .values('year').annotate(total=Sum('calculated_co2e_kg'))):
+            year_totals[row['year']] = year_totals.get(row['year'], 0.0) + float(row['total'] or 0)
+        for cr in CustomEmissionRequest.objects.filter(
+                company=company, status='approved', calculated_co2e_kg__isnull=False):
+            year_totals[cr.year] = year_totals.get(cr.year, 0.0) + float(cr.calculated_co2e_kg or 0)
 
     return {
         'company': company,
@@ -524,6 +609,8 @@ def _gather(report, lang):
         'direct_t': by_scope.get('scope1', 0.0) / 1000.0,
         'indirect_t': (total_kg - by_scope.get('scope1', 0.0)) / 1000.0,
         'facilities': facilities,
+        'facility_activity': facility_activity,
+        'year_totals': year_totals,
         'answers': _answers(report),
     }
 
@@ -585,6 +672,18 @@ def _kv_table(S, rows, lang, col_widths=(58*mm, 112*mm)):
 
 def _bullets(S, items):
     return [Paragraph(f'• {i}', S['body']) for i in items]
+
+
+def _ellipsize(text_, limit):
+    """Hard-truncate long reference/source strings for a fixed-width table
+    cell, marking the cut with an ellipsis rather than silently dropping the
+    tail — a bare slice can chop a value mid-number (e.g. a factor
+    "N2O=0.0015)" reading as "N2O=0.00"), which looks like a rendering bug
+    rather than a deliberate summary."""
+    text_ = (text_ or '—')
+    if len(text_) <= limit:
+        return text_
+    return text_[:max(0, limit - 1)].rstrip() + '…'
 
 
 def _bar_row_chart(rows, total, S, lang, max_rows=10):
@@ -665,6 +764,51 @@ def _org_chart(roles, prepared, S, width_mm=170, height_mm=54):
     box(cx_mid, mid_y, 78*mm, 13*mm, mid_lines)
     box(left_x, bot_y, 66*mm, 11*mm, [(env_eng, True, 7, INK)])
     box(right_x, bot_y, 66*mm, 11*mm, [(data_owners, True, 7, INK)])
+    return d
+
+
+def _flow_diagram(steps, S, width_mm=170, height_mm=32):
+    """A left-to-right process diagram: N boxes joined by arrows.
+
+    Used for the GHG accounting workflow figure in section 1 — the
+    organisation-agnostic equivalent of the sector-specific "activities
+    workflow diagram" a single-sector report would draw, since this platform
+    serves organisations across sectors and has no one process to depict.
+    `steps` is a list of short label strings, rendered in order left to right.
+    """
+    fn, fnb = S['fn'], S['fnb']
+    n = len(steps)
+    d = Drawing(width_mm * mm, height_mm * mm)
+    cy = height_mm / 2 * mm
+    box_w = (width_mm - 8) / n - 6
+    gap = 6
+    x = 0
+    centers = []
+    for i, label in enumerate(steps):
+        cx = (x + box_w / 2) * mm
+        centers.append((x, box_w))
+        d.add(Rect(x * mm, cy - 8*mm, box_w * mm, 16*mm, rx=2*mm, ry=2*mm,
+                    fillColor=ACCENT_SOFT, strokeColor=ACCENT, strokeWidth=0.9))
+        words = label.split(' ')
+        # Wrap onto two lines around the midpoint so labels of 3-5 words fit
+        # the fixed-width box without the renderer's own line breaking.
+        mid = len(words) // 2 + (1 if len(words) % 2 else 0)
+        lines = [' '.join(words[:mid]), ' '.join(words[mid:])] if len(words) > 2 else [label]
+        line_h = 8.5
+        start_y = cy + line_h * (len(lines) - 1) / 2 - 2.6
+        for j, line in enumerate(lines):
+            d.add(String(cx, start_y - j * line_h, line, fontName=fnb, fontSize=6.8,
+                          fillColor=INK, textAnchor='middle'))
+        x += box_w + gap
+    # Arrows between consecutive boxes: a line plus a small filled triangle.
+    for i in range(n - 1):
+        x0 = (centers[i][0] + centers[i][1]) * mm
+        x1 = centers[i + 1][0] * mm
+        tip = x1 - 0.3*mm
+        base = tip - 2.2*mm
+        d.add(Line(x0, cy, base, cy, strokeColor=MUTED, strokeWidth=1))
+        d.add(Polygon(points=[base, cy - 1.6*mm, base, cy + 1.6*mm, tip, cy],
+                       fillColor=MUTED, strokeColor=None))
     return d
 
 
@@ -754,7 +898,7 @@ def _donut_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
     legend.columnMaximum = max_slices + 1
     legend.colorNamePairs = [
         (CHART_PALETTE[i % len(CHART_PALETTE)],
-         f'{lbl[:38]}  —  {_fmt(v / 1000.0, tr)} t  ({_localize_num(f"{v / total * 100:.1f}", tr)} %)')
+         f'{_ellipsize(lbl, 38)}  —  {_fmt(v / 1000.0, tr)} t  ({_localize_num(f"{v / total * 100:.1f}", tr)} %)')
         for i, (lbl, v) in enumerate(live)
     ]
     d.add(legend)
@@ -869,6 +1013,7 @@ def _cover(E, S, D, report, lang):
 def _contents(E, S, lang):
     E.append(Paragraph(t('contents', lang), S['h1']))
     items = [
+        ('', t('intro', lang)),
         ('1', t('s1', lang)),
         ('2', t('s2', lang)),
         ('3', t('s3', lang)),
@@ -877,6 +1022,51 @@ def _contents(E, S, lang):
     for num, label in items:
         E.append(Paragraph(f'<b>{num}</b>   {label.title() if lang == "en" else label}',
                            S['toc']))
+    E.append(PageBreak())
+
+
+def _introduction(E, S, lang):
+    """Narrative framing before the organisational disclosures start —
+    why an organisation quantifies its GHG emissions at all. Present in
+    every full corporate GHG inventory report of this kind; kept short and
+    generic (not sector-specific) since the platform serves any sector."""
+    E.append(Paragraph(t('intro', lang), S['h1']))
+    if lang == 'tr':
+        paras = [
+            'Günümüzde şirketlerin başarısı yalnızca mal ve hizmet üretimi ile finansal '
+            'performansla sınırlı değildir; şirketlerin çevresel ve sosyal sorumluluklarını '
+            'yerine getirmesi ve iyi bir kurumsal vatandaş olarak hareket etmesi de '
+            'beklenmektedir. Bu dönüşüm sürecinde sürdürülebilirlik, şirketler ve yatırımcılar '
+            'için öncelikli bir konu hâline gelmiştir.',
+            'Karbondioksit (CO₂), metan (CH₄), diazot monoksit (N₂O), hidroflorokarbonlar '
+            '(HFC), perflorokarbonlar (PFC) ve kükürt heksaflorür (SF₆) gibi sera gazları, '
+            'kurumsal faaliyetler sonucunda atmosfere salınır ve küresel ısınmaya yol açar. '
+            'Sera gazı emisyonlarının küresel ısınma üzerindeki etkisi, karbondioksit '
+            'eşdeğeri (CO₂e) cinsinden ifade edildiğinde karbon ayak izi olarak adlandırılır.',
+            'Bu farkındalıkla birlikte, kurumsal düzeyde karbon ayak izinin ölçülmesine olan '
+            'ilgi artmaktadır. Bu rapor, kuruluşun ISO 14064-1:2018 standardı kapsamındaki '
+            'sera gazı performansını raporlamak amacıyla hazırlanmıştır.',
+        ]
+    else:
+        paras = [
+            'The success of an organisation is no longer measured by the production of goods '
+            'and services and financial performance alone; organisations are also expected to '
+            'meet their environmental and social responsibilities and act as good corporate '
+            'citizens. In this shift, sustainability has become a priority for organisations '
+            'and investors alike.',
+            'Greenhouse gases such as carbon dioxide (CO₂), methane (CH₄), nitrous oxide '
+            '(N₂O), hydrofluorocarbons (HFCs), perfluorocarbons (PFCs) and sulphur '
+            'hexafluoride (SF₆) are released into the atmosphere as a result of organisational '
+            'activity and contribute to global warming. The impact of these emissions on '
+            'global warming, expressed in carbon dioxide equivalent (CO₂e), is referred to as '
+            'the carbon footprint.',
+            'With this awareness, interest in quantifying the corporate carbon footprint '
+            'continues to grow. This report has been prepared to document the organisation’s '
+            'greenhouse gas performance under ISO 14064-1:2018 for the stated reporting '
+            'period.',
+        ]
+    for p in paras:
+        E.append(Paragraph(p, S['body']))
     E.append(PageBreak())
 
 
@@ -903,6 +1093,26 @@ def _section1(E, S, D, report, lang, TBL, FIG):
          getattr(company, 'number_of_employees', None) or t('not_declared', lang)),
         ('Number of facilities' if lang == 'en' else 'Tesis sayısı',
          getattr(company, 'number_of_facilities', None) if company else t('not_declared', lang)),
+        ('Annual turnover' if lang == 'en' else 'Yıllık ciro',
+         getattr(company, 'annual_turnover_range', None) or t('not_declared', lang)),
+        ('Overseas operations' if lang == 'en' else 'Yurt dışı faaliyetler',
+         (('Yes' if lang == 'en' else 'Var') if getattr(company, 'has_overseas_operations', False)
+          else ('No' if lang == 'en' else 'Yok')) if company else t('not_declared', lang)),
+        ('Subsidiaries' if lang == 'en' else 'Bağlı ortaklıklar',
+         (getattr(company, 'number_of_subsidiaries', 0) or 0) if company else t('not_declared', lang)),
+        ('Certificates and management systems held'
+         if lang == 'en' else 'Sahip olunan sertifikalar ve yönetim sistemleri',
+         (', '.join(
+             ([('ISO 14001 Environmental Management System' if lang == 'en'
+                else 'ISO 14001 Çevre Yönetim Sistemi')] if getattr(company, 'has_iso_14001', False) else [])
+             + ([('ISO 50001 Energy Management System' if lang == 'en'
+                  else 'ISO 50001 Enerji Yönetim Sistemi')] if getattr(company, 'has_iso_50001', False) else [])
+             + ([('Prior ISO 14064 work' if lang == 'en'
+                  else 'Önceki ISO 14064 çalışması')] if getattr(company, 'has_iso_14064_work', False) else [])
+         ) or t('not_declared', lang)) if company else t('not_declared', lang)),
+        ('Target ISO 14064-1 verification' if lang == 'en' else 'Hedeflenen ISO 14064-1 doğrulaması',
+         (('Yes' if lang == 'en' else 'Evet') if getattr(company, 'target_iso_14064_verification', False)
+          else ('No' if lang == 'en' else 'Hayır')) if company else t('not_declared', lang)),
     ]
     E.append(_caption(S, TBL, t('t_org', lang), lang))
     E.append(_kv_table(S, rows, lang))
@@ -925,13 +1135,29 @@ def _section1(E, S, D, report, lang, TBL, FIG):
         ('Prepared by' if lang == 'en' else 'Hazırlayan',
          report.prepared_by or t('not_declared', lang)),
         ('Organisational boundary approach' if lang == 'en' else 'Organizasyon sınırı yaklaşımı',
-         report.get_org_boundary_display() if getattr(report, 'org_boundary', None)
+         report.get_boundary_approach_display() if getattr(report, 'boundary_approach', None)
          else t('not_declared', lang)),
         ('Emission factor database' if lang == 'en' else 'Emisyon faktörü veri tabanı',
          report.get_ef_database_display() if getattr(report, 'ef_database', None)
          else t('not_declared', lang)),
     ]
     E.append(_kv_table(S, basic, lang))
+    E.append(Spacer(1, 6*mm))
+
+    # The organisation-agnostic GHG accounting workflow — every inventory of
+    # this kind runs through these steps regardless of sector, so this stands
+    # in for the sector-specific "activities workflow diagram" a single-sector
+    # report would draw at this point.
+    flow_steps = (
+        ['Toplama: Faaliyet verisi', 'Eşleştirme: Emisyon faktörü',
+         'Hesaplama: kg CO₂e', 'Kategorilendirme: I-VI', 'İç kontrol ve KYS',
+         'Doğrulama ve raporlama']
+        if lang == 'tr' else
+        ['Collect activity data', 'Match emission factor',
+         'Calculate CO₂e', 'Categorise I-VI', 'Internal QMS review',
+         'Verify and report'])
+    E.append(_flow_diagram(flow_steps, S))
+    E.append(_fig_caption(S, FIG, t('t_flow', lang), lang))
     E.append(Spacer(1, 6*mm))
 
     # 1.1 Purpose and scope
@@ -1039,6 +1265,57 @@ def _section1(E, S, D, report, lang, TBL, FIG):
     ]))
     E.append(Spacer(1, 4*mm))
 
+    # 1.4.1 The ISO 14064 family — narrative context for why this report takes
+    # the shape it does, and how it relates to the -2 (projects) and -3
+    # (verification) parts of the same standard family.
+    E.append(Paragraph('1.4.1   ' + t('s1_4_1', lang), S['h3']))
+    if lang == 'tr':
+        E.append(Paragraph(
+            'ISO 14060 sera gazı standartları ailesi, sera gazı emisyon ve uzaklaştırmalarının '
+            'ölçülmesi, izlenmesi, raporlanması ve doğrulanması veya geçerli kılınması için '
+            'açıklık ve tutarlılık sağlar.', S['body']))
+        E.append(Paragraph(
+            '<b>ISO 14064-1:2018</b>, kuruluş düzeyinde sera gazı emisyon ve uzaklaştırma '
+            'sınırlarının belirlenmesine, kuruluşun sera gazı emisyon ve azaltımlarının '
+            'hesaplanmasına ve sera gazı yönetimini iyileştirmeye yönelik faaliyetlerin '
+            'tanımlanmasına ilişkin gereklilikleri içerir. Ayrıca envanter kalite yönetimi, '
+            'raporlama, iç denetim ve doğrulama faaliyetlerine ilişkin sorumluluklarla ilgili '
+            'gereklilik ve rehberlik de sunar.', S['body']))
+        E.append(Paragraph(
+            '<b>ISO 14064-2:2019</b>, baz senaryoların belirlenmesi ile sera gazı azaltımına '
+            'yönelik proje faaliyetlerinin izlenmesi, nicelenmesi ve raporlanmasına ilişkin '
+            'ilke ve gereklilikleri ayrıntılandırır.', S['body']))
+        E.append(Paragraph(
+            '<b>ISO 14064-3:2019</b>, sera gazı envanterlerinin, projelerinin ve ürün karbon '
+            'ayak izi beyanlarının doğrulanmasına ilişkin gereklilikleri açıklar; planlama, '
+            'değerlendirme prosedürleri ile kurumsal, proje ve ürün beyanlarının '
+            'değerlendirilmesini kapsar.', S['body']))
+    else:
+        E.append(Paragraph(
+            'The ISO 14060 family of greenhouse gas standards provides clarity and '
+            'consistency for measuring, monitoring, reporting and verifying or validating '
+            'greenhouse gas emissions and removals.', S['body']))
+        E.append(Paragraph(
+            '<b>ISO 14064-1:2018</b> includes requirements for determining greenhouse gas '
+            'emission and removal boundaries at the organisational level, calculating an '
+            'organisation’s greenhouse gas emissions and removals, and identifying specific '
+            'actions or activities aimed at improving GHG management. It also includes '
+            'requirements and guidance related to inventory quality management, reporting, '
+            'internal auditing and verification responsibilities. This report is prepared '
+            'against this part of the standard.', S['body']))
+        E.append(Paragraph(
+            '<b>ISO 14064-2:2019</b> details the principles and requirements for determining '
+            'baselines and for monitoring, quantifying and reporting project emissions. It '
+            'focuses on greenhouse gas projects or project-based activities specifically '
+            'designed to reduce greenhouse gas emissions.', S['body']))
+        E.append(Paragraph(
+            '<b>ISO 14064-3:2019</b> details the requirements for the verification of '
+            'greenhouse gas inventories, greenhouse gas projects and greenhouse gas claims '
+            'related to the carbon footprint of products, including planning, assessment '
+            'procedures and the assessment of organisational, project and product '
+            'statements.', S['body']))
+    E.append(Spacer(1, 4*mm))
+
     # 1.5 Principles
     E.append(Paragraph('1.5   ' + t('s1_5', lang), S['h2']))
     principles = ([
@@ -1071,44 +1348,164 @@ def _section2(E, S, lang):
     E.append(Paragraph('2   ' + t('s2', lang), S['h1']))
     E.append(Paragraph('2.1   ' + t('s2_1', lang), S['h2']))
     defs = ([
+        ('Anthropogenic biogenic GHG emission', 'Greenhouse gas emission resulting from '
+         'human activities that originates from biogenic material.'),
+        ('Non-anthropogenic biogenic GHG emission', 'Greenhouse gas emission from biogenic '
+         'material caused by natural disasters or natural processes such as decomposition.'),
+        ('Land use', 'Human use or management of land within the reporting boundary.'),
+        ('Primary data', 'A quantified value of a process obtained from direct measurement '
+         'or a calculation based on direct measurement.'),
+        ('Secondary data', 'Data obtained from a source other than primary data, such as a '
+         'published database or literature accepted by a competent authority.'),
+        ('Biogenic carbon', 'Carbon originating from biomass.'),
+        ('Biomass', 'Material of biological origin, living or dead, excluding material '
+         'embedded in geological formations or fossilised.'),
+        ('Direct land use change', 'A change in human use or management of land within the '
+         'reporting boundary.'),
         ('Greenhouse gas (GHG)', 'Gaseous constituent of the atmosphere, natural or '
-                                 'anthropogenic, that absorbs and emits infrared radiation.'),
+         'anthropogenic, that absorbs and emits infrared radiation.'),
         ('GHG source', 'Process that releases a GHG into the atmosphere.'),
         ('GHG sink', 'Process that removes a GHG from the atmosphere.'),
+        ('GHG reservoir', 'A component of the Earth other than the atmosphere itself (e.g. '
+         'oceans, forests, soil) with the capacity to accumulate, store and release GHGs.'),
+        ('GHG activity data', 'A quantitative measure of an activity that results in a GHG '
+         'emission or removal, such as fuel, energy or electricity consumed.'),
+        ('GHG emission or removal factor', 'A factor relating GHG activity data to a GHG '
+         'emission or removal.'),
+        ('GHG emission', 'The total mass of a GHG released into the atmosphere over a '
+         'specified period of time.'),
+        ('GHG removal', 'The total mass of a GHG removed from the atmosphere over a '
+         'specified period of time.'),
+        ('GHG inventory', 'A quantified list of an organisation’s GHG emissions and '
+         'removals, reported by source or sink.'),
+        ('GHG project', 'An activity, or set of activities, that changes the conditions '
+         'identified in a baseline scenario to reduce GHG emissions or increase removals.'),
+        ('GHG programme', 'A voluntary or mandatory international, national or regional '
+         'system that registers, tracks or manages GHG emissions, removals or reductions '
+         'outside the organisation.'),
+        ('GHG statement', 'A factual and objective presentation of GHG-related information '
+         'that is the subject of a verification or validation engagement.'),
+        ('GHG reduction initiative', 'An activity or initiative that reduces GHG emissions '
+         'or increases removals, that is not organised as a GHG project.'),
         ('Direct GHG emission', 'Emission from GHG sources owned or controlled by the '
-                                'organisation (Category 1).'),
+         'organisation (Category I).'),
         ('Indirect GHG emission', 'Emission that is a consequence of the organisation’s '
-                                  'activities but arises from sources owned or controlled '
-                                  'by another organisation (Categories 2-6).'),
+         'activities but arises from sources owned or controlled by another organisation '
+         '(Categories II-VI).'),
         ('Global warming potential (GWP)', 'Factor describing the radiative forcing impact '
-                                           'of one mass unit of a GHG relative to CO₂.'),
+         'of one mass unit of a GHG relative to CO₂ over a given time horizon.'),
         ('CO₂ equivalent (CO₂e)', 'Unit for comparing the radiative forcing of a GHG to '
-                                  'that of carbon dioxide.'),
+         'that of carbon dioxide.'),
         ('Base year', 'Historical period specified for the purpose of comparing GHG '
-                      'emissions over time.'),
+         'emissions or removals over time.'),
+        ('Organisation', 'A person or group of people with its own functions, '
+         'responsibilities, authorities and relationships to achieve its objectives.'),
         ('Organisational boundary', 'The facilities and operations consolidated into the '
-                                    'inventory under the chosen consolidation approach.'),
-        ('Uncertainty', 'Parameter characterising the dispersion of values that could '
-                        'reasonably be attributed to the quantified result.'),
+         'inventory under the chosen consolidation approach.'),
+        ('Reporting boundary', 'The direct and significant indirect GHG emissions and '
+         'removals determined for the organisational boundary.'),
+        ('Facility', 'A single installation, or a group of installations, that can be '
+         'defined within a single geographical boundary, organisational unit or process.'),
+        ('Site-specific data', 'Primary data obtained from within the organisational '
+         'boundary, e.g. fuel volume consumed, kWh of electricity purchased, km travelled.'),
+        ('Monitoring', 'The continuous or periodic assessment of GHG emissions, removals or '
+         'other GHG-related data.'),
+        ('Uncertainty', 'A parameter characterising the dispersion of the values that could '
+         'reasonably be attributed to a quantified result.'),
+        ('Confidence level', 'The level of assurance associated with a GHG statement.'),
+        ('Target user', 'An individual or organisation identified as relying on GHG-related '
+         'information for decision-making.'),
+        ('Carbon footprint', 'The GHG emissions associated with the production, transport, '
+         'use or disposal of a product, expressed as CO₂e.'),
+        ('Verification', 'A systematic, independent and documented process for evaluating a '
+         'GHG statement against agreed verification criteria.'),
+        ('Verifier', 'A competent and independent person, or group of people, who conducts '
+         'and reports on a verification.'),
+        ('Client', 'The organisation or person requesting a verification or validation.'),
+        ('Responsible party', 'The person or persons accountable for the GHG statement and '
+         'able to authorise another party to act on their behalf.'),
+        ('Sustainability officer', 'The person or persons responsible for submitting the GHG '
+         'declaration and providing GHG information.'),
     ] if lang == 'en' else [
+        ('Antropojenik biyojenik SG emisyonu', 'İnsan faaliyetlerinden kaynaklanan ve '
+         'biyojenik materyalden köken alan sera gazı emisyonu.'),
+        ('Antropojenik olmayan biyojenik SG emisyonu', 'Doğal afetler veya ayrışma gibi '
+         'doğal süreçlerin neden olduğu, biyojenik materyalden kaynaklanan sera gazı '
+         'emisyonu.'),
+        ('Arazi kullanımı', 'Raporlama sınırı içinde arazinin insan tarafından kullanımı '
+         'veya yönetimi.'),
+        ('Birincil veri', 'Doğrudan ölçümden veya doğrudan ölçüme dayalı bir hesaplamadan '
+         'elde edilen nicel değer.'),
+        ('İkincil veri', 'Birincil veri dışındaki bir kaynaktan, örneğin yetkili bir '
+         'makamca kabul edilen yayımlanmış bir veri tabanından elde edilen veri.'),
+        ('Biyojenik karbon', 'Biyokütleden köken alan karbon.'),
+        ('Biyokütle', 'Jeolojik oluşumlara gömülü veya fosilleşmiş materyal hariç, canlı '
+         'veya cansız biyolojik kökenli materyal.'),
+        ('Doğrudan arazi kullanım değişikliği', 'Raporlama sınırı içinde arazinin insan '
+         'tarafından kullanımında veya yönetiminde meydana gelen değişiklik.'),
         ('Sera gazı (SG)', 'Kızılötesi radyasyonu soğuran ve yayan, doğal veya antropojenik '
-                           'atmosfer bileşeni.'),
+         'atmosfer bileşeni.'),
         ('SG kaynağı', 'Atmosfere sera gazı salan süreç.'),
         ('SG yutağı', 'Atmosferden sera gazı uzaklaştıran süreç.'),
+        ('SG rezervuarı', 'Atmosfer dışında, sera gazlarını biriktirme, depolama ve salma '
+         'kapasitesine sahip Dünya bileşeni (örn. okyanuslar, ormanlar, toprak).'),
+        ('SG faaliyet verisi', 'Bir sera gazı emisyonu veya uzaklaştırmasıyla sonuçlanan '
+         'faaliyetin nicel ölçüsü; örn. tüketilen yakıt, enerji veya elektrik miktarı.'),
+        ('SG emisyon veya uzaklaştırma faktörü', 'SG faaliyet verisini bir SG emisyonu veya '
+         'uzaklaştırmasıyla ilişkilendiren faktör.'),
+        ('SG emisyonu', 'Belirli bir süre içinde atmosfere salınan sera gazının toplam '
+         'kütlesi.'),
+        ('SG uzaklaştırması', 'Belirli bir süre içinde atmosferden uzaklaştırılan sera '
+         'gazının toplam kütlesi.'),
+        ('SG envanteri', 'Bir kuruluşun kaynak veya yutağa göre raporlanan, nicelenmiş sera '
+         'gazı emisyon ve uzaklaştırma listesi.'),
+        ('SG projesi', 'Bir baz senaryoda tanımlanan koşulları değiştirerek sera gazı '
+         'emisyonlarını azaltan veya uzaklaştırmalarını artıran faaliyet veya faaliyetler '
+         'bütünü.'),
+        ('SG programı', 'Kuruluş dışında sera gazı emisyonlarını, uzaklaştırmalarını veya '
+         'azaltımlarını kaydeden, izleyen veya yöneten gönüllü ya da zorunlu sistem.'),
+        ('SG beyanı', 'Doğrulama veya geçerli kılma faaliyetine konu olan, gerçeğe dayalı ve '
+         'nesnel sera gazı bilgisi sunumu.'),
+        ('SG azaltım girişimi', 'Bir SG projesi olarak organize edilmeyen, emisyonları '
+         'azaltan veya uzaklaştırmaları artıran faaliyet veya girişim.'),
         ('Doğrudan SG emisyonu', 'Kuruluşun sahip olduğu veya kontrol ettiği kaynaklardan '
-                                 'gelen emisyon (Kategori 1).'),
+         'gelen emisyon (Kategori I).'),
         ('Dolaylı SG emisyonu', 'Kuruluşun faaliyetlerinin sonucu olan ancak başka bir '
-                                'kuruluşun kontrolündeki kaynaklardan doğan emisyon '
-                                '(Kategori 2-6).'),
-        ('Küresel ısınma potansiyeli (GWP)', 'Bir birim kütle sera gazının CO₂’ye göre '
-                                             'ışınımsal zorlama etkisini tanımlayan faktör.'),
+         'kuruluşun kontrolündeki kaynaklardan doğan emisyon (Kategori II-VI).'),
+        ('Küresel ısınma potansiyeli (GWP)', 'Bir birim kütle sera gazının, belirli bir '
+         'zaman ufkunda CO₂’ye göre ışınımsal zorlama etkisini tanımlayan faktör.'),
         ('CO₂ eşdeğeri (CO₂e)', 'Sera gazlarının ışınımsal zorlamasını karbondioksitle '
-                                'karşılaştırmak için kullanılan birim.'),
-        ('Baz yıl', 'Emisyonların zaman içinde karşılaştırılması için belirlenen dönem.'),
+         'karşılaştırmak için kullanılan birim.'),
+        ('Baz yıl', 'Emisyonların veya uzaklaştırmaların zaman içinde karşılaştırılması '
+         'için belirlenen geçmiş dönem.'),
+        ('Kuruluş', 'Kendi hedeflerine ulaşmak için işlevleri, sorumlulukları, yetkileri ve '
+         'ilişkileri olan kişi veya kişi grubu.'),
         ('Organizasyon sınırı', 'Seçilen konsolidasyon yaklaşımıyla envantere dâhil edilen '
-                               'tesis ve faaliyetler.'),
+         'tesis ve faaliyetler.'),
+        ('Raporlama sınırı', 'Organizasyon sınırı için belirlenen doğrudan ve önemli '
+         'dolaylı sera gazı emisyonları ve uzaklaştırmaları.'),
+        ('Tesis', 'Tek bir coğrafi sınır, organizasyonel birim veya süreç içinde '
+         'tanımlanabilen tek bir tesis veya tesis grubu.'),
+        ('Tesise özgü veri', 'Organizasyon sınırı içinden elde edilen birincil veri; örn. '
+         'tüketilen yakıt hacmi, satın alınan elektrik (kWh), kat edilen mesafe (km).'),
+        ('İzleme', 'Sera gazı emisyonlarının, uzaklaştırmalarının veya diğer sera gazı '
+         'ile ilgili verilerin sürekli veya periyodik olarak değerlendirilmesi.'),
         ('Belirsizlik', 'Nicelenen sonuca makul olarak atfedilebilecek değerlerin '
-                        'dağılımını karakterize eden parametre.'),
+         'dağılımını karakterize eden parametre.'),
+        ('Güven düzeyi', 'Bir sera gazı beyanıyla ilişkili güvence düzeyi.'),
+        ('Hedef kullanıcı', 'Karar verme sürecinde sera gazı bilgisine dayandığı belirlenen '
+         'kişi veya kuruluş.'),
+        ('Karbon ayak izi', 'Bir ürünün üretimi, taşınması, kullanımı veya bertarafıyla '
+         'ilişkili, CO₂e cinsinden ifade edilen sera gazı emisyonları.'),
+        ('Doğrulama', 'Bir sera gazı beyanının üzerinde anlaşılan doğrulama kriterlerine '
+         'göre değerlendirildiği sistematik, bağımsız ve belgelenmiş süreç.'),
+        ('Doğrulayıcı', 'Doğrulamayı yürüten ve raporlayan yetkin ve bağımsız kişi veya '
+         'kişi grubu.'),
+        ('Müşteri', 'Doğrulama veya geçerli kılma talep eden kuruluş veya kişi.'),
+        ('Sorumlu taraf', 'Sera gazı beyanından sorumlu olan ve başka bir tarafı kendi '
+         'adına hareket etmeye yetkilendirebilen kişi veya kişiler.'),
+        ('Sürdürülebilirlik sorumlusu', 'Sera gazı beyanını sunmaktan ve sera gazı '
+         'bilgisini sağlamaktan sorumlu kişi veya kişiler.'),
     ])
     for term, meaning in defs:
         E.append(Paragraph(f'<b>{term}.</b> {meaning}', S['body']))
@@ -1116,13 +1513,19 @@ def _section2(E, S, lang):
 
     E.append(Paragraph('2.2   ' + t('s2_2', lang), S['h2']))
     abbrs = [
+        ('CH₄', 'Methane' if lang == 'en' else 'Metan'),
+        ('CO₂', 'Carbon dioxide' if lang == 'en' else 'Karbondioksit'),
         ('CO₂e', 'Carbon dioxide equivalent' if lang == 'en' else 'Karbondioksit eşdeğeri'),
+        ('EF', 'Emission factor' if lang == 'en' else 'Emisyon faktörü'),
         ('GHG / SG', 'Greenhouse gas' if lang == 'en' else 'Sera gazı'),
         ('GWP', 'Global warming potential' if lang == 'en' else 'Küresel ısınma potansiyeli'),
+        ('HFC', 'Hydrofluorocarbon' if lang == 'en' else 'Hidroflorokarbon'),
         ('IPCC', 'Intergovernmental Panel on Climate Change'),
         ('IEA', 'International Energy Agency'),
+        ('N₂O', 'Nitrous oxide' if lang == 'en' else 'Diazot monoksit'),
         ('NCV', 'Net calorific value' if lang == 'en' else 'Net kalorifik değer'),
-        ('EF', 'Emission factor' if lang == 'en' else 'Emisyon faktörü'),
+        ('PFC', 'Perfluorocarbon' if lang == 'en' else 'Perflorokarbon'),
+        ('SF₆', 'Sulphur hexafluoride' if lang == 'en' else 'Kükürt heksaflorür'),
         ('t CO₂e', 'Tonnes of carbon dioxide equivalent'
                    if lang == 'en' else 'Ton karbondioksit eşdeğeri'),
     ]
@@ -1196,6 +1599,56 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         if lang == 'en' else
         'Organizasyon sınırı için beyan edilen konsolidasyon yaklaşımı, envanterdeki her '
         'tesise tutarlı biçimde uygulanır.', S['body']))
+    E.append(Spacer(1, 4*mm))
+
+    # 3.2.1 Calculation approach — which consolidation basis (control/equity)
+    # was declared for the organisational boundary.
+    E.append(Paragraph('3.2.1   ' + ('Calculation Approach' if lang == 'en'
+                                      else 'Hesaplama Yaklaşımı'), S['h3']))
+    boundary_code = getattr(report, 'boundary_approach', '') or ''
+    boundary_label = report.get_boundary_approach_display() if boundary_code else None
+    if boundary_code == 'equity_share':
+        approach_sentence = (
+            'The organisation holds an equity share in one or more of its operations, so '
+            'the equity share approach has been selected: emissions are included in '
+            'proportion to the organisation’s share of equity in each operation.'
+            if lang == 'en' else
+            'Kuruluş, faaliyetlerinden bir veya birden fazlasında öz sermaye payına sahip '
+            'olduğundan öz sermaye payı yaklaşımı seçilmiştir: emisyonlar, kuruluşun her '
+            'faaliyetteki öz sermaye payı oranında dâhil edilmiştir.')
+    elif boundary_label:
+        approach_sentence = (
+            f'The “{boundary_label.lower()}” approach has been selected for consolidating '
+            'greenhouse gas emissions and removals: all emissions from activities within the '
+            'organisation’s boundary under that basis have been included in the calculation.'
+            if lang == 'en' else
+            f'“{boundary_label}” yaklaşımı, sera gazı emisyon ve uzaklaştırmalarının '
+            'konsolide edilmesi için seçilmiştir: bu esasa göre kuruluşun sınırları içindeki '
+            'faaliyetlerden kaynaklanan tüm emisyonlar hesaplamaya dâhil edilmiştir.')
+    else:
+        approach_sentence = (
+            'The consolidation approach (operational control, financial control or equity '
+            'share) has not been declared for this reporting period.'
+            if lang == 'en' else
+            'Bu raporlama dönemi için konsolidasyon yaklaşımı (operasyonel kontrol, mali '
+            'kontrol veya öz sermaye payı) beyan edilmemiştir.')
+    E.append(Paragraph(approach_sentence, S['body']))
+    E.append(Spacer(1, 4*mm))
+
+    # 3.2.2 Calculation method — the platform always applies the standard
+    # (activity-data × factor) method shown above; it does not implement
+    # mass-balance or continuous-measurement methods, so this states that
+    # fact rather than implying a choice was made per source.
+    E.append(Paragraph('3.2.2   ' + ('Calculation Method' if lang == 'en'
+                                      else 'Hesaplama Yöntemi'), S['h3']))
+    E.append(Paragraph(
+        'The “standard method”, based on multiplying activity data by an emission factor, '
+        'has been used for every source in this inventory. Mass-balance and continuous '
+        'measurement-based methods have not been applied.'
+        if lang == 'en' else
+        'Bu envanterdeki her kaynak için, faaliyet verisinin bir emisyon faktörüyle '
+        'çarpılmasına dayanan “standart yöntem” kullanılmıştır. Kütle dengesi ve sürekli '
+        'ölçüme dayalı yöntemler uygulanmamıştır.', S['body']))
     E.append(Spacer(1, 5*mm))
 
     # 3.3 Reporting boundaries
@@ -1206,15 +1659,69 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         E.append(Paragraph(
             f'<b>{t("c_cat", lang)} {ROMAN[cat]}</b> — {name}: '
             f'{_fmt(val, lang == "tr")} t CO₂e', S['body']))
+    E.append(Spacer(1, 3*mm))
+
+    # 3.3.1 / 3.3.2 — the actual GHG sources found in category I (direct) vs
+    # II-VI (indirect), listed by name rather than restated as a definition,
+    # since D['sources'] already knows exactly what this organisation
+    # declared.
+    direct_names = sorted({cat_label(r['category'], lang) for r in D['sources']
+                           if r['iso_cat'] == CAT_I})
+    indirect_names = sorted({cat_label(r['category'], lang) for r in D['sources']
+                             if r['iso_cat'] != CAT_I})
+    E.append(Paragraph('3.3.1   ' + ('Direct Greenhouse Gas Emissions' if lang == 'en'
+                                      else 'Doğrudan Sera Gazı Emisyonları'), S['h3']))
+    if direct_names:
+        E.extend(_bullets(S, direct_names))
+    else:
+        E.append(Paragraph(t('none_recorded', lang), S['no_data']))
+    E.append(Spacer(1, 3*mm))
+    E.append(Paragraph('3.3.2   ' + ('Indirect Greenhouse Gas Emissions' if lang == 'en'
+                                      else 'Dolaylı Sera Gazı Emisyonları'), S['h3']))
+    if indirect_names:
+        E.extend(_bullets(S, indirect_names))
+    else:
+        E.append(Paragraph(t('none_recorded', lang), S['no_data']))
     E.append(Spacer(1, 5*mm))
 
-    # 3.4 Exclusions
+    # 3.4 Exclusions — 6A-1 (flagged?) / 6A-2 (reason code) / 6A-3 (business
+    # justification, free text) / 6A-4 (estimated emission band) / 6A-5
+    # (future inclusion plan, optional free text). Rendered as prose rather
+    # than the raw option codes those steps store.
     E.append(Paragraph('3.4   ' + t('s3_4', lang), S['h2']))
-    excl = _answer_text(A, '6A-1', lang, default=None)
-    if excl == t('not_declared', lang):
-        excl = _answer_text(A, '6B-1', lang, default=None)
-    if excl and excl != t('not_declared', lang):
-        E.append(Paragraph(excl, S['body']))
+    flagged = _raw_answer(A, '6A-1')
+    if flagged == 'yes':
+        reason_code = _raw_answer(A, '6A-2')
+        reason = (EXCLUSION_REASON_LABELS.get(reason_code, {}).get(lang)
+                  if reason_code else None)
+        justification = _answer_text(A, '6A-3', lang, default=None)
+        band_code = _raw_answer(A, '6A-4')
+        band = EXCLUSION_BAND_LABELS.get(band_code, {}).get(lang) if band_code else None
+        future_plan = _answer_text(A, '6A-5', lang, default=None)
+
+        if lang == 'en':
+            sentence = 'One or more sources have been excluded from the declared boundary'
+            if reason:
+                sentence += f', because {reason}'
+            sentence += '.'
+        else:
+            sentence = 'Beyan edilen sınırdan bir veya daha fazla kaynak hariç tutulmuştur'
+            if reason:
+                sentence += f' ({reason} gerekçesiyle)'
+            sentence += '.'
+        E.append(Paragraph(sentence, S['body']))
+        if justification and justification != t('not_declared', lang):
+            E.append(Paragraph(
+                (f'<b>{"Justification" if lang == "en" else "Gerekçe"}:</b> {justification}'),
+                S['body']))
+        if band:
+            E.append(Paragraph(
+                (f'<b>{"Estimated impact" if lang == "en" else "Tahmini etki"}:</b> {band}'),
+                S['body']))
+        if future_plan and future_plan != t('not_declared', lang):
+            E.append(Paragraph(
+                (f'<b>{"Future inclusion plan" if lang == "en" else "Gelecekte dahil etme planı"}'
+                 f':</b> {future_plan}'), S['body']))
     else:
         E.append(Paragraph(
             'No sources have been excluded from the declared boundary other than those '
@@ -1224,11 +1731,38 @@ def _section3(E, S, D, report, lang, TBL, FIG):
             'edilen sınırdan hariç tutulan kaynak bulunmamaktadır.', S['body']))
     E.append(Spacer(1, 4*mm))
 
-    # 3.5 Assumptions
+    # 3.5 Assumptions — 6C-1 (exception type code) / 6C-2 (compound: which
+    # source, alternative approach, materiality %) / 6C-3 (improvement
+    # commitment, optional free text).
     E.append(Paragraph('3.5   ' + t('s3_5', lang), S['h2']))
-    assum = _answer_text(A, '6C-1', lang, default=None)
-    if assum and assum != t('not_declared', lang):
-        E.append(Paragraph(assum, S['body']))
+    exc_type = _raw_answer(A, '6C-1')
+    if exc_type and exc_type != 'none':
+        type_label = EXCEPTION_TYPE_LABELS.get(exc_type, {}).get(lang)
+        if type_label:
+            sentence = (f'An exception to the standard methodology applies: {type_label}.'
+                        if lang == 'en' else
+                        f'Standart metodolojiye ilişkin bir istisna geçerlidir: {type_label}.')
+            E.append(Paragraph(sentence, S['body']))
+        detail = _raw_answer(A, '6C-2')
+        if isinstance(detail, dict):
+            desc = detail.get('exception_description')
+            pct = detail.get('materiality_pct')
+            just = detail.get('justification')
+            if desc:
+                E.append(Paragraph(
+                    f'<b>{"Description" if lang == "en" else "Açıklama"}:</b> {desc}', S['body']))
+            if just:
+                E.append(Paragraph(
+                    f'<b>{"Justification" if lang == "en" else "Gerekçe"}:</b> {just}', S['body']))
+            if pct not in (None, ''):
+                E.append(Paragraph(
+                    (f'<b>{"Estimated impact on total emissions" if lang == "en" else "Toplam emisyonlara tahmini etki"}'
+                     f':</b> {pct} %'), S['body']))
+        commitment = _answer_text(A, '6C-3', lang, default=None)
+        if commitment and commitment != t('not_declared', lang):
+            E.append(Paragraph(
+                (f'<b>{"Improvement commitment" if lang == "en" else "İyileştirme taahhüdü"}'
+                 f':</b> {commitment}'), S['body']))
     else:
         E.extend(_bullets(S, (
             ['Where metered data was unavailable, consumption has been apportioned on a '
@@ -1254,7 +1788,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
                  Paragraph(f'<b>{t("c_source", lang)}</b>', S['body_sm'])]]
         for ref, cats in sorted(refs.items()):
             uniq = sorted(set(cats))
-            data.append([Paragraph(ref[:150], S['body_sm']),
+            data.append([Paragraph(_ellipsize(ref, 150), S['body_sm']),
                          Paragraph(', '.join(uniq), S['body_sm'])])
         tbl = Table(data, colWidths=[96*mm, 74*mm], hAlign='LEFT', repeatRows=1)
         st = _tbl_style(fn, fnb)
@@ -1500,7 +2034,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
                 Paragraph(str(r['unit'] or '—'), S['small']),
                 Paragraph(_localize_num(f'{r["factor"]:,.4f}', tr), S['small']),
                 Paragraph(_fmt(r['kg'] / 1000.0, tr), S['small']),
-                Paragraph((r['reference'] or '—')[:90], S['small']),
+                Paragraph(_ellipsize(r['reference'], 90), S['small']),
             ])
         tbl = Table(data, colWidths=[46*mm, 20*mm, 14*mm, 20*mm, 20*mm, 54*mm],
                     hAlign='LEFT', repeatRows=1)
@@ -1531,38 +2065,59 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         E.append(Spacer(1, 5*mm))
     E.append(PageBreak())
 
-    # 4.1.7 Significance assessment
+    # 4.1.7 Significance assessment — per individual indirect source, ranked
+    # by magnitude, with a running cumulative share. Sources are classified
+    # "significant" while the cumulative total up to (and including) that
+    # source has not yet reached 95 % of indirect emissions — the same
+    # cumulative-contribution test the standard's significance clause
+    # describes, applied at source level rather than flattened to a per-
+    # category ≥1 % cutoff.
     E.append(Paragraph('4.1.7   ' + t('s4_sig', lang), S['h2']))
     E.append(Paragraph(
-        'Indirect emissions have been assessed for significance against magnitude, level '
-        'of influence, access to data and sector relevance. Categories contributing at '
-        'least 1 % of the inventory are treated as significant and are quantified in full.'
+        'Indirect emissions contributing at least 95 % of total indirect emissions '
+        'cumulatively are classified as significant and are quantified in full below.'
         if lang == 'en' else
-        'Dolaylı emisyonlar; büyüklük, etki düzeyi, veriye erişim ve sektörel ilgililik '
-        'kriterlerine göre önem açısından değerlendirilmiştir. Envanterin en az %1’ini '
-        'oluşturan kategoriler önemli kabul edilerek tam olarak nicelenmiştir.', S['body']))
-    data = [[Paragraph(f'<b>{t("c_cat", lang)}</b>', S['body_sm']),
-             Paragraph(f'<b>{t("c_pct", lang)}</b>', S['body_sm']),
-             Paragraph(f'<b>{t("c_criterion", lang)}</b>', S['body_sm']),
-             Paragraph(f'<b>{t("c_result", lang)}</b>', S['body_sm'])]]
-    for cat in (CAT_II, CAT_III, CAT_IV, CAT_V, CAT_VI):
-        v = D['by_category'][cat] / 1000.0
-        share = (v / total_t * 100) if total_t else 0
-        significant = share >= 1.0
+        'Toplam dolaylı emisyonların kümülatif olarak en az %95’ini oluşturan dolaylı '
+        'emisyonlar önemli kabul edilerek aşağıda tam olarak nicelenmiştir.', S['body']))
+    indirect_sources = sorted(
+        (r for r in D['sources'] if r['iso_cat'] != CAT_I and r['kg'] > 0),
+        key=lambda r: -r['kg'])
+    indirect_total_t = D['indirect_t']
+    data = [[Paragraph(f'<b>{t("c_cat", lang)}</b>', S['small']),
+             Paragraph(f'<b>{t("c_source", lang)}</b>', S['small']),
+             Paragraph(f'<b>{t("c_ghg_t", lang)}</b>', S['small']),
+             Paragraph(f'<b>{t("c_pct", lang)}</b>', S['small']),
+             Paragraph('<b>' + ('Cumulative %' if lang == 'en' else 'Kümülatif %') + '</b>',
+                       S['small']),
+             Paragraph(f'<b>{t("c_result", lang)}</b>', S['small'])]]
+    prev_cum = 0.0
+    for r in indirect_sources:
+        v_t = r['kg'] / 1000.0
+        share_pct = (v_t / indirect_total_t * 100) if indirect_total_t else 0
+        cum = prev_cum + share_pct
+        significant = prev_cum < 95.0
+        prev_cum = cum
         data.append([
-            Paragraph(f'{ROMAN[cat]}', S['body_sm']),
-            Paragraph(_localize_num(f'{share:.2f}', tr), S['body_sm']),
-            Paragraph(('Magnitude ≥ 1 % of inventory' if lang == 'en'
-                       else 'Envanterin ≥ %1’i'), S['body_sm']),
+            Paragraph(ROMAN[r['iso_cat']], S['small']),
+            Paragraph(f'{cat_label(r["category"], lang)} — {r["name"]}', S['small']),
+            Paragraph(_fmt(v_t, tr), S['small']),
+            Paragraph(_localize_num(f'{share_pct:.2f}', tr), S['small']),
+            Paragraph(_localize_num(f'{cum:.2f}', tr), S['small']),
             Paragraph((('Significant' if significant else 'Not significant') if lang == 'en'
-                       else ('Önemli' if significant else 'Önemli değil')), S['body_sm']),
+                       else ('Önemli' if significant else 'Önemli değil')), S['small']),
         ])
-    tbl = Table(data, colWidths=[16*mm, 24*mm, 76*mm, 54*mm], hAlign='LEFT', repeatRows=1)
-    st = _tbl_style(fn, fnb)
-    st.add('ALIGN', (2, 0), (-1, -1), 'LEFT')
-    tbl.setStyle(st)
-    E.append(_caption(S, TBL, t('t_sig', lang), lang))
-    E.append(tbl)
+    if indirect_sources:
+        tbl = Table(data, colWidths=[10*mm, 66*mm, 20*mm, 16*mm, 24*mm, 34*mm],
+                    hAlign='LEFT', repeatRows=1)
+        st = _tbl_style(fn, fnb)
+        st.add('ALIGN', (0, 0), (1, -1), 'LEFT')
+        st.add('ALIGN', (5, 0), (5, -1), 'LEFT')
+        st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
+        tbl.setStyle(st)
+        E.append(_caption(S, TBL, t('t_sig', lang), lang))
+        E.append(tbl)
+    else:
+        E.append(Paragraph(t('none_recorded', lang), S['no_data']))
     E.append(Spacer(1, 5*mm))
 
     # Uncertainty
@@ -1640,19 +2195,16 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'tanımlanan kontrollerle yönetilir.'])))
     E.append(Spacer(1, 4*mm))
 
-    # Verification
+    # Verification — the questionnaire has no dedicated verification-statement
+    # free-text step, so this is always the standard declaration.
     E.append(Paragraph('4.1.11   ' + t('s4_ver', lang), S['h2']))
-    ver = _answer_text(A, '7B-1', lang, default=None)
-    if ver and ver != t('not_declared', lang):
-        E.append(Paragraph(ver, S['body']))
-    else:
-        E.append(Paragraph(
-            'This inventory has been prepared for verification at a limited or reasonable '
-            'level of assurance by an accredited independent third party. The verification '
-            'statement, once issued, is retained with this report.'
-            if lang == 'en' else
-            'Bu envanter, akredite bağımsız üçüncü tarafça sınırlı veya makul güvence '
-            'düzeyinde doğrulanmak üzere hazırlanmıştır. Doğrulama beyanı düzenlendiğinde '
+    E.append(Paragraph(
+        'This inventory has been prepared for verification at a limited or reasonable '
+        'level of assurance by an accredited independent third party. The verification '
+        'statement, once issued, is retained with this report.'
+        if lang == 'en' else
+        'Bu envanter, akredite bağımsız üçüncü tarafça sınırlı veya makul güvence '
+        'düzeyinde doğrulanmak üzere hazırlanmıştır. Doğrulama beyanı düzenlendiğinde '
             'bu raporla birlikte saklanır.', S['body']))
     E.append(Spacer(1, 4*mm))
 
@@ -1733,17 +2285,27 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         data = [[Paragraph(f'<b>{t("c_facility", lang)}</b>', S['small'])] +
                 [Paragraph(f'<b>{ROMAN[c]}</b>', S['small']) for c in sorted(ROMAN)] +
                 [Paragraph(f'<b>{t("c_total", lang)}</b>', S['small'])]]
-        for name, cats in ordered[:20]:
+        dominant_cells = []  # (row, col) of each facility's largest category
+        for row_i, (name, cats) in enumerate(ordered[:20], start=1):
             tot = sum(cats.values()) / 1000.0
             data.append(
                 [Paragraph(name, S['small'])] +
                 [Paragraph(_fmt(cats[c] / 1000.0, tr), S['small']) for c in sorted(ROMAN)] +
                 [Paragraph(f'<b>{_fmt(tot, tr)}</b>', S['small'])]
             )
+            dominant_cat = max(sorted(ROMAN), key=lambda c: cats[c])
+            if cats[dominant_cat] > 0:
+                dominant_cells.append((row_i, sorted(ROMAN).index(dominant_cat) + 1))
         tbl = Table(data, colWidths=[54*mm] + [16*mm]*6 + [20*mm], hAlign='LEFT',
                     repeatRows=1)
         st = _tbl_style(fn, fnb)
         st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+        # Highlight each facility's dominant emission category — the same
+        # visual cue the sample report uses to show at a glance which
+        # category (imported energy, purchased transport, personnel
+        # services, …) drives each location's emissions.
+        for row, col in dominant_cells:
+            st.add('BACKGROUND', (col, row), (col, row), ACCENT_SOFT)
         tbl.setStyle(st)
         E.append(_caption(S, TBL, t('t_loc', lang), lang))
         E.append(tbl)
@@ -1753,6 +2315,37 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             E.append(Spacer(1, 4*mm))
             E.append(chart)
             E.append(_fig_caption(S, FIG, t('t_loc', lang), lang))
+        E.append(PageBreak())
+
+        # Per-activity location breakdown — for each of the largest activity
+        # types, which facility is driving it. This is the same cut the
+        # sample ISO report devotes a dedicated figure to for every activity
+        # (stationary combustion, mobile combustion, electricity, business
+        # travel, …); it answers "where should this specific activity be
+        # acted on", which the single combined table above cannot.
+        act_by_facility = D.get('facility_activity') or {}
+        top_activities = sorted(
+            ((k, v) for k, v in act_by_facility.items() if sum(v.values()) > 0 and len(v) > 1),
+            key=lambda kv: -sum(kv[1].values()))[:8]
+        if top_activities:
+            E.append(Paragraph(
+                'Emissions from the activity types with the largest spread across '
+                'facilities are broken down below.'
+                if lang == 'en' else
+                'Tesisler arasında en geniş dağılıma sahip faaliyet türlerine ait '
+                'emisyonların dökümü aşağıda verilmiştir.', S['body']))
+            for act_key, per_fac in top_activities:
+                rows = sorted(per_fac.items(), key=lambda kv: -kv[1])
+                chart = _bar_row_chart(rows, sum(per_fac.values()), S, lang)
+                if chart is None:
+                    continue
+                E.append(Spacer(1, 4*mm))
+                E.append(chart)
+                act_name = cat_label(act_key, lang).lower()
+                cap = (f'Location-level evaluation of emissions from {act_name}'
+                       if lang == 'en' else
+                       f'Faaliyet bazında tesis düzeyinde emisyon değerlendirmesi — {act_name}')
+                E.append(_fig_caption(S, FIG, cap, lang))
     else:
         E.append(Paragraph(
             'Activity data has not been attributed to individual facilities, so a '
@@ -1789,6 +2382,7 @@ def generate_iso_report(report: CarbonReport, lang: str = 'en') -> bytes:
     TBL, FIG = _Counter(), _Counter()
     _cover(E, S, D, report, lang)
     _contents(E, S, lang)
+    _introduction(E, S, lang)
     _section1(E, S, D, report, lang, TBL, FIG)
     _section2(E, S, lang)
     _section3(E, S, D, report, lang, TBL, FIG)
