@@ -49,12 +49,16 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     return () => clearTimeout(t);
   }, []);
 
-  // The ISO 14064-1 inventory report is keyed to a CarbonReport, while every
-  // other export on this tab is keyed to a year, so the matching report has to
-  // be looked up before that download can be offered. A completed inventory
-  // wins over a draft for the same year; if none exists the button explains
-  // that rather than appearing and then failing.
+  // The ISO 14064-1 / inventory report is keyed to a CarbonReport (one of
+  // possibly several inventories the company has submitted — different years,
+  // divisions, or re-runs), while the emissions summary/CSV/Excel exports on
+  // this tab are keyed to a year and read straight from EmissionEntry rows.
+  // So the inventory has to be picked explicitly rather than assumed: this
+  // loads every inventory once, defaults to the best match for the selected
+  // year, and lets the user override that choice with the dropdown below.
+  const [allReports, setAllReports] = useState([]);
   const [isoReportId, setIsoReportId] = useState(null);
+  const [manualIsoPick, setManualIsoPick] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -65,15 +69,28 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         // This endpoint answers {reports: [...]} — not a bare array and not the
         // DRF {results: [...]} envelope. InventoryLibrary reads it the same way.
         const list = Array.isArray(data) ? data : (data.reports ?? data.results ?? []);
-        const forYear = list.filter(r => String(r.reporting_year) === String(selectedYear));
-        const pick = forYear.find(r => r.status === 'completed') || forYear[0] || null;
-        if (!cancelled) setIsoReportId(pick ? (pick.report_id ?? pick.id) : null);
+        if (!cancelled) setAllReports(list);
       } catch {
-        if (!cancelled) setIsoReportId(null);
+        if (!cancelled) setAllReports([]);
       }
     })();
     return () => { cancelled = true; };
-  }, [selectedYear]);
+  }, []);
+
+  // Re-derive the default pick whenever the year changes or the list loads,
+  // but only while the user hasn't manually chosen a different inventory —
+  // switching the year shouldn't silently discard an explicit selection.
+  useEffect(() => {
+    if (manualIsoPick) return;
+    const forYear = allReports.filter(r => String(r.reporting_year) === String(selectedYear));
+    const pick = forYear.find(r => r.status === 'completed') || forYear[0] || null;
+    setIsoReportId(pick ? (pick.report_id ?? pick.id) : null);
+  }, [allReports, selectedYear, manualIsoPick]);
+
+  const completedReports = useMemo(
+    () => allReports.filter(r => r.status === 'completed'),
+    [allReports],
+  );
 
   // Readiness — useMemo so this is only recalculated when data actually changes,
   // not on every local state update (e.g. pdfLoading spinner toggling).
@@ -176,9 +193,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
           </div>
         )}
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => handleDownload('iso', 'tr')} className="col-span-2 rounded-2xl bg-[#072C0E] p-4 text-center text-sm font-bold text-white">ISO 14064-1 {tr ? '(TR)' : '(EN)'}</button>
-          <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">PDF TR</button>
-          <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">PDF EN</button>
+          <button onClick={() => handleDownload('iso', 'tr')} disabled={!isoReportId} className="col-span-2 rounded-2xl bg-[#072C0E] p-4 text-center text-sm font-bold text-white disabled:opacity-50">{tr ? 'Envanter Raporu' : 'Inventory Report'} {tr ? '(TR)' : '(EN)'}</button>
+          <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">{tr ? 'Emisyon TR' : 'Emissions TR'}</button>
+          <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">{tr ? 'Emisyon EN' : 'Emissions EN'}</button>
           <button onClick={() => handleDownload('csv', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">CSV</button>
           <button onClick={() => handleDownload('excel', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">Excel</button>
         </div>
@@ -211,17 +228,17 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
+            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
               <Shield className="h-3.5 w-3.5" />
-              {pdfLoading?.startsWith('iso') ? '...' : 'ISO 14064-1'}
+              {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Envanter Raporu' : 'Inventory Report')}
             </button>
             <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
-              {pdfLoading === 'pdftr' ? '...' : 'PDF TR'}
+              {pdfLoading === 'pdftr' ? '...' : (tr ? 'Emisyon Raporu TR' : 'Emissions Report TR')}
             </button>
             <button onClick={() => handleDownload('pdf', 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
-              {pdfLoading === 'pdfen' ? '...' : 'PDF EN'}
+              {pdfLoading === 'pdfen' ? '...' : (tr ? 'Emisyon Raporu EN' : 'Emissions Report EN')}
             </button>
           </div>
         </div>
@@ -370,17 +387,56 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </div>
             <h2 className="text-sm font-bold">{tr ? 'Dışa Aktarma' : 'Export Center'}</h2>
           </div>
+
+          {/* Three distinct report types: (1) the emissions summary, scoped to
+              the selected year and read straight from activity data; (2) the
+              complete ISO 14064-1 inventory report, scoped to one specific
+              inventory submission — picked below, since a company can have
+              more than one; (3) raw CSV/Excel export of the same year's data. */}
+          {completedReports.length > 0 && (
+            <div className="mb-3">
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#072C0E]/40">
+                {tr ? 'Envanter (ISO raporu için)' : 'Inventory (for ISO report)'}
+              </label>
+              <select
+                value={isoReportId ?? ''}
+                onChange={(e) => {
+                  setManualIsoPick(true);
+                  setIsoReportId(e.target.value || null);
+                }}
+                className="w-full rounded-xl border border-[#072C0E]/12 bg-[#F8F8F8] px-3 py-2.5 text-xs font-semibold text-[#072C0E] focus:outline-none focus:ring-2 focus:ring-[#2ABD41]/40"
+              >
+                {completedReports.map((r) => {
+                  const id = r.report_id ?? r.id;
+                  return (
+                    <option key={id} value={id}>
+                      {(r.title || (tr ? 'İsimsiz envanter' : 'Untitled inventory'))} — {r.reporting_year}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
-            {/* The full inventory report — what a verifier asks for. The two
-                buttons below it are the shorter emissions summary, which is
-                why these are labelled by document rather than both "ISO PDF". */}
-            <ExportBtn icon={Shield} label="ISO 14064-1 (TR)" loading={pdfLoading === 'isotr'} onClick={() => handleDownload('iso', 'tr')} />
-            <ExportBtn icon={Shield} label="ISO 14064-1 (EN)" loading={pdfLoading === 'isoen'} onClick={() => handleDownload('iso', 'en')} />
-            <ExportBtn icon={FileText} label={tr ? 'Emisyon Özeti (TR)' : 'Emissions Summary (TR)'} loading={pdfLoading === 'pdftr'} onClick={() => handleDownload('pdf', 'tr')} />
-            <ExportBtn icon={FileText} label={tr ? 'Emisyon Özeti (EN)' : 'Emissions Summary (EN)'} loading={pdfLoading === 'pdfen'} onClick={() => handleDownload('pdf', 'en')} />
+            {/* Type 3 — the complete inventory report, for whichever inventory
+                is selected above. What a verifier asks for. */}
+            <ExportBtn icon={Shield} label={tr ? 'Envanter Raporu (TR)' : 'Inventory Report (TR)'} loading={pdfLoading === 'isotr'} disabled={!isoReportId} onClick={() => handleDownload('iso', 'tr')} />
+            <ExportBtn icon={Shield} label={tr ? 'Envanter Raporu (EN)' : 'Inventory Report (EN)'} loading={pdfLoading === 'isoen'} disabled={!isoReportId} onClick={() => handleDownload('iso', 'en')} />
+            {/* Type 1 — the shorter emissions-only summary, scoped to the year
+                selected at the top of the dashboard, not to one inventory. */}
+            <ExportBtn icon={FileText} label={tr ? 'Emisyon Raporu (TR)' : 'Emissions Report (TR)'} loading={pdfLoading === 'pdftr'} onClick={() => handleDownload('pdf', 'tr')} />
+            <ExportBtn icon={FileText} label={tr ? 'Emisyon Raporu (EN)' : 'Emissions Report (EN)'} loading={pdfLoading === 'pdfen'} onClick={() => handleDownload('pdf', 'en')} />
             <ExportBtn icon={Download} label="CSV Export" loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
             <ExportBtn icon={Download} label="Excel Export" loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
           </div>
+          {completedReports.length === 0 && (
+            <p className="mt-2 text-[11px] font-semibold text-[#072C0E]/40">
+              {tr
+                ? 'Envanter raporu için önce bir anketi tamamlayın.'
+                : 'Complete a questionnaire to unlock the inventory report.'}
+            </p>
+          )}
         </ReportCard>
 
         {/* Compliance Status */}
@@ -457,9 +513,9 @@ function InsightItem({ text, type }) {
   );
 }
 
-function ExportBtn({ icon: Icon, label, loading, onClick }) {
+function ExportBtn({ icon: Icon, label, loading, disabled, onClick }) {
   return (
-    <button onClick={onClick} disabled={loading} className="flex items-center gap-2 rounded-xl border border-[#072C0E]/8 bg-[#F8F8F8] px-3.5 py-3 text-xs font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:opacity-50">
+    <button onClick={onClick} disabled={loading || disabled} className="flex items-center gap-2 rounded-xl border border-[#072C0E]/8 bg-[#F8F8F8] px-3.5 py-3 text-xs font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:opacity-50">
       <Icon className="h-4 w-4 text-[#2ABD41]" />
       {loading ? '...' : label}
     </button>

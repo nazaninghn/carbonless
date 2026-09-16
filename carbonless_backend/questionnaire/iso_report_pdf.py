@@ -1577,6 +1577,48 @@ def _section3(E, S, D, report, lang, TBL, FIG):
             'konsolide edilmiştir.', S['body']))
     E.append(Spacer(1, 5*mm))
 
+    # Coverage of activity data across facilities — only meaningful once there
+    # is more than one facility to compare; for a single consolidated
+    # inventory every declared activity trivially has 100 % coverage. Uses
+    # D['facility_activity'], already gathered for the 4.3 location-level
+    # breakdowns, so this costs no extra query.
+    if len(facs) > 1:
+        fac_act = D.get('facility_activity') or {}
+        total_facs = len(facs)
+        cov_items = sorted(
+            ((cat_label(k, lang), len(v)) for k, v in fac_act.items() if v),
+            key=lambda kv: -kv[1])
+        if cov_items:
+            E.append(Paragraph(
+                'Activity data could not be declared for every activity type at every '
+                'facility. The proportion of facilities reporting data for each activity '
+                'type is summarised below.'
+                if lang == 'en' else
+                'Faaliyet verisi, her tesiste her faaliyet türü için beyan edilememiştir. '
+                'Her faaliyet türü için veri bildiren tesislerin oranı aşağıda '
+                'özetlenmiştir.', S['body']))
+            data = [[
+                Paragraph(f'<b>{"Activity type" if lang == "en" else "Faaliyet türü"}</b>',
+                          S['body_sm']),
+                Paragraph('<b>' + ('Facilities declaring data' if lang == 'en'
+                                    else 'Veri bildiren tesisler') + '</b>', S['body_sm']),
+            ]]
+            for label, n in cov_items:
+                cov_pct = n / total_facs * 100
+                data.append([
+                    Paragraph(label, S['body_sm']),
+                    Paragraph(f'{n}/{total_facs}  '
+                              f'({_localize_num(f"{cov_pct:.0f}", lang == "tr")} %)',
+                              S['body_sm']),
+                ])
+            tbl = Table(data, colWidths=[110*mm, 60*mm], hAlign='LEFT', repeatRows=1)
+            st = _tbl_style(fn, fnb)
+            st.add('ALIGN', (0, 0), (-1, -1), 'LEFT')
+            tbl.setStyle(st)
+            E.append(_caption(S, TBL, t('t_cov', lang), lang))
+            E.append(tbl)
+            E.append(Spacer(1, 5*mm))
+
     # 3.2 Calculation methodology
     E.append(Paragraph('3.2   ' + t('s3_2', lang), S['h2']))
     E.append(Paragraph(
@@ -2167,6 +2209,49 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             if lang == 'en' else
             'Bu raporlama dönemi için nicelenmiş azaltım hedefi kaydedilmemiştir. Azaltım '
             'girişimleri sera gazı yönetim prosedüründe izlenmektedir.', S['body']))
+    E.append(Spacer(1, 3*mm))
+
+    # Generic, sector-agnostic reduction levers — the platform serves
+    # organisations across sectors, so this is the same role a sector-specific
+    # report's "typical reduction levers for this industry" paragraph plays,
+    # written broadly enough to apply regardless of which categories this
+    # organisation's inventory actually contains.
+    E.append(Paragraph(
+        'Reduction levers organisations in most sectors typically evaluate include:'
+        if lang == 'en' else
+        'Çoğu sektördeki kuruluşların tipik olarak değerlendirdiği azaltım '
+        'seçenekleri şunlardır:', S['body']))
+    E.extend(_bullets(S, (
+        ['Energy efficiency: LED lighting, efficient HVAC and equipment upgrades to '
+         'reduce Category I and II consumption.',
+         'Renewable and low-carbon energy: on-site generation or certified renewable '
+         'electricity procurement to reduce Category II emissions.',
+         'Fleet transition: replacing fossil-fuel vehicles with electric or hybrid '
+         'alternatives, and optimising routes and load factors.',
+         'Fugitive-emission control: leak detection and repair programmes, and lower-GWP '
+         'refrigerants where equipment is replaced.',
+         'Supply chain engagement: working with lower-emission suppliers and favouring '
+         'recyclable or lower-carbon materials, which typically reduces Category IV.',
+         'Waste reduction and diversion: minimising waste generation and increasing reuse '
+         'or recycling ahead of disposal.',
+         'Business travel policy: substituting travel with virtual meetings where '
+         'practicable, and favouring lower-carbon transport modes.']
+        if lang == 'en' else
+        ['Enerji verimliliği: Kategori I ve II tüketimini azaltmak için LED aydınlatma, '
+         'verimli HVAC ve ekipman yenilemeleri.',
+         'Yenilenebilir ve düşük karbonlu enerji: Kategori II emisyonlarını azaltmak için '
+         'sahada üretim veya sertifikalı yenilenebilir elektrik tedariki.',
+         'Filo dönüşümü: fosil yakıtlı araçların elektrikli veya hibrit alternatiflerle '
+         'değiştirilmesi, rota ve doluluk oranı optimizasyonu.',
+         'Kaçak emisyon kontrolü: sızıntı tespit ve onarım programları, ekipman '
+         'yenilendiğinde daha düşük KIP\'li soğutucu akışkanlar.',
+         'Tedarik zinciri katılımı: daha düşük emisyonlu tedarikçilerle çalışmak ve geri '
+         'dönüştürülebilir veya düşük karbonlu malzemeleri tercih etmek — genellikle '
+         'Kategori IV\'ü azaltır.',
+         'Atık azaltımı ve yönlendirme: atık oluşumunu en aza indirmek, bertaraf '
+         'öncesinde yeniden kullanım veya geri dönüşümü artırmak.',
+         'İş seyahati politikası: mümkün olduğunda seyahat yerine sanal toplantılar, '
+         'daha düşük karbonlu ulaşım modlarının tercih edilmesi.'])))
     E.append(Spacer(1, 4*mm))
 
     # Risk & opportunity
@@ -2355,6 +2440,47 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             'Faaliyet verisi ayrı tesislere atanmadığından tesis bazında dağılım '
             'sunulmamıştır. Bu bölümün oluşması için emisyon kayıtlarına tesis atayın.',
             S['no_data']))
+
+    # 4.4 Year-on-year comparison — every year the company has any activity
+    # data for, not just the reporting year, so the base-year comparison the
+    # methodology section (3.2) already describes can actually be shown
+    # rather than just asserted.
+    year_totals = D.get('year_totals') or {}
+    if len(year_totals) > 1:
+        E.append(PageBreak())
+        E.append(Paragraph('4.4   ' + t('s4_trend', lang), S['h2']))
+        base_year = report.baseline_year or min(year_totals)
+        base_t = year_totals.get(base_year, 0.0) / 1000.0
+        E.append(Paragraph(
+            (f'Total greenhouse gas emissions for every year with recorded activity '
+             f'data are compared against the {base_year} base year below.')
+            if lang == 'en' else
+            (f'Kayıtlı faaliyet verisi bulunan her yıla ait toplam sera gazı emisyonları '
+             f'aşağıda {base_year} baz yılı ile karşılaştırılmıştır.'), S['body']))
+        data = [[Paragraph(f'<b>{"Year" if lang == "en" else "Yıl"}</b>', S['body_sm']),
+                 Paragraph(f'<b>{t("c_total", lang)}</b>', S['body_sm']),
+                 Paragraph('<b>' + ('Change vs base year' if lang == 'en'
+                                     else 'Baz yıla göre değişim') + '</b>', S['body_sm'])]]
+        for yr in sorted(year_totals):
+            v_t = year_totals[yr] / 1000.0
+            if base_t:
+                change = (v_t - base_t) / base_t * 100
+                change_txt = f'{"+" if change >= 0 else ""}{_localize_num(f"{change:.1f}", tr)} %'
+            else:
+                change_txt = '—'
+            is_base = (yr == base_year)
+            label = f'{yr}' + ((' (base year)' if lang == 'en' else ' (baz yıl)') if is_base else '')
+            data.append([
+                Paragraph(label, S['body_sm']),
+                Paragraph(f'{_fmt(v_t, tr)} t CO₂e', S['body_sm']),
+                Paragraph(change_txt if not is_base else '—', S['body_sm']),
+            ])
+        tbl = Table(data, colWidths=[50*mm, 60*mm, 60*mm], hAlign='LEFT', repeatRows=1)
+        st = _tbl_style(fn, fnb)
+        st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+        tbl.setStyle(st)
+        E.append(_caption(S, TBL, t('t_trend', lang), lang))
+        E.append(tbl)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
