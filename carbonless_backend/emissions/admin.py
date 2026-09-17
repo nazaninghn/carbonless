@@ -26,6 +26,20 @@ class EmissionFactorAdmin(ModelAdmin):
         ('Factor Data', {
             'fields': ('unit', 'factor_kg_co2e', 'year'),
         }),
+        ('Per-Gas Breakdown', {
+            'fields': ('gas_split_basis',
+                       ('factor_co2_kg_co2e', 'factor_ch4_kg_co2e', 'factor_n2o_kg_co2e'),
+                       ('factor_hfc_kg_co2e', 'factor_pfc_kg_co2e', 'factor_sf6_kg_co2e'),
+                       'gas_split_reference'),
+            'classes': ('collapse',),
+            'description': (
+                'How this factor\'s CO2e divides between greenhouse gases — required by '
+                'ISO 14064-1 reporting, which is gas by gas rather than CO2e only. Each '
+                'value is kg CO2e per unit (already GWP-weighted), so the six must add up '
+                'to the factor above. Leave all six blank when the publisher issues no '
+                'split; the report then reports the source as a combined CO2e figure and '
+                'says so. Most rows are filled by "manage.py seed_gas_splits".'),
+        }),
         ('Source & Reference', {
             'fields': ('source', 'reference'),
         }),

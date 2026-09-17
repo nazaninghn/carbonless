@@ -882,6 +882,53 @@ class ISOInventoryReportView(APIView):
         return response
 
 
+class CombinedReportView(APIView):
+    """GET /api/questionnaire/<report_id>/combined-report/?lang=en|tr&year=YYYY
+
+    All three reports bound into one PDF: the full ISO 14064-1 inventory, the
+    qualitative Carbon Inventory Profile, and the quantified Scope 1/2/3
+    summary, with continuous page numbering, a contents page and PDF
+    bookmarks. The three remain available separately from the endpoints above.
+
+    `year` scopes the emissions summary and defaults to the report's own
+    reporting year, so every part of a pack covers the same period.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        try:
+            report = CarbonReport.objects.select_related('company').get(
+                id=report_id, created_by=request.user
+            )
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
+        year = request.query_params.get('year')
+        try:
+            year = int(year) if year else None
+        except ValueError:
+            return Response({'error': 'year must be a whole number'}, status=400)
+
+        try:
+            from .combined_report_pdf import generate_combined_report
+            pdf_bytes = generate_combined_report(report, lang, year)
+        except Exception as e:
+            logger.error(
+                f'Combined report generation failed for report {report_id}: {e}',
+                exc_info=True,
+            )
+            return Response({'error': f'Report generation failed: {e}'}, status=500)
+
+        from django.http import HttpResponse
+        response = HttpResponse(pdf_bytes, content_type='application/pdf')
+        stamp = year or report.reporting_year or ''
+        response['Content-Disposition'] = (
+            f'attachment; filename="ghg_reporting_pack_{stamp}_{lang}.pdf"'
+        )
+        return response
+
+
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]

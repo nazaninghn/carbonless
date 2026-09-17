@@ -127,9 +127,13 @@ def _step_stage_index(step_id):
     return None
 
 
-def generate_questionnaire_report(report: CarbonReport, lang='en') -> bytes:
+def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0) -> bytes:
     """Generate the qualitative Carbon Inventory Profile PDF for a completed
-    (or in-progress) CarbonReport. Returns raw PDF bytes."""
+    (or in-progress) CarbonReport. Returns raw PDF bytes.
+
+    `page_offset` shifts the printed page number so the report numbers on
+    from the part before it in the combined pack.
+    """
     S = _styles()
     fn, fnb = S['fn'], S['fnb']
     tr = lang == 'tr'
@@ -144,7 +148,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en') -> bytes:
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
-    doc = _ReportDocTemplate(buf, cname, year, lang, pagesize=A4,
+    doc = _ReportDocTemplate(buf, cname, year, lang, page_offset=page_offset, pagesize=A4,
                               leftMargin=20 * mm, rightMargin=20 * mm,
                               topMargin=22 * mm, bottomMargin=20 * mm)
     E = []

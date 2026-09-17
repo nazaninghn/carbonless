@@ -42,7 +42,7 @@ export default function CompletionReportCard({
 }) {
   // Which download is in flight, if any — the two reports share one handler,
   // so a single boolean would grey out both buttons whichever was clicked.
-  const [downloading, setDownloading] = useState(null); // 'profile' | 'iso' | null
+  const [downloading, setDownloading] = useState(null); // 'profile' | 'iso' | 'pack' | null
   const [pdfError, setPdfError] = useState('');
 
   const download = async (kind) => {
@@ -52,7 +52,9 @@ export default function CompletionReportCard({
     setPdfError('');
     let url;
     try {
-      const res = kind === 'iso'
+      const res = kind === 'pack'
+        ? await api.downloadCombinedReport(report.report_id, lang)
+        : kind === 'iso'
         ? await api.downloadIsoReport(report.report_id, lang)
         : await api.downloadQuestionnairePdf(report.report_id, lang);
       if (!res.ok) {
@@ -63,7 +65,9 @@ export default function CompletionReportCard({
       url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = kind === 'iso'
+      a.download = kind === 'pack'
+        ? `ghg_reporting_pack_${report.report_id}_${lang}.pdf`
+        : kind === 'iso'
         ? `iso14064-1_inventory_report_${report.report_id}_${lang}.pdf`
         : `carbon_inventory_profile_${report.report_id}_${lang}.pdf`;
       document.body.appendChild(a);
@@ -222,7 +226,22 @@ export default function CompletionReportCard({
         </div>
       )}
 
-      {/* The ISO report is the deliverable a verifier asks for, so it leads. */}
+      {/* The pack leads: it contains the ISO report plus the profile and the
+          quantified summary, which is what someone finishing an inventory
+          usually wants to send on. The parts stay available below it. */}
+      <button
+        onClick={() => download('pack')}
+        disabled={!!downloading}
+        className="flex items-center justify-center gap-2 w-full px-6 py-3 mb-3 bg-[#2ABD41] text-white font-semibold rounded-full hover:bg-[#25a839] transition disabled:opacity-50"
+      >
+        {downloading === 'pack'
+          ? <Loader2 className="w-4 h-4 animate-spin" />
+          : <FileText className="w-4 h-4" />}
+        {downloading === 'pack'
+          ? (tr ? 'Paket hazırlanıyor…' : 'Preparing pack…')
+          : (tr ? 'Tam Rapor Paketi İndir (3 rapor)' : 'Download Full Report Pack (3 reports)')}
+      </button>
+
       <button
         onClick={() => download('iso')}
         disabled={!!downloading}

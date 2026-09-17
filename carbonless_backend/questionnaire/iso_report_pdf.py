@@ -27,7 +27,7 @@ from datetime import datetime
 
 from django.db.models import Sum
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -115,8 +115,17 @@ def _styles():
                                    spaceAfter=4, leading=13),
         'small': ParagraphStyle('small', fontName=fn, fontSize=7.5, textColor=MUTED,
                                  spaceAfter=2, leading=10),
-        'toc': ParagraphStyle('toc', fontName=fn, fontSize=11, textColor=INK,
-                               spaceBefore=7, spaceAfter=7, leading=16),
+        # Numeric cells in the six-gas inventory tables: a step smaller and
+        # right-aligned, so a figure like 2,552.70 sits on one line in a 12 mm
+        # column and the decimal points line up down the column.
+        'num': ParagraphStyle('num', fontName=fn, fontSize=6.8, textColor=MUTED,
+                               alignment=TA_RIGHT, spaceAfter=2, leading=9),
+        'num_hdr': ParagraphStyle('num_hdr', fontName=fnb, fontSize=6.8, textColor=INK,
+                                   alignment=TA_RIGHT, spaceAfter=2, leading=9),
+        'toc': ParagraphStyle('toc', fontName=fnb, fontSize=10.5, textColor=INK,
+                               spaceBefore=7, spaceAfter=3, leading=15),
+        'toc_sub': ParagraphStyle('toc_sub', fontName=fn, fontSize=9, textColor=MUTED,
+                                   leftIndent=10, spaceBefore=0, spaceAfter=2, leading=13),
         'quote': ParagraphStyle('quote', fontName=fn, fontSize=9, textColor=MUTED,
                                  leftIndent=12, spaceAfter=4, leading=13),
     }
@@ -209,6 +218,110 @@ GWP_AR6 = [
 ]
 
 
+# ═══════════════════════════════════════════════════════════════════════════
+# METHODOLOGY REFERENCE CONSTANTS
+# ═══════════════════════════════════════════════════════════════════════════
+# A full inventory report discloses not only the factors applied but the
+# constants those published factors rest on, so a verifier can retrace the
+# chain from a metered litre of diesel to a kilogram of CO₂e.
+#
+# The platform applies factors already expressed in kg CO₂e per activity unit
+# (see EmissionFactor.factor_kg_co2e), so it performs no density or net
+# calorific value conversion of its own. These tables are therefore published
+# as *references* for the constants underlying combustion factors of this
+# type — section 4.1.1.1 says so explicitly rather than implying the platform
+# ran the IPCC TJ route itself.
+FUEL_DENSITY_REF = [
+    ('Natural gas', 'Doğal gaz', '0.796', 'kg/m³',
+     'DEFRA 2024 — fuel properties — natural gas'),
+    ('Diesel', 'Motorin', '830.565', 'kg/m³',
+     'DEFRA 2024 — fuel properties — diesel (100 % mineral diesel)'),
+    ('Petrol', 'Benzin', '746.269', 'kg/m³',
+     'DEFRA 2024 — fuel properties — petrol (100 % mineral petrol)'),
+    ('LPG', 'LPG', '540.000', 'kg/m³', 'DEFRA 2024 — fuel properties — LPG'),
+    ('Fuel oil', 'Fuel oil', '980.000', 'kg/m³',
+     'DEFRA 2024 — fuel properties — fuel oil'),
+]
+
+FUEL_NCV_REF = [
+    ('Natural gas', 'Doğal gaz', '48.0', 'IPCC 2006, Vol. 2, Ch. 1, Table 1.2'),
+    ('Diesel', 'Motorin', '43.0', 'IPCC 2006, Vol. 2, Ch. 1, Table 1.2'),
+    ('Petrol', 'Benzin', '44.3', 'IPCC 2006, Vol. 2, Ch. 1, Table 1.2'),
+    ('LPG', 'LPG', '47.3', 'IPCC 2006, Vol. 2, Ch. 1, Table 1.2'),
+    ('Fuel oil', 'Fuel oil', '40.4', 'IPCC 2006, Vol. 2, Ch. 1, Table 1.2'),
+    ('Coal (other bituminous)', 'Kömür (bitümlü)', '25.8',
+     'IPCC 2006, Vol. 2, Ch. 1, Table 1.2'),
+]
+
+FUEL_EF_REF = [
+    ('Natural gas', 'Doğal gaz', 'Stationary', 'Sabit', '56,100', '5', '0.1',
+     'IPCC 2006, Vol. 2, Ch. 2, Table 2.3'),
+    ('Diesel — ON ROAD', 'Motorin — ON ROAD', 'Mobile', 'Hareketli',
+     '74,100', '3.9', '3.9', 'IPCC 2006, Vol. 2, Ch. 3, Tables 3.2.1 / 3.2.2'),
+    ('Petrol — ON ROAD', 'Benzin — ON ROAD', 'Mobile', 'Hareketli',
+     '69,300', '3.8', '5.7',
+     'IPCC 2006, Vol. 2, Ch. 3, Tables 3.2.1 / 3.2.2 — low mileage'),
+    ('Diesel — stationary', 'Motorin — sabit', 'Stationary', 'Sabit',
+     '74,100', '3', '0.6', 'IPCC 2006, Vol. 2, Ch. 2, Table 2.3'),
+    ('LPG', 'LPG', 'Stationary', 'Sabit', '63,100', '5', '0.1',
+     'IPCC 2006, Vol. 2, Ch. 2, Table 2.3'),
+]
+
+LEAKAGE_RATE_REF = [
+    ('Refrigerators / water coolers', 'Buzdolabı / su sebili', '0',
+     'IPCC 2006, Vol. 3, Ch. 7, Table 7.9'),
+    ('Air conditioners', 'Klimalar', '1', 'IPCC 2006, Vol. 3, Ch. 7, Table 7.9'),
+    ('Commercial refrigeration', 'Ticari soğutma', '15',
+     'IPCC 2006, Vol. 3, Ch. 7, Table 7.9'),
+    ('Fire extinguishers', 'Yangın söndürücüler', '4',
+     'IPCC 2005, Ch. 9 (fire protection), Table 9.2'),
+]
+
+# The six gas columns the inventory and per-category data tables carry, in the
+# order ISO 14064-1 reports them.
+GAS_COLS = ('CO₂', 'CH₄', 'N₂O', 'HFC', 'PFC', 'SF₆')
+
+# Fugitive sources release one identifiable gas, so their CO₂e belongs in that
+# gas's column. Matched on the factor name, lowercased.
+_PFC_MARKERS = ('pfc', 'cf4', 'c2f6', 'perfluoro', 'perflor')
+_SF6_MARKERS = ('sf6', 'sf₆', 'sulphur hexafluoride', 'sulfur hexafluoride',
+                'kükürt heksaflorür')
+_NF3_MARKERS = ('nf3', 'nf₃', 'nitrogen trifluoride', 'azot triflorür')
+
+
+# EmissionFactor names its gas columns in ASCII; this report prints them with
+# subscripts. Same six columns, same order.
+GAS_KEY_TO_COL = {'CO2': 'CO₂', 'CH4': 'CH₄', 'N2O': 'N₂O',
+                  'HFC': 'HFC', 'PFC': 'PFC', 'SF6': 'SF₆'}
+
+
+def gas_column_for(row):
+    """Fallback column for a source whose factor publishes no per-gas split.
+
+    Most factors now carry one (see EmissionFactor.gas_split), and this is not
+    consulted for those. It remains for the rest — grid electricity, purchased
+    goods, waste, water, distance-based composite factors — where the publisher
+    issues a single CO₂e figure. Those go in the CO₂ column, and the table
+    footnote says which rows were reported that way rather than letting a
+    reader assume every gas was quantified separately.
+
+    A fugitive release with no seeded split is still a single named gas, so it
+    is placed by gas identity, which is accurate without inferring anything.
+    """
+    if row.get('category') != 'fugitive_emissions':
+        return 'CO₂'
+    name = (row.get('name') or '').lower()
+    if any(m in name for m in _SF6_MARKERS):
+        return 'SF₆'
+    if any(m in name for m in _PFC_MARKERS):
+        return 'PFC'
+    if any(m in name for m in _NF3_MARKERS):
+        # NF₃ has no column of its own in the ISO layout; it is reported with
+        # the other fluorinated gases rather than dropped.
+        return 'PFC'
+    return 'HFC'
+
+
 def iso_category_for(scope, category):
     """Resolve one (scope, category) pair to its ISO 14064-1 category number.
 
@@ -283,6 +396,42 @@ T = {
                 'tr': 'Yıllara göre toplam sera gazı emisyonları'},
     't_cov': {'en': 'Coverage of activity data across facilities',
               'tr': 'Faaliyet verisinin tesisler arasındaki kapsamı'},
+
+    # ── Section 4 headings, numbered as the ISO inventory report does ──
+    's4_direct': {'en': 'Direct Greenhouse Gas Emissions — Calculation and Analysis',
+                  'tr': 'Doğrudan Sera Gazı Emisyonları — Hesaplama ve Analiz'},
+    's4_dir_comb': {'en': 'Calculation of Direct Emissions from Stationary and Mobile '
+                          'Combustion Sources',
+                    'tr': 'Sabit ve Hareketli Yanma Kaynaklarından Doğrudan Emisyonların '
+                          'Hesaplanması'},
+    's4_dir_leak': {'en': 'Direct Emissions from Anthropogenic System Leaks',
+                    'tr': 'Antropojenik Sistem Sızıntılarından Doğrudan Emisyonlar'},
+    's4_dir_an': {'en': 'Direct Greenhouse Gas Emissions Analysis',
+                  'tr': 'Doğrudan Sera Gazı Emisyonları Analizi'},
+    's4_indirect': {'en': 'Indirect Greenhouse Gas Emissions — Calculation and Analysis',
+                    'tr': 'Dolaylı Sera Gazı Emisyonları — Hesaplama ve Analiz'},
+    's4_loc': {'en': 'Location-Based Evaluation', 'tr': 'Tesis Bazında Değerlendirme'},
+    's4_actsub': {'en': 'Activity-Based Assessment', 'tr': 'Faaliyet Bazında Değerlendirme'},
+
+    # ── Methodology reference tables ──
+    't_density': {'en': 'Fuel density references', 'tr': 'Yakıt yoğunluğu referansları'},
+    't_ncv': {'en': 'Fuel net calorific value references',
+              'tr': 'Yakıt net kalorifik değer referansları'},
+    't_fuel_ef': {'en': 'Fuel emission factor references',
+                  'tr': 'Yakıt emisyon faktörü referansları'},
+    't_leak': {'en': 'Anthropogenic system leakage rate references',
+               'tr': 'Antropojenik sistem sızıntı oranı referansları'},
+    't_cat_data': {'en': 'greenhouse gas emissions, Category {cat} data',
+                   'tr': 'sera gazı emisyonları, Kategori {cat} verileri'},
+
+    # ── Column headers for the per-gas inventory tables ──
+    'c_density': {'en': 'Density', 'tr': 'Yoğunluk'},
+    'c_ncv': {'en': 'NCV (TJ/Gg)', 'tr': 'NKD (TJ/Gg)'},
+    'c_comb_type': {'en': 'Combustion type', 'tr': 'Yanma türü'},
+    'c_leak_rate': {'en': 'Leakage rate (%)', 'tr': 'Sızıntı oranı (%)'},
+    'c_device': {'en': 'Device type', 'tr': 'Cihaz türü'},
+    'c_fuel': {'en': 'Fuel', 'tr': 'Yakıt'},
+    'c_cat_n_total': {'en': 'CATEGORY {cat} TOTAL', 'tr': 'KATEGORİ {cat} TOPLAMI'},
 
     # Table captions
     't_org': {'en': 'Organisational information', 'tr': 'Kurumsal bilgiler'},
@@ -523,10 +672,26 @@ def _gather(report, lang):
             'quantity': 0.0,
             'kg': 0.0,
             'count': 0,
+            # Per-gas breakdown, filled below. `split_basis` is None when the
+            # factor publishes no split; the tables then fall back to a single
+            # column and the footnote says which rows those were.
+            'gas_kg': {g: 0.0 for g in GAS_COLS},
+            'split_basis': f.gas_split_basis or None,
+            'split_reference': f.gas_split_reference or '',
         })
         row['quantity'] += float(e.quantity or 0)
         row['kg'] += kg
         row['count'] += 1
+        # Shares rather than the per-gas factors themselves: the stored CO₂e is
+        # authoritative (it may have been calculated against an older factor
+        # value), so apportioning it keeps the gas columns adding up to exactly
+        # the emission this inventory reports.
+        shares = f.gas_split_shares()
+        if shares:
+            for gas_key, share in shares.items():
+                row['gas_kg'][GAS_KEY_TO_COL[gas_key]] += kg * float(share)
+        else:
+            row['gas_kg'][gas_column_for(row)] += kg
 
         by_category[iso_cat] += kg
         by_scope[scope] = by_scope.get(scope, 0.0) + kg
@@ -547,10 +712,15 @@ def _gather(report, lang):
             'name': key[2], 'unit': getattr(cr, 'unit', '') or '',
             'factor': 0.0, 'reference': 'Custom request (approved)',
             'quantity': 0.0, 'kg': 0.0, 'count': 0,
+            # An approved custom request carries a CO₂e figure and no factor
+            # record, so there is no split to read — it reports as combined.
+            'gas_kg': {g: 0.0 for g in GAS_COLS},
+            'split_basis': None, 'split_reference': '',
         })
         row['quantity'] += float(getattr(cr, 'quantity', 0) or 0)
         row['kg'] += kg
         row['count'] += 1
+        row['gas_kg'][gas_column_for(row)] += kg
         by_category[iso_cat] += kg
         by_scope[cr.scope] = by_scope.get(cr.scope, 0.0) + kg
         total_kg += kg
@@ -668,6 +838,28 @@ def _kv_table(S, rows, lang, col_widths=(58*mm, 112*mm)):
     st.add('ALIGN', (0, 0), (-1, -1), 'LEFT')
     tbl.setStyle(st)
     return tbl
+
+
+def _ref_table(E, S, lang, TBL, caption, headers, rows, col_widths):
+    """A plain reference table — headers and already-formatted string cells.
+
+    Used for the methodology constants (densities, net calorific values, IPCC
+    default factors, leakage rates), which are fixed published values rather
+    than anything derived from this organisation's data.
+    """
+    fn, fnb = S['fn'], S['fnb']
+    data = [[Paragraph(f'<b>{h}</b>', S['small']) for h in headers]]
+    for r in rows:
+        data.append([Paragraph(str(c), S['small']) for c in r])
+    tbl = Table(data, colWidths=col_widths, hAlign='LEFT', repeatRows=1)
+    st = _tbl_style(fn, fnb)
+    st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+    st.add('ALIGN', (-1, 0), (-1, -1), 'LEFT')
+    st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
+    tbl.setStyle(st)
+    E.append(_caption(S, TBL, caption, lang))
+    E.append(tbl)
+    E.append(Spacer(1, 4*mm))
 
 
 def _bullets(S, items):
@@ -911,11 +1103,14 @@ def _donut_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
 # reports, which keep their bolder brand-forward chrome).
 # ═══════════════════════════════════════════════════════════════════════════
 class _ReportDocTemplate(BaseDocTemplate):
-    def __init__(self, buf, company_name, year, lang, **kw):
+    def __init__(self, buf, company_name, year, lang, page_offset=0, **kw):
         super().__init__(buf, **kw)
         self.company_name = company_name
         self.year = year
         self.lang = lang
+        # See emissions.report_pdf._ReportDocTemplate — pages printed ahead of
+        # this one, so the combined pack numbers straight through.
+        self.page_offset = page_offset
 
         frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
         frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
@@ -965,22 +1160,26 @@ class _ReportDocTemplate(BaseDocTemplate):
         canvas.setLineWidth(0.6)
         canvas.line(20*mm, h-15*mm, w-20*mm, h-15*mm)
         self._draw_logo(canvas, 20*mm, h-13.8*mm, 3.6*mm)
+        # The running head names the document and the reporting year, and the
+        # page number sits opposite it — the chrome a printed inventory report
+        # carries, so any loose page can be placed back in the document.
         canvas.setFont(fnb, 7.5)
         canvas.setFillColor(ACCENT)
-        canvas.drawString(25*mm, h-13*mm, 'CARBONLESS')
+        canvas.drawString(25*mm, h-13*mm,
+                          f'{t("standard", self.lang)} {t("doc_title", self.lang)} — {self.year}')
         canvas.setFont(fn, 7)
         canvas.setFillColor(FAINT)
-        canvas.drawRightString(w-20*mm, h-13*mm, f'ISO 14064-1 · {self.company_name} · {self.year}')
-        # Footer — hairline rule, centered page number, no box/fill.
+        page_num = doc.page - 1 + self.page_offset
+        label = 'Sayfa' if self.lang == 'tr' else 'Page'
+        canvas.drawRightString(w-20*mm, h-13*mm, f'{label} {page_num}')
+        # Footer — hairline rule, organisation and issue date, no box/fill.
         canvas.setStrokeColor(LINE)
         canvas.setLineWidth(0.4)
         canvas.line(20*mm, 15*mm, w-20*mm, 15*mm)
         canvas.setFont(fn, 7)
         canvas.setFillColor(FAINT)
-        page_num = doc.page - 1
-        label = 'Sayfa' if self.lang == 'tr' else 'Page'
-        canvas.drawCentredString(w/2, 10*mm, f'{label} {page_num}')
-        canvas.drawString(20*mm, 10*mm, 'Carbonless Platform')
+        canvas.drawString(20*mm, 10*mm, self.company_name)
+        canvas.drawCentredString(w/2, 10*mm, 'Carbonless')
         canvas.drawRightString(w-20*mm, 10*mm, datetime.now().strftime('%d.%m.%Y'))
 
 
@@ -1011,17 +1210,44 @@ def _cover(E, S, D, report, lang):
 
 
 def _contents(E, S, lang):
+    """Two-level contents. A 30-plus page inventory report is consulted rather
+    than read start to finish, so the sub-sections a verifier looks up by name
+    (exclusions, assumptions, significance, uncertainty) are listed too."""
     E.append(Paragraph(t('contents', lang), S['h1']))
-    items = [
-        ('', t('intro', lang)),
-        ('1', t('s1', lang)),
-        ('2', t('s2', lang)),
-        ('3', t('s3', lang)),
-        ('4', t('s4', lang)),
+    top = [
+        ('', t('intro', lang), []),
+        ('1', t('s1', lang), [
+            ('1.1', t('s1_1', lang)), ('1.2', t('s1_2', lang)),
+            ('1.3', t('s1_3', lang)), ('1.4', t('s1_4', lang)),
+            ('1.5', t('s1_5', lang)),
+        ]),
+        ('2', t('s2', lang), [
+            ('2.1', t('s2_1', lang)), ('2.2', t('s2_2', lang)),
+        ]),
+        ('3', t('s3', lang), [
+            ('3.1', t('s3_1', lang)), ('3.2', t('s3_2', lang)),
+            ('3.3', t('s3_3', lang)), ('3.4', t('s3_4', lang)),
+            ('3.5', t('s3_5', lang)), ('3.6', t('s3_6', lang)),
+        ]),
+        ('4', t('s4', lang), [
+            ('4.1', t('s4_1', lang)),
+            ('4.1.1', t('s4_direct', lang)),
+            ('4.1.2', t('s4_indirect', lang)),
+            ('4.1.3', t('s4_sig', lang)),
+            ('4.1.4', t('s4_unc', lang)),
+            ('4.1.5', t('s4_tgt', lang)),
+            ('4.1.6', t('s4_risk', lang)),
+            ('4.1.7', t('s4_ver', lang)),
+            ('4.1.8', t('s4_qms', lang)),
+            ('4.2', t('s4_2', lang)),
+            ('4.3', t('s4_trend', lang)),
+        ]),
     ]
-    for num, label in items:
-        E.append(Paragraph(f'<b>{num}</b>   {label.title() if lang == "en" else label}',
-                           S['toc']))
+    for num, label, subs in top:
+        text_ = label.title() if lang == 'en' else label
+        E.append(Paragraph(f'{num}   {text_}' if num else text_, S['toc']))
+        for sub_num, sub_label in subs:
+            E.append(Paragraph(f'{sub_num}   {sub_label}', S['toc_sub']))
     E.append(PageBreak())
 
 
@@ -1554,16 +1780,32 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     from companies.models import Facility
     facs = list(Facility.objects.filter(company=company)) if company else []
     if facs:
+        E.append(Paragraph(
+            'The locations that make up the facility boundary are listed in the table '
+            'below. All activities at these locations are included in the calculation.'
+            if lang == 'en' else
+            'Tesis sınırını oluşturan lokasyonlar aşağıdaki tabloda listelenmiştir. Bu '
+            'lokasyonlardaki tüm faaliyetler hesaplamaya dâhil edilmiştir.', S['body']))
         data = [[Paragraph(f'<b>{t("c_no", lang)}</b>', S['body_sm']),
                  Paragraph(f'<b>{t("c_facility", lang)}</b>', S['body_sm']),
-                 Paragraph(f'<b>{t("c_type", lang)}</b>', S['body_sm'])]]
+                 Paragraph(f'<b>{t("c_type", lang)}</b>', S['body_sm']),
+                 Paragraph('<b>' + ('Address' if lang == 'en' else 'Adres') + '</b>',
+                           S['body_sm'])]]
         for i, f in enumerate(facs, 1):
+            # City/country stand in when no street address was entered — a
+            # location's line should say where it is, not read as blank.
+            where = ', '.join(x for x in (getattr(f, 'address', '') or '',
+                                          getattr(f, 'city', '') or '',
+                                          getattr(f, 'country', '') or '') if x)
             data.append([
                 Paragraph(str(i), S['body_sm']),
                 Paragraph(getattr(f, 'name', '—'), S['body_sm']),
                 Paragraph(str(getattr(f, 'facility_type', '') or '—'), S['body_sm']),
+                Paragraph(_ellipsize(where, 70) if where else t('not_declared', lang),
+                          S['body_sm']),
             ])
-        tbl = Table(data, colWidths=[12*mm, 100*mm, 58*mm], hAlign='LEFT', repeatRows=1)
+        tbl = Table(data, colWidths=[13*mm, 53*mm, 36*mm, 68*mm], hAlign='LEFT',
+                    repeatRows=1)
         st = _tbl_style(fn, fnb)
         st.add('ALIGN', (0, 0), (-1, -1), 'LEFT')
         tbl.setStyle(st)
@@ -1843,18 +2085,92 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     E.append(PageBreak())
 
 
+def _gas_cells(row, S, tr):
+    """One inventory row rendered across the six GHG columns.
+
+    A gas with no contribution prints blank rather than 0.00, so the eye can
+    pick a row's gases out of eleven columns at a glance — the same way the
+    reference inventory table reads.
+    """
+    return [Paragraph(_fmt(row['gas_kg'][g] / 1000.0, tr) if row['gas_kg'][g] else '',
+                      S['num'])
+            for g in GAS_COLS]
+
+
+def _gas_totals(rows):
+    """Per-gas column totals (tonnes) for a set of inventory rows."""
+    totals = {g: 0.0 for g in GAS_COLS}
+    for r in rows:
+        for g in GAS_COLS:
+            totals[g] += r['gas_kg'][g] / 1000.0
+    return totals
+
+
+def _gas_footnote(E, S, lang, rows):
+    """Say how each gas column was arrived at, for the rows actually shown.
+
+    ISO 14064-1 asks for emissions gas by gas, and a reader is entitled to know
+    which figures are a publisher's own split, which are an apportionment on a
+    published ratio, and which are a single combined CO₂e figure that could not
+    be divided at all. The sentence is assembled from what this table contains
+    rather than asserted in full every time.
+    """
+    bases = {r.get('split_basis') for r in rows}
+    parts = []
+    if 'single_gas' in bases:
+        parts.append(
+            'Fugitive releases are single-gas sources: the whole quantity is that gas, '
+            'weighted by its own 100-year global warming potential.'
+            if lang == 'en' else
+            'Kaçak salımlar tek gazlı kaynaklardır: miktarın tamamı, kendi 100 yıllık '
+            'küresel ısınma potansiyeli ile ağırlıklandırılmış olarak o gaza aittir.')
+    if 'apportioned' in bases:
+        parts.append(
+            'For fuel combustion the CO₂ / CH₄ / N₂O division follows the IPCC default '
+            'emission factors for that fuel and combustion type, weighted by AR6 100-year '
+            'global warming potentials and applied to the factor’s own published CO₂e '
+            'total, which is unchanged. The table each ratio comes from is recorded '
+            'against the factor.'
+            if lang == 'en' else
+            'Yakıt yanması için CO₂ / CH₄ / N₂O ayrımı, ilgili yakıt ve yanma türüne ait '
+            'IPCC varsayılan emisyon faktörlerine dayanır; bu oranlar AR6 100 yıllık '
+            'küresel ısınma potansiyelleri ile ağırlıklandırılarak faktörün yayımlanmış '
+            'CO₂e toplamına uygulanmıştır ve bu toplam değişmemiştir. Her oranın alındığı '
+            'tablo faktör kaydında saklanmaktadır.')
+    if 'published' in bases:
+        parts.append(
+            'Where the factor’s publisher issues the split itself, that split is used as '
+            'published.'
+            if lang == 'en' else
+            'Faktörü yayımlayan kuruluşun ayrımı doğrudan verdiği durumlarda, bu ayrım '
+            'yayımlandığı şekliyle kullanılmıştır.')
+    if None in bases:
+        parts.append(
+            'Some sources — grid electricity, purchased goods and services, waste, water '
+            'and distance-based composite factors — are published as a single CO₂e figure '
+            'with no gas split available. These are reported in the CO₂ column and their '
+            'gases are not separately quantified.'
+            if lang == 'en' else
+            'Bazı kaynaklar — şebeke elektriği, satın alınan mal ve hizmetler, atık, su ve '
+            'mesafe tabanlı bileşik faktörler — gaz ayrımı bulunmayan tek bir CO₂e değeri '
+            'olarak yayımlanmıştır. Bunlar CO₂ sütununda raporlanır ve gazları ayrıca '
+            'nicelenmemiştir.')
+    if parts:
+        E.append(Paragraph(' '.join(parts), S['small']))
+
+
 def _inventory_table(E, S, D, lang, TBL):
-    """Table 5 — the inventory itself, one row per GHG source, grouped by category."""
+    """Table 5 — the inventory itself, one row per GHG source, grouped by
+    category, laid out across the six GHG columns the standard reports."""
     fn, fnb = S['fn'], S['fnb']
     tr = lang == 'tr'
     hdr = [
         Paragraph(f'<b>{t("c_scope", lang)}</b>', S['small']),
         Paragraph(f'<b>{t("c_cat", lang)}</b>', S['small']),
         Paragraph(f'<b>{t("c_source", lang)}</b>', S['small']),
-        Paragraph(f'<b>{t("c_activity", lang)}</b>', S['small']),
-        Paragraph(f'<b>{t("c_unit", lang)}</b>', S['small']),
-        Paragraph(f'<b>{t("c_ghg_t", lang)}</b>', S['small']),
-        Paragraph(f'<b>{t("c_cat_total", lang)}</b>', S['small']),
+    ] + [Paragraph(g, S['num_hdr']) for g in GAS_COLS] + [
+        Paragraph(t('c_ghg_t', lang), S['num_hdr']),
+        Paragraph(t('c_cat_total', lang), S['num_hdr']),
     ]
     data = [hdr]
     span_cmds = []
@@ -1872,28 +2188,35 @@ def _inventory_table(E, S, D, lang, TBL):
                 Paragraph(scope_lbl if j == 0 else '', S['small']),
                 Paragraph(ROMAN[cat], S['small']),
                 Paragraph(f'{cat_label(r["category"], lang)} — {r["name"]}', S['small']),
-                Paragraph(_fmt(r['quantity'], tr), S['small']),
-                Paragraph(str(r['unit'] or '—'), S['small']),
-                Paragraph(_fmt(r['kg'] / 1000.0, tr), S['small']),
-                Paragraph(_fmt(cat_total_t, tr) if j == 0 else '', S['small']),
+            ] + _gas_cells(r, S, tr) + [
+                Paragraph(_fmt(r['kg'] / 1000.0, tr), S['num']),
+                Paragraph(_fmt(cat_total_t, tr) if j == 0 else '', S['num']),
             ])
             row_i += 1
         if len(rows) > 1:
-            span_cmds.append(('SPAN', (6, first_row_of_cat), (6, row_i - 1)))
+            span_cmds.append(('SPAN', (10, first_row_of_cat), (10, row_i - 1)))
             span_cmds.append(('SPAN', (0, first_row_of_cat), (0, row_i - 1)))
 
+    totals = _gas_totals(D['sources'])
     data.append([
-        Paragraph(f'<b>{t("total", lang)}</b>', S['small']), Paragraph('', S['small']),
-        Paragraph('', S['small']), Paragraph('', S['small']), Paragraph('', S['small']),
-        Paragraph(f'<b>{_fmt(D["total_t"], tr)}</b>', S['small']),
-        Paragraph(f'<b>{_fmt(D["total_t"], tr)}</b>', S['small']),
+        Paragraph(f'<b>{t("total", lang)}</b>', S['small']),
+        Paragraph('', S['small']), Paragraph('', S['small']),
+    ] + [Paragraph(f'<b>{_fmt(totals[g], tr)}</b>' if totals[g] else '', S['num'])
+         for g in GAS_COLS] + [
+        Paragraph(f'<b>{_fmt(D["total_t"], tr)}</b>', S['num']),
+        Paragraph(f'<b>{_fmt(D["total_t"], tr)}</b>', S['num']),
     ])
 
-    tbl = Table(data, colWidths=[16*mm, 10*mm, 68*mm, 24*mm, 16*mm, 20*mm, 20*mm],
+    tbl = Table(data,
+                colWidths=[16*mm, 10*mm, 32*mm] + [13*mm]*6 + [17*mm, 17*mm],
                 hAlign='LEFT', repeatRows=1)
     st = _tbl_style(fn, fnb)
     st.add('ALIGN', (0, 0), (2, -1), 'LEFT')
     st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
+    # Eleven columns across an A4 text block: the default 8pt side padding
+    # would wrap "Cat." and the eight-character figures onto second lines.
+    st.add('LEFTPADDING', (0, 0), (-1, -1), 3)
+    st.add('RIGHTPADDING', (0, 0), (-1, -1), 3)
     for cmd in span_cmds:
         st.add(*cmd)
     st.add('BACKGROUND', (0, -1), (-1, -1), CREAM)
@@ -1901,6 +2224,51 @@ def _inventory_table(E, S, D, lang, TBL):
     tbl.setStyle(st)
     E.append(_caption(S, TBL, t('t_inv', lang), lang))
     E.append(tbl)
+    E.append(Spacer(1, 2*mm))
+    _gas_footnote(E, S, lang, D['sources'])
+
+
+def _category_data_table(E, S, D, cat, lang, TBL):
+    """One category's emissions laid out per gas, closing on a CATEGORY N
+    TOTAL row — the per-category counterpart of the inventory table."""
+    fn, fnb = S['fn'], S['fnb']
+    tr = lang == 'tr'
+    rows = [r for r in D['sources'] if r['iso_cat'] == cat]
+    if not rows:
+        return
+    data = [[Paragraph('<b>' + ('Emission source' if lang == 'en' else 'Emisyon kaynağı')
+                       + '</b>', S['small'])]
+            + [Paragraph(g, S['num_hdr']) for g in GAS_COLS]
+            + [Paragraph(t('c_ghg_t', lang), S['num_hdr'])]]
+    for r in rows:
+        data.append(
+            [Paragraph(f'{cat_label(r["category"], lang)} — {r["name"]}', S['small'])]
+            + _gas_cells(r, S, tr)
+            + [Paragraph(_fmt(r['kg'] / 1000.0, tr), S['num'])])
+    cat_total_t = D['by_category'][cat] / 1000.0
+    data.append([Paragraph('<b>' + t('c_cat_n_total', lang).format(cat=ROMAN[cat])
+                           + '</b>', S['small'])]
+                + [Paragraph('', S['num'])] * 6
+                + [Paragraph(f'<b>{_fmt(cat_total_t, tr)}</b>', S['num'])])
+    tbl = Table(data, colWidths=[74*mm] + [13*mm]*6 + [18*mm],
+                hAlign='LEFT', repeatRows=1)
+    st = _tbl_style(fn, fnb)
+    st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+    st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
+    st.add('LEFTPADDING', (1, 0), (-1, -1), 2)
+    st.add('RIGHTPADDING', (1, 0), (-1, -1), 2)
+    st.add('BACKGROUND', (0, -1), (-1, -1), CREAM)
+    st.add('LINEABOVE', (0, -1), (-1, -1), 1.2, OLIVE)
+    tbl.setStyle(st)
+    # "Direct"/"Indirect" only — the caption template already carries the rest
+    # of the phrase, so taking the whole `direct`/`indirect` string here would
+    # repeat "greenhouse gas emissions".
+    adjective = (t('direct', lang) if cat == CAT_I else t('indirect', lang)).split()[0]
+    cap = f'{adjective} ' + t('t_cat_data', lang).format(cat=ROMAN[cat])
+    E.append(_caption(S, TBL, cap, lang))
+    E.append(tbl)
+    E.append(Spacer(1, 2*mm))
+    _gas_footnote(E, S, lang, rows)
 
 
 def _section4(E, S, D, report, lang, TBL, FIG):
@@ -2018,6 +2386,206 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         E.append(_fig_caption(S, FIG, t('t_cat_bars', lang), lang))
     E.append(PageBreak())
 
+    # ═══════════════════════════════════════════════════════════════════════
+    # 4.1.1 — DIRECT EMISSIONS
+    # Split the way the standard's own report structure splits it: first how
+    # the figures are arrived at (combustion, then fugitive releases), then
+    # what the figures actually are. The two "calculation" sub-sections carry
+    # the published constants a verifier retraces the arithmetic against.
+    # ═══════════════════════════════════════════════════════════════════════
+    # Per-category renderers, shared by 4.1.1.3 and by every 4.1.2.x pair.
+    # Kept as closures because both need `pct`, TBL/FIG and the same styles;
+    # lifting them to module level would mean threading six arguments through.
+    def _cat_factors(cat):
+        """The activity data and emission factors behind one category."""
+        rows = [r for r in D['sources'] if r['iso_cat'] == cat]
+        if not rows:
+            E.append(Paragraph(t('none_recorded', lang), S['no_data']))
+            E.append(Spacer(1, 3*mm))
+            return
+        E.append(Paragraph(
+            'The activity data included in this category, the unit each quantity is '
+            'recorded in, the emission factor applied and its published source are set '
+            'out below.'
+            if lang == 'en' else
+            'Bu kategoriye dâhil edilen faaliyet verileri, her miktarın kaydedildiği '
+            'birim, uygulanan emisyon faktörü ve faktörün yayımlandığı kaynak aşağıda '
+            'verilmiştir.', S['body']))
+        E.append(Spacer(1, 2*mm))
+        data = [[Paragraph(f'<b>{t("c_source", lang)}</b>', S['small']),
+                 Paragraph(t('c_activity', lang), S['num_hdr']),
+                 Paragraph(f'<b>{t("c_unit", lang)}</b>', S['small']),
+                 Paragraph(t('c_factor', lang), S['num_hdr']),
+                 Paragraph(t('c_ghg_t', lang), S['num_hdr']),
+                 Paragraph(f'<b>{t("c_ref", lang)}</b>', S['small'])]]
+        for r in rows:
+            data.append([
+                Paragraph(f'{cat_label(r["category"], lang)} — {r["name"]}', S['small']),
+                Paragraph(_fmt(r['quantity'], tr), S['num']),
+                Paragraph(str(r['unit'] or '—'), S['small']),
+                Paragraph(_localize_num(f'{r["factor"]:,.4f}', tr), S['num']),
+                Paragraph(_fmt(r['kg'] / 1000.0, tr), S['num']),
+                Paragraph(_ellipsize(r['reference'], 90), S['small']),
+            ])
+        tbl = Table(data, colWidths=[44*mm, 18*mm, 18*mm, 18*mm, 18*mm, 54*mm],
+                    hAlign='LEFT', repeatRows=1)
+        st = _tbl_style(fn, fnb)
+        st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+        st.add('ALIGN', (5, 0), (5, -1), 'LEFT')
+        st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
+        st.add('LEFTPADDING', (1, 0), (4, -1), 3)
+        st.add('RIGHTPADDING', (1, 0), (4, -1), 3)
+        tbl.setStyle(st)
+        E.append(_caption(S, TBL, f'{t("t_ef", lang)} — {ROMAN[cat]}', lang))
+        E.append(tbl)
+        E.append(Spacer(1, 4*mm))
+
+    def _cat_analysis(cat):
+        """One category's result: narrative, per-gas data table, figures."""
+        rows = [r for r in D['sources'] if r['iso_cat'] == cat]
+        cat_t = D['by_category'][cat] / 1000.0
+        if not rows:
+            E.append(Paragraph(t('none_recorded', lang), S['no_data']))
+            E.append(Spacer(1, 3*mm))
+            return
+        top = max(rows, key=lambda r: r['kg'])
+        top_t = top['kg'] / 1000.0
+        # Only the category label is lower-cased for the sentence; the source
+        # name keeps its own casing, or "SF6" would read as "sf6".
+        top_name = f'{cat_label(top["category"], lang).lower()} — {top["name"]}'
+        in_cat = (top_t / cat_t * 100) if cat_t else 0
+        E.append(Paragraph(
+            (f'Emissions in this category totalled {_fmt(cat_t, tr)} t CO₂e, '
+             f'{pct(cat_t)} % of the inventory. The largest share is '
+             f'{top_name} at {_fmt(top_t, tr)} t CO₂e, which represents '
+             f'{_localize_num(f"{in_cat:.2f}", tr)} % of the category.')
+            if lang == 'en' else
+            (f'Bu kategorideki emisyonlar toplam {_fmt(cat_t, tr)} t CO₂e olup envanterin '
+             f'%{pct(cat_t)}’ini oluşturmaktadır. En büyük pay {_fmt(top_t, tr)} t CO₂e ile '
+             f'{top_name} kaynağına aittir; bu, kategorinin '
+             f'%{_localize_num(f"{in_cat:.2f}", tr)}’ine karşılık gelmektedir.'), S['body']))
+        E.append(Spacer(1, 3*mm))
+        _category_data_table(E, S, D, cat, lang, TBL)
+
+        src_rows = [(f'{cat_label(r["category"], lang)} — {r["name"]}', r['kg'])
+                    for r in rows]
+        name = ISO_CATEGORY_NAMES[cat][lang]
+        cat_ref = (f'Category {ROMAN[cat]}: {name[0].lower()}{name[1:]}' if lang == 'en'
+                   else f'Kategori {ROMAN[cat]}: {name}')
+        # The pie and the bars answer different questions, so they get distinct
+        # captions rather than the same line twice: the pie is the share split,
+        # the bars rank the sources against each other.
+        if len([r for r in src_rows if r[1] > 0]) > 1:
+            pie = _donut_chart(src_rows, S, lang)
+            if pie is not None:
+                E.append(Spacer(1, 3*mm))
+                E.append(pie)
+                E.append(_fig_caption(
+                    S, FIG,
+                    f'{cat_ref} — ' + ('distribution' if lang == 'en' else 'dağılım'),
+                    lang))
+        chart = _bar_row_chart(src_rows, D['by_category'][cat], S, lang)
+        if chart is not None:
+            E.append(Spacer(1, 3*mm))
+            E.append(chart)
+            E.append(_fig_caption(
+                S, FIG,
+                f'{cat_ref} — ' + ('emissions by source' if lang == 'en'
+                                   else 'kaynak bazında emisyonlar'), lang))
+        E.append(Spacer(1, 5*mm))
+
+    E.append(Paragraph('4.1.1   ' + t('s4_direct', lang), S['h2']))
+    E.append(Paragraph(
+        'Direct greenhouse gas emissions are those from fuel combustion in stationary and '
+        'mobile sources within the organisation’s boundary, together with fugitive or '
+        'leakage emissions from gases used in anthropogenic systems.'
+        if lang == 'en' else
+        'Doğrudan sera gazı emisyonları, kuruluşun sınırları içindeki sabit ve hareketli '
+        'kaynaklarda yakıt yanmasından ve antropojenik sistemlerde kullanılan gazların '
+        'kaçak veya sızıntı salımlarından kaynaklanan emisyonlardır.', S['body']))
+    E.append(Spacer(1, 3*mm))
+
+    # 4.1.1.1 — stationary and mobile combustion.
+    E.append(Paragraph('4.1.1.1   ' + t('s4_dir_comb', lang), S['h3']))
+    E.append(Paragraph(
+        'Activity data for stationary and mobile combustion sources is recorded in the unit '
+        'in which it is metered or invoiced — litres, cubic metres or kilowatt-hours — and '
+        'the emission factor applied to it is published in kilograms of CO₂ equivalent per '
+        'that unit. No density or net calorific value conversion is therefore performed '
+        'within this inventory. The published constants on which combustion factors of this '
+        'type rest are reproduced below so that the calculation chain from metered quantity '
+        'to reported emission can be retraced.'
+        if lang == 'en' else
+        'Sabit ve hareketli yanma kaynaklarına ait faaliyet verisi, ölçüldüğü veya '
+        'faturalandığı birimde — litre, metreküp veya kilovatsaat — kaydedilir ve uygulanan '
+        'emisyon faktörü bu birim başına kilogram CO₂ eşdeğeri olarak yayımlanmıştır. Bu '
+        'nedenle envanter içinde ayrıca yoğunluk veya net kalorifik değer dönüşümü '
+        'yapılmamaktadır. Bu türdeki yanma faktörlerinin dayandığı yayımlanmış sabitler, '
+        'ölçülen miktardan raporlanan emisyona uzanan hesap zincirinin izlenebilmesi için '
+        'aşağıda verilmiştir.', S['body']))
+    E.append(Spacer(1, 3*mm))
+    E.append(Paragraph(
+        '<b>Activity data (fuel, mass) = activity data (fuel, volume) × density</b>'
+        if lang == 'en' else
+        '<b>Faaliyet verisi (yakıt, kütle) = faaliyet verisi (yakıt, hacim) × yoğunluk</b>',
+        S['quote']))
+    _ref_table(E, S, lang, TBL, t('t_density', lang),
+               [t('c_fuel', lang), t('c_density', lang), t('c_unit', lang), t('c_ref', lang)],
+               [[(en if lang == 'en' else tr_), _localize_num(d, tr), unit, ref]
+                for en, tr_, d, unit, ref in FUEL_DENSITY_REF],
+               [44*mm, 24*mm, 18*mm, 84*mm])
+    E.append(Paragraph(
+        '<b>Activity data (fuel, TJ) = activity data (fuel, Gg) × NCV (fuel)</b>'
+        if lang == 'en' else
+        '<b>Faaliyet verisi (yakıt, TJ) = faaliyet verisi (yakıt, Gg) × NKD (yakıt)</b>',
+        S['quote']))
+    _ref_table(E, S, lang, TBL, t('t_ncv', lang),
+               [t('c_fuel', lang), t('c_ncv', lang), t('c_ref', lang)],
+               [[(en if lang == 'en' else tr_), _localize_num(v, tr), ref]
+                for en, tr_, v, ref in FUEL_NCV_REF],
+               [52*mm, 28*mm, 90*mm])
+    E.append(Paragraph(
+        '<b>GHG emission (gas) = activity data (fuel, TJ) × emission factor (gas)</b>'
+        if lang == 'en' else
+        '<b>SG emisyonu (gaz) = faaliyet verisi (yakıt, TJ) × emisyon faktörü (gaz)</b>',
+        S['quote']))
+    _ref_table(E, S, lang, TBL, t('t_fuel_ef', lang),
+               [t('c_activity', lang), t('c_comb_type', lang),
+                'EF CO₂ (kg/TJ)', 'EF CH₄ (kg/TJ)', 'EF N₂O (kg/TJ)', t('c_ref', lang)],
+               [[(en if lang == 'en' else tr_), (ct_en if lang == 'en' else ct_tr),
+                 _localize_num(co2, tr), _localize_num(ch4, tr), _localize_num(n2o, tr), ref]
+                for en, tr_, ct_en, ct_tr, co2, ch4, n2o, ref in FUEL_EF_REF],
+               [30*mm, 24*mm, 19*mm, 19*mm, 19*mm, 59*mm])
+    E.append(PageBreak())
+
+    # 4.1.1.2 — fugitive releases from anthropogenic systems.
+    E.append(Paragraph('4.1.1.2   ' + t('s4_dir_leak', lang), S['h3']))
+    E.append(Paragraph(
+        'Leakage rates published by the IPCC are used to determine the quantity of gas '
+        'released from anthropogenic systems, by device type. The released quantity of each '
+        'identified gas is expressed in kilograms and then converted to CO₂ equivalent '
+        'using that gas’s own 100-year global warming potential.'
+        if lang == 'en' else
+        'Antropojenik sistemlerden salınan gaz miktarının cihaz türüne göre belirlenmesinde '
+        'IPCC tarafından yayımlanan sızıntı oranları kullanılır. Tanımlanan her gazın '
+        'salınan miktarı kilogram cinsinden ifade edilir ve ardından gazın kendi 100 yıllık '
+        'küresel ısınma potansiyeli kullanılarak CO₂ eşdeğerine dönüştürülür.', S['body']))
+    E.append(Spacer(1, 3*mm))
+    _ref_table(E, S, lang, TBL, t('t_leak', lang),
+               [t('c_device', lang), t('c_leak_rate', lang), t('c_ref', lang)],
+               [[(en if lang == 'en' else tr_), _localize_num(v, tr), ref]
+                for en, tr_, v, ref in LEAKAGE_RATE_REF],
+               [56*mm, 28*mm, 86*mm])
+    E.append(Paragraph(
+        'In the final stage each greenhouse gas is multiplied by its 100-year global warming '
+        'potential and converted to kg CO₂e; all values in kg CO₂e are then summed and '
+        'reported in tonnes CO₂e.'
+        if lang == 'en' else
+        'Son aşamada her sera gazı, 100 yıllık küresel ısınma potansiyeli ile çarpılarak '
+        'kg CO₂e’ye dönüştürülür; kg CO₂e cinsinden hesaplanan tüm değerler toplanarak ton '
+        'CO₂e olarak raporlanır.', S['body']))
+    E.append(Spacer(1, 3*mm))
+
     # Global warming potentials — the constants the CO₂e figures above rest on.
     gwp_data = [[Paragraph(f'<b>{"Greenhouse gas" if lang == "en" else "Sera gazı"}</b>', S['body_sm']),
                  Paragraph(f'<b>{"Description" if lang == "en" else "Açıklama"}</b>', S['body_sm']),
@@ -2045,76 +2613,55 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         'CO₂ eşdeğeri cinsinden ifade edilmiştir.', S['small']))
     E.append(PageBreak())
 
-    # Per-category detail
-    for cat in sorted(ROMAN):
-        rows = [r for r in D['sources'] if r['iso_cat'] == cat]
-        cat_t = D['by_category'][cat] / 1000.0
-        E.append(Paragraph(
-            f'4.1.{cat}   {t("c_cat", lang).rstrip(".")} {ROMAN[cat]} — '
-            f'{ISO_CATEGORY_NAMES[cat][lang]}', S['h2']))
-        if not rows:
-            E.append(Paragraph(t('none_recorded', lang), S['no_data']))
-            E.append(Spacer(1, 3*mm))
-            continue
-        E.append(Paragraph(
-            (f'Emissions in this category totalled {_fmt(cat_t, tr)} t CO₂e, '
-             f'{pct(cat_t)} % of the inventory.')
-            if lang == 'en' else
-            (f'Bu kategorideki emisyonlar toplam {_fmt(cat_t, tr)} t CO₂e olup '
-             f'envanterin %{pct(cat_t)}’ini oluşturmaktadır.'), S['body']))
+    # 4.1.1.3 — what the direct emissions actually are.
+    E.append(Paragraph('4.1.1.3   ' + t('s4_dir_an', lang), S['h3']))
+    _cat_factors(CAT_I)
+    _cat_analysis(CAT_I)
 
-        data = [[Paragraph(f'<b>{t("c_source", lang)}</b>', S['small']),
-                 Paragraph(f'<b>{t("c_activity", lang)}</b>', S['small']),
-                 Paragraph(f'<b>{t("c_unit", lang)}</b>', S['small']),
-                 Paragraph(f'<b>{t("c_factor", lang)}</b>', S['small']),
-                 Paragraph(f'<b>{t("c_ghg_t", lang)}</b>', S['small']),
-                 Paragraph(f'<b>{t("c_ref", lang)}</b>', S['small'])]]
-        for r in rows:
-            data.append([
-                Paragraph(f'{cat_label(r["category"], lang)} — {r["name"]}', S['small']),
-                Paragraph(_fmt(r['quantity'], tr), S['small']),
-                Paragraph(str(r['unit'] or '—'), S['small']),
-                Paragraph(_localize_num(f'{r["factor"]:,.4f}', tr), S['small']),
-                Paragraph(_fmt(r['kg'] / 1000.0, tr), S['small']),
-                Paragraph(_ellipsize(r['reference'], 90), S['small']),
-            ])
-        tbl = Table(data, colWidths=[46*mm, 20*mm, 14*mm, 20*mm, 20*mm, 54*mm],
-                    hAlign='LEFT', repeatRows=1)
-        st = _tbl_style(fn, fnb)
-        st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
-        st.add('ALIGN', (5, 0), (5, -1), 'LEFT')
-        st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
-        tbl.setStyle(st)
-        E.append(_caption(S, TBL, f'{t("t_ef", lang)} — {ROMAN[cat]}', lang))
-        E.append(tbl)
+    # ═══════════════════════════════════════════════════════════════════════
+    # 4.1.2 — INDIRECT EMISSIONS
+    # One calculation/analysis pair per category, numbered straight through,
+    # so each category states the factors it rests on before it states its
+    # result — the order a verifier reads them in.
+    # ═══════════════════════════════════════════════════════════════════════
+    E.append(PageBreak())
+    E.append(Paragraph('4.1.2   ' + t('s4_indirect', lang), S['h2']))
+    E.append(Paragraph(
+        'Indirect greenhouse gas emissions arise outside the organisation’s boundary but '
+        'are a consequence of its activities. They are assessed under Categories II to VI. '
+        'For each category the emission factors applied are stated first, followed by the '
+        'quantified result.'
+        if lang == 'en' else
+        'Dolaylı sera gazı emisyonları, kuruluşun sınırları dışında oluşmakla birlikte onun '
+        'faaliyetlerinin bir sonucudur. Bu emisyonlar Kategori II–VI kapsamında '
+        'değerlendirilir. Her kategori için önce uygulanan emisyon faktörleri, ardından '
+        'nicelenmiş sonuç verilmiştir.', S['body']))
+    E.append(Spacer(1, 3*mm))
 
-        src_rows = [(f'{cat_label(r["category"], lang)} — {r["name"]}', r['kg']) for r in rows]
-        cat_caption = (f'{t("c_cat", lang).rstrip(".")} {ROMAN[cat]} — '
-                       f'{ISO_CATEGORY_NAMES[cat][lang]}')
-        # Only worth a pie once there is more than one source to compare; with
-        # a single source it would be a full circle restating the table.
-        if len([r for r in src_rows if r[1] > 0]) > 1:
-            pie = _donut_chart(src_rows, S, lang)
-            if pie is not None:
-                E.append(Spacer(1, 3*mm))
-                E.append(pie)
-                E.append(_fig_caption(S, FIG, cat_caption, lang))
-        chart = _bar_row_chart(src_rows, D['by_category'][cat], S, lang)
-        if chart is not None:
-            E.append(Spacer(1, 3*mm))
-            E.append(chart)
-            E.append(_fig_caption(S, FIG, cat_caption, lang))
-        E.append(Spacer(1, 5*mm))
+    sub = 0
+    for cat in (CAT_II, CAT_III, CAT_IV, CAT_V, CAT_VI):
+        name = ISO_CATEGORY_NAMES[cat][lang]
+        name_lc = name[0].lower() + name[1:]
+        sub += 1
+        E.append(Paragraph(
+            f'4.1.2.{sub}   ' + (f'Calculation of {name_lc}' if lang == 'en'
+                                 else f'{name} hesaplaması'), S['h3']))
+        _cat_factors(cat)
+        sub += 1
+        E.append(Paragraph(
+            f'4.1.2.{sub}   ' + (f'Analysis of {name_lc}' if lang == 'en'
+                                 else f'{name} analizi'), S['h3']))
+        _cat_analysis(cat)
     E.append(PageBreak())
 
-    # 4.1.7 Significance assessment — per individual indirect source, ranked
+    # 4.1.3 Significance assessment — per individual indirect source, ranked
     # by magnitude, with a running cumulative share. Sources are classified
     # "significant" while the cumulative total up to (and including) that
     # source has not yet reached 95 % of indirect emissions — the same
     # cumulative-contribution test the standard's significance clause
     # describes, applied at source level rather than flattened to a per-
     # category ≥1 % cutoff.
-    E.append(Paragraph('4.1.7   ' + t('s4_sig', lang), S['h2']))
+    E.append(Paragraph('4.1.3   ' + t('s4_sig', lang), S['h2']))
     E.append(Paragraph(
         'Indirect emissions contributing at least 95 % of total indirect emissions '
         'cumulatively are classified as significant and are quantified in full below.'
@@ -2127,10 +2674,9 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     indirect_total_t = D['indirect_t']
     data = [[Paragraph(f'<b>{t("c_cat", lang)}</b>', S['small']),
              Paragraph(f'<b>{t("c_source", lang)}</b>', S['small']),
-             Paragraph(f'<b>{t("c_ghg_t", lang)}</b>', S['small']),
-             Paragraph(f'<b>{t("c_pct", lang)}</b>', S['small']),
-             Paragraph('<b>' + ('Cumulative %' if lang == 'en' else 'Kümülatif %') + '</b>',
-                       S['small']),
+             Paragraph(t('c_ghg_t', lang), S['num_hdr']),
+             Paragraph(t('c_pct', lang), S['num_hdr']),
+             Paragraph('Cumulative %' if lang == 'en' else 'Kümülatif %', S['num_hdr']),
              Paragraph(f'<b>{t("c_result", lang)}</b>', S['small'])]]
     prev_cum = 0.0
     for r in indirect_sources:
@@ -2142,18 +2688,20 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         data.append([
             Paragraph(ROMAN[r['iso_cat']], S['small']),
             Paragraph(f'{cat_label(r["category"], lang)} — {r["name"]}', S['small']),
-            Paragraph(_fmt(v_t, tr), S['small']),
-            Paragraph(_localize_num(f'{share_pct:.2f}', tr), S['small']),
-            Paragraph(_localize_num(f'{cum:.2f}', tr), S['small']),
+            Paragraph(_fmt(v_t, tr), S['num']),
+            Paragraph(_localize_num(f'{share_pct:.2f}', tr), S['num']),
+            Paragraph(_localize_num(f'{cum:.2f}', tr), S['num']),
             Paragraph((('Significant' if significant else 'Not significant') if lang == 'en'
                        else ('Önemli' if significant else 'Önemli değil')), S['small']),
         ])
     if indirect_sources:
-        tbl = Table(data, colWidths=[10*mm, 66*mm, 20*mm, 16*mm, 24*mm, 34*mm],
+        tbl = Table(data, colWidths=[13*mm, 63*mm, 20*mm, 18*mm, 22*mm, 34*mm],
                     hAlign='LEFT', repeatRows=1)
         st = _tbl_style(fn, fnb)
         st.add('ALIGN', (0, 0), (1, -1), 'LEFT')
         st.add('ALIGN', (5, 0), (5, -1), 'LEFT')
+        st.add('LEFTPADDING', (2, 0), (4, -1), 3)
+        st.add('RIGHTPADDING', (2, 0), (4, -1), 3)
         st.add('VALIGN', (0, 0), (-1, -1), 'TOP')
         tbl.setStyle(st)
         E.append(_caption(S, TBL, t('t_sig', lang), lang))
@@ -2163,7 +2711,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     E.append(Spacer(1, 5*mm))
 
     # Uncertainty
-    E.append(Paragraph('4.1.8   ' + t('s4_unc', lang), S['h2']))
+    E.append(Paragraph('4.1.4   ' + t('s4_unc', lang), S['h2']))
     E.append(Paragraph(
         'Uncertainty has been considered for both activity data and emission factors. '
         'Activity data drawn from metered or invoiced records carries low uncertainty; '
@@ -2181,7 +2729,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     E.append(Spacer(1, 4*mm))
 
     # Reduction targets
-    E.append(Paragraph('4.1.9   ' + t('s4_tgt', lang), S['h2']))
+    E.append(Paragraph('4.1.5   ' + t('s4_tgt', lang), S['h2']))
     from emissions.models import ReductionTarget
     targets = list(ReductionTarget.objects.filter(user=report.created_by)) if report.created_by else []
     if targets:
@@ -2255,7 +2803,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     E.append(Spacer(1, 4*mm))
 
     # Risk & opportunity
-    E.append(Paragraph('4.1.10   ' + t('s4_risk', lang), S['h2']))
+    E.append(Paragraph('4.1.6   ' + t('s4_risk', lang), S['h2']))
     E.extend(_bullets(S, (
         ['Identifying carbon-intensive processes creates opportunities to move to more '
          'energy-efficient technology, reducing both cost and emissions.',
@@ -2282,7 +2830,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
 
     # Verification — the questionnaire has no dedicated verification-statement
     # free-text step, so this is always the standard declaration.
-    E.append(Paragraph('4.1.11   ' + t('s4_ver', lang), S['h2']))
+    E.append(Paragraph('4.1.7   ' + t('s4_ver', lang), S['h2']))
     E.append(Paragraph(
         'This inventory has been prepared for verification at a limited or reasonable '
         'level of assurance by an accredited independent third party. The verification '
@@ -2294,7 +2842,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     E.append(Spacer(1, 4*mm))
 
     # QMS
-    E.append(Paragraph('4.1.12   ' + t('s4_qms', lang), S['h2']))
+    E.append(Paragraph('4.1.8   ' + t('s4_qms', lang), S['h2']))
     E.extend(_bullets(S, (
         ['compliance with the principles of ISO 14064-1:2018 is maintained;',
          'the inventory remains fit for its intended purpose;',
@@ -2310,73 +2858,33 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'envanter kayıtları belgelenip arşivlenir ve on yıl saklanır.'])))
     E.append(PageBreak())
 
-    # 4.2 Activity-based assessment — the same inventory cut by what the
-    # organisation actually does, rather than by ISO category. An activity can
-    # straddle categories (fuel appears under both combustion and transport),
-    # so this is the view that answers "which activity should we act on first".
-    E.append(Paragraph('4.2   ' + t('s4_act', lang), S['h2']))
-    acts = D.get('by_activity') or {}
-    live_acts = [(cat_label(k, lang), v) for k, v in acts.items() if v > 0]
-    if live_acts:
-        live_acts.sort(key=lambda kv: -kv[1])
-        biggest, biggest_kg = live_acts[0]
-        E.append(Paragraph(
-            (f'Emissions are spread across {len(live_acts)} activity types. The largest '
-             f'is {biggest.lower()}, at {_fmt(biggest_kg / 1000.0, tr)} t CO₂e '
-             f'({pct(biggest_kg / 1000.0)} % of the inventory).')
-            if lang == 'en' else
-            (f'Emisyonlar {len(live_acts)} faaliyet türüne dağılmaktadır. En büyüğü '
-             f'{biggest.lower()} olup {_fmt(biggest_kg / 1000.0, tr)} t CO₂e '
-             f'(envanterin %{pct(biggest_kg / 1000.0)}’i) düzeyindedir.'), S['body']))
+    # 4.2 Evaluation by location and by activity — the two cuts of the same
+    # inventory that answer "where" and "on what". Presented in that order.
+    E.append(Paragraph('4.2   ' + t('s4_2', lang), S['h2']))
 
-        data = [[Paragraph(f'<b>{"Activity type" if lang == "en" else "Faaliyet türü"}</b>', S['body_sm']),
-                 Paragraph(f'<b>{t("c_pct", lang)}</b>', S['body_sm']),
-                 Paragraph(f'<b>{t("c_total", lang)}</b>', S['body_sm'])]]
-        for label, v in live_acts:
-            data.append([Paragraph(label, S['body_sm']),
-                         Paragraph(pct(v / 1000.0), S['body_sm']),
-                         Paragraph(f'{_fmt(v / 1000.0, tr)} t CO₂e', S['body_sm'])])
-        data.append([Paragraph(f'<b>{t("total", lang)}</b>', S['body_sm']),
-                     Paragraph(_localize_num('100.00', tr), S['body_sm']),
-                     Paragraph(f'<b>{_fmt(total_t, tr)} t CO₂e</b>', S['body_sm'])])
-        tbl = Table(data, colWidths=[92*mm, 30*mm, 48*mm], hAlign='LEFT', repeatRows=1)
-        st = _tbl_style(fn, fnb)
-        st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
-        st.add('BACKGROUND', (0, -1), (-1, -1), CREAM)
-        st.add('LINEABOVE', (0, -1), (-1, -1), 1.2, OLIVE)
-        tbl.setStyle(st)
-        E.append(_caption(S, TBL, t('t_act', lang), lang))
-        E.append(tbl)
-
-        act_pie = _donut_chart(live_acts, S, lang)
-        if act_pie is not None:
-            E.append(Spacer(1, 4*mm))
-            E.append(act_pie)
-            E.append(_fig_caption(S, FIG, t('t_act', lang), lang))
-        act_bars = _bar_row_chart(live_acts, D['total_kg'], S, lang, max_rows=14)
-        if act_bars is not None:
-            E.append(Spacer(1, 4*mm))
-            E.append(act_bars)
-            E.append(_fig_caption(S, FIG, t('t_act', lang), lang))
-    else:
-        E.append(Paragraph(t('none_recorded', lang), S['no_data']))
-    E.append(PageBreak())
-
-    # 4.3 Location evaluation
-    E.append(Paragraph('4.3   ' + t('s4_2', lang), S['h2']))
+    # 4.2.1 Location-based evaluation
+    E.append(Paragraph('4.2.1   ' + t('s4_loc', lang), S['h3']))
     facs = D['facilities']
     if facs:
         ordered = sorted(facs.items(), key=lambda kv: -sum(kv[1].values()))
+        E.append(Paragraph(
+            'Emissions at each reporting location are shown by category below. The '
+            'highlighted cell in each row is that location’s dominant category.'
+            if lang == 'en' else
+            'Her raporlama lokasyonuna ait emisyonlar aşağıda kategori bazında '
+            'gösterilmiştir. Her satırdaki vurgulu hücre, o lokasyonun baskın '
+            'kategorisidir.', S['body']))
+        E.append(Spacer(1, 2*mm))
         data = [[Paragraph(f'<b>{t("c_facility", lang)}</b>', S['small'])] +
-                [Paragraph(f'<b>{ROMAN[c]}</b>', S['small']) for c in sorted(ROMAN)] +
-                [Paragraph(f'<b>{t("c_total", lang)}</b>', S['small'])]]
+                [Paragraph(ROMAN[c], S['num_hdr']) for c in sorted(ROMAN)] +
+                [Paragraph(t('c_total', lang), S['num_hdr'])]]
         dominant_cells = []  # (row, col) of each facility's largest category
         for row_i, (name, cats) in enumerate(ordered[:20], start=1):
             tot = sum(cats.values()) / 1000.0
             data.append(
                 [Paragraph(name, S['small'])] +
-                [Paragraph(_fmt(cats[c] / 1000.0, tr), S['small']) for c in sorted(ROMAN)] +
-                [Paragraph(f'<b>{_fmt(tot, tr)}</b>', S['small'])]
+                [Paragraph(_fmt(cats[c] / 1000.0, tr), S['num']) for c in sorted(ROMAN)] +
+                [Paragraph(f'<b>{_fmt(tot, tr)}</b>', S['num'])]
             )
             dominant_cat = max(sorted(ROMAN), key=lambda c: cats[c])
             if cats[dominant_cat] > 0:
@@ -2385,6 +2893,8 @@ def _section4(E, S, D, report, lang, TBL, FIG):
                     repeatRows=1)
         st = _tbl_style(fn, fnb)
         st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+        st.add('LEFTPADDING', (1, 0), (-1, -1), 3)
+        st.add('RIGHTPADDING', (1, 0), (-1, -1), 3)
         # Highlight each facility's dominant emission category — the same
         # visual cue the sample report uses to show at a glance which
         # category (imported energy, purchased transport, personnel
@@ -2394,6 +2904,27 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         tbl.setStyle(st)
         E.append(_caption(S, TBL, t('t_loc', lang), lang))
         E.append(tbl)
+
+        # The inter-location reading the table supports but does not state:
+        # which locations carry the inventory, and by how much.
+        tops = [(n, sum(c.values())) for n, c in ordered[:3] if sum(c.values()) > 0]
+        if tops and D['total_kg']:
+            def _share(v):
+                return _localize_num(f'{v / D["total_kg"] * 100:.0f}', tr)
+            lead_n, lead_v = tops[0]
+            sentence = (
+                f'In the inter-location comparison the largest share of emissions belongs '
+                f'to {lead_n} with {_share(lead_v)} %.'
+                if lang == 'en' else
+                f'Lokasyonlar arası karşılaştırmada en büyük emisyon payı %{_share(lead_v)} '
+                f'ile {lead_n} lokasyonuna aittir.')
+            if len(tops) > 1:
+                rest = ', '.join(f'{n} ({_share(v)} %)' for n, v in tops[1:])
+                sentence += (f' The next largest are {rest}.' if lang == 'en'
+                             else f' Bunu {rest} izlemektedir.')
+            E.append(Spacer(1, 3*mm))
+            E.append(Paragraph(sentence, S['body']))
+
         chart = _bar_row_chart([(n, sum(c.values())) for n, c in ordered],
                                D['total_kg'], S, lang)
         if chart is not None:
@@ -2440,15 +2971,71 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             'Faaliyet verisi ayrı tesislere atanmadığından tesis bazında dağılım '
             'sunulmamıştır. Bu bölümün oluşması için emisyon kayıtlarına tesis atayın.',
             S['no_data']))
+    E.append(PageBreak())
 
-    # 4.4 Year-on-year comparison — every year the company has any activity
+    # 4.2.2 Activity-based assessment — the same inventory cut by what the
+    # organisation actually does, rather than by ISO category. An activity can
+    # straddle categories (fuel appears under both combustion and transport),
+    # so this is the view that answers "which activity should we act on first".
+    E.append(Paragraph('4.2.2   ' + t('s4_actsub', lang), S['h3']))
+    acts = D.get('by_activity') or {}
+    live_acts = [(cat_label(k, lang), v) for k, v in acts.items() if v > 0]
+    if live_acts:
+        live_acts.sort(key=lambda kv: -kv[1])
+        biggest, biggest_kg = live_acts[0]
+        E.append(Paragraph(
+            (f'Emissions are spread across {len(live_acts)} activity types. The largest '
+             f'is {biggest.lower()}, at {_fmt(biggest_kg / 1000.0, tr)} t CO₂e '
+             f'({pct(biggest_kg / 1000.0)} % of the inventory).')
+            if lang == 'en' else
+            (f'Emisyonlar {len(live_acts)} faaliyet türüne dağılmaktadır. En büyüğü '
+             f'{biggest.lower()} olup {_fmt(biggest_kg / 1000.0, tr)} t CO₂e '
+             f'(envanterin %{pct(biggest_kg / 1000.0)}’i) düzeyindedir.'), S['body']))
+
+        data = [[Paragraph(f'<b>{"Activity type" if lang == "en" else "Faaliyet türü"}</b>', S['body_sm']),
+                 Paragraph(f'<b>{t("c_pct", lang)}</b>', S['body_sm']),
+                 Paragraph(f'<b>{t("c_total", lang)}</b>', S['body_sm'])]]
+        for label, v in live_acts:
+            data.append([Paragraph(label, S['body_sm']),
+                         Paragraph(pct(v / 1000.0), S['body_sm']),
+                         Paragraph(f'{_fmt(v / 1000.0, tr)} t CO₂e', S['body_sm'])])
+        data.append([Paragraph(f'<b>{t("total", lang)}</b>', S['body_sm']),
+                     Paragraph(_localize_num('100.00', tr), S['body_sm']),
+                     Paragraph(f'<b>{_fmt(total_t, tr)} t CO₂e</b>', S['body_sm'])])
+        tbl = Table(data, colWidths=[92*mm, 30*mm, 48*mm], hAlign='LEFT', repeatRows=1)
+        st = _tbl_style(fn, fnb)
+        st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
+        st.add('BACKGROUND', (0, -1), (-1, -1), CREAM)
+        st.add('LINEABOVE', (0, -1), (-1, -1), 1.2, OLIVE)
+        tbl.setStyle(st)
+        E.append(_caption(S, TBL, t('t_act', lang), lang))
+        E.append(tbl)
+
+        act_pie = _donut_chart(live_acts, S, lang)
+        if act_pie is not None:
+            E.append(Spacer(1, 4*mm))
+            E.append(act_pie)
+            E.append(_fig_caption(S, FIG, t('t_act', lang), lang))
+        act_bars = _bar_row_chart(live_acts, D['total_kg'], S, lang, max_rows=14)
+        if act_bars is not None:
+            E.append(Spacer(1, 4*mm))
+            E.append(act_bars)
+            E.append(_fig_caption(
+                S, FIG,
+                t('t_act', lang) + (' — ranked' if lang == 'en' else ' — sıralı'),
+                lang))
+    else:
+        E.append(Paragraph(t('none_recorded', lang), S['no_data']))
+    E.append(PageBreak())
+
+    # 4.3 Year-on-year comparison — every year the company has any activity
     # data for, not just the reporting year, so the base-year comparison the
     # methodology section (3.2) already describes can actually be shown
     # rather than just asserted.
     year_totals = D.get('year_totals') or {}
     if len(year_totals) > 1:
         E.append(PageBreak())
-        E.append(Paragraph('4.4   ' + t('s4_trend', lang), S['h2']))
+        E.append(Paragraph('4.3   ' + t('s4_trend', lang), S['h2']))
         base_year = report.baseline_year or min(year_totals)
         base_t = year_totals.get(base_year, 0.0) / 1000.0
         E.append(Paragraph(
@@ -2486,8 +3073,12 @@ def _section4(E, S, D, report, lang, TBL, FIG):
 # ═══════════════════════════════════════════════════════════════════════════
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════
-def generate_iso_report(report: CarbonReport, lang: str = 'en') -> bytes:
-    """Build the full ISO 14064-1:2018 inventory report. Returns PDF bytes."""
+def generate_iso_report(report: CarbonReport, lang: str = 'en', page_offset: int = 0) -> bytes:
+    """Build the full ISO 14064-1:2018 inventory report. Returns PDF bytes.
+
+    `page_offset` shifts the printed page number so the report numbers on
+    from the part before it in the combined pack.
+    """
     lang = 'tr' if lang == 'tr' else 'en'
     S = _styles()
     D = _gather(report, lang)
@@ -2497,7 +3088,7 @@ def generate_iso_report(report: CarbonReport, lang: str = 'en') -> bytes:
 
     buf = io.BytesIO()
     doc = _ReportDocTemplate(
-        buf, cname, D['year'], lang,
+        buf, cname, D['year'], lang, page_offset=page_offset,
         pagesize=A4, topMargin=20*mm, bottomMargin=20*mm,
         leftMargin=20*mm, rightMargin=20*mm,
         title=f'{t("standard", lang)} {t("doc_title", lang)} {D["year"]}',

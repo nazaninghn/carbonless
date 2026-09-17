@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.core.management.base import BaseCommand
 from emissions.models import EmissionFactor
 from emissions.seed_data import EMISSION_FACTORS
@@ -9,6 +11,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         created = 0
         updated = 0
+        stale_splits = 0
 
         # Source -> year mapping for factors that don't have explicit year
         source_year = {
@@ -26,6 +29,22 @@ class Command(BaseCommand):
             data.setdefault('is_active', True)
             data.setdefault('is_default', True)
 
+            # A factor's per-gas breakdown is expressed in kg CO2e per unit and
+            # has to add up to the factor itself, so a changed factor value
+            # invalidates the split that was derived from the old one. Clear it
+            # here rather than leave a breakdown that no longer sums — the
+            # report would then publish gas rows that disagree with their own
+            # total. `seed_gas_splits` re-derives them; the reminder below says so.
+            existing = EmissionFactor.objects.filter(
+                slug=data['slug'], country=data.get('country', 'global'),
+                year=data['year']).first()
+            if (existing and existing.gas_split_basis
+                    and existing.factor_kg_co2e != Decimal(str(data['factor_kg_co2e']))):
+                data.update({f: None for f in EmissionFactor.GAS_FIELDS.values()})
+                data['gas_split_basis'] = ''
+                data['gas_split_reference'] = ''
+                stale_splits += 1
+
             obj, was_created = EmissionFactor.objects.update_or_create(
                 slug=data['slug'],
                 country=data.get('country', 'global'),
@@ -41,3 +60,9 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(
             f'Done: {created} created, {updated} updated. Total in DB: {total}'
         ))
+        if stale_splits:
+            self.stdout.write(self.style.WARNING(
+                f'{stale_splits} factor value(s) changed, so their per-gas breakdown was '
+                f'cleared.'))
+        self.stdout.write('Run "manage.py seed_gas_splits" to (re)derive the per-gas '
+                          'breakdown ISO 14064-1 reporting uses.')

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Loader2 } from 'lucide-react';
+import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Package, Loader2 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
 
@@ -86,15 +86,18 @@ export default function InventoryLibrary({ tr = false }) {
     }
   };
 
-  // `kind` selects which document: the full ISO 14064-1 inventory report, or
-  // the short questionnaire profile. Both stream a PDF blob back the same way.
+  // `kind` selects which document: the three-report pack, the full ISO 14064-1
+  // inventory report, or the short questionnaire profile. All stream a PDF
+  // blob back the same way.
   const handleDownloadPdf = async (reportId, kind = 'profile') => {
     if (pdfDownloadingId) return;
     const lang = tr ? 'tr' : 'en';
     setPdfDownloadingId(`${reportId}:${kind}`);
     let url;
     try {
-      const res = kind === 'iso'
+      const res = kind === 'pack'
+        ? await api.downloadCombinedReport(reportId, lang)
+        : kind === 'iso'
         ? await api.downloadIsoReport(reportId, lang)
         : await api.downloadQuestionnairePdf(reportId, lang);
       if (!res.ok) {
@@ -105,7 +108,9 @@ export default function InventoryLibrary({ tr = false }) {
       url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = kind === 'iso'
+      a.download = kind === 'pack'
+        ? `ghg_reporting_pack_${reportId}_${lang}.pdf`
+        : kind === 'iso'
         ? `iso14064-1_inventory_report_${reportId}_${lang}.pdf`
         : `carbon_inventory_profile_${reportId}_${lang}.pdf`;
       document.body.appendChild(a);
@@ -279,6 +284,17 @@ export default function InventoryLibrary({ tr = false }) {
                     </>
                   ) : (
                     <>
+                      <button
+                        onClick={() => handleDownloadPdf(report.report_id, 'pack')}
+                        disabled={!!pdfDownloadingId}
+                        title={tr ? 'Tam rapor paketi indir (3 rapor)'
+                                  : 'Download full report pack (3 reports)'}
+                        className="flex items-center justify-center h-9 w-9 text-[#2ABD41] hover:text-[#175022] hover:bg-[#2ABD41]/10 rounded-full transition disabled:opacity-50"
+                      >
+                        {pdfDownloadingId === `${report.report_id}:pack`
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <Package className="w-4 h-4" />}
+                      </button>
                       <button
                         onClick={() => handleDownloadPdf(report.report_id, 'iso')}
                         disabled={!!pdfDownloadingId}

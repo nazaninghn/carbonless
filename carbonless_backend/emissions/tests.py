@@ -1,6 +1,10 @@
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 from django.contrib.auth.models import User
 from rest_framework.test import APIClient
+from .gas_split_data import fuel_gas_shares
 from .models import EmissionFactor, EmissionEntry
 
 
@@ -19,6 +23,67 @@ class EmissionFactorTests(TestCase):
 
     def test_factor_str(self):
         self.assertIn('Test Gas', str(self.factor))
+
+
+class GasSplitTests(TestCase):
+    """The per-gas breakdown ISO 14064-1 reporting needs."""
+
+    def _factor(self, **kw):
+        defaults = dict(
+            slug='split-test', name='Split Test', scope='scope1',
+            category='stationary_combustion', country='global', unit='kg',
+            factor_kg_co2e=Decimal('100'), year=2024, source='generic',
+        )
+        defaults.update(kw)
+        return EmissionFactor(**defaults)
+
+    def test_no_split_reads_as_none(self):
+        """A factor with no breakdown must not look like an all-zero one."""
+        f = self._factor()
+        self.assertIsNone(f.gas_split())
+        self.assertIsNone(f.gas_split_shares())
+
+    def test_shares_sum_to_one(self):
+        f = self._factor(
+            factor_co2_kg_co2e=Decimal('97'), factor_ch4_kg_co2e=Decimal('1'),
+            factor_n2o_kg_co2e=Decimal('2'), gas_split_basis='apportioned')
+        shares = f.gas_split_shares()
+        self.assertEqual(sorted(shares), ['CH4', 'CO2', 'N2O'])
+        self.assertAlmostEqual(float(sum(shares.values())), 1.0, places=9)
+        self.assertAlmostEqual(float(shares['CO2']), 0.97, places=9)
+
+    def test_gases_with_no_contribution_are_omitted(self):
+        f = self._factor(factor_sf6_kg_co2e=Decimal('100'),
+                         gas_split_basis='single_gas')
+        self.assertEqual(f.gas_split(), {'SF6': Decimal('100')})
+
+    def test_split_must_add_up_to_the_factor(self):
+        f = self._factor(factor_co2_kg_co2e=Decimal('50'),
+                         gas_split_basis='apportioned')
+        with self.assertRaises(ValidationError) as ctx:
+            f.clean()
+        self.assertIn('factor_kg_co2e', ctx.exception.message_dict)
+
+    def test_rounding_drift_is_tolerated(self):
+        f = self._factor(factor_co2_kg_co2e=Decimal('99.995'),
+                         gas_split_basis='apportioned')
+        f.clean()  # within tolerance — must not raise
+
+    def test_split_requires_a_stated_basis(self):
+        """A breakdown with no provenance cannot go in an assurance document."""
+        f = self._factor(factor_co2_kg_co2e=Decimal('100'))
+        with self.assertRaises(ValidationError) as ctx:
+            f.clean()
+        self.assertIn('gas_split_basis', ctx.exception.message_dict)
+
+    def test_seeded_combustion_factor_keeps_its_total(self):
+        """Apportioning must divide a factor, never change it."""
+        shares = fuel_gas_shares('diesel_onroad')
+        self.assertAlmostEqual(sum(shares.values()), 1.0, places=9)
+        # CO2 dominates, but CH4 and N2O are both present and non-zero.
+        self.assertGreater(shares['CO2'], 0.9)
+        self.assertGreater(shares['CH4'], 0)
+        self.assertGreater(shares['N2O'], 0)
 
 
 class EmissionEntryTests(TestCase):

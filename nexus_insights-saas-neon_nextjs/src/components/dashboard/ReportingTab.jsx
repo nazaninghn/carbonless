@@ -5,9 +5,12 @@ import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 import {
   CheckCircle2,
+  ClipboardList,
   Download,
   FileText,
   Sparkles,
+  Package,
+  Table2,
   Target,
   TrendingDown,
   AlertCircle,
@@ -119,14 +122,24 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     setDlError('');
     try {
       let res;
-      if (type === 'iso') {
+      // 'pack' (all three reports in one PDF), 'iso' (the full ISO 14064-1
+      // report) and 'inv' (the shorter inventory profile) are all keyed to one
+      // CarbonReport, so each needs a picked inventory; 'pdf'/'csv'/'excel'
+      // are keyed to the selected year instead.
+      if (type === 'pack' || type === 'iso' || type === 'inv') {
         if (!isoReportId) {
           setDlError(tr
             ? `${selectedYear} yılı için tamamlanmış bir envanter bulunamadı. Önce Karbon Envanteri anketini doldurun.`
             : `No inventory found for ${selectedYear}. Complete the Carbon Inventory questionnaire first.`);
           return;
         }
-        res = await api.downloadIsoReport(isoReportId, lang);
+        res = type === 'pack'
+          // The pack builds all three reports server-side, so it is the one
+          // download that can take tens of seconds on a large inventory.
+          ? await api.downloadCombinedReport(isoReportId, lang, selectedYear)
+          : type === 'iso'
+          ? await api.downloadIsoReport(isoReportId, lang)
+          : await api.downloadQuestionnairePdf(isoReportId, lang);
       }
       else if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
       else if (type === 'csv') res = await api.downloadCsv(selectedYear);
@@ -142,10 +155,14 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       const u = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = u;
-      a.download = type === 'iso'
-        ? `iso14064-1_inventory_report_${selectedYear}_${lang}.pdf`
+      a.download = type === 'pack'
+        ? `ghg_reporting_pack_${selectedYear}_${lang}.pdf`
+        : type === 'iso'
+        ? `iso14064-1_full_report_${selectedYear}_${lang}.pdf`
+        : type === 'inv'
+        ? `carbon_inventory_report_${selectedYear}_${lang}.pdf`
         : type === 'pdf'
-        ? `carbonless_report_${selectedYear}_${lang}.pdf`
+        ? `emissions_report_${selectedYear}_${lang}.pdf`
         : type === 'csv'
         ? `emissions_${selectedYear}.csv`
         : `emissions_${selectedYear}.xlsx`;
@@ -192,10 +209,34 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             {dlError}
           </div>
         )}
+        {/* Same three report types as the full view, each with its two
+            languages, then the raw-data exports. */}
+        {[
+          { type: 'pack', label: tr ? 'Tam Rapor Paketi (3 rapor)' : 'Full Report Pack (3 reports)', gated: true, primary: true },
+          { type: 'iso', label: tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report', gated: true },
+          { type: 'inv', label: tr ? 'Envanter Raporu' : 'Inventory Report', gated: true },
+          { type: 'pdf', label: tr ? 'Emisyon Raporu' : 'Emissions Report', gated: false },
+        ].map(({ type, label, gated, primary }) => (
+          <div
+            key={type}
+            className={`rounded-2xl border p-4 ${primary ? 'border-[#2ABD41]/35 bg-[#F1FCF2]' : 'border-[#072C0E]/10 bg-white'} ${gated && !isoReportId ? 'opacity-50' : ''}`}
+          >
+            <p className="text-sm font-bold text-[#072C0E]">{label}</p>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              {['tr', 'en'].map((l) => (
+                <button
+                  key={l}
+                  onClick={() => handleDownload(type, l)}
+                  disabled={gated && !isoReportId}
+                  className="rounded-xl border border-[#072C0E]/10 bg-white p-3 text-center text-sm font-bold text-[#072C0E] disabled:opacity-50"
+                >
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => handleDownload('iso', 'tr')} disabled={!isoReportId} className="col-span-2 rounded-2xl bg-[#072C0E] p-4 text-center text-sm font-bold text-white disabled:opacity-50">{tr ? 'Envanter Raporu' : 'Inventory Report'} {tr ? '(TR)' : '(EN)'}</button>
-          <button onClick={() => handleDownload('pdf', 'tr')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">{tr ? 'Emisyon TR' : 'Emissions TR'}</button>
-          <button onClick={() => handleDownload('pdf', 'en')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">{tr ? 'Emisyon EN' : 'Emissions EN'}</button>
           <button onClick={() => handleDownload('csv', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">CSV</button>
           <button onClick={() => handleDownload('excel', '')} className="rounded-2xl border border-[#072C0E]/10 bg-white p-4 text-center text-sm font-bold text-[#072C0E]">Excel</button>
         </div>
@@ -227,18 +268,25 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               {tr ? 'Denetim-hazır ESG & ISO 14064-1 raporları oluşturun' : 'Generate audit-ready ESG & ISO 14064-1 reports'}
             </p>
           </div>
+          {/* One button per report type, in the report language. The type
+              choice is what matters here; TR/EN for each is in the export
+              centre below. */}
           <div className="flex flex-wrap gap-2">
+            <button onClick={() => handleDownload('pack', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
+              <Package className="h-3.5 w-3.5" />
+              {pdfLoading?.startsWith('pack') ? '...' : (tr ? 'Tam Rapor Paketi' : 'Full Report Pack')}
+            </button>
             <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
               <Shield className="h-3.5 w-3.5" />
-              {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Envanter Raporu' : 'Inventory Report')}
+              {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report')}
             </button>
-            <button onClick={() => handleDownload('pdf', 'tr')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
-              <FileText className="h-3.5 w-3.5" />
-              {pdfLoading === 'pdftr' ? '...' : (tr ? 'Emisyon Raporu TR' : 'Emissions Report TR')}
+            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+              <ClipboardList className="h-3.5 w-3.5" />
+              {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Envanter Raporu' : 'Inventory Report')}
             </button>
-            <button onClick={() => handleDownload('pdf', 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
-              {pdfLoading === 'pdfen' ? '...' : (tr ? 'Emisyon Raporu EN' : 'Emissions Report EN')}
+              {pdfLoading?.startsWith('pdf') ? '...' : (tr ? 'Emisyon Raporu' : 'Emissions Report')}
             </button>
           </div>
         </div>
@@ -388,15 +436,22 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             <h2 className="text-sm font-bold">{tr ? 'Dışa Aktarma' : 'Export Center'}</h2>
           </div>
 
-          {/* Three distinct report types: (1) the emissions summary, scoped to
-              the selected year and read straight from activity data; (2) the
-              complete ISO 14064-1 inventory report, scoped to one specific
-              inventory submission — picked below, since a company can have
-              more than one; (3) raw CSV/Excel export of the same year's data. */}
+          {/* Three distinct report types, each answering a different question:
+              (1) the emissions report — what was emitted in the selected year,
+              read straight from activity data; (2) the inventory report — how
+              the inventory itself is set up (boundary, framework, coverage),
+              read from the questionnaire; (3) the full ISO 14064-1 report —
+              the complete disclosure a verifier asks for, which is (1) and (2)
+              plus methodology, per-category analysis and the significance,
+              uncertainty and management-system sections. (2) and (3) are keyed
+              to one inventory submission, picked below, since a company can
+              have more than one; (1) is keyed to the year. */}
           {completedReports.length > 0 && (
             <div className="mb-3">
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-[#072C0E]/40">
-                {tr ? 'Envanter (ISO raporu için)' : 'Inventory (for ISO report)'}
+                {tr
+                  ? 'Envanter (Envanter ve Tam ISO raporları için)'
+                  : 'Inventory (for the Inventory and Full ISO reports)'}
               </label>
               <select
                 value={isoReportId ?? ''}
@@ -418,25 +473,86 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2">
-            {/* Type 3 — the complete inventory report, for whichever inventory
-                is selected above. What a verifier asks for. */}
-            <ExportBtn icon={Shield} label={tr ? 'Envanter Raporu (TR)' : 'Inventory Report (TR)'} loading={pdfLoading === 'isotr'} disabled={!isoReportId} onClick={() => handleDownload('iso', 'tr')} />
-            <ExportBtn icon={Shield} label={tr ? 'Envanter Raporu (EN)' : 'Inventory Report (EN)'} loading={pdfLoading === 'isoen'} disabled={!isoReportId} onClick={() => handleDownload('iso', 'en')} />
-            {/* Type 1 — the shorter emissions-only summary, scoped to the year
-                selected at the top of the dashboard, not to one inventory. */}
-            <ExportBtn icon={FileText} label={tr ? 'Emisyon Raporu (TR)' : 'Emissions Report (TR)'} loading={pdfLoading === 'pdftr'} onClick={() => handleDownload('pdf', 'tr')} />
-            <ExportBtn icon={FileText} label={tr ? 'Emisyon Raporu (EN)' : 'Emissions Report (EN)'} loading={pdfLoading === 'pdfen'} onClick={() => handleDownload('pdf', 'en')} />
-            <ExportBtn icon={Download} label="CSV Export" loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
-            <ExportBtn icon={Download} label="Excel Export" loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
+          <div className="space-y-3">
+            {/* Everything in one file. Listed first and highlighted because it
+                is the deliverable a verifier or customer is usually sent; the
+                three parts stay individually downloadable below it. */}
+            <ReportType
+              icon={Package}
+              title={tr ? 'Tam Rapor Paketi' : 'Full Report Pack'}
+              scope={tr ? '3 rapor' : '3 reports'}
+              desc={tr
+                ? 'Aşağıdaki üç raporun tamamı tek bir PDF’te: kesintisiz sayfa numaraları, içindekiler sayfası ve bölüm yer imleri. Oluşturulması biraz sürebilir.'
+                : 'All three reports below in one PDF, with continuous page numbering, a contents page and per-part bookmarks. May take a moment to build.'}
+              onDownload={(l) => handleDownload('pack', l)}
+              loading={pdfLoading}
+              prefix="pack"
+              disabled={!isoReportId}
+              highlight
+              tr={tr}
+            />
+            {/* Type 1 — what was emitted, scoped to the year selected at the
+                top of the dashboard rather than to one inventory. */}
+            <ReportType
+              icon={FileText}
+              title={tr ? 'Emisyon Raporu' : 'Emissions Report'}
+              scope={`${selectedYear}`}
+              desc={tr
+                ? 'Girilen faaliyet verisinden hesaplanan emisyonlar: kapsam ve kategori dağılımı, aylık trend.'
+                : 'Emissions calculated from entered activity data: scope and category breakdown, monthly trend.'}
+              onDownload={(l) => handleDownload('pdf', l)}
+              loading={pdfLoading}
+              prefix="pdf"
+              tr={tr}
+            />
+            {/* Type 2 — how the inventory is set up, from the questionnaire. */}
+            <ReportType
+              icon={ClipboardList}
+              title={tr ? 'Envanter Raporu' : 'Inventory Report'}
+              scope={tr ? 'Seçili envanter' : 'Selected inventory'}
+              desc={tr
+                ? 'Kurumsal profil, raporlama çerçevesi ve sınırlar, anket tamamlanma durumu ve ölçülen emisyonlar.'
+                : 'Organizational profile, reporting framework and boundaries, questionnaire completion and quantified emissions.'}
+              onDownload={(l) => handleDownload('inv', l)}
+              loading={pdfLoading}
+              prefix="inv"
+              disabled={!isoReportId}
+              tr={tr}
+            />
+            {/* Type 3 — the complete disclosure a verifier asks for. */}
+            <ReportType
+              icon={Shield}
+              title={tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report'}
+              scope={tr ? 'Seçili envanter' : 'Selected inventory'}
+              desc={tr
+                ? 'Denetim-hazır tam rapor: metodoloji ve faktör referansları, gaz bazında envanter tablosu, kategori analizleri, önemlilik, belirsizlik ve kalite yönetimi.'
+                : 'Audit-ready full report: methodology and factor references, per-gas inventory table, category analyses, significance, uncertainty and quality management.'}
+              onDownload={(l) => handleDownload('iso', l)}
+              loading={pdfLoading}
+              prefix="iso"
+              disabled={!isoReportId}
+              tr={tr}
+            />
           </div>
+
           {completedReports.length === 0 && (
             <p className="mt-2 text-[11px] font-semibold text-[#072C0E]/40">
               {tr
-                ? 'Envanter raporu için önce bir anketi tamamlayın.'
-                : 'Complete a questionnaire to unlock the inventory report.'}
+                ? 'Rapor paketi, envanter ve tam ISO raporu için önce bir anketi tamamlayın.'
+                : 'Complete a questionnaire to unlock the report pack, the inventory and the full ISO reports.'}
             </p>
           )}
+
+          {/* Raw activity data — not a report, so kept visually separate. */}
+          <div className="mt-4 border-t border-[#072C0E]/8 pt-3">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#072C0E]/40">
+              {tr ? `Ham veri (${selectedYear})` : `Raw data (${selectedYear})`}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <ExportBtn icon={Table2} label="CSV Export" loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
+              <ExportBtn icon={Table2} label="Excel Export" loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
+            </div>
+          </div>
         </ReportCard>
 
         {/* Compliance Status */}
@@ -509,6 +625,52 @@ function InsightItem({ text, type }) {
     <div className="flex items-start gap-2.5">
       <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${type === 'warning' ? 'bg-amber-400' : type === 'neutral' ? 'bg-white/30' : 'bg-[#8BEA99]'}`} />
       <p className={`text-xs leading-5 ${type === 'neutral' ? 'text-white/50' : 'text-white/80'}`}>{text}</p>
+    </div>
+  );
+}
+
+// One of the three report types: what it is, what it is scoped to, and the
+// two language buttons that produce it. Grouping the TR/EN pair under a named,
+// described block is what makes the three types distinguishable — a flat grid
+// of six identical buttons does not say which report answers which question.
+function ReportType({ icon: Icon, title, scope, desc, onDownload, loading, prefix, disabled, highlight, tr }) {
+  const busy = (l) => loading === prefix + l;
+  return (
+    <div className={`rounded-2xl border p-3.5 transition-colors ${
+      highlight
+        ? 'border-[#2ABD41]/35 bg-[#F1FCF2]'
+        : 'border-[#072C0E]/8 bg-[#F8F8F8]'
+    } ${disabled ? 'opacity-60' : ''}`}>
+      <div className="flex items-start gap-2.5">
+        <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
+          highlight ? 'bg-[#2ABD41] text-white' : 'bg-white text-[#2ABD41]'
+        }`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h3 className="text-xs font-bold text-[#072C0E]">{title}</h3>
+            <span className="rounded-full bg-[#072C0E]/6 px-2 py-0.5 text-[10px] font-bold text-[#072C0E]/50">
+              {scope}
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] leading-4 text-[#072C0E]/55">{desc}</p>
+          <div className="mt-2.5 flex gap-2">
+            {['tr', 'en'].map((l) => (
+              <button
+                key={l}
+                onClick={() => onDownload(l)}
+                disabled={!!loading || disabled}
+                title={disabled ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-[#072C0E]/10 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="h-3 w-3 text-[#2ABD41]" />
+                {busy(l) ? '...' : l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -115,6 +115,16 @@ def _register_fonts():
             if os.path.exists(regular):
                 pdfmetrics.registerFont(TTFont('CF', regular))
                 pdfmetrics.registerFont(TTFont('CFB', bold if os.path.exists(bold) else regular))
+                # Registering the two faces is not enough: a Paragraph styled
+                # with 'CF' has no way to know 'CFB' is its bold, so <b> inside
+                # paragraph markup renders at regular weight. Every table header
+                # and emphasised run across all three reports is written that
+                # way, so the family has to be declared for them to come out
+                # bold. Italic maps back to the regular face — these are the
+                # only two files shipped, and a missing mapping would fall back
+                # to Helvetica mid-paragraph.
+                pdfmetrics.registerFontFamily(
+                    'CF', normal='CF', bold='CFB', italic='CF', boldItalic='CFB')
                 _font_registered = True
                 return
         except Exception:
@@ -358,11 +368,15 @@ def _monthly_trend_chart(monthly_kg, months, fn, width_mm=170, height_mm=68):
 # PAGE TEMPLATES
 # ═══════════════════════════════════════════════════════
 class _ReportDocTemplate(BaseDocTemplate):
-    def __init__(self, buf, company_name, year, lang, **kw):
+    def __init__(self, buf, company_name, year, lang, page_offset=0, **kw):
         super().__init__(buf, **kw)
         self.company_name = company_name
         self.year = year
         self.lang = lang
+        # Pages already printed ahead of this document. Non-zero only when the
+        # report is bound into the combined pack, where numbering has to run
+        # continuously across the parts instead of restarting at each one.
+        self.page_offset = page_offset
 
         frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
         frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
@@ -414,7 +428,7 @@ class _ReportDocTemplate(BaseDocTemplate):
         # Footer text
         canvas.setFont(fn, 7)
         canvas.setFillColor(GRAY_400)
-        page_num = doc.page - 1
+        page_num = doc.page - 1 + self.page_offset
         label = 'Sayfa' if self.lang == 'tr' else 'Page'
         canvas.drawCentredString(w/2, 10*mm, f'\u2014  {label} {page_num}  \u2014')
         canvas.drawString(20*mm, 10*mm, 'Carbonless Platform')
@@ -424,8 +438,13 @@ class _ReportDocTemplate(BaseDocTemplate):
 # ═══════════════════════════════════════════════════════
 # MAIN GENERATOR
 # ═══════════════════════════════════════════════════════
-def generate_report(user, year, lang='tr'):
-    """Generate premium ISO 14064-1 PDF report. Returns bytes."""
+def generate_report(user, year, lang='tr', page_offset=0):
+    """Generate premium ISO 14064-1 PDF report. Returns bytes.
+
+    `page_offset` is the number of pages that precede this one when it is
+    bound into the combined report pack; it only shifts the printed page
+    number, nothing else.
+    """
     S = _styles()
     fn, fnb = S['fn'], S['fnb']
     tr = lang == 'tr'
@@ -568,7 +587,7 @@ def generate_report(user, year, lang='tr'):
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
-    doc = _ReportDocTemplate(buf, cname, year, lang, pagesize=A4,
+    doc = _ReportDocTemplate(buf, cname, year, lang, page_offset=page_offset, pagesize=A4,
                               leftMargin=20*mm, rightMargin=20*mm,
                               topMargin=22*mm, bottomMargin=20*mm)
     E = []

@@ -274,6 +274,12 @@ export const api = {
   // methodology, significance and uncertainty) — distinct from the short
   // questionnaire profile above.
   downloadIsoReport: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/iso-report/?lang=${lang}`),
+  // All three reports bound into one PDF — the ISO report, the questionnaire
+  // profile and the quantified emissions summary — with continuous page
+  // numbering and bookmarks. `year` scopes the emissions part and defaults
+  // server-side to the inventory's own reporting year.
+  downloadCombinedReport: (reportId, lang = 'en', year) =>
+    request(`/questionnaire/${reportId}/combined-report/?lang=${lang}` + (year ? `&year=${year}` : '')),
   listReports: () => request('/questionnaire/'),
 
   // Chat sessions
