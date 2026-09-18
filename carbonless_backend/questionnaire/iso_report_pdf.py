@@ -1473,6 +1473,36 @@ def _section1(E, S, D, report, lang, TBL, FIG):
 
     # 1.2 Responsibilities
     E.append(Paragraph('1.2   ' + t('s1_2', lang), S['h2']))
+    E.append(Paragraph(
+        'To meet the objectives the organisation has set for greenhouse gas reporting, '
+        'an organisational structure has been established and is shown in Figure 2. It '
+        'sets out the hierarchy within the organisation and the reporting relationships '
+        'between the roles that contribute to the inventory.'
+        if lang == 'en' else
+        'Kuruluşun sera gazı raporlamasına ilişkin belirlediği hedefleri karşılamak üzere '
+        'bir organizasyon yapısı oluşturulmuş olup Şekil 2’de gösterilmiştir. Bu yapı, '
+        'kuruluş içindeki hiyerarşiyi ve envantere katkı veren roller arasındaki raporlama '
+        'ilişkilerini ortaya koyar.', S['body']))
+    # Who carries the inventory, named from the report's own prepared_by so
+    # the sentence states an actual appointment rather than a generic role.
+    if report.prepared_by:
+        E.append(Paragraph(
+            (f'<b>{report.prepared_by}</b> has been appointed by senior management as the '
+             f'Sustainability Officer, and is responsible for the greenhouse gas '
+             f'inventory and for approving the declaration made in this report.')
+            if lang == 'en' else
+            (f'<b>{report.prepared_by}</b>, üst yönetim tarafından Sürdürülebilirlik '
+             f'Sorumlusu olarak görevlendirilmiş olup sera gazı envanterinden ve bu raporda '
+             f'yapılan beyanın onaylanmasından sorumludur.'), S['body']))
+    E.append(Paragraph(
+        'The contact roles for this greenhouse gas inventory report are listed below. '
+        'Their full job descriptions and responsibilities are held in the organisation’s '
+        'greenhouse gas management procedure, of which this table is a summary.'
+        if lang == 'en' else
+        'Bu sera gazı envanter raporuna ilişkin iletişim rolleri aşağıda listelenmiştir. '
+        'Bu rollerin tam görev tanımları ve sorumlulukları, bu tablonun özetini oluşturduğu '
+        'sera gazı yönetim prosedüründe tutulur.', S['body']))
+    E.append(Spacer(1, 2*mm))
     fn, fnb = S['fn'], S['fnb']
     role_rows = [[
         Paragraph(f'<b>{t("c_no", lang)}</b>', S['body_sm']),
@@ -1518,6 +1548,12 @@ def _section1(E, S, D, report, lang, TBL, FIG):
 
     # 1.4 Standards used
     E.append(Paragraph('1.4   ' + t('s1_4', lang), S['h2']))
+    E.append(Paragraph(
+        'The standards, documents and sources referenced or used in the preparation of '
+        'this report are listed below.'
+        if lang == 'en' else
+        'Bu raporun hazırlanmasında atıf yapılan veya kullanılan standart, belge ve '
+        'kaynaklar aşağıda listelenmiştir.', S['body']))
     E.extend(_bullets(S, [
         'ISO 14064-1:2018 — Greenhouse gases: specification with guidance at the '
         'organization level for quantification and reporting of greenhouse gas emissions '
@@ -1536,9 +1572,20 @@ def _section1(E, S, D, report, lang, TBL, FIG):
     E.append(Paragraph('1.4.1   ' + t('s1_4_1', lang), S['h3']))
     if lang == 'tr':
         E.append(Paragraph(
-            'ISO 14060 sera gazı standartları ailesi, sera gazı emisyon ve uzaklaştırmalarının '
-            'ölçülmesi, izlenmesi, raporlanması ve doğrulanması veya geçerli kılınması için '
-            'açıklık ve tutarlılık sağlar.', S['body']))
+            'Uluslararası Standardizasyon Örgütü (ISO), dünyanın en büyük standart yayıncı '
+            'kuruluşlarından biridir ve bilimsel bilginin iklim değişikliğiyle mücadelede '
+            'kullanılabilir araçlara dönüştürülmesine yardımcı olan belgeler üretir. Düşük '
+            'karbonlu ekonomi yoluyla gelişimi desteklemek amacıyla ISO 14060 sera gazı '
+            'standartları ailesini yayımlamıştır; bu aile, sera gazı emisyon ve '
+            'uzaklaştırmalarının ölçülmesi, izlenmesi, raporlanması ve doğrulanması veya '
+            'geçerli kılınması için açıklık ve tutarlılık sağlar.', S['body']))
+        E.append(Paragraph(
+            'Standardın üç bileşeni vardır. <b>Envanter</b>, kuruluşun sınırı içindeki her '
+            'kaynağın doğrudan ve dolaylı sera gazı emisyonlarını belirlemesini ve '
+            'ölçmesini gerektirir. <b>Nicelendirme</b>, toplamın hesaplanması ve kuruluşun '
+            'karbon ayak izinin belirlenmesidir. <b>Raporlama</b>, bu ayak izinin '
+            'kuruluşun paydaşlarına — müşteriler, yatırımcılar ve düzenleyici kurumlar '
+            'dahil — açıklanmasıdır.', S['body']))
         E.append(Paragraph(
             '<b>ISO 14064-1:2018</b>, kuruluş düzeyinde sera gazı emisyon ve uzaklaştırma '
             'sınırlarının belirlenmesine, kuruluşun sera gazı emisyon ve azaltımlarının '
@@ -1557,9 +1604,21 @@ def _section1(E, S, D, report, lang, TBL, FIG):
             'değerlendirilmesini kapsar.', S['body']))
     else:
         E.append(Paragraph(
-            'The ISO 14060 family of greenhouse gas standards provides clarity and '
+            'The International Organization for Standardization (ISO) is one of the '
+            'world’s largest publishers of standards, and produces documents that help '
+            'turn scientific knowledge into tools for addressing climate change. To '
+            'support development through a low-carbon economy it has published the ISO '
+            '14060 family of greenhouse gas standards, which provides clarity and '
             'consistency for measuring, monitoring, reporting and verifying or validating '
             'greenhouse gas emissions and removals.', S['body']))
+        E.append(Paragraph(
+            'The standard has three components. <b>Inventory</b> requires the '
+            'organisation to identify and measure the greenhouse gas emissions of every '
+            'source within its boundary, direct and indirect. <b>Quantification</b> is '
+            'the calculation of the total and the determination of the organisation’s '
+            'carbon footprint. <b>Reporting</b> is the disclosure of that footprint to '
+            'the organisation’s stakeholders — customers, investors and regulatory '
+            'bodies among them.', S['body']))
         E.append(Paragraph(
             '<b>ISO 14064-1:2018</b> includes requirements for determining greenhouse gas '
             'emission and removal boundaries at the organisational level, calculating an '
@@ -1583,26 +1642,65 @@ def _section1(E, S, D, report, lang, TBL, FIG):
 
     # 1.5 Principles
     E.append(Paragraph('1.5   ' + t('s1_5', lang), S['h2']))
+    E.append(Paragraph(
+        'The principles established in ISO 14064-1:2018 are what make greenhouse '
+        'gas information accurate and fair. Each is stated below together with what was '
+        'done in this inventory to satisfy it.'
+        if lang == 'en' else
+        'ISO 14064-1:2018’de tanımlanan ilkeler, sera gazı bilgisinin doğru ve adil '
+        'olmasını sağlayan unsurlardır. Her ilke, bu envanterde onu karşılamak için '
+        'yapılanlarla birlikte aşağıda verilmiştir.', S['body']))
+    E.append(Spacer(1, 2*mm))
+    # Each principle says what was *done*, not only what the principle means:
+    # a definition list restates the standard, which a verifier already has.
     principles = ([
-        ('Relevance', 'Sources, sinks, reservoirs, data and methodologies appropriate to '
-                      'the needs of the intended user are selected.'),
-        ('Completeness', 'All relevant emissions and removals within the declared '
-                         'boundary are included; exclusions are stated and justified.'),
-        ('Consistency', 'Methodologies allow meaningful comparison over time; any change '
-                        'is documented.'),
-        ('Accuracy', 'Bias and uncertainty are reduced as far as is practicable.'),
-        ('Transparency', 'Sufficient information is disclosed for an intended user to '
-                         'make decisions with reasonable confidence.'),
+        ('Compliance', 'Quantification and reporting have been carried out in accordance '
+                       'with ISO 14064-1:2018, and the report follows the disclosure '
+                       'requirements of its clause 9.'),
+        ('Relevance', 'The greenhouse gas sources, sinks, reservoirs, data and '
+                      'methodologies selected are those appropriate to the needs of the '
+                      'intended user, and the emission factors applied are appropriate '
+                      'to the activities the organisation carries out.'),
+        ('Completeness', 'All emissions and removals arising from the organisation’s '
+                         'activities within the declared boundary have been included in '
+                         'the calculations; anything excluded is stated and justified in '
+                         'section 3.4.'),
+        ('Consistency', 'So that emissions can be compared meaningfully against the base '
+                        'year and between reporting periods, the same boundary, '
+                        'methodology and factor basis are applied throughout, and any '
+                        'change to them is documented and the base year recalculated '
+                        'where the change is significant.'),
+        ('Accuracy', 'To keep the reported CO₂e reliable, a greenhouse gas quality '
+                     'management system has been established, activity data has been '
+                     'collected from the sources that minimise uncertainty, and bias is '
+                     'reduced as far as is practicable.'),
+        ('Transparency', 'The report discloses the calculation basis, the emission '
+                         'factors used and the references behind them, so that an '
+                         'intended user can make decisions with reasonable confidence '
+                         'and an independent party can follow the quantification.'),
     ] if lang == 'en' else [
-        ('İlgililik', 'Hedef kullanıcının ihtiyaçlarına uygun kaynaklar, yutaklar, veriler '
-                      've metodolojiler seçilir.'),
-        ('Tamlık', 'Beyan edilen sınır içindeki tüm ilgili emisyon ve uzaklaştırmalar dâhil '
-                   'edilir; hariç tutmalar gerekçesiyle belirtilir.'),
-        ('Tutarlılık', 'Metodolojiler zaman içinde anlamlı karşılaştırmaya izin verir; her '
-                       'değişiklik belgelenir.'),
-        ('Doğruluk', 'Yanlılık ve belirsizlik uygulanabilir olduğu ölçüde azaltılır.'),
-        ('Şeffaflık', 'Hedef kullanıcının makul güvenle karar verebilmesi için yeterli bilgi '
-                      'açıklanır.'),
+        ('Uygunluk', 'Nicelendirme ve raporlama ISO 14064-1:2018’e uygun olarak '
+                     'yürütülmüş olup rapor, standardın 9. maddesindeki açıklama '
+                     'gerekliliklerini izler.'),
+        ('İlgililik', 'Seçilen sera gazı kaynakları, yutakları, rezervuarları, verileri ve '
+                      'metodolojileri hedef kullanıcının ihtiyaçlarına uygundur ve '
+                      'uygulanan emisyon faktörleri kuruluşun yürüttüğü faaliyetlerle '
+                      'uyumludur.'),
+        ('Tamlık', 'Beyan edilen sınır içinde kuruluşun faaliyetlerinden kaynaklanan tüm '
+                   'emisyon ve uzaklaştırmalar hesaplamalara dâhil edilmiştir; hariç '
+                   'tutulanlar 3.4 bölümünde gerekçesiyle belirtilmiştir.'),
+        ('Tutarlılık', 'Emisyonların baz yılla ve dönemler arasında anlamlı biçimde '
+                       'karşılaştırılabilmesi için aynı sınır, metodoloji ve faktör esası '
+                       'boyunca uygulanır; bunlarda yapılan her değişiklik belgelenir ve '
+                       'değişiklik önemliyse baz yıl yeniden hesaplanır.'),
+        ('Doğruluk', 'Raporlanan CO₂e değerinin güvenilir olması için bir sera gazı kalite '
+                     'yönetim sistemi kurulmuş, faaliyet verisi belirsizliği en aza '
+                     'indiren kaynaklardan toplanmış ve yanlılık uygulanabilir olduğu '
+                     'ölçüde azaltılmıştır.'),
+        ('Şeffaflık', 'Rapor; hesaplama esasını, kullanılan emisyon faktörlerini ve '
+                      'bunların dayandığı referansları açıklar; böylece hedef kullanıcı makul '
+                      'güvenle karar verebilir ve bağımsız bir taraf nicelendirmeyi takip '
+                      'edebilir.'),
     ])
     for name, text_ in principles:
         E.append(Paragraph(f'<b>{name}.</b> {text_}', S['body']))
@@ -1643,6 +1741,11 @@ def _section2(E, S, lang):
          'specified period of time.'),
         ('GHG inventory', 'A quantified list of an organisation’s GHG emissions and '
          'removals, reported by source or sink.'),
+        ('Purpose of the GHG inventory', 'The reason the inventory is compiled and the '
+         'use its target users are expected to make of it, which governs the boundaries, '
+         'the level of detail and the assurance the inventory needs.'),
+        ('GHG report', 'A standalone document intended to communicate an '
+         'organisation’s GHG-related information to its target users.'),
         ('GHG project', 'An activity, or set of activities, that changes the conditions '
          'identified in a baseline scenario to reduce GHG emissions or increase removals.'),
         ('GHG programme', 'A voluntary or mandatory international, national or regional '
@@ -1902,6 +2005,19 @@ def _section3(E, S, D, report, lang, TBL, FIG):
 
     # 3.2 Calculation methodology
     E.append(Paragraph('3.2   ' + t('s3_2', lang), S['h2']))
+    # Why this methodology, before what it is: a verifier reads 3.2 to judge
+    # whether the approach was chosen deliberately, not merely applied.
+    E.append(Paragraph(
+        'The calculation methodology was selected to give accurate, consistent and '
+        'reproducible results that minimise uncertainty, taking into account how readily '
+        'the information each methodology requires can be obtained. The quantification '
+        'was carried out at the organisational level in accordance with ISO 14064-1:2018.'
+        if lang == 'en' else
+        'Hesaplama metodolojisi, her yöntemin gerektirdiği bilginin ne kadar kolay elde '
+        'edilebildiği de dikkate alınarak, belirsizliği en aza indiren doğru, tutarlı ve '
+        'tekrarlanabilir sonuçlar verecek şekilde seçilmiştir. Nicelendirme, ISO '
+        '14064-1:2018 uyarınca kuruluş düzeyinde gerçekleştirilmiştir.', S['body']))
+    E.append(Spacer(1, 3*mm))
     E.append(Paragraph(
         'Emissions are quantified by multiplying activity data by the emission factor '
         'appropriate to the source, gas and geography, and converting to carbon dioxide '
@@ -1922,6 +2038,44 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         if lang == 'en' else
         'Organizasyon sınırı için beyan edilen konsolidasyon yaklaşımı, envanterdeki her '
         'tesise tutarlı biçimde uygulanır.', S['body']))
+    E.append(Spacer(1, 3*mm))
+
+    # Base year, and the conditions under which it is recalculated. ISO
+    # 14064-1 requires both to be stated: an inventory whose base year can
+    # shift silently is not comparable over time, which is the only reason to
+    # have one. The three triggers below are the standard's own.
+    base_year = report.baseline_year or D['year']
+    E.append(Paragraph(
+        (f'The base year for this inventory is <b>{base_year}</b>, selected because activity '
+         f'data for that year can be collected completely and reliably. Analytical review '
+         f'of greenhouse gas performance in subsequent inventories is made against it.')
+        if lang == 'en' else
+        (f'Bu envanterin baz yılı <b>{base_year}</b> olup, söz konusu yıla ait faaliyet '
+         f'verisinin eksiksiz ve güvenilir biçimde toplanabilmesi nedeniyle seçilmiştir. '
+         f'Sonraki envanterlerde sera gazı performansının analitik değerlendirmesi bu yıla '
+         f'göre yapılır.'), S['body']))
+    E.append(Spacer(1, 2*mm))
+    E.append(Paragraph(
+        'So that the base year inventory stays representative, base year emissions are '
+        'reviewed and recalculated where any of the following causes a significant '
+        'cumulative change:'
+        if lang == 'en' else
+        'Baz yıl envanterinin temsil gücünü koruyabilmesi için, aşağıdakilerden herhangi '
+        'biri önemli bir kümülatif değişikliğe yol açtığında baz yıl emisyonları gözden '
+        'geçirilir ve yeniden hesaplanır:', S['body']))
+    for _en, _tr in (
+        ('a structural change in the organisation’s boundaries or reporting, such as a '
+         'merger, acquisition or divestiture;',
+         'birleşme, satın alma veya elden çıkarma gibi kuruluşun sınırlarında ya da '
+         'raporlamasında yapısal bir değişiklik;'),
+        ('a change in calculation methodology or in the emission factors applied;',
+         'hesaplama metodolojisinde veya uygulanan emisyon faktörlerinde bir değişiklik;'),
+        ('the identification of an error, alone or combined with others, that has '
+         'resulted in significant misreporting.',
+         'tek başına veya diğerleriyle birlikte önemli bir yanlış raporlamaya yol açan bir '
+         'hatanın tespit edilmesi.'),
+    ):
+        E.append(Paragraph('•  ' + (_en if lang == 'en' else _tr), S['body']))
     E.append(Spacer(1, 4*mm))
 
     # 3.2.1 Calculation approach — which consolidation basis (control/equity)
@@ -1972,6 +2126,34 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         'Bu envanterdeki her kaynak için, faaliyet verisinin bir emisyon faktörüyle '
         'çarpılmasına dayanan “standart yöntem” kullanılmıştır. Kütle dengesi ve sürekli '
         'ölçüme dayalı yöntemler uygulanmamıştır.', S['body']))
+    E.append(Spacer(1, 2*mm))
+    # One multiplication in code, but a verifier checks the two as distinct
+    # steps — the factor applied, then the GWP applied — so the report shows
+    # where each comes from rather than only the combined formula above.
+    E.append(Paragraph(
+        'The calculation is carried out in two stages. In the first, activity data is '
+        'converted into a greenhouse gas emission using the emission factor published '
+        'for that source:'
+        if lang == 'en' else
+        'Hesaplama iki aşamada yürütülür. İlk aşamada faaliyet verisi, o kaynak için '
+        'yayımlanmış emisyon faktörü kullanılarak bir sera gazı emisyonuna dönüştürülür:',
+        S['body']))
+    E.append(Paragraph(
+        '<b>Greenhouse gas emission = activity data × emission factor</b>'
+        if lang == 'en' else
+        '<b>Sera gazı emisyonu = faaliyet verisi × emisyon faktörü</b>', S['quote']))
+    E.append(Paragraph(
+        'In the second, each greenhouse gas is expressed in tonnes of carbon dioxide '
+        'equivalent using its global warming potential, so that gases with different '
+        'radiative forcing can be added together:'
+        if lang == 'en' else
+        'İkinci aşamada her sera gazı, farklı ışınımsal zorlamaya sahip gazların '
+        'toplanabilmesi için kendi küresel ısınma potansiyeli kullanılarak ton '
+        'karbondioksit eşdeğeri cinsinden ifade edilir:', S['body']))
+    E.append(Paragraph(
+        '<b>t CO₂e = greenhouse gas emission × GWP ÷ 1,000</b>'
+        if lang == 'en' else
+        '<b>t CO₂e = sera gazı emisyonu × GWP ÷ 1.000</b>', S['quote']))
     E.append(Spacer(1, 5*mm))
 
     # 3.3 Reporting boundaries
@@ -2022,16 +2204,15 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         band = EXCLUSION_BAND_LABELS.get(band_code, {}).get(lang) if band_code else None
         future_plan = _answer_text(A, '6A-5', lang, default=None)
 
+        # The reason labels are noun phrases ('data inaccessible', 'outside
+        # operational control'), so they are introduced as a stated reason
+        # rather than pushed behind a 'because' that will not fit them.
         if lang == 'en':
             sentence = 'One or more sources have been excluded from the declared boundary'
-            if reason:
-                sentence += f', because {reason}'
-            sentence += '.'
+            sentence += f'. Reason declared: {reason}.' if reason else '.'
         else:
             sentence = 'Beyan edilen sınırdan bir veya daha fazla kaynak hariç tutulmuştur'
-            if reason:
-                sentence += f' ({reason} gerekçesiyle)'
-            sentence += '.'
+            sentence += f'. Beyan edilen gerekçe: {reason}.' if reason else '.'
         E.append(Paragraph(sentence, S['body']))
         if justification and justification != t('not_declared', lang):
             E.append(Paragraph(
@@ -2052,6 +2233,45 @@ def _section3(E, S, D, report, lang, TBL, FIG):
             if lang == 'en' else
             'Kuruluşun faaliyetleri için geçerli olmadığı belirtilenler dışında, beyan '
             'edilen sınırdan hariç tutulan kaynak bulunmamaktadır.', S['body']))
+
+    # Which categories carry nothing, stated whether or not the organisation
+    # declared an exclusion. An empty category is not self-evidently out of
+    # scope — a verifier has to be told it was considered and found to have
+    # no identified sources, which is a fact about this inventory and can be
+    # read straight off it.
+    empty = [c for c in range(1, 7) if not D['by_category'].get(c)]
+    if empty:
+        names = ', '.join(f'{ROMAN[c]} ({ISO_CATEGORY_NAMES[c][lang]})' for c in empty)
+        E.append(Spacer(1, 2*mm))
+        E.append(Paragraph(
+            (f'No greenhouse gas sources were identified or declared under '
+             f'{"Category" if len(empty) == 1 else "Categories"} {names}, so no '
+             f'emissions have been quantified for '
+             f'{"it" if len(empty) == 1 else "them"} in this reporting period. '
+             f'{"This category is" if len(empty) == 1 else "These categories are"} '
+             f'reassessed each period, and will be quantified once a source falling '
+             f'within {"it" if len(empty) == 1 else "them"} is identified.')
+            if lang == 'en' else
+            (f'{names} kategorisinde/kategorilerinde herhangi bir sera gazı kaynağı '
+             f'belirlenmemiş veya beyan edilmemiştir; bu nedenle bu raporlama döneminde '
+             f'bunlar için emisyon nicelendirilmemiştir. Bu kategoriler her dönem yeniden '
+             f'değerlendirilir ve kapsamlarına giren bir kaynak belirlendiğinde '
+             f'nicelendirilir.'), S['body']))
+
+    # Biogenic CO2 and removals are reported separately from the gross
+    # inventory under ISO 14064-1, so their absence is itself a disclosure.
+    E.append(Spacer(1, 2*mm))
+    E.append(Paragraph(
+        'No greenhouse gas removals or sinks were identified within the organisation’s '
+        'operational area, so no removals have been quantified. Biogenic CO₂ from '
+        'biomass combustion, where present, is reported separately from the fossil '
+        'inventory and is not included in the totals above.'
+        if lang == 'en' else
+        'Kuruluşun faaliyet alanı içinde sera gazı uzaklaştırması veya yutağı '
+        'belirlenmemiştir; bu nedenle uzaklaştırma nicelendirilmemiştir. Biyokütle '
+        'yanmasından kaynaklanan biyojenik CO₂, mevcut olduğu durumlarda fosil '
+        'envanterinden ayrı raporlanır ve yukarıdaki toplamlara dahil edilmez.',
+        S['body']))
     E.append(Spacer(1, 4*mm))
 
     # 3.5 Assumptions — 6C-1 (exception type code) / 6C-2 (compound: which
@@ -2086,17 +2306,40 @@ def _section3(E, S, D, report, lang, TBL, FIG):
             E.append(Paragraph(
                 (f'<b>{"Improvement commitment" if lang == "en" else "İyileştirme taahhüdü"}'
                  f':</b> {commitment}'), S['body']))
-    else:
-        E.extend(_bullets(S, (
-            ['Where metered data was unavailable, consumption has been apportioned on a '
-             'documented basis (floor area, headcount or operating hours).',
-             'Emission factors are applied for the geography in which the activity occurs.',
-             'Biogenic CO₂ from biomass combustion is reported separately from fossil CO₂.']
+        E.append(Spacer(1, 3*mm))
+        E.append(Paragraph(
+            'The following assumptions apply to the quantification regardless of the '
+            'exception above:'
             if lang == 'en' else
-            ['Sayaç verisi bulunmayan durumlarda tüketim, belgelenmiş bir esasa göre '
-             '(alan, personel sayısı veya çalışma saati) dağıtılmıştır.',
-             'Emisyon faktörleri, faaliyetin gerçekleştiği coğrafyaya göre uygulanır.',
-             'Biyokütle yanmasından kaynaklanan biyojenik CO₂ fosil CO₂’den ayrı raporlanır.'])))
+            'Aşağıdaki kabuller, yukarıdaki istisnadan bağımsız olarak nicelendirmenin '
+            'tümünde geçerlidir:', S['body']))
+    # The platform's own methodological assumptions hold whether or not the
+    # organisation declared an exception, so they are listed either way.
+    E.extend(_bullets(S, (
+        ['Emission factors are applied as published, and the global warming '
+         'potentials used to convert each gas to CO₂e are the IPCC AR6 100-year '
+         'values listed in Table 13.',
+         'Where a factor is published as a single CO₂e value, the split between '
+         'CO₂, CH₄ and N₂O is apportioned on published IPCC default ratios for that '
+         'fuel and combustion type, leaving the factor’s own total unchanged; where '
+         'no such basis exists the source is reported as a combined CO₂e figure.',
+         'Where metered data was unavailable, consumption has been apportioned on a '
+         'documented basis (floor area, headcount or operating hours).',
+         'Emission factors are applied for the geography in which the activity occurs.',
+         'Biogenic CO₂ from biomass combustion is reported separately from fossil CO₂.']
+        if lang == 'en' else
+        ['Emisyon faktörleri yayımlandığı şekliyle uygulanır; her gazı CO₂e’ye '
+         'çevirmek için kullanılan küresel ısınma potansiyelleri Tablo 13’te listelenen '
+         'IPCC AR6 100 yıllık değerleridir.',
+         'Bir faktör tek bir CO₂e değeri olarak yayımlandığında CO₂, CH₄ ve N₂O '
+         'arasındaki ayrım, ilgili yakıt ve yanma türü için yayımlanmış IPCC '
+         'varsayılan oranlarına göre dağıtılır ve faktörün kendi toplamı değişmez; '
+         'böyle bir esas bulunmadığında kaynak birleşik CO₂e değeri olarak '
+         'raporlanır.',
+         'Sayaç verisi bulunmayan durumlarda tüketim, belgelenmiş bir esasa göre '
+         '(alan, personel sayısı veya çalışma saati) dağıtılmıştır.',
+         'Emisyon faktörleri, faaliyetin gerçekleştiği coğrafyaya göre uygulanır.',
+         'Biyokütle yanmasından kaynaklanan biyojenik CO₂ fosil CO₂’den ayrı raporlanır.'])))
     E.append(Spacer(1, 4*mm))
 
     # 3.6 Data sources
@@ -2765,6 +3008,35 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         'belirsizliği, belirtildiği durumlarda yayınlayan kaynaktan alınır. Nicelenmiş '
         'belirsizlik beyanı ayrı belirsizlik hesaplama kaydında tutulur ve her raporlama '
         'döneminde gözden geçirilir.', S['body']))
+    E.append(Spacer(1, 2*mm))
+    # How the two component uncertainties combine into one figure. Stated
+    # because a reader given a single +/- % is entitled to know what went
+    # into it and on whose method.
+    E.append(Paragraph(
+        'Total uncertainty is obtained by combining, at each emission source, the '
+        'uncertainty of the activity data with the uncertainty of the emission factor '
+        'applied to it, and aggregating those source-level results over the inventory. '
+        'The combination follows the uncertainty calculation tables published by the GHG '
+        'Protocol and the IPCC, and is reported separately for direct and indirect '
+        'emissions as well as for the inventory as a whole, each with the confidence '
+        'level it corresponds to.'
+        if lang == 'en' else
+        'Toplam belirsizlik, her emisyon kaynağında faaliyet verisinin belirsizliği ile '
+        'o kaynağa uygulanan emisyon faktörünün belirsizliğinin birleştirilmesi ve kaynak '
+        'bazındaki bu sonuçların envanter genelinde toplanmasıyla elde edilir. '
+        'Birleştirme, GHG Protocol ve IPCC tarafından yayımlanan belirsizlik hesaplama '
+        'tablolarına göre yapılır ve doğrudan ile dolaylı emisyonlar için ayrı ayrı, '
+        'ayrıca envanterin bütünü için, karşılık geldiği güven düzeyiyle birlikte '
+        'raporlanır.', S['body']))
+    E.append(Spacer(1, 2*mm))
+    E.append(Paragraph(
+        'Data collection standards and forms are developed each period with the specific '
+        'aim of reducing the uncertainty level, by replacing apportioned and estimated '
+        'activity data with metered or invoiced records.'
+        if lang == 'en' else
+        'Veri toplama standartları ve formları, dağıtılmış ve tahmin edilmiş faaliyet '
+        'verisinin yerine sayacı veya faturası bulunan kayıtların geçirilmesi yoluyla '
+        'belirsizlik düzeyini düşürmek amacıyla her dönem geliştirilir.', S['body']))
     E.append(Spacer(1, 4*mm))
 
     # Reduction targets
@@ -2822,7 +3094,14 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'Waste reduction and diversion: minimising waste generation and increasing reuse '
          'or recycling ahead of disposal.',
          'Business travel policy: substituting travel with virtual meetings where '
-         'practicable, and favouring lower-carbon transport modes.']
+         'practicable, and favouring lower-carbon transport modes.',
+         'Modal shift: moving freight from road to lower-carbon modes such as rail or '
+         'sea where the route and lead time allow.',
+         'Load factor: running vehicles and shipments at fuller capacity, so that fewer '
+         'trips carry the same volume.',
+         'Offsetting: investing in removal projects or retiring carbon credits for the '
+         'residual footprint, after the reductions above have been pursued rather than '
+         'in place of them.']
         if lang == 'en' else
         ['Enerji verimliliği: Kategori I ve II tüketimini azaltmak için LED aydınlatma, '
          'verimli HVAC ve ekipman yenilemeleri.',
@@ -2838,11 +3117,50 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'Atık azaltımı ve yönlendirme: atık oluşumunu en aza indirmek, bertaraf '
          'öncesinde yeniden kullanım veya geri dönüşümü artırmak.',
          'İş seyahati politikası: mümkün olduğunda seyahat yerine sanal toplantılar, '
-         'daha düşük karbonlu ulaşım modlarının tercih edilmesi.'])))
+         'daha düşük karbonlu ulaşım modlarının tercih edilmesi.',
+         'Mod değişimi: rota ve teslim süresi elverdiğinde yükün karayolundan demiryolu '
+         'veya denizyolu gibi daha düşük karbonlu modlara kaydırılması.',
+         'Doluluk oranı: araçların ve sevkiyatların daha dolu kapasiteyle çalıştırılması, '
+         'böylece aynı hacmin daha az seferle taşınması.',
+         'Dengeleme: yukarıdaki azaltımların yerine değil, onlar izlendikten sonra kalan '
+         'ayak izi için uzaklaştırma projelerine yatırım yapılması veya karbon '
+         'kredilerinin emekliye ayrılması.'])))
+    E.append(Spacer(1, 3*mm))
+    E.append(Paragraph(
+        'Alongside the reduction targets themselves, reduction and removal initiatives '
+        'and projects are recorded in the target tracking table of the greenhouse gas '
+        'management procedure, and their progress is reviewed each reporting period.'
+        if lang == 'en' else
+        'Azaltım hedeflerinin yanı sıra, azaltım ve uzaklaştırma girişimleri ile projeler '
+        'sera gazı yönetim prosedürünün hedef izleme tablosunda kaydedilir ve '
+        'ilerlemeleri her raporlama döneminde gözden geçirilir.', S['body']))
     E.append(Spacer(1, 4*mm))
 
     # Risk & opportunity
     E.append(Paragraph('4.1.6   ' + t('s4_risk', lang), S['h2']))
+    # The section had only its opportunity bullets, which left the 'risk' half
+    # of its own title unanswered. Risk first, then opportunity.
+    E.append(Paragraph(
+        'Risk to the greenhouse gas inventory management system is assessed against the '
+        'factors that can affect data quality, recorded by the work area each data source '
+        'sits in and rated by the risk it carries. Risks are reduced by reviewing those '
+        'processes systematically, identifying weak points and the causes behind them, '
+        'and improving how the areas that supply the data communicate with one another. '
+        'Data quality remains the principal risk to this inventory, and it is managed '
+        'through the controls set out in the quality management system below.'
+        if lang == 'en' else
+        'Sera gazı envanteri yönetim sistemine ilişkin risk, veri kalitesini '
+        'etkileyebilecek unsurlar üzerinden, her veri kaynağının bulunduğu çalışma alanına '
+        'göre kaydedilerek ve taşıdığı risk derecelendirilerek değerlendirilir. Riskler; '
+        'bu süreçlerin sistematik olarak gözden geçirilmesi, zayıf noktaların ve '
+        'nedenlerinin belirlenmesi ve veriyi sağlayan alanlar arasındaki iletişimin '
+        'iyileştirilmesi yoluyla azaltılır. Bu envanter için asıl risk veri kalitesidir ve '
+        'aşağıdaki kalite yönetim sistemi kontrolleriyle yönetilir.', S['body']))
+    E.append(Spacer(1, 3*mm))
+    E.append(Paragraph(
+        'The opportunities identified alongside those risks are:'
+        if lang == 'en' else
+        'Bu risklerle birlikte belirlenen fırsatlar şunlardır:', S['body']))
     E.extend(_bullets(S, (
         ['Identifying carbon-intensive processes creates opportunities to move to more '
          'energy-efficient technology, reducing both cost and emissions.',
@@ -2852,8 +3170,12 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'typically the largest indirect category.',
          'Transparent reporting supports access to sustainability-linked finance and '
          'improves standing in public and private tenders.',
-         'Data quality remains the principal risk to the inventory; it is managed through '
-         'the controls described in the quality management system below.']
+         'Organisations that reduce their footprint reach green financing and '
+         'ESG-aligned investors more readily than those that cannot evidence a '
+         'reduction.',
+         'Meeting a standard such as ISO 14064-1 early brings tax incentives and access '
+         'to government-supported funds, beyond avoiding the penalties that late '
+         'compliance risks.']
         if lang == 'en' else
         ['Karbon yoğun süreçlerin belirlenmesi, hem maliyeti hem emisyonu azaltan daha '
          'verimli teknolojiye geçiş fırsatı yaratır.',
@@ -2863,8 +3185,20 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'kategori olan Kategori IV emisyonlarını azaltır.',
          'Şeffaf raporlama, sürdürülebilirlik bağlantılı finansmana erişimi destekler ve '
          'ihalelerde avantaj sağlar.',
-         'Veri kalitesi envanterin başlıca riskidir; aşağıdaki kalite yönetim sisteminde '
-         'tanımlanan kontrollerle yönetilir.'])))
+         'Ayak izini azaltan kuruluşlar, azaltımı belgeleyemeyenlere kıyasla yeşil '
+         'finansmana ve ÇSY uyumlu yatırımcılara daha kolay erişir.',
+         'ISO 14064-1 gibi bir standarda erken uyum; geç uyumun riske attığı cezalardan '
+         'kaçınmanın ötesinde, vergi teşvikleri ve devlet destekli fonlara erişim '
+         'sağlar.'])))
+    E.append(Spacer(1, 3*mm))
+    E.append(Paragraph(
+        'An organisation that reduces its carbon footprint and reports that process '
+        'transparently builds a more credible and more responsible standing with its '
+        'customers and its other stakeholders.'
+        if lang == 'en' else
+        'Karbon ayak izini azaltan ve bu süreci şeffaf biçimde raporlayan bir kuruluş, '
+        'müşterileri ve diğer paydaşları nezdinde daha güvenilir ve daha sorumlu bir '
+        'konum edinir.', S['body']))
     E.append(Spacer(1, 4*mm))
 
     # Verification — the questionnaire has no dedicated verification-statement
@@ -2882,6 +3216,12 @@ def _section4(E, S, D, report, lang, TBL, FIG):
 
     # QMS
     E.append(Paragraph('4.1.8   ' + t('s4_qms', lang), S['h2']))
+    E.append(Paragraph(
+        'A greenhouse gas management procedure has been established, and the procedures '
+        'created under it are applied so that:'
+        if lang == 'en' else
+        'Bir sera gazı yönetim prosedürü oluşturulmuş olup, bu kapsamda hazırlanan '
+        'prosedürler aşağıdakileri sağlayacak şekilde uygulanır:', S['body']))
     E.extend(_bullets(S, (
         ['compliance with the principles of ISO 14064-1:2018 is maintained;',
          'the inventory remains fit for its intended purpose;',
@@ -2895,6 +3235,25 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          'envanterin doğruluğu rutin olarak kontrol edilir ve eksiklikler giderilir;',
          'tespit edilen hatalar düzeltilir ve düzeltme kaydedilir;',
          'envanter kayıtları belgelenip arşivlenir ve on yıl saklanır.'])))
+    E.append(Spacer(1, 3*mm))
+    # What keeps the checklist above from being a statement of intent: who
+    # sees the procedures, how long records survive, and how often the system
+    # is actually audited.
+    E.append(Paragraph(
+        'The procedures and forms within the greenhouse gas management procedure are '
+        'published and communicated to everyone who uses them. Records relating to the '
+        'management system are retained for ten years and backed up regularly. Internal '
+        'audits and a management review are carried out annually, and corrective and '
+        'improvement actions are raised from them; the quality of the data used to '
+        'determine and calculate emissions is itself risk-assessed on the same cycle.'
+        if lang == 'en' else
+        'Sera gazı yönetim prosedürü kapsamındaki prosedür ve formlar yayımlanır ve '
+        'bunları kullanan herkese duyurulur. Yönetim sistemine ilişkin kayıtlar on yıl '
+        'saklanır ve düzenli olarak yedeklenir. İç denetimler ve yönetimin gözden '
+        'geçirmesi yılda bir kez yapılır ve bunlardan düzeltici ve iyileştirici '
+        'faaliyetler çıkarılır; emisyonların belirlenmesinde ve hesaplanmasında '
+        'kullanılan verinin kalitesi de aynı döngüde risk değerlendirmesine tabi '
+        'tutulur.', S['body']))
     E.append(PageBreak())
 
     # 4.2 Evaluation by location and by activity — the two cuts of the same
