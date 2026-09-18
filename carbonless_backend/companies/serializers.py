@@ -8,6 +8,9 @@ class CompanySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'legal_entity_name', 'tax_number', 'country_of_headquarters',
             'countries_of_operation', 'nace_code', 'main_activity_description',
+            'registered_address', 'telephone', 'website', 'tax_office',
+            'trade_registry_number', 'inventory_declaration_scope',
+            'environmental_regulations', 'certificates',
             'number_of_employees', 'annual_turnover_range', 'number_of_facilities',
             'has_overseas_operations', 'number_of_subsidiaries',
             'has_iso_14001', 'has_iso_50001', 'has_iso_14064_work',

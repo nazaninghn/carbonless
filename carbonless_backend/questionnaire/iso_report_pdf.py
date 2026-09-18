@@ -24,6 +24,7 @@ inventory report is an assurance document, so a blank has to read as a blank.
 import io
 import os
 from datetime import datetime
+from html import escape
 
 from django.db.models import Sum
 from reportlab.lib import colors
@@ -1296,6 +1297,19 @@ def _introduction(E, S, lang):
     E.append(PageBreak())
 
 
+def _lines_to_html(value):
+    """One-per-line free text as <br/>-separated markup for a table cell.
+
+    The regulations and certificates a company must list are genuinely a list,
+    and running them together on one line makes the cell unreadable. Escaped
+    first, since this is user-entered text going into reportlab's mini-HTML.
+    """
+    if not value:
+        return ''
+    lines = [escape(ln.strip()) for ln in str(value).splitlines() if ln.strip()]
+    return '<br/>'.join(lines)
+
+
 def _section1(E, S, D, report, lang, TBL, FIG):
     A = D['answers']
     company = D['company']
@@ -1306,13 +1320,27 @@ def _section1(E, S, D, report, lang, TBL, FIG):
          ('Reporting organisation' if lang == 'en' else 'Raporlayan kuruluş'),
          company.legal_entity_name if company else t('not_declared', lang)),
         ('Registered address' if lang == 'en' else 'Kayıtlı adres',
-         getattr(company, 'country_of_headquarters', None) or t('not_declared', lang)),
-        ('Tax number' if lang == 'en' else 'Vergi numarası',
-         getattr(company, 'tax_number', None) or t('not_declared', lang)),
+         getattr(company, 'registered_address', None)
+         or getattr(company, 'country_of_headquarters', None) or t('not_declared', lang)),
+        ('Tax office and number' if lang == 'en' else 'Vergi dairesi ve numarası',
+         ' — '.join(x for x in (getattr(company, 'tax_office', '') or '',
+                                getattr(company, 'tax_number', '') or '') if x)
+         or t('not_declared', lang)),
+        ('Telephone' if lang == 'en' else 'Telefon',
+         getattr(company, 'telephone', None) or t('not_declared', lang)),
         ('Sector' if lang == 'en' else 'Sektör',
          getattr(company, 'main_activity_description', None) or t('not_declared', lang)),
+        # What the declaration covers, as distinct from what the business does.
+        # Falls back to the activity description when the organisation has not
+        # stated a narrower scope, which is the common case.
+        ('Scope to be included in the inventory declaration' if lang == 'en'
+         else 'Envanter beyanına dahil edilecek kapsam',
+         getattr(company, 'inventory_declaration_scope', None)
+         or getattr(company, 'main_activity_description', None) or t('not_declared', lang)),
         ('NACE code' if lang == 'en' else 'NACE kodu',
          getattr(company, 'nace_code', None) or t('not_declared', lang)),
+        ('Trade registry number' if lang == 'en' else 'Ticaret sicil numarası',
+         getattr(company, 'trade_registry_number', None) or t('not_declared', lang)),
         ('Countries of operation' if lang == 'en' else 'Faaliyet ülkeleri',
          getattr(company, 'countries_of_operation', None) or t('not_declared', lang)),
         ('Number of employees' if lang == 'en' else 'Çalışan sayısı',
@@ -1326,9 +1354,16 @@ def _section1(E, S, D, report, lang, TBL, FIG):
           else ('No' if lang == 'en' else 'Yok')) if company else t('not_declared', lang)),
         ('Subsidiaries' if lang == 'en' else 'Bağlı ortaklıklar',
          (getattr(company, 'number_of_subsidiaries', 0) or 0) if company else t('not_declared', lang)),
+        ('Environmental regulations the organisation must comply with' if lang == 'en'
+         else 'Kuruluşun uymakla yükümlü olduğu çevre mevzuatı',
+         _lines_to_html(getattr(company, 'environmental_regulations', None)) or t('not_declared', lang)),
+        # The free-text list is what the organisation actually holds; the three
+        # booleans below it are what the questionnaire has always asked, and
+        # they are folded in so a company that answered only those still gets a
+        # populated row.
         ('Certificates and management systems held'
          if lang == 'en' else 'Sahip olunan sertifikalar ve yönetim sistemleri',
-         (', '.join(
+         (_lines_to_html(getattr(company, 'certificates', None)) or ', '.join(
              ([('ISO 14001 Environmental Management System' if lang == 'en'
                 else 'ISO 14001 Çevre Yönetim Sistemi')] if getattr(company, 'has_iso_14001', False) else [])
              + ([('ISO 50001 Energy Management System' if lang == 'en'
@@ -1336,6 +1371,8 @@ def _section1(E, S, D, report, lang, TBL, FIG):
              + ([('Prior ISO 14064 work' if lang == 'en'
                   else 'Önceki ISO 14064 çalışması')] if getattr(company, 'has_iso_14064_work', False) else [])
          ) or t('not_declared', lang)) if company else t('not_declared', lang)),
+        ('Website' if lang == 'en' else 'İnternet sitesi',
+         getattr(company, 'website', None) or t('not_declared', lang)),
         ('Target ISO 14064-1 verification' if lang == 'en' else 'Hedeflenen ISO 14064-1 doğrulaması',
          (('Yes' if lang == 'en' else 'Evet') if getattr(company, 'target_iso_14064_verification', False)
           else ('No' if lang == 'en' else 'Hayır')) if company else t('not_declared', lang)),
@@ -1358,8 +1395,10 @@ def _section1(E, S, D, report, lang, TBL, FIG):
          report.baseline_year or D['year']),
         ('Calculation year' if lang == 'en' else 'Hesaplama yılı', D['year']),
         (t('reporting_period', lang), period),
-        ('Prepared by' if lang == 'en' else 'Hazırlayan',
+        ('Person responsible for the report' if lang == 'en' else 'Rapordan sorumlu kişi',
          report.prepared_by or t('not_declared', lang)),
+        ('Contact e-mail' if lang == 'en' else 'İletişim e-postası',
+         getattr(getattr(report, 'created_by', None), 'email', '') or t('not_declared', lang)),
         ('Organisational boundary approach' if lang == 'en' else 'Organizasyon sınırı yaklaşımı',
          report.get_boundary_approach_display() if getattr(report, 'boundary_approach', None)
          else t('not_declared', lang)),

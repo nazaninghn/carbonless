@@ -118,6 +118,17 @@ export default function CompanySettings({ language }) {
         country_of_headquarters: form.country_of_headquarters || '',
         nace_code: form.nace_code || '',
         main_activity_description: form.main_activity_description || '',
+        // Organisational details the ISO 14064-1 report states about the
+        // reporting organisation. All optional — the report prints
+        // "Not declared" for whatever is left blank.
+        registered_address: form.registered_address || '',
+        telephone: form.telephone || '',
+        website: form.website || '',
+        tax_office: form.tax_office || '',
+        trade_registry_number: form.trade_registry_number || '',
+        inventory_declaration_scope: form.inventory_declaration_scope || '',
+        environmental_regulations: form.environmental_regulations || '',
+        certificates: form.certificates || '',
       });
       if (res.ok) {
         const data = await res.json();
@@ -285,6 +296,47 @@ export default function CompanySettings({ language }) {
         <FormField label="NACE">
           <input type="text" value={field('nace_code')} onChange={set('nace_code')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
+        <FormField label={tr ? 'Vergi Dairesi' : 'Tax Office'}>
+          <input type="text" value={field('tax_office')} onChange={set('tax_office')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+        </FormField>
+        <FormField label={tr ? 'Ticaret Sicil No' : 'Trade Registry Number'}>
+          <input type="text" value={field('trade_registry_number')} onChange={set('trade_registry_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+        </FormField>
+        <FormField label={tr ? 'Telefon' : 'Telephone'}>
+          <input type="text" value={field('telephone')} onChange={set('telephone')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+        </FormField>
+        <FormField label={tr ? 'İnternet Sitesi' : 'Website'}>
+          <input type="text" value={field('website')} onChange={set('website')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+        </FormField>
+        <FormField label={tr ? 'Kayıtlı Adres' : 'Registered Address'} full>
+          <textarea value={field('registered_address')} onChange={set('registered_address')} rows={2} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+        </FormField>
+      </div>
+
+      {/* These three are what the ISO 14064-1 report states about the
+          organisation and are the ones most often left blank, so they are
+          grouped and labelled with what they are for rather than mixed into
+          the identity fields above. */}
+      <div className="rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] p-4">
+        <p className="mb-1 text-sm font-bold text-[#072C0E]">
+          {tr ? 'ISO 14064-1 rapor beyanı' : 'ISO 14064-1 report declaration'}
+        </p>
+        <p className="mb-3 text-xs text-[#072C0E]/55">
+          {tr
+            ? 'Bu alanlar tam ISO 14064-1 raporunun kuruluş bilgileri tablosunda yer alır. Boş bırakılanlar raporda "Beyan edilmedi" olarak görünür.'
+            : 'These appear in the organisational information table of the full ISO 14064-1 report. Anything left blank is shown there as "Not declared".'}
+        </p>
+        <div className="grid grid-cols-1 gap-4">
+          <FormField label={tr ? 'Envanter beyanına dahil edilecek kapsam' : 'Scope to be included in the inventory declaration'}>
+            <textarea value={field('inventory_declaration_scope')} onChange={set('inventory_declaration_scope')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" rows={4} />
+          </FormField>
+          <FormField label={tr ? 'Uyulması gereken çevre mevzuatı (her satıra bir tane)' : 'Environmental regulations to comply with (one per line)'}>
+            <textarea value={field('environmental_regulations')} onChange={set('environmental_regulations')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" rows={4} />
+          </FormField>
+          <FormField label={tr ? 'Sahip olunan sertifikalar (her satıra bir tane)' : 'Certificates held (one per line)'}>
+            <textarea value={field('certificates')} onChange={set('certificates')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" rows={4} />
+          </FormField>
+        </div>
       </div>
 
       {error   && <ErrorBox msg={error} />}

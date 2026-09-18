@@ -10,7 +10,29 @@ class Company(models.Model):
     countries_of_operation = models.TextField()
     nace_code = models.CharField(max_length=50, blank=True)
     main_activity_description = models.TextField()
-    
+
+    # Identifying and contact details an ISO 14064-1 report states about the
+    # reporting organisation. Optional: an inventory is still valid without
+    # them, and the report prints "Not declared" for whatever is left blank
+    # rather than refusing to build.
+    registered_address = models.TextField(blank=True, help_text='Registered address of the legal entity')
+    telephone = models.CharField(max_length=50, blank=True)
+    website = models.CharField(max_length=255, blank=True)
+    tax_office = models.CharField(max_length=150, blank=True, help_text='Tax office the tax number is registered with')
+    trade_registry_number = models.CharField(max_length=100, blank=True)
+
+    # What the organisation is declaring an inventory for. Distinct from
+    # main_activity_description, which says what the business does: this says
+    # which of those activities the inventory covers, and the standard expects
+    # the declaration to state it.
+    inventory_declaration_scope = models.TextField(
+        blank=True, help_text='The activities this GHG inventory declaration covers')
+    environmental_regulations = models.TextField(
+        blank=True, help_text='Environmental regulations the organisation must comply with, one per line')
+    certificates = models.TextField(
+        blank=True,
+        help_text='Management-system certificates held, one per line (e.g. ISO 9001:2015 Quality Management Systems)')
+
     # Section 2: Scale & Complexity
     number_of_employees = models.CharField(max_length=50)
     annual_turnover_range = models.CharField(max_length=50)
