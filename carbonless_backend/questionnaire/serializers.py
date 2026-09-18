@@ -78,6 +78,30 @@ class StepA7aSerializer(serializers.Serializer):
     )
 
 
+class StepA7bSerializer(serializers.Serializer):
+    """Organisation details published in the report's first table.
+
+    Every field is optional and may be sent blank: the report prints
+    "Not declared" in place of anything the organisation has not stated, so an
+    empty submission is a valid answer rather than a skipped step.
+
+    No `default` on purpose. With one, DRF would materialise every key on every
+    request, and a caller sending only the field it meant to change would
+    silently blank the other seven. Leaving them absent lets handle_A7b tell
+    "not mentioned" (leave alone) from "sent empty" (clear).
+    """
+    _opt = dict(required=False, allow_blank=True)
+    registered_address = serializers.CharField(max_length=500, **_opt)
+    tax_office = serializers.CharField(max_length=150, **_opt)
+    trade_registry_number = serializers.CharField(max_length=100, **_opt)
+    telephone = serializers.CharField(max_length=50, **_opt)
+    website = serializers.CharField(max_length=255, **_opt)
+    inventory_declaration_scope = serializers.CharField(max_length=1000, **_opt)
+    environmental_regulations = serializers.CharField(max_length=2000, **_opt)
+    certificates = serializers.CharField(max_length=2000, **_opt)
+    del _opt
+
+
 class StepB1Serializer(serializers.Serializer):
     nace_code = serializers.CharField(max_length=50)
     nace_label = serializers.CharField(max_length=200, required=False, allow_blank=True, default='')

@@ -15,7 +15,7 @@ import time
 # Verify with:
 #   node -e "const s=require('fs').readFileSync('src/lib/carboniq/questions.js','utf8');
 #            console.log([...s.matchAll(/^\s{4}id: '[^']+',/gm)].length)"
-TOTAL_QUESTIONS = 156
+TOTAL_QUESTIONS = 157
 
 
 def _progress(completed_count, status):
@@ -81,7 +81,7 @@ def _save_report_step(report, step_id, answer, is_skipped=False):
 from .serializers import (
     StepA1Serializer, StepA2Serializer, StepA3Serializer,
     StepA4Serializer, StepA5Serializer, StepA6Serializer,
-    StepA7Serializer, StepA7aSerializer,
+    StepA7Serializer, StepA7aSerializer, StepA7bSerializer,
     StepB1Serializer, StepB2Serializer, StepB3Serializer,
     StepB4Serializer, StepB5Serializer, StepB6Serializer,
     StepC1Serializer, StepC2Serializer, StepC3Serializer,
@@ -93,7 +93,7 @@ STEP_SERIALIZERS = {
     'A1': StepA1Serializer, 'A2': StepA2Serializer,
     'A3': StepA3Serializer, 'A4': StepA4Serializer,
     'A5': StepA5Serializer, 'A6': StepA6Serializer,
-    'A7': StepA7Serializer, 'A7a': StepA7aSerializer,
+    'A7': StepA7Serializer, 'A7a': StepA7aSerializer, 'A7b': StepA7bSerializer,
     'B1': StepB1Serializer, 'B2': StepB2Serializer,
     'B3': StepB3Serializer, 'B4': StepB4Serializer,
     'B5': StepB5Serializer, 'B6': StepB6Serializer,
@@ -447,7 +447,7 @@ class SubmitStepView(APIView):
         # never persisted.  Adding them here routes their saves through the
         # serializer → handle_step() path, matching A1-A7a behaviour.
         STRICT_STEPS = {
-            'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+            'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
             'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
             'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
         }
@@ -557,7 +557,7 @@ class SubmitStepView(APIView):
             # finished (handle_D4 flips status to IN_PROGRESS) and a
             # meaningful number of Phase-2 answers must exist.
             PHASE1_STEP_IDS = {
-                'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+                'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
                 'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
                 'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
             }
@@ -691,7 +691,7 @@ class ReportStatusView(APIView):
 # need copying for a report to look/behave as if the user answered them fresh.
 
 PHASE1_STEP_IDS = [
-    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
     'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
     'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
 ]

@@ -397,8 +397,8 @@ export const CARBONIQ_QUESTIONS = [
     ],
     nextByValue: {
       yes: 'A7a',
-      no: 'B1',
-      skip: 'B1',
+      no: 'A7b',
+      skip: 'A7b',
     },
     systemMessages: {
       yes: {
@@ -449,6 +449,108 @@ export const CARBONIQ_QUESTIONS = [
       selected: {
         tr: 'Baz yıl olarak seçilen yıl belirlendi. Bu yıla ait emisyon verilerinizi raporun sonunda girmenizi isteyeceğiz.',
         en: 'Baseline year selected. We will ask you to enter emission data for this year at the end of the report flow.',
+      },
+    },
+    next: 'A7b',
+  },
+  {
+    id: 'A7b',
+    number: 8,
+    stage: 1,
+    block: 'A',
+    isoRef: 'ISO 14064-1 §9.3.1',
+    type: 'compound',
+    // Every field is optional: an inventory is valid without any of them, and
+    // the report prints "Not declared" for whatever is left blank. They are
+    // asked together because they are all the same kind of thing — what the
+    // report states about the organisation on its first page.
+    required: false,
+    reportField: 'company.iso_declaration',
+    text: {
+      tr: 'Raporda yer alacak kuruluş bilgilerini tamamlayın.',
+      en: 'Complete the organisation details that appear in your report.',
+    },
+    helper: {
+      tr: 'Bu alanlar tam ISO 14064-1 raporunun "Kuruluş Bilgileri" tablosunda yayımlanır. Tamamı isteğe bağlıdır — boş bırakılanlar raporda "Beyan edilmedi" olarak görünür ve daha sonra Şirket Ayarları’ndan da doldurulabilir.',
+      en: 'These are published in the "Organisational Information" table of the full ISO 14064-1 report. All are optional — anything left blank appears there as "Not declared", and can be filled in later from Company Settings.',
+    },
+    fields: [
+      {
+        id: 'registered_address',
+        type: 'text',
+        subtype: 'multi_line',
+        required: false,
+        maxLength: 500,
+        label: { tr: 'Kayıtlı adres', en: 'Registered address' },
+        placeholder: { tr: 'Kuruluşun ticaret sicilinde kayıtlı adresi', en: 'The address the legal entity is registered at' },
+      },
+      {
+        id: 'tax_office',
+        type: 'text',
+        required: false,
+        maxLength: 150,
+        label: { tr: 'Vergi dairesi', en: 'Tax office' },
+        placeholder: { tr: 'Vergi numarasının bağlı olduğu daire', en: 'The office the tax number is registered with' },
+      },
+      {
+        id: 'trade_registry_number',
+        type: 'text',
+        required: false,
+        maxLength: 100,
+        label: { tr: 'Ticaret sicil numarası', en: 'Trade registry number' },
+      },
+      {
+        id: 'telephone',
+        type: 'text',
+        required: false,
+        maxLength: 50,
+        label: { tr: 'Telefon', en: 'Telephone' },
+      },
+      {
+        id: 'website',
+        type: 'text',
+        required: false,
+        maxLength: 255,
+        label: { tr: 'İnternet sitesi', en: 'Website' },
+      },
+      {
+        id: 'inventory_declaration_scope',
+        type: 'text',
+        subtype: 'multi_line',
+        required: false,
+        maxLength: 1000,
+        label: { tr: 'Envanter beyanına dahil edilecek kapsam', en: 'Scope to be included in the inventory declaration' },
+        placeholder: {
+          tr: 'Bu envanterin kapsadığı faaliyetler — boş bırakılırsa ana faaliyet tanımınız kullanılır',
+          en: 'The activities this inventory covers — your main activity description is used if left blank',
+        },
+      },
+      {
+        id: 'environmental_regulations',
+        type: 'text',
+        subtype: 'multi_line',
+        required: false,
+        maxLength: 2000,
+        label: { tr: 'Uyulması gereken çevre mevzuatı', en: 'Environmental regulations to comply with' },
+        placeholder: { tr: 'Her satıra bir mevzuat', en: 'One regulation per line' },
+      },
+      {
+        id: 'certificates',
+        type: 'text',
+        subtype: 'multi_line',
+        required: false,
+        maxLength: 2000,
+        label: { tr: 'Sahip olunan sertifikalar', en: 'Certificates held' },
+        placeholder: {
+          tr: 'Her satıra bir sertifika, örn. ISO 9001:2015 Kalite Yönetim Sistemi',
+          en: 'One per line, e.g. ISO 9001:2015 Quality Management Systems',
+        },
+      },
+    ],
+    systemMessages: {
+      selected: {
+        tr: 'Kuruluş bilgileri kaydedildi. Bu bilgiler raporunuzun ilk tablosunda yer alacak.',
+        en: 'Organisation details saved. These appear in the first table of your report.',
       },
     },
     next: 'B1',

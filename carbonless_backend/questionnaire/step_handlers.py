@@ -7,7 +7,7 @@ import datetime
 STEP_FLOW = {
     'A1': 'A2', 'A2': 'A3', 'A3': 'A4',
     'A4': 'A5', 'A5': 'A6', 'A6': 'A7',
-    'A7': 'A7a', 'A7a': 'B1',
+    'A7': 'A7a', 'A7a': 'A7b', 'A7b': 'B1',
     'B1': 'B2', 'B2': 'B3', 'B3': 'B4',
     'B4': 'B5', 'B5': 'B6', 'B6': 'C1',
     'C1': 'C2', 'C2': 'C3', 'C3': 'D1',
@@ -19,7 +19,7 @@ STEP_FLOW = {
 # (e.g. editing an earlier answer via the review table's Edit button) —
 # see SubmitStepView.patch's use of this for the current_step rewind guard.
 STRICT_STEP_ORDER = [
-    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a',
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
     'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
     'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
 ]
@@ -236,11 +236,52 @@ def handle_A7a(report, data):
     report.baseline_year = baseline_year
     report.save()
     return {
-        'next_step': 'B1',
+        'next_step': 'A7b',
         'message': f"Baseline year: {baseline_year}",
         'warnings': [],
         'bot_messages': [
             f"✅ Baseline year set to **{baseline_year}**.",
+            "A few organisation details next — they go on the first page of your report."
+        ]
+    }
+
+
+# The organisation details the full ISO 14064-1 report states about the
+# reporting organisation. Every one is optional — an inventory is valid without
+# them and the report prints "Not declared" in their place — so this step never
+# blocks progress and never returns a validation warning.
+A7B_FIELDS = (
+    'registered_address', 'tax_office', 'trade_registry_number', 'telephone',
+    'website', 'inventory_declaration_scope', 'environmental_regulations',
+    'certificates',
+)
+
+
+def handle_A7b(report, data):
+    company = report.company
+    # An absent key leaves the stored value alone; a key present but empty
+    # clears it, so re-submitting this step from the review table's Edit button
+    # can remove a detail the organisation no longer wants published.
+    changed = [f for f in A7B_FIELDS if f in data]
+    for field in changed:
+        setattr(company, field, (data.get(field) or '').strip())
+    if changed:
+        company.save(update_fields=changed)
+
+    filled = sum(1 for f in A7B_FIELDS if getattr(company, f, ''))
+    if filled:
+        note = (f"✅ Saved — {filled} of {len(A7B_FIELDS)} organisation details "
+                f"recorded. Anything left blank shows as “Not declared” and can be "
+                f"completed later in Company Settings.")
+    else:
+        note = ("✅ Skipped — these will show as “Not declared” in your "
+                "report. You can fill them in at any time from Company Settings.")
+    return {
+        'next_step': 'B1',
+        'message': f'Organisation details saved ({filled} of {len(A7B_FIELDS)} provided).',
+        'warnings': [],
+        'bot_messages': [
+            note,
             "What is the primary sector of your company? (NACE code or sector name)"
         ]
     }
@@ -528,7 +569,7 @@ def handle_D4(report, data):
 HANDLERS = {
     'A1': handle_A1, 'A2': handle_A2, 'A3': handle_A3,
     'A4': handle_A4, 'A5': handle_A5, 'A6': handle_A6,
-    'A7': handle_A7, 'A7a': handle_A7a,
+    'A7': handle_A7, 'A7a': handle_A7a, 'A7b': handle_A7b,
     'B1': handle_B1, 'B2': handle_B2, 'B3': handle_B3,
     'B4': handle_B4, 'B5': handle_B5, 'B6': handle_B6,
     'C1': handle_C1, 'C2': handle_C2, 'C3': handle_C3,

@@ -144,6 +144,22 @@ function mapAnswerForBackend(questionId, value) {
     // selected after the user had actually picked "I want to skip".
     case 'A7': return { has_previous_report: value === 'skip' ? null : value === 'yes' };
     case 'A7a': { const y = parseInt(value, 10); return { baseline_year: Number.isNaN(y) ? null : y }; }
+    // A7b is a compound step whose field ids are already the Company field
+    // names, so it passes straight through. Every field is optional; blanks are
+    // sent as empty strings so clearing one actually clears it on the server.
+    case 'A7b': {
+      const v = (value && typeof value === 'object') ? value : {};
+      return {
+        registered_address: v.registered_address || '',
+        tax_office: v.tax_office || '',
+        trade_registry_number: v.trade_registry_number || '',
+        telephone: v.telephone || '',
+        website: v.website || '',
+        inventory_declaration_scope: v.inventory_declaration_scope || '',
+        environmental_regulations: v.environmental_regulations || '',
+        certificates: v.certificates || '',
+      };
+    }
 
     // ── Phase 1 continuation (B / C / D) ──────────────────────────────────────
     // B1: options are 'NACE_A', 'NACE_B', … — strip the prefix so handle_B1's
