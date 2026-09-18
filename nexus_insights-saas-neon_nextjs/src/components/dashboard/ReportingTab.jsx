@@ -209,13 +209,14 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             {dlError}
           </div>
         )}
-        {/* Same three report types as the full view, each with its two
-            languages, then the raw-data exports. */}
+        {/* The same three report types as the full view, each with its two
+            languages, then the bundle of all three, then the raw-data
+            exports. */}
         {[
-          { type: 'pack', label: tr ? 'Tam Rapor Paketi (3 rapor)' : 'Full Report Pack (3 reports)', gated: true, primary: true },
-          { type: 'iso', label: tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report', gated: true },
-          { type: 'inv', label: tr ? 'Envanter Raporu' : 'Inventory Report', gated: true },
           { type: 'pdf', label: tr ? 'Emisyon Raporu' : 'Emissions Report', gated: false },
+          { type: 'inv', label: tr ? 'Envanter Raporu' : 'Inventory Report', gated: true },
+          { type: 'iso', label: tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report', gated: true, primary: true },
+          { type: 'pack', label: tr ? 'Üçü tek PDF olarak' : 'All three as one PDF', gated: true },
         ].map(({ type, label, gated, primary }) => (
           <div
             key={type}
@@ -268,25 +269,26 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               {tr ? 'Denetim-hazır ESG & ISO 14064-1 raporları oluşturun' : 'Generate audit-ready ESG & ISO 14064-1 reports'}
             </p>
           </div>
-          {/* One button per report type, in the report language. The type
-              choice is what matters here; TR/EN for each is in the export
-              centre below. */}
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => handleDownload('pack', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
-              <Package className="h-3.5 w-3.5" />
-              {pdfLoading?.startsWith('pack') ? '...' : (tr ? 'Tam Rapor Paketi' : 'Full Report Pack')}
-            </button>
-            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
-              <Shield className="h-3.5 w-3.5" />
-              {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report')}
+          {/* One button per report type, in the report language; TR/EN for
+              each is in the export centre below. The pack is set apart because
+              it is the same three reports in one file, not a fourth type. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+              <FileText className="h-3.5 w-3.5" />
+              {pdfLoading?.startsWith('pdf') ? '...' : (tr ? 'Emisyon Raporu' : 'Emissions Report')}
             </button>
             <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <ClipboardList className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Envanter Raporu' : 'Inventory Report')}
             </button>
-            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
-              <FileText className="h-3.5 w-3.5" />
-              {pdfLoading?.startsWith('pdf') ? '...' : (tr ? 'Emisyon Raporu' : 'Emissions Report')}
+            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
+              <Shield className="h-3.5 w-3.5" />
+              {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report')}
+            </button>
+            <span className="mx-0.5 hidden h-5 w-px bg-[#072C0E]/10 sm:block" />
+            <button onClick={() => handleDownload('pack', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2.5 text-xs font-bold text-[#072C0E]/60 underline-offset-2 transition hover:text-[#072C0E] hover:underline disabled:opacity-60">
+              <Package className="h-3.5 w-3.5" />
+              {pdfLoading?.startsWith('pack') ? '...' : (tr ? 'Üçü tek PDF' : 'All three in one PDF')}
             </button>
           </div>
         </div>
@@ -473,24 +475,11 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </div>
           )}
 
+          {/* The three report types, in the order they build on each other:
+              what was emitted, how the inventory is set up, and the full
+              disclosure. The pack below is not a fourth type — it is these
+              three in one file. */}
           <div className="space-y-3">
-            {/* Everything in one file. Listed first and highlighted because it
-                is the deliverable a verifier or customer is usually sent; the
-                three parts stay individually downloadable below it. */}
-            <ReportType
-              icon={Package}
-              title={tr ? 'Tam Rapor Paketi' : 'Full Report Pack'}
-              scope={tr ? '3 rapor' : '3 reports'}
-              desc={tr
-                ? 'Aşağıdaki üç raporun tamamı tek bir PDF’te: kesintisiz sayfa numaraları, içindekiler sayfası ve bölüm yer imleri. Oluşturulması biraz sürebilir.'
-                : 'All three reports below in one PDF, with continuous page numbering, a contents page and per-part bookmarks. May take a moment to build.'}
-              onDownload={(l) => handleDownload('pack', l)}
-              loading={pdfLoading}
-              prefix="pack"
-              disabled={!isoReportId}
-              highlight
-              tr={tr}
-            />
             {/* Type 1 — what was emitted, scoped to the year selected at the
                 top of the dashboard rather than to one inventory. */}
             <ReportType
@@ -519,27 +508,62 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               disabled={!isoReportId}
               tr={tr}
             />
-            {/* Type 3 — the complete disclosure a verifier asks for. */}
+            {/* Type 3 — the complete disclosure a verifier asks for, and the
+                one built to the reference ISO 14064-1 report's structure.
+                Highlighted because it is the deliverable of the three. */}
             <ReportType
               icon={Shield}
               title={tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report'}
               scope={tr ? 'Seçili envanter' : 'Selected inventory'}
               desc={tr
-                ? 'Denetim-hazır tam rapor: metodoloji ve faktör referansları, gaz bazında envanter tablosu, kategori analizleri, önemlilik, belirsizlik ve kalite yönetimi.'
-                : 'Audit-ready full report: methodology and factor references, per-gas inventory table, category analyses, significance, uncertainty and quality management.'}
+                ? 'Denetim-hazır tam rapor: metodoloji ve faktör referansları, gaz bazında envanter tablosu, altı kategorinin analizi, tesis ve faaliyet bazında değerlendirme, önemlilik, belirsizlik ve kalite yönetimi.'
+                : 'Audit-ready full report: methodology and factor references, per-gas inventory table, analysis of all six categories, location- and activity-level evaluation, significance, uncertainty and quality management.'}
               onDownload={(l) => handleDownload('iso', l)}
               loading={pdfLoading}
               prefix="iso"
               disabled={!isoReportId}
+              highlight
               tr={tr}
             />
+          </div>
+
+          {/* Not a fourth report type — the same three bound into one file,
+              so it is offered after them rather than alongside them. */}
+          <div className="mt-3 rounded-2xl border border-dashed border-[#072C0E]/15 bg-[#FAFCFA] p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Package className="h-3.5 w-3.5 text-[#072C0E]/50" />
+                <div>
+                  <p className="text-xs font-bold text-[#072C0E]">
+                    {tr ? 'Üçü tek PDF olarak' : 'All three as one PDF'}
+                  </p>
+                  <p className="text-[10px] text-[#072C0E]/50">
+                    {tr
+                      ? 'Kesintisiz sayfa numaraları, içindekiler ve bölüm yer imleri. Biraz sürebilir.'
+                      : 'Continuous page numbering, a contents page and per-part bookmarks. Takes a moment.'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {['tr', 'en'].map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => handleDownload('pack', l)}
+                    disabled={!!pdfLoading || !isoReportId}
+                    className="rounded-lg border border-[#072C0E]/15 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#F1FCF2] disabled:opacity-50"
+                  >
+                    {pdfLoading === `pack-${l}` ? '...' : l.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {completedReports.length === 0 && (
             <p className="mt-2 text-[11px] font-semibold text-[#072C0E]/40">
               {tr
-                ? 'Rapor paketi, envanter ve tam ISO raporu için önce bir anketi tamamlayın.'
-                : 'Complete a questionnaire to unlock the report pack, the inventory and the full ISO reports.'}
+                ? 'Envanter ve tam ISO raporu için önce bir anketi tamamlayın.'
+                : 'Complete a questionnaire to unlock the inventory and full ISO reports.'}
             </p>
           )}
 

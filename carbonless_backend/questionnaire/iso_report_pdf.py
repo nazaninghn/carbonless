@@ -2939,10 +2939,17 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         # (stationary combustion, mobile combustion, electricity, business
         # travel, …); it answers "where should this specific activity be
         # acted on", which the single combined table above cannot.
+        # Every activity type that is actually spread across facilities gets
+        # its own figure, the way the reference inventory report does — the
+        # section is what a reader consults to find where one specific activity
+        # should be acted on, so truncating it to the largest few would leave
+        # the smaller activities with nowhere to be looked up. Activities
+        # recorded at a single facility are left out: a one-bar chart says
+        # nothing the activity table above has not already said.
         act_by_facility = D.get('facility_activity') or {}
         top_activities = sorted(
             ((k, v) for k, v in act_by_facility.items() if sum(v.values()) > 0 and len(v) > 1),
-            key=lambda kv: -sum(kv[1].values()))[:8]
+            key=lambda kv: -sum(kv[1].values()))
         if top_activities:
             E.append(Paragraph(
                 'Emissions from the activity types with the largest spread across '
