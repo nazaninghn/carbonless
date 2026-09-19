@@ -160,7 +160,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
         : type === 'iso'
         ? `iso14064-1_full_report_${selectedYear}_${lang}.pdf`
         : type === 'inv'
-        ? `carbon_inventory_report_${selectedYear}_${lang}.pdf`
+        ? `carbon_inventory_profile_${selectedYear}_${lang}.pdf`
         : type === 'pdf'
         ? `emissions_report_${selectedYear}_${lang}.pdf`
         : type === 'csv'
@@ -214,7 +214,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             exports. */}
         {[
           { type: 'pdf', label: tr ? 'Emisyon Raporu' : 'Emissions Report', gated: false },
-          { type: 'inv', label: tr ? 'Envanter Raporu' : 'Inventory Report', gated: true },
+          { type: 'inv', label: tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile', gated: true },
           { type: 'iso', label: tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report', gated: true, primary: true },
           { type: 'pack', label: tr ? 'Üçü tek PDF olarak' : 'All three as one PDF', gated: true },
         ].map(({ type, label, gated, primary }) => (
@@ -279,7 +279,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             </button>
             <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <ClipboardList className="h-3.5 w-3.5" />
-              {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Envanter Raporu' : 'Inventory Report')}
+              {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile')}
             </button>
             <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
               <Shield className="h-3.5 w-3.5" />
@@ -494,14 +494,17 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               prefix="pdf"
               tr={tr}
             />
-            {/* Type 2 — how the inventory is set up, from the questionnaire. */}
+            {/* Type 2 — how the inventory is set up, from the questionnaire.
+                Named after the document it actually produces: "Inventory
+                Report" read as the ISO 14064-1 inventory below it, and people
+                downloaded this expecting that. */}
             <ReportType
               icon={ClipboardList}
-              title={tr ? 'Envanter Raporu' : 'Inventory Report'}
+              title={tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile'}
               scope={tr ? 'Seçili envanter' : 'Selected inventory'}
               desc={tr
-                ? 'Kurumsal profil, raporlama çerçevesi ve sınırlar, anket tamamlanma durumu ve ölçülen emisyonlar.'
-                : 'Organizational profile, reporting framework and boundaries, questionnaire completion and quantified emissions.'}
+                ? 'Anket cevaplarınızdan oluşan kısa profil: kurumsal bilgiler, raporlama çerçevesi ve sınırlar, anket tamamlanma durumu. Tam ISO 14064-1 envanteri için aşağıdaki rapora bakın.'
+                : 'A short profile built from your questionnaire answers: organisational details, reporting framework and boundaries, and questionnaire completion. For the full ISO 14064-1 inventory, see the report below.'}
               onDownload={(l) => handleDownload('inv', l)}
               loading={pdfLoading}
               prefix="inv"
