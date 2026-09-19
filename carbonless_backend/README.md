@@ -50,14 +50,24 @@ SKIP_EMAIL_VERIFICATION=false
 # Fix users without a company (legacy accounts)
 python manage.py fix_missing_companies
 
-# Seed emission factors
-python manage.py seed_emission_factors
+# Seed emission factors (values), then divide each factor's CO2e between
+# the greenhouse gases the ISO 14064-1 report has to state separately.
+# Order matters: seed_factors owns the values and clears a split whose
+# value changed, so the split has to be re-derived after it.
+python manage.py seed_factors
+python manage.py seed_gas_splits
 ```
 
 ## Deployment (Render)
 
-- Python 3.12 (`runtime.txt`)
-- Build command: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
+- Root directory: `carbonless_backend`
+- Build command: `./build.sh`
+
+  Use the script, not an inline pip/collectstatic/migrate chain. Besides
+  installing, collecting static and migrating, it seeds the emission factors
+  and derives their per-gas splits — skip it and the ISO report's
+  CH4/N2O/HFC/PFC/SF6 columns come out empty, because the columns exist on
+  every factor with nothing in them.
 - Start command: `gunicorn carbonless_api.wsgi:application --workers 2 --timeout 60`
   (2 workers fits the Starter plan's 0.5 CPU / 512MB — more workers would
   contend for the half core rather than add capacity; 60s timeout gives
