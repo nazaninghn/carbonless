@@ -1,4 +1,5 @@
 import { COUNTRIES } from '@/lib/data/countries';
+import { parseLocalizedNumber } from '@/lib/utils/numbers';
 
 // A4's year-select options and current-year assumption/warning triggers were
 // previously hardcoded to a fixed 2020-2026 list with 2026 hardcoded as "the
@@ -5974,8 +5975,10 @@ function validateCompoundFields(fields, obj, lang) {
     // caught before it ever leaves the browser.
     if (field.type === 'numeric' || field.subtype === 'numeric') {
       const flabel = field.label?.[lang] || field.label?.en || field.id;
-      const s = String(fv).trim();
-      if (!/^-?\d+(\.\d+)?$/.test(s)) {
+      // Turkish "1.250,5" / "15.000" are valid here; normalizeCarbonIQNumbers
+      // turns them into "1250.5" / "15000" before the answer is sent.
+      const n = parseLocalizedNumber(fv);
+      if (Number.isNaN(n)) {
         return {
           ok: false,
           message: lang === 'tr'
@@ -5983,7 +5986,7 @@ function validateCompoundFields(fields, obj, lang) {
             : `Please enter a valid number for "${flabel}".`,
         };
       }
-      if (Number(s) < 0) {
+      if (n < 0) {
         return {
           ok: false,
           message: lang === 'tr'
@@ -5994,6 +5997,48 @@ function validateCompoundFields(fields, obj, lang) {
     }
   }
   return { ok: true };
+}
+
+// Turn the amounts in an answer into plain "1250.5" form before it is saved,
+// so "1.250,5" (Turkish) and "1,250.5" (English) reach the backend the same
+// way. Only numeric amounts change; strict digit fields (tax IDs etc.) and
+// anything that doesn't parse are left exactly as typed.
+function canonicalNumber(v) {
+  if (v === undefined || v === null || String(v).trim() === '') return v;
+  const n = parseLocalizedNumber(v);
+  return Number.isNaN(n) ? v : String(n);
+}
+
+function normalizeCompoundNumbers(fields, obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  const out = { ...obj };
+  for (const field of (fields || [])) {
+    if ((field.type === 'numeric' || field.subtype === 'numeric') && !field.numericOnly && field.id in out) {
+      out[field.id] = canonicalNumber(out[field.id]);
+    }
+  }
+  return out;
+}
+
+export function normalizeCarbonIQNumbers(question, value) {
+  if (!question || value === undefined || value === null) return value;
+  if (question.type === 'compound') {
+    if (question.repeatable && value && Array.isArray(value.items)) {
+      return { ...value, items: value.items.map(item => normalizeCompoundNumbers(question.fields, item)) };
+    }
+    return normalizeCompoundNumbers(question.fields, value);
+  }
+  const isLoopQuantity =
+    (question.type === 'fuel_loop' || question.type === 'equipment_loop') &&
+    question.units && !(question.options && question.options.length);
+  if (!question.numericOnly && !question.exactLength && typeof value === 'string'
+      && (question.subtype === 'numeric' || question.type === 'numeric' || isLoopQuantity)) {
+    // "1.250,5 kWh" -> "1250.5 kWh": only the amount before the first space.
+    const s = value.trim();
+    const i = s.indexOf(' ');
+    return i === -1 ? canonicalNumber(s) : `${canonicalNumber(s.slice(0, i))}${s.slice(i)}`;
+  }
+  return value;
 }
 
 export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en') {
@@ -6094,7 +6139,7 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     const s = String(value).trim();
     const spaceIdx = s.indexOf(' ');
     const amountStr = spaceIdx === -1 ? s : s.slice(0, spaceIdx);
-    if (!/^-?\d+(\.\d+)?$/.test(amountStr)) {
+    if (Number.isNaN(parseLocalizedNumber(amountStr))) {
       return {
         ok: false,
         message:
@@ -6106,7 +6151,7 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     // distance, spend, ...) — none are legitimately negative. The backend
     // (carboniq_validation.py) already rejects negatives; check it here too
     // so the user sees the friendly inline message instead of a round trip.
-    if (Number(amountStr) < 0) {
+    if (parseLocalizedNumber(amountStr) < 0) {
       return {
         ok: false,
         message:
@@ -6120,7 +6165,7 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     // a 150% equity share and nothing caught it. rangeMessage covers both
     // bounds set together; min/maxValueMessage cover a single bound.
     const { minValue, maxValue } = question.validate || {};
-    const amountNum = Number(amountStr);
+    const amountNum = parseLocalizedNumber(amountStr);
     if (minValue !== undefined && amountNum < minValue) {
       return {
         ok: false,

@@ -16,6 +16,7 @@ import {
   getInitialQuestionId,
   getNextQuestionId,
   validateCarbonIQAnswer,
+  normalizeCarbonIQNumbers,
   getSystemMessage,
   getQuestionWarning,
   CARBONIQ_STAGES,
@@ -882,7 +883,7 @@ export function ChatWorkspace({
     if (!question) return;
 
     // Always trim string answers so whitespace-only never reaches the chat
-    const answer = typeof rawAnswer === 'string' ? rawAnswer.trim() : rawAnswer;
+    const answer = normalizeCarbonIQNumbers(question, typeof rawAnswer === 'string' ? rawAnswer.trim() : rawAnswer);
 
     const validation = validateCarbonIQAnswer(question, answer, guidedAnswers, activeLang);
     if (!validation.ok) {

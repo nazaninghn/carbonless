@@ -185,8 +185,8 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
           >
             <div className="flex gap-2 items-center">
               <input
-                type="number"
-                min="0"
+                type="text" inputMode="decimal"
+               
                 className={INPUT_CLS}
                 placeholder={tr ? 'Örn: 12000' : 'e.g. 12000'}
                 value={airVals[mode.id]}
@@ -238,8 +238,8 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
             >
               <div className="flex gap-2 items-center">
                 <input
-                  type="number"
-                  min="0"
+                  type="text" inputMode="decimal"
+                 
                   className={INPUT_CLS}
                   placeholder={tr ? 'Örn: 4000' : 'e.g. 4000'}
                   value={groundVals[mode.id]}

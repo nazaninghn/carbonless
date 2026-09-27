@@ -9,8 +9,11 @@
 // Python parse_localized_number() in carbonless_backend/chat/local_parser.py
 // — keep both in sync if the heuristic changes.
 export function parseLocalizedNumber(raw) {
-  const s = String(raw ?? '').trim();
-  if (!s) return NaN;
+  // Spaces are grouping too ("12 500"). Anything but digits, separators and
+  // a leading sign is not a number: quantity fields are plain text inputs (so
+  // Turkish "1.250,5" can be typed), and parseFloat("12abc") would give 12.
+  const s = String(raw ?? '').trim().replace(/[\s\u00a0]/g, '');
+  if (!s || !/^[-+]?[\d.,]+$/.test(s)) return NaN;
 
   const hasComma = s.includes(',');
   const hasDot = s.includes('.');
@@ -23,6 +26,11 @@ export function parseLocalizedNumber(raw) {
       ? s.replace(/\./g, '').replace(',', '.')
       : s.replace(/,/g, '');
     return parseFloat(cleaned);
+  }
+
+  if ((s.match(/\./g) || []).length > 1 || (s.match(/,/g) || []).length > 1) {
+    // "1.250.000" / "1,250,000": a repeated separator can only be grouping.
+    return parseFloat(s.replace(/[.,]/g, ''));
   }
 
   if (/^\d{1,3}[.,]\d{3}$/.test(s)) {

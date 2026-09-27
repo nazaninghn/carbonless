@@ -249,9 +249,9 @@ export default function Scope3EntryForm({ language, fetchData }) {
                 </label>
                 <div className="relative">
                   <input
-                    type="number"
-                    min="0"
-                    step="any"
+                    type="text" inputMode="decimal"
+                   
+                   
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder={tr ? 'Miktar girin...' : 'Enter quantity...'}

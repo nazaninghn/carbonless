@@ -9,7 +9,7 @@ from companies.permissions import NotAuditorForWrites
 from rest_framework.response import Response
 from django_ratelimit.decorators import ratelimit
 from .models import ChatSession, ChatMessage
-from .local_parser import try_local_emission_parse, try_guided_draft_parse
+from .local_parser import try_local_emission_parse, try_local_emission_parse_all, try_guided_draft_parse
 from .nlu_extractor import extract_emission_intent
 from .calculation_registry import (
     normalize_nlu, get_schema, prepare_guided_draft,
@@ -1725,11 +1725,29 @@ def send_message(request, session_id):
 
     # ─── 1) LOCAL CALCULATOR: handle simple data entries without Groq ─────
     if not attachment:
-        local_entry = try_local_emission_parse(content)
-        if local_entry:
-            pending_entries = _build_pending_entries_from_data([local_entry])
+        local_entries, not_understood = try_local_emission_parse_all(content)
+        if local_entries:
+            # Items the parser read but no registered factor matched are lost
+            # just as silently as unparsed ones, so they're reported too.
+            pending_entries = []
+            for entry in local_entries:
+                built = _build_pending_entries_from_data([entry])
+                if built:
+                    pending_entries.extend(built)
+                else:
+                    not_understood.append(f"{entry['quantity']:g} {entry['unit']}")
             if pending_entries:
-                clean_text = _build_pending_entries_text(pending_entries, getattr(session, 'ui_language', None))
+                lang = getattr(session, 'ui_language', None)
+                clean_text = _build_pending_entries_text(pending_entries, lang)
+                if not_understood:
+                    listed = ', '.join(f'"{x}"' for x in not_understood)
+                    clean_text += (
+                        f"\n\n⚠️ Şu kısımları anlayamadım, kaydedilmeyecek: {listed}. "
+                        "Kaynağı belirterek ayrı bir mesajla yazabilirsiniz (örn. \"3 ton çelik satın aldık\")."
+                        if lang == 'tr' else
+                        f"\n\n⚠️ I couldn't understand these parts, so they won't be saved: {listed}. "
+                        "You can send them in a separate message with their source (e.g. \"we bought 3 tonnes of steel\")."
+                    )
                 ai_msg = ChatMessage.objects.create(
                     session=session, role='assistant', content=clean_text,
                 )
