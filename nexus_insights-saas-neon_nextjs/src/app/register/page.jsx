@@ -189,8 +189,10 @@ export default function RegisterPage() {
             email: formData.email,
             password: formData.password,
             password2: formData.password2,
-            first_name: formData.legalEntityName,
+            // The form asks for no personal name; the company name goes in
+            // `company`, never in the user's own first_name.
             company: companyPayload,
+            language,
           }),
           signal: regCtrl.signal,
         }).finally(() => clearTimeout(regTimer));

@@ -1,6 +1,7 @@
 'use client';
 
 import { authErrorMessage } from '@/lib/authErrors';
+import { api, markSessionActive } from '@/lib/utils/api';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -23,6 +24,7 @@ function VerifyContent() {
   const [digits, setDigits] = useState(Array(CODE_LENGTH).fill(''));
   const [status, setStatus] = useState('idle'); // idle | verifying | success | error
   const [message, setMessage] = useState('');
+  const [signedIn, setSignedIn] = useState(false);
   const [resendState, setResendState] = useState('idle'); // idle | sending | sent
   const inputRefs = useRef([]);
 
@@ -64,13 +66,24 @@ function VerifyContent() {
     setStatus('verifying');
     setMessage('');
     try {
-      const res = await fetch(`${API_BASE}/accounts/verify-email-code/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code }),
-      });
+      const res = await api.verifyEmailCode(email, code);
       const data = await res.json().catch(() => ({}));
-      if (res.ok) {
+      if (res.ok && data.access) {
+        // Signed in by the verification itself: continue into the app the
+        // same way a login does (back to a pending team invite, if any).
+        markSessionActive();
+        document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
+        let inviteToken = null;
+        try { inviteToken = sessionStorage.getItem('pendingInviteToken'); } catch {}
+        setSignedIn(true);
+        setStatus('success');
+        setMessage(tr ? 'E-posta doğrulandı. Hesabınıza yönlendiriliyorsunuz…' : 'Email verified. Taking you to your account…');
+        setTimeout(() => {
+          window.location.href = inviteToken
+            ? `/accept-invite?token=${encodeURIComponent(inviteToken)}`
+            : '/dashboard/select';
+        }, 1200);
+      } else if (res.ok) {
         setStatus('success');
         setMessage(tr ? 'E-posta başarıyla doğrulandı! Artık giriş yapabilirsiniz.' : 'Email verified! You can now log in.');
       } else {
@@ -134,10 +147,14 @@ function VerifyContent() {
               </div>
               <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'E-posta Doğrulandı!' : 'Email Verified!'}</h1>
               <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
-              <Link href="/login"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
-                {tr ? 'Girişe Devam Et' : 'Continue to Login'}
-              </Link>
+              {signedIn ? (
+                <Loader2 className="mx-auto mt-6 h-6 w-6 animate-spin text-[#2ABD41]" aria-hidden />
+              ) : (
+                <Link href="/login"
+                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+                  {tr ? 'Girişe Devam Et' : 'Continue to Login'}
+                </Link>
+              )}
             </>
           ) : (
             <>

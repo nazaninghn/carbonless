@@ -145,6 +145,20 @@ export const api = {
     return res;
   },
 
+  // Verifies the signup code; on success the route also signs the user in.
+  verifyEmailCode: async (email, code) => {
+    const res = await fetchWithTimeout('/api/auth/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
+    });
+    if (res.ok) {
+      const d = await res.clone().json().catch(() => ({}));
+      if (d.access) setToken(d.access);
+    }
+    return res;
+  },
+
   googleLogin: async (credential) => {
     const res = await fetchWithTimeout('/api/auth/google', {
       method: 'POST',

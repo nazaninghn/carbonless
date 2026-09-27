@@ -20,8 +20,14 @@ export function LanguageProvider({ children }) {
       if ((saved === 'tr' || saved === 'en') && explicit === '1') {
         setLanguage(saved);
       } else {
-        // No explicit preference — default to English and persist it
-        localStorage.setItem('language', 'en');
+        // No explicit preference — follow the browser: Turkish browsers get
+        // Turkish, everyone else English. Not marked explicit, so a later
+        // browser change is still followed until the user picks a language.
+        const langs = (navigator.languages && navigator.languages.length)
+          ? navigator.languages : [navigator.language || ''];
+        const detected = langs.some(l => String(l).toLowerCase().startsWith('tr')) ? 'tr' : 'en';
+        setLanguage(detected);
+        localStorage.setItem('language', detected);
         localStorage.removeItem('language_explicit');
       }
     } catch {
