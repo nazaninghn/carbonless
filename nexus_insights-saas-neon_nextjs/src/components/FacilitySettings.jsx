@@ -2,9 +2,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
-import { Plus, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
+import { Plus, AlertCircle, Building2, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
 
-export default function FacilitySettings({ language, readOnly = false }) {
+// Stored values are English; the list shows them in the UI language.
+const TYPE_LABELS = {
+  Office: { tr: 'Ofis', en: 'Office' },
+  Factory: { tr: 'Fabrika', en: 'Factory' },
+  Warehouse: { tr: 'Depo', en: 'Warehouse' },
+  Store: { tr: 'Mağaza', en: 'Store' },
+  Other: { tr: 'Diğer', en: 'Other' },
+};
+
+export default function FacilitySettings({ language, readOnly = false, onChange }) {
   const [facilities, setFacilities]   = useState([]);
   const [loading, setLoading]         = useState(true);
   const [noCompany, setNoCompany]     = useState(false);
@@ -16,6 +25,9 @@ export default function FacilitySettings({ language, readOnly = false }) {
   const [city, setCity]               = useState('');
   const [country, setCountry]         = useState('');
   const [facilityType, setFacilityType] = useState('');
+  const [editingId, setEditingId]     = useState(null);   // null = adding a new facility
+  const [confirmDelete, setConfirmDelete] = useState(null); // facility awaiting delete confirmation
+  const [deleting, setDeleting]       = useState(false);
 
   const tr    = language === 'tr';
   const toast = useToast();
@@ -46,8 +58,36 @@ export default function FacilitySettings({ language, readOnly = false }) {
 
   const resetForm = useCallback(() => {
     setName(''); setCity(''); setCountry(''); setFacilityType('');
-    setFormError(''); setSuccessMsg('');
+    setFormError(''); setSuccessMsg(''); setEditingId(null);
   }, []);
+
+  const startEdit = useCallback((f) => {
+    setName(f.name || ''); setCity(f.city || ''); setCountry(f.country || '');
+    setFacilityType(f.facility_type || '');
+    setFormError(''); setSuccessMsg(''); setConfirmDelete(null);
+    setEditingId(f.id); setShowForm(true);
+  }, []);
+
+  const handleDelete = useCallback(async () => {
+    if (!confirmDelete || deleting) return;
+    setDeleting(true);
+    try {
+      const res = await api.deleteFacility(confirmDelete.id);
+      if (res.ok || res.status === 204) {
+        setConfirmDelete(null);
+        await fetchFacilities();
+        onChange?.();
+        setSuccessMsg(tr ? 'Tesis silindi' : 'Facility deleted');
+        toast.success(tr ? 'Tesis silindi' : 'Facility deleted');
+      } else {
+        toast.error(tr ? 'Tesis silinemedi' : 'Failed to delete facility');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setDeleting(false);
+    }
+  }, [confirmDelete, deleting, fetchFacilities, onChange, toast, tr]);
 
   const handleAdd = useCallback(async (e) => {
     e.preventDefault();
@@ -65,19 +105,28 @@ export default function FacilitySettings({ language, readOnly = false }) {
     setSaving(true);
 
     try {
-      const res = await api.createFacility({
+      const payload = {
         name,
         city: city || undefined,
         country: country || undefined,
         facility_type: facilityType || undefined,
-      });
+      };
+      const wasEditing = editingId !== null;
+      // Editing sends blanks as '' so a cleared field is actually cleared.
+      const res = wasEditing
+        ? await api.updateFacility(editingId, { name, city, country, facility_type: facilityType })
+        : await api.createFacility(payload);
 
       if (res.ok) {
         resetForm();
         setShowForm(false);
         await fetchFacilities();
-        setSuccessMsg(tr ? 'Tesis başarıyla eklendi' : 'Facility added successfully');
-        toast.success(tr ? 'Tesis başarıyla eklendi ✓' : 'Facility added successfully ✓');
+        onChange?.();
+        const done = wasEditing
+          ? (tr ? 'Tesis güncellendi' : 'Facility updated')
+          : (tr ? 'Tesis başarıyla eklendi' : 'Facility added successfully');
+        setSuccessMsg(done);
+        toast.success(`${done} ✓`);
       } else if (res.status === 403) {
         setNoCompany(true);
         setShowForm(false);
@@ -107,7 +156,7 @@ export default function FacilitySettings({ language, readOnly = false }) {
     } finally {
       setSaving(false);
     }
-  }, [name, city, country, facilityType, saving, tr, toast, fetchFacilities, resetForm]); // saving added
+  }, [name, city, country, facilityType, saving, editingId, onChange, tr, toast, fetchFacilities, resetForm]); // saving added
 
   /* ─── Loading ─── */
   if (loading) {
@@ -159,22 +208,78 @@ export default function FacilitySettings({ language, readOnly = false }) {
       {facilities.length > 0 ? (
         <div className="space-y-2">
           {facilities.map(f => (
-            <div key={f.id} className="flex items-center justify-between p-3 bg-[#F8F8F8] rounded-xl">
-              <div>
-                <p className="text-sm font-medium text-[#072C0E]">{f.name}</p>
-                <p className="text-xs text-[#072C0E]/55">
-                  {[f.facility_type, f.city, f.country].filter(Boolean).join(' · ')}
-                </p>
+            <div key={f.id} className="rounded-xl bg-[#F8F8F8] p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-[#072C0E]">{f.name}</p>
+                  <p className="text-xs text-[#072C0E]/55">
+                    {[TYPE_LABELS[f.facility_type]?.[tr ? 'tr' : 'en'] || f.facility_type, f.city, f.country].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
+                    f.is_active
+                      ? 'bg-[#2ABD41]/12 text-[#175022]'
+                      : 'bg-[#F0F0F0] text-[#072C0E]/50'
+                  }`}>
+                    {f.is_active
+                      ? (tr ? 'Aktif' : 'Active')
+                      : (tr ? 'Pasif' : 'Inactive')}
+                  </span>
+                  {!readOnly && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => startEdit(f)}
+                        aria-label={tr ? `${f.name} tesisini düzenle` : `Edit ${f.name}`}
+                        title={tr ? 'Düzenle' : 'Edit'}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/40 transition hover:bg-[#2ABD41]/10 hover:text-[#2ABD41]"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setConfirmDelete(f); setShowForm(false); }}
+                        aria-label={tr ? `${f.name} tesisini sil` : `Delete ${f.name}`}
+                        title={tr ? 'Sil' : 'Delete'}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/40 transition hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
-              <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
-                f.is_active
-                  ? 'bg-[#2ABD41]/12 text-[#175022]'
-                  : 'bg-[#F0F0F0] text-[#072C0E]/50'
-              }`}>
-                {f.is_active
-                  ? (tr ? 'Aktif' : 'Active')
-                  : (tr ? 'Pasif' : 'Inactive')}
-              </span>
+              {confirmDelete?.id === f.id && (
+                <div role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
+                  <p className="font-bold">{tr ? `"${f.name}" silinsin mi?` : `Delete "${f.name}"?`}</p>
+                  <p className="mt-0.5">
+                    {f.entry_count > 0
+                      ? (tr
+                        ? `Bu tesise bağlı ${f.entry_count} kayıt var. Kayıtlar silinmez, yalnızca tesis bilgileri boşalır.`
+                        : `${f.entry_count} entries are linked to it. They are kept; only their facility is cleared.`)
+                      : (tr ? 'Bu tesise bağlı kayıt yok.' : 'No entries are linked to it.')}
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="rounded-lg bg-red-500 px-3 py-1.5 font-bold text-white hover:bg-red-600 disabled:opacity-60"
+                    >
+                      {deleting ? (tr ? 'Siliniyor…' : 'Deleting…') : (tr ? 'Sil' : 'Delete')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(null)}
+                      disabled={deleting}
+                      className="rounded-lg border border-red-200 bg-white px-3 py-1.5 font-bold text-red-600 hover:bg-red-50"
+                    >
+                      {tr ? 'Vazgeç' : 'Cancel'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -188,7 +293,7 @@ export default function FacilitySettings({ language, readOnly = false }) {
       {showForm ? (
         <form onSubmit={handleAdd} noValidate className="space-y-3 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] p-4">
           <p className="text-xs font-bold text-[#072C0E]/60 uppercase tracking-wide">
-            {tr ? 'Yeni Tesis' : 'New Facility'}
+            {editingId !== null ? (tr ? 'Tesisi Düzenle' : 'Edit Facility') : (tr ? 'Yeni Tesis' : 'New Facility')}
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -267,7 +372,7 @@ export default function FacilitySettings({ language, readOnly = false }) {
                   {tr ? 'Kaydediliyor…' : 'Saving…'}
                 </>
               ) : (
-                <>{tr ? 'Tesis Ekle' : 'Add Facility'}</>
+                <>{editingId !== null ? (tr ? 'Kaydet' : 'Save') : (tr ? 'Tesis Ekle' : 'Add Facility')}</>
               )}
             </button>
             <button

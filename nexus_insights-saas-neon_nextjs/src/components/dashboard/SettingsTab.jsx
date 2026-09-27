@@ -281,7 +281,7 @@ export default function SettingsTab({ language, user, fetchData }) {
           {activeTab === 'facilities' && (
             <Panel>
               <PanelTitle icon={Target} title={tr ? 'Tesis Yönetimi' : 'Facility Management'} />
-              <FacilitySettings language={language} readOnly={!perms.canEdit} />
+              <FacilitySettings language={language} readOnly={!perms.canEdit} onChange={fetchData} />
             </Panel>
           )}
 

@@ -285,6 +285,11 @@ def emission_summary(request):
             'pending_count': custom_pending,
         },
         'questionnaire_profile': questionnaire_profile,
+        # Lets the dashboard tell "no data for this year" apart from "no data yet".
+        'years_with_data': sorted(
+            set(EmissionEntry.objects.filter(company=company).values_list('year', flat=True)),
+            reverse=True,
+        ) if company else [],
     })
 
 

@@ -187,6 +187,8 @@ export const api = {
 
   getFacilities: () => request('/companies/facilities/'),
   createFacility: (data) => request('/companies/facilities/', { method: 'POST', body: JSON.stringify(data) }),
+  updateFacility: (id, data) => request(`/companies/facilities/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteFacility: (id) => request(`/companies/facilities/${id}/`, { method: 'DELETE' }),
 
   getMemberships: () => request('/companies/memberships/'),
   updateMembership: (id, data) => request(`/companies/memberships/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
