@@ -306,3 +306,48 @@ class TryLocalEmissionParseTest(SimpleTestCase):
         self.assertIsNotNone(result)
         for key in ('fuel_type', 'quantity', 'unit', 'month', 'year', 'description'):
             self.assertIn(key, result)
+
+
+class DateExtractionTest(SimpleTestCase):
+    """Periods in Turkish and relative phrases — 'Geçen ay …' used to be
+    booked to the current month."""
+
+    def _now(self):
+        from datetime import datetime, timezone
+        return datetime.now(timezone.utc)
+
+    def _prev(self):
+        now = self._now()
+        return (12, now.year - 1) if now.month == 1 else (now.month - 1, now.year)
+
+    def test_relative_months(self):
+        from chat.local_parser import _extract_date_from_text as x
+        self.assertEqual(x('Geçen ay 12.000 kWh elektrik kullandık'), self._prev())
+        self.assertEqual(x('last month we used 500 kWh'), self._prev())
+        self.assertEqual(x('bu ay 300 kWh'), (self._now().month, self._now().year))
+
+    def test_turkish_month_names(self):
+        from chat.local_parser import _extract_date_from_text as x
+        year = self._now().year
+        self.assertEqual(x("Mart'ta 200 m3 doğalgaz"), (3, year))
+        self.assertEqual(x('Ocak ayında 100 litre dizel'), (1, year))
+        self.assertEqual(x('Şubat 2025 elektrik 900 kWh'), (2, 2025))
+        self.assertEqual(x('ARALIK 2024 300 kWh'), (12, 2024))
+
+    def test_ambiguous_turkish_words_are_not_months(self):
+        from chat.local_parser import _extract_date_from_text as x
+        self.assertIsNone(x('bu aralıkta 300 kWh tükettik'))   # "interval"
+        self.assertIsNone(x('tarlada ekim yaptık 50 kWh'))    # "sowing"
+        self.assertEqual(x('ekim ayı 50 kWh'), (10, self._now().year))
+
+    def test_parse_marks_relative_date_as_extracted(self):
+        result = try_local_emission_parse('Geçen ay 12.000 kWh elektrik kullandık')
+        self.assertTrue(result['date_extracted'])
+        self.assertEqual((result['month'], result['year']), self._prev())
+        self.assertEqual(result['quantity'], 12000.0)
+
+    def test_typed_period_answers(self):
+        from chat.calculation_registry import resolve_period
+        self.assertEqual(resolve_period('geçen ay'), self._prev())
+        self.assertEqual(resolve_period('Mart 2025'), (3, 2025))
+        self.assertIsNone(resolve_period('garbage'))

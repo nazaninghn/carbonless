@@ -101,7 +101,90 @@ class CompanyMembershipUpdateView(generics.UpdateAPIView):
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.core.exceptions import ValidationError
 from .models import CompanyInvite
+
+
+def _join_company_via_invite(user, invite):
+    """Add `user` to the invite's company, mark it accepted, and switch the
+    user into that company (they otherwise stay in their own signup company)."""
+    CompanyMembership.objects.get_or_create(
+        company=invite.company, user=user,
+        defaults={'role': invite.role, 'invited_by': invite.invited_by}
+    )
+    invite.accepted = True
+    invite.save(update_fields=['accepted'])
+    from accounts.models import UserProfile
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    profile.active_company = invite.company
+    profile.save(update_fields=['active_company'])
+
+
+def accept_pending_invites(user):
+    """Join every open, unexpired invite addressed to this user's email.
+
+    Called once the email address is verified: the team screen promises that
+    an invited person "is added automatically after registration", and only a
+    verified address proves they own the one the invite was sent to.
+    """
+    if not user.email:
+        return []
+    joined = []
+    for invite in CompanyInvite.objects.filter(email__iexact=user.email.strip(), accepted=False).select_related('company'):
+        if invite.is_expired:
+            continue
+        _join_company_via_invite(user, invite)
+        joined.append(invite.company)
+    return joined
+
+
+def _send_invite_email(invite, inviter):
+    """Email the invitee a join link. Returns True if handed to the mail backend.
+
+    Bilingual because nothing tells us the invitee's language yet.
+    """
+    import logging
+    import os
+    from django.conf import settings
+    from django.core.mail import send_mail
+
+    frontend = (os.environ.get('FRONTEND_URL') or 'http://localhost:3000').strip().rstrip('/')
+    link = f"{frontend}/accept-invite?token={invite.token}"
+    company = invite.company.legal_entity_name
+    who = (inviter.get_full_name() or inviter.username) if inviter else 'Carbonless'
+    if who.strip() == company.strip() and inviter:
+        # Signup stores the company name as the person's name until they edit
+        # their profile — "X invited you to X" reads as a mistake.
+        who = inviter.username
+    days = CompanyInvite.INVITE_TTL_DAYS
+    message = (
+        f"Merhaba,\n\n"
+        f"{who}, sizi Carbonless'ta {company} ekibine davet etti.\n\n"
+        f"Katılmak için bağlantıya tıklayın:\n{link}\n\n"
+        f"Henüz hesabınız yoksa bu e-posta adresiyle ({invite.email}) kayıt olun; "
+        f"e-postanızı doğruladığınızda ekibe otomatik olarak eklenirsiniz. "
+        f"Davet {days} gün geçerlidir.\n\n"
+        f"— — —\n\n"
+        f"Hello,\n\n"
+        f"{who} invited you to join {company} on Carbonless.\n\n"
+        f"Join here:\n{link}\n\n"
+        f"No account yet? Sign up with this email address ({invite.email}); you will be "
+        f"added to the team automatically once you verify it. "
+        f"The invite is valid for {days} days.\n\n"
+        f"— Carbonless"
+    )
+    try:
+        send_mail(
+            subject=f"{company} sizi Carbonless'a davet ediyor / invites you to Carbonless",
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[invite.email],
+            fail_silently=False,
+        )
+        return True
+    except Exception as e:
+        logging.getLogger(__name__).error('Invite email to %s failed: %s', invite.email, e)
+        return False
 
 
 @api_view(['POST'])
@@ -134,7 +217,13 @@ def invite_member(request):
         company=company, email=email.strip().lower(),
         defaults={'role': role, 'invited_by': request.user}
     )
-    return Response({'token': str(invite.token), 'email': invite.email, 'created': created})
+    # Previously nothing was sent: the invite only existed in the database and
+    # its token only in this response, so the invitee had no way to join.
+    email_sent = _send_invite_email(invite, request.user)
+    return Response({
+        'token': str(invite.token), 'email': invite.email, 'created': created,
+        'email_sent': email_sent,
+    })
 
 
 @api_view(['POST'])
@@ -143,8 +232,15 @@ def accept_invite(request):
     """Accept an invite to join a company"""
     token = request.data.get('token')
     try:
-        invite = CompanyInvite.objects.get(token=token, accepted=False)
-    except CompanyInvite.DoesNotExist:
+        invite = CompanyInvite.objects.select_related('company').get(token=token)
+    except (CompanyInvite.DoesNotExist, ValueError, ValidationError):
+        return Response({'error': 'Invalid or already used invite'}, status=404)
+
+    if invite.accepted:
+        # Already joined — typically auto-joined on email verification, then
+        # the invite link was opened. Treat it as success for that member.
+        if CompanyMembership.objects.filter(company=invite.company, user=request.user).exists():
+            return Response({'status': 'ok', 'company': invite.company.legal_entity_name})
         return Response({'error': 'Invalid or already used invite'}, status=404)
 
     # Fix #30: Reject expired invites (is_expired handles legacy None rows safely)
@@ -162,20 +258,9 @@ def accept_invite(request):
             status=403,
         )
 
-    CompanyMembership.objects.get_or_create(
-        company=invite.company, user=request.user,
-        defaults={'role': invite.role, 'invited_by': invite.invited_by}
-    )
-    invite.accepted = True
-    invite.save()
-
-    # Switch the user straight into the company they just joined — without
-    # this, someone who already has their own (e.g. auto-created on signup)
-    # company stays stuck viewing that one everywhere in the app and can
-    # never actually see the company they were invited to work in.
-    from .utils import get_current_company
-    request.user.profile.active_company = invite.company
-    request.user.profile.save(update_fields=['active_company'])
+    # Also switches the user into that company — otherwise someone who has
+    # their own (signup) company never actually sees the one they joined.
+    _join_company_via_invite(request.user, invite)
 
     return Response({'status': 'ok', 'company': invite.company.legal_entity_name})
 
