@@ -70,9 +70,9 @@ const BT_OPTIONS = [
 ];
 const BT_FLIGHT_MODES = ['BT-01', 'BT-02', 'BT-03'];
 const CABIN_CLASS_OPTIONS = [
-  { value: 'economy', label: { tr: 'Economy (1x)', en: 'Economy (1x)' } },
+  { value: 'economy', label: { tr: 'Ekonomi (1x)', en: 'Economy (1x)' } },
   { value: 'business', label: { tr: 'Business (2.9x)', en: 'Business (2.9x)' } },
-  { value: 'first', label: { tr: 'First Class (4.0x)', en: 'First Class (4.0x)' } },
+  { value: 'first', label: { tr: 'Birinci Sınıf (4.0x)', en: 'First Class (4.0x)' } },
 ];
 const RENTAL_FUEL_OPTIONS = [
   { value: 'diesel', label: { tr: 'Motorin', en: 'Diesel' } },

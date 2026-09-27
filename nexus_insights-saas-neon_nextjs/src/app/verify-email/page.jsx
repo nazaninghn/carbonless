@@ -1,5 +1,6 @@
 'use client';
 
+import { authErrorMessage } from '@/lib/authErrors';
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -71,10 +72,10 @@ function VerifyContent() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || (tr ? 'E-posta başarıyla doğrulandı!' : 'Email verified successfully!'));
+        setMessage(tr ? 'E-posta başarıyla doğrulandı! Artık giriş yapabilirsiniz.' : 'Email verified! You can now log in.');
       } else {
         setStatus('error');
-        setMessage(data.error || (tr ? 'Doğrulama başarısız.' : 'Verification failed.'));
+        setMessage(authErrorMessage(data, tr, tr ? 'Doğrulama başarısız.' : 'Verification failed.'));
         setDigits(Array(CODE_LENGTH).fill(''));
         inputRefs.current[0]?.focus();
       }

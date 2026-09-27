@@ -293,3 +293,9 @@ class ProofAndAccountDeletionTests(TestCase):
         res = self.client.delete('/api/accounts/delete-account/', {'password': 'nope'}, format='json')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.data['code'], 'wrong_password')
+
+    def test_form_entry_status_follows_role_like_chat(self):
+        self._as('aylin')
+        self.assertEqual(self._entry().data['status'], 'approved')
+        self._as('ali')
+        self.assertEqual(self._entry().data['status'], 'submitted')

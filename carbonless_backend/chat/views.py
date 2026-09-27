@@ -573,7 +573,7 @@ def _complete_guided_draft(session, draft):
     session.save(update_fields=['state', 'updated_at'])
 
     if pending_entries:
-        clean_text = _build_pending_entries_text(pending_entries)
+        clean_text = _build_pending_entries_text(pending_entries, getattr(session, 'ui_language', None))
         return _assistant_response(session, clean_text, pending_entries=pending_entries, source='nlu_calculator')
 
     # Factor not found — tell the user
@@ -959,6 +959,7 @@ def _build_pending_entries_from_data(emission_blocks):
                 'factor_unit': factor.unit,
                 'factor_id': factor.pk,
                 'factor_name': getattr(factor, 'name', ''),
+                'factor_name_tr': getattr(factor, 'name_tr', '') or '',
                 'factor_source': getattr(factor, 'source', ''),
                 'factor_source_label': factor.get_source_display() if hasattr(factor, 'get_source_display') else getattr(factor, 'source', ''),
                 'factor_reference': getattr(factor, 'reference', ''),
@@ -970,22 +971,39 @@ def _build_pending_entries_from_data(emission_blocks):
     return pending_entries
 
 
-def _build_pending_entries_text(pending_entries):
-    """Build clean result text — no formula, no quantity, just result + source."""
+def _fmt_number(value, lang):
+    """1234.5 -> '1,234.50' (en) or '1.234,50' (tr)."""
+    text = f'{value:,.2f}'
+    if lang == 'tr':
+        text = text.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
+    return text
+
+
+def _build_pending_entries_text(pending_entries, lang=None):
+    """Build clean result text — no formula, no quantity, just result + source.
+
+    `lang` is the UI language the message was sent in; Turkish users get the
+    Turkish factor name, labels and number format.
+    """
+    tr = lang == 'tr'
     confirmations = []
     for pe in pending_entries:
-        scope_label = pe.get('scope', '').replace('scope', 'Scope ') if pe.get('scope') else ''
-        activity = pe.get('fuel_type', '').replace('_', ' ').title()
+        scope_num = pe.get('scope', '').replace('scope', '') if pe.get('scope') else ''
+        scope_label = (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else ''
         raw_source = pe.get('factor_source_label') or pe.get('factor_source') or ''
+        if tr:
+            activity = pe.get('factor_name_tr') or pe.get('fuel_type', '').replace('_', ' ').capitalize()
+            source_label = f'Kayıtlı faktör — {raw_source}' if raw_source else 'Kayıtlı emisyon faktörü'
+            date_note = '' if pe.get('date_extracted') else '\n📅 *Dönem: bu ay (kaydetmeden önce değiştirebilirsiniz)*'
+            confirmations.append(
+                f"✅ **{scope_label}: {activity} sonucu**\n"
+                f"**{_fmt_number(pe['co2e_kg'], 'tr')} kgCO₂e** ({_fmt_number(pe['co2e_tonne'], 'tr')} tCO₂e)\n"
+                f"Kaynak: {source_label}{date_note}"
+            )
+            continue
+        activity = pe.get('fuel_type', '').replace('_', ' ').title()
         source_label = f'Registered factor — {raw_source}' if raw_source else 'Registered emission factor'
-        
-        # Show period info
-        month_names = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        month = pe.get('month', 1)
-        year = pe.get('year', datetime.now(timezone.utc).year)
-        period_label = f"{month_names[month-1]} {year}" if month and year else ''
         date_note = '' if pe.get('date_extracted') else '\n📅 *Period: current month (you can change before saving)*'
-        
         confirmations.append(
             f"✅ **{scope_label}: {activity} result**\n"
             f"**{pe['co2e_kg']:,.2f} kgCO₂e** ({pe['co2e_tonne']:.2f} tCO₂e)\n"
@@ -1236,7 +1254,7 @@ def _handle_guided_reply(request, session, content):
         session.save(update_fields=['state', 'updated_at'])
 
         if pending_entries:
-            clean_text = _build_pending_entries_text(pending_entries)
+            clean_text = _build_pending_entries_text(pending_entries, getattr(session, 'ui_language', None))
             ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
             return Response({
                 'id': ai_msg.id, 'role': 'assistant', 'content': clean_text,
@@ -1363,7 +1381,7 @@ def _handle_guided_reply(request, session, content):
     session.save(update_fields=['state', 'updated_at'])
 
     if pending_entries:
-        clean_text = _build_pending_entries_text(pending_entries)
+        clean_text = _build_pending_entries_text(pending_entries, getattr(session, 'ui_language', None))
         ai_msg = ChatMessage.objects.create(
             session=session, role='assistant', content=clean_text,
         )
@@ -1604,6 +1622,8 @@ def send_message(request, session_id):
 
     content = (request.data.get('content') or '').strip()
     ui_language = (request.data.get('language') or '').strip().lower()
+    # Read by _build_pending_entries_text further down this request.
+    session.ui_language = ui_language
     attachment = request.FILES.get('attachment')
 
     if not content and not attachment:
@@ -1709,7 +1729,7 @@ def send_message(request, session_id):
         if local_entry:
             pending_entries = _build_pending_entries_from_data([local_entry])
             if pending_entries:
-                clean_text = _build_pending_entries_text(pending_entries)
+                clean_text = _build_pending_entries_text(pending_entries, getattr(session, 'ui_language', None))
                 ai_msg = ChatMessage.objects.create(
                     session=session, role='assistant', content=clean_text,
                 )

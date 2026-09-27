@@ -103,3 +103,27 @@ class RegistrationCompanyTests(TestCase):
         data, company = self._register('nocompany')
         self.assertFalse(data['company_saved'])
         self.assertEqual(company.legal_entity_name, "nocompany's Company")
+
+
+class AuthErrorCodeTests(TestCase):
+    """Auth errors carry a code so the UI can show them in Turkish."""
+
+    def test_wrong_verification_code_reports_attempts_left(self):
+        from .models import EmailVerificationToken
+        user = User.objects.create_user('kod', 'kod@test.com', 'testpass123')
+        token = EmailVerificationToken.objects.create(user=user)
+        wrong = '000000' if token.code != '000000' else '111111'
+        res = APIClient().post('/api/accounts/verify-email-code/', {'email': 'kod@test.com', 'code': wrong}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'wrong_code')
+        self.assertEqual(res.data['attempts_remaining'], token.MAX_ATTEMPTS - 1)
+
+    def test_used_reset_link_has_a_code(self):
+        from .models import PasswordResetToken
+        user = User.objects.create_user('rst', 'rst@test.com', 'testpass123')
+        token = PasswordResetToken.objects.create(user=user)
+        client = APIClient()
+        body = {'token': str(token.token), 'new_password': 'Yeni-Sifre-2026!'}
+        self.assertEqual(client.post('/api/accounts/password-reset-confirm/', body, format='json').status_code, 200)
+        res = client.post('/api/accounts/password-reset-confirm/', body, format='json')
+        self.assertEqual(res.data['code'], 'link_used')
