@@ -162,3 +162,75 @@ class ContactFormTests(TestCase):
         }, format='json')
         self.assertEqual(res.status_code, 200)
         self.assertFalse(ContactMessage.objects.exists())
+
+
+class SignupFacilitiesAndAutoLoginTests(TestCase):
+    """Signup creates the declared facilities, and verifying the code signs the user in."""
+
+    COMPANY = {
+        'legal_entity_name': 'Yıldız Gıda Ltd.', 'tax_number': '9876543210',
+        'country_of_headquarters': 'TR', 'countries_of_operation': 'TR',
+        'main_activity_description': 'Unlu mamul', 'number_of_employees': '11-50',
+        'annual_turnover_range': '1M - 10M ₺',
+    }
+
+    # Signup is rate-limited per IP; don't let these signups count against
+    # the tests that run after this class.
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def tearDown(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def _register(self, username, facilities, language='tr'):
+        res = APIClient().post('/api/accounts/register/', {
+            'username': username, 'email': f'{username}@test.com',
+            'password': 'StrongPass123', 'password2': 'StrongPass123',
+            'company': {**self.COMPANY, 'number_of_facilities': facilities},
+            'language': language,
+        }, format='json')
+        self.assertEqual(res.status_code, 201)
+        return User.objects.get(username=username)
+
+    def _facility_names(self, user):
+        company = user.company_memberships.get().company
+        return list(company.facilities.order_by('id').values_list('name', flat=True))
+
+    def test_declared_facilities_are_created_with_numbered_names(self):
+        user = self._register('zeynep', 2)
+        self.assertEqual(self._facility_names(user), ['Tesis 1', 'Tesis 2'])
+        self.assertEqual(user.first_name, '')
+
+    def test_english_names_and_an_upper_bound(self):
+        user = self._register('john', 500, language='en')
+        names = self._facility_names(user)
+        self.assertEqual(len(names), 20)
+        self.assertEqual(names[0], 'Facility 1')
+
+    def test_zero_facilities_creates_none(self):
+        self.assertEqual(self._facility_names(self._register('ece', 0)), [])
+
+    def test_correct_code_signs_the_user_in(self):
+        from .models import EmailVerificationToken
+        user = self._register('mert', 1)
+        code = EmailVerificationToken.objects.get(user=user).code
+        res = APIClient().post('/api/accounts/verify-email-code/',
+                               {'email': 'mert@test.com', 'code': code}, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn('access', res.data)
+        self.assertIn('refresh', res.data)
+        client = APIClient()
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {res.data['access']}")
+        self.assertEqual(client.get('/api/accounts/profile/').status_code, 200)
+
+    def test_already_verified_account_gets_no_tokens(self):
+        from .models import EmailVerificationToken
+        user = self._register('selin', 1)
+        token = EmailVerificationToken.objects.get(user=user)
+        token.verify()
+        res = APIClient().post('/api/accounts/verify-email-code/',
+                               {'email': 'selin@test.com', 'code': '000000'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn('access', res.data)

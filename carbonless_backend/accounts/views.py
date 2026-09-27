@@ -105,6 +105,7 @@ class RegisterView(generics.CreateAPIView):
         if company is None:
             company = Company.objects.create(**placeholder)
         CompanyMembership.objects.create(user=user, company=company, role='owner')
+        self._create_signup_facilities(company)
 
         # Create verification code
         token_obj = EmailVerificationToken.objects.create(user=user)
@@ -117,6 +118,23 @@ class RegisterView(generics.CreateAPIView):
         if os.environ.get('SKIP_EMAIL_VERIFICATION', 'false').lower() == 'true':
             user.is_active = True
             user.save(update_fields=['is_active'])
+
+    # Upper bound so a typo like "500" doesn't create hundreds of rows.
+    MAX_SIGNUP_FACILITIES = 20
+
+    def _create_signup_facilities(self, company):
+        """The signup form asks how many facilities the company has; create
+        that many so the Facilities list and the entry form's facility picker
+        aren't empty. They get numbered names the owner renames in Settings."""
+        from companies.models import Facility
+        if not self._company_saved:
+            return
+        count = min(company.number_of_facilities or 0, self.MAX_SIGNUP_FACILITIES)
+        label = 'Tesis' if (self.request.data.get('language') or 'tr') == 'tr' else 'Facility'
+        Facility.objects.bulk_create([
+            Facility(company=company, name=f'{label} {i}', country=company.country_of_headquarters or '')
+            for i in range(1, count + 1)
+        ])
 
     def _send_verification_email(self, user, code):
         """Returns True if the message was handed to the mail backend."""
@@ -828,7 +846,20 @@ def verify_email_code(request):
     # verified address is what proves they own the invited email.
     from companies.views import accept_pending_invites
     joined = accept_pending_invites(token_obj.user)
+    # The person just proved they own the address with the emailed code (the
+    # same proof a password reset relies on), so sign them in instead of
+    # sending them to type the password they chose a minute ago.
+    from rest_framework_simplejwt.tokens import RefreshToken
+    from .models import ActivityLog
+    user = token_obj.user
+    refresh = RefreshToken.for_user(user)
+    ActivityLog.objects.create(
+        user=user, action='login', detail='Signed in after verifying email',
+        ip_address=request.META.get('REMOTE_ADDR'),
+        target_type='User', target_id=str(user.id),
+    )
     return Response({
+        'access': str(refresh.access_token), 'refresh': str(refresh),
         'status': 'ok', 'message': 'Email verified successfully. You can now log in.',
         'joined_companies': [c.legal_entity_name for c in joined],
     })
