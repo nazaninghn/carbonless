@@ -170,8 +170,8 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
           <div className="flex-1">
             <FieldRow label={tr ? 'Tüketim miktarı' : 'Consumption'} required>
               <input
-                type="number"
-                min="0"
+                type="text" inputMode="decimal"
+               
                 className={INPUT_CLS}
                 placeholder={tr ? 'Örn: 15000' : 'e.g. 15000'}
                 value={consumption}

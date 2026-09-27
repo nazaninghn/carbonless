@@ -272,9 +272,9 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
           </p>
           <FieldRow label={tr ? 'Toplam Emisyon (kgCO₂e)' : 'Total Emission (kgCO₂e)'}>
             <input
-              type="number"
-              min="0"
-              step="0.1"
+              type="text" inputMode="decimal"
+             
+             
               className={INPUT_CLS}
               placeholder={tr ? 'Örn: 3316' : 'e.g. 3316'}
               value={directTotalKg}
@@ -319,7 +319,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
             <div className="grid grid-cols-2 gap-2">
               <FieldRow label={tr ? 'Yük (ton)' : 'Cargo (tonnes)'}>
                 <input
-                  type="number" min="0" step="0.01"
+                  type="text" inputMode="decimal"
                   className={INPUT_CLS}
                   placeholder={tr ? 'Örn: 45' : 'e.g. 45'}
                   value={draft.cargo_t}
@@ -328,7 +328,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
               </FieldRow>
               <FieldRow label={tr ? 'Mesafe (km)' : 'Distance (km)'}>
                 <input
-                  type="number" min="0"
+                  type="text" inputMode="decimal"
                   className={INPUT_CLS}
                   placeholder={tr ? 'Örn: 1200' : 'e.g. 1200'}
                   value={draft.distance_km}

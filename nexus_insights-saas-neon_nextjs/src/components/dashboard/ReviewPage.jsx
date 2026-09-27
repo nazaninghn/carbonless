@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Edit2, ChevronLeft, Save } from 'lucide-react';
 import { useInventory } from './InventoryWorkflow';
 import { api } from '@/lib/utils/api';
-import { getQuestionById, validateCarbonIQAnswer } from '@/lib/carboniq/questions';
+import { getQuestionById, validateCarbonIQAnswer, normalizeCarbonIQNumbers } from '@/lib/carboniq/questions';
 
 // Question types whose answer isn't a plain string (compound: {field: value},
 // country_city: {country, city}) can't be represented by this table's plain
@@ -49,7 +49,8 @@ export default function ReviewPage({ tr = false }) {
     // arbitrary string into a single-select one. Run the same validator the
     // live questionnaire uses before it ever reaches the backend.
     const question = getQuestionById(qId);
-    const check = validateCarbonIQAnswer(question, editValue, answers, tr ? 'tr' : 'en');
+    const value = normalizeCarbonIQNumbers(question, editValue);
+    const check = validateCarbonIQAnswer(question, value, answers, tr ? 'tr' : 'en');
     if (!check.ok) {
       setEditError(check.message || (tr ? 'Geçersiz yanıt.' : 'Invalid answer.'));
       return;
@@ -59,7 +60,7 @@ export default function ReviewPage({ tr = false }) {
     try {
       // Save to backend
       const res = await api.submitReportStep(activeInventoryId, qId, {
-        answer: editValue
+        answer: value
       });
 
       if (!res.ok) {

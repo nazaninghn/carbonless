@@ -35,6 +35,16 @@ function TargetsKPI({ label, value, color, delay = 0 }) {
 // Evaluated at call time so the year stays correct if the app stays open past midnight
 function currentYear() { return new Date().getFullYear(); }
 
+// The amount fields are text (so "15,25" and "1.250,5" can be typed), which
+// drops the browser's own min/max checks — these replace them.
+function targetNumbersError(baseEmit, reducePct, tr) {
+  const base = parseLocalizedNumber(baseEmit);
+  const pct = parseLocalizedNumber(reducePct);
+  if (!(base > 0)) return tr ? 'Geçerli bir baz emisyon girin.' : 'Enter a valid base emission.';
+  if (!(pct > 0 && pct <= 100)) return tr ? 'Azaltma hedefi 0 ile 100 arasında olmalıdır.' : 'The reduction target must be between 0 and 100.';
+  return null;
+}
+
 function fmt(n, d = 1) {
   return parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d });
 }
@@ -379,6 +389,8 @@ export default function ReductionTargetsTab({
         : 'Target year must be after base year.');
       return;
     }
+    const numbersError = targetNumbersError(baseEmit, reducePct, tr);
+    if (numbersError) { toast.error(numbersError); return; }
     setSaving(true);
     try {
       const res = await api.createTarget({
@@ -413,6 +425,8 @@ export default function ReductionTargetsTab({
         : 'Target year must be after base year.');
       return;
     }
+    const numbersError = targetNumbersError(editBaseEmit, editReducePct, tr);
+    if (numbersError) { toast.error(numbersError); return; }
     setEditSaving(true);
     try {
       const res = await api.updateTarget(editTarget.id, {
@@ -680,7 +694,7 @@ export default function ReductionTargetsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Baz Emisyon (tCO₂e)' : 'Base Emissions (tCO₂e)'} *</label>
                     <input
-                      type="number" step="any" min="0"
+                      type="text" inputMode="decimal"
                       value={editBaseEmit} onChange={e => setEditBaseEmit(e.target.value)}
                       className={FIELD} required
                     />
@@ -688,7 +702,7 @@ export default function ReductionTargetsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'} *</label>
                     <input
-                      type="number" step="any" min="1" max="100"
+                      type="text" inputMode="decimal"
                       value={editReducePct} onChange={e => setEditReducePct(e.target.value)}
                       className={FIELD} required
                     />
@@ -803,7 +817,7 @@ export default function ReductionTargetsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Baz Emisyon (tCO₂e)' : 'Base Emissions (tCO₂e)'} *</label>
                     <input
-                      type="number" step="any" min="0"
+                      type="text" inputMode="decimal"
                       value={baseEmit} onChange={e => { baseAutoFilled.current = false; setBaseEmit(e.target.value); }}
                       placeholder="0.0"
                       className={FIELD} required
@@ -825,7 +839,7 @@ export default function ReductionTargetsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'} *</label>
                     <input
-                      type="number" step="any" min="1" max="100"
+                      type="text" inputMode="decimal"
                       value={reducePct} onChange={e => setReducePct(e.target.value)}
                       placeholder={tr ? 'Örn. 30' : 'e.g. 30'}
                       className={FIELD} required

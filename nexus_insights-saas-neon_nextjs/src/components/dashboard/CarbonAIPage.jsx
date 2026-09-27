@@ -42,6 +42,7 @@ import {
   getSystemMessage,
   getTriggeredAssumptions,
   validateCarbonIQAnswer,
+  normalizeCarbonIQNumbers,
   readAnswerValue,
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
@@ -2721,7 +2722,7 @@ export function QuestionnaireTab({
     if (overrideValue === undefined && answerForIdRef.current !== currentId) return;
 
     const raw = overrideValue !== undefined ? overrideValue : answerValue;
-    const value = normalizeAnswerValue(q, raw);
+    const value = normalizeCarbonIQNumbers(q, normalizeAnswerValue(q, raw));
 
     // Validate — validateCarbonIQAnswer returns {ok, message}; check .ok not truthiness
     if (q.type !== 'info') {

@@ -178,8 +178,8 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
 
         <FieldRow label={tr ? 'Tüketim (kWh)' : 'Consumption (kWh)'} required>
           <input
-            type="number"
-            min="0"
+            type="text" inputMode="decimal"
+           
             className={INPUT_CLS}
             placeholder={tr ? 'Örn: 18000' : 'e.g. 18000'}
             value={consumptionKwh}
@@ -230,8 +230,8 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
           hint={tr ? 'isteğe bağlı' : 'optional'}
         >
           <input
-            type="number"
-            min="0"
+            type="text" inputMode="decimal"
+           
             className={INPUT_CLS}
             placeholder={tr ? 'Örn: 2000' : 'e.g. 2000'}
             value={renewableOnSite}
@@ -260,9 +260,9 @@ export function ElectricityPanel({ reportId, fieldValues = {}, lang = 'en', onSa
           <div className="flex-1">
             <FieldRow label={tr ? 'Faktör (kgCO₂e/kWh)' : 'Factor (kgCO₂e/kWh)'}>
               <input
-                type="number"
-                min="0"
-                step="0.001"
+                type="text" inputMode="decimal"
+               
+               
                 className={INPUT_CLS}
                 placeholder="0.4199"
                 value={emissionFactor}

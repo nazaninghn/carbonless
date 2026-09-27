@@ -363,7 +363,7 @@ export default function EmissionsTab({
       setFormError(tr ? 'Lütfen emisyon kaynağı seçin.' : 'Please select an emission source.');
       return;
     }
-    if (!quantity || parseLocalizedNumber(quantity) <= 0) {
+    if (!(parseLocalizedNumber(quantity) > 0)) {
       setFormError(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
       return;
     }
@@ -442,7 +442,7 @@ export default function EmissionsTab({
     // and no pre-submit check, so an entry could be edited down to 0 or a
     // negative quantity (silently rejected by the backend as a raw
     // "Update failed" toast instead of this friendly message).
-    if (!editQty || parseLocalizedNumber(editQty) <= 0) {
+    if (!(parseLocalizedNumber(editQty) > 0)) {
       toast.error(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
       return;
     }
@@ -476,7 +476,7 @@ export default function EmissionsTab({
     if (cSaving) return;
     // Same guard as handleAdd's — this form's quantity input had no min="0"
     // and no pre-submit check.
-    if (!cQty || parseLocalizedNumber(cQty) <= 0) {
+    if (!(parseLocalizedNumber(cQty) > 0)) {
       toast.error(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
       return;
     }
@@ -1018,7 +1018,7 @@ export default function EmissionsTab({
                     </div>
                     <div>
                       <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'}{selFactorObj ? ` (${selFactorObj.unit})` : ''}</label>
-                      <input type="number" step="any" min="0" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
+                      <input type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
                     </div>
                   </div>
                   {quantity && selFactorObj && (
@@ -1160,7 +1160,7 @@ export default function EmissionsTab({
               <form id="edit-form" onSubmit={handleEdit} className="space-y-4">
                 <div>
                   <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({editing.unit})</label>
-                  <input type="number" step="any" min="0" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
+                  <input type="text" inputMode="decimal" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
                 </div>
                 <div>
                   <label className={LABEL}>{tr ? 'Tesis' : 'Facility'}</label>
@@ -1243,7 +1243,7 @@ export default function EmissionsTab({
                   </div>
                   <div>
                     <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} *</label>
-                    <input type="number" step="any" min="0" value={cQty} onChange={e => setCQty(e.target.value)} className={FIELD} required />
+                    <input type="text" inputMode="decimal" value={cQty} onChange={e => setCQty(e.target.value)} className={FIELD} required />
                   </div>
                 </div>
                 <div>

@@ -351,3 +351,44 @@ class DateExtractionTest(SimpleTestCase):
         self.assertEqual(resolve_period('geçen ay'), self._prev())
         self.assertEqual(resolve_period('Mart 2025'), (3, 2025))
         self.assertIsNone(resolve_period('garbage'))
+
+
+class MultiItemParseTest(SimpleTestCase):
+    """One message can carry several items; none may be dropped silently."""
+
+    def _parse(self, text):
+        from chat.local_parser import try_local_emission_parse_all
+        entries, missed = try_local_emission_parse_all(text)
+        return [(e['fuel_type'], e['quantity'], e['unit'], e['month']) for e in entries], missed
+
+    def test_two_items_joined_with_ve(self):
+        entries, missed = self._parse("Ocak'ta 5.000 kWh elektrik ve 300 m3 doğalgaz kullandık")
+        self.assertEqual(entries, [('electricity', 5000.0, 'kwh', 1), ('natural_gas', 300.0, 'm3', 1)])
+        self.assertEqual(missed, [])
+
+    def test_comma_list_keeps_decimal_commas(self):
+        entries, _ = self._parse("Mayıs'ta 1250,5 kWh elektrik, 150 litre benzin ve 80 m3 doğalgaz")
+        self.assertEqual([e[:3] for e in entries], [
+            ('electricity', 1250.5, 'kwh'), ('petrol', 150.0, 'liters'), ('natural_gas', 80.0, 'm3'),
+        ])
+
+    def test_each_part_can_have_its_own_month(self):
+        entries, _ = self._parse('Ocak: 5000 kWh elektrik; Şubat: 4200 kWh elektrik')
+        self.assertEqual([(e[1], e[3]) for e in entries], [(5000.0, 1), (4200.0, 2)])
+
+    def test_items_without_separators(self):
+        entries, _ = self._parse('5000 kWh elektrik 300 m3 doğalgaz')
+        self.assertEqual([e[0] for e in entries], ['electricity', 'natural_gas'])
+
+    def test_unknown_amounts_are_reported(self):
+        entries, missed = self._parse('3 ton çelik ve 500 kWh elektrik')
+        self.assertEqual([e[0] for e in entries], ['electricity'])
+        self.assertEqual(missed, ['3 ton'])
+
+    def test_dates_are_not_amounts(self):
+        _, missed = self._parse('20 Ocak 2026 tarihli faturada 1.200 kWh elektrik')
+        self.assertEqual(missed, [])
+
+    def test_grouped_numbers(self):
+        self.assertEqual(self._parse('1.250,5 kWh elektrik')[0][0][1], 1250.5)
+        self.assertEqual(self._parse('1.250.000 kWh elektrik')[0][0][1], 1250000.0)

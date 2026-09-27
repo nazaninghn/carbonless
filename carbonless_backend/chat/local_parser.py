@@ -185,6 +185,9 @@ def parse_localized_number(raw: str) -> float:
             s = s.replace('.', '').replace(',', '.')
         else:
             s = s.replace(',', '')
+    elif s.count('.') > 1 or s.count(',') > 1:
+        # "1.250.000" / "1,250,000": a repeated separator can only be grouping.
+        s = s.replace('.', '').replace(',', '')
     elif _THOUSANDS_GROUP_RE.match(s):
         # A single separator followed by exactly 3 digits and nothing else
         # — "15.000" or "15,000" — is thousands grouping in both
@@ -316,6 +319,113 @@ def _extract_date_from_text(text: str) -> tuple[int, int] | None:
 
 # ── Main entry point ─────────────────────────────────────────────────────────
 
+# A quantity is either a grouped number ("1.250,5", "15.000", "1,250.5") or a
+# plain one ("1250,5", "300"). The grouped form comes first so "1.250,5 kWh"
+# isn't read from its tail as 250,5.
+_NUMBER = r'\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?'
+_QUANTITY_RE = re.compile(r'(?<![\d.,])(?P<quantity>' + _NUMBER + r')\s*' + UNIT_PATTERN + r'\b', re.IGNORECASE)
+
+# Where one item ends and the next begins: ; newline, "ve"/"and"/"ile"/"+"/"&",
+# or a comma that isn't part of a number ("1250,5" keeps its decimal comma).
+_ITEM_SPLIT_RE = re.compile(
+    r';|\n|(?<!\d),|,(?!\d)|\s(?:ve|and|ile|artı|\+|&)\s',
+    re.IGNORECASE,
+)
+
+
+def _entry(activity_type, quantity, unit, date):
+    now = datetime.now(timezone.utc)
+    return {
+        'fuel_type': activity_type,
+        'quantity': quantity,
+        'unit': unit,
+        'month': date[0] if date else now.month,
+        'year': date[1] if date else now.year,
+        'description': f'AI Chat: {activity_type} {quantity} {unit}',
+        'date_extracted': date is not None,
+    }
+
+
+def _item_chunks(text: str) -> list[str]:
+    """Split a message into one chunk per quantity. Separators come first;
+    a chunk still holding several quantities ("5000 kWh elektrik 300 m3
+    doğalgaz") is cut at each quantity, the leading text going to the first."""
+    chunks = []
+    for part in _ITEM_SPLIT_RE.split(text):
+        part = (part or '').strip()
+        if not part:
+            continue
+        matches = list(_QUANTITY_RE.finditer(part))
+        if len(matches) <= 1:
+            chunks.append(part)
+            continue
+        starts = [m.start() for m in matches] + [len(part)]
+        for i in range(len(matches)):
+            begin = 0 if i == 0 else starts[i]
+            chunks.append(part[begin:starts[i + 1]].strip())
+    return chunks
+
+
+# "3 ton", "5 kişi", "20 adet": a number followed by a word, i.e. something the
+# user meant as an amount even though no supported unit matched.
+_LOOSE_AMOUNT_RE = re.compile(r'(?<![\d.,])(\d[\d.,]*)\s*([^\W\d_]{1,15})', re.UNICODE)
+_NOT_AN_AMOUNT_WORDS = (
+    set(_MONTH_NAMES) | set(_TR_MONTH_NAMES)
+    | {'ay', 'ayı', 'ayında', 'yıl', 'yılı', 'yılında', 'year', 'month', 'th', 'st', 'nd', 'rd'}
+)
+
+
+def _loose_amounts(chunk: str) -> list[str]:
+    found = []
+    for m in _LOOSE_AMOUNT_RE.finditer(chunk):
+        word = m.group(2).lower()
+        if word in _NOT_AN_AMOUNT_WORDS or re.fullmatch(r'(19|20)\d\d', m.group(1)):
+            continue
+        found.append(m.group(0).strip())
+    return found
+
+
+def try_local_emission_parse_all(text: str) -> tuple[list[dict], list[str]]:
+    """Parse every "quantity + unit + activity" item in one message.
+
+    "Ocak'ta 5.000 kWh elektrik ve 300 m3 doğalgaz" used to keep only the
+    electricity and silently drop the gas. Returns (entries, not_understood):
+    the second list holds the quantity fragments no activity could be matched
+    to, so the reply can say so instead of losing them.
+    """
+    if not text or looks_like_question(text):
+        return [], []
+    matches = list(_QUANTITY_RE.finditer(text))
+    if not matches:
+        return [], []
+    chunks = _item_chunks(text)
+    if len(matches) == 1:
+        # One recognised quantity: the activity may be named anywhere in the
+        # message ("Doğalgaz tüketimi, 300 m3"), so read it from all of it.
+        entry = try_local_emission_parse(text)
+        leftovers = [a for c in chunks if not _QUANTITY_RE.search(c) for a in _loose_amounts(c)]
+        return ([entry] if entry else []), leftovers
+
+    message_date = _extract_date_from_text(text)
+    entries, not_understood = [], []
+    for chunk in chunks:
+        m = _QUANTITY_RE.search(chunk)
+        if not m:
+            not_understood.extend(_loose_amounts(chunk))
+            continue
+        activity_type = detect_activity_type(chunk)
+        if not activity_type:
+            not_understood.append(m.group(0).strip())
+            continue
+        entries.append(_entry(
+            activity_type,
+            parse_localized_number(m.group('quantity')),
+            normalise_unit(m.group('unit')),
+            _extract_date_from_text(chunk) or message_date,
+        ))
+    return entries, not_understood
+
+
 def try_local_emission_parse(text: str) -> dict | None:
     """
     Try to parse a simple emission data entry from user text without calling Groq.
@@ -329,11 +439,7 @@ def try_local_emission_parse(text: str) -> dict | None:
     if looks_like_question(text):
         return None
 
-    pattern = (
-        r'(?P<quantity>\d+(?:[.,]\d+)?)\s*'
-        + UNIT_PATTERN + r'\b'
-    )
-    match = re.search(pattern, text, re.IGNORECASE)
+    match = _QUANTITY_RE.search(text)
     if not match:
         return None
 
