@@ -380,6 +380,8 @@ else:
 # the authenticated account, or they silently rewrite/reject it — default
 # to EMAIL_HOST_USER when DEFAULT_FROM_EMAIL isn't explicitly overridden.
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@carbonless.info'
+# Where public contact-form messages are sent.
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@carbonless.info')
 
 # ============================================
 # DJANGO-UNFOLD — modern admin theme

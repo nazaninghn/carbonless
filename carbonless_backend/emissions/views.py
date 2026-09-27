@@ -69,6 +69,12 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         if not company:
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found. Please create or join a company first.'})
+        from .duplicates import find_duplicate, is_confirmed, PossibleDuplicate
+        if not is_confirmed(self.request.data):
+            v = serializer.validated_data
+            existing = find_duplicate(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('quantity'))
+            if existing:
+                raise PossibleDuplicate(existing)
         # Same rule as chat/questionnaire saves (create_entry_from_activity):
         # owners, admins and managers are approvers, so their own entries don't
         # wait in the review queue; data-entry members' entries do.
@@ -77,6 +83,8 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             user=self.request.user, company=company,
             status=_get_entry_status(self.request.user, company),
         )
+        from .notifications import notify_entry_submitted
+        notify_entry_submitted(serializer.instance)
         from accounts.models import ActivityLog
         ActivityLog.objects.create(
             user=self.request.user, action='entry_created',
@@ -86,7 +94,18 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         )
 
     def perform_update(self, serializer):
-        instance = serializer.save()
+        # Editing a rejected entry is how its author fixes and resends it:
+        # it goes back through the same approval rule as a new entry.
+        if serializer.instance.status == 'draft':
+            from .factor_lookup import _get_entry_status
+            instance = serializer.save(
+                status=_get_entry_status(self.request.user, serializer.instance.company),
+                rejected_reason='',
+            )
+            from .notifications import notify_entry_submitted
+            notify_entry_submitted(instance)
+        else:
+            instance = serializer.save()
         from accounts.models import ActivityLog
         ActivityLog.objects.create(
             user=self.request.user, action='entry_updated',
@@ -625,11 +644,15 @@ def approve_entry_view(request, pk):
         # and may store an incorrect timestamp.
         entry.approved_at = timezone.now()
         entry.save()
+        from .notifications import notify_entry_reviewed
+        notify_entry_reviewed(entry, approved=True, reviewer=request.user)
         return Response({'status': 'approved'})
     elif action == 'reject':
         entry.status = 'draft'
         entry.rejected_reason = request.data.get('reason', '')
         entry.save()
+        from .notifications import notify_entry_reviewed
+        notify_entry_reviewed(entry, approved=False, reviewer=request.user)
         return Response({'status': 'rejected'})
     return Response({'error': 'action must be approve or reject'}, status=400)
 

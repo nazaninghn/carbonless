@@ -1892,9 +1892,28 @@ def confirm_entry(request):
         except (TypeError, ValueError):
             pass
 
+    from emissions.duplicates import find_duplicate, is_confirmed
+    if not is_confirmed(entry_data):
+        from companies.utils import get_current_company
+        from emissions.factor_lookup import resolve_factor_and_amount
+        factor, qty, _co2e, _err = resolve_factor_and_amount(
+            entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''))
+        now = datetime.now(timezone.utc)
+        existing = find_duplicate(
+            get_current_company(request.user), factor,
+            entry_data.get('year') or now.year, entry_data.get('month') or now.month, qty)
+        if existing:
+            return Response({
+                'error': 'An entry with the same source, period and quantity already exists.',
+                'code': 'possible_duplicate', 'existing_id': existing.pk,
+                'existing_status': existing.status,
+            }, status=409)
+
     entry, err = _create_emission_from_chat(request.user, entry_data)
     if err:
         return Response({'error': err}, status=400)
+    from emissions.notifications import notify_entry_submitted
+    notify_entry_submitted(entry)
 
     return Response({
         'id': entry.id,
