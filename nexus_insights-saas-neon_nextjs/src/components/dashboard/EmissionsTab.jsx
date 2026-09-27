@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { noPermissionMessage } from '@/lib/permissions';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   AlertCircle, FileText, Leaf, Paperclip,
   Pencil, Plus, Search, Trash2, X,
@@ -135,6 +135,11 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
           {tr ? st.tr : st.en}
         </span>
+        {entry.status === 'draft' && entry.rejected_reason && (
+          <span className="w-full text-[10px] font-medium text-red-600">
+            {tr ? 'Red nedeni' : 'Reason'}: {entry.rejected_reason}
+          </span>
+        )}
         {entry.facility_name && (
           <span className="rounded-full bg-[#072C0E]/5 px-2 py-0.5 text-[9px] font-semibold text-[#072C0E]/50">
             {entry.facility_name}
@@ -322,9 +327,14 @@ export default function EmissionsTab({
   }, [entries]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
+  // Set by "Save anyway" after the server flagged a likely duplicate.
+  const [dupWarning, setDupWarning] = useState(false);
+  const confirmDupRef = useRef(false);
+
   const resetAddForm = useCallback(() => {
     setSelScope(''); setSelCategory(''); setSelFactor('');
     setQuantity(''); setDesc(''); setFacility(''); setFile(null); setFormError('');
+    setDupWarning(false);
   }, []);
 
   const handleAdd = useCallback(async (e) => {
@@ -332,6 +342,9 @@ export default function EmissionsTab({
     // Fix 30A: code-level guard — disabled attr can't stop Enter-key submission mid-flight
     if (submitting) return;
     setFormError('');
+    const confirmDuplicate = confirmDupRef.current;
+    confirmDupRef.current = false;
+    setDupWarning(false);
 
     // Client-side file validation
     if (file) {
@@ -367,6 +380,7 @@ export default function EmissionsTab({
         fd.append('description', desc);
         if (facility) fd.append('facility', facility);
         fd.append('proof_document', file);
+        if (confirmDuplicate) fd.append('confirm_duplicate', 'true');
         res = await api.createEntryWithFile(fd);
       } else {
         // Fix 24A: coerce empty string to null — Django FK rejects '' but accepts null
@@ -374,6 +388,7 @@ export default function EmissionsTab({
           emission_factor: parseInt(selFactor), year: selectedYear,
           month: parseInt(month), quantity: parseLocalizedNumber(quantity), description: desc,
           facility: facility || null,
+          ...(confirmDuplicate ? { confirm_duplicate: true } : {}),
         });
       }
       if (res.ok) {
@@ -381,7 +396,9 @@ export default function EmissionsTab({
         toast.success(tr ? 'Kayıt başarıyla eklendi ✓' : 'Entry added successfully ✓');
       } else {
         // Don't expose raw server response — show a user-friendly message
-        if (res.status === 403) {
+        if (res.status === 409) {
+          setDupWarning(true);
+        } else if (res.status === 403) {
           setFormError(noPermissionMessage(tr));
           toast.error(noPermissionMessage(tr));
         } else {
@@ -797,6 +814,11 @@ export default function EmissionsTab({
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
                             {tr ? st.tr : st.en}
                           </span>
+                          {entry.status === 'draft' && entry.rejected_reason && (
+                            <span className="truncate text-[10px] font-medium text-red-600" title={entry.rejected_reason}>
+                              {tr ? 'Red nedeni' : 'Reason'}: {entry.rejected_reason}
+                            </span>
+                          )}
                           {entry.facility_name && (
                             <span className="text-[9px] text-[#072C0E]/35">{entry.facility_name}</span>
                           )}
@@ -1077,6 +1099,27 @@ export default function EmissionsTab({
                     <AlertCircle className="h-4 w-4 shrink-0" />{formError}
                   </div>
                 )}
+                {dupWarning && (
+                  <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                    <p className="flex items-center gap-2 font-bold">
+                      <AlertCircle className="h-4 w-4 shrink-0" />
+                      {tr ? 'Bu kayıt zaten var gibi görünüyor' : 'This entry looks like it already exists'}
+                    </p>
+                    <p className="mt-1">
+                      {tr
+                        ? 'Bu ay için aynı kaynak ve aynı miktarla bir kayıt var. Aynı faturayı iki kez girerseniz toplam iki kat görünür.'
+                        : 'There is already an entry with the same source and quantity for this month. Entering the same invoice twice doubles it in the totals.'}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={submitting}
+                      onClick={() => { confirmDupRef.current = true; document.getElementById('add-entry-form')?.requestSubmit(); }}
+                      className="mt-2 rounded-full border border-amber-300 bg-white px-4 py-1.5 font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+                    >
+                      {tr ? 'Yine de kaydet' : 'Save anyway'}
+                    </button>
+                  </div>
+                )}
               </form>
             </div>
 
@@ -1104,6 +1147,16 @@ export default function EmissionsTab({
               <p className="mb-4 text-sm font-semibold text-[#072C0E]/60">
                 {tr && editing.emission_factor_name_tr ? editing.emission_factor_name_tr : editing.emission_factor_name}
               </p>
+              {editing.status === 'draft' && (
+                <div className="mb-4 rounded-2xl border border-red-200/60 bg-red-50/60 px-4 py-3 text-xs text-red-700">
+                  {editing.rejected_reason && (
+                    <p className="font-bold">{tr ? 'Red nedeni' : 'Reason for rejection'}: {editing.rejected_reason}</p>
+                  )}
+                  <p className="mt-0.5">
+                    {tr ? 'Düzeltip kaydettiğinizde kayıt tekrar onaya gönderilir.' : 'When you fix and save it, the entry is sent for approval again.'}
+                  </p>
+                </div>
+              )}
               <form id="edit-form" onSubmit={handleEdit} className="space-y-4">
                 <div>
                   <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({editing.unit})</label>

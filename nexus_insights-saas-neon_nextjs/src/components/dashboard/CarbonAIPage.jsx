@@ -4307,17 +4307,30 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                             setSavingMessageId(msg.id);
                             try {
                               let lastStatus = 'approved';
+                              let savedCount = 0;
                               for (const [idx, pe] of msg.pending_entries.entries()) {
                                 const override = periodOverrides[`${msg.id}-${idx}`];
                                 const peToSave = override ? { ...pe, month: override.month, year: override.year } : pe;
-                                const res = await api.confirmEmissionEntry(peToSave);
-                                const data = await res.json().catch(() => ({}));
+                                let res = await api.confirmEmissionEntry(peToSave);
+                                let data = await res.json().catch(() => ({}));
+                                if (res.status === 409 && data.code === 'possible_duplicate') {
+                                  // Same source, period and quantity is already saved: ask
+                                  // before doubling it; "Cancel" skips just this one.
+                                  const saveAnyway = window.confirm(tr
+                                    ? 'Bu dönem için aynı kaynak ve miktarla bir kayıt zaten var. Aynı faturayı iki kez girerseniz toplam iki kat görünür.\n\nYine de kaydedilsin mi?'
+                                    : 'An entry with the same source and quantity already exists for this period. Entering the same invoice twice doubles it in the totals.\n\nSave it anyway?');
+                                  if (!saveAnyway) continue;
+                                  res = await api.confirmEmissionEntry({ ...peToSave, confirm_duplicate: true });
+                                  data = await res.json().catch(() => ({}));
+                                }
                                 if (!res.ok) {
                                   setError(res.status === 403 ? noPermissionMessage(tr) : (data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.')));
                                   return;
                                 }
                                 if (data.entry_status) lastStatus = data.entry_status;
+                                savedCount += 1;
                               }
+                              if (savedCount === 0) return;
                               setMessages(prev => prev.map(m =>
                                 m.id === msg.id ? { ...m, entriesSaved: true, entryStatus: lastStatus } : m
                               ));

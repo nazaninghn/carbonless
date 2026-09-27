@@ -127,3 +127,38 @@ class AuthErrorCodeTests(TestCase):
         self.assertEqual(client.post('/api/accounts/password-reset-confirm/', body, format='json').status_code, 200)
         res = client.post('/api/accounts/password-reset-confirm/', body, format='json')
         self.assertEqual(res.data['code'], 'link_used')
+
+
+class ContactFormTests(TestCase):
+    """The public contact form stores the message and emails the team."""
+
+    URL = '/api/accounts/contact/'
+
+    def test_message_is_stored_and_emailed_with_reply_to(self):
+        from django.core import mail
+        from .models import ContactMessage
+        res = APIClient().post(self.URL, {
+            'name': 'Ayşe', 'email': 'ayse@example.com', 'subject': 'Fiyat', 'message': 'Merhaba',
+        }, format='json')
+        self.assertEqual(res.status_code, 201)
+        msg = ContactMessage.objects.get()
+        self.assertTrue(msg.email_sent)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].reply_to, ['ayse@example.com'])
+        self.assertIn('Merhaba', mail.outbox[0].body)
+
+    def test_missing_fields_and_bad_email_are_rejected(self):
+        client = APIClient()
+        res = client.post(self.URL, {'name': 'Ayşe', 'email': '', 'message': ''}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'missing_fields')
+        res = client.post(self.URL, {'name': 'Ayşe', 'email': 'ayse@', 'message': 'x'}, format='json')
+        self.assertEqual(res.data['code'], 'invalid_email')
+
+    def test_honeypot_is_silently_dropped(self):
+        from .models import ContactMessage
+        res = APIClient().post(self.URL, {
+            'name': 'bot', 'email': 'bot@example.com', 'message': 'spam', 'website': 'http://spam',
+        }, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertFalse(ContactMessage.objects.exists())

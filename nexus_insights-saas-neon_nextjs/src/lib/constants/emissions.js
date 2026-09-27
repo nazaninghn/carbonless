@@ -13,7 +13,8 @@ export const SCOPE_META = {
 export const STATUS_META = {
   submitted: { bg: 'bg-amber-100',    text: 'text-amber-700',   tr: 'Beklemede', en: 'Pending'  },
   approved:  { bg: 'bg-[#2ABD41]/12', text: 'text-[#1D9C31]',   tr: 'Onaylı',    en: 'Approved' },
-  draft:     { bg: 'bg-[#072C0E]/8',  text: 'text-[#072C0E]/50', tr: 'Taslak',   en: 'Draft'    },
+  // An approver's "reject" moves an entry to draft with a rejected_reason.
+  draft:     { bg: 'bg-red-50',        text: 'text-red-600',      tr: 'Reddedildi', en: 'Rejected' },
 };
 
 export const CATEGORY_LABELS = {

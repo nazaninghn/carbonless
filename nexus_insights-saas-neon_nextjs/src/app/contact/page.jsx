@@ -6,11 +6,47 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useState } from 'react';
 import { Mail, MapPin, Phone, Send, CheckCircle } from 'lucide-react';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
 export default function ContactPage() {
   const { t, language } = useLanguage();
   const tr = language === 'tr';
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', subject: '', message: '', website: '' });
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (sending) return;
+    setSending(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE}/accounts/contact/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, language }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+      } else if (res.status === 403 || res.status === 429) {
+        setError(tr
+          ? 'Kısa sürede çok fazla mesaj gönderildi. Lütfen biraz sonra tekrar deneyin veya bize e-posta yazın.'
+          : 'Too many messages in a short time. Please try again later or email us.');
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.code === 'invalid_email'
+          ? (tr ? 'Geçerli bir e-posta adresi girin.' : 'Enter a valid email address.')
+          : (tr ? 'Mesaj gönderilemedi. Lütfen alanları kontrol edin.' : 'Could not send the message. Please check the fields.'));
+      }
+    } catch {
+      setError(tr
+        ? 'Sunucuya bağlanılamadı. Lütfen tekrar deneyin veya bize e-posta yazın.'
+        : 'Could not reach the server. Please try again or email us.');
+    } finally {
+      setSending(false);
+    }
+  };
   const setField = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));
 
   return (
@@ -75,16 +111,7 @@ export default function ContactPage() {
                     </div>
                   ) : (
                     <form
-                      onSubmit={(e) => {
-                        e.preventDefault();
-                        // Open the user's email client pre-filled; backend integration can replace this later
-                        const subject = encodeURIComponent(form.subject || (tr ? 'İletişim Formu' : 'Contact Form'));
-                        const body = encodeURIComponent(
-                          `${tr ? 'Ad Soyad' : 'Full Name'}: ${form.name}\n${tr ? 'E-posta' : 'Email'}: ${form.email}\n\n${form.message}`
-                        );
-                        window.location.href = `mailto:${t.company.email}?subject=${subject}&body=${body}`;
-                        setSubmitted(true);
-                      }}
+                      onSubmit={handleSubmit}
                       className="space-y-6"
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -128,8 +155,25 @@ export default function ContactPage() {
                           className="w-full px-4 py-3 rounded-xl border border-[#072C0E]/20 focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none resize-none"
                         />
                       </div>
-                      <button type="submit" className="px-8 py-3 bg-[#1D9C31] text-[#DEFAE1] font-semibold rounded-xl hover:bg-[#1A7B2A] transition-colors flex items-center gap-2">
-                        <Send className="w-5 h-5" /> {tr ? 'Mesaj Gönder' : 'Send Message'}
+                      {/* Honeypot: hidden from people, filled in by spam bots. */}
+                      <input
+                        type="text"
+                        name="website"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        aria-hidden="true"
+                        value={form.website}
+                        onChange={setField('website')}
+                        className="hidden"
+                      />
+                      {error && (
+                        <p role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+                          {error}{' '}
+                          <a href={`mailto:${t.company.email}`} className="underline">{t.company.email}</a>
+                        </p>
+                      )}
+                      <button type="submit" disabled={sending} className="px-8 py-3 bg-[#1D9C31] text-[#DEFAE1] font-semibold rounded-xl hover:bg-[#1A7B2A] transition-colors flex items-center gap-2 disabled:opacity-60">
+                        <Send className="w-5 h-5" /> {sending ? (tr ? 'Gönderiliyor...' : 'Sending...') : (tr ? 'Mesaj Gönder' : 'Send Message')}
                       </button>
                     </form>
                   )}

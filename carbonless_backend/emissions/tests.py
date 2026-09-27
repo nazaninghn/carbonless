@@ -298,4 +298,106 @@ class ProofAndAccountDeletionTests(TestCase):
         self._as('aylin')
         self.assertEqual(self._entry().data['status'], 'approved')
         self._as('ali')
-        self.assertEqual(self._entry().data['status'], 'submitted')
+        self.assertEqual(self._entry(quantity=11).data['status'], 'submitted')
+
+
+class ApprovalNotificationAndDuplicateTests(TestCase):
+    """Approvers hear about new entries, authors hear back, and duplicates are flagged."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        self.factor = EmissionFactor.objects.create(
+            slug='test-gas-dup', name='Test Gas', name_tr='Test Gaz',
+            scope='scope1', category='stationary_combustion', country='global',
+            unit='kg', factor_kg_co2e=2.5, year=2024, source='generic',
+            is_active=True, is_default=True,
+        )
+        self.company = Company.objects.create(
+            legal_entity_name='Kaya Tekstil A.Ş.', tax_number='1234567890',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        self.users = {}
+        for name, role, lang in [('aylin', 'owner', 'tr'), ('ali', 'data_entry', 'en')]:
+            u = User.objects.create_user(name, f'{name}@test.com', 'testpass123')
+            UserProfile.objects.create(user=u, active_company=self.company, language_preference=lang)
+            CompanyMembership.objects.create(company=self.company, user=u, role=role)
+            self.users[name] = u
+        self.client = APIClient()
+
+    def _as(self, name):
+        self.client.force_authenticate(user=self.users[name])
+
+    def _entry(self, **extra):
+        return self.client.post('/api/emissions/entries/', {
+            'emission_factor': self.factor.id, 'year': 2026, 'month': 3, 'quantity': 10, **extra,
+        }, format='json')
+
+    def _notes(self, name, kind):
+        from accounts.models import Notification
+        return list(Notification.objects.filter(user=self.users[name], notification_type=kind))
+
+    def test_submitted_entry_notifies_the_approver_in_their_language(self):
+        self._as('ali')
+        self.assertEqual(self._entry().status_code, 201)
+        notes = self._notes('aylin', 'entry_submitted')
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes[0].title, 'Onay bekleyen kayıt')
+        self.assertIn('Test Gaz', notes[0].message)
+
+    def test_owner_entry_needs_no_approval_notice(self):
+        self._as('aylin')
+        self._entry()
+        self.assertEqual(self._notes('aylin', 'entry_submitted'), [])
+
+    def test_rejection_tells_the_author_why_and_editing_resubmits(self):
+        self._as('ali')
+        entry_id = self._entry().data['id']
+        self._as('aylin')
+        res = self.client.post(f'/api/emissions/entries/{entry_id}/approve/',
+                               {'action': 'reject', 'reason': 'Invoice missing'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        notes = self._notes('ali', 'entry_rejected')
+        self.assertEqual(len(notes), 1)
+        self.assertIn('Invoice missing', notes[0].message)
+
+        self._as('ali')
+        res = self.client.patch(f'/api/emissions/entries/{entry_id}/', {'quantity': 12}, format='json')
+        self.assertEqual(res.status_code, 200)
+        entry = EmissionEntry.objects.get(id=entry_id)
+        self.assertEqual(entry.status, 'submitted')
+        self.assertEqual(entry.rejected_reason, '')
+        self.assertEqual(len(self._notes('aylin', 'entry_submitted')), 2)
+
+    def test_approval_tells_the_author(self):
+        self._as('ali')
+        entry_id = self._entry().data['id']
+        self._as('aylin')
+        self.client.post(f'/api/emissions/entries/{entry_id}/approve/', {'action': 'approve'}, format='json')
+        self.assertEqual(len(self._notes('ali', 'entry_approved')), 1)
+
+    def test_turned_off_approval_notifications_are_respected(self):
+        self.users['aylin'].profile.notify_approvals = False
+        self.users['aylin'].profile.save()
+        self._as('ali')
+        self._entry()
+        self.assertEqual(self._notes('aylin', 'entry_submitted'), [])
+
+    def test_same_entry_twice_is_flagged_unless_confirmed(self):
+        self._as('aylin')
+        self.assertEqual(self._entry().status_code, 201)
+        res = self._entry()
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.data['code'], 'possible_duplicate')
+        self.assertEqual(EmissionEntry.objects.count(), 1)
+        self.assertEqual(self._entry(confirm_duplicate=True).status_code, 201)
+        self.assertEqual(EmissionEntry.objects.count(), 2)
+
+    def test_different_month_or_rejected_entry_is_not_a_duplicate(self):
+        self._as('aylin')
+        self._entry()
+        self.assertEqual(self._entry(month=4).status_code, 201)
+        EmissionEntry.objects.filter(month=3).update(status='draft')
+        self.assertEqual(self._entry().status_code, 201)

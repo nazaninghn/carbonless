@@ -3,7 +3,7 @@ from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin, UserAdmin as
 from django.contrib.auth.models import Group, User
 from unfold.admin import ModelAdmin
 from unfold.forms import AdminPasswordChangeForm, UserChangeForm, UserCreationForm
-from .models import UserProfile, Notification, ActivityLog
+from .models import UserProfile, Notification, ActivityLog, ContactMessage
 
 
 # User and Group ship registered against plain django.contrib ModelAdmins, so
@@ -48,3 +48,12 @@ class ActivityLogAdmin(ModelAdmin):
     list_filter = ['action']
     search_fields = ['user__username', 'detail']
     readonly_fields = ['user', 'action', 'detail', 'ip_address', 'created_at']
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(ModelAdmin):
+    list_display = ['created_at', 'name', 'email', 'subject', 'email_sent', 'handled']
+    list_filter = ['handled', 'email_sent']
+    list_editable = ['handled']
+    search_fields = ['name', 'email', 'subject', 'message']
+    readonly_fields = ['name', 'email', 'subject', 'message', 'language', 'email_sent', 'created_at']

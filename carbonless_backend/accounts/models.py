@@ -56,6 +56,9 @@ class Notification(models.Model):
         ('custom_rejected', 'Custom Request Rejected'),
         ('target_alert', 'Target Alert'),
         ('report_ready', 'Report Ready'),
+        ('entry_submitted', 'Entry Awaiting Approval'),
+        ('entry_approved', 'Entry Approved'),
+        ('entry_rejected', 'Entry Rejected'),
         ('system', 'System Message'),
     ]
 
@@ -215,3 +218,25 @@ class TOTPDevice(models.Model):
 
     def __str__(self):
         return f"2FA: {self.user.username} ({'active' if self.is_confirmed else 'pending'})"
+
+
+class ContactMessage(models.Model):
+    """A message sent from the public contact form.
+
+    Stored before the team is emailed, so a message is never lost when SMTP is
+    down or not configured — it can always be read in the admin.
+    """
+    name = models.CharField(max_length=200)
+    email = models.EmailField()
+    subject = models.CharField(max_length=255, blank=True)
+    message = models.TextField(max_length=5000)
+    language = models.CharField(max_length=5, blank=True)
+    email_sent = models.BooleanField(default=False)
+    handled = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.name} <{self.email}>: {self.subject or self.message[:40]}"

@@ -963,3 +963,58 @@ def get_2fa_status(request):
         })
     except TOTPDevice.DoesNotExist:
         return Response({'enabled': False, 'pending_setup': False})
+
+
+# ── Public contact form ─────────────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+@ratelimit(key='ip', rate='5/h', method='POST', block=True)
+def contact_message(request):
+    """Store a contact-form message and email it to the team.
+
+    The message is saved first; the email is best-effort, so the sender only
+    sees "sent" once the message is safely stored.
+    """
+    from django.conf import settings
+    from django.core.mail import EmailMessage
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError
+    from .models import ContactMessage
+
+    data = request.data
+    # Hidden field real people never fill in; bots do. Pretend success.
+    if (data.get('website') or '').strip():
+        return Response({'status': 'ok'})
+
+    name = (data.get('name') or '').strip()[:200]
+    email = (data.get('email') or '').strip()[:254]
+    subject = (data.get('subject') or '').strip()[:255]
+    message = (data.get('message') or '').strip()[:5000]
+    missing = [f for f, v in (('name', name), ('email', email), ('message', message)) if not v]
+    if missing:
+        return Response({'error': 'Please fill in: ' + ', '.join(missing), 'code': 'missing_fields',
+                         'fields': missing}, status=400)
+    try:
+        validate_email(email)
+    except ValidationError:
+        return Response({'error': 'Enter a valid email address.', 'code': 'invalid_email'}, status=400)
+
+    msg = ContactMessage.objects.create(
+        name=name, email=email, subject=subject, message=message,
+        language=(data.get('language') or '')[:5],
+    )
+    to = [getattr(settings, 'CONTACT_EMAIL', '') or 'info@carbonless.info']
+    try:
+        EmailMessage(
+            subject=f'[Carbonless contact] {subject or name}',
+            body=f'From: {name} <{email}>\nLanguage: {msg.language or "-"}\n\n{message}',
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=to,
+            reply_to=[email],
+        ).send(fail_silently=False)
+        msg.email_sent = True
+        msg.save(update_fields=['email_sent'])
+    except Exception as e:  # stored anyway; the team can read it in the admin
+        logger.error(f'Contact message {msg.pk} saved but email failed: {e}', exc_info=True)
+    return Response({'status': 'ok'}, status=201)

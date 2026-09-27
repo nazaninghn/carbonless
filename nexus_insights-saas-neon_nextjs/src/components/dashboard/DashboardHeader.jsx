@@ -173,6 +173,7 @@ export default function DashboardHeader({
           <div className="relative" ref={notifPanelRef}>
             <button
               onClick={loadNotifications}
+              aria-label={tr ? 'Bildirimler' : 'Notifications'}
               className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-[#DEFAE1] text-[#072C0E]/50 hover:text-[#072C0E] transition"
             >
               <Bell className="h-4 w-4" />

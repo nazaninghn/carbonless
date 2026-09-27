@@ -1,0 +1,106 @@
+"""In-app notifications for the entry approval workflow.
+
+- A data-entry member saves an entry that waits for review -> every approver
+  (owner/admin/manager) of that company is told.
+- An approver approves or rejects an entry -> its author is told, with the
+  reason for a rejection.
+
+Each notification is written in the recipient's language preference and is
+skipped when they switched approval notifications off in Settings.
+"""
+import logging
+
+logger = logging.getLogger(__name__)
+
+APPROVER_ROLES = ('owner', 'admin', 'manager')
+
+_MONTHS = {
+    'tr': ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz',
+           'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+    'en': ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+           'August', 'September', 'October', 'November', 'December'],
+}
+
+
+def _prefs(user):
+    """(wants approval notifications, language) for a user."""
+    profile = getattr(user, 'profile', None)
+    if profile is None:
+        return True, 'tr'
+    lang = profile.language_preference if profile.language_preference in ('tr', 'en') else 'tr'
+    return profile.notify_approvals, lang
+
+
+def _describe(entry, lang):
+    factor = entry.emission_factor
+    name = (factor.name_tr or factor.name) if lang == 'tr' else factor.name
+    month = _MONTHS[lang][entry.month - 1] if 1 <= (entry.month or 0) <= 12 else ''
+    qty = f'{entry.quantity:,.2f}'.rstrip('0').rstrip('.')
+    if lang == 'tr':
+        qty = qty.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
+    return f'{name} · {qty} {factor.unit} · {month} {entry.year}'.strip()
+
+
+def _notify(user, notification_type, title, message):
+    from accounts.models import Notification
+    Notification.objects.create(
+        user=user, notification_type=notification_type,
+        title=title, message=message, link='/dashboard',
+    )
+
+
+def notify_entry_submitted(entry):
+    """Tell the company's approvers that `entry` is waiting for their review."""
+    if entry.status != 'submitted' or not entry.company_id:
+        return
+    try:
+        from companies.models import CompanyMembership
+        author = entry.user.username if entry.user else '—'
+        approvers = (
+            CompanyMembership.objects
+            .filter(company_id=entry.company_id, is_active=True, role__in=APPROVER_ROLES)
+            .exclude(user_id=entry.user_id)
+            .select_related('user', 'user__profile')
+        )
+        for membership in approvers:
+            wants, lang = _prefs(membership.user)
+            if not wants:
+                continue
+            if lang == 'tr':
+                _notify(membership.user, 'entry_submitted', 'Onay bekleyen kayıt',
+                        f'{author} yeni bir kayıt ekledi: {_describe(entry, lang)}. '
+                        f'Onay Bekleyenler sayfasından inceleyebilirsiniz.')
+            else:
+                _notify(membership.user, 'entry_submitted', 'Entry awaiting approval',
+                        f'{author} added a new entry: {_describe(entry, lang)}. '
+                        f'Review it on the Pending Review page.')
+    except Exception:  # a notification must never break saving the entry
+        logger.exception('Could not notify approvers about entry %s', entry.pk)
+
+
+def notify_entry_reviewed(entry, approved, reviewer):
+    """Tell the entry's author that it was approved or rejected."""
+    if not entry.user_id or entry.user_id == reviewer.pk:
+        return
+    try:
+        wants, lang = _prefs(entry.user)
+        if not wants:
+            return
+        what = _describe(entry, lang)
+        if approved:
+            if lang == 'tr':
+                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.')
+            else:
+                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.')
+            return
+        reason = (entry.rejected_reason or '').strip()
+        if lang == 'tr':
+            _notify(entry.user, 'entry_rejected', 'Kaydınız reddedildi',
+                    f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '')
+                    + ' Kaydı düzenleyip tekrar gönderebilirsiniz.')
+        else:
+            _notify(entry.user, 'entry_rejected', 'Your entry was rejected',
+                    f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '')
+                    + ' You can edit the entry to send it again.')
+    except Exception:
+        logger.exception('Could not notify the author of entry %s', entry.pk)
