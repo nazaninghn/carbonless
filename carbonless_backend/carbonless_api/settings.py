@@ -293,6 +293,8 @@ CORS_ALLOWED_ORIGINS = list({o.strip() for o in CORS_ALLOWED_ORIGINS if o.strip(
 CSRF_TRUSTED_ORIGINS = list({o.strip() for o in CSRF_TRUSTED_ORIGINS if o.strip()})
 
 CORS_ALLOW_CREDENTIALS = True
+# Lets the frontend read the real filename of a downloaded proof document.
+CORS_EXPOSE_HEADERS = ['Content-Disposition']
 
 # ============================================
 # PRODUCTION SECURITY HEADERS

@@ -52,11 +52,28 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = [
-            'calculated_co2e_kg', 'facility_name', 'proof_document',
+            'calculated_co2e_kg', 'facility_name',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at',
             'factor_value_snapshot', 'factor_source_snapshot',
         ]
+
+    # Same limits as EmissionEntry.clean(); checked here so a bad upload is a
+    # 400 with a message instead of a ValidationError escaping save() as a 500.
+    PROOF_MAX_BYTES = 10 * 1024 * 1024
+    PROOF_EXTENSIONS = ('.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx', '.xls', '.xlsx')
+
+    def validate_proof_document(self, value):
+        if not value:
+            return value
+        import os
+        if value.size > self.PROOF_MAX_BYTES:
+            raise serializers.ValidationError('File size must be under 10MB.')
+        if os.path.splitext(value.name)[1].lower() not in self.PROOF_EXTENSIONS:
+            raise serializers.ValidationError(
+                'File type not allowed. Use: ' + ', '.join(self.PROOF_EXTENSIONS)
+            )
+        return value
 
     def validate_quantity(self, value):
         if value <= 0:

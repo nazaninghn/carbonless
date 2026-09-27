@@ -196,7 +196,8 @@ class EmissionFactor(models.Model):
 class EmissionEntry(models.Model):
     """Individual emission data entry by user"""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='emission_entries')
+    # Company data: kept (author unset) when the author deletes their account.
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='emission_entries')
     company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True, related_name='emission_entries')
     emission_factor = models.ForeignKey(EmissionFactor, on_delete=models.PROTECT)
 
@@ -270,7 +271,7 @@ class EmissionEntry(models.Model):
         return self.calculated_co2e_kg / 1000
 
     def __str__(self):
-        return f"{self.user.username} - {self.emission_factor.name} - {self.calculated_co2e_kg} kg"
+        return f"{self.user.username if self.user else '(deleted)'} - {self.emission_factor.name} - {self.calculated_co2e_kg} kg"
 
     class Meta:
         ordering = ['-year', '-month', '-created_at']
@@ -286,7 +287,8 @@ class ReductionTarget(models.Model):
         ('failed', 'Failed'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reduction_targets')
+    # Company data: kept (author unset) when the author deletes their account.
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reduction_targets')
     company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True, related_name='reduction_targets')
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -316,7 +318,8 @@ class CustomEmissionRequest(models.Model):
 
     SCOPE_CHOICES = EmissionFactor.SCOPE_CHOICES
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='custom_emission_requests')
+    # Company data: kept (author unset) when the author deletes their account.
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='custom_emission_requests')
     company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True, related_name='custom_emission_requests')
 
     # What the user wants to report
@@ -353,7 +356,7 @@ class CustomEmissionRequest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.user.username} - {self.source_name} ({self.get_status_display()})"
+        return f"{self.user.username if self.user else '(deleted)'} - {self.source_name} ({self.get_status_display()})"
 
     class Meta:
         ordering = ['-created_at']

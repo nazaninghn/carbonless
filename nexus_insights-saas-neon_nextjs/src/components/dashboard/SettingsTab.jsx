@@ -99,7 +99,14 @@ export default function SettingsTab({ language, user, fetchData }) {
         window.location.href = '/login';
       } else {
         const data = await res.json().catch(() => ({}));
-        setDeleteError(data.error || (tr ? 'Hata oluştu' : 'An error occurred'));
+        const names = (data.companies || []).join(', ');
+        const byCode = {
+          wrong_password: tr ? 'Şifre hatalı.' : 'Incorrect password.',
+          owner_successor_needed: tr
+            ? `Önce Takım sekmesinden bir üyeyi Yönetici veya Müdür yapın; şirketi o yönetecek: ${names}`
+            : `First make a member an Admin or Manager in the Team tab so they can run the company: ${names}`,
+        };
+        setDeleteError(byCode[data.code] || data.error || (tr ? 'Hata oluştu' : 'An error occurred'));
         setDeleting(false);
       }
     } catch {
@@ -313,8 +320,8 @@ export default function SettingsTab({ language, user, fetchData }) {
                 </h3>
                 <p className="mb-4 text-sm leading-6 text-red-700/70">
                   {tr
-                    ? 'Hesabınızı silmek geri alınamaz. Tüm verileriniz kalıcı olarak silinir.'
-                    : 'Deleting your account is irreversible. All your data will be permanently deleted.'}
+                    ? 'Hesabınızı silmek geri alınamaz. Tek üyesi olduğunuz şirketler ve verileri de silinir; ekibi olan şirketlerde girdiğiniz kayıtlar şirkette kalır.'
+                    : 'Deleting your account is irreversible. Companies where you are the only member are deleted with their data; in companies with a team, the records you entered stay with the company.'}
                 </p>
                 <button
                   onClick={openDeleteModal}
