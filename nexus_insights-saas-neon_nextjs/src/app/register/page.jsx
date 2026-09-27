@@ -108,6 +108,31 @@ export default function RegisterPage() {
     // This is intentional  -  subsequent authenticated calls use api.* helpers.
     const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
+    // Sent WITH the signup request: the account is inactive until its email is
+    // verified, so a follow-up "create company" call after login never ran for
+    // a normal signup and every detail on these three steps was lost.
+      const companyPayload = {
+        legal_entity_name: formData.legalEntityName,
+        tax_number: formData.taxNumber,
+        country_of_headquarters: formData.countryOfHeadquarters,
+        countries_of_operation: formData.countriesOfOperation,
+        nace_code: formData.naceCode,
+        main_activity_description: formData.mainActivityDescription,
+        number_of_employees: formData.numberOfEmployees,
+        annual_turnover_range: formData.annualTurnoverRange,
+        number_of_facilities: parseInt(formData.numberOfFacilities) || 0,
+        has_overseas_operations: formData.hasOverseasOperations === 'yes',
+        number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0,
+        has_iso_14001: formData.hasISO14001 === 'yes',
+        has_iso_50001: formData.hasISO50001 === 'yes',
+        has_iso_14064_work: formData.hasISO14064Work === 'yes',
+        target_iso_14064_verification: formData.targetISO14064Verification === 'yes',
+        has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes',
+        is_for_financing: formData.isForFinancing === 'yes',
+        is_due_to_export_pressure: formData.isDueToExportPressure === 'yes',
+        is_for_group_reporting: formData.isForGroupReporting === 'yes',
+      };
+
     try {
       // â”€â”€ Step 1: Create account â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
       let regRes;
@@ -123,6 +148,7 @@ export default function RegisterPage() {
             password: formData.password,
             password2: formData.password2,
             first_name: formData.legalEntityName,
+            company: companyPayload,
           }),
           signal: regCtrl.signal,
         }).finally(() => clearTimeout(regTimer));
@@ -144,6 +170,11 @@ export default function RegisterPage() {
       // "enter your code" screen would strand them waiting for a mail that
       // isn't coming â€” so flag it and let that screen say so.
       const regData = await regRes.json().catch(() => ({}));
+      if (regData?.company_saved === false) {
+        // Backend fell back to placeholder details — keep what was typed so
+        // Settings -> Company can pre-fill it (CompanySettings reads this key).
+        try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
+      }
       const mailFailedParam = regData?.email_sent === false ? '&mail=failed' : '';
 
       // â”€â”€ Step 2: Login via proxy (sets localStorage token + session cookie) â”€â”€
@@ -167,43 +198,6 @@ export default function RegisterPage() {
         // Redirect to verify-email page instead of showing error
         router.push(`/verify-email?email=${encodeURIComponent(formData.email)}${mailFailedParam}`);
         return;
-      }
-
-      // â”€â”€ Step 3: Create company (token is now set  -  api.createCompany works) â”€
-
-      const companyPayload = {
-        legal_entity_name: formData.legalEntityName,
-        tax_number: formData.taxNumber,
-        country_of_headquarters: formData.countryOfHeadquarters,
-        countries_of_operation: formData.countriesOfOperation,
-        nace_code: formData.naceCode,
-        main_activity_description: formData.mainActivityDescription,
-        number_of_employees: formData.numberOfEmployees,
-        annual_turnover_range: formData.annualTurnoverRange,
-        number_of_facilities: parseInt(formData.numberOfFacilities) || 0,
-        has_overseas_operations: formData.hasOverseasOperations === 'yes',
-        number_of_subsidiaries: parseInt(formData.numberOfSubsidiaries) || 0,
-        has_iso_14001: formData.hasISO14001 === 'yes',
-        has_iso_50001: formData.hasISO50001 === 'yes',
-        has_iso_14064_work: formData.hasISO14064Work === 'yes',
-        target_iso_14064_verification: formData.targetISO14064Verification === 'yes',
-        has_3rd_party_audit_plan: formData.has3rdPartyAuditPlan === 'yes',
-        is_for_financing: formData.isForFinancing === 'yes',
-        is_due_to_export_pressure: formData.isDueToExportPressure === 'yes',
-        is_for_group_reporting: formData.isForGroupReporting === 'yes',
-      };
-
-      try {
-        const companyRes = await apiModule.createCompany(companyPayload); // reuse same import
-        if (!companyRes.ok) {
-          // Save so Settings â†’ Company can auto-fill  -  no re-typing needed
-          try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
-        } else {
-          try { sessionStorage.removeItem('pendingCompany'); } catch {}
-        }
-      } catch {
-        // Company creation failed  -  save data for Settings â†’ Company auto-fill
-        try { sessionStorage.setItem('pendingCompany', JSON.stringify(companyPayload)); } catch {}
       }
 
       // Set mode cookie so middleware allows dashboard access
