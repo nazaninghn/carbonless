@@ -401,3 +401,52 @@ class ApprovalNotificationAndDuplicateTests(TestCase):
         self.assertEqual(self._entry(month=4).status_code, 201)
         EmissionEntry.objects.filter(month=3).update(status='draft')
         self.assertEqual(self._entry().status_code, 201)
+
+
+class YearsAndFacilityTests(TestCase):
+    """The summary lists the years that have data; deleting a facility keeps its entries."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership, Facility
+        from accounts.models import UserProfile
+        self.factor = EmissionFactor.objects.create(
+            slug='test-gas-years', name='Test Gas', name_tr='Test Gaz',
+            scope='scope1', category='stationary_combustion', country='global',
+            unit='kg', factor_kg_co2e=2.5, year=2024, source='generic',
+            is_active=True, is_default=True,
+        )
+        self.company = Company.objects.create(
+            legal_entity_name='Kaya Tekstil A.Ş.', tax_number='1234567890',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        self.user = User.objects.create_user('aylin', 'aylin@test.com', 'testpass123')
+        UserProfile.objects.create(user=self.user, active_company=self.company)
+        CompanyMembership.objects.create(company=self.company, user=self.user, role='owner')
+        self.facility = Facility.objects.create(company=self.company, name='Fabrika 1')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _entry(self, year, **extra):
+        return self.client.post('/api/emissions/entries/', {
+            'emission_factor': self.factor.id, 'year': year, 'month': 3, 'quantity': 10, **extra,
+        }, format='json')
+
+    def test_summary_lists_years_with_data_newest_first(self):
+        self._entry(2024)
+        self._entry(2026)
+        data = self.client.get('/api/emissions/summary/?year=2025').data
+        self.assertEqual(data['years_with_data'], [2026, 2024])
+        self.assertEqual(data['total_kg'], 0)
+
+    def test_facility_shows_entry_count_and_delete_keeps_entries(self):
+        entry_id = self._entry(2026, facility=self.facility.id).data['id']
+        listed = self.client.get('/api/companies/facilities/').data
+        rows = listed['results'] if isinstance(listed, dict) else listed
+        self.assertEqual(rows[0]['entry_count'], 1)
+        res = self.client.patch(f'/api/companies/facilities/{self.facility.id}/', {'name': 'Fabrika A'}, format='json')
+        self.assertEqual(res.data['name'], 'Fabrika A')
+        self.assertEqual(self.client.delete(f'/api/companies/facilities/{self.facility.id}/').status_code, 204)
+        entry = EmissionEntry.objects.get(id=entry_id)
+        self.assertIsNone(entry.facility)

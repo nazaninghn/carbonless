@@ -367,8 +367,11 @@ export default function DashboardOverview({
   questionnaireProfile,
   setActiveTab,
   setShowAddForm,
+  onYearChange,
 }) {
   const tr = language === 'tr';
+  // Years other than the selected one that have entries (newest first).
+  const otherYears = (summary?.years_with_data ?? []).filter(y => y !== Number(selectedYear));
   const totalTonne = summary?.total_tonne  ?? 0;
   const s1         = summary?.scope1_tonne ?? 0;
   const s2         = summary?.scope2_tonne ?? 0;
@@ -464,8 +467,38 @@ export default function DashboardOverview({
     <div className="space-y-3 sm:space-y-4">
       <style>{DASHBOARD_ANIM_STYLES}</style>
 
+      {/* ── EMPTY YEAR  -  this year is empty but other years have data ── */}
+      {entries.length === 0 && otherYears.length > 0 && (
+        <div className="dash-fade-up rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 text-center sm:p-10">
+          <h2 className="text-[19px] font-bold text-[#072C0E]">
+            {tr ? `${selectedYear} için henüz veri yok` : `No data for ${selectedYear} yet`}
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-[#072C0E]/50">
+            {tr
+              ? `Kayıtlarınız başka yıllarda: ${otherYears.join(', ')}. O yıla geçebilir veya ${selectedYear} için veri ekleyebilirsiniz.`
+              : `Your entries are in other years: ${otherYears.join(', ')}. Switch to one of them or add data for ${selectedYear}.`}
+          </p>
+          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+            {onYearChange && (
+              <button
+                onClick={() => onYearChange(otherYears[0])}
+                className="rounded-full border border-[#2ABD41] bg-[#F1FCF2] px-5 py-2.5 text-[13px] font-semibold text-[#175022] transition hover:bg-[#DEFAE1]"
+              >
+                {tr ? `${otherYears[0]} yılına geç` : `Switch to ${otherYears[0]}`}
+              </button>
+            )}
+            <button
+              onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
+              className="rounded-full border border-[#DEFAE1] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#072C0E] transition hover:border-[#072C0E]/25"
+            >
+              {tr ? `${selectedYear} için veri ekle` : `Add data for ${selectedYear}`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
-      {entries.length === 0 && (
+      {entries.length === 0 && otherYears.length === 0 && (
         <div className="rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 pb-8 sm:p-10 sm:pb-12 overflow-hidden">
           {/* Scope 1/2/3 explainer — custom image */}
           <div className="dash-fade-up mb-6">

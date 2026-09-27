@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { noPermissionMessage } from '@/lib/permissions';
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
@@ -289,6 +289,35 @@ export default function ReductionTargetsTab({
   const [reducePct,  setReducePct]  = useState('');
   const [saving,     setSaving]     = useState(false);
 
+  // The base year's inventory total, used to fill "Base Emissions" so the
+  // user doesn't have to look it up. { year, tonne } once loaded.
+  const [baseInventory, setBaseInventory] = useState(null);
+  const baseAutoFilled = useRef(false); // true while baseEmit holds our value, not the user's
+  useEffect(() => {
+    if (!showForm) return;
+    const y = parseInt(baseYear, 10);
+    if (!(y >= 2000 && y <= 2100)) { setBaseInventory(null); return; }
+    let cancelled = false;
+    setBaseInventory({ year: y, tonne: null });
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.getSummary(y);
+        const data = res.ok ? await res.json() : null;
+        if (cancelled) return;
+        const tonne = data ? parseFloat(data.total_tonne) || 0 : 0;
+        setBaseInventory({ year: y, tonne });
+        setBaseEmit(prev => {
+          if (prev !== '' && !baseAutoFilled.current) return prev; // never overwrite the user's value
+          baseAutoFilled.current = tonne > 0;
+          return tonne > 0 ? String(Math.round(tonne * 100) / 100) : '';
+        });
+      } catch {
+        if (!cancelled) setBaseInventory(null);
+      }
+    }, 300);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [showForm, baseYear]);
+
   // Gates the overall-progress-bar grow-in — starts at 0% and animates to its
   // real width shortly after mount, same treatment as the dashboard charts.
   const [mounted, setMounted] = useState(false);
@@ -312,6 +341,7 @@ export default function ReductionTargetsTab({
   const resetForm = useCallback(() => {
     setTitle(''); setBaseEmit(''); setReducePct('');
     setBaseYear(new Date().getFullYear() - 1); setTgtYear(2030);
+    baseAutoFilled.current = false; setBaseInventory(null);
   }, []);
 
   const openEdit = useCallback((tgt) => {
@@ -774,17 +804,30 @@ export default function ReductionTargetsTab({
                     <label className={LABEL}>{tr ? 'Baz Emisyon (tCO₂e)' : 'Base Emissions (tCO₂e)'} *</label>
                     <input
                       type="number" step="any" min="0"
-                      value={baseEmit} onChange={e => setBaseEmit(e.target.value)}
+                      value={baseEmit} onChange={e => { baseAutoFilled.current = false; setBaseEmit(e.target.value); }}
                       placeholder="0.0"
                       className={FIELD} required
                     />
+                    {baseInventory && (
+                      <p className="mt-1 text-[10px] leading-snug text-[#072C0E]/50">
+                        {baseInventory.tonne === null
+                          ? (tr ? 'Envanter kontrol ediliyor…' : 'Checking your inventory…')
+                          : baseInventory.tonne > 0
+                            ? (tr
+                              ? `${baseInventory.year} envanterinizden: ${fmt(baseInventory.tonne, 2)} tCO₂e`
+                              : `From your ${baseInventory.year} inventory: ${fmt(baseInventory.tonne, 2)} tCO₂e`)
+                            : (tr
+                              ? `${baseInventory.year} için kayıtlı emisyon yok. Değeri elle girin veya verisi olan bir baz yıl seçin.`
+                              : `No emissions recorded for ${baseInventory.year}. Enter the value yourself or pick a base year that has data.`)}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className={LABEL}>{tr ? 'Azaltma Hedefi (%)' : 'Reduction Target (%)'} *</label>
                     <input
                       type="number" step="any" min="1" max="100"
                       value={reducePct} onChange={e => setReducePct(e.target.value)}
-                      placeholder="30"
+                      placeholder={tr ? 'Örn. 30' : 'e.g. 30'}
                       className={FIELD} required
                     />
                   </div>

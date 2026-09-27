@@ -22,10 +22,16 @@ class CompanySerializer(serializers.ModelSerializer):
 
 
 class FacilitySerializer(serializers.ModelSerializer):
+    # Shown before deleting a facility: its entries are kept, only unlinked.
+    entry_count = serializers.SerializerMethodField()
+
+    def get_entry_count(self, obj):
+        return obj.emission_entries.count()
+
     class Meta:
         model = Facility
         fields = ['id', 'company', 'name', 'address', 'city', 'country',
-                  'facility_type', 'is_active', 'created_at']
+                  'facility_type', 'is_active', 'created_at', 'entry_count']
         # 'company' is set server-side from the requester's own membership
         # (see FacilityListCreateView.perform_create) — it must never be
         # settable by the client, or a PATCH could reassign a facility to a

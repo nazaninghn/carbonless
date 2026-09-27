@@ -231,6 +231,7 @@ export default function DashboardPage() {
                     questionnaireProfile={questionnaireProfile}
                     setActiveTab={setActiveTab}
                     setShowAddForm={setShowAddForm}
+                    onYearChange={setSelectedYear}
                   />
                 </>
               )}
