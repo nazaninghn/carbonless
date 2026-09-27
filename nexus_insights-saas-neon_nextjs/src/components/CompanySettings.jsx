@@ -7,7 +7,7 @@ import { Building2, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 // fetchCompanyDetail now uses api.getCompanyDetail() so it automatically carries
 // the Bearer token + 401 auto-refresh, matching every other API call in the app.
 
-export default function CompanySettings({ language }) {
+export default function CompanySettings({ language, readOnly = false }) {
   const [company, setCompany]   = useState(null);
   const [loading, setLoading]   = useState(true);
   const [editing, setEditing]   = useState(false);
@@ -270,12 +270,12 @@ export default function CompanySettings({ language }) {
           ))}
         </div>
 
-        <button
+        {!readOnly && <button
           onClick={() => { setEditing(true); setError(''); setSuccess(''); }}
           className="rounded-xl border border-[#2ABD41] px-4 py-2 text-sm font-medium text-[#2ABD41] hover:bg-[#2ABD41]/8 transition"
         >
           {tr ? 'Düzenle' : 'Edit'}
-        </button>
+        </button>}
       </div>
     );
   }

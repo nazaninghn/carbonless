@@ -435,14 +435,14 @@ def change_password(request):
     if not old_password or not new_password:
         return Response({'error': 'old_password and new_password required'}, status=400)
     if not request.user.check_password(old_password):
-        return Response({'error': 'Current password is incorrect'}, status=400)
+        return Response({'error': 'Current password is incorrect', 'code': 'wrong_password'}, status=400)
     # Full Django password validation
     from django.contrib.auth.password_validation import validate_password
     from django.core.exceptions import ValidationError
     try:
         validate_password(new_password, request.user)
     except ValidationError as e:
-        return Response({'error': '; '.join(e.messages)}, status=400)
+        return Response({'error': '; '.join(e.messages), 'code': 'weak_password'}, status=400)
     request.user.set_password(new_password)
     request.user.save()
     # A stolen refresh token must stop working the moment the password that
@@ -636,24 +636,24 @@ def password_reset_confirm(request):
         import uuid
         token_uuid = uuid.UUID(str(token_str))
     except ValueError:
-        return Response({'error': 'Invalid token'}, status=400)
+        return Response({'error': 'Invalid token', 'code': 'invalid_link'}, status=400)
 
     try:
         token_obj = PasswordResetToken.objects.select_related('user').get(token=token_uuid)
     except PasswordResetToken.DoesNotExist:
-        return Response({'error': 'Invalid or expired reset link'}, status=400)
+        return Response({'error': 'Invalid or expired reset link', 'code': 'invalid_link'}, status=400)
 
     if token_obj.is_used:
-        return Response({'error': 'This reset link has already been used'}, status=400)
+        return Response({'error': 'This reset link has already been used', 'code': 'link_used'}, status=400)
 
     if token_obj.is_expired:
-        return Response({'error': 'This reset link has expired. Please request a new one.'}, status=400)
+        return Response({'error': 'This reset link has expired. Please request a new one.', 'code': 'link_expired'}, status=400)
 
     # Validate new password
     try:
         validate_password(new_password, token_obj.user)
     except ValidationError as e:
-        return Response({'error': '; '.join(e.messages)}, status=400)
+        return Response({'error': '; '.join(e.messages), 'code': 'weak_password'}, status=400)
 
     # Set new password
     token_obj.user.set_password(new_password)
@@ -802,23 +802,26 @@ def verify_email_code(request):
     try:
         token_obj = EmailVerificationToken.objects.select_related('user').get(user__email__iexact=email)
     except EmailVerificationToken.DoesNotExist:
-        return Response({'error': 'Invalid code'}, status=400)
+        return Response({'error': 'Invalid code', 'code': 'invalid_code'}, status=400)
 
     if token_obj.is_verified:
         return Response({'status': 'ok', 'message': 'Email already verified'})
 
     if token_obj.is_expired:
-        return Response({'error': 'Verification code has expired. Please request a new one.'}, status=400)
+        return Response({'error': 'Verification code has expired. Please request a new one.', 'code': 'code_expired'}, status=400)
 
     if token_obj.is_locked:
-        return Response({'error': 'Too many incorrect attempts. Please request a new code.'}, status=400)
+        return Response({'error': 'Too many incorrect attempts. Please request a new code.', 'code': 'too_many_attempts'}, status=400)
 
     if token_obj.code != code:
         token_obj.register_failed_attempt()
         remaining = token_obj.MAX_ATTEMPTS - token_obj.attempts
         if remaining <= 0:
-            return Response({'error': 'Too many incorrect attempts. Please request a new code.'}, status=400)
-        return Response({'error': f'Incorrect code. {remaining} attempt(s) remaining.'}, status=400)
+            return Response({'error': 'Too many incorrect attempts. Please request a new code.', 'code': 'too_many_attempts'}, status=400)
+        return Response({
+            'error': f'Incorrect code. {remaining} attempt(s) remaining.',
+            'code': 'wrong_code', 'attempts_remaining': remaining,
+        }, status=400)
 
     token_obj.verify()
     # The team screen promises invitees are added once they register; a

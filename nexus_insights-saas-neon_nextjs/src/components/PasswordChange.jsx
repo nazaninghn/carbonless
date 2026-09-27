@@ -1,4 +1,5 @@
 ﻿'use client';
+import { authErrorMessage } from '@/lib/authErrors';
 import { useState, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/PasswordStrengthIndicator';
@@ -35,7 +36,7 @@ export default function PasswordChange({ language }) {
         setOldPw(''); setNewPw(''); setConfirm('');
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || (tr ? 'Hata oluştu' : 'An error occurred'));
+        setError(authErrorMessage(data, tr, tr ? 'Hata oluştu' : 'An error occurred'));
       }
     } catch {
       setError(tr ? 'Bağlantı hatası' : 'Connection error');

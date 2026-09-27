@@ -1,4 +1,5 @@
 ﻿'use client';
+import { roleLabel } from '@/lib/permissions';
 import { useState, useCallback, useEffect } from 'react';
 import {
   LayoutDashboard, Leaf, TrendingDown, FileText, Settings, LogOut, X,
@@ -241,7 +242,7 @@ export default function DashboardSidebar({
                           <span className="h-3 w-3 shrink-0" />
                         )}
                         <span className="min-w-0 flex-1 truncate">{c.name}</span>
-                        <span className="shrink-0 text-[9px] uppercase text-[#072C0E]/30">{c.role}</span>
+                        <span className="shrink-0 text-[9px] uppercase text-[#072C0E]/30">{roleLabel(c.role, tr)}</span>
                       </button>
                     ))}
                   </div>

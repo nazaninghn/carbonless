@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { noPermissionMessage } from '@/lib/permissions';
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { api } from '@/lib/utils/api';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
@@ -273,7 +274,7 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ReductionTargetsTab({
-  language, targets, summary, fetchData,
+  language, targets, summary, fetchData, canEdit = true,
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
@@ -361,7 +362,7 @@ export default function ReductionTargetsTab({
         setShowForm(false); resetForm(); fetchData();
         toast.success(tr ? 'Hedef başarıyla eklendi ✓' : 'Target saved successfully ✓');
       } else {
-        toast.error(tr ? 'Hedef kaydedilemedi' : 'Failed to save target');
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Hedef kaydedilemedi' : 'Failed to save target'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -395,7 +396,7 @@ export default function ReductionTargetsTab({
         setEditTarget(null); fetchData();
         toast.success(tr ? 'Hedef güncellendi ✓' : 'Target updated ✓');
       } else {
-        toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Güncelleme başarısız' : 'Update failed'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -417,7 +418,7 @@ export default function ReductionTargetsTab({
         fetchData();
         toast.success(tr ? 'Hedef silindi' : 'Target deleted');
       } else {
-        toast.error(tr ? 'Hedef silinemedi' : 'Failed to delete target');
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Hedef silinemedi' : 'Failed to delete target'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -466,13 +467,13 @@ export default function ReductionTargetsTab({
                 : 'Track your carbon reduction commitments'}
             </p>
           </div>
-          <button
+          {canEdit && <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] sm:self-auto"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Hedef Ekle' : 'Add Target'}
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -535,13 +536,13 @@ export default function ReductionTargetsTab({
                 : 'Set your carbon reduction commitment and track your progress'}
             </p>
           </div>
-          <button
+          {canEdit && <button
             onClick={() => setShowForm(true)}
             className="inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Hedefinizi Ekleyin' : 'Add Your First Target'}
-          </button>
+          </button>}
         </div>
       )}
 
@@ -554,8 +555,8 @@ export default function ReductionTargetsTab({
               tgt={tgt}
               currentKg={currentKg}
               language={language}
-              onEdit={openEdit}
-              onDelete={handleDelete}
+              onEdit={canEdit ? openEdit : undefined}
+              onDelete={canEdit ? handleDelete : undefined}
             />
           ))}
         </div>

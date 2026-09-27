@@ -1,5 +1,6 @@
 'use client';
 
+import { authErrorMessage } from '@/lib/authErrors';
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -43,10 +44,10 @@ function ResetContent() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setStatus('success');
-        setMessage(data.message || (tr ? 'Şifre başarıyla sıfırlandı!' : 'Password reset successfully!'));
+        setMessage(tr ? 'Şifreniz sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.' : 'Your password has been reset. You can now log in with it.');
       } else {
         setStatus('error');
-        setMessage(data.error || (tr ? 'Sıfırlama başarısız. Bağlantının süresi dolmuş olabilir.' : 'Reset failed. The link may have expired.'));
+        setMessage(authErrorMessage(data, tr, tr ? 'Sıfırlama başarısız. Bağlantının süresi dolmuş olabilir.' : 'Reset failed. The link may have expired.'));
       }
     } catch {
       setStatus('error');

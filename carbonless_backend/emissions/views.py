@@ -69,7 +69,14 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         if not company:
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found. Please create or join a company first.'})
-        serializer.save(user=self.request.user, company=company)
+        # Same rule as chat/questionnaire saves (create_entry_from_activity):
+        # owners, admins and managers are approvers, so their own entries don't
+        # wait in the review queue; data-entry members' entries do.
+        from .factor_lookup import _get_entry_status
+        serializer.save(
+            user=self.request.user, company=company,
+            status=_get_entry_status(self.request.user, company),
+        )
         from accounts.models import ActivityLog
         ActivityLog.objects.create(
             user=self.request.user, action='entry_created',

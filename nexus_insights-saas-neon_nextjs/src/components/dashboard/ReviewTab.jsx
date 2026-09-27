@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { ClipboardCheck, Check, X, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
+import { noPermissionMessage } from '@/lib/permissions';
 
 const RISK_STYLES = {
   low:          'bg-[#8BEA99]/18 text-[#175022]',
@@ -19,7 +20,7 @@ const RISK_LABELS_TR = {
   critical: 'Kritik', warning: 'Uyarı', positive: 'Olumlu',
 };
 
-export default function ReviewTab({ language, fetchData }) {
+export default function ReviewTab({ language, fetchData, canApprove = true }) {
   const [pending, setPending] = useState([]);
   const [advisorPending, setAdvisorPending] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +75,7 @@ export default function ReviewTab({ language, fetchData }) {
         ? await api.approveAdvisorApproval(id, 'approve')
         : await api.approveEntry(id, 'approve');
       if (res.ok) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
-      else toast.error(tr ? 'Onay başarısız' : 'Approval failed');
+      else toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Onay başarısız' : 'Approval failed'));
       await fetchPending();
       if (fetchData) fetchData();
     } catch {
@@ -96,7 +97,7 @@ export default function ReviewTab({ language, fetchData }) {
         ? await api.approveAdvisorApproval(id, 'reject', reason)
         : await api.approveEntry(id, 'reject', reason);
       if (res.ok) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
-      else toast.error(tr ? 'Red işlemi başarısız' : 'Rejection failed');
+      else toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Red işlemi başarısız' : 'Rejection failed'));
       await fetchPending();
       if (fetchData) fetchData();
     } catch {
@@ -129,6 +130,14 @@ export default function ReviewTab({ language, fetchData }) {
           </div>
         </div>
       </div>
+
+      {!canApprove && (
+        <p className="rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3 py-2 text-[11px] font-semibold text-[#072C0E]/55">
+          {tr
+            ? 'Kayıtları yalnızca şirket sahibi, yönetici veya müdür onaylayabilir. Buradan durumlarını takip edebilirsiniz.'
+            : 'Only the company owner, admins and managers can approve entries. You can follow their status here.'}
+        </p>
+      )}
 
       {/* Content */}
       {loading ? (
@@ -170,7 +179,7 @@ export default function ReviewTab({ language, fetchData }) {
                         <span className="text-[10px] text-[#072C0E]/35">{item.report_title}</span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    {canApprove && <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         onClick={() => handleApprove(item.id, 'advisor')}
                         disabled={processing === item.id}
@@ -187,7 +196,7 @@ export default function ReviewTab({ language, fetchData }) {
                         <X className="h-3 w-3" />
                         {tr ? 'Reddet' : 'Reject'}
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 </div>
               ))}
@@ -223,7 +232,7 @@ export default function ReviewTab({ language, fetchData }) {
                         <span className="text-[10px] text-[#072C0E]/35">{tr ? 'Ay' : 'Mo'}: {entry.month}</span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    {canApprove && <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         onClick={() => handleApprove(entry.id, 'entry')}
                         disabled={processing === entry.id}
@@ -240,7 +249,7 @@ export default function ReviewTab({ language, fetchData }) {
                         <X className="h-3 w-3" />
                         {tr ? 'Reddet' : 'Reject'}
                       </button>
-                    </div>
+                    </div>}
                   </div>
                 </div>
               ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import { noPermissionMessage } from '@/lib/permissions';
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 import {
@@ -4227,15 +4228,15 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                         {msg.pending_entries.map((pe, idx) => (
                           <div key={idx} className="rounded-lg bg-white/80 border border-[#175022]/5 px-3 py-2.5">
                             <div className="text-[12px] text-[#175022]/80">
-                              <span className="font-semibold capitalize">{(pe.fuel_type || '').replace(/_/g, ' ')}</span>
-                              {' result: '}
-                              <span className="font-bold text-[#175022]">{Number(pe.co2e_kg).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} kgCO₂e</span>
+                              <span className={`font-semibold ${tr && pe.factor_name_tr ? '' : 'capitalize'}`}>{tr && pe.factor_name_tr ? pe.factor_name_tr : (pe.fuel_type || '').replace(/_/g, ' ')}</span>
+                              {tr ? ' sonucu: ' : ' result: '}
+                              <span className="font-bold text-[#175022]">{Number(pe.co2e_kg).toLocaleString(tr ? 'tr-TR' : 'en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} kgCO₂e</span>
                               {' '}
-                              <span className="text-[#1A7B2A]">({Number(pe.co2e_tonne).toFixed(2)} tCO₂e)</span>
+                              <span className="text-[#1A7B2A]">({Number(pe.co2e_tonne).toLocaleString(tr ? 'tr-TR' : 'en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} tCO₂e)</span>
                             </div>
                             {(pe.factor_source_label || pe.factor_reference) && (
                               <div className="mt-1 text-[10px] text-[#1A7B2A]">
-                                Source: Registered factor — {pe.factor_reference || pe.factor_source_label}
+                                {tr ? 'Kaynak: Kayıtlı faktör — ' : 'Source: Registered factor — '}{pe.factor_reference || pe.factor_source_label}
                               </div>
                             )}
                             {/* Always shown — the user confirms the period explicitly
@@ -4312,7 +4313,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                 const res = await api.confirmEmissionEntry(peToSave);
                                 const data = await res.json().catch(() => ({}));
                                 if (!res.ok) {
-                                  setError(data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.'));
+                                  setError(res.status === 403 ? noPermissionMessage(tr) : (data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.')));
                                   return;
                                 }
                                 if (data.entry_status) lastStatus = data.entry_status;

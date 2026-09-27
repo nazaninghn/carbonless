@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { noPermissionMessage } from '@/lib/permissions';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   AlertCircle, FileText, Leaf, Paperclip,
@@ -70,7 +71,7 @@ async function downloadProofDocument(entryId) {
 }
 
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
-function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
+function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
   const tr = language === 'tr';
   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
   const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
@@ -99,6 +100,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
               <Paperclip className="h-3.5 w-3.5" />
             </button>
           )}
+          {canEdit && (<>
           <button
             onClick={() => onEdit(entry)}
             aria-label={language === 'tr' ? 'Kaydı düzenle' : 'Edit entry'}
@@ -113,6 +115,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete }) {
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
+          </>)}
         </div>
       </div>
 
@@ -157,6 +160,7 @@ export default function EmissionsTab({
   showAddForm, setShowAddForm,
   setActiveTab,
   fetchData,
+  canEdit = true,
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
@@ -377,8 +381,13 @@ export default function EmissionsTab({
         toast.success(tr ? 'Kayıt başarıyla eklendi ✓' : 'Entry added successfully ✓');
       } else {
         // Don't expose raw server response — show a user-friendly message
-        setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
-        toast.error(tr ? 'Kayıt eklenemedi' : 'Failed to add entry');
+        if (res.status === 403) {
+          setFormError(noPermissionMessage(tr));
+          toast.error(noPermissionMessage(tr));
+        } else {
+          setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
+          toast.error(tr ? 'Kayıt eklenemedi' : 'Failed to add entry');
+        }
       }
     } catch {
       setFormError(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -400,7 +409,7 @@ export default function EmissionsTab({
         fetchData();
         toast.success(tr ? 'Kayıt silindi' : 'Entry deleted');
       } else {
-        toast.error(tr ? 'Kayıt silinemedi' : 'Failed to delete entry');
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Kayıt silinemedi' : 'Failed to delete entry'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -430,7 +439,7 @@ export default function EmissionsTab({
         setEditing(null); fetchData();
         toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
       } else {
-        toast.error(tr ? 'Güncelleme başarısız' : 'Update failed');
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Güncelleme başarısız' : 'Update failed'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -467,7 +476,7 @@ export default function EmissionsTab({
         fetchData();
         toast.info(tr ? 'Özel talep gönderildi — inceleme bekleniyor' : 'Custom request submitted — pending review');
       } else {
-        toast.error(tr ? 'Talep gönderilemedi' : 'Failed to submit request');
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Talep gönderilemedi' : 'Failed to submit request'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -523,6 +532,7 @@ export default function EmissionsTab({
               {tr ? 'Aktivite verilerinizi girin ve yönetin' : 'Record and manage your activity data'}
             </p>
           </div>
+          {canEdit ? (
           <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               onClick={() => setShowAddForm(true)}
@@ -539,6 +549,11 @@ export default function EmissionsTab({
               {tr ? 'Özel Talep' : 'Custom Request'}
             </button>
           </div>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-[#072C0E]/10 bg-[#F8F8F8] px-4 py-2 text-xs font-bold text-[#072C0E]/55 sm:shrink-0">
+              {tr ? 'Salt okunur erişim' : 'Read-only access'}
+            </span>
+          )}
         </div>
       </div>
 
@@ -716,13 +731,13 @@ export default function EmissionsTab({
               {tr ? 'Fatura, sayaç okuma veya ESG raporunuzdan veri ekleyin.' : 'Add data from invoices, meter readings or your ESG report.'}
             </p>
           </div>
-          <button
+          {canEdit && <button
             onClick={() => setShowAddForm(true)}
             className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition hover:bg-[#175022]"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Kaydı Ekle' : 'Add First Entry'}
-          </button>
+          </button>}
         </div>
       )}
 
@@ -823,7 +838,7 @@ export default function EmissionsTab({
                       </td>
                       {/* Actions */}
                       <td className="px-3 py-3">
-                        <div className="flex justify-end gap-1 opacity-0 transition group-hover/row:opacity-100">
+                        {canEdit && <div className="flex justify-end gap-1 opacity-0 transition group-hover/row:opacity-100">
                           <button
                             onClick={() => openEdit(entry)}
                             aria-label={tr ? 'Kaydı düzenle' : 'Edit entry'}
@@ -838,7 +853,7 @@ export default function EmissionsTab({
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
-                        </div>
+                        </div>}
                       </td>
                     </tr>
                   );
@@ -876,6 +891,7 @@ export default function EmissionsTab({
               maxKg={maxKg}
               onEdit={openEdit}
               onDelete={handleDelete}
+              canEdit={canEdit}
             />
           ))}
           {/* Mobile totals */}
@@ -901,7 +917,7 @@ export default function EmissionsTab({
       )}
 
       {/* ═══════════════════ ADD ENTRY MODAL ═════════════════════════════ */}
-      {showAddForm && (
+      {showAddForm && canEdit && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-3xl`} role="dialog" aria-modal="true" aria-labelledby="add-entry-title">
             <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">

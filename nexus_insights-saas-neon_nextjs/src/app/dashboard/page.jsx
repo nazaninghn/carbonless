@@ -14,6 +14,7 @@ import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
 import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
+import { getPermissions } from '@/lib/permissions';
 import ReductionTargetsTab from '@/components/dashboard/ReductionTargetsTab';
 import BenchmarkTab from '@/components/dashboard/BenchmarkTab';
 import HowItWorksTab from '@/components/dashboard/HowItWorksTab';
@@ -85,6 +86,7 @@ export default function DashboardPage() {
     questionnaireProfile, unreadCount, facilityList, loading,
     setUnreadCount, fetchData,
   } = useDashboardData(selectedYear);
+  const perms = getPermissions(user);
 
   // loading = true only on first render; subsequent fetches use `refreshing`
   // so the page never flashes/flickers on refresh
@@ -258,6 +260,7 @@ export default function DashboardPage() {
                 setShowAddForm={setShowAddForm}
                 setActiveTab={setActiveTab}
                 fetchData={fetchData}
+                canEdit={perms.canEdit}
               />
             </ErrorBoundary>
           )}
@@ -265,7 +268,7 @@ export default function DashboardPage() {
           {/* ===== REVIEW TAB ===== */}
           {activeTab === 'review' && (
             <ErrorBoundary language={language}>
-              <ReviewTab language={language} fetchData={fetchData} />
+              <ReviewTab language={language} fetchData={fetchData} canApprove={perms.canApprove} />
             </ErrorBoundary>
           )}
 
@@ -277,6 +280,7 @@ export default function DashboardPage() {
                 targets={targets}
                 summary={effectiveSummary}
                 fetchData={fetchData}
+                canEdit={perms.canEdit}
               />
             </ErrorBoundary>
           )}

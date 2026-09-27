@@ -16,6 +16,7 @@ import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
 import TeamManagement from '@/components/TeamManagement';
+import { getPermissions, roleLabel } from '@/lib/permissions';
 import ProfileEdit from '@/components/ProfileEdit';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import { api } from '@/lib/utils/api';
@@ -43,6 +44,7 @@ export default function SettingsTab({ language, user, fetchData }) {
   const [deleteError, setDeleteError] = useState('');
   const deleteInputRef = useRef(null);
   const tr = language === 'tr';
+  const perms = getPermissions(user);
   // TABS is module-level (never changes); only dep is activeTab
   const active = useMemo(() => TABS.find((tab) => tab.id === activeTab), [activeTab]);
 
@@ -191,7 +193,7 @@ export default function SettingsTab({ language, user, fetchData }) {
               <div className="mb-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
                 <InfoCard label={tr ? 'Kullanıcı Adı' : 'Username'} value={user?.username || '-'} />
                 <InfoCard label={tr ? 'E-posta' : 'Email'} value={user?.email || '-'} />
-                <InfoCard label={tr ? 'Rol' : 'Role'} value={user?.role_display || user?.role || '-'} />
+                <InfoCard label={tr ? 'Rol' : 'Role'} value={user?.role ? roleLabel(user.role, tr) : '-'} />
               </div>
               <div className="w-full min-w-0 overflow-hidden">
                 <ProfileEdit language={language} user={user} onUpdate={fetchData} />
@@ -255,7 +257,15 @@ export default function SettingsTab({ language, user, fetchData }) {
           )}
           {activeTab === 'team' && (
             <Panel>
-              <TeamManagement language={language} />
+              {perms.canManageTeam ? (
+                <TeamManagement language={language} />
+              ) : (
+                <p className="text-sm text-[#072C0E]/60">
+                  {tr
+                    ? `Takım üyelerini yalnızca şirket sahibi ve yöneticiler yönetebilir. Rolünüz: ${roleLabel(user?.role, tr)}.`
+                    : `Only the company owner and admins can manage team members. Your role: ${roleLabel(user?.role, tr)}.`}
+                </p>
+              )}
             </Panel>
           )}
 
@@ -263,7 +273,7 @@ export default function SettingsTab({ language, user, fetchData }) {
           {activeTab === 'company' && (
             <Panel>
               <PanelTitle icon={Leaf} title={tr ? 'Şirket Bilgileri' : 'Company Information'} />
-              <CompanySettings language={language} />
+              <CompanySettings language={language} readOnly={!perms.canEdit} />
             </Panel>
           )}
 
@@ -271,7 +281,7 @@ export default function SettingsTab({ language, user, fetchData }) {
           {activeTab === 'facilities' && (
             <Panel>
               <PanelTitle icon={Target} title={tr ? 'Tesis Yönetimi' : 'Facility Management'} />
-              <FacilitySettings language={language} />
+              <FacilitySettings language={language} readOnly={!perms.canEdit} />
             </Panel>
           )}
 

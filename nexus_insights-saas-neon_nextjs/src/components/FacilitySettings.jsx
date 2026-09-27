@@ -4,7 +4,7 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Plus, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
 
-export default function FacilitySettings({ language }) {
+export default function FacilitySettings({ language, readOnly = false }) {
   const [facilities, setFacilities]   = useState([]);
   const [loading, setLoading]         = useState(true);
   const [noCompany, setNoCompany]     = useState(false);
@@ -280,7 +280,7 @@ export default function FacilitySettings({ language }) {
             </button>
           </div>
         </form>
-      ) : (
+      ) : !readOnly && (
         <button
           onClick={() => { resetForm(); setShowForm(true); }}
           className="flex items-center gap-2 rounded-xl border border-[#2ABD41] px-4 py-2.5 text-sm font-medium text-[#2ABD41] hover:bg-[#2ABD41]/8 transition"
