@@ -159,7 +159,7 @@ class CustomEmissionRequestAdmin(ModelAdmin):
             obj.calculated_co2e_kg = obj.quantity * obj.approved_factor_kg_co2e
         super().save_model(request, obj, form, change)
 
-        if change and 'status' in form.changed_data:
+        if change and 'status' in form.changed_data and obj.user_id:
             from accounts.models import Notification
             if obj.status == 'approved':
                 Notification.objects.create(

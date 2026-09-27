@@ -189,3 +189,107 @@ class APITests(TestCase):
         })
         self.assertEqual(res.status_code, 200)
         self.assertAlmostEqual(res.data['emissions_kg'], 419.9, places=1)
+
+
+class ProofAndAccountDeletionTests(TestCase):
+    """Proof uploads are stored, and company data outlives the member who entered it."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        self.factor = EmissionFactor.objects.create(
+            slug='test-gas-proof', name='Test Gas', name_tr='Test Gaz',
+            scope='scope1', category='stationary_combustion', country='global',
+            unit='kg', factor_kg_co2e=2.5, year=2024, source='generic',
+            is_active=True, is_default=True,
+        )
+        self.company = Company.objects.create(
+            legal_entity_name='Kaya Tekstil A.Ş.', tax_number='1234567890',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        self.users = {}
+        for name, role in [('aylin', 'owner'), ('ali', 'data_entry')]:
+            u = User.objects.create_user(name, f'{name}@test.com', 'testpass123')
+            UserProfile.objects.create(user=u, active_company=self.company)
+            CompanyMembership.objects.create(company=self.company, user=u, role=role)
+            self.users[name] = u
+        self.client = APIClient()
+
+    def _as(self, name):
+        self.client.force_authenticate(user=self.users[name])
+
+    def _entry(self, **extra):
+        return self.client.post('/api/emissions/entries/', {
+            'emission_factor': self.factor.id, 'year': 2026, 'month': 3, 'quantity': 10, **extra,
+        }, format='multipart')
+
+    def _file(self, name, size=100):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return SimpleUploadedFile(name, b'%PDF' + b'0' * size, content_type='application/pdf')
+
+    def test_proof_document_is_saved_and_downloadable(self):
+        import shutil, tempfile
+        media = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, media, True)
+        with self.settings(MEDIA_ROOT=media):
+            self._as('aylin')
+            res = self._entry(proof_document=self._file('fatura.pdf'))
+            self.assertEqual(res.status_code, 201, res.data)
+            self.assertTrue(res.data['proof_document'])
+            dl = self.client.get(f"/api/emissions/entries/{res.data['id']}/proof/")
+            self.assertEqual(dl.status_code, 200)
+            self.assertTrue(b''.join(dl.streaming_content).startswith(b'%PDF'))
+
+    def test_bad_proof_document_is_a_400_not_a_500(self):
+        self._as('aylin')
+        self.assertEqual(self._entry(proof_document=self._file('virus.exe')).status_code, 400)
+        self.assertEqual(self._entry(proof_document=self._file('big.pdf', 10 * 1024 * 1024 + 1)).status_code, 400)
+        self.assertEqual(EmissionEntry.objects.count(), 0)
+
+    def _delete_account(self, name):
+        self._as(name)
+        return self.client.delete('/api/accounts/delete-account/', {'password': 'testpass123'}, format='json')
+
+    def test_member_leaving_keeps_their_entries_in_the_company(self):
+        self._as('ali')
+        entry_id = self._entry().data['id']
+        self.assertEqual(self._delete_account('ali').status_code, 200)
+        entry = EmissionEntry.objects.get(id=entry_id)
+        self.assertEqual(entry.company, self.company)
+        self.assertIsNone(entry.user)
+        self._as('aylin')
+        listed = self.client.get('/api/emissions/entries/').data
+        rows = listed['results'] if isinstance(listed, dict) else listed
+        self.assertIn(entry_id, [r['id'] for r in rows])
+
+    def test_owner_needs_an_admin_or_manager_to_take_over(self):
+        res = self._delete_account('aylin')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'owner_successor_needed')
+        self.assertTrue(User.objects.filter(username='aylin').exists())
+
+    def test_owner_leaving_hands_the_company_to_a_manager(self):
+        from companies.models import CompanyMembership
+        CompanyMembership.objects.filter(user=self.users['ali']).update(role='manager')
+        self._as('aylin')
+        entry_id = self._entry().data['id']
+        self.assertEqual(self._delete_account('aylin').status_code, 200)
+        self.assertEqual(CompanyMembership.objects.get(user=self.users['ali']).role, 'owner')
+        self.assertTrue(EmissionEntry.objects.filter(id=entry_id, company=self.company).exists())
+
+    def test_sole_owner_leaving_deletes_their_company(self):
+        from companies.models import Company, CompanyMembership
+        CompanyMembership.objects.filter(user=self.users['ali']).delete()
+        self._as('aylin')
+        self._entry()
+        self.assertEqual(self._delete_account('aylin').status_code, 200)
+        self.assertFalse(Company.objects.filter(id=self.company.id).exists())
+        self.assertEqual(EmissionEntry.objects.count(), 0)
+
+    def test_wrong_password_has_a_code(self):
+        self._as('aylin')
+        res = self.client.delete('/api/accounts/delete-account/', {'password': 'nope'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'wrong_password')

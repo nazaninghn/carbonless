@@ -674,14 +674,60 @@ def password_reset_confirm(request):
     return Response({'status': 'ok', 'message': 'Password has been reset successfully. You can now log in.'})
 
 
+def _plan_owned_companies(user):
+    """Work out what happens to each company `user` owns when they delete
+    their account, without changing anything yet.
+
+    Returns (to_delete, handovers, blocked):
+      - to_delete: companies where the user is the only active member; the
+        account deletion promises "all your data is deleted", so these go too.
+      - handovers: (membership, company) pairs; the company still has members,
+        so its longest-serving admin (else manager) becomes the owner.
+      - blocked: names of companies whose remaining members are all
+        data-entry/auditor, which can't run a company on their own.
+    """
+    from companies.models import CompanyMembership
+    to_delete, handovers, blocked = [], [], []
+    owned = CompanyMembership.objects.filter(user=user, role='owner', is_active=True).select_related('company')
+    for membership in owned:
+        company = membership.company
+        others = CompanyMembership.objects.filter(company=company, is_active=True).exclude(user=user)
+        if not others.exists():
+            to_delete.append(company)
+        elif others.filter(role='owner').exists():
+            continue
+        else:
+            successor = (others.filter(role='admin').order_by('created_at').first()
+                         or others.filter(role='manager').order_by('created_at').first())
+            if successor:
+                handovers.append((successor, company))
+            else:
+                blocked.append(company.legal_entity_name)
+    return to_delete, handovers, blocked
+
+
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_account(request):
-    """Delete user account — requires password confirmation"""
+    """Delete user account — requires password confirmation.
+
+    Emission entries, targets and custom requests belong to the company, so
+    they stay (with no author) when a member leaves. Companies the user owns
+    are handed to another admin/manager, or deleted if nobody else is in them.
+    """
+    from django.db import transaction
     password = request.data.get('password')
     if not password or not request.user.check_password(password):
-        return Response({'error': 'Password confirmation required'}, status=400)
+        return Response({'error': 'Password confirmation required', 'code': 'wrong_password'}, status=400)
     user = request.user
+    to_delete, handovers, blocked = _plan_owned_companies(user)
+    if blocked:
+        return Response({
+            'error': ('Make another member an admin or manager first, so the company '
+                      'keeps someone who can manage it: ' + ', '.join(blocked)),
+            'code': 'owner_successor_needed',
+            'companies': blocked,
+        }, status=400)
     from .models import ActivityLog
     ActivityLog.objects.create(
         user=user, action='account_deleted',
@@ -689,7 +735,13 @@ def delete_account(request):
         ip_address=request.META.get('REMOTE_ADDR'),
         target_type='User', target_id=str(user.id),
     )
-    user.delete()
+    with transaction.atomic():
+        for successor, company in handovers:
+            successor.role = 'owner'
+            successor.save(update_fields=['role'])
+        for company in to_delete:
+            company.delete()
+        user.delete()
     response = Response({'status': 'ok', 'message': 'Account deleted'})
     response.delete_cookie('access_token', path='/')
     response.delete_cookie('refresh_token', path='/')
