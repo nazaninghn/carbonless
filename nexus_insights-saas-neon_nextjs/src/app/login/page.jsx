@@ -48,7 +48,12 @@ function LoginContent() {
   const completeLogin = useCallback(() => {
     markSessionActive();
     document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
-    window.location.href = '/dashboard/select';
+    // Came from an invite link while signed out: finish joining that team.
+    let inviteToken = null;
+    try { inviteToken = sessionStorage.getItem('pendingInviteToken'); } catch {}
+    window.location.href = inviteToken
+      ? `/accept-invite?token=${encodeURIComponent(inviteToken)}`
+      : '/dashboard/select';
   }, []);
 
   const handleGoogleCredential = useCallback(async (response) => {

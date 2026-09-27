@@ -243,11 +243,33 @@ _MONTH_NAMES = {
 _MONTH_NAME_PATTERN = '|'.join(_MONTH_NAMES.keys())
 
 
+# Turkish month names. 'ekim' (also "sowing") and 'aralık' (also "interval")
+# are ordinary words too, so they only count as a month next to a year, an
+# apostrophe suffix ("Aralık'ta") or the word "ay" ("Ekim ayında").
+_TR_MONTH_NAMES = {
+    'ocak': 1, 'şubat': 2, 'subat': 2, 'mart': 3, 'nisan': 4, 'mayıs': 5, 'mayis': 5,
+    'haziran': 6, 'temmuz': 7, 'ağustos': 8, 'agustos': 8, 'eylül': 9, 'eylul': 9,
+    'ekim': 10, 'kasım': 11, 'kasim': 11, 'aralık': 12, 'aralik': 12,
+}
+_TR_AMBIGUOUS_MONTHS = {'ekim', 'aralık', 'aralik'}
+_TR_MONTH_PATTERN = '|'.join(sorted(_TR_MONTH_NAMES, key=len, reverse=True))
+
+# Relative months — "Geçen ay 12.000 kWh" used to be booked to the current month.
+_LAST_MONTH_RE = re.compile(r'\b(?:last|previous|past)\s+month\b|\b(?:geçen|gecen|önceki|onceki)\s+ay\b')
+_THIS_MONTH_RE = re.compile(r'\b(?:this|current)\s+month\b|\bbu\s+ay\b')
+
+
+def _previous_month(now):
+    return (12, now.year - 1) if now.month == 1 else (now.month - 1, now.year)
+
+
 def _extract_date_from_text(text: str) -> tuple[int, int] | None:
-    """Find an explicit month(+year) mention in *text*, e.g. 'in June 2025',
-    'for 03/2024', or '2025-06'. Returns None if no date phrase is found —
-    callers should fall back to the current month rather than guess."""
+    """Find a month(+year) mention in *text*: 'in June 2025', 'Mart 2025',
+    'Ocak ayında', 'for 03/2024', '2025-06', 'last month' / 'geçen ay'.
+    Returns None if no date phrase is found — callers should fall back to the
+    current month rather than guess."""
     t = text.lower()
+    now = datetime.now(timezone.utc)
 
     m = re.search(r'\b(\d{4})[-/](\d{1,2})\b', t)
     if m:
@@ -270,8 +292,24 @@ def _extract_date_from_text(text: str) -> tuple[int, int] | None:
         if name == 'may' and not year_str:
             return None
         month = _MONTH_NAMES[name]
-        year = int(year_str) if year_str else datetime.now(timezone.utc).year
+        year = int(year_str) if year_str else now.year
         return month, year
+
+    m = re.search(
+        rf"(?<![a-zçğıöşü])({_TR_MONTH_PATTERN})(?![a-zçğıöşü])"
+        rf"(?P<apos>['’][a-zçğıöşü]*)?(?P<ay>\s+ay[a-zçğıöşü]*)?(?:\s*(?P<year>\d{{4}}))?",
+        t,
+    )
+    if m:
+        name = m.group(1)
+        if name not in _TR_AMBIGUOUS_MONTHS or m.group('apos') or m.group('ay') or m.group('year'):
+            year = int(m.group('year')) if m.group('year') else now.year
+            return _TR_MONTH_NAMES[name], year
+
+    if _LAST_MONTH_RE.search(t):
+        return _previous_month(now)
+    if _THIS_MONTH_RE.search(t):
+        return now.month, now.year
 
     return None
 

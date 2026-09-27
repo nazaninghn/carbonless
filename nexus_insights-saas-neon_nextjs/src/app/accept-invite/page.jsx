@@ -19,10 +19,18 @@ function AcceptInviteContent() {
   useEffect(() => {
     if (!token) { setStatus('no-token'); return; }
 
+    // Remember the invite so signing in (or signing up and verifying) comes
+    // back here: the login page reads this key. Signed out, the API call
+    // below would just bounce to /login and the token would be lost.
+    try { sessionStorage.setItem('pendingInviteToken', token); } catch {}
+    const signedIn = typeof document !== 'undefined' && document.cookie.split('; ').includes('carbonless_auth=1');
+    if (!signedIn) { setStatus('signed-out'); return; }
+
     (async () => {
       try {
         const res = await api.acceptInvite(token);
         const data = await res.json().catch(() => ({}));
+        try { sessionStorage.removeItem('pendingInviteToken'); } catch {}
         if (res.ok) {
           setStatus('success');
           setMessage(data.message || (tr ? 'Şirkete başarıyla katıldınız!' : 'You have joined the company successfully!'));
@@ -77,6 +85,25 @@ function AcceptInviteContent() {
               <Link href="/login" className="mt-4 inline-block text-[13px] font-medium text-[#2ABD41] hover:underline">
                 {tr ? 'Girişe Git' : 'Go to Login'}
               </Link>
+            </>
+          )}
+          {status === 'signed-out' && (
+            <>
+              <Users className="h-12 w-12 text-[#2ABD41] mx-auto mb-4" />
+              <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Ekibe davet edildiniz' : "You've been invited to a team"}</h1>
+              <p className="mt-2 text-[14px] text-[#072C0E]/60">
+                {tr
+                  ? 'Daveti kabul etmek için davetin gönderildiği e-posta adresiyle giriş yapın. Hesabınız yoksa bu adresle kayıt olun — e-postanızı doğruladığınızda ekibe otomatik olarak eklenirsiniz.'
+                  : 'To accept, log in with the email address the invite was sent to. No account yet? Sign up with that address — you will be added to the team automatically once you verify it.'}
+              </p>
+              <div className="mt-6 flex justify-center gap-3">
+                <Link href="/login" className="inline-flex items-center rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+                  {tr ? 'Giriş Yap' : 'Log In'}
+                </Link>
+                <Link href="/register" className="inline-flex items-center rounded-full border border-[#072C0E]/15 px-6 py-3 text-[14px] font-bold text-[#072C0E] hover:bg-[#F1FCF2] transition">
+                  {tr ? 'Kayıt Ol' : 'Sign Up'}
+                </Link>
+              </div>
             </>
           )}
           {status === 'no-token' && (

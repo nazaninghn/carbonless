@@ -726,7 +726,14 @@ def verify_email(request):
 
     # Verify!
     token_obj.verify()
-    return Response({'status': 'ok', 'message': 'Email verified successfully. You can now log in.'})
+    # The team screen promises invitees are added once they register; a
+    # verified address is what proves they own the invited email.
+    from companies.views import accept_pending_invites
+    joined = accept_pending_invites(token_obj.user)
+    return Response({
+        'status': 'ok', 'message': 'Email verified successfully. You can now log in.',
+        'joined_companies': [c.legal_entity_name for c in joined],
+    })
 
 
 @api_view(['POST'])
@@ -762,7 +769,14 @@ def verify_email_code(request):
         return Response({'error': f'Incorrect code. {remaining} attempt(s) remaining.'}, status=400)
 
     token_obj.verify()
-    return Response({'status': 'ok', 'message': 'Email verified successfully. You can now log in.'})
+    # The team screen promises invitees are added once they register; a
+    # verified address is what proves they own the invited email.
+    from companies.views import accept_pending_invites
+    joined = accept_pending_invites(token_obj.user)
+    return Response({
+        'status': 'ok', 'message': 'Email verified successfully. You can now log in.',
+        'joined_companies': [c.legal_entity_name for c in joined],
+    })
 
 
 @api_view(['POST'])

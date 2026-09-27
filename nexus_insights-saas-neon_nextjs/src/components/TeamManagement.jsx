@@ -74,7 +74,16 @@ export default function TeamManagement({ language }) {
       const res = await api.inviteMember({ email: inviteEmail, role: inviteRole });
       if (res.ok) {
         const data = await res.json();
-        toast.success(tr ? `Davet gönderildi: ${data.email}` : `Invite sent to ${data.email}`);
+        if (data.email_sent === false) {
+          // Mail could not be sent — give the inviter the join link to share.
+          const link = `${window.location.origin}/accept-invite?token=${data.token}`;
+          try { await navigator.clipboard.writeText(link); } catch {}
+          toast.error(tr
+            ? `Davet e-postası gönderilemedi. Katılım bağlantısı panoya kopyalandı, ${data.email} ile paylaşın: ${link}`
+            : `The invite email could not be sent. The join link was copied — share it with ${data.email}: ${link}`);
+        } else {
+          toast.success(tr ? `Davet e-postası gönderildi: ${data.email}` : `Invite email sent to ${data.email}`);
+        }
         setInviteEmail('');
       } else {
         let msg = tr ? 'Hata' : 'Error';

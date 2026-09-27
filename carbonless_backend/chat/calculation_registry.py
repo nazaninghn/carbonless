@@ -55,7 +55,10 @@ def resolve_period(value) -> tuple[int, int] | None:
         year = int(m.group(2)) if m.group(2) else now.year
         return month, year
 
-    return None
+    # Typed Turkish answers ("geçen ay", "Mart 2025", "Ocak ayı") — same
+    # rules as dates found inside a data-entry message.
+    from .local_parser import _extract_date_from_text
+    return _extract_date_from_text(s)
 
 # ---------------------------------------------------------------------------
 # Calculation schemas

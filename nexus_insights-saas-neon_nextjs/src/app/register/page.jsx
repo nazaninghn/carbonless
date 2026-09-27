@@ -15,6 +15,45 @@ import { ALL_NACE_CODES } from '@/lib/data/naceCodes';
 import CountryPicker from '@/components/CountryPicker';
 import { api as apiModule, markSessionActive as activate } from '@/lib/utils/api';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+// Server-side signup errors (DRF / Django validators) -> readable text in the
+// UI language, plus the form step that holds the offending field.
+const REGISTER_FIELD_LABELS = {
+  username: { tr: 'Kullanıcı Adı', en: 'Username' },
+  email: { tr: 'E-posta', en: 'Email' },
+  password: { tr: 'Şifre', en: 'Password' },
+  password2: { tr: 'Şifre Tekrar', en: 'Confirm Password' },
+  first_name: { tr: 'Yasal Kuruluş Adı', en: 'Legal Entity Name' },
+};
+const REGISTER_MESSAGE_TR = [
+  [/valid email/i, 'Geçerli bir e-posta adresi girin.'],
+  [/email already exists/i, 'Bu e-posta adresi zaten kayıtlı.'],
+  [/username already exists/i, 'Bu kullanıcı adı zaten kullanılıyor.'],
+  [/valid username/i, 'Kullanıcı adı yalnızca harf, rakam ve @ . + - _ içerebilir.'],
+  [/too common/i, 'Bu şifre çok yaygın, daha güçlü bir şifre seçin.'],
+  [/too similar/i, 'Şifre kullanıcı bilgilerinize çok benziyor.'],
+  [/entirely numeric/i, 'Şifre yalnızca rakamlardan oluşamaz.'],
+  [/too short/i, 'Şifre en az 8 karakter olmalıdır.'],
+  [/didn't match|did not match/i, 'Şifreler eşleşmiyor.'],
+  [/may not be blank|required/i, 'Bu alan zorunludur.'],
+];
+function describeRegisterErrors(data, tr) {
+  if (!data || typeof data !== 'object') return { message: '', section: null };
+  const parts = [];
+  let section = null;
+  for (const [field, raw] of Object.entries(data)) {
+    const msgs = (Array.isArray(raw) ? raw : [raw]).map(String);
+    const label = REGISTER_FIELD_LABELS[field]?.[tr ? 'tr' : 'en'];
+    if (label) section = 1;
+    for (const m of msgs) {
+      const text = tr ? (REGISTER_MESSAGE_TR.find(([re]) => re.test(m))?.[1] || m) : m;
+      parts.push(label ? `${label}: ${text}` : text);
+    }
+  }
+  return { message: parts.join(' '), section };
+}
+
 export default function RegisterPage() {
   const { language, t } = useLanguage();
   const router = useRouter();
@@ -62,6 +101,9 @@ export default function RegisterPage() {
     if (!formData.password2) missing.push(tr ? 'Şifre Tekrar' : 'Confirm Password');
     if (!formData.legalEntityName.trim()) missing.push(tr ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
     if (formData.taxNumber && formData.taxNumber.length !== 10) { setError(tr ? 'Vergi numarası 10 haneli olmalıdır' : 'Tax number must be 10 digits'); return false; }
+    // Checked here, not only by the server — otherwise a typo surfaced at the
+    // end of step 3, in English, with nothing pointing back to step 1.
+    if (formData.email.trim() && !EMAIL_RE.test(formData.email.trim())) { setError(tr ? 'Geçerli bir e-posta adresi girin (örn. ad@sirket.com)' : 'Enter a valid email address (e.g. name@company.com)'); return false; }
     if (!formData.countryOfHeadquarters.trim()) missing.push(tr ? 'Merkez Ülkesi' : 'Country of Headquarters');
     if (!formData.countriesOfOperation.trim()) missing.push(tr ? 'Faaliyet Gösterilen Ülkeler' : 'Countries of Operation');
     if (!formData.naceCode.trim()) missing.push(tr ? 'NACE Kodu' : 'NACE Code');
@@ -161,7 +203,10 @@ export default function RegisterPage() {
 
       if (!regRes.ok) {
         const d = await regRes.json().catch(() => ({}));
-        setError(Object.values(d).flat().join(', ') || (language === 'tr' ? 'Kayıt hatası' : 'Registration error'));
+        const { message, section } = describeRegisterErrors(d, tr);
+        // Every field the signup endpoint validates lives on step 1.
+        if (section) setCurrentSection(section);
+        setError(message || (language === 'tr' ? 'Kayıt hatası' : 'Registration error'));
         return; // outer finally calls setLoading(false)
       }
 

@@ -110,3 +110,73 @@ class CompanyIsolationTests(TestCase):
         res = client.get('/api/companies/detail/')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.data['legal_entity_name'], 'Company B')
+
+
+class InviteFlowTests(TestCase):
+    """An invite emails a join link, and a new signup with that address joins on verification."""
+
+    def setUp(self):
+        from accounts.models import UserProfile
+        self.owner = User.objects.create_user('owner', 'owner@test.com', 'testpass123')
+        UserProfile.objects.create(user=self.owner)
+        self.company = Company.objects.create(
+            legal_entity_name='Kaya Tekstil A.Ş.', tax_number='1234567890',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(company=self.company, user=self.owner, role='owner')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.owner)
+
+    def _invite(self, email='ali@test.com'):
+        res = self.client.post('/api/companies/invite/', {'email': email, 'role': 'data_entry'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        return res.data
+
+    def test_invite_sends_an_email_with_the_join_link(self):
+        from django.core import mail
+        data = self._invite()
+        self.assertTrue(data['email_sent'])
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['ali@test.com'])
+        self.assertIn(f"/accept-invite?token={data['token']}", mail.outbox[0].body)
+
+    def test_new_signup_joins_the_team_when_the_email_is_verified(self):
+        from accounts.models import EmailVerificationToken
+        self._invite('ali@test.com')
+        res = APIClient().post('/api/accounts/register/', {
+            'username': 'ali', 'email': 'ali@test.com',
+            'password': 'StrongPass123', 'password2': 'StrongPass123',
+        }, format='json')
+        self.assertEqual(res.status_code, 201)
+        ali = User.objects.get(username='ali')
+        self.assertFalse(CompanyMembership.objects.filter(user=ali, company=self.company).exists())
+        code = EmailVerificationToken.objects.get(user=ali).code
+        res = APIClient().post('/api/accounts/verify-email-code/', {'email': 'ali@test.com', 'code': code}, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['joined_companies'], ['Kaya Tekstil A.Ş.'])
+        membership = CompanyMembership.objects.get(user=ali, company=self.company)
+        self.assertEqual(membership.role, 'data_entry')
+        ali.profile.refresh_from_db()
+        self.assertEqual(ali.profile.active_company, self.company)
+
+    def test_opening_the_link_after_auto_join_still_succeeds(self):
+        data = self._invite('ali@test.com')
+        ali = User.objects.create_user('ali', 'ali@test.com', 'testpass123')
+        from companies.views import accept_pending_invites
+        accept_pending_invites(ali)
+        client = APIClient(); client.force_authenticate(user=ali)
+        res = client.post('/api/companies/accept-invite/', {'token': data['token']}, format='json')
+        self.assertEqual(res.status_code, 200)
+
+    def test_used_invite_cannot_be_taken_by_someone_else(self):
+        data = self._invite('ali@test.com')
+        ali = User.objects.create_user('ali', 'ali@test.com', 'testpass123')
+        from companies.views import accept_pending_invites
+        accept_pending_invites(ali)
+        other = User.objects.create_user('eve', 'eve@test.com', 'testpass123')
+        client = APIClient(); client.force_authenticate(user=other)
+        res = client.post('/api/companies/accept-invite/', {'token': data['token']}, format='json')
+        self.assertEqual(res.status_code, 404)
+        self.assertFalse(CompanyMembership.objects.filter(user=other, company=self.company).exists())
