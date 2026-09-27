@@ -5928,7 +5928,6 @@ export function getNextQuestionId(question, answer) {
 // (obj = one entry in the items array) so the two don't drift.
 function validateCompoundFields(fields, obj, lang) {
   for (const field of (fields || [])) {
-    if (field.required === false) continue; // explicitly optional
     // Skip fields whose conditionalOn toggle is false/unset — they are hidden in the UI
     // and cannot be filled by the user, so they must not fail validation.
     // conditionalOnValue generalises this to non-boolean fields (e.g. K3C6-2's
@@ -5942,6 +5941,11 @@ function validateCompoundFields(fields, obj, lang) {
     }
     const fv = obj[field.id];
     const fempty = fv === undefined || fv === null || String(fv).trim() === '';
+    // An optional field may be left blank, but once filled it gets the same
+    // format checks as a required one — skipping it outright let text typed
+    // into e.g. "Company debt" reach the backend, which answered with a raw
+    // "Field 'company_debt': Expected a number" error.
+    if (field.required === false && fempty) continue;
     if (fempty) {
       const flabel = field.label?.[lang] || field.label?.en || field.id;
       return {

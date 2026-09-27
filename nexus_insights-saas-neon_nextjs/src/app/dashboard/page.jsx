@@ -284,7 +284,7 @@ export default function DashboardPage() {
           {/* ===== REPORTING TAB ===== */}
           {activeTab === 'reporting' && (
             <ErrorBoundary language={language}>
-              <ReportingTab language={language} selectedYear={selectedYear} summary={effectiveSummary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
+              <ReportingTab language={language} selectedYear={selectedYear} onYearChange={setSelectedYear} summary={effectiveSummary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
             </ErrorBoundary>
           )}
 

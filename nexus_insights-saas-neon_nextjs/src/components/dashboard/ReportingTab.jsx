@@ -35,7 +35,7 @@ function ReportCard({ children, className = '', delay = 0 }) {
   );
 }
 
-export default function ReportingTab({ language, selectedYear, summary, entries, targets, questionnaireProfile }) {
+export default function ReportingTab({ language, selectedYear, onYearChange, summary, entries, targets, questionnaireProfile }) {
   const [pdfLoading, setPdfLoading] = useState('');
   const [dlError, setDlError] = useState('');
   const tr = language === 'tr';
@@ -95,6 +95,52 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     [allReports],
   );
 
+  // Why the inventory-keyed reports are locked, shown on the page itself (a
+  // hover-only title never reaches touch users). The common trap: the
+  // inventory IS complete, but for a different reporting year than the one
+  // selected in the header, so nothing is picked by default.
+  const inventoryHint = useMemo(() => {
+    if (isoReportId) return null;
+    const latestCompleted = [...completedReports]
+      .sort((a, b) => Number(b.reporting_year || 0) - Number(a.reporting_year || 0))[0];
+    if (latestCompleted) {
+      const year = latestCompleted.reporting_year;
+      return {
+        year,
+        text: tr
+          ? `${selectedYear} yılı için tamamlanmış bir envanter yok. Tamamlanmış envanteriniz ${year} yılına ait — o yıla geçin veya aşağıdaki Dışa Aktarma Merkezi'nden seçin.`
+          : `No completed inventory for ${selectedYear}. Your completed inventory is for ${year} — switch to that year, or pick it in the Export Center below.`,
+      };
+    }
+    if (allReports.length > 0) {
+      return {
+        text: tr
+          ? 'Envanteriniz henüz tamamlanmadı. Bu raporları açmak için Karbon Envanteri anketini bitirin.'
+          : "Your inventory isn't finished yet. Finish the Carbon Inventory questionnaire to unlock these reports.",
+      };
+    }
+    return {
+      text: tr
+        ? 'Bu raporlar için önce Karbon Envanteri anketini tamamlayın.'
+        : 'Complete the Carbon Inventory questionnaire to unlock these reports.',
+    };
+  }, [isoReportId, completedReports, allReports.length, selectedYear, tr]);
+
+  const inventoryNotice = inventoryHint && (
+    <div role="status" className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+      <AlertCircle className="h-4 w-4 shrink-0" />
+      <span className="min-w-0 flex-1">{inventoryHint.text}</span>
+      {inventoryHint.year && onYearChange && (
+        <button
+          onClick={() => onYearChange(Number(inventoryHint.year))}
+          className="shrink-0 rounded-full bg-[#072C0E] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0b3d14]"
+        >
+          {tr ? `${inventoryHint.year} yılına geç` : `Switch to ${inventoryHint.year}`}
+        </button>
+      )}
+    </div>
+  );
+
   // Readiness — useMemo so this is only recalculated when data actually changes,
   // not on every local state update (e.g. pdfLoading spinner toggling).
   const { checks, readiness } = useMemo(() => {
@@ -128,9 +174,9 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
       // are keyed to the selected year instead.
       if (type === 'pack' || type === 'iso' || type === 'inv') {
         if (!isoReportId) {
-          setDlError(tr
-            ? `${selectedYear} yılı için tamamlanmış bir envanter bulunamadı. Önce Karbon Envanteri anketini doldurun.`
-            : `No inventory found for ${selectedYear}. Complete the Carbon Inventory questionnaire first.`);
+          setDlError(inventoryHint?.text || (tr
+            ? 'Bu raporlar için önce Karbon Envanteri anketini tamamlayın.'
+            : 'Complete the Carbon Inventory questionnaire to unlock these reports.'));
           return;
         }
         res = type === 'pack'
@@ -175,7 +221,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
     } finally {
       setPdfLoading('');
     }
-  }, [selectedYear, pdfLoading, tr, isoReportId]); // pdfLoading added — read inside guard
+  }, [selectedYear, pdfLoading, tr, isoReportId, inventoryHint]); // pdfLoading added — read inside guard
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so the GPU-heavy complex view is never rendered to screen on Android tablets.
@@ -209,6 +255,7 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
             {dlError}
           </div>
         )}
+        {inventoryNotice}
         {/* The same three report types as the full view, each with its two
             languages, then the bundle of all three, then the raw-data
             exports. */}
@@ -277,22 +324,24 @@ export default function ReportingTab({ language, selectedYear, summary, entries,
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('pdf') ? '...' : (tr ? 'Emisyon Raporu' : 'Emissions Report')}
             </button>
-            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
               <ClipboardList className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile')}
             </button>
-            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
+            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
               <Shield className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report')}
             </button>
             <span className="mx-0.5 hidden h-5 w-px bg-[#072C0E]/10 sm:block" />
-            <button onClick={() => handleDownload('pack', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={!isoReportId ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2.5 text-xs font-bold text-[#072C0E]/60 underline-offset-2 transition hover:text-[#072C0E] hover:underline disabled:opacity-60">
+            <button onClick={() => handleDownload('pack', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2.5 text-xs font-bold text-[#072C0E]/60 underline-offset-2 transition hover:text-[#072C0E] hover:underline disabled:opacity-60">
               <Package className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('pack') ? '...' : (tr ? 'Üçü tek PDF' : 'All three in one PDF')}
             </button>
           </div>
         </div>
       </div>
+
+      {inventoryNotice}
 
       {/* ─── ROW 1: Readiness + AI Insights ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

@@ -19,7 +19,7 @@ import {
   getSystemMessage,
   getQuestionWarning,
   CARBONIQ_STAGES,
-  TOTAL_QUESTIONS,
+  MAX_QUESTION_NUMBER,
 } from '@/lib/carboniq/questions';
 // Emission factors shared with ai-brain.js and the dashboard preview — see
 // emission-factors.js for why this used to be three separate, drifting tables.
@@ -555,7 +555,7 @@ function formatQuestionMsg(question, lang) {
   const qText      = question.text?.[lang]   || question.text?.en   || '';
   const qHelper    = question.helper?.[lang] || question.helper?.en || '';
 
-  let content = `🔢 **${lang === 'tr' ? 'Soru' : 'Question'} ${question.number} / ${TOTAL_QUESTIONS}**`;
+  let content = `🔢 **${lang === 'tr' ? 'Soru' : 'Question'} ${question.number}**`;
   if (stageName) content += ` — _${stageName}_`;
   content += '\n';
   if (question.isoRef) content += `\`${question.isoRef}\`\n\n`;
@@ -963,8 +963,8 @@ export function ChatWorkspace({
       id: `mode-switch-${Date.now()}`,
       role: 'mode-switch',
       label: lang === 'tr'
-        ? `📋 Rehberli Akış Başlıyor — ${TOTAL_QUESTIONS} Soru`
-        : `📋 Guided Flow Starting — ${TOTAL_QUESTIONS} Questions`,
+        ? '📋 Rehberli Akış Başlıyor'
+        : '📋 Guided Flow Starting',
     }]);
 
     // Intro
@@ -1331,13 +1331,13 @@ export function ChatWorkspace({
               </p>
             </div>
             <span className="text-[10px] font-semibold text-[#072C0E]/40 shrink-0 tabular-nums">
-              {currentQuestion.number} / {TOTAL_QUESTIONS}
+              {tr ? 'Soru' : 'Q'} {currentQuestion.number}
             </span>
           </div>
           <div className="w-full h-1 rounded-full bg-[#072C0E]/8 overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-[#8BEA99] to-[#2ABD41] transition-all duration-700 ease-out"
-              style={{ width: `${(currentQuestion.number / TOTAL_QUESTIONS) * 100}%` }}
+              style={{ width: `${Math.min(100, ((parseInt(currentQuestion.number, 10) || 0) / MAX_QUESTION_NUMBER) * 100)}%` }}
             />
           </div>
           {/* Stage dots — 7 segments, one per stage */}
@@ -1636,7 +1636,7 @@ export function ChatWorkspace({
               <div className="flex items-center gap-1.5 min-w-0">
                 <FileText className="h-3 w-3 text-[#175022]/40 shrink-0" />
                 <p className="text-[9.5px] text-[#072C0E]/28 truncate">
-                  {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}/${TOTAL_QUESTIONS}` : `Question ${currentQuestion.number}/${TOTAL_QUESTIONS}`}
+                  {currentQuestion.isoRef} — {tr ? `Soru ${currentQuestion.number}` : `Question ${currentQuestion.number}`}
                   {currentQuestion.required ? (tr ? ' · Zorunlu' : ' · Required') : (tr ? ' · İsteğe bağlı' : ' · Optional')}
                 </p>
               </div>
