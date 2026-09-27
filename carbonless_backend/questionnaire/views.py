@@ -11,18 +11,22 @@ import logging
 import re
 import time
 
-# Fix #28: Keep in sync with the frontend's CARBONIQ_QUESTIONS.length.
-# Verify with:
-#   node -e "const s=require('fs').readFileSync('src/lib/carboniq/questions.js','utf8');
-#            console.log([...s.matchAll(/^\s{4}id: '[^']+',/gm)].length)"
-TOTAL_QUESTIONS = 157
+# Denominator for a draft's progress in report lists: the questions every
+# user is asked — CARBONIQ_QUESTIONS that are not `type: 'info'` screens and
+# have no `conditionalShow` (120 of the 157 objects). It is the same number the
+# survey's own progress sidebar starts from ("0 / 120"), so the inventory
+# library and the survey agree; the raw object count (157) made a draft look
+# far less complete there than the survey itself said. Keep in sync with
+# questions.js:
+#   CARBONIQ_QUESTIONS.filter(q => q.type !== 'info' && !q.conditionalShow).length
+BASELINE_QUESTIONS = 120
 
 
 def _progress(completed_count, status):
     """Coarse progress for report *lists*.
 
-    This is deliberately an approximation: of the 138 question objects, 8 are
-    info screens and 21 are conditional branches whose reachability depends on
+    This is deliberately an approximation: of the 157 question objects, 8 are
+    info screens and 29 are conditional branches whose reachability depends on
     the user's own answers — and only the client has the question definitions
     needed to evaluate those conditions. So the survey UI computes its own
     exact denominator (see getApplicableQuestions in CarbonAIPage.jsx) and this
@@ -34,8 +38,11 @@ def _progress(completed_count, status):
     """
     if status == CarbonReport.Status.COMPLETED:
         return {'completed': completed_count, 'total': completed_count, 'percent': 100}
-    percent = round(completed_count / TOTAL_QUESTIONS * 100) if TOTAL_QUESTIONS else 0
-    return {'completed': completed_count, 'total': TOTAL_QUESTIONS, 'percent': percent}
+    total = max(BASELINE_QUESTIONS, completed_count)
+    # Branches can push a draft past the baseline; it is still not done, so
+    # never show 100% before the report is actually completed.
+    percent = min(99, round(completed_count / total * 100)) if total else 0
+    return {'completed': completed_count, 'total': total, 'percent': percent}
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -705,6 +712,22 @@ PHASE1_REPORT_FIELDS = [
 ]
 
 
+def _registration_prefill_answers(company):
+    """Phase-1 answers derivable from what the user entered at sign-up."""
+    answers = {}
+    if company is None:
+        return answers
+    name = (company.legal_entity_name or '').strip()
+    if name:
+        answers['A1'] = {'legal_name': name}
+    tax = (company.tax_number or '').strip()
+    # Registration treats the tax number as optional; A2 accepts exactly 10
+    # digits, so only offer it when it would pass that validation.
+    if tax.isdigit() and len(tax) == 10:
+        answers['A2'] = {'tax_id': tax}
+    return answers
+
+
 def _find_previous_profile_source(report):
     """
     Most recent OTHER CarbonReport for the same company that has ANY Phase 1
@@ -745,12 +768,23 @@ class PreviousCompanyProfileView(APIView):
 
         source = _find_previous_profile_source(report)
         if not source:
-            return Response({'available': False})
+            # No earlier report to reuse, but the company was already named
+            # (and maybe given a tax number) at registration — hand those back
+            # so the first questions arrive pre-filled instead of re-asking
+            # what the user just typed. Same answer shape as a stored step, so
+            # the frontend's unmapPhase1Answer reads it unchanged.
+            return Response({
+                'available': False,
+                'answers': _registration_prefill_answers(report.company),
+            })
 
-        answers = {
+        # The earlier report's answers win; anything it never answered falls
+        # back to what the company entered at registration.
+        answers = _registration_prefill_answers(report.company)
+        answers.update({
             step.step_id: step.answer
             for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS)
-        }
+        })
 
         return Response({
             'available': True,

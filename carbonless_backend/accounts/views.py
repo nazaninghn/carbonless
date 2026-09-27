@@ -60,6 +60,7 @@ class RegisterView(generics.CreateAPIView):
         # arrive — a dead end that looks like success from every angle.
         if response.status_code == 201 and isinstance(response.data, dict):
             response.data['email_sent'] = getattr(self, '_email_sent', True)
+            response.data['company_saved'] = getattr(self, '_company_saved', False)
         return response
 
     def perform_create(self, serializer):
@@ -68,20 +69,41 @@ class RegisterView(generics.CreateAPIView):
         from .models import UserProfile, EmailVerificationToken
         UserProfile.objects.create(user=user, role='data_entry')
 
-        # Auto-create a default company for the user so they can immediately
-        # use AI chat and save emissions without manual setup.
+        # Create the user's company now, from the details the three-step
+        # registration form collected. This used to be a placeholder
+        # ("<username>'s Company", tax '—', country 'Not set') with the real
+        # details only sent in a follow-up call after login — but a new
+        # account is inactive until the email is verified, so that login fails
+        # and the follow-up never ran: every verified signup lost everything it
+        # typed. Missing or invalid details still fall back to the placeholder
+        # values field by field, so registration never fails because of them.
         from companies.models import Company, CompanyMembership
-        company = Company.objects.create(
-            legal_entity_name=f"{user.username}'s Company",
-            tax_number='—',
-            country_of_headquarters='Not set',
-            countries_of_operation='Not set',
-            nace_code='',
-            main_activity_description='Not set',
-            number_of_employees='1-10',
-            annual_turnover_range='Not set',
-            number_of_facilities=1,
-        )
+        from companies.serializers import CompanySerializer
+        placeholder = {
+            'legal_entity_name': f"{user.username}'s Company",
+            'tax_number': '—',
+            'country_of_headquarters': 'Not set',
+            'countries_of_operation': 'Not set',
+            'nace_code': '',
+            'main_activity_description': 'Not set',
+            'number_of_employees': '1-10',
+            'annual_turnover_range': 'Not set',
+            'number_of_facilities': 1,
+        }
+        submitted = self.request.data.get('company')
+        company = None
+        self._company_saved = False
+        if isinstance(submitted, dict):
+            data = dict(placeholder)
+            data.update({k: v for k, v in submitted.items() if v not in (None, '')})
+            company_serializer = CompanySerializer(data=data)
+            if company_serializer.is_valid():
+                company = company_serializer.save()
+                self._company_saved = True
+            else:
+                logger.warning('Registration company details rejected: %s', company_serializer.errors)
+        if company is None:
+            company = Company.objects.create(**placeholder)
         CompanyMembership.objects.create(user=user, company=company, role='owner')
 
         # Create verification code

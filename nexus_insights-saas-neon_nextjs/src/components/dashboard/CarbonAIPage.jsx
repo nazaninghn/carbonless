@@ -34,7 +34,6 @@ import {
   CARBONIQ_STAGES,
   CARBONIQ_QUESTIONS,
   TOTAL_QUESTIONS,
-  MAX_QUESTION_NUMBER,
   getInitialQuestionId,
   getNextQuestionId,
   getQuestionById,
@@ -301,6 +300,34 @@ function stripOptionCode(text) {
   // 4. NACE code in parens "(NACE ...)"
   result = result.replace(/\s*\(NACE[^)]*\)/g, '');
   return result.trim();
+}
+
+// Labels of the visible required compound fields still empty in `obj` — lets a
+// disabled Confirm / Done button say what it is waiting for instead of just
+// greying out (conditionalOn-hidden fields are ignored, as in the button check).
+function missingRequiredLabels(requiredFields, obj, lang) {
+  return requiredFields
+    .filter(f => {
+      if (f.conditionalOn) {
+        const condVal = obj[f.conditionalOn];
+        const condMet = f.conditionalOnValue
+          ? f.conditionalOnValue.includes(condVal)
+          : (condVal === true || condVal === 'true');
+        if (!condMet) return false;
+      }
+      const v = obj[f.id];
+      return v === undefined || v === null || String(v).trim() === '';
+    })
+    .map(f => f.label?.[lang] || f.label?.en || f.id);
+}
+
+function MissingFieldsHint({ labels, tr }) {
+  if (!labels || labels.length === 0) return null;
+  return (
+    <p role="status" className="text-[11px] font-semibold text-amber-700">
+      {tr ? 'Eksik alanlar: ' : 'Still needed: '}{labels.join(', ')}
+    </p>
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1350,6 +1377,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     const draftFilled = isFieldsetComplete(draft);
     const draftIsEmpty = Object.values(draft).every(v => v === '' || v === undefined || v === null);
     const canFinish = (draftIsEmpty || draftFilled) && (items.length > 0 || draftFilled);
+    const draftMissing = draftIsEmpty ? [] : missingRequiredLabels(requiredFields, draft, lang);
     const summarize = (item) => fields
       .filter(f => item[f.id] !== undefined && item[f.id] !== '' && item[f.id] !== null)
       .map(f => `${f.label?.[lang] || f.label?.en || f.id}: ${item[f.id]}`)
@@ -1396,6 +1424,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
             {tr ? 'Tamamla →' : 'Done →'}
           </button>
         </div>
+        {!draftFilled && <MissingFieldsHint labels={draftMissing} tr={tr} />}
       </div>
     );
   }
@@ -1418,6 +1447,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       const v = compoundVal[f.id];
       return v !== undefined && v !== null && String(v).trim() !== '';
     });
+    const startedFilling = Object.values(compoundVal).some(v => v !== '' && v !== undefined && v !== null);
+    const compoundMissing = startedFilling && !allRequiredFilled
+      ? missingRequiredLabels(requiredFields, compoundVal, lang)
+      : [];
     return (
       <div className="flex flex-col gap-4 w-full max-w-lg">
         <CompoundInput
@@ -1434,6 +1467,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
+        <MissingFieldsHint labels={compoundMissing} tr={tr} />
       </div>
     );
   }
@@ -1681,7 +1715,7 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Progress Sidebar
 // ─────────────────────────────────────────────────────────────────────────────
-function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
+function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed = false }) {
   const tr = lang === 'tr';
   // Default to combined (Scope 1 & 2 together) unless user explicitly chose 'separate'
   const scopeGroupingAnswer = readAnswerValue(answers, 'SCOPE-GROUPING');
@@ -1717,12 +1751,21 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle }) {
         : countForStage(stage.id),
     }));
     const totalAnswered = allAnswered.filter(isRealQuestion).length;
-    const applicableTotal = getApplicableQuestions(answers).length;
-    const pct = applicableTotal
+    // getApplicableQuestions only knows about conditionalShow, not nextByValue
+    // routing, so questions a "No" answer jumped past still count while the
+    // survey is running. Once it is completed, every question this user was
+    // routed through has been answered — the rest never applied to them — so
+    // the answered count IS the total and the bar reads 100%.
+    const applicableTotal = completed
+      ? totalAnswered
+      : getApplicableQuestions(answers).length;
+    const pct = completed
+      ? 100
+      : applicableTotal
       ? Math.min(100, Math.round((totalAnswered / applicableTotal) * 100))
       : 0;
     return { displayStages, stageStats, totalAnswered, applicableTotal, pct };
-  }, [answers, scopesCombined]);
+  }, [answers, scopesCombined, completed]);
 
   return (
     <aside
@@ -2180,14 +2223,19 @@ export function QuestionnaireTab({
   // answers already present) or one that's already past A1 skips this.
   useEffect(() => {
     if (previousProfileCheckedRef.current) return;
-    if (!reportId || currentId !== 'A1' || Object.keys(answers).length > 0) return;
+    // Fetch while anywhere in Stage 1 (Company Profile), not only at a fresh
+    // A1: it also carries the registration details used to pre-fill A1/A2,
+    // which a user resuming mid-stage should still get. The reuse offer
+    // itself stays limited to a genuinely fresh report.
+    if (!reportId || getQuestionById(currentId)?.stage !== 1) return;
+    const isFreshStart = currentId === 'A1' && Object.keys(answers).length === 0;
     previousProfileCheckedRef.current = true;
     api.getPreviousCompanyProfile(reportId)
       .then(res => res.json())
       .then(data => {
         if (!isMounted.current) return;
         setPreviousProfile(data);
-        if (data?.available) setShowReuseDialog(true);
+        if (data?.available && isFreshStart) setShowReuseDialog(true);
       })
       .catch(e => console.error('getPreviousCompanyProfile failed:', e));
   }, [reportId, currentId, answers]);
@@ -2325,11 +2373,14 @@ export function QuestionnaireTab({
       const stageIds = stage.stageIds || [stage.id];
       const stageQuestions = applicable.filter(q => stageIds.includes(q.stage));
       const answeredIds = stageQuestions.filter(q => q.id in src).map(q => q.id);
+      // The survey is finished, so the questions this user was routed to are
+      // exactly the answered ones; applicable-but-unanswered questions were
+      // skipped by nextByValue routing and never applied (see ProgressSidebar).
       return {
         id: stage.id,
         title: stage.title,
         answeredCount: answeredIds.length,
-        totalCount: stageQuestions.length,
+        totalCount: answeredIds.length,
       };
     });
   }, [completed, completedReport, answers]);
@@ -2343,19 +2394,38 @@ export function QuestionnaireTab({
     if (!hydrated || !initialReportId) return;
     const firstQ = getQuestionById(currentId);
     if (!firstQ) return;
+    // A brand-new inventory has nothing to resume — greet it as a start.
+    const isFresh = Object.keys(answers).length === 0;
+    // Same cleanup the live flow applies: strips the "[Equipment name] —"
+    // doc placeholder that loop questions carry in their raw text.
+    const qText = stripDocLabels(firstQ.text?.[lang] || firstQ.text?.en || '');
+    // Resuming onto a loop question: re-enter the loop from item 0, exactly as
+    // goBack does, so the item is named and submitAnswer takes the loop path.
+    let itemLabel = null;
+    if (firstQ.loopSource) {
+      const built = buildLoopItems(currentId, answers, lang);
+      if (built && built.items.length > 0) {
+        setLoopState({ questionId: currentId, items: built.items, itemLabels: built.itemLabels, currentIndex: 0, collected: {} });
+        itemLabel = built.itemLabels[0] || built.items[0];
+      }
+    }
+    const qRef = itemLabel ? `${firstQ.number} (${itemLabel})` : `${firstQ.number}`;
+    const intro = isFresh
+      ? (tr ? `Karbon envanterinize başlayalım — Soru ${qRef}:` : `Let's start your carbon inventory — Question ${qRef}:`)
+      : (tr ? `Tekrar hoş geldiniz! Kaldığınız yerden devam ediyorsunuz — Soru ${qRef}:` : `Welcome back! Resuming where you left off — Question ${qRef}:`);
     const welcomeMsg = {
       id: 'welcome',
       role: 'assistant',
-      content: tr
-        ? `Hoş geldin! Kaldığın yerden devam ediyorsun — Soru ${firstQ.number}:\n\n${firstQ.text?.tr || firstQ.text?.en}`
-        : `Welcome back! Resuming where you left off — Question ${firstQ.number}:\n\n${firstQ.text?.en}`,
+      content: `${intro}\n\n${qText}`,
     };
     if (firstQ.helper) {
       welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
     }
     setMessages([welcomeMsg]);
     questionMsgLenRef.current = 1;
-    setAnswerValue(normalizeAnswerValue(firstQ, readAnswerValue(answers, currentId)) ?? getInitialValue(firstQ));
+    setAnswerValue(itemLabel
+      ? getInitialValue(firstQ)
+      : normalizeAnswerValue(firstQ, readAnswerValue(answers, currentId)) ?? getInitialValue(firstQ));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -3164,6 +3234,7 @@ export function QuestionnaireTab({
         lang={lang}
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(false)}
+        completed={completed}
       />
 
       {/* Main area */}
@@ -3187,7 +3258,7 @@ export function QuestionnaireTab({
             {currentQuestion && (
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-[#175022]/40">
-                  {tr ? 'Soru' : 'Q'} {currentQuestion.number} / {MAX_QUESTION_NUMBER}
+                  {tr ? 'Soru' : 'Q'} {currentQuestion.number}
                 </span>
                 {currentQuestion.isoRef && (
                   <span className="rounded-full bg-[#8BEA99]/15 px-2 py-0.5 text-[9px] font-bold text-[#175022]">

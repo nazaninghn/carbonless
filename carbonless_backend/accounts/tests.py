@@ -50,3 +50,56 @@ class AuthTests(TestCase):
         self.assertEqual(res.status_code, 200)
         user.refresh_from_db()
         self.assertTrue(user.check_password('NewPass456'))
+
+
+class RegistrationCompanyTests(TestCase):
+    """The company details from the signup form are saved at signup.
+
+    The account is inactive until its email is verified, so they cannot wait
+    for a post-login call — that call never ran and the details were lost.
+    """
+
+    def _register(self, username, company=None):
+        body = {
+            'username': username, 'email': f'{username}@test.com',
+            'password': 'StrongPass123', 'password2': 'StrongPass123',
+        }
+        if company is not None:
+            body['company'] = company
+        res = APIClient().post('/api/accounts/register/', body, format='json')
+        self.assertEqual(res.status_code, 201)
+        user = User.objects.get(username=username)
+        return res.json(), user.company_memberships.get().company
+
+    def test_signup_company_details_are_stored(self):
+        data, company = self._register('kaya', {
+            'legal_entity_name': 'Kaya Tekstil A.Ş.',
+            'tax_number': '1234567890',
+            'country_of_headquarters': 'TR',
+            'countries_of_operation': 'TR',
+            'nace_code': 'C13',
+            'main_activity_description': 'Kumaş üretimi',
+            'number_of_employees': '51-250',
+            'annual_turnover_range': '10M-50M',
+            'number_of_facilities': 2,
+            'has_iso_14001': True,
+        })
+        self.assertTrue(data['company_saved'])
+        self.assertEqual(company.legal_entity_name, 'Kaya Tekstil A.Ş.')
+        self.assertEqual(company.tax_number, '1234567890')
+        self.assertEqual(company.nace_code, 'C13')
+        self.assertTrue(company.has_iso_14001)
+
+    def test_optional_blank_fields_fall_back_to_placeholders(self):
+        # Tax number is optional on the form; a blank one must not reject the rest.
+        data, company = self._register('blanktax', {
+            'legal_entity_name': 'Blank Tax Ltd', 'tax_number': '',
+        })
+        self.assertTrue(data['company_saved'])
+        self.assertEqual(company.legal_entity_name, 'Blank Tax Ltd')
+        self.assertEqual(company.tax_number, '—')
+
+    def test_without_company_details_a_placeholder_is_created(self):
+        data, company = self._register('nocompany')
+        self.assertFalse(data['company_saved'])
+        self.assertEqual(company.legal_entity_name, "nocompany's Company")

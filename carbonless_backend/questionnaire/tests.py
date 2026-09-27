@@ -158,3 +158,50 @@ class CombinedReportTests(TestCase):
     def test_bad_year_is_rejected(self):
         res = self.client.get(self.url + '?year=soon', **self._auth())
         self.assertEqual(res.status_code, 400)
+
+
+class RegistrationPrefillTests(TestCase):
+    """A first report pre-fills A1/A2 from the company entered at sign-up."""
+
+    def _make(self, tax_number):
+        user = User.objects.create_user(f'pre{tax_number or "x"}', f'pre{tax_number}@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Kaya Tekstil A.Ş.', tax_number=tax_number,
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+        report = CarbonReport.objects.create(company=company, created_by=user, reporting_year=2026)
+        token = str(RefreshToken.for_user(user).access_token)
+        return self.client.get(
+            f'/api/questionnaire/{report.id}/previous-profile/',
+            HTTP_AUTHORIZATION=f'Bearer {token}',
+        ).json()
+
+    def test_first_report_gets_company_name_and_valid_tax_id(self):
+        data = self._make('1234567890')
+        self.assertFalse(data['available'])
+        self.assertEqual(data['answers']['A1'], {'legal_name': 'Kaya Tekstil A.Ş.'})
+        self.assertEqual(data['answers']['A2'], {'tax_id': '1234567890'})
+
+    def test_tax_id_skipped_when_it_would_fail_a2_validation(self):
+        data = self._make('')
+        self.assertEqual(data['answers']['A1'], {'legal_name': 'Kaya Tekstil A.Ş.'})
+        self.assertNotIn('A2', data['answers'])
+
+
+class ReportListProgressTests(TestCase):
+    """Library progress uses the survey's own baseline and never fakes 100%."""
+
+    def test_draft_uses_baseline_and_caps_below_100(self):
+        from .views import _progress, BASELINE_QUESTIONS
+        self.assertEqual(_progress(0, CarbonReport.Status.IN_PROGRESS)['total'], BASELINE_QUESTIONS)
+        # Branches can push a draft past the baseline — still not "done".
+        long_draft = _progress(BASELINE_QUESTIONS + 5, CarbonReport.Status.IN_PROGRESS)
+        self.assertEqual(long_draft['percent'], 99)
+
+    def test_completed_report_is_100(self):
+        from .views import _progress
+        self.assertEqual(_progress(97, CarbonReport.Status.COMPLETED)['percent'], 100)

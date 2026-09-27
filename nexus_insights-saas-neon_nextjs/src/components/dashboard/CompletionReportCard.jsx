@@ -180,14 +180,19 @@ export default function CompletionReportCard({
           </h4>
           <div className="space-y-2.5">
             {stageBreakdown.map(stage => {
-              const pct = stage.totalCount > 0 ? Math.round((stage.answeredCount / stage.totalCount) * 100) : 0;
+              // A stage with no questions for this user (all skipped by
+              // routing) is not applicable, not 0% done.
+              const notApplicable = stage.totalCount === 0;
+              const pct = notApplicable ? 100 : Math.round((stage.answeredCount / stage.totalCount) * 100);
               const label = stage.title?.[tr ? 'tr' : 'en'] || stage.title?.en;
               return (
                 <div key={stage.id} className="flex items-center gap-3">
-                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${pct === 100 ? 'text-[#2ABD41]' : 'text-[#175022]/25'}`} />
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${notApplicable ? 'text-[#175022]/25' : pct === 100 ? 'text-[#2ABD41]' : 'text-[#175022]/25'}`} />
                   <span className="text-xs font-semibold text-[#175022] flex-1 min-w-0 truncate">{label}</span>
                   <span className="text-[11px] font-bold text-[#175022]/50 shrink-0">
-                    {stage.answeredCount}/{stage.totalCount} · {pct}%
+                    {notApplicable
+                      ? (tr ? 'Uygulanmadı' : 'Not applicable')
+                      : `${stage.answeredCount}/${stage.totalCount} · ${pct}%`}
                   </span>
                 </div>
               );
