@@ -498,3 +498,73 @@ class ExcelExportLanguageTests(TestCase):
         self.assertEqual(header[-2:], ['Status', 'Rejection reason'])
         self.assertEqual(row[1:3], ['Scope 1', 'Stationary Combustion'])
         self.assertEqual(row[-2], 'Rejected')
+
+
+class TargetAndCustomRequestRoleTests(TestCase):
+    """Targets are the company's commitment: only owner/admin/manager change
+    them. A custom request is withdrawn or edited only while pending, by its
+    sender or an owner/admin/manager."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        self.company = Company.objects.create(
+            legal_entity_name='Rol A.Ş.', tax_number='1234567891',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        self.users = {}
+        for name, role in [('sahip', 'owner'), ('mudur', 'manager'), ('veri', 'data_entry'), ('veri2', 'data_entry')]:
+            u = User.objects.create_user(name, f'{name}@test.com', 'testpass123')
+            UserProfile.objects.create(user=u, active_company=self.company)
+            CompanyMembership.objects.create(company=self.company, user=u, role=role)
+            self.users[name] = u
+        self.client = APIClient()
+
+    def _as(self, name):
+        self.client.force_authenticate(user=self.users[name])
+
+    def _target(self):
+        return self.client.post('/api/emissions/targets/', {
+            'title': '2030', 'base_year': 2024, 'target_year': 2030,
+            'base_emissions_kg': 1000, 'target_reduction_percent': 30,
+        }, format='json')
+
+    def test_data_entry_cannot_change_targets_but_can_read_them(self):
+        self._as('veri')
+        self.assertEqual(self._target().status_code, 403)
+        self._as('mudur')
+        res = self._target()
+        self.assertEqual(res.status_code, 201, res.content)
+        tid = res.json()['id']
+        self._as('veri')
+        self.assertEqual(self.client.get('/api/emissions/targets/').status_code, 200)
+        self.assertEqual(self.client.delete(f'/api/emissions/targets/{tid}/').status_code, 403)
+        self.assertEqual(self.client.patch(f'/api/emissions/targets/{tid}/', {'title': 'x'}, format='json').status_code, 403)
+        self._as('sahip')
+        self.assertEqual(self.client.delete(f'/api/emissions/targets/{tid}/').status_code, 204)
+
+    def _request(self):
+        return self.client.post('/api/emissions/custom-requests/', {
+            'scope': 'scope1', 'category_name': 'Jeneratör', 'source_name': 'Dizel jeneratör',
+            'description': 'x', 'unit': 'litre', 'quantity': 120.5, 'year': 2026, 'month': 3,
+        }, format='json')
+
+    def test_custom_request_withdrawn_by_sender_not_by_other_member(self):
+        self._as('veri')
+        rid = self._request().json()['id']
+        self._as('veri2')
+        self.assertEqual(self.client.delete(f'/api/emissions/custom-requests/{rid}/').status_code, 403)
+        self._as('veri')
+        self.assertEqual(self.client.delete(f'/api/emissions/custom-requests/{rid}/').status_code, 204)
+
+    def test_reviewed_custom_request_cannot_be_changed(self):
+        from .models import CustomEmissionRequest
+        self._as('veri')
+        rid = self._request().json()['id']
+        CustomEmissionRequest.objects.filter(id=rid).update(status='approved')
+        self._as('sahip')
+        res = self.client.delete(f'/api/emissions/custom-requests/{rid}/')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], 'already_reviewed')

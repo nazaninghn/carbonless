@@ -243,6 +243,7 @@ export const api = {
 
   getCustomRequests: () => request('/emissions/custom-requests/'),
   createCustomRequest: (data) => request('/emissions/custom-requests/', { method: 'POST', body: JSON.stringify(data) }),
+  deleteCustomRequest: (id) => request(`/emissions/custom-requests/${id}/`, { method: 'DELETE' }),
 
   downloadReport: (year, lang) => request(`/emissions/report/?year=${year}&lang=${lang}`),
   downloadCsv: (year) => request(`/emissions/export-csv/?year=${year}`),

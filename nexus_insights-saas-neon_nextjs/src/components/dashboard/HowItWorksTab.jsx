@@ -69,8 +69,8 @@ const SECTIONS = [
     key: 'review', icon: ClipboardCheck,
     title: { tr: 'Onay Bekleyenler', en: 'Review' },
     desc: {
-      tr: 'Ekip üyelerinin gönderdiği özel talepleri ve veri girişlerini onaylayın veya reddedin.',
-      en: 'Approve or reject custom requests and data entries submitted by your team.',
+      tr: 'Ekip üyelerinin gönderdiği veri girişlerini ve anketteki danışman onaylarını onaylayın veya reddedin.',
+      en: "Approve or reject your team's data entries and the questionnaire's advisor approvals.",
     },
   },
   {

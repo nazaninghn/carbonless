@@ -7,6 +7,11 @@ import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lu
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
+
+// A number put into an input, in the UI language ("0,58" in Turkish), without
+// thousands separators so it reads back unchanged.
+const inputNumber = (n, tr, digits = 2) =>
+  Number(n).toLocaleString(tr ? 'tr-TR' : 'en-US', { maximumFractionDigits: digits, useGrouping: false });
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 
@@ -351,14 +356,14 @@ export default function ReductionTargetsTab({
         setBaseEmit(prev => {
           if (prev !== '' && !baseAutoFilled.current) return prev; // never overwrite the user's value
           baseAutoFilled.current = tonne > 0;
-          return tonne > 0 ? String(Math.round(tonne * 100) / 100) : '';
+          return tonne > 0 ? inputNumber(tonne, tr) : '';
         });
       } catch {
         if (!cancelled) setBaseInventory(null);
       }
     }, 300);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [showForm, baseYear]);
+  }, [showForm, baseYear, tr]);
 
   // Gates the overall-progress-bar grow-in — starts at 0% and animates to its
   // real width shortly after mount, same treatment as the dashboard charts.
@@ -391,9 +396,9 @@ export default function ReductionTargetsTab({
     setEditTitle(tgt.title);
     setEditBaseYear(tgt.base_year);
     setEditTgtYear(tgt.target_year);
-    setEditBaseEmit((parseFloat(tgt.base_emissions_kg) / 1000).toString());
+    setEditBaseEmit(inputNumber(parseFloat(tgt.base_emissions_kg) / 1000, tr, 6)); // stored value, unrounded
     setEditReducePct(tgt.target_reduction_percent.toString());
-  }, []);
+  }, [tr]);
 
   // Escape key handlers — consistent with all other modals in the app
   useEffect(() => {
@@ -574,7 +579,7 @@ export default function ReductionTargetsTab({
             <p className="text-xs font-bold text-[#072C0E]/60">
               {tr ? 'Ortalama azaltma taahhüdü' : 'Average reduction commitment'}
             </p>
-            <span className="text-sm font-bold text-[#175022]">-{totalReductionPct}%</span>
+            <span className="text-sm font-bold text-[#175022]">{tr ? `%${totalReductionPct}` : `${totalReductionPct}%`}</span>
           </div>
           <div className="h-2.5 overflow-hidden rounded-full bg-[#072C0E]/6">
             <div

@@ -171,6 +171,8 @@ export default function EmissionsTab({
   setActiveTab,
   fetchData,
   canEdit = true,
+  canApprove = false,
+  currentUsername,
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
@@ -217,6 +219,7 @@ export default function EmissionsTab({
   const [cQty,    setCQty]     = useState('');
   const [cMonth,  setCMonth]   = useState(new Date().getMonth() + 1);
   const [cSaving, setCSaving]  = useState(false);
+  const [withdrawing, setWithdrawing] = useState(null); // custom request to withdraw
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const months = tr ? MONTHS_TR : MONTHS_EN;
@@ -504,7 +507,7 @@ export default function EmissionsTab({
         setShowCustom(false);
         setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCQty('');
         fetchData();
-        toast.info(tr ? 'Özel talep gönderildi — inceleme bekleniyor' : 'Custom request submitted — pending review');
+        toast.info(tr ? 'Özel talep gönderildi — Carbonless ekibi inceleyecek' : 'Custom request submitted — the Carbonless team will review it');
       } else {
         toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Talep gönderilemedi' : 'Failed to submit request'));
       }
@@ -730,8 +733,12 @@ export default function EmissionsTab({
               <div key={cr.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#072C0E]/6 bg-[#F8F8F8]/60 px-4 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-[#072C0E]">{cr.source_name}</p>
-                  <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {cr.quantity} {cr.unit}</p>
+                  <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {fmt(cr.quantity, 4)} {cr.unit}</p>
+                  {cr.status === 'rejected' && cr.admin_notes && (
+                    <p className="mt-0.5 text-[10px] text-red-500">{tr ? 'Not' : 'Note'}: {cr.admin_notes}</p>
+                  )}
                 </div>
+                <div className="flex shrink-0 items-center gap-2">
                 <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${
                   cr.status === 'approved' ? 'bg-[#2ABD41]/12 text-[#175022]' :
                   cr.status === 'rejected' ? 'bg-red-50 text-red-500' :
@@ -743,6 +750,16 @@ export default function EmissionsTab({
                   {cr.status === 'approved' && cr.calculated_co2e_kg
                     ? ` · ${fixed((cr.calculated_co2e_kg / 1000), 4)} t` : ''}
                 </span>
+                {cr.status === 'pending' && (canApprove || cr.username === currentUsername) && (
+                  <button
+                    type="button"
+                    onClick={() => setWithdrawing(cr)}
+                    className="rounded-full border border-[#072C0E]/10 px-2.5 py-1 text-[10px] font-bold text-[#072C0E]/60 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                  >
+                    {tr ? 'Geri çek' : 'Withdraw'}
+                  </button>
+                )}
+                </div>
               </div>
             ))}
           </div>
@@ -1224,6 +1241,36 @@ export default function EmissionsTab({
         onCancel={() => setDeleteConfirm(null)}
       />
 
+      <ConfirmDialog
+        open={withdrawing !== null}
+        type="danger"
+        title={tr ? 'Talebi geri çek' : 'Withdraw request'}
+        message={tr
+          ? `"${withdrawing?.source_name || ''}" talebi silinecek. Gerekirse yeniden gönderebilirsiniz.`
+          : `The request "${withdrawing?.source_name || ''}" will be deleted. You can send it again if needed.`}
+        confirmText={tr ? 'Geri çek' : 'Withdraw'}
+        cancelText={tr ? 'Vazgeç' : 'Cancel'}
+        onConfirm={async () => {
+          const cr = withdrawing;
+          setWithdrawing(null);
+          try {
+            const res = await api.deleteCustomRequest(cr.id);
+            if (res.ok || res.status === 204) {
+              toast.success(tr ? 'Talep geri çekildi' : 'Request withdrawn');
+              fetchData();
+            } else {
+              const d = await res.json().catch(() => ({}));
+              toast.error(d.code === 'already_reviewed'
+                ? (tr ? 'Bu talep zaten incelendi.' : 'This request has already been reviewed.')
+                : res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Talep geri çekilemedi' : 'Could not withdraw the request'));
+            }
+          } catch {
+            toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+          }
+        }}
+        onCancel={() => setWithdrawing(null)}
+      />
+
       {/* ═══════════════════ CUSTOM REQUEST MODAL ════════════════════════ */}
       {showCustom && (
         <div className={OVERLAY}>
@@ -1231,7 +1278,9 @@ export default function EmissionsTab({
             <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <div>
                 <h2 id="custom-request-title" className="text-base font-bold">{tr ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
-                <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr ? 'Listede olmayan kaynak? Admin onaylayacak.' : "Source not in the list? Admin will review."}</p>
+                <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr
+                  ? 'Listede olmayan kaynak mı? Talebi Carbonless ekibi inceler; uygun emisyon faktörü belirlenince kayıt olarak eklenir.'
+                  : 'Source not in the list? The Carbonless team reviews the request; once a suitable emission factor is set, it is added as an entry.'}</p>
               </div>
               <button onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
@@ -1244,7 +1293,7 @@ export default function EmissionsTab({
                       <button key={s} type="button" onClick={() => setCScope(s)}
                         className={`rounded-2xl border px-3 py-2.5 text-center transition ${cScope === s ? 'border-[#2ABD41]/50 bg-[#2ABD41]/10 ring-2 ring-[#2ABD41]/15' : 'border-[#072C0E]/10 bg-[#DEFAE1]/40 hover:border-[#2ABD41]/30'}`}
                       >
-                        <p className="text-xs font-bold">Scope {i + 1}</p>
+                        <p className="text-xs font-bold">{tr ? 'Kapsam' : 'Scope'} {i + 1}</p>
                       </button>
                     ))}
                   </div>
