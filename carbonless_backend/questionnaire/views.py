@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
-from chat.local_parser import parse_localized_number
+from .step_entries import sync_step_entries
 import logging
 import re
 import time
@@ -187,185 +187,6 @@ def extract_profile(session):
     profile['report_language'] = lang_map.get(s9.get('selected', ''), 'tr')
     profile['warnings'] = session.warnings or []
     return profile
-
-
-# A units-bearing questionnaire answer is typed as "1200 kWh" / "15.000 m³"
-# in one string — split the leading numeric part from the trailing unit so
-# it can go through parse_localized_number. Unit is optional; a bare number
-# just returns ('1200', '').
-_QTY_UNIT_RE = re.compile(r'^\s*([\d.,]+)\s*([^\d,.\s][^\s]*)?\s*$')
-
-
-def _split_amount_unit(raw):
-    s = str(raw).strip()
-    m = _QTY_UNIT_RE.match(s)
-    if not m:
-        return s, ''
-    return m.group(1), (m.group(2) or '').strip()
-
-
-def _extract_emission_from_step(step_id, data, report):
-    """
-    Check if a questionnaire step contains consumption data that should create
-    an EmissionEntry. Returns a dict with fuel_type, quantity, unit, etc. or None.
-    """
-    # Phase 2 consumption steps follow patterns:
-    # 3A-5: stationary combustion consumption (quantity + unit per fuel)
-    # 3B-7: mobile combustion fuel litres
-    # 4A-1a: electricity consumption kWh per facility
-    # Data format from frontend: { answer: "15000", unit: "m³", fuel_type: "natural_gas" }
-    # or compound: { consumption: "15000", unit: "m³" }
-
-    if not data:
-        return None
-
-    # Direct consumption data (most common pattern from frontend questionnaire)
-    raw_quantity = (
-        data.get('consumption') or data.get('quantity') or
-        data.get('answer') or data.get('value')
-    )
-    if not raw_quantity:
-        return None
-
-    # Real consumption questions submit one of two shapes, neither of which
-    # is the flat number this function used to assume — verified live, both
-    # silently produced saved_entry=None on every real submission:
-    #   - loopSource questions (per-facility/per-equipment, e.g. 4A-1,
-    #     4A-1a) send a dict {itemKey: "amount unit"}, one item per
-    #     facility/equipment (see CarbonAIPage.jsx's loop `collected` map).
-    #   - non-loop questions send a single "amount unit" string, e.g.
-    #     "1200 kWh" — the unit is typed inline, not a separate field.
-    # Normalise to a list of raw item strings either way, then split each
-    # into its numeric part + unit and sum same-question items into one
-    # entry (parse_localized_number distinguishes a thousands separator
-    # from a decimal point, e.g. Turkish "15.000" == 15000 not 15).
-    if isinstance(raw_quantity, dict):
-        items = list(raw_quantity.values())
-    elif isinstance(raw_quantity, list):
-        items = raw_quantity
-    else:
-        items = [raw_quantity]
-
-    qty = 0.0
-    parsed_unit = ''
-    for item in items:
-        amount_str, item_unit = _split_amount_unit(item)
-        try:
-            item_qty = parse_localized_number(amount_str)
-        except (ValueError, TypeError):
-            continue
-        if item_qty <= 0:
-            continue
-        qty += item_qty
-        parsed_unit = parsed_unit or item_unit
-
-    if qty <= 0:
-        return None
-
-    fuel_type = data.get('fuel_type', '')
-    unit = data.get('unit', '') or parsed_unit
-
-    # Determine scope/category based on step pattern
-    if step_id.startswith('3A'):
-        # Scope 1 - Stationary combustion
-        scope = 'scope1'
-        if not fuel_type:
-            fuel_type = 'natural_gas'  # default
-    elif step_id.startswith('3B'):
-        # Scope 1 - Mobile combustion
-        scope = 'scope1'
-        if not fuel_type:
-            fuel_type = 'diesel'
-    elif step_id.startswith('3C'):
-        # Scope 1 - Process emissions
-        scope = 'scope1'
-        if not fuel_type:
-            fuel_type = 'process'
-    elif step_id.startswith('4A') or step_id.startswith('4B'):
-        # Scope 2 - Electricity
-        scope = 'scope2'
-        fuel_type = 'electricity'
-        if not unit:
-            unit = 'kWh'
-    elif step_id.startswith('5') or step_id.startswith('6') or step_id.startswith('7'):
-        # Scope 3
-        scope = 'scope3'
-    else:
-        return None
-
-    year = report.reporting_year or 2024
-    month = data.get('month', 1)  # Default to January (annual data)
-    description = data.get('description', f'Questionnaire step {step_id}')
-
-    return {
-        'fuel_type': fuel_type,
-        'quantity': qty,
-        'unit': unit or 'kWh',
-        'year': year,
-        'month': month,
-        'scope': scope,
-        'description': description,
-        'step_id': step_id,
-    }
-
-
-def _create_entry_from_questionnaire(user, company, emission_data):
-    """
-    Create an EmissionEntry from questionnaire-extracted data.
-
-    Factor resolution is shared with the AI chat (chat/views.py) via
-    emissions/factor_lookup.py, so a fuel_type+unit resolves to the exact same
-    registered factor no matter which entry point produced it — no more
-    fuzzy slug matching or unit-mismatched factors being silently applied.
-
-    Returns (entry, error) tuple.
-    """
-    from emissions.models import EmissionEntry
-    from emissions.factor_lookup import resolve_factor_and_amount
-
-    if not company:
-        return None, 'No company'
-
-    fuel_type = emission_data['fuel_type']
-    quantity = emission_data['quantity']
-    unit = emission_data['unit']
-    year = emission_data['year']
-    month = emission_data['month']
-    description = emission_data['description']
-
-    factor, qty_decimal, co2e_kg, error = resolve_factor_and_amount(fuel_type, quantity, unit)
-    if error:
-        return None, error
-
-    # Check for duplicate (same step, same report year, same fuel)
-    existing = EmissionEntry.objects.filter(
-        user=user, company=company, year=year,
-        description__contains=f'step {emission_data["step_id"]}'
-    ).first()
-    if existing:
-        # Update instead of duplicate
-        existing.emission_factor = factor
-        existing.quantity = qty_decimal
-        existing.calculated_co2e_kg = co2e_kg
-        existing.factor_value_snapshot = factor.factor_kg_co2e
-        existing.factor_source_snapshot = factor.source
-        existing.save()
-        return existing, None
-
-    entry = EmissionEntry.objects.create(
-        user=user,
-        company=company,
-        emission_factor=factor,
-        year=year,
-        month=month,
-        quantity=qty_decimal,
-        calculated_co2e_kg=co2e_kg,
-        description=description,
-        factor_value_snapshot=factor.factor_kg_co2e,
-        factor_source_snapshot=factor.source,
-        status='approved',
-    )
-    return entry, None
 
 
 class StartReportView(APIView):
@@ -624,21 +445,18 @@ class SubmitStepView(APIView):
         report.current_step = step
         report.save(update_fields=['current_step', 'updated_at', 'client_progress'])
 
-        # ── Phase 2: Auto-create EmissionEntry for consumption data steps ──
-        # If this step contains emission/consumption data, create a real entry
+        # ── Phase 2: questions that ask for an activity amount (fuel, electricity,
+        # freight, waste) become EmissionEntry rows; see step_entries.py ──
         saved_entry = None
-        emission_data = _extract_emission_from_step(step, data, report)
-        if emission_data:
-            entry, err = _create_entry_from_questionnaire(
-                request.user, report.company, emission_data
-            )
-            if entry:
-                saved_entry = {
-                    'id': entry.id,
-                    'co2e_kg': float(entry.calculated_co2e_kg),
-                    'co2e_tonne': float(entry.calculated_co2e_kg) / 1000,
-                    'factor_name': entry.emission_factor.name,
-                }
+        entries = sync_step_entries(request.user, report.company, report, step, data)
+        if entries:
+            co2e_kg = sum(float(e.calculated_co2e_kg) for e in entries)
+            saved_entry = {
+                'id': entries[0].id,
+                'co2e_kg': co2e_kg,
+                'co2e_tonne': co2e_kg / 1000,
+                'factor_name': ', '.join(e.emission_factor.name for e in entries),
+            }
 
         return Response({
             'success': True,
