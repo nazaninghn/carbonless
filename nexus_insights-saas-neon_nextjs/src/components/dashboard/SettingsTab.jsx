@@ -48,19 +48,22 @@ export default function SettingsTab({ language, user, fetchData }) {
   // TABS is module-level (never changes); only dep is activeTab
   const active = useMemo(() => TABS.find((tab) => tab.id === activeTab), [activeTab]);
 
-  const handleExport = useCallback(async () => {
-    setExporting(true);
+  // `kind`: 'xlsx' — a workbook a person can open; 'json' — the machine
+  // backup. Both hold the same full company data.
+  const handleExport = useCallback(async (kind = 'xlsx') => {
+    setExporting(kind);
     try {
-      const res = await api.exportAll();
+      const res = kind === 'xlsx' ? await api.exportAllExcel(tr ? 'tr' : 'en') : await api.exportAll();
       if (res.ok) {
-        const data = await res.json();
-        const blob = new Blob([JSON.stringify(data, null, 2)], {
-          type: 'application/json',
-        });
+        const blob = kind === 'xlsx'
+          ? await res.blob()
+          : new Blob([JSON.stringify(await res.json(), null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'carbonless_backup.json';
+        a.download = kind === 'xlsx'
+          ? (tr ? 'carbonless_yedek.xlsx' : 'carbonless_backup.xlsx')
+          : 'carbonless_backup.json';
         // Append to DOM — required by Firefox/older Safari for blob downloads
         document.body.appendChild(a);
         a.click();
@@ -70,7 +73,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       }
     } catch {}
     setExporting(false);
-  }, []);
+  }, [tr]);
 
   const openDeleteModal = useCallback(() => {
     setDeletePassword('');
@@ -308,17 +311,26 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <PanelTitle icon={Download} title={tr ? 'Veri Dışa Aktarma' : 'Data Export'} />
                 <p className="mb-4 text-sm leading-6 text-[#072C0E]/60">
                   {tr
-                    ? 'Tüm emisyon verilerinizi JSON formatında indirin.'
-                    : 'Download all your emission data in JSON format.'}
+                    ? 'Şirketinizin tüm verilerini indirin: şirket bilgileri, tesisler, tüm yılların emisyon kayıtları, hedefler ve envanterlerin anket cevapları. Excel dosyası her bölümü ayrı bir sayfada açar; JSON dosyası teknik yedek içindir.'
+                    : "Download all of your company's data: company details, facilities, every year's emission entries, targets and the inventories' questionnaire answers. The Excel file opens each part on its own sheet; the JSON file is a technical backup."}
                 </p>
-                <button
-                  onClick={handleExport}
-                  disabled={exporting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-[#DEFAE1] shadow-xl shadow-[#072C0E]/15 transition hover:bg-[#175022] disabled:opacity-60 sm:w-auto"
-                >
-                  <Download className="h-4 w-4" />
-                  {exporting ? '...' : tr ? 'Tüm Verileri İndir' : 'Export All Data'}
-                </button>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    onClick={() => handleExport('xlsx')}
+                    disabled={!!exporting}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-[#DEFAE1] shadow-xl shadow-[#072C0E]/15 transition hover:bg-[#175022] disabled:opacity-60 sm:w-auto"
+                  >
+                    <Download className="h-4 w-4" />
+                    {exporting === 'xlsx' ? '...' : tr ? 'Tüm Verileri İndir (Excel)' : 'Export All Data (Excel)'}
+                  </button>
+                  <button
+                    onClick={() => handleExport('json')}
+                    disabled={!!exporting}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#072C0E]/15 bg-white px-5 py-3 text-sm font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60 sm:w-auto"
+                  >
+                    {exporting === 'json' ? '...' : tr ? 'JSON yedek' : 'JSON backup'}
+                  </button>
+                </div>
               </Panel>
 
               <div className="rounded-[2rem] border border-red-200 bg-red-50 p-5 shadow-[0_8px_30px_rgba(7, 44, 14,0.05)]">

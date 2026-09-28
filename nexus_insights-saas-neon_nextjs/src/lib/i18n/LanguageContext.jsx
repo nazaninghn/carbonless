@@ -49,6 +49,15 @@ export function LanguageProvider({ children }) {
       localStorage.setItem('language', lang);
       localStorage.setItem('language_explicit', '1'); // marks that user actively chose this
     } catch {}
+    // A signed-in user's choice is also the account's language, which the
+    // notifications (and e-mails) are written in — not only this browser's.
+    try {
+      if (typeof document !== 'undefined' && document.cookie.includes('carbonless_auth=1')) {
+        import('@/lib/utils/api')
+          .then(({ api }) => api.updateProfile({ language_preference: lang }))
+          .catch(() => {});
+      }
+    } catch {}
   }, []);
 
   // `translations` is a module-level import — same reference for the lifetime of the page.

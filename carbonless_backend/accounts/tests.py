@@ -278,3 +278,54 @@ class DeactivatedMemberTests(TestCase):
         rows = r.data if isinstance(r.data, list) else r.data.get('results', r.data.get('members', []))
         names = {m['user_email']: m['full_name'] for m in rows}
         self.assertEqual(names['mem5@test.com'], 'Selin Kaya')
+
+
+class LanguagePreferenceTests(TestCase):
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user('langu', 'langu@test.com', 'pass12345')
+        from .models import UserProfile
+        UserProfile.objects.create(user=self.user)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_choice_is_saved_and_validated(self):
+        r = self.client.patch('/api/accounts/update-profile/', {'language_preference': 'en'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        self.user.profile.refresh_from_db()
+        self.assertEqual(self.user.profile.language_preference, 'en')
+        r = self.client.patch('/api/accounts/update-profile/', {'language_preference': 'de'}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+
+class FullBackupTests(TestCase):
+    def test_backup_has_company_facilities_and_inventories(self):
+        from rest_framework.test import APIClient
+        from companies.models import Company, CompanyMembership, Facility
+        from questionnaire.models import CarbonReport, ReportStep
+        user = User.objects.create_user('bak', 'bak@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Yedek A.Ş.', tax_number='9',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+        Facility.objects.create(company=company, name='Gebze Fabrika')
+        report = CarbonReport.objects.create(company=company, created_by=user, reporting_year=2024, title='Env 2024')
+        ReportStep.objects.create(report=report, step_id='4A-1', answer={'answer': {'Merkez': '1000 kWh'}})
+        c = APIClient()
+        c.force_authenticate(user=user)
+        d = c.get('/api/emissions/export-all/').data
+        self.assertEqual(d['company']['legal_entity_name'], 'Yedek A.Ş.')
+        self.assertEqual([f['name'] for f in d['facilities']], ['Gebze Fabrika'])
+        self.assertEqual(d['inventories'][0]['answers']['4A-1'], {'answer': {'Merkez': '1000 kWh'}})
+        r = c.get('/api/emissions/export-all/?file=xlsx&lang=tr')
+        self.assertEqual(r.status_code, 200)
+        from io import BytesIO
+        from openpyxl import load_workbook
+        wb = load_workbook(BytesIO(b''.join(r.streaming_content) if r.streaming else r.content))
+        self.assertEqual(wb.sheetnames, ['Şirket', 'Tesisler', 'Emisyon Kayıtları', 'Hedefler',
+                                         'Envanterler', 'Anket Cevapları'])
+        self.assertEqual(wb['Anket Cevapları']['C2'].value, '4A-1')

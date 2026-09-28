@@ -580,30 +580,13 @@ def api_docs_view(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_all_view(request):
-    """Export all user data as JSON (backup)"""
-    company = get_current_company(request.user)
-    # Fix #65: EmissionEntrySerializer now includes facility_name (source='facility.name').
-    # Without 'facility' in select_related, every entry that has a facility FK triggers
-    # an extra SQL query inside the serializer — classic N+1.
-    entries = (
-        EmissionEntry.objects
-        .filter(company=company)
-        .select_related('emission_factor', 'facility', 'user')
-        if company else EmissionEntry.objects.none()
-    )
-    targets = ReductionTarget.objects.filter(company=company) if company else ReductionTarget.objects.none()
-    custom = CustomEmissionRequest.objects.filter(company=company) if company else CustomEmissionRequest.objects.none()
-
-    from emissions.serializers import EmissionEntrySerializer, ReductionTargetSerializer, CustomEmissionRequestSerializer
-    return Response({
-        'user': request.user.username,
-        # Fix #51: Removed dead-code `if True else ''` pattern; use timezone.now()
-        # so the exported_at timestamp is timezone-aware (consistent with USE_TZ=True).
-        'exported_at': str(timezone.now()),
-        'entries': EmissionEntrySerializer(entries, many=True).data,
-        'targets': ReductionTargetSerializer(targets, many=True).data,
-        'custom_requests': CustomEmissionRequestSerializer(custom, many=True).data,
-    })
+    """The company's full backup (see full_export.py): JSON by default,
+    an Excel workbook with ?file=xlsx (&lang=tr for Turkish sheets; DRF reserves ?format=)."""
+    from .full_export import build_backup, backup_workbook_response
+    data = build_backup(request.user, get_current_company(request.user))
+    if request.query_params.get('file') == 'xlsx':
+        return backup_workbook_response(data, request.query_params.get('lang') == 'tr')
+    return Response(data)
 
 
 @api_view(['GET'])
