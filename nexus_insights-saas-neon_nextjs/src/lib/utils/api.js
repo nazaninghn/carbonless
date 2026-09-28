@@ -260,6 +260,8 @@ export const api = {
   approveAdvisorApproval: (id, action, reason) => request(`/questionnaire/advisor-approvals/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
 
   inviteMember: (data) => request('/companies/invite/', { method: 'POST', body: JSON.stringify(data) }),
+  getInvites: () => request('/companies/invites/'),
+  cancelInvite: (id) => request(`/companies/invites/${id}/`, { method: 'DELETE' }),
   acceptInvite: (token) => request('/companies/accept-invite/', { method: 'POST', body: JSON.stringify({ token }) }),
   getMyCompanies: () => request('/companies/my-companies/'),
   switchCompany: (companyId) => request('/companies/switch/', { method: 'POST', body: JSON.stringify({ company_id: companyId }) }),

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { Users, UserPlus, Shield, Crown, Pencil, Database, Eye, Info } from 'lucide-react';
+import { Users, UserPlus, Shield, Crown, Pencil, Database, Eye, Info, Mail, X } from 'lucide-react';
 
 const ROLES = [
   { value: 'owner', icon: Crown, color: 'bg-amber-100 text-amber-700 border-amber-300',
@@ -24,6 +24,15 @@ const ROLES = [
 ];
 
 const getRoleInfo = (role) => ROLES.find(r => r.value === role) || ROLES[3];
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Invite errors the server names by code.
+const INVITE_ERRORS = {
+  invalid_email: { tr: 'Geçerli bir e-posta adresi girin (örn. ad@sirket.com).', en: 'Enter a valid email address (e.g. name@company.com).' },
+  already_member: { tr: 'Bu kişi zaten takımın üyesi.', en: 'This person is already a member of the team.' },
+  inactive_member: { tr: 'Bu kişi takımda ama devre dışı. Aşağıdaki listeden "Etkinleştir" ile erişimini açabilirsiniz.', en: 'This person is in the team but deactivated. Use "Activate" in the list to restore access.' },
+};
 
 export default function TeamManagement({ language }) {
   const [members, setMembers] = useState([]);
@@ -49,7 +58,32 @@ export default function TeamManagement({ language }) {
     } finally { setLoading(false); }
   }, [tr, toast]);
 
-  useEffect(() => { fetchMembers(); }, [fetchMembers]);
+  // Invites sent but not accepted yet — shown so they can be followed up,
+  // re-sent (which renews them) or withdrawn.
+  const [invites, setInvites] = useState([]);
+  const fetchInvites = useCallback(async () => {
+    try {
+      const res = await api.getInvites();
+      if (res.ok) setInvites(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => { fetchMembers(); fetchInvites(); }, [fetchMembers, fetchInvites]);
+
+  const [confirmCancel, setConfirmCancel] = useState(null);
+  const handleCancelInvite = useCallback(async (inv) => {
+    try {
+      const res = await api.cancelInvite(inv.id);
+      if (res.ok || res.status === 204) {
+        toast.success(tr ? `Davet iptal edildi: ${inv.email}` : `Invite cancelled: ${inv.email}`);
+      } else {
+        toast.error(tr ? 'Davet iptal edilemedi' : 'Could not cancel the invite');
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    }
+    fetchInvites();
+  }, [tr, toast, fetchInvites]);
 
   const handleRoleChange = useCallback(async (id, newRole) => {
     setUpdating(id);
@@ -68,11 +102,15 @@ export default function TeamManagement({ language }) {
 
   const handleInvite = useCallback(async () => {
     if (!inviteEmail) return;
+    if (!EMAIL_RE.test(inviteEmail.trim())) {
+      toast.error(tr ? INVITE_ERRORS.invalid_email.tr : INVITE_ERRORS.invalid_email.en);
+      return;
+    }
     // Fix 25E: prevent double-invoke — button has disabled={inviting} but guard the fn too
     if (inviting) return;
     setInviting(true);
     try {
-      const res = await api.inviteMember({ email: inviteEmail, role: inviteRole });
+      const res = await api.inviteMember({ email: inviteEmail.trim(), role: inviteRole });
       if (res.ok) {
         const data = await res.json();
         if (data.email_sent === false) {
@@ -86,9 +124,14 @@ export default function TeamManagement({ language }) {
           toast.success(tr ? `Davet e-postası gönderildi: ${data.email}` : `Invite email sent to ${data.email}`);
         }
         setInviteEmail('');
+        fetchInvites();
       } else {
-        let msg = tr ? 'Hata' : 'Error';
-        try { const err = await res.json(); msg = err.error || msg; } catch {}
+        let msg = tr ? 'Davet gönderilemedi' : 'Could not send the invite';
+        try {
+          const err = await res.json();
+          const known = INVITE_ERRORS[err.code];
+          msg = known ? (tr ? known.tr : known.en) : (err.error || msg);
+        } catch {}
         toast.error(msg);
       }
     } catch {
@@ -96,7 +139,7 @@ export default function TeamManagement({ language }) {
     } finally {
       setInviting(false);
     }
-  }, [inviteEmail, inviteRole, inviting, tr, toast]);
+  }, [inviteEmail, inviteRole, inviting, tr, toast, fetchInvites]);
 
   // Deactivating cuts the member off at once, so it is confirmed first;
   // re-activating is harmless and happens on click.
@@ -278,6 +321,64 @@ export default function TeamManagement({ language }) {
           </button>
         </div>
       </div>
+
+      {/* Pending invites */}
+      {invites.length > 0 && (
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Mail className="h-4 w-4 text-[#2ABD41]" />
+            <h4 className="text-sm font-semibold text-[#072C0E]">
+              {tr ? `Bekleyen Davetler (${invites.length})` : `Pending Invites (${invites.length})`}
+            </h4>
+          </div>
+          <p className="mb-3 text-xs text-[#072C0E]/55">
+            {tr
+              ? 'Davet bağlantısı 7 gün geçerlidir. Süresi dolan bir daveti yenilemek için aynı adresi yukarıdan tekrar davet edin.'
+              : 'An invite link is valid for 7 days. To renew an expired invite, invite the same address again above.'}
+          </p>
+          <div className="space-y-2">
+            {invites.map(inv => {
+              const role = getRoleInfo(inv.role);
+              const until = inv.expires_at ? new Date(inv.expires_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB') : null;
+              return (
+                <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F8F8F8] px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[#072C0E]">{inv.email}</p>
+                    <p className="text-[11px] text-[#072C0E]/50">
+                      {tr ? role.label.tr : role.label.en}
+                      {' · '}
+                      {inv.expired
+                        ? <span className="font-semibold text-red-500">{tr ? 'Süresi doldu' : 'Expired'}</span>
+                        : (until && (tr ? `${until} tarihine kadar geçerli` : `Valid until ${until}`))}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmCancel(inv)}
+                    className="inline-flex items-center gap-1 rounded-full border border-[#072C0E]/10 px-3 py-1 text-xs font-semibold text-[#072C0E]/60 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                  >
+                    <X className="h-3 w-3" /> {tr ? 'Daveti iptal et' : 'Cancel invite'}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmCancel !== null}
+        type="danger"
+        language={tr ? 'tr' : 'en'}
+        title={tr ? 'Davet iptal edilsin mi?' : 'Cancel this invite?'}
+        message={confirmCancel && (tr
+          ? `${confirmCancel.email} adresine gönderilen davet bağlantısı artık çalışmayacak.`
+          : `The invite link sent to ${confirmCancel.email} will stop working.`)}
+        confirmText={tr ? 'Daveti iptal et' : 'Cancel invite'}
+        cancelText={tr ? 'Vazgeç' : 'Keep'}
+        onConfirm={() => { const inv = confirmCancel; setConfirmCancel(null); if (inv) handleCancelInvite(inv); }}
+        onCancel={() => setConfirmCancel(null)}
+      />
 
       <ConfirmDialog
         open={confirmDeactivate !== null}
