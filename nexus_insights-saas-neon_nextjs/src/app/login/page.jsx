@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef, Suspense } from 'react';
 import Script from 'next/script';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { authErrorMessage } from '@/lib/authErrors';
 import NextLink from 'next/link';
 import Image from 'next/image';
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
@@ -66,7 +67,9 @@ function LoginContent() {
         completeLogin();
       } else {
         const data = await res.json().catch(() => ({}));
-        setError(translateBackendError(data?.error, tr) || (tr ? 'Google ile giriş başarısız oldu.' : 'Google sign-in failed.'));
+        setError(data?.code === 'rate_limited'
+          ? authErrorMessage(data, tr)
+          : translateBackendError(data?.error, tr) || (tr ? 'Google ile giriş başarısız oldu.' : 'Google sign-in failed.'));
       }
     } catch {
       setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
@@ -106,7 +109,9 @@ function LoginContent() {
         completeLogin();
       } else {
         const data = await res.json().catch(() => ({}));
-        if (res.status >= 500) {
+        if (data?.code === 'rate_limited') {
+          setError(authErrorMessage(data, tr));
+        } else if (res.status >= 500) {
           setError(tr ? 'Sunucu hatası. Lütfen tekrar deneyin.' : 'Server error. Please try again.');
         } else {
           const detail = data?.detail || data?.error;

@@ -96,3 +96,40 @@ export const NACE_CODES_2 = [
 
 // Combined list
 export const ALL_NACE_CODES = [...NACE_CODES, ...NACE_CODES_2];
+
+// NACE Rev. 2 sections — for a company recorded with only the section letter.
+export const NACE_SECTIONS = {
+  A: { tr: 'Tarım, ormancılık ve balıkçılık', en: 'Agriculture, forestry and fishing' },
+  B: { tr: 'Madencilik ve taş ocakçılığı', en: 'Mining and quarrying' },
+  C: { tr: 'İmalat', en: 'Manufacturing' },
+  D: { tr: 'Elektrik, gaz, buhar ve iklimlendirme', en: 'Electricity, gas, steam and air conditioning supply' },
+  E: { tr: 'Su temini; kanalizasyon ve atık yönetimi', en: 'Water supply; sewerage and waste management' },
+  F: { tr: 'İnşaat', en: 'Construction' },
+  G: { tr: 'Toptan ve perakende ticaret', en: 'Wholesale and retail trade' },
+  H: { tr: 'Ulaştırma ve depolama', en: 'Transportation and storage' },
+  I: { tr: 'Konaklama ve yiyecek hizmetleri', en: 'Accommodation and food service activities' },
+  J: { tr: 'Bilgi ve iletişim', en: 'Information and communication' },
+  K: { tr: 'Finans ve sigorta faaliyetleri', en: 'Financial and insurance activities' },
+  L: { tr: 'Gayrimenkul faaliyetleri', en: 'Real estate activities' },
+  M: { tr: 'Mesleki, bilimsel ve teknik faaliyetler', en: 'Professional, scientific and technical activities' },
+  N: { tr: 'İdari ve destek hizmet faaliyetleri', en: 'Administrative and support service activities' },
+  O: { tr: 'Kamu yönetimi ve savunma', en: 'Public administration and defence' },
+  P: { tr: 'Eğitim', en: 'Education' },
+  Q: { tr: 'İnsan sağlığı ve sosyal hizmetler', en: 'Human health and social work activities' },
+  R: { tr: 'Kültür, sanat, eğlence ve spor', en: 'Arts, entertainment and recreation' },
+  S: { tr: 'Diğer hizmet faaliyetleri', en: 'Other service activities' },
+  T: { tr: 'Hanehalkı faaliyetleri', en: 'Activities of households as employers' },
+  U: { tr: 'Ülke dışı örgüt ve kuruluşlar', en: 'Activities of extraterritorial organisations' },
+};
+
+// "C13 — Tekstil ürünlerinin imalatı" for a stored NACE code; the code alone
+// when it is not in the list.
+export function naceLabel(code, lang) {
+  if (!code) return '';
+  const c = String(code).trim().toUpperCase();
+  const l = lang === 'tr' ? 'tr' : 'en';
+  const hit = ALL_NACE_CODES.find((n) => n.code === c)
+    || (NACE_SECTIONS[c] ? { code: c, ...NACE_SECTIONS[c] } : null)
+    || ALL_NACE_CODES.find((n) => c.startsWith(n.code));
+  return hit ? `${c} — ${hit[l]}` : c;
+}

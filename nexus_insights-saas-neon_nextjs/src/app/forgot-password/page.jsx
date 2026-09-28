@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { authErrorMessage } from '@/lib/authErrors';
 import SimpleHeader from '@/components/SimpleHeader';
 import NextLink from 'next/link';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
@@ -37,7 +38,9 @@ export default function ForgotPasswordPage() {
       if (res.ok) {
         setSent(true);
       } else {
-        setError(tr ? 'Bir hata oluştu. Lütfen tekrar deneyin.' : 'An error occurred. Please try again.');
+        const data = await res.json().catch(() => ({}));
+        setError(authErrorMessage(data?.code === 'rate_limited' ? data : null, tr,
+          tr ? 'Bir hata oluştu. Lütfen tekrar deneyin.' : 'An error occurred. Please try again.'));
       }
     } catch {
       setError(tr ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');

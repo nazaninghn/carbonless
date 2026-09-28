@@ -30,7 +30,7 @@ export async function POST(request) {
   if (!backendRes.ok) {
     const err = await backendRes.json().catch(() => ({}));
     return NextResponse.json(
-      { error: err.detail || 'Google sign-in failed' },
+      { error: err.detail || err.error || 'Google sign-in failed', code: err.code },
       { status: backendRes.status }
     );
   }

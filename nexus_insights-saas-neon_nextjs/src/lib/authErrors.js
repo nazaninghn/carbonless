@@ -31,6 +31,10 @@ const MESSAGES = {
     tr: 'Şifre çok zayıf. En az 8 karakterli, tahmin edilmesi zor ve yalnızca rakamlardan oluşmayan bir şifre seçin.',
     en: 'That password is too weak. Use at least 8 characters that are hard to guess and not only numbers.',
   },
+  rate_limited: {
+    tr: 'Çok fazla deneme yapıldı. Lütfen biraz bekleyip tekrar deneyin.',
+    en: 'Too many attempts. Please wait a little and try again.',
+  },
   wrong_password: { tr: 'Mevcut şifre hatalı.', en: 'Current password is incorrect.' },
 };
 

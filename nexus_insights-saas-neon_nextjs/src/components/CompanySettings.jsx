@@ -3,6 +3,44 @@ import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import { Building2, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
+import { COUNTRIES } from '@/lib/data/countries';
+import { ALL_NACE_CODES, naceLabel } from '@/lib/data/naceCodes';
+
+// Stored values are codes ("TR", "C13"); a company without one has "Not set".
+const blank = (v) => !v || v === 'Not set';
+
+function countryLabel(code, tr) {
+  if (blank(code)) return '';
+  const c = COUNTRIES.find((x) => x.code === String(code).toUpperCase());
+  return c ? (tr ? c.tr : c.en) : code;
+}
+
+const SELECT_CLS = 'w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none';
+
+function CountrySelect({ value, onChange, tr }) {
+  const v = blank(value) ? '' : value;
+  const known = COUNTRIES.some((c) => c.code === v);
+  return (
+    <select value={v} onChange={onChange} className={SELECT_CLS}>
+      <option value="">{tr ? 'Seçin…' : 'Select…'}</option>
+      {v && !known && <option value={v}>{v}</option>}
+      {[...COUNTRIES].sort((a, b) => (tr ? a.tr : a.en).localeCompare(tr ? b.tr : b.en, tr ? 'tr' : 'en'))
+        .map((c) => <option key={c.code} value={c.code}>{tr ? c.tr : c.en}</option>)}
+    </select>
+  );
+}
+
+function NaceSelect({ value, onChange, tr }) {
+  const v = value || '';
+  const known = ALL_NACE_CODES.some((n) => n.code === v);
+  return (
+    <select value={v} onChange={onChange} className={SELECT_CLS}>
+      <option value="">{tr ? 'Seçin…' : 'Select…'}</option>
+      {v && !known && <option value={v}>{naceLabel(v, tr ? 'tr' : 'en')}</option>}
+      {ALL_NACE_CODES.map((n) => <option key={n.code} value={n.code}>{n.code} — {tr ? n.tr : n.en}</option>)}
+    </select>
+  );
+}
 
 // fetchCompanyDetail now uses api.getCompanyDetail() so it automatically carries
 // the Bearer token + 401 auto-refresh, matching every other API call in the app.
@@ -215,12 +253,10 @@ export default function CompanySettings({ language, readOnly = false }) {
             <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
           </FormField>
           <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
-            <input type="text" value={field('country_of_headquarters')} onChange={set('country_of_headquarters')}
-              placeholder={tr ? 'Türkiye' : 'Turkey'} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+            <CountrySelect value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} tr={tr} />
           </FormField>
           <FormField label="NACE">
-            <input type="text" value={field('nace_code')} onChange={set('nace_code')}
-              placeholder={tr ? 'Örn. C29.10' : 'e.g. C29.10'} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+            <NaceSelect value={field('nace_code')} onChange={set('nace_code')} tr={tr} />
           </FormField>
         </div>
 
@@ -260,8 +296,8 @@ export default function CompanySettings({ language, readOnly = false }) {
           {[
             { key: 'name',    label: tr ? 'Şirket Adı' : 'Company Name', val: company.legal_entity_name },
             { key: 'tax',     label: tr ? 'Vergi No' : 'Tax Number',      val: company.tax_number },
-            { key: 'country', label: tr ? 'Ülke' : 'Country',             val: company.country_of_headquarters },
-            { key: 'nace',    label: 'NACE',                               val: company.nace_code },
+            { key: 'country', label: tr ? 'Ülke' : 'Country',             val: countryLabel(company.country_of_headquarters, tr) },
+            { key: 'nace',    label: tr ? 'Sektör (NACE)' : 'Sector (NACE)', val: naceLabel(company.nace_code, language) },
           ].map((f) => (
             <div key={f.key} className="rounded-xl bg-[#F8F8F8] p-3">
               <p className="text-xs text-[#072C0E]/50">{f.label}</p>
@@ -291,10 +327,10 @@ export default function CompanySettings({ language, readOnly = false }) {
           <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
-          <input type="text" value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <CountrySelect value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} tr={tr} />
         </FormField>
         <FormField label="NACE">
-          <input type="text" value={field('nace_code')} onChange={set('nace_code')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <NaceSelect value={field('nace_code')} onChange={set('nace_code')} tr={tr} />
         </FormField>
         <FormField label={tr ? 'Vergi Dairesi' : 'Tax Office'}>
           <input type="text" value={field('tax_office')} onChange={set('tax_office')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />

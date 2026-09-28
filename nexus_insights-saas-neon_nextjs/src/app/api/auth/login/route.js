@@ -26,7 +26,7 @@ export async function POST(request) {
   if (!backendRes.ok) {
     const err = await backendRes.json().catch(() => ({}));
     return NextResponse.json(
-      { error: err.detail || err.non_field_errors?.[0] || 'Invalid credentials' },
+      { error: err.detail || err.error || err.non_field_errors?.[0] || 'Invalid credentials', code: err.code },
       { status: backendRes.status }
     );
   }

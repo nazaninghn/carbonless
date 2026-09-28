@@ -193,7 +193,14 @@ AUTHENTICATION_BACKENDS = [
 # ============================================
 # REST FRAMEWORK & JWT
 # ============================================
+# How many proxies sit in front of Django and append to X-Forwarded-For
+# (Render: 1). Rate limits key on the address that entry records instead of
+# REMOTE_ADDR, which is the proxy's for every visitor (carbonless_api/client_ip.py).
+RATELIMIT_TRUSTED_PROXIES = int(os.environ.get('RATELIMIT_TRUSTED_PROXIES', '0' if DEBUG else '1'))
+
 REST_FRAMEWORK = {
+    # Rate-limited requests answer 429 + code 'rate_limited' (not a 403).
+    'EXCEPTION_HANDLER': 'carbonless_api.client_ip.exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'accounts.authentication.CookieJWTAuthentication',
     ),

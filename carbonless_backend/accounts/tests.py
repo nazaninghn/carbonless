@@ -329,3 +329,58 @@ class FullBackupTests(TestCase):
         self.assertEqual(wb.sheetnames, ['Şirket', 'Tesisler', 'Emisyon Kayıtları', 'Hedefler',
                                          'Envanterler', 'Anket Cevapları'])
         self.assertEqual(wb['Anket Cevapları']['C2'].value, '4A-1')
+
+
+class RateLimitKeyTests(TestCase):
+    """Every visitor arrives through the same proxy address, so limits must be
+    counted per account (sign-in) or per forwarded client address — never on
+    the proxy's own address, which would lock the whole site at once."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+        self.user = User.objects.create_user('real', 'real@test.com', 'StrongPass123')
+
+    def tearDown(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def _login(self, username, password, **extra):
+        return APIClient().post('/api/accounts/login/', {'username': username, 'password': password},
+                                format='json', **extra)
+
+    def test_others_failed_logins_do_not_lock_a_user_out(self):
+        for _ in range(12):
+            self._login('attacker-target', 'wrong')
+        res = self._login('real', 'StrongPass123')
+        self.assertEqual(res.status_code, 200)
+
+    def test_too_many_failed_logins_answer_429_with_code(self):
+        for _ in range(10):
+            self._login('real', 'wrong')
+        res = self._login('REAL ', 'StrongPass123')
+        self.assertEqual(res.status_code, 429)
+        self.assertEqual(res.json()['code'], 'rate_limited')
+
+    def test_forwarded_client_address_is_used_behind_the_proxy(self):
+        from django.test import override_settings
+        with override_settings(RATELIMIT_TRUSTED_PROXIES=1):
+            for _ in range(10):
+                res = APIClient().post('/api/accounts/password-reset/', {'email': 'x@test.com'},
+                                       format='json', HTTP_X_FORWARDED_FOR='203.0.113.5')
+                self.assertEqual(res.status_code, 200)
+            blocked = APIClient().post('/api/accounts/password-reset/', {'email': 'x@test.com'},
+                                       format='json', HTTP_X_FORWARDED_FOR='203.0.113.5')
+            self.assertEqual(blocked.status_code, 429)
+            other = APIClient().post('/api/accounts/password-reset/', {'email': 'x@test.com'},
+                                     format='json', HTTP_X_FORWARDED_FOR='198.51.100.7')
+            self.assertEqual(other.status_code, 200)
+
+    def test_spoofed_leftmost_forwarded_entry_is_ignored(self):
+        from carbonless_api.client_ip import client_ip
+        from django.test import RequestFactory, override_settings
+        req = RequestFactory().get('/', HTTP_X_FORWARDED_FOR='1.2.3.4, 203.0.113.5', REMOTE_ADDR='10.0.0.1')
+        with override_settings(RATELIMIT_TRUSTED_PROXIES=1):
+            self.assertEqual(client_ip(req), '203.0.113.5')
+        with override_settings(RATELIMIT_TRUSTED_PROXIES=0):
+            self.assertEqual(client_ip(req), '10.0.0.1')

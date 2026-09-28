@@ -110,11 +110,18 @@ function VerifyContent() {
     if (!email || resendState === 'sending') return;
     setResendState('sending');
     try {
-      await fetch(`${API_BASE}/accounts/resend-verification/`, {
+      const res = await fetch(`${API_BASE}/accounts/resend-verification/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({ code: 'rate_limited' }));
+        setResendState('idle');
+        setStatus('error');
+        setMessage(authErrorMessage({ ...data, code: 'rate_limited' }, tr));
+        return;
+      }
     } catch {
       // Fall through — resendState still flips to 'sent' since the
       // endpoint never reveals whether the email exists either way
