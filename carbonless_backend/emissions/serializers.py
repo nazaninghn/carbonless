@@ -28,6 +28,26 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     )
     # Who entered it — shown on approval cards so an approver knows whose data it is.
     entered_by = serializers.SerializerMethodField()
+    # For entries the questionnaire created: which inventory and question they
+    # come from, so the UI can send the user there to correct them.
+    questionnaire_source = serializers.SerializerMethodField()
+
+    def get_questionnaire_source(self, obj):
+        desc = obj.description or ''
+        if not desc.startswith('Questionnaire step '):
+            return None
+        step_id = desc[len('Questionnaire step '):].split(' ')[0]
+        cache = self.context.setdefault('_inventory_by_year', {})
+        key = (obj.company_id, obj.year)
+        if key not in cache:
+            from questionnaire.models import CarbonReport
+            report = (CarbonReport.objects
+                      .filter(company_id=obj.company_id, reporting_year=obj.year)
+                      .order_by('-updated_at').only('id').first())
+            cache[key] = report.id if report else None
+        if not cache[key]:
+            return None
+        return {'report_id': cache[key], 'step_id': step_id}
 
     def get_entered_by(self, obj):
         u = obj.user
@@ -57,7 +77,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'description', 'facility', 'facility_name',
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
-            'created_at', 'updated_at', 'entered_by',
+            'created_at', 'updated_at', 'entered_by', 'questionnaire_source',
         ]
         read_only_fields = [
             'calculated_co2e_kg', 'facility_name',

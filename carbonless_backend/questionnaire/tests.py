@@ -511,3 +511,56 @@ class StepEntryApprovalTests(TestCase):
         pending = c.get('/api/emissions/pending/').data
         self.assertEqual([(p['entered_by'], p['year']) for p in pending], [('de3@test.com', 2025)])
         self.assertEqual(save(owner).status, 'approved')
+
+
+class RejectedQuestionnaireEntryTests(TestCase):
+    """A rejected questionnaire entry is fixed in the questionnaire, and a
+    rejected entry does not count in the totals."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from emissions.models import EmissionFactor
+        self.owner = User.objects.create_user('ow4', 'ow4@test.com', 'pass12345')
+        self.clerk = User.objects.create_user('de4', 'de4@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Rej Co', tax_number='7',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        CompanyMembership.objects.create(user=self.clerk, company=self.company, role='data_entry')
+        EmissionFactor.objects.update_or_create(
+            slug='turkey-grid', country='turkey', year=2024,
+            defaults=dict(name='grid', scope='scope2', category='electricity', unit='kwh',
+                          factor_kg_co2e=0.4, source='test', is_active=True, is_default=True))
+        self.report = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2021)
+        self.c_clerk, self.c_owner = APIClient(), APIClient()
+        self.c_clerk.force_authenticate(user=self.clerk)
+        self.c_owner.force_authenticate(user=self.owner)
+        self.c_clerk.patch(f'/api/questionnaire/{self.report.id}/step/',
+                           {'step': '4A-1', 'data': {'answer': {'Merkez': '1000 kWh'}}}, format='json')
+        from emissions.models import EmissionEntry
+        self.entry = EmissionEntry.objects.get(company=self.company)
+        r = self.c_owner.post(f'/api/emissions/entries/{self.entry.id}/approve/',
+                              {'action': 'reject', 'reason': 'fatura 800'}, format='json')
+        self.assertEqual(r.status_code, 200)
+
+    def test_entry_points_to_its_question_and_cannot_be_edited_here(self):
+        rows = self.c_clerk.get('/api/emissions/entries/?year=2021').data
+        rows = rows.get('results', rows) if isinstance(rows, dict) else rows
+        self.assertEqual(rows[0]['questionnaire_source'], {'report_id': self.report.id, 'step_id': '4A-1'})
+        r = self.c_clerk.patch(f'/api/emissions/entries/{self.entry.id}/', {'quantity': '800'}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'edit_in_questionnaire')
+
+    def test_rejection_notification_opens_the_entry_year(self):
+        from accounts.models import Notification
+        n = Notification.objects.get(user=self.clerk, notification_type='entry_rejected')
+        self.assertEqual(n.link, '/dashboard?tab=emissions&year=2021')
+        self.assertIn('Ankette düzelt', n.message)
+
+    def test_rejected_entry_not_in_summary(self):
+        s = self.c_owner.get('/api/emissions/summary/?year=2021').data
+        self.assertEqual(float(s['total_kg'] if 'total_kg' in s else s['total_tonne']), 0.0)

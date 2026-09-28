@@ -50,6 +50,22 @@ export const CATEGORY_LABELS = {
 
 export const catLabel = (key, tr) => CATEGORY_LABELS[key]?.[tr ? 'tr' : 'en'] ?? key;
 export const scopeLabel = (s) => SCOPE_META[s]?.label ?? s;
+// Display names for EmissionFactor.unit codes (stored lower-case: kwh, m3…).
+const UNIT_LABELS = {
+  kwh: 'kWh', mwh: 'MWh', gj: 'GJ', m3: 'm³', m2: 'm²', kg: 'kg', km: 'km', usd: 'USD',
+  liters: { tr: 'litre', en: 'litres' }, tonne: { tr: 'ton', en: 'tonnes' },
+  'tonne-km': { tr: 'ton-km', en: 'tonne-km' }, pkm: { tr: 'yolcu-km', en: 'passenger-km' },
+  'person-km': { tr: 'yolcu-km', en: 'passenger-km' }, night: { tr: 'gece', en: 'nights' },
+  nights: { tr: 'gece', en: 'nights' }, units: { tr: 'adet', en: 'units' },
+  packages: { tr: 'paket', en: 'packages' }, days: { tr: 'gün', en: 'days' },
+  employees: { tr: 'çalışan', en: 'employees' },
+};
+export const unitLabel = (u, tr) => {
+  const l = UNIT_LABELS[u];
+  if (!l) return u;
+  return typeof l === 'string' ? l : (tr ? l.tr : l.en);
+};
+
 export const fmt = (n, d = 2) => parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d });
 
 export const ALLOWED_UPLOAD_MIME = new Set([

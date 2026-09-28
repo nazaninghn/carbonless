@@ -93,6 +93,19 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             target_type='EmissionEntry', target_id=str(serializer.instance.id),
         )
 
+    def update(self, request, *args, **kwargs):
+        # A questionnaire-created entry is rebuilt from its questionnaire answer
+        # whenever that question is saved again, so an amount changed here
+        # would silently come back. It is corrected in the questionnaire.
+        instance = self.get_object()
+        if ((instance.description or '').startswith('Questionnaire step ')
+                and any(k in request.data for k in ('quantity', 'emission_factor', 'year', 'month'))):
+            return Response({
+                'error': 'This entry comes from the questionnaire; correct it there.',
+                'code': 'edit_in_questionnaire',
+            }, status=400)
+        return super().update(request, *args, **kwargs)
+
     def perform_update(self, serializer):
         # Editing a rejected entry is how its author fixes and resends it:
         # it goes back through the same approval rule as a new entry.
@@ -166,7 +179,11 @@ def emission_summary(request):
     # Fix #63: was hardcoded to 2026 — use current year as the dynamic default
     year = request.query_params.get('year', datetime.now().year)
     company = get_current_company(request.user)
-    entries = EmissionEntry.objects.filter(company=company, year=year) if company else EmissionEntry.objects.none()
+    # A rejected entry (a rejection moves it to 'draft') is not part of the
+    # inventory; it stays listed, with its reason, on the emissions page until
+    # it is corrected.
+    entries = (EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft')
+               if company else EmissionEntry.objects.none())
 
     total = float(entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0)
     scope1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
@@ -448,7 +465,8 @@ def comparison_view(request):
 
     def get_year_data(y):
         company = _company
-        qs = EmissionEntry.objects.filter(company=company, year=y) if company else EmissionEntry.objects.none()
+        qs = (EmissionEntry.objects.filter(company=company, year=y).exclude(status='draft')
+              if company else EmissionEntry.objects.none())
         total = qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s1 = qs.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s2 = qs.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0

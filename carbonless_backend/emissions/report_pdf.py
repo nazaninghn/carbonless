@@ -455,7 +455,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     company = get_current_company(user)
     cname = company.legal_entity_name if company else user.username
 
-    entries = EmissionEntry.objects.filter(company=company, year=year).select_related(
+    entries = EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft').select_related(
         'emission_factor', 'facility'
     ) if company else EmissionEntry.objects.none()
 

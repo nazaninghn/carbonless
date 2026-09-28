@@ -5,19 +5,7 @@ import { ClipboardCheck, Check, X, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import { noPermissionMessage } from '@/lib/permissions';
 import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
-import { MONTHS_TR, MONTHS_EN } from '@/lib/constants/emissions';
-
-const UNIT_LABELS = {
-  kwh: 'kWh', gj: 'GJ', m3: 'm³', m2: 'm²', liters: { tr: 'litre', en: 'litres' }, kg: 'kg',
-  tonne: { tr: 'ton', en: 'tonnes' }, km: 'km', 'tonne-km': { tr: 'ton-km', en: 'tonne-km' },
-  'person-km': { tr: 'yolcu-km', en: 'passenger-km' }, nights: { tr: 'gece', en: 'nights' },
-  units: { tr: 'adet', en: 'units' }, usd: 'USD',
-};
-const unitLabel = (u, tr) => {
-  const l = UNIT_LABELS[u];
-  if (!l) return u;
-  return typeof l === 'string' ? l : (tr ? l.tr : l.en);
-};
+import { MONTHS_TR, MONTHS_EN, unitLabel } from '@/lib/constants/emissions';
 const num = (v, tr, digits = 2) =>
   Number(v || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: digits });
 

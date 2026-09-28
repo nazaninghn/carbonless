@@ -91,7 +91,7 @@ def get_dashboard_update_payload(user_id: int) -> dict:
     entries = EmissionEntry.objects.filter(
         company__account__user_id=user_id,
         year=current_year
-    ).select_related('emission_factor')
+    ).exclude(status='draft').select_related('emission_factor')
 
     total_co2e_kg = entries.aggregate(Sum('calculated_co2e_kg'))['calculated_co2e_kg__sum'] or 0
 
