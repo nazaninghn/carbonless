@@ -242,3 +242,80 @@ class ClientProgressTests(TestCase):
         self._step({'answered': 500, 'total': 128})
         self.report.refresh_from_db()
         self.assertIsNone(self.report.client_progress)
+
+
+class StepEntriesTests(TestCase):
+    """Only questions that ask for an activity amount become emission entries."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user('ent', 'ent@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Ent Co', tax_number='2',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.user, company=self.company, role='owner')
+        self.report = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2025)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _factor(self, slug, unit, value, scope='scope3', country='global'):
+        from emissions.models import EmissionFactor
+        return EmissionFactor.objects.update_or_create(
+            slug=slug, country=country, year=2024,
+            defaults=dict(name=slug, scope=scope, category='x', unit=unit,
+                          factor_kg_co2e=value, source='test', is_active=True, is_default=True))[0]
+
+    def _step(self, step, answer):
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
+            'step': step, 'data': {'answer': answer}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        return r
+
+    def _entries(self):
+        from emissions.models import EmissionEntry
+        return list(EmissionEntry.objects.filter(company=self.company).order_by('id'))
+
+    def test_supplier_ef_document_creates_no_entry(self):
+        self._step('3A-EF-a', {'ef_year': '2026', 'ef_unit': 'kgCO2e_kWh', 'ef_value': '5', 'ef_source': 'X'})
+        self._step('4A-1a', '5')
+        self._step('4A-3a', {'production_kwh': '5', 'grid_sales': True, 'grid_sales_kwh': '5'})
+        self.assertEqual(self._entries(), [])
+
+    def test_each_fuel_gets_its_own_factor(self):
+        self._factor('natural-gas-m3', 'm3', 2, scope='scope1')
+        self._factor('diesel', 'liters', 3, scope='scope1')
+        self._step('3A-5', {'natural_gas': '10 m³', 'diesel': '1.000 litre'})
+        got = {(e.emission_factor.slug, float(e.quantity)) for e in self._entries()}
+        self.assertEqual(got, {('natural-gas-m3', 10.0), ('diesel', 1000.0)})
+        # Answering again replaces, never duplicates.
+        self._step('3A-5', {'natural_gas': '20 m³'})
+        self.assertEqual([(e.emission_factor.slug, float(e.quantity)) for e in self._entries()],
+                         [('natural-gas-m3', 20.0)])
+
+    def test_transport_and_waste_use_catalog_codes(self):
+        self._factor('tm-01', 'tonne-km', 0.062)
+        self._factor('tm-02-ds', 'tonne-km', 0.123)
+        self._factor('wt-01-recycling', 'kg', -0.125)
+        self._step('K3C4-2', {'items': [{'transport_mode': 'TM-01', 'load_tonne': '5', 'distance_km': '100'},
+                                        {'transport_mode': 'TM-99', 'load_tonne': '5', 'distance_km': '100'}],
+                              'draft': {}})
+        self._step('K3C9-1', {'items': [{'transport_mode': 'TM-02', 'load_tonne': '2', 'distance_km': '50'}]})
+        self._step('K3C5-2', {'items': [{'waste_type': 'WT-01', 'quantity_kg': '400', 'disposal_method': 'recycling'},
+                                        {'waste_type': 'WT-05', 'quantity_kg': '10', 'disposal_method': 'landfill'}]})
+        got = {(e.emission_factor.slug, float(e.quantity), round(float(e.calculated_co2e_kg), 3))
+               for e in self._entries()}
+        self.assertEqual(got, {('tm-01', 500.0, 31.0), ('tm-02-ds', 100.0, 12.3),
+                               ('wt-01-recycling', 400.0, -50.0)})
+
+    def test_4a_1_does_not_touch_4a_1a_entries(self):
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('4A-1', {'site': '1 MWh'})
+        self._step('4A-1a', '5')
+        entries = self._entries()
+        self.assertEqual([(e.description, float(e.quantity)) for e in entries],
+                         [('Questionnaire step 4A-1', 1000.0)])
+

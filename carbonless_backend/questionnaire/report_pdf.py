@@ -11,7 +11,7 @@ styles, colors, table helpers and page template rather than re-implementing
 them, so both PDFs stay visually consistent.
 
 If quantified emissions exist for the reporting year (auto-created from
-Scope 1/2/3 questionnaire answers via _create_entry_from_questionnaire, or
+questionnaire answers via step_entries.sync_step_entries, or
 logged separately via Chat/manual entry — see views.py), Section 5 reports
 the real Scope 1/2/3 totals using the exact same aggregation this app's
 existing report already uses. No new calculation logic is introduced here.
