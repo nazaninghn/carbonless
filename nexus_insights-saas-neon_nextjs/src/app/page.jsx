@@ -479,86 +479,46 @@ export default function Home() {
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
             <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
-              {lang === 'tr' ? 'Basit fiyatlandırma' : 'Simple pricing'}
+              {lang === 'tr' ? 'Fiyatlandırma' : 'Pricing'}
             </h2>
             <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">
-              {lang === 'tr' ? 'Her büyüklükteki şirket için uygun planlar.' : 'Plans that fit companies of every size.'}
+              {lang === 'tr'
+                ? 'Carbonless beta sürecinde — tüm özellikler şu an ücretsiz.'
+                : 'Carbonless is in beta — every feature is free for now.'}
             </p>
           </div>
 
-          {/* Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 max-w-3xl mx-auto">
-
-            {/* Free Plan */}
-            <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-7 shadow-sm">
-              <div className="mb-5 sm:mb-6">
-                <p className="text-[13px] sm:text-[14px] font-bold text-[#072C0E]/80">{lang === 'tr' ? 'Ücretsiz' : 'Free'}</p>
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-[30px] sm:text-[36px] font-extrabold text-[#072C0E]">$0</span>
-                  <span className="text-[13px] sm:text-[14px] text-[#072C0E]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
-                </div>
-                <p className="mt-2 text-[12px] sm:text-[13px] text-[#072C0E]/50">
-                  {lang === 'tr' ? 'Küçük ekipler için temel karbon hesaplama.' : 'Basic carbon calculation for small teams.'}
-                </p>
-              </div>
-              <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
-                {(lang === 'tr' ? [
-                  'Dashboard veri girişi',
-                  'Temel emisyon hesaplama',
-                  'Sektör benchmarkı',
-                  'Aylık 5 AI soru',
-                ] : [
-                  'Dashboard data entry',
-                  'Basic emission calculations',
-                  'Sector benchmark',
-                  '5 AI questions / month',
-                ]).map(f => (
-                  <div key={f} className="flex items-center gap-2.5">
-                    <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#2ABD41] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span className="text-[12px] sm:text-[13px] text-[#072C0E]/65">{f}</span>
-                  </div>
-                ))}
-              </div>
-              <Link href="/register"
-                className="block w-full rounded-full border-2 border-[#DEFAE1] py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold text-[#072C0E]/60 hover:border-[#072C0E]/30 hover:text-[#072C0E] transition">
-                {lang === 'tr' ? 'Ücretsiz Başla' : 'Get Started'}
-              </Link>
-            </div>
-
-            {/* Pro Plan */}
+          {/* One plan: there is no paid tier or usage limit yet, so the page
+              says so instead of showing prices and limits that don't apply. */}
+          <div className="max-w-xl mx-auto">
             <div className="relative rounded-2xl border-2 border-[#2ABD41] bg-white p-5 sm:p-7 shadow-lg shadow-[#2ABD41]/5">
-              {/* Popular badge */}
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#2ABD41] px-4 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
-                {lang === 'tr' ? 'Popüler' : 'Popular'}
+                Beta
               </div>
               <div className="mb-5 sm:mb-6">
-                <p className="text-[13px] sm:text-[14px] font-bold text-[#2ABD41]">Pro</p>
-                <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-[30px] sm:text-[36px] font-extrabold text-[#072C0E]">$49</span>
-                  <span className="text-[13px] sm:text-[14px] text-[#072C0E]/40">/ {lang === 'tr' ? 'ay' : 'month'}</span>
-                </div>
+                <p className="text-[13px] sm:text-[14px] font-bold text-[#2ABD41]">{lang === 'tr' ? 'Ücretsiz' : 'Free'}</p>
                 <p className="mt-2 text-[12px] sm:text-[13px] text-[#072C0E]/50">
-                  {lang === 'tr' ? 'AI destekli tam karbon yönetim platformu.' : 'Full AI-powered carbon management platform.'}
+                  {lang === 'tr'
+                    ? 'Beta süresince kullanım sınırı yok. Ücretli planlar başlamadan önce kullanıcılarımıza haber vereceğiz.'
+                    : 'No usage limits during the beta. We will let our users know before any paid plan starts.'}
                 </p>
               </div>
               <div className="space-y-2.5 sm:space-y-3 mb-6 sm:mb-8">
                 {(lang === 'tr' ? [
-                  'Ücretsiz\'deki her şey',
-                  'Sınırsız AI karbon hesaplama',
-                  'ISO 14064-1 PDF raporu',
+                  'Dashboard ve AI ile veri girişi',
+                  'Kapsam 1, 2 ve 3 emisyon hesaplama',
+                  'ISO 14064-1 uyumlu PDF raporu',
+                  'Adım adım karbon envanteri anketi',
                   'Hedefler ve ilerleme takibi',
-                  'AI rehberli anket (133 soru)',
-                  'Danışman onay sistemi',
+                  'Ekip rolleri ve onay akışı',
                   'Excel/CSV dışa aktarma',
                 ] : [
-                  'Everything in Free',
-                  'Unlimited AI carbon calculations',
-                  'ISO 14064-1 PDF report',
+                  'Data entry on the dashboard and with AI',
+                  'Scope 1, 2 and 3 emission calculations',
+                  'ISO 14064-1 aligned PDF report',
+                  'Step-by-step carbon inventory questionnaire',
                   'Goals and progress tracking',
-                  'AI guided questionnaire (133 questions)',
-                  'Consultant approval system',
+                  'Team roles and approval flow',
                   'Excel/CSV export',
                 ]).map(f => (
                   <div key={f} className="flex items-center gap-2.5">
@@ -571,7 +531,7 @@ export default function Home() {
               </div>
               <Link href="/register"
                 className="block w-full rounded-full bg-[#2ABD41] py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold text-white shadow-sm hover:bg-[#1D9C31] transition">
-                {lang === 'tr' ? 'Pro\'ya Geç' : 'Go Pro'}
+                {lang === 'tr' ? 'Ücretsiz Başla' : 'Get Started Free'}
               </Link>
             </div>
           </div>
@@ -598,14 +558,14 @@ export default function Home() {
             {(lang === 'tr' ? [
               { q: 'Kapsam 1, 2 ve 3 emisyonları nedir?', a: 'Kapsam 1 doğrudan emisyonlarınızdır (kendi tesisleriniz, araçlarınız). Kapsam 2, satın aldığınız elektrik/ısıdan kaynaklanır. Kapsam 3 ise tedarik zinciriniz, iş seyahatleri ve ürün kullanımı gibi dolaylı emisyonları kapsar.' },
               { q: 'Kullanmak için teknik bilgi gerekiyor mu?', a: "Hayır. Verilerinizi kendi cümlelerinizle AI'a anlatmanız yeterli — CarbonIQ geri kalanını hesaplar ve sınıflandırır." },
-              { q: 'Raporlar gerçekten denetime hazır mı?', a: 'Evet. Tüm Pro raporları ISO 14064-1 standardına uygun hazırlanır ve doğrudan denetçinize teslim edilebilir.' },
-              { q: 'İstediğim zaman iptal edebilir miyim?', a: 'Evet, Pro aboneliğinizi istediğiniz zaman iptal edebilir veya Ücretsiz plana geri dönebilirsiniz — taahhüt yok.' },
+              { q: 'Raporlar denetime hazır mı?', a: 'Raporlar ISO 14064-1 yapısına uygun hazırlanır: metodoloji, faktör kaynakları, kapsam ve kategori dağılımı. Anketi tamamlayıp verilerinizi ve kanıt belgelerinizi eklediğinizde raporu doğrulama için denetçinize teslim edebilirsiniz.' },
+              { q: 'Ücret ödemem gerekiyor mu?', a: 'Hayır. Carbonless beta sürecinde ve tüm özellikler ücretsiz. Ücretli bir plan başlarsa önceden haber verilir; hesabınızı istediğiniz zaman silebilirsiniz.' },
               { q: 'Verilerim güvende mi?', a: 'Tüm veriler şifrelenir ve yalnızca sizin şirketiniz erişebilir. Verilerinizi asla üçüncü taraflarla paylaşmayız.' },
             ] : [
               { q: 'What are Scope 1, 2, and 3 emissions?', a: 'Scope 1 covers your direct emissions (owned facilities, vehicles). Scope 2 comes from the electricity or heat you purchase. Scope 3 covers indirect emissions across your supply chain, business travel, and product use.' },
               { q: 'Do I need technical knowledge to use Carbonless?', a: 'No. Just describe your data to the AI in plain language — CarbonIQ handles the calculation and classification for you.' },
-              { q: 'Are the reports really audit-ready?', a: 'Yes. Every Pro report is built to the ISO 14064-1 standard and can be handed straight to your auditor.' },
-              { q: 'Can I cancel anytime?', a: 'Yes, you can cancel your Pro subscription or downgrade to Free at any time — no contracts.' },
+              { q: 'Are the reports audit-ready?', a: 'Reports follow the ISO 14064-1 structure: methodology, factor sources, scope and category breakdown. Once you complete the questionnaire and add your data and evidence documents, you can hand the report to your auditor for verification.' },
+              { q: 'Do I have to pay?', a: 'No. Carbonless is in beta and every feature is free. If a paid plan starts, you will be told in advance; you can delete your account at any time.' },
               { q: 'Is my data secure?', a: 'All data is encrypted and accessible only to your company. We never share your data with third parties.' },
             ]).map((item, i) => (
               <details key={i} className="group rounded-2xl border border-[#DEFAE1] bg-[#F9FFF4] px-5 sm:px-6 open:bg-white open:shadow-md transition-colors">

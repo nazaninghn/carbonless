@@ -10,12 +10,15 @@ export default function NotFound() {
 
   useEffect(() => {
     try {
+      // The saved language (chosen or detected), else the browser's —
+      // the same rule LanguageProvider follows.
       const lang = localStorage.getItem('language');
-      const explicit = localStorage.getItem('language_explicit');
-      setTr(lang === 'tr' && explicit === '1');
+      if (lang === 'tr' || lang === 'en') { setTr(lang === 'tr'); return; }
     } catch {
-      // localStorage blocked — keep English default
+      // localStorage blocked — fall through to the browser language
     }
+    const langs = (navigator.languages && navigator.languages.length) ? navigator.languages : [navigator.language || ''];
+    setTr(langs.some(l => String(l).toLowerCase().startsWith('tr')));
   }, []);
 
   return (

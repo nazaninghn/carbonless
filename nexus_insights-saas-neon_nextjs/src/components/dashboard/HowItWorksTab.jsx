@@ -96,8 +96,8 @@ const STEPS = [
     num: '2',
     title: { tr: 'AI hesaplar', en: 'AI calculates' },
     desc: {
-      tr: 'CarbonIQ, verinizi 188+ emisyon faktörüyle anında eşleştirir.',
-      en: 'CarbonIQ matches your data against 188+ emission factors instantly.',
+      tr: 'CarbonIQ, verinizi uygun emisyon faktörüyle anında eşleştirir.',
+      en: 'CarbonIQ matches your data to the right emission factor instantly.',
     },
   },
   {

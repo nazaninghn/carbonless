@@ -14,8 +14,8 @@ export default function FeaturesPage() {
   const tr = language === 'tr';
 
   const features = [
-    { icon: Leaf, title: tr ? 'Scope 1/2/3 Emisyon Takibi' : 'Scope 1/2/3 Emission Tracking', desc: tr ? '131+ emisyon faktörü ile doğrudan, enerji dolaylı ve diğer dolaylı emisyonlarınızı hesaplayın.' : 'Calculate direct, energy indirect, and other indirect emissions with 131+ emission factors.' },
-    { icon: MessageCircle, title: tr ? 'ISO 14064-1 Envanter Sihirbazı' : 'ISO 14064-1 Questionnaire Wizard', desc: tr ? 'Chatbot ile envanter yapılandırmanızı 9 soruda belirleyin. Raporlama dönemi, baz yıl, faktör kaynağı ve daha fazlası.' : 'Configure your inventory in 9 questions via chatbot. Reporting period, base year, factor source and more.' },
+    { icon: Leaf, title: tr ? 'Scope 1/2/3 Emisyon Takibi' : 'Scope 1/2/3 Emission Tracking', desc: tr ? 'DEFRA, IPCC ve Türkiye ulusal emisyon faktörleriyle doğrudan, enerji dolaylı ve diğer dolaylı emisyonlarınızı hesaplayın.' : 'Calculate direct, energy indirect, and other indirect emissions with DEFRA, IPCC and Turkish national emission factors.' },
+    { icon: MessageCircle, title: tr ? 'ISO 14064-1 Envanter Sihirbazı' : 'ISO 14064-1 Questionnaire Wizard', desc: tr ? 'Adım adım anketle envanterinizi yapılandırın: raporlama dönemi, baz yıl, faktör kaynağı, sınırlar ve daha fazlası.' : 'Configure your inventory with a step-by-step questionnaire: reporting period, base year, factor source, boundaries and more.' },
     { icon: BarChart3, title: tr ? 'Görsel Dashboard' : 'Visual Dashboard', desc: tr ? 'Scope dağılımı, aylık trend, kategori kırılımı ile emisyonlarınızı anlık takip edin.' : 'Track emissions in real-time with scope distribution, monthly trends, and category breakdown.' },
     { icon: FileText, title: tr ? 'PDF ve CSV Raporlama' : 'PDF & CSV Reporting', desc: tr ? 'ISO 14064-1 uyumlu profesyonel raporlar. Türkçe ve İngilizce dil desteği.' : 'Professional ISO 14064-1 compliant reports. Turkish and English language support.' },
     { icon: Globe, title: tr ? 'Çoklu Ülke Desteği' : 'Multi-Country Support', desc: tr ? 'Türkiye (ISO 14064-1 doğrulanmış envanter, ulusal veriler) ve Global (Defra, IPCC) emisyon faktörleri.' : 'Turkey (ISO 14064-1 verified inventory, national data) and Global (Defra, IPCC) emission factors.' },
@@ -73,7 +73,7 @@ export default function FeaturesPage() {
                 {tr ? 'Emisyon Faktör Kaynakları' : 'Emission Factor Sources'}
               </h2>
               <p className="text-lg text-[#072C0E]/60">
-                {tr ? '131+ emisyon faktörü, güvenilir uluslararası ve ulusal kaynaklardan.' : '131+ emission factors from trusted international and national sources.'}
+                {tr ? 'Güvenilir uluslararası ve ulusal kaynaklardan emisyon faktörleri.' : 'Emission factors from trusted international and national sources.'}
               </p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
