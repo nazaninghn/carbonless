@@ -15,14 +15,14 @@ const inter = Inter({
 
 export const metadata = {
   title: 'Carbonless — AI-Powered Carbon Calculator Platform',
-  description: 'Measure your carbon footprint with AI guidance. ISO 14064-1 compliant reports, 188+ emission factors, Scope 1-2-3 calculations. Free to start.',
+  description: 'Measure your carbon footprint with AI guidance. ISO 14064-1 compliant reports, DEFRA, IPCC and Turkish national emission factors, Scope 1-2-3 calculations. Free during beta.',
   keywords: 'carbon footprint calculator, ISO 14064-1, GHG Protocol, carbon accounting, AI carbon calculator, emission factors, Scope 1 2 3, ESG reporting, Carbonless',
   authors: [{ name: 'Carbonless' }],
   creator: 'Carbonless',
   metadataBase: new URL('https://carbonless.info'),
   openGraph: {
     title: 'Carbonless — AI-Powered Carbon Calculator',
-    description: 'Measure, report, and reduce your company\'s carbon footprint with AI. ISO 14064-1 compliant. 188+ emission factors.',
+    description: 'Measure, report, and reduce your company\'s carbon footprint with AI. ISO 14064-1 compliant. DEFRA, IPCC and Turkish national emission factors.',
     type: 'website',
     siteName: 'Carbonless',
     locale: 'en_US',

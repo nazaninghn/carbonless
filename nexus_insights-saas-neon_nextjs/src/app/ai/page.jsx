@@ -31,8 +31,8 @@ export default function AiPage() {
                   </p>
                   <p>
                     {tr
-                      ? '188+ emisyon faktörü ile Scope 1, 2 ve 3 emisyonlarınızı saniyeler içinde ISO 14064-1 uyumlu rapora çevirir.'
-                      : 'With 188+ emission factors, it converts your Scope 1, 2 & 3 emissions into ISO 14064-1 compliant reports in seconds.'}
+                      ? 'DEFRA, IPCC ve Türkiye ulusal emisyon faktörleriyle Kapsam 1, 2 ve 3 emisyonlarınızı saniyeler içinde ISO 14064-1 uyumlu rapora çevirir.'
+                      : 'With DEFRA, IPCC and Turkish national emission factors, it converts your Scope 1, 2 & 3 emissions into ISO 14064-1 compliant reports in seconds.'}
                   </p>
                   <p>
                     {tr
@@ -90,7 +90,7 @@ export default function AiPage() {
                 <div aria-hidden className="hidden lg:block absolute left-[12.5%] right-[12.5%] top-6 h-px bg-[#DEFAE1]" />
                 {[
                   { num: '1', title: tr ? 'Verinizi anlatın' : 'Tell the AI', desc: tr ? 'Enerji, seyahat ya da satın alımlarınızı sade bir dille anlatın.' : 'Describe your energy use, travel, or purchases in plain language.' },
-                  { num: '2', title: tr ? 'AI hesaplar' : 'AI calculates', desc: tr ? 'CarbonIQ, verinizi 188+ emisyon faktörüyle anında eşleştirir.' : 'CarbonIQ matches your data against 188+ emission factors instantly.' },
+                  { num: '2', title: tr ? 'AI hesaplar' : 'AI calculates', desc: tr ? 'CarbonIQ, verinizi uygun emisyon faktörüyle anında eşleştirir.' : 'CarbonIQ matches your data to the right emission factor instantly.' },
                   { num: '3', title: tr ? 'Raporunuzu alın' : 'Get your report', desc: tr ? 'ISO 14064-1 uyumlu, denetime hazır PDF raporu.' : 'An ISO 14064-1 compliant, audit-ready PDF report in seconds.' },
                   { num: '4', title: tr ? 'Hedef belirleyin' : 'Track & reduce', desc: tr ? 'Hedefler koyun, ilerlemenizi izleyin.' : 'Set targets, track progress, and watch your footprint shrink.' },
                 ].map((step) => (
@@ -103,7 +103,7 @@ export default function AiPage() {
                     <div data-detail className="max-h-0 opacity-0 mt-0 overflow-hidden transition-all duration-500 ease-in-out">
                       <div className="bg-[#F1FCF2] border border-[#DEFAE1] rounded-xl px-4 py-3 text-[12px] text-[#072C0E]/70 leading-[1.6]">
                         {step.num === '1' && (tr ? '💬 AI sohbet ekranına girin ve verilerinizi paylaşın' : '💬 Open AI chat and share your data naturally')}
-                        {step.num === '2' && (tr ? '⚡ 188+ emisyon faktörü ile otomatik eşleştirme' : '⚡ Auto-matching with 188+ emission factors')}
+                        {step.num === '2' && (tr ? '⚡ Emisyon faktörüyle otomatik eşleştirme' : '⚡ Automatic emission factor matching')}
                         {step.num === '3' && (tr ? '📄 PDF raporu saniyeler içinde hazır' : '📄 PDF report ready in seconds')}
                         {step.num === '4' && (tr ? '📊 Dashboard\'da hedeflerinizi takip edin' : '📊 Track your goals in the dashboard')}
                       </div>
