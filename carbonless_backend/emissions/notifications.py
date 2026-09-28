@@ -22,6 +22,20 @@ _MONTHS = {
 }
 
 
+# Unit spellings for messages (EmissionFactor.unit is a lower-case code).
+_UNITS = {
+    'kwh': 'kWh', 'gj': 'GJ', 'm3': 'm³', 'm2': 'm²',
+    'liters': {'tr': 'litre', 'en': 'litres'}, 'tonne': {'tr': 'ton', 'en': 'tonnes'},
+    'tonne-km': {'tr': 'ton-km', 'en': 'tonne-km'}, 'person-km': {'tr': 'yolcu-km', 'en': 'passenger-km'},
+    'nights': {'tr': 'gece', 'en': 'nights'}, 'units': {'tr': 'adet', 'en': 'units'}, 'usd': 'USD',
+}
+
+
+def _unit(code, lang):
+    u = _UNITS.get(code, code)
+    return u[lang] if isinstance(u, dict) else u
+
+
 def _prefs(user):
     """(wants approval notifications, language) for a user."""
     profile = getattr(user, 'profile', None)
@@ -38,7 +52,7 @@ def _describe(entry, lang):
     qty = f'{entry.quantity:,.2f}'.rstrip('0').rstrip('.')
     if lang == 'tr':
         qty = qty.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
-    return f'{name} · {qty} {factor.unit} · {month} {entry.year}'.strip()
+    return f'{name} · {qty} {_unit(factor.unit, lang)} · {month} {entry.year}'.strip()
 
 
 def _notify(user, notification_type, title, message):

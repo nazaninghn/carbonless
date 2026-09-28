@@ -97,6 +97,29 @@ export default function DashboardHeader({
     }
   }, [unreadCount, notifications, setUnreadCount]);
 
+  // Where each kind of notification takes you when clicked.
+  const NOTIFICATION_TAB = {
+    entry_submitted: 'review',
+    entry_approved: 'emissions',
+    entry_rejected: 'emissions',
+    custom_approved: 'emissions',
+    custom_rejected: 'emissions',
+    target_alert: 'reduction',
+    report_ready: 'reporting',
+  };
+
+  const openNotification = useCallback(async (n) => {
+    const tab = NOTIFICATION_TAB[n.notification_type];
+    if (tab) setActiveTab?.(tab);
+    setShowNotifications(false);
+    if (!n.is_read) {
+      setNotifications(items => items.map(item => (item.id === n.id ? { ...item, is_read: true } : item)));
+      setUnreadCount?.(Math.max(0, (unreadCount || 0) - 1));
+      try { await api.markNotificationsRead([n.id]); } catch { /* the badge re-syncs on next load */ }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setActiveTab, setUnreadCount, unreadCount]);
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center border-b border-[#DEFAE1] bg-white px-3 sm:px-4 lg:px-5">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
@@ -200,10 +223,15 @@ export default function DashboardHeader({
                   {notifications.length === 0 ? (
                     <p className="py-6 text-center text-[12px] text-[#072C0E]/35">{tr ? 'Bildirim yok' : 'No notifications'}</p>
                   ) : notifications.map(n => (
-                    <div key={n.id} className={`rounded-xl px-3 py-2.5 mb-1 ${n.is_read ? '' : 'bg-[#F1FCF2]'}`}>
+                    <button
+                      type="button"
+                      key={n.id}
+                      onClick={() => openNotification(n)}
+                      className={`block w-full text-left rounded-xl px-3 py-2.5 mb-1 transition hover:bg-[#DEFAE1]/60 ${n.is_read ? '' : 'bg-[#F1FCF2]'}`}
+                    >
                       <p className="text-[12px] font-semibold text-[#072C0E]">{n.title}</p>
                       <p className="text-[10px] text-[#072C0E]/50 mt-0.5">{n.message}</p>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>

@@ -236,6 +236,7 @@ export default function DashboardPage() {
                     setActiveTab={setActiveTab}
                     setShowAddForm={setShowAddForm}
                     onYearChange={setSelectedYear}
+                    canApprove={perms.canApprove}
                   />
                 </>
               )}

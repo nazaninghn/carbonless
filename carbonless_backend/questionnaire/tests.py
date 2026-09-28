@@ -504,4 +504,10 @@ class StepEntryApprovalTests(TestCase):
         entry = save(clerk)
         self.assertEqual(entry.status, 'submitted')
         self.assertTrue(Notification.objects.filter(user=owner, notification_type='entry_submitted').exists())
+        note = Notification.objects.get(user=owner, notification_type='entry_submitted')
+        self.assertIn('1.000 kWh', note.message)
+        c = APIClient()
+        c.force_authenticate(user=owner)
+        pending = c.get('/api/emissions/pending/').data
+        self.assertEqual([(p['entered_by'], p['year']) for p in pending], [('de3@test.com', 2025)])
         self.assertEqual(save(owner).status, 'approved')

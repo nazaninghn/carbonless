@@ -26,6 +26,14 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     facility_name = serializers.CharField(
         source='facility.name', read_only=True, allow_null=True, default=None
     )
+    # Who entered it — shown on approval cards so an approver knows whose data it is.
+    entered_by = serializers.SerializerMethodField()
+
+    def get_entered_by(self, obj):
+        u = obj.user
+        if not u:
+            return None
+        return u.get_full_name() or u.email or u.username
 
     class Meta:
         model = EmissionEntry
@@ -49,7 +57,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'description', 'facility', 'facility_name',
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
-            'created_at', 'updated_at',
+            'created_at', 'updated_at', 'entered_by',
         ]
         read_only_fields = [
             'calculated_co2e_kg', 'facility_name',
