@@ -162,7 +162,7 @@ function TimelineBar({ baseYear, targetYear, currentYear, language }) {
 }
 
 // ─── Target Card ──────────────────────────────────────────────────────────────
-function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
+function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDelete }) {
   const tr = language === 'tr';
 
   const baseKg     = parseFloat(tgt.base_emissions_kg) || 0;
@@ -238,7 +238,9 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
           <p className="mt-0.5 text-xs font-bold text-[#072C0E]">{fmt(baseKg / 1000)} t</p>
         </div>
         <div className="rounded-xl bg-[#F8F8F8] px-2.5 py-2 text-center">
-          <p className="text-[9px] font-bold uppercase text-[#072C0E]/30">{tr ? 'Şimdi' : 'Now'}</p>
+          <p className="text-[9px] font-bold uppercase text-[#072C0E]/30">
+            {tr ? 'Şimdi' : 'Now'}{currentLabelYear ? ` · ${currentLabelYear}` : ''}
+          </p>
           <p className="mt-0.5 text-xs font-bold text-[#072C0E]">
             {currentKg > 0 ? `${fmt(currentKg / 1000)} t` : '—'}
           </p>
@@ -284,11 +286,34 @@ function TargetCard({ tgt, currentKg, language, onEdit, onDelete }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ReductionTargetsTab({
-  language, targets, summary, fetchData, canEdit = true,
+  language, targets, summary, fetchData, canEdit = true, selectedYear, onYearChange,
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
+  // "Now" is the year selected in the header — shown on every card, and
+  // flagged below when that year has no completed inventory to compare.
   const currentKg = (summary?.total_tonne || 0) * 1000;
+  const nowYear = Number(selectedYear) || currentYear();
+
+  // Years with a completed inventory, newest first — for the "now" note and
+  // the new target's default base year.
+  const [inventoryYears, setInventoryYears] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    api.listReports()
+      .then(res => (res.ok ? res.json() : null))
+      .then(d => {
+        if (cancelled || !d) return;
+        const list = Array.isArray(d) ? d : (d.reports ?? []);
+        const years = [...new Set(list.filter(r => r.status === 'completed' && r.reporting_year)
+          .map(r => Number(r.reporting_year)))].sort((a, b) => b - a);
+        setInventoryYears(years);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+  const latestInventoryYear = inventoryYears[0] || null;
+  const nowHasInventory = inventoryYears.includes(nowYear);
 
   // ── Add target form state ────────────────────────────────────────────────
   const [showForm,   setShowForm]   = useState(false);
@@ -303,6 +328,13 @@ export default function ReductionTargetsTab({
   // user doesn't have to look it up. { year, tonne } once loaded.
   const [baseInventory, setBaseInventory] = useState(null);
   const baseAutoFilled = useRef(false); // true while baseEmit holds our value, not the user's
+  // A new target starts from the latest completed inventory's year (the
+  // natural base), not from an arbitrary last year that may have no data.
+  const baseYearTouched = useRef(false);
+  useEffect(() => {
+    if (showForm && latestInventoryYear && !baseYearTouched.current) setBaseYear(latestInventoryYear);
+  }, [showForm, latestInventoryYear]);
+
   useEffect(() => {
     if (!showForm) return;
     const y = parseInt(baseYear, 10);
@@ -351,7 +383,7 @@ export default function ReductionTargetsTab({
   const resetForm = useCallback(() => {
     setTitle(''); setBaseEmit(''); setReducePct('');
     setBaseYear(new Date().getFullYear() - 1); setTgtYear(2030);
-    baseAutoFilled.current = false; setBaseInventory(null);
+    baseAutoFilled.current = false; setBaseInventory(null); baseYearTouched.current = false;
   }, []);
 
   const openEdit = useCallback((tgt) => {
@@ -590,6 +622,26 @@ export default function ReductionTargetsTab({
         </div>
       )}
 
+      {/* "Now" is a year without a completed inventory — progress is measured
+          against partial data. Point to the latest completed inventory. */}
+      {targets.length > 0 && latestInventoryYear && !nowHasInventory && (
+        <div role="status" className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+          <span className="min-w-0 flex-1">
+            {tr
+              ? `"Şimdi" değeri seçili yılın (${nowYear}) kayıtlarından geliyor ve ${nowYear} için tamamlanmış bir envanter yok; karşılaştırma eksik veriye dayanabilir. En son tamamlanmış envanteriniz ${latestInventoryYear} yılına ait.`
+              : `"Now" comes from the selected year's (${nowYear}) entries, and ${nowYear} has no completed inventory, so the comparison may rest on partial data. Your latest completed inventory is for ${latestInventoryYear}.`}
+          </span>
+          {onYearChange && (
+            <button
+              onClick={() => onYearChange(latestInventoryYear)}
+              className="shrink-0 rounded-full bg-[#072C0E] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0b3d14]"
+            >
+              {tr ? `${latestInventoryYear} yılına geç` : `Switch to ${latestInventoryYear}`}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── Target cards grid ────────────────────────────────────────────── */}
       {targets.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -598,6 +650,7 @@ export default function ReductionTargetsTab({
               key={tgt.id}
               tgt={tgt}
               currentKg={currentKg}
+              currentLabelYear={nowYear}
               language={language}
               onEdit={canEdit ? openEdit : undefined}
               onDelete={canEdit ? handleDelete : undefined}
@@ -798,7 +851,7 @@ export default function ReductionTargetsTab({
                     <label className={LABEL}>{tr ? 'Baz Yıl' : 'Base Year'} *</label>
                     <input
                       type="number" min="2000" max={currentYear() + 9}
-                      value={baseYear} onChange={e => setBaseYear(e.target.value)}
+                      value={baseYear} onChange={e => { baseYearTouched.current = true; setBaseYear(e.target.value); }}
                       className={FIELD} required
                     />
                   </div>

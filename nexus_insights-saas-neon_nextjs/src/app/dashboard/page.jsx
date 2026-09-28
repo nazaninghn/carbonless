@@ -309,6 +309,8 @@ export default function DashboardPage() {
                 summary={effectiveSummary}
                 fetchData={fetchData}
                 canEdit={perms.canEdit}
+                selectedYear={selectedYear}
+                onYearChange={setSelectedYear}
               />
             </ErrorBoundary>
           )}
