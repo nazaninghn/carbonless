@@ -53,7 +53,7 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company
         qs = scope_queryset_to_company(
-            EmissionEntry.objects.select_related('emission_factor', 'company', 'facility'),
+            EmissionEntry.objects.select_related('emission_factor', 'company', 'facility', 'user'),
             self.request.user
         )
         year = self.request.query_params.get('year')
@@ -486,7 +486,7 @@ def export_csv_view(request):
     entries = (
         EmissionEntry.objects
         .filter(company=company, year=year)
-        .select_related('emission_factor', 'facility')
+        .select_related('emission_factor', 'facility', 'user')
         if company else EmissionEntry.objects.none()
     )
 
@@ -570,7 +570,7 @@ def export_all_view(request):
     entries = (
         EmissionEntry.objects
         .filter(company=company)
-        .select_related('emission_factor', 'facility')
+        .select_related('emission_factor', 'facility', 'user')
         if company else EmissionEntry.objects.none()
     )
     targets = ReductionTarget.objects.filter(company=company) if company else ReductionTarget.objects.none()
@@ -697,7 +697,7 @@ def pending_entries_view(request):
         return Response([])
     entries = EmissionEntry.objects.filter(
         company=company, status='submitted'
-    ).select_related('emission_factor', 'facility').order_by('-created_at')
+    ).select_related('emission_factor', 'facility', 'user').order_by('-created_at')
 
     from .serializers import EmissionEntrySerializer
     return Response(EmissionEntrySerializer(entries, many=True).data)
@@ -749,7 +749,7 @@ def export_excel_view(request):
     entries = (
         EmissionEntry.objects
         .filter(company=company, year=year)
-        .select_related('emission_factor', 'facility')
+        .select_related('emission_factor', 'facility', 'user')
         if company else EmissionEntry.objects.none()
     )
 

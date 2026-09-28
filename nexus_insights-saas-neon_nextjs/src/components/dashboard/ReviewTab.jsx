@@ -4,6 +4,22 @@ import { api } from '@/lib/utils/api';
 import { ClipboardCheck, Check, X, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import { noPermissionMessage } from '@/lib/permissions';
+import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
+import { MONTHS_TR, MONTHS_EN } from '@/lib/constants/emissions';
+
+const UNIT_LABELS = {
+  kwh: 'kWh', gj: 'GJ', m3: 'm³', m2: 'm²', liters: { tr: 'litre', en: 'litres' }, kg: 'kg',
+  tonne: { tr: 'ton', en: 'tonnes' }, km: 'km', 'tonne-km': { tr: 'ton-km', en: 'tonne-km' },
+  'person-km': { tr: 'yolcu-km', en: 'passenger-km' }, nights: { tr: 'gece', en: 'nights' },
+  units: { tr: 'adet', en: 'units' }, usd: 'USD',
+};
+const unitLabel = (u, tr) => {
+  const l = UNIT_LABELS[u];
+  if (!l) return u;
+  return typeof l === 'string' ? l : (tr ? l.tr : l.en);
+};
+const num = (v, tr, digits = 2) =>
+  Number(v || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: digits });
 
 const RISK_STYLES = {
   low:          'bg-[#8BEA99]/18 text-[#175022]',
@@ -163,20 +179,27 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                   {tr ? 'Danışman Onayı' : 'Advisor Approval'} ({advisorPending.length})
                 </h2>
               </div>
-              {advisorPending.map(item => (
+              <p className="px-1 text-[11px] leading-5 text-[#072C0E]/55">
+                {tr
+                  ? 'Anketteki bazı cevaplar ISO 14064-1 doğrulamasında açıklama gerektirir. Onaylarsanız cevabın bilerek verildiği kaydedilir; reddederseniz cevabın gözden geçirilip düzeltilmesi gerektiği not edilir. Aynı kural her envanter için ayrı listelenir.'
+                  : 'Some questionnaire answers need a justification in an ISO 14064-1 verification. Approving records that the answer was given on purpose; rejecting notes that it must be reviewed and corrected. Each inventory is listed separately.'}
+              </p>
+              {advisorPending.map(item => { const reason = advisorReasonText(item, tr); return (
                 <div key={`advisor-${item.id}`} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-1.5">
-                      <h3 className="truncate text-sm font-bold text-[#072C0E]">
-                        {item.description || item.reason_code}
+                      <h3 className="text-sm font-bold text-[#072C0E]">
+                        {reason.text}
                       </h3>
+                      {reason.question && (
+                        <p className="line-clamp-2 text-[11px] text-[#072C0E]/55">{reason.question}</p>
+                      )}
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${RISK_STYLES[item.risk_level] || 'bg-[#072C0E]/10 text-[#072C0E]'}`}>
                           {tr ? (RISK_LABELS_TR[item.risk_level] || item.risk_level) : item.risk_level?.replace('_', '-')}
                         </span>
-                        <span className="text-[11px] font-semibold text-[#072C0E]/50">{item.trigger_category}</span>
-                        <span className="text-[10px] text-[#072C0E]/35 font-mono">{item.question_id}</span>
-                        <span className="text-[10px] text-[#072C0E]/35">{item.report_title}</span>
+                        <span className="text-[11px] font-semibold text-[#072C0E]/50">{advisorCategoryLabel(item.trigger_category, tr)}</span>
+                        <span className="text-[10px] text-[#072C0E]/45">{tr ? 'Envanter' : 'Inventory'}: {item.report_title}</span>
                       </div>
                     </div>
                     {canApprove && <div className="flex shrink-0 items-center gap-1.5">
@@ -199,7 +222,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                     </div>}
                   </div>
                 </div>
-              ))}
+              ); })}
             </div>
           )}
 
@@ -227,9 +250,20 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                           entry.scope === 'scope2' ? 'bg-[#2ABD41]/15 text-[#175022]' :
                           'bg-[#8BEA99]/18 text-[#175022]'
                         }`}>{entry.scope?.replace('scope', 'S')}</span>
-                        <span className="text-[11px] font-semibold text-[#072C0E]/50">{parseFloat(entry.quantity).toLocaleString()} {entry.unit}</span>
-                        <span className="text-[11px] font-bold text-[#2ABD41]">{parseFloat(entry.calculated_co2e_kg).toFixed(1)} kg</span>
-                        <span className="text-[10px] text-[#072C0E]/35">{tr ? 'Ay' : 'Mo'}: {entry.month}</span>
+                        <span className="text-[11px] font-semibold text-[#072C0E]/50">{num(entry.quantity, tr)} {unitLabel(entry.unit, tr)}</span>
+                        <span className="text-[11px] font-bold text-[#2ABD41]">{num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e</span>
+                        <span className="text-[10px] text-[#072C0E]/45">
+                          {(tr ? MONTHS_TR : MONTHS_EN)[(entry.month || 1) - 1]} {entry.year}
+                        </span>
+                        {(entry.entered_by || (entry.description || '').startsWith('Questionnaire step')) && (
+                          <span className="text-[10px] text-[#072C0E]/45">
+                            {(entry.description || '').startsWith('Questionnaire step')
+                              ? (tr ? 'Kaynak: Anket' : 'Source: Questionnaire')
+                              : null}
+                            {(entry.description || '').startsWith('Questionnaire step') && entry.entered_by ? ' · ' : ''}
+                            {entry.entered_by ? `${tr ? 'Giren' : 'Entered by'}: ${entry.entered_by}` : ''}
+                          </span>
+                        )}
                       </div>
                     </div>
                     {canApprove && <div className="flex shrink-0 items-center gap-1.5">

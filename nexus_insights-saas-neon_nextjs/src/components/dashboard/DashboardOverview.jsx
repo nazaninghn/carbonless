@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
+import { api } from '@/lib/utils/api';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
@@ -368,8 +369,28 @@ export default function DashboardOverview({
   setActiveTab,
   setShowAddForm,
   onYearChange,
+  canApprove = false,
 }) {
   const tr = language === 'tr';
+  // Items waiting in "Onay Bekleyenler" (entries + advisor approvals), shown
+  // to approvers under Pending Actions so they are not only in the bell.
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  useEffect(() => {
+    if (!canApprove) { setPendingApprovals(0); return; }
+    let cancelled = false;
+    const count = async (req) => {
+      try {
+        const res = await req();
+        if (!res.ok) return 0;
+        const d = await res.json().catch(() => null);
+        const list = Array.isArray(d) ? d : (d?.results ?? d?.entries ?? d?.approvals ?? []);
+        return Array.isArray(list) ? list.length : 0;
+      } catch { return 0; }
+    };
+    Promise.all([count(api.getPendingEntries), count(api.getPendingAdvisorApprovals)])
+      .then(([a, b]) => { if (!cancelled) setPendingApprovals(a + b); });
+    return () => { cancelled = true; };
+  }, [canApprove, entries]);
   // Years other than the selected one that have entries (newest first).
   const otherYears = (summary?.years_with_data ?? []).filter(y => y !== Number(selectedYear));
   const totalTonne = summary?.total_tonne  ?? 0;
@@ -735,6 +756,13 @@ export default function DashboardOverview({
           <div className="space-y-1.5">
             {[
               {
+                dot: 'bg-amber-400',
+                done: pendingApprovals === 0,
+                tr: `${pendingApprovals} kayıt onayınızı bekliyor`,
+                en: `${pendingApprovals} item${pendingApprovals === 1 ? '' : 's'} awaiting your approval`,
+                tab: 'review',
+              },
+              {
                 dot: 'bg-[#2ABD41]',
                 done: !!questionnaireProfile?.is_complete,
                 tr: 'CarbonIQ anketi tamamlanmadı',
@@ -776,7 +804,7 @@ export default function DashboardOverview({
               )
             ))}
             {/* All done state */}
-            {[questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
+            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
                 <CheckCircle2 className="h-6 w-6 text-[#2ABD41]" />
                 <p className="text-[11px] font-semibold text-[#072C0E]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
