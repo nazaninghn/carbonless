@@ -753,16 +753,46 @@ def export_excel_view(request):
         if company else EmissionEntry.objects.none()
     )
 
+    # Headers, scopes, categories, factor names and status in the language
+    # the user reads the app in (?lang=tr), instead of English and raw codes
+    # like "scope1" / "stationary_combustion". Numbers stay numeric cells.
+    from .report_pdf import _CAT
+    lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
+    tr = lang == 'tr'
+    status_labels = {
+        'approved': 'Onaylı' if tr else 'Approved',
+        'submitted': 'Beklemede' if tr else 'Pending',
+        'draft': 'Reddedildi' if tr else 'Rejected',
+    }
+    months = (['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos',
+               'Eylül', 'Ekim', 'Kasım', 'Aralık'] if tr else
+              ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+               'September', 'October', 'November', 'December'])
+
     wb = Workbook()
     ws = wb.active
-    ws.title = f'Emissions {year}'
-    ws.append(['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit', 'Factor', 'kg CO2e', 'tCO2e', 'Facility', 'Description'])
+    ws.title = f'Emisyonlar {year}' if tr else f'Emissions {year}'
+    ws.append(
+        ['Kaynak', 'Kapsam', 'Kategori', 'Ay', 'Miktar', 'Birim', 'Faktör (kg CO2e/birim)',
+         'kg CO2e', 'tCO2e', 'Tesis', 'Açıklama', 'Durum', 'Red nedeni'] if tr else
+        ['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit', 'Factor (kg CO2e/unit)',
+         'kg CO2e', 'tCO2e', 'Facility', 'Description', 'Status', 'Rejection reason']
+    )
 
     for e in entries:
         ef = e.emission_factor
-        ws.append([ef.name, ef.scope, ef.category, e.month, float(e.quantity), ef.unit,
-                   float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg)/1000,
-                   e.facility.name if e.facility_id else '', e.description])
+        scope_num = (ef.scope or '').replace('scope', '')
+        ws.append([
+            (ef.name_tr or ef.name) if tr else ef.name,
+            (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
+            _CAT[lang].get(ef.category, ef.category),
+            months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month,
+            float(e.quantity), ef.unit,
+            float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
+            e.facility.name if e.facility_id else '', e.description,
+            status_labels.get(e.status, e.status),
+            e.rejected_reason if e.status == 'draft' else '',
+        ])
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="emissions_{year}.xlsx"'

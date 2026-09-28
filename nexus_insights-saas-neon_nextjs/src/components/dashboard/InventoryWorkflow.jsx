@@ -51,7 +51,11 @@ export function InventoryProvider({ children }) {
     setLoading(true);
     setError('');
     try {
-      const title = `${name} — ${new Date().toLocaleString()}`;
+      // Keep the name exactly as typed; the list already shows each draft's
+      // date. An unnamed inventory is called after today's date, written the
+      // way the user reads dates (27.09.2026, not 9/27/2026, 11:50:01 PM).
+      const title = (name || '').trim()
+        || new Date().toLocaleDateString(tr ? 'tr-TR' : 'en-GB');
       const res = await api.startCarbonReport(title, true);
       const data = await res.json().catch(() => ({}));
 

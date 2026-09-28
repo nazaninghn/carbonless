@@ -450,3 +450,51 @@ class YearsAndFacilityTests(TestCase):
         self.assertEqual(self.client.delete(f'/api/companies/facilities/{self.facility.id}/').status_code, 204)
         entry = EmissionEntry.objects.get(id=entry_id)
         self.assertIsNone(entry.facility)
+
+
+class ExcelExportLanguageTests(TestCase):
+    """The Excel export follows the UI language and shows each entry's status."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        factor = EmissionFactor.objects.create(
+            slug='test-gas-xlsx', name='Natural Gas (Turkey)', name_tr='Doğal Gaz (Türkiye)',
+            scope='scope1', category='stationary_combustion', country='global',
+            unit='gj', factor_kg_co2e=56.211, year=2024, source='generic',
+            is_active=True, is_default=True,
+        )
+        company = Company.objects.create(
+            legal_entity_name='Kaya Tekstil A.Ş.', tax_number='1234567890',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        self.user = User.objects.create_user('xlsx', 'xlsx@test.com', 'testpass123')
+        UserProfile.objects.create(user=self.user, active_company=company)
+        CompanyMembership.objects.create(company=company, user=self.user, role='owner')
+        EmissionEntry.objects.create(user=self.user, company=company, emission_factor=factor,
+                                     year=2026, month=3, quantity=10, status='draft',
+                                     rejected_reason='Fatura eksik')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _rows(self, lang):
+        import io
+        from openpyxl import load_workbook
+        res = self.client.get(f'/api/emissions/export-excel/?year=2026&lang={lang}')
+        self.assertEqual(res.status_code, 200)
+        ws = load_workbook(io.BytesIO(res.content)).active
+        return [list(r) for r in ws.iter_rows(values_only=True)]
+
+    def test_turkish_export(self):
+        header, row = self._rows('tr')
+        self.assertEqual(header[0], 'Kaynak')
+        self.assertEqual(row[:4], ['Doğal Gaz (Türkiye)', 'Kapsam 1', 'Sabit Yanma', 'Mart'])
+        self.assertEqual(row[-2:], ['Reddedildi', 'Fatura eksik'])
+
+    def test_english_export(self):
+        header, row = self._rows('en')
+        self.assertEqual(header[-2:], ['Status', 'Rejection reason'])
+        self.assertEqual(row[1:3], ['Scope 1', 'Stationary Combustion'])
+        self.assertEqual(row[-2], 'Rejected')

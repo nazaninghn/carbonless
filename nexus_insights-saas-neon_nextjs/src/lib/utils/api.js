@@ -246,7 +246,7 @@ export const api = {
 
   downloadReport: (year, lang) => request(`/emissions/report/?year=${year}&lang=${lang}`),
   downloadCsv: (year) => request(`/emissions/export-csv/?year=${year}`),
-  downloadExcel: (year) => request(`/emissions/export-excel/?year=${year}`),
+  downloadExcel: (year, lang = 'en') => request(`/emissions/export-excel/?year=${year}&lang=${lang}`),
 
   approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
   downloadProofDocument: (entryId) => request(`/emissions/entries/${entryId}/proof/`),
@@ -273,9 +273,9 @@ export const api = {
     body: JSON.stringify({ title, force_new: forceNew })
   }),
   resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
-  submitReportStep: (reportId, step, data, language) => request(`/questionnaire/${reportId}/step/`, {
+  submitReportStep: (reportId, step, data, language, progress) => request(`/questionnaire/${reportId}/step/`, {
     method: 'PATCH',
-    body: JSON.stringify({ step, data, language }),
+    body: JSON.stringify({ step, data, language, progress }),
   }),
   saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
     method: 'PATCH',

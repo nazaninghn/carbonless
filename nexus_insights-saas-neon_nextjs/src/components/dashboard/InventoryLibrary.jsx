@@ -194,7 +194,7 @@ export default function InventoryLibrary({ tr = false }) {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#175022]/60 mt-2">
                     <span>{report.progress?.percent || 0}% {tr ? 'tamamlandı' : 'complete'}</span>
                     <span>{report.progress?.completed || 0} / {report.progress?.total || 120} {tr ? 'soru' : 'questions'}</span>
-                    <span>{tr ? 'Güncelleme' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString()}</span>
+                    <span>{tr ? 'Güncelleme' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -259,7 +259,7 @@ export default function InventoryLibrary({ tr = false }) {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>
                   <p className="text-xs text-[#175022]/60 mt-1">
-                    {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.updated_at).toLocaleDateString()}
+                    {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

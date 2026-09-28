@@ -189,7 +189,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       }
       else if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
       else if (type === 'csv') res = await api.downloadCsv(selectedYear);
-      else res = await api.downloadExcel(selectedYear);
+      else res = await api.downloadExcel(selectedYear, tr ? 'tr' : 'en');
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));

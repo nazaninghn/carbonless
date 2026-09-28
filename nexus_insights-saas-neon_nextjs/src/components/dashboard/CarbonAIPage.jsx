@@ -264,6 +264,17 @@ function getApplicableQuestions(answersMap) {
   });
 }
 
+// The survey's progress: real questions answered over the questions that
+// apply given the answers so far. Shown in the sidebar and sent with every
+// saved step, so the inventory library shows the very same numbers.
+function computeSurveyProgress(answersMap, completed = false) {
+  const answered = Object.keys(answersMap)
+    .filter(qid => { const q = getQuestionById(qid); return q && q.type !== 'info'; }).length;
+  const total = completed ? answered : getApplicableQuestions(answersMap).length;
+  const percent = completed ? 100 : (total ? Math.min(100, Math.round((answered / total) * 100)) : 0);
+  return { answered, total, percent };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1732,7 +1743,6 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
     // Count only real questions — info screens are stored in `answers` too (they
     // advance via the same submit path), so including them would let the
     // numerator outrun a denominator that excludes them.
-    const isRealQuestion = (qid) => getQuestionById(qid)?.type !== 'info';
     const countForStage = (stageId) => allAnswered.filter(qid => {
       const q = getQuestionById(qid);
       return q && q.stage === stageId && q.type !== 'info';
@@ -1752,20 +1762,13 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
         ? stage.stageIds.reduce((sum, id) => sum + countForStage(id), 0)
         : countForStage(stage.id),
     }));
-    const totalAnswered = allAnswered.filter(isRealQuestion).length;
     // getApplicableQuestions only knows about conditionalShow, not nextByValue
     // routing, so questions a "No" answer jumped past still count while the
     // survey is running. Once it is completed, every question this user was
     // routed through has been answered — the rest never applied to them — so
     // the answered count IS the total and the bar reads 100%.
-    const applicableTotal = completed
-      ? totalAnswered
-      : getApplicableQuestions(answers).length;
-    const pct = completed
-      ? 100
-      : applicableTotal
-      ? Math.min(100, Math.round((totalAnswered / applicableTotal) * 100))
-      : 0;
+    const { answered: totalAnswered, total: applicableTotal, percent: pct } =
+      computeSurveyProgress(answers, completed);
     return { displayStages, stageStats, totalAnswered, applicableTotal, pct };
   }, [answers, scopesCombined, completed]);
 
@@ -2553,7 +2556,8 @@ export function QuestionnaireTab({
     if (!rid_) return { success: true, data: {} };
     try {
       const backendData = mapAnswerForBackend(questionId, value);
-      const res = await api.submitReportStep(rid_, questionId, backendData, lang);
+      const { answered, total } = computeSurveyProgress({ ...answersRef.current, [questionId]: value });
+      const res = await api.submitReportStep(rid_, questionId, backendData, lang, { answered, total });
 
       // Guard: component may have unmounted while the save request was in-flight
       if (!isMounted.current) return { success: false, data: {} };
@@ -3069,10 +3073,47 @@ export function QuestionnaireTab({
     }, TYPING_DELAY_MS);
   }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting]);
 
+  // After leaving and coming back, this session's `history` is empty, so the
+  // back button had nothing to go to. Fall back to the last answered question
+  // before the current one in survey order. Loop questions are skipped: their
+  // per-item state isn't restorable from the saved answer alone.
+  const resumePrevId = useMemo(() => {
+    if (history.length > 0 || completed || !currentId) return null;
+    const idx = CARBONIQ_QUESTIONS.findIndex(q => q.id === currentId);
+    for (let i = idx - 1; i >= 0; i--) {
+      const q = CARBONIQ_QUESTIONS[i];
+      if (q.type === 'info' || q.loopSource) continue;
+      if (q.id in answers) return q.id;
+    }
+    return null;
+  }, [history.length, completed, currentId, answers]);
+
   // ── goBack ─────────────────────────────────────────────────────────────────
   const goBack = useCallback(() => {
     if (blockSummaryState) { setBlockSummaryState(null); return; }
-    if (history.length === 0) return;
+    if (history.length === 0) {
+      if (!resumePrevId) return;
+      if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
+      markSubmitting(false);
+      setIsTyping(false);
+      setValidationError('');
+      setShowValidationError(false);
+      setLoopState(null);
+      const prevQ = getQuestionById(resumePrevId);
+      setCurrentId(resumePrevId);
+      setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, resumePrevId)) ?? getInitialValue(prevQ));
+      const questionText = stripDocLabels(prevQ?.text?.[lang] || prevQ?.text?.en || '');
+      setMessages(prev => {
+        questionMsgLenRef.current = prev.length + 1;
+        return [...prev, {
+          id: `m-${++msgIdRef.current}`,
+          role: 'assistant',
+          type: 'assistant',
+          content: `**${tr ? 'Soru' : 'Question'} ${prevQ?.number}:** ${questionText}\n\n_${tr ? 'Önceki yanıtınız aşağıda; değiştirip kaydedebilirsiniz.' : 'Your previous answer is below; change it and save.'}_`,
+        }];
+      });
+      return;
+    }
     // Cancel any in-flight typing timer so its callback can't post stale bubbles
     if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
     markSubmitting(false);
@@ -3118,7 +3159,7 @@ export function QuestionnaireTab({
       setLoopState(null);
       setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, prevId)) ?? getInitialValue(prevQ));
     }
-  }, [history, answers, lang, blockSummaryState, markSubmitting]);
+  }, [history, answers, lang, tr, blockSummaryState, markSubmitting, resumePrevId]);
 
   // ── jumpToQuestion ─────────────────────────────────────────────────────────
   // Called when the user clicks "Edit" in a BlockSummaryTable row.
@@ -3271,14 +3312,14 @@ export function QuestionnaireTab({
             )}
           </div>
           <div className="flex items-center gap-1">
-            {history.length > 0 && !completed && (
+            {(history.length > 0 || resumePrevId) && !completed && (
               <button
                 onClick={goBack}
-                title={tr ? 'Geri' : 'Back'}
                 aria-label={tr ? 'Önceki soruya dön' : 'Go back to previous question'}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
+                className="flex h-7 items-center gap-1 rounded-full border border-[#175022]/15 bg-white px-2.5 text-[11px] font-bold text-[#175022]/70 hover:bg-[#175022]/6 hover:text-[#175022] transition"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
+                {tr ? 'Önceki soru' : 'Previous question'}
               </button>
             )}
             {resetConfirm ? (
