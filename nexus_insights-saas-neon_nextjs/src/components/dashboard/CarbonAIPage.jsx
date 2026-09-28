@@ -282,6 +282,15 @@ function computeSurveyProgress(answersMap, completed = false) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire helpers
 // ─────────────────────────────────────────────────────────────────────────────
+// The earlier answer for one item of a per-site / per-fuel loop question. The
+// saved answer is the whole loop's {itemKey: value} map; the input for an item
+// must get that item's own value, never the map itself (which rendered as
+// "[object Object]" when a user came back to such a question).
+function loopItemValue(aggregate, itemKey) {
+  if (!aggregate || typeof aggregate !== 'object' || Array.isArray(aggregate)) return undefined;
+  return aggregate[itemKey];
+}
+
 function normalizeAnswerValue(q, raw) {
   if (!q) return raw;
   if (q.type === 'multi_select') return Array.isArray(raw) ? raw : (raw ? [raw] : []);
@@ -2471,8 +2480,11 @@ export function QuestionnaireTab({
     }
     setMessages([welcomeMsg]);
     questionMsgLenRef.current = 1;
+    const resumeLoopValue = itemLabel
+      ? loopItemValue(readAnswerValue(answers, currentId), buildLoopItems(currentId, answers, lang)?.items?.[0])
+      : undefined;
     setAnswerValue(itemLabel
-      ? getInitialValue(firstQ)
+      ? (resumeLoopValue !== undefined ? normalizeAnswerValue(firstQ, resumeLoopValue) : getInitialValue(firstQ))
       : normalizeAnswerValue(firstQ, readAnswerValue(answers, currentId)) ?? getInitialValue(firstQ));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -2525,9 +2537,18 @@ export function QuestionnaireTab({
       // as "[object Object]") whenever a stale aggregate from an earlier pass
       // through the loop is still sitting in `answers`. Pull the per-item value
       // from loopState.collected instead while a loop is actively running.
-      const existing = (loopState && loopState.questionId === currentId)
-        ? loopState.collected[loopState.items[loopState.currentIndex]]
-        : answersRef.current[currentId];
+      let existing;
+      if (loopState && loopState.questionId === currentId) {
+        const item = loopState.items[loopState.currentIndex];
+        existing = loopState.collected[item] ?? loopItemValue(answersRef.current[currentId], item);
+      } else if (currentQuestion.loopSource) {
+        // The loop has not been (re)entered yet — e.g. on resume, where the
+        // resume effect starts it at item 0 in this same pass.
+        const firstItem = buildLoopItems(currentId, answersRef.current, lang)?.items?.[0];
+        existing = loopItemValue(answersRef.current[currentId], firstItem);
+      } else {
+        existing = answersRef.current[currentId];
+      }
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
       // Marks answerValue as belonging to THIS question. React usually runs
       // this effect before the browser paints, but on a transcript this long
@@ -2610,7 +2631,9 @@ export function QuestionnaireTab({
 
       if (!res.ok) {
         setSaveSuccess(false);
-        const msg = respData?.error || respData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.');
+        const msg = res.status === 403
+          ? noPermissionMessage(lang === 'tr')
+          : (respData?.error || respData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
         if (isMounted.current) setSaveError(msg);
         return { success: false, data: {} };
       }
@@ -2828,7 +2851,8 @@ export function QuestionnaireTab({
         // await rather than the closure-captured value, guarding against any future
         // concurrent mutation even though isSubmittingRef currently prevents it.
         setLoopState(prev => prev ? { ...prev, currentIndex: nextIndex, collected: newCollected } : null);
-        setAnswerValue(getInitialValue(q));
+        const earlierItemValue = loopItemValue(answersRef.current[currentId], items[nextIndex]);
+        setAnswerValue(earlierItemValue !== undefined ? normalizeAnswerValue(q, earlierItemValue) : getInitialValue(q));
 
         // Clear the mutex AFTER setIsTyping(true) to eliminate the window where
         // both guards are simultaneously false.

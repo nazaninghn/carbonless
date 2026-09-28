@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { api } from '@/lib/utils/api';
+import { noPermissionMessage } from '@/lib/permissions';
 import { readAnswerValue, unmapPhase1Answer } from '@/lib/carboniq/questions';
 
 // A report resumed from the backend echoes back exactly what was PATCHed for
@@ -60,7 +61,9 @@ export function InventoryProvider({ children }) {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.error || (tr ? 'Envanter başlatılamadı' : 'Could not start inventory'));
+        setError(res.status === 403
+          ? noPermissionMessage(tr)
+          : (data.error || (tr ? 'Envanter başlatılamadı' : 'Could not start inventory')));
         return false;
       }
 
