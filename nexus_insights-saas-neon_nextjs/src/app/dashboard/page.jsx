@@ -146,6 +146,10 @@ export default function DashboardPage() {
         setAiCarbonVisible(false);
         setActiveTab(tab);
       }
+      // Open the reports on the inventory's own reporting year, not whatever
+      // year the header happened to show.
+      const year = Number(e.detail?.year);
+      if (year) setSelectedYear(year);
     }
     window.addEventListener('carboniq-close', handleClose);
     window.addEventListener('carboniq-open', handleOpen);

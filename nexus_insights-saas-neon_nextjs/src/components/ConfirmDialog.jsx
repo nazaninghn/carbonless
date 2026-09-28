@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { AlertTriangle, LogOut } from 'lucide-react';
 
-export default function ConfirmDialog({ open, onConfirm, onCancel, title, message, confirmText, cancelText, type = 'warning', language = 'en' }) {
+export default function ConfirmDialog({ open, onConfirm, onCancel, title, message, confirmText, cancelText, type = 'warning', language = 'en', children }) {
   // Every current caller passes confirmText/cancelText explicitly, so this
   // fallback never actually fires today — but it's a latent bug for any
   // future caller that forgets to, since it silently shows English
@@ -38,6 +38,7 @@ export default function ConfirmDialog({ open, onConfirm, onCancel, title, messag
           <h3 id="confirm-dialog-title" className="text-lg font-bold tracking-[-0.02em] text-[#072C0E]">{title}</h3>
           <p className="mt-2 text-sm leading-6 text-[#072C0E]/55">{message}</p>
         </div>
+        {children}
 
         {/* Actions */}
         <div className="mt-6 flex gap-3">

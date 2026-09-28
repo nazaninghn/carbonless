@@ -63,9 +63,9 @@ export default function InventoryLibrary({ tr = false }) {
     }
   };
 
-  const handleViewReport = (reportId) => {
+  const handleViewReport = (reportId, year) => {
     window.dispatchEvent(new CustomEvent('carboniq-navigate', {
-      detail: { tab: 'reporting', reportId }
+      detail: { tab: 'reporting', reportId, year }
     }));
   };
 
@@ -318,7 +318,7 @@ export default function InventoryLibrary({ tr = false }) {
                           : <FileText className="w-4 h-4" />}
                       </button>
                       <button
-                        onClick={() => handleViewReport(report.report_id)}
+                        onClick={() => handleViewReport(report.report_id, report.reporting_year)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"
                       >
                         <Eye className="w-4 h-4" />
