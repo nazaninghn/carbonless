@@ -234,3 +234,47 @@ class SignupFacilitiesAndAutoLoginTests(TestCase):
                                {'email': 'selin@test.com', 'code': '000000'}, format='json')
         self.assertEqual(res.status_code, 200)
         self.assertNotIn('access', res.data)
+
+
+class DeactivatedMemberTests(TestCase):
+    """A member switched off in the team keeps a login but no workspace."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from companies.models import Company, CompanyMembership
+        self.owner = User.objects.create_user('own5', 'own5@test.com', 'pass12345')
+        self.member = User.objects.create_user('mem5@test.com', 'mem5@test.com', 'pass12345',
+                                               first_name='Selin', last_name='Kaya')
+        self.company = Company.objects.create(
+            legal_entity_name='Team5 Co', tax_number='8',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        self.membership = CompanyMembership.objects.create(user=self.member, company=self.company, role='data_entry')
+        self.client = APIClient()
+
+    def _profile(self, user):
+        self.client.force_authenticate(user=user)
+        return self.client.get('/api/accounts/profile/').data
+
+    def test_active_member_has_access(self):
+        p = self._profile(self.member)
+        self.assertFalse(p['access_revoked'])
+        self.assertTrue(p['permissions']['can_edit_entries'])
+
+    def test_deactivated_member_has_no_permissions(self):
+        self.membership.is_active = False
+        self.membership.save()
+        p = self._profile(self.member)
+        self.assertTrue(p['access_revoked'])
+        self.assertEqual(set(p['permissions'].values()), {False})
+
+    def test_team_list_carries_full_name(self):
+        self.client.force_authenticate(user=self.owner)
+        r = self.client.get('/api/companies/memberships/')
+        rows = r.data if isinstance(r.data, list) else r.data.get('results', r.data.get('members', []))
+        names = {m['user_email']: m['full_name'] for m in rows}
+        self.assertEqual(names['mem5@test.com'], 'Selin Kaya')

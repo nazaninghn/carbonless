@@ -174,6 +174,28 @@ export default function DashboardPage() {
     );
   }
 
+  // Every company membership was switched off by an admin: no workspace to
+  // show, so say so instead of an empty dashboard whose buttons all fail.
+  if (user?.access_revoked) {
+    const tr = language === 'tr';
+    return (
+      <div className="min-h-screen bg-[#F1FCF2] flex items-center justify-center p-4 text-[#072C0E]">
+        <div role="alert" className="w-full max-w-md rounded-3xl border border-[#072C0E]/10 bg-white p-8 text-center shadow-sm">
+          <h1 className="text-lg font-bold">{tr ? 'Şirket erişiminiz kapatıldı' : 'Your company access was turned off'}</h1>
+          <p className="mt-3 text-sm leading-6 text-[#072C0E]/60">
+            {tr
+              ? 'Şirketinizin yöneticisi hesabınızı ekipte devre dışı bıraktı; şu an verileri göremez veya giremezsiniz. Erişiminizin yeniden açılması için şirket sahibi ya da yöneticinizle iletişime geçin.'
+              : "Your company's admin has deactivated your account in the team, so you can't see or enter data right now. Contact your company owner or admin to get access again."}
+          </p>
+          <p className="mt-2 text-xs text-[#072C0E]/45">{user.email}</p>
+          <button onClick={handleLogout} className="mt-6 rounded-full bg-[#072C0E] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#175022]">
+            {tr ? 'Çıkış yap' : 'Sign out'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ToastProvider language={language}>
     <div className="dashboard-android-fix h-screen overflow-hidden bg-[#F1FCF2] text-[#072C0E] flex font-inter">

@@ -42,10 +42,15 @@ class FacilitySerializer(serializers.ModelSerializer):
 class CompanyMembershipSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
     username = serializers.CharField(source='user.username', read_only=True)
+    # The member's name as they set it in their profile ('' when not set).
+    full_name = serializers.SerializerMethodField()
+
+    def get_full_name(self, obj):
+        return obj.user.get_full_name() if obj.user_id else ''
 
     class Meta:
         model = CompanyMembership
-        fields = ['id', 'company', 'user', 'username', 'user_email',
+        fields = ['id', 'company', 'user', 'username', 'user_email', 'full_name',
                   'role', 'is_active', 'invited_by', 'created_at']
         # 'company' and 'user' must never be client-writable: this serializer
         # backs CompanyMembershipUpdateView, and a PATCH with a different

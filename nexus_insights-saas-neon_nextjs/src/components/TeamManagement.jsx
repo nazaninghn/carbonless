@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Users, UserPlus, Shield, Crown, Pencil, Database, Eye, Info } from 'lucide-react';
 
 const ROLES = [
@@ -97,6 +98,10 @@ export default function TeamManagement({ language }) {
     }
   }, [inviteEmail, inviteRole, inviting, tr, toast]);
 
+  // Deactivating cuts the member off at once, so it is confirmed first;
+  // re-activating is harmless and happens on click.
+  const [confirmDeactivate, setConfirmDeactivate] = useState(null);
+
   const handleToggleActive = useCallback(async (m) => {
     setUpdating(m.id);
     try {
@@ -179,14 +184,18 @@ export default function TeamManagement({ language }) {
                 <div className="flex items-center gap-3">
                   {/* Avatar */}
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${roleInfo.color}`}>
-                    {(m.username || m.user_email || '?')[0].toUpperCase()}
+                    {(m.full_name || m.user_email || m.username || '?')[0].toUpperCase()}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-[#072C0E]">{m.username || '—'}</p>
+                      <p className="text-sm font-medium text-[#072C0E]">
+                        {m.full_name || (m.username !== m.user_email && m.username) || m.user_email || '—'}
+                      </p>
                       {m.role === 'owner' && <Crown className="w-3.5 h-3.5 text-amber-500" />}
                     </div>
-                    <p className="text-xs text-[#072C0E]/55">{m.user_email || '—'}</p>
+                    {(m.full_name || (m.username && m.username !== m.user_email)) && (
+                      <p className="text-xs text-[#072C0E]/55">{m.user_email || '—'}</p>
+                    )}
                   </div>
                 </div>
 
@@ -215,7 +224,7 @@ export default function TeamManagement({ language }) {
                   {/* Active/Inactive toggle */}
                   {m.role !== 'owner' && (
                     <button
-                      onClick={() => handleToggleActive(m)}
+                      onClick={() => (m.is_active ? setConfirmDeactivate(m) : handleToggleActive(m))}
                       disabled={updating === m.id}
                       className={`px-2.5 py-1 rounded-xl text-xs font-medium border transition-colors disabled:opacity-50 ${
                         m.is_active
@@ -269,6 +278,20 @@ export default function TeamManagement({ language }) {
           </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDeactivate !== null}
+        type="danger"
+        language={tr ? 'tr' : 'en'}
+        title={tr ? 'Üye devre dışı bırakılsın mı?' : 'Deactivate this member?'}
+        message={confirmDeactivate && (tr
+          ? `${confirmDeactivate.full_name || confirmDeactivate.user_email} şirkete erişimini hemen kaybeder: verileri göremez ve giremez. Girdiği kayıtlar silinmez; istediğiniz zaman "Etkinleştir" ile erişimini geri açabilirsiniz.`
+          : `${confirmDeactivate.full_name || confirmDeactivate.user_email} immediately loses access to the company: they can no longer see or enter data. Their entries are kept, and you can restore access at any time with "Activate".`)}
+        confirmText={tr ? 'Devre dışı bırak' : 'Deactivate'}
+        cancelText={tr ? 'İptal' : 'Cancel'}
+        onConfirm={() => { const m = confirmDeactivate; setConfirmDeactivate(null); if (m) handleToggleActive(m); }}
+        onCancel={() => setConfirmDeactivate(null)}
+      />
     </div>
   );
 }
