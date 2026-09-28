@@ -205,3 +205,40 @@ class ReportListProgressTests(TestCase):
     def test_completed_report_is_100(self):
         from .views import _progress
         self.assertEqual(_progress(97, CarbonReport.Status.COMPLETED)['percent'], 100)
+
+
+class ClientProgressTests(TestCase):
+    """The library shows the survey's own progress, sent with each step."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user('prog', 'prog@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Prog Co', tax_number='1',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.user, company=company, role='owner')
+        self.report = CarbonReport.objects.create(company=company, created_by=self.user, reporting_year=2026)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _step(self, progress):
+        return self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
+            'step': 'SCOPE-GROUPING', 'data': {'answer': 'combined'}, 'progress': progress,
+        }, format='json')
+
+    def _listed(self):
+        rows = self.client.get('/api/questionnaire/').data['reports']
+        return next(r for r in rows if r['report_id'] == self.report.id)['progress']
+
+    def test_list_uses_the_survey_numbers(self):
+        self.assertEqual(self._step({'answered': 47, 'total': 128}).status_code, 200)
+        self.assertEqual(self._listed(), {'completed': 47, 'total': 128, 'percent': 37})
+
+    def test_nonsense_progress_is_ignored(self):
+        self._step({'answered': 500, 'total': 128})
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.client_progress)

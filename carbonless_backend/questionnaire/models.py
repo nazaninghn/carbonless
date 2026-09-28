@@ -33,6 +33,11 @@ class CarbonReport(models.Model):
         User, on_delete=models.SET_NULL, null=True, related_name='created_reports'
     )
     title = models.CharField(max_length=200, blank=True, default='')
+    # Progress as the questionnaire itself computes it (answered / questions
+    # that apply given the answers so far). Only the client can evaluate the
+    # branch conditions, so it sends this with each step and report lists show
+    # the same numbers as the survey. Null for reports saved before this.
+    client_progress = models.JSONField(null=True, blank=True)
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.DRAFT
     )

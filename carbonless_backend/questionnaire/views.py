@@ -22,7 +22,20 @@ import time
 BASELINE_QUESTIONS = 120
 
 
-def _progress(completed_count, status):
+def _client_progress_from(payload):
+    """The questionnaire's own {answered, total} progress, if sent and sane."""
+    if not isinstance(payload, dict):
+        return None
+    try:
+        answered, total = int(payload.get('answered')), int(payload.get('total'))
+    except (TypeError, ValueError):
+        return None
+    if total <= 0 or answered < 0 or answered > total or total > 1000:
+        return None
+    return {'answered': answered, 'total': total}
+
+
+def _progress(completed_count, status, client_progress=None):
     """Coarse progress for report *lists*.
 
     This is deliberately an approximation: of the 157 question objects, 8 are
@@ -38,6 +51,11 @@ def _progress(completed_count, status):
     """
     if status == CarbonReport.Status.COMPLETED:
         return {'completed': completed_count, 'total': completed_count, 'percent': 100}
+    client = _client_progress_from(client_progress)
+    if client:
+        # Same numbers the survey's own progress bar shows.
+        percent = min(99, round(client['answered'] / client['total'] * 100))
+        return {'completed': client['answered'], 'total': client['total'], 'percent': percent}
     total = max(BASELINE_QUESTIONS, completed_count)
     # Branches can push a draft past the baseline; it is still not done, so
     # never show 100% before the report is actually completed.
@@ -447,6 +465,12 @@ class SubmitStepView(APIView):
         if not step:
             return Response({'error': 'step is required'}, status=400)
 
+        # Stored with whichever save below succeeds (validation failures
+        # return before saving, so a rejected answer doesn't move it).
+        client_progress = _client_progress_from(request.data.get('progress'))
+        if client_progress:
+            report.client_progress = client_progress
+
         # Steps with strict serializer validation + DB side-effects.
         # Fix #60b: B1-D4 were missing — their handlers were never called, so
         # company fields (nace_code, employees, facilities, revenue, etc.) and
@@ -583,7 +607,7 @@ class SubmitStepView(APIView):
 
             report.status = CarbonReport.Status.COMPLETED
             report.current_step = 'DONE'
-            report.save(update_fields=['status', 'current_step', 'updated_at'])
+            report.save(update_fields=['status', 'current_step', 'updated_at', 'client_progress'])
             logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
 
             return Response({
@@ -598,7 +622,7 @@ class SubmitStepView(APIView):
 
         # Not final step - update and continue
         report.current_step = step
-        report.save(update_fields=['current_step', 'updated_at'])
+        report.save(update_fields=['current_step', 'updated_at', 'client_progress'])
 
         # ── Phase 2: Auto-create EmissionEntry for consumption data steps ──
         # If this step contains emission/consumption data, create a real entry
@@ -674,7 +698,7 @@ class ReportStatusView(APIView):
                 'boundary_approach': report.boundary_approach,
                 'scope3_approach': report.scope3_approach,
                 'completed_steps': completed_steps,
-                'progress': _progress(len(completed_steps), report.status),
+                'progress': _progress(len(completed_steps), report.status, report.client_progress),
             })
         except Exception as e:
             logger.error(f'Error in ReportStatusView: {e}', exc_info=True)
@@ -1026,7 +1050,7 @@ class ReportListView(APIView):
                 'current_step': r.current_step,
                 'created_at': r.created_at.isoformat() if r.created_at else None,
                 'updated_at': r.updated_at.isoformat() if r.updated_at else None,
-                'progress': _progress(completed, r.status),
+                'progress': _progress(completed, r.status, r.client_progress),
             })
         return Response({'reports': data})
 
