@@ -467,3 +467,41 @@ class CompanyInventoryAccessTests(TestCase):
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 0})
         self.assertEqual(EmissionEntry.objects.count(), 1)
+
+
+class StepEntryApprovalTests(TestCase):
+    """Questionnaire entries follow the same approval rule as the form."""
+
+    def test_data_entry_answers_wait_for_approval(self):
+        from rest_framework.test import APIClient
+        from emissions.models import EmissionEntry, EmissionFactor
+        from accounts.models import Notification
+        owner = User.objects.create_user('ow3', 'ow3@test.com', 'pass12345')
+        clerk = User.objects.create_user('de3', 'de3@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Appr Co', tax_number='6',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=owner, company=company, role='owner')
+        CompanyMembership.objects.create(user=clerk, company=company, role='data_entry')
+        EmissionFactor.objects.update_or_create(
+            slug='turkey-grid', country='turkey', year=2024,
+            defaults=dict(name='grid', scope='scope2', category='electricity', unit='kwh',
+                          factor_kg_co2e=0.4, source='test', is_active=True, is_default=True))
+        report = CarbonReport.objects.create(company=company, created_by=owner, reporting_year=2025)
+
+        def save(user):
+            c = APIClient()
+            c.force_authenticate(user=user)
+            r = c.patch(f'/api/questionnaire/{report.id}/step/',
+                        {'step': '4A-1', 'data': {'answer': {'Merkez': '1000 kWh'}}}, format='json')
+            self.assertEqual(r.status_code, 200)
+            return EmissionEntry.objects.get(company=company)
+
+        entry = save(clerk)
+        self.assertEqual(entry.status, 'submitted')
+        self.assertTrue(Notification.objects.filter(user=owner, notification_type='entry_submitted').exists())
+        self.assertEqual(save(owner).status, 'approved')

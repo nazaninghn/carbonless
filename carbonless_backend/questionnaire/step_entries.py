@@ -218,9 +218,14 @@ def sync_step_entries(user, company, report, step_id, data):
     therefore never leaves stale or duplicate rows. Returns the new entries.
     """
     from emissions.models import EmissionEntry
+    from emissions.factor_lookup import _get_entry_status
+    from emissions.notifications import notify_entry_submitted
     if not company:
         return []
     year = report.reporting_year or 2024
+    # Same approval rule as the form and the chat: an owner/admin/manager's
+    # answers count at once, a data-entry member's wait for approval.
+    status = _get_entry_status(user, company)
     activities = activities_for_step(step_id, data)
     resolved = [(a, _resolve(a)) for a in activities]
 
@@ -245,6 +250,8 @@ def sync_step_entries(user, company, report, step_id, data):
             description=description,
             factor_value_snapshot=factor.factor_kg_co2e,
             factor_source_snapshot=factor.source,
-            status='approved',
+            status=status,
         ))
+    for entry in created:
+        notify_entry_submitted(entry)  # no-op unless the entry awaits approval
     return created

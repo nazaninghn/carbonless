@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Package, Loader2 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
+import { getPermissions } from '@/lib/permissions';
 
 export default function InventoryLibrary({ tr = false }) {
   const {
@@ -21,6 +22,15 @@ export default function InventoryLibrary({ tr = false }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteError, setDeleteError] = useState('');
+  // Auditors are read-only: they view and download inventories, but cannot
+  // start, continue or delete one (the backend refuses those with a 403).
+  const [canEdit, setCanEdit] = useState(true);
+  useEffect(() => {
+    api.getProfile()
+      .then(res => (res.ok ? res.json() : null))
+      .then(profile => { if (profile) setCanEdit(getPermissions(profile).canEdit); })
+      .catch(() => {});
+  }, []);
   const [pdfDownloadingId, setPdfDownloadingId] = useState(null);
 
   // Load all inventories
@@ -181,7 +191,16 @@ export default function InventoryLibrary({ tr = false }) {
         </div>
       )}
 
+      {!canEdit && (
+        <div role="status" className="p-4 bg-[#8BEA99]/10 border border-[#8BEA99]/40 rounded-lg text-[#175022] text-sm">
+          {tr
+            ? 'Denetçi rolünüz salt okunur: envanterleri görüntüleyebilir ve raporlarını indirebilirsiniz, ancak yeni envanter başlatamaz, düzenleyemez veya silemezsiniz.'
+            : 'Your auditor role is read-only: you can view inventories and download their reports, but not start, edit or delete one.'}
+        </div>
+      )}
+
       {/* Start New */}
+      {canEdit && (
       <div className="p-6 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -202,6 +221,7 @@ export default function InventoryLibrary({ tr = false }) {
           </button>
         </div>
       </div>
+      )}
 
       {/* Drafts */}
       {drafts.length > 0 && (
@@ -251,7 +271,7 @@ export default function InventoryLibrary({ tr = false }) {
                       </button>
                     </>
                   ) : (
-                    <>
+                    canEdit && <>
                       <button
                         onClick={() => handleContinue(report.report_id)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"
@@ -362,6 +382,7 @@ export default function InventoryLibrary({ tr = false }) {
                         <Eye className="w-4 h-4" />
                         {tr ? 'Görüntüle' : 'View'}
                       </button>
+                      {canEdit && (
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
@@ -369,6 +390,7 @@ export default function InventoryLibrary({ tr = false }) {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      )}
                     </>
                   )}
                 </div>
