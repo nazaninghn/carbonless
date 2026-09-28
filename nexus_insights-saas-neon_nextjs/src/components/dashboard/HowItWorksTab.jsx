@@ -61,8 +61,8 @@ const SECTIONS = [
     key: 'benchmark', icon: BarChart2,
     title: { tr: 'Benchmark', en: 'Benchmark' },
     desc: {
-      tr: 'Emisyonlarınızı, anonim ve GDPR uyumlu verilerle aynı sektördeki şirketlerle karşılaştırın.',
-      en: 'Compare your emissions against companies in your sector using anonymous, GDPR-compliant data.',
+      tr: 'Emisyonlarınızı sektör ortalamalarıyla karşılaştırın. Şimdilik örnek verilerle gösterilir; gerçek sektör verisi eklendiğinde güncellenecek.',
+      en: 'Compare your emissions with sector averages. Shown with sample data for now; it will be updated when real sector data is added.',
     },
   },
   {
