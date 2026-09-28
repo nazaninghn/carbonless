@@ -358,6 +358,11 @@ function KPICard({ title, value, decimals = 2, unit, subtitle, accent, icon: Ico
 }
 
 // ─── Main Component ────────────────────────────────────────────────────────
+// Small targets (e.g. 0,35 t) must not round to "0": two decimals under 10 t.
+const tonneLabel = (t, tr) => Number(t || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', {
+  maximumFractionDigits: Math.abs(t) < 10 ? 2 : 0,
+});
+
 export default function DashboardOverview({
   language,
   selectedYear,
@@ -835,8 +840,11 @@ export default function DashboardOverview({
           ) : (
             <div className="space-y-3">
               {targets.slice(0, 3).map(t => {
-                const targetTonne = t.target_tonne || 0;
-                const baseTonne   = t.base_tonne   || totalTonne || 1;
+                // Same figures as the target card on Azaltma Hedefleri: the
+                // target's own base and reduction %, not fields the API
+                // doesn't send (which made every target read "0 tCO2e").
+                const baseTonne   = (parseFloat(t.base_emissions_kg) || 0) / 1000;
+                const targetTonne = baseTonne * (1 - (parseFloat(t.target_reduction_percent) || 0) / 100);
                 const reduction   = baseTonne - targetTonne;
                 const pct = Math.min(Math.max(Math.round((reduction > 0 ? (baseTonne - totalTonne) / reduction : 0) * 100), 0), 100);
                 return (
@@ -852,8 +860,8 @@ export default function DashboardOverview({
                       />
                     </div>
                     <div className="mt-0.5 flex justify-between text-[10px] text-[#072C0E]/35">
-                      <span>{tr ? 'Hedef' : 'Target'}: {targetTonne.toFixed(0)} tCO2e</span>
-                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne.toFixed(0)} tCO2e</span>
+                      <span>{tr ? 'Hedef' : 'Target'}: {tonneLabel(targetTonne, tr)} tCO2e</span>
+                      <span>{tr ? 'Mevcut' : 'Current'}: {tonneLabel(totalTonne, tr)} tCO2e</span>
                     </div>
                   </div>
                 );

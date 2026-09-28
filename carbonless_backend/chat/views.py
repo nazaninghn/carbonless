@@ -1823,8 +1823,27 @@ def send_message(request, session_id):
     # missing unit/date or offers to save. Verified live: this was the exact
     # cause of a chat that walked through several turns without ever
     # reaching a real calculation.
+    # Without the AI, a simple question about the company's own data is still
+    # answered from the database (see local_answers.py).
+    def _local_reply(text, source):
+        msg = ChatMessage.objects.create(session=session, role='assistant', content=text)
+        session.save(update_fields=['updated_at'])
+        return Response({
+            'id': msg.id, 'role': 'assistant', 'content': text,
+            'created_at': msg.created_at, 'session_title': session.title,
+            'pending_entries': [], 'source': source,
+        })
+
+    from .local_answers import local_data_answer, ai_unavailable_text
+
     if nlu_hard_failure:
+        local = local_data_answer(request.user, content, ui_language)
+        if local:
+            return _local_reply(local, 'local_data_answer')
         clean_text = (
+            'Şu an bunu işlerken bir sorun yaşıyorum (AI hizmetinde geçici bir aksaklık). '
+            'Birazdan tekrar gönderebilir misiniz?'
+            if ui_language == 'tr' else
             "I'm having trouble processing that right now (temporary AI service hiccup). "
             "Could you try sending it again in a moment?"
         )
@@ -1842,9 +1861,12 @@ def send_message(request, session_id):
 
     # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
     if _get_groq_client() is None:
+        local = local_data_answer(request.user, content, ui_language)
+        if local:
+            return _local_reply(local, 'local_data_answer')
         return Response({
-            'error': 'AI service is temporarily unavailable. You can still use the dashboard to manually add emissions.',
-            'content': '⚠️ AI service is temporarily unavailable. Please try again in a few minutes, or use the Emissions tab to add data manually.',
+            'error': ai_unavailable_text(ui_language),
+            'content': ai_unavailable_text(ui_language),
             'role': 'assistant',
         }, status=503)
 
@@ -1854,7 +1876,11 @@ def send_message(request, session_id):
     # Call Groq
     ai_text, error, status_code = _call_groq(history, user_context, ui_language)
     if error:
-        return Response({'error': error}, status=status_code)
+        local = local_data_answer(request.user, content, ui_language)
+        if local:
+            return _local_reply(local, 'local_data_answer')
+        text = ai_unavailable_text(ui_language, rate_limited=status_code == 429)
+        return Response({'error': text, 'content': text, 'role': 'assistant'}, status=status_code)
 
     # P2: Groq conversational is ONLY for general answers.
     # Save is ONLY via confirm-entry endpoint. Do NOT parse emission_entry from AI text.

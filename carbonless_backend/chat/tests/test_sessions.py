@@ -86,3 +86,58 @@ class MultiItemMessageTests(TestCase):
         res = self._send('3 ton çelik ve 500 kWh elektrik')
         self.assertEqual(len(res.data['pending_entries']), 1)
         self.assertIn('"3 ton"', res.data['content'])
+
+
+class LocalDataAnswerTests(TestCase):
+    """Without the AI, simple questions about the company's data are answered
+    from the database, and the chat speaks the UI language."""
+
+    def setUp(self):
+        from unittest import mock
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        from emissions.models import EmissionFactor, EmissionEntry
+        self.user = User.objects.create_user('localq', 'localq@test.com', 'testpass123')
+        company = Company.objects.create(
+            legal_entity_name='Yerel A.Ş.', tax_number='1234567891',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        UserProfile.objects.create(user=self.user, active_company=company)
+        CompanyMembership.objects.create(company=company, user=self.user, role='owner')
+        gas = EmissionFactor.objects.create(slug='lq-gas', name='Gas', name_tr='Doğal Gaz', scope='scope1',
+                                            category='stationary_combustion', country='turkey', unit='m3',
+                                            factor_kg_co2e=2, source='test')
+        grid = EmissionFactor.objects.create(slug='lq-grid', name='Grid', name_tr='Şebeke', scope='scope2',
+                                             category='electricity', country='turkey', unit='kwh',
+                                             factor_kg_co2e=0.5, source='test')
+        for f, qty, status in ((gas, 1000, 'approved'), (grid, 1000, 'approved'), (grid, 9000, 'draft')):
+            EmissionEntry.objects.create(company=company, user=self.user, emission_factor=f, year=2020, month=1,
+                                         quantity=qty, calculated_co2e_kg=qty * float(f.factor_kg_co2e), status=status)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        self.session = ChatSession.objects.create(user=self.user, title='t')
+        patcher = mock.patch('chat.views._get_groq_client', return_value=None)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def _send(self, text, lang='tr'):
+        return self.client.post(f'/api/chat/sessions/{self.session.id}/message/',
+                                {'content': text, 'language': lang}, format='json')
+
+    def test_total_for_a_year(self):
+        res = self._send('2020 yılı toplam emisyonumuz ne kadar?')
+        self.assertEqual(res.status_code, 200)
+        # 2 t gas + 0.5 t grid; the rejected 4.5 t is not counted.
+        self.assertIn('**2,50 tCO₂e**', res.data['content'])
+        self.assertIn('Kapsam 1: 2,00 t', res.data['content'])
+
+    def test_largest_source(self):
+        res = self._send('2020 yılında en çok emisyon hangi kaynaktan geliyor?')
+        self.assertIn('**Doğal Gaz**', res.data['content'])
+
+    def test_other_questions_get_a_turkish_unavailable_message(self):
+        res = self._send('Emisyonlarımızı nasıl azaltabiliriz?')
+        self.assertEqual(res.status_code, 503)
+        self.assertIn('AI hizmetine şu an ulaşılamıyor', res.data['content'])
