@@ -252,6 +252,27 @@ def invite_member(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
+def invite_info(request):
+    """What an invite link is for — company, role and address — so the join
+    page can show it and lock the email. Only the holder of the (random)
+    token can ask."""
+    token = request.query_params.get('token')
+    try:
+        invite = CompanyInvite.objects.select_related('company').get(token=token)
+    except (CompanyInvite.DoesNotExist, ValueError, ValidationError):
+        return Response({'error': 'Invalid invite', 'code': 'invalid_invite'}, status=404)
+    if invite.accepted:
+        return Response({'error': 'This invite has already been used.', 'code': 'invite_used'}, status=410)
+    if invite.is_expired:
+        return Response({'error': 'This invite has expired.', 'code': 'invite_expired'}, status=410)
+    return Response({
+        'email': invite.email, 'role': invite.role,
+        'company': invite.company.legal_entity_name,
+    })
+
+
+@api_view(['GET'])
 @permission_classes([IsAuthenticated, HasCompanyAdminRole])
 def pending_invites(request):
     """Invites of the current company not yet accepted, newest first."""

@@ -62,6 +62,7 @@ class RegisterView(generics.CreateAPIView):
         if response.status_code == 201 and isinstance(response.data, dict):
             response.data['email_sent'] = getattr(self, '_email_sent', True)
             response.data['company_saved'] = getattr(self, '_company_saved', False)
+            response.data['joining_team'] = getattr(self, '_joining_team', False)
         return response
 
     def perform_create(self, serializer):
@@ -82,8 +83,33 @@ class RegisterView(generics.CreateAPIView):
         # and the follow-up never ran: every verified signup lost everything it
         # typed. Missing or invalid details still fall back to the placeholder
         # values field by field, so registration never fails because of them.
-        from companies.models import Company, CompanyMembership
+        from companies.models import Company, CompanyMembership, CompanyInvite
         from companies.serializers import CompanySerializer
+        # Someone joining a team from an invite (the /join page) gets no
+        # company of their own: they would otherwise own a placeholder
+        # "<username>'s Company" next to the team they were invited to. The
+        # invite must be open and addressed to this email; verifying the email
+        # then joins them (accept_pending_invites).
+        invite_token = self.request.data.get('invite_token')
+        if invite_token:
+            from django.core.exceptions import ValidationError as DjangoValidationError
+            try:
+                invite = CompanyInvite.objects.get(token=invite_token, accepted=False,
+                                                   email__iexact=(user.email or '').strip())
+            except (CompanyInvite.DoesNotExist, ValueError, DjangoValidationError):
+                invite = None
+            if invite is not None and not invite.is_expired:
+                self._company_saved = False
+                self._joining_team = True
+                token_obj = EmailVerificationToken.objects.create(user=user)
+                self._email_sent = self._send_verification_email(user, token_obj.code)
+                import os
+                if os.environ.get('SKIP_EMAIL_VERIFICATION', 'false').lower() == 'true':
+                    user.is_active = True
+                    user.save(update_fields=['is_active'])
+                    from companies.views import accept_pending_invites
+                    accept_pending_invites(user)
+                return
         placeholder = {
             'legal_entity_name': f"{user.username}'s Company",
             'tax_number': '—',

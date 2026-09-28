@@ -47,6 +47,7 @@ import {
   readAnswerValue,
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
+import { fixed } from '@/lib/formatNumber';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Timing constants
@@ -608,8 +609,8 @@ const SessionItem = memo(function SessionItem({ session, active, onSelect, onDel
 // ─────────────────────────────────────────────────────────────────────────────
 function EmptyState({ onNew, tr }) {
   const suggestions = tr ? [
-    { img: '/icons/scopes.png', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?', label: 'Scopes' },
-    { img: '/icons/analytics.png', text: 'En büyük emisyon kaynağım hangisi?', label: 'Analytics' },
+    { img: '/icons/scopes.png', text: 'Kapsam 1, 2 ve 3 arasındaki fark nedir?', label: 'Kapsamlar' },
+    { img: '/icons/analytics.png', text: 'En büyük emisyon kaynağım hangisi?', label: 'Analiz' },
     { img: '/icons/reporting.png', text: 'ISO 14064-1 raporu nasıl hazırlanır?', label: 'Raporlama' },
     { img: '/icons/targets.png', text: 'Karbon azaltma hedefleri nasıl belirlenir?', label: 'Hedefler' },
     { img: '/icons/efficiency.png', text: 'Enerji verimliliği önerileri', label: 'Verimlilik' },
@@ -4120,7 +4121,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
 
           {totalTonne > 0 && (
             <span className="hidden sm:inline-block shrink-0 rounded-full bg-[#DEFAE1] border border-[#2ABD41]/20 px-2.5 py-1 text-[11px] font-semibold text-[#175022]">
-              {totalTonne.toFixed(1)} tCO₂e
+              {fixed(totalTonne, 1)} tCO₂e
             </span>
           )}
 
