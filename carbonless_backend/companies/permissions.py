@@ -71,3 +71,23 @@ class NotAuditorForWrites(BasePermission):
             .first()
         )
         return membership is not None and membership.role != 'auditor'
+
+
+def current_role(user):
+    """The user's role in their current company, or None."""
+    company = get_current_company(user)
+    if company is None:
+        return None
+    membership = user.company_memberships.filter(is_active=True, company=company).first()
+    return membership.role if membership else None
+
+
+class ApproverForWrites(BasePermission):
+    """Company-level decisions (reduction targets) are changed only by the
+    roles that approve data — owner, admin, manager. Everyone may read."""
+    allowed_roles = {'owner', 'admin', 'manager'}
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user.is_authenticated and current_role(request.user) in self.allowed_roles

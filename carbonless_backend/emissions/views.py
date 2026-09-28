@@ -18,7 +18,7 @@ except ImportError:
     SCOPE3_CATEGORIES = {}
     SCOPE3_GHG_NUMBER = {}
 from companies.utils import get_current_company
-from companies.permissions import NotAuditorForWrites
+from companies.permissions import NotAuditorForWrites, ApproverForWrites
 
 
 class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
@@ -139,9 +139,11 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
 
 
 class ReductionTargetViewSet(viewsets.ModelViewSet):
-    """CRUD for reduction targets — fully company-scoped"""
+    """CRUD for reduction targets — fully company-scoped. A target is the
+    company's commitment, so only owner/admin/manager change it; data-entry
+    members and auditors see it."""
     serializer_class = ReductionTargetSerializer
-    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+    permission_classes = [IsAuthenticated, NotAuditorForWrites, ApproverForWrites]
 
     def get_queryset(self):
         from emissions.utils import scope_queryset_to_company
@@ -170,6 +172,24 @@ class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found.'})
         serializer.save(user=self.request.user, company=company)
+
+    def _check_can_change(self, obj):
+        """A request is changed or withdrawn only while it waits for review,
+        and only by the member who sent it or an owner/admin/manager."""
+        from rest_framework.exceptions import PermissionDenied, ValidationError
+        from companies.permissions import current_role
+        if obj.status != 'pending':
+            raise ValidationError({'error': 'This request has already been reviewed.', 'code': 'already_reviewed'})
+        if obj.user_id != self.request.user.id and current_role(self.request.user) not in ('owner', 'admin', 'manager'):
+            raise PermissionDenied()
+
+    def perform_update(self, serializer):
+        self._check_can_change(serializer.instance)
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._check_can_change(instance)
+        instance.delete()
 
 
 @api_view(['GET'])

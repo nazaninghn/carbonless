@@ -283,6 +283,8 @@ export default function DashboardPage() {
                 factors={factors}
                 facilityList={facilityList}
                 customRequests={customRequests}
+                currentUsername={user?.username}
+                canApprove={perms.canApprove}
                 questionnaireProfile={questionnaireProfile}
                 showAddForm={showAddForm}
                 setShowAddForm={setShowAddForm}
@@ -308,7 +310,7 @@ export default function DashboardPage() {
                 targets={targets}
                 summary={effectiveSummary}
                 fetchData={fetchData}
-                canEdit={perms.canEdit}
+                canEdit={perms.canApprove}
                 selectedYear={selectedYear}
                 onYearChange={setSelectedYear}
               />
