@@ -194,10 +194,25 @@ def invite_member(request):
     company = get_current_company(request.user)
     if not company:
         return Response({'error': 'No company'}, status=403)
-    email = request.data.get('email')
+    email = (request.data.get('email') or '').strip().lower()
     role = request.data.get('role', 'data_entry')
     if not email:
-        return Response({'error': 'email required'}, status=400)
+        return Response({'error': 'email required', 'code': 'email_required'}, status=400)
+    from django.core.validators import validate_email
+    from django.core.exceptions import ValidationError as DjangoValidationError
+    try:
+        validate_email(email)
+    except DjangoValidationError:
+        return Response({'error': 'Enter a valid email address.', 'code': 'invalid_email'}, status=400)
+    # Someone already in the team gets no "join the team" e-mail; a
+    # deactivated member is turned back on from the member list instead.
+    existing = (CompanyMembership.objects.filter(company=company, user__email__iexact=email)
+                .select_related('user').first())
+    if existing:
+        return Response({
+            'error': 'This person is already a member of the team.',
+            'code': 'already_member' if existing.is_active else 'inactive_member',
+        }, status=400)
 
     # Fix #27: Validate role — 'owner' must never be assignable via an invite.
     # Without this check any API caller could POST role='owner' and gain full
@@ -213,9 +228,19 @@ def invite_member(request):
     # Fix #47: update_or_create replaces get_or_create so that re-inviting an
     # existing unaccepted invite properly refreshes the role and invited_by
     # fields instead of silently keeping stale values.
+    # Sending the invite again also renews it: a fresh 7-day expiry (the old
+    # one kept counting, so a re-sent link could already be expired) and a
+    # new link, so an earlier forwarded link stops working.
+    import datetime
+    import uuid
+    from django.utils import timezone
     invite, created = CompanyInvite.objects.update_or_create(
-        company=company, email=email.strip().lower(),
-        defaults={'role': role, 'invited_by': request.user}
+        company=company, email=email,
+        defaults={
+            'role': role, 'invited_by': request.user, 'accepted': False,
+            'token': uuid.uuid4(),
+            'expires_at': timezone.now() + datetime.timedelta(days=CompanyInvite.INVITE_TTL_DAYS),
+        }
     )
     # Previously nothing was sent: the invite only existed in the database and
     # its token only in this response, so the invitee had no way to join.
@@ -224,6 +249,29 @@ def invite_member(request):
         'token': str(invite.token), 'email': invite.email, 'created': created,
         'email_sent': email_sent,
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated, HasCompanyAdminRole])
+def pending_invites(request):
+    """Invites of the current company not yet accepted, newest first."""
+    company = get_current_company(request.user)
+    rows = CompanyInvite.objects.filter(company=company, accepted=False).order_by('-created_at')
+    return Response([{
+        'id': i.id, 'email': i.email, 'role': i.role,
+        'created_at': i.created_at, 'expires_at': i.expires_at, 'expired': i.is_expired,
+    } for i in rows])
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, HasCompanyAdminRole])
+def cancel_invite(request, pk):
+    """Withdraw a pending invite; its link stops working."""
+    company = get_current_company(request.user)
+    deleted, _ = CompanyInvite.objects.filter(company=company, pk=pk, accepted=False).delete()
+    if not deleted:
+        return Response({'error': 'Invite not found'}, status=404)
+    return Response(status=204)
 
 
 @api_view(['POST'])

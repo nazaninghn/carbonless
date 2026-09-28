@@ -180,3 +180,53 @@ class InviteFlowTests(TestCase):
         res = client.post('/api/companies/accept-invite/', {'token': data['token']}, format='json')
         self.assertEqual(res.status_code, 404)
         self.assertFalse(CompanyMembership.objects.filter(user=other, company=self.company).exists())
+
+
+class InviteManagementTests(InviteFlowTests):
+    """Invites are validated, renewed when sent again, listed and cancellable."""
+
+    def _post(self, email):
+        return self.client.post('/api/companies/invite/', {'email': email, 'role': 'data_entry'}, format='json')
+
+    def test_invalid_email_is_refused(self):
+        res = self._post('bozuk-adres')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'invalid_email')
+
+    def test_existing_member_is_not_invited(self):
+        member = User.objects.create_user('selin', 'Selin@Test.com', 'testpass123')
+        CompanyMembership.objects.create(company=self.company, user=member, role='admin')
+        res = self._post('selin@test.com')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'already_member')
+        CompanyMembership.objects.filter(user=member).update(is_active=False)
+        self.assertEqual(self._post('selin@test.com').data['code'], 'inactive_member')
+
+    def test_sending_again_renews_an_expired_invite(self):
+        import datetime
+        from django.utils import timezone
+        from .models import CompanyInvite
+        first = self._invite('ali@test.com')
+        CompanyInvite.objects.filter(email='ali@test.com').update(expires_at=timezone.now() - datetime.timedelta(days=1))
+        second = self._invite('ali@test.com')
+        invite = CompanyInvite.objects.get(email='ali@test.com')
+        self.assertFalse(invite.is_expired)
+        self.assertNotEqual(first['token'], second['token'])
+
+    def test_pending_invites_are_listed_and_can_be_cancelled(self):
+        self._invite('ali@test.com')
+        res = self.client.get('/api/companies/invites/')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual([r['email'] for r in res.data], ['ali@test.com'])
+        res = self.client.delete(f"/api/companies/invites/{res.data[0]['id']}/")
+        self.assertEqual(res.status_code, 204)
+        self.assertEqual(self.client.get('/api/companies/invites/').data, [])
+
+    def test_data_entry_cannot_see_or_cancel_invites(self):
+        self._invite('ali@test.com')
+        clerk = User.objects.create_user('veri', 'veri@test.com', 'testpass123')
+        from accounts.models import UserProfile
+        UserProfile.objects.create(user=clerk, active_company=self.company)
+        CompanyMembership.objects.create(company=self.company, user=clerk, role='data_entry')
+        client = APIClient(); client.force_authenticate(user=clerk)
+        self.assertEqual(client.get('/api/companies/invites/').status_code, 403)

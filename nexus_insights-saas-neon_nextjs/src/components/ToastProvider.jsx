@@ -103,7 +103,7 @@ function Toast({ id, type, message, duration, onDismiss, language }) {
         ${bg} ${border}
         ${in_ && !out
           ? 'translate-x-0 translate-y-0 opacity-100'
-          : 'translate-x-5 opacity-0'}
+          : 'translate-x-5 opacity-0 lg:translate-x-0 lg:-translate-y-2'}
       `}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -147,15 +147,17 @@ function Toast({ id, type, message, duration, onDismiss, language }) {
 function ToastContainer({ toasts, onDismiss, language }) {
   return (
     <>
-      {/* bottom-20 on mobile keeps toasts above the fixed bottom nav (h-16 + safe-area)
-          bottom-6 on lg because no bottom nav */}
+      {/* bottom-20 on mobile keeps toasts above the fixed bottom nav (h-16 + safe-area).
+          On lg they sit at the top centre, over the header: bottom-right put
+          them on top of form buttons (e.g. "Davet Et"), which then could not
+          be clicked until the toast went away. */}
       <div
         className="
           pointer-events-none
           fixed bottom-20 right-0 z-[300]
           flex w-full max-w-[360px] flex-col gap-2
           px-3
-          lg:bottom-6 lg:px-4
+          lg:bottom-auto lg:top-3 lg:right-auto lg:left-1/2 lg:-translate-x-1/2 lg:max-w-[420px] lg:px-0
         "
         aria-live="polite"
         aria-atomic="false"
