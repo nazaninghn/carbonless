@@ -387,6 +387,14 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             if company else None
         )
         role = membership.role if membership else profile.role
+        # Every company membership switched off ("Devre Dışı"): the user may
+        # still sign in, but has no company to work in and may do nothing —
+        # the dashboard shows an "access closed" page instead of an empty
+        # workspace whose every button fails.
+        data['access_revoked'] = membership is None and CompanyMembership.objects.filter(
+            user=user, is_active=False).exists()
+        if data['access_revoked']:
+            role = ''
         MANAGE_ROLES = {'owner', 'admin'}
         APPROVE_ROLES = {'owner', 'admin', 'manager'}
         EDIT_ROLES = {'owner', 'admin', 'manager', 'data_entry'}
