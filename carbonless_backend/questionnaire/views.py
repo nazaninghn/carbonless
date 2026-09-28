@@ -189,6 +189,18 @@ def extract_profile(session):
     return profile
 
 
+def _company_reports(user):
+    """Inventories of every company the user is an active member of.
+
+    An inventory belongs to the company, not only to whoever started it: an
+    admin or manager must be able to open, continue and download the reports
+    of an inventory a teammate created (auditors stay read-only through
+    NotAuditorForWrites)."""
+    return CarbonReport.objects.filter(
+        company__memberships__user=user, company__memberships__is_active=True,
+    ).distinct()
+
+
 class StartReportView(APIView):
     """POST /api/questionnaire/start/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]
@@ -276,7 +288,7 @@ class SubmitStepView(APIView):
 
     def patch(self, request, report_id):
         try:
-            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+            report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
 
@@ -475,9 +487,7 @@ class ReportStatusView(APIView):
 
     def get(self, request, report_id):
         try:
-            report = CarbonReport.objects.select_related('company').prefetch_related('steps').get(
-                id=report_id, created_by=request.user
-            )
+            report = _company_reports(request.user).select_related('company').prefetch_related('steps').get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
@@ -525,12 +535,35 @@ class ReportStatusView(APIView):
     def delete(self, request, report_id):
         """DELETE /api/questionnaire/<report_id>/ — remove a draft/completed inventory."""
         try:
-            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+            report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
+        if report.created_by_id != request.user.id:
+            from companies.models import CompanyMembership
+            if not CompanyMembership.objects.filter(
+                company=report.company, user=request.user, is_active=True,
+                role__in=('owner', 'admin'),
+            ).exists():
+                return Response({'error': 'Only the creator or a company owner/admin can delete this inventory.',
+                                 'code': 'forbidden'}, status=403)
+
+        # The emission entries the questionnaire created for this inventory go
+        # with it — unless another inventory covers the same year, since
+        # entries are kept per company and year and are shared with it. Chat
+        # and form entries are never touched.
+        deleted_entries = 0
+        year = report.reporting_year
+        if year and not CarbonReport.objects.filter(
+                company=report.company, reporting_year=year).exclude(id=report.id).exists():
+            from emissions.models import EmissionEntry
+            deleted_entries, _ = EmissionEntry.objects.filter(
+                company=report.company, year=year,
+                description__startswith='Questionnaire step ',
+            ).delete()
+
         report.delete()
-        return Response(status=204)
+        return Response({'deleted_entries': deleted_entries}, status=200)
 
 
 # ── Company Profile reuse ─────────────────────────────────────────────────────
@@ -619,7 +652,7 @@ class PreviousCompanyProfileView(APIView):
 
     def get(self, request, report_id):
         try:
-            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+            report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
 
@@ -666,7 +699,7 @@ class ReuseCompanyProfileView(APIView):
 
     def post(self, request, report_id):
         try:
-            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+            report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
 
@@ -732,9 +765,7 @@ class QuestionnairePDFView(APIView):
 
     def get(self, request, report_id):
         try:
-            report = CarbonReport.objects.select_related('company').get(
-                id=report_id, created_by=request.user
-            )
+            report = _company_reports(request.user).select_related('company').get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
@@ -768,9 +799,7 @@ class ISOInventoryReportView(APIView):
 
     def get(self, request, report_id):
         try:
-            report = CarbonReport.objects.select_related('company').get(
-                id=report_id, created_by=request.user
-            )
+            report = _company_reports(request.user).select_related('company').get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
@@ -809,9 +838,7 @@ class CombinedReportView(APIView):
 
     def get(self, request, report_id):
         try:
-            report = CarbonReport.objects.select_related('company').get(
-                id=report_id, created_by=request.user
-            )
+            report = _company_reports(request.user).select_related('company').get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
@@ -847,7 +874,7 @@ class SaveDraftView(APIView):
 
     def patch(self, request, report_id):
         try:
-            report = CarbonReport.objects.get(id=report_id, created_by=request.user)
+            report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
 
@@ -889,8 +916,8 @@ class ReportListView(APIView):
             return Response({'reports': []})
 
         reports = CarbonReport.objects.filter(
-            company=company, created_by=request.user
-        ).select_related('company').prefetch_related('steps').order_by('-updated_at')
+            company=company
+        ).select_related('company', 'created_by').prefetch_related('steps').order_by('-updated_at')
 
         data = []
         for r in reports:
@@ -905,6 +932,11 @@ class ReportListView(APIView):
                 'created_at': r.created_at.isoformat() if r.created_at else None,
                 'updated_at': r.updated_at.isoformat() if r.updated_at else None,
                 'progress': _progress(completed, r.status, r.client_progress),
+                # Who started it, when that was a teammate (None for your own).
+                'created_by': (
+                    None if r.created_by_id == request.user.id or not r.created_by
+                    else (r.created_by.get_full_name() or r.created_by.email or r.created_by.username)
+                ),
             })
         return Response({'reports': data})
 

@@ -100,7 +100,7 @@ export default function RegisterPage() {
     if (!formData.password) missing.push(tr ? 'Şifre' : 'Password');
     if (!formData.password2) missing.push(tr ? 'Şifre Tekrar' : 'Confirm Password');
     if (!formData.legalEntityName.trim()) missing.push(tr ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
-    if (formData.taxNumber && formData.taxNumber.length !== 10) { setError(tr ? 'Vergi numarası 10 haneli olmalıdır' : 'Tax number must be 10 digits'); return false; }
+    if (formData.taxNumber && ![10, 11].includes(formData.taxNumber.length)) { setError(tr ? 'Vergi numarası 10 haneli (VKN) veya 11 haneli (TCKN) olmalıdır' : 'Tax number must be 10 digits (VKN) or 11 digits (TCKN)'); return false; }
     // Checked here, not only by the server — otherwise a typo surfaced at the
     // end of step 3, in English, with nothing pointing back to step 1.
     if (formData.email.trim() && !EMAIL_RE.test(formData.email.trim())) { setError(tr ? 'Geçerli bir e-posta adresi girin (örn. ad@sirket.com)' : 'Enter a valid email address (e.g. name@company.com)'); return false; }
@@ -335,7 +335,7 @@ export default function RegisterPage() {
                 <Panel title={language === 'tr' ? 'Temel Kurumsal Bilgiler' : 'Corporate Information'} icon={Building2}>
                   <div className="grid gap-3 md:grid-cols-2">
                     <TextField label={language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} required value={formData.legalEntityName} onChange={e => handleInputChange('legalEntityName', e.target.value)} icon={Building2} placeholder={language === 'tr' ? 'örn: ABC Teknoloji A.Ş.' : 'e.g. ABC Technology Inc.'} />
-                    <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={10} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel  -  10 haneli' : 'Optional  -  10 digits'} /></div>
+                    <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={11} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 11))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel  -  VKN (10) veya TCKN (11)' : 'Optional  -  VKN (10) or TCKN (11 digits)'} /></div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div><Label required>{language === 'tr' ? 'Merkez Ülkesi' : 'Country of HQ'}</Label><CountryPicker value={formData.countryOfHeadquarters} onChange={val => handleInputChange('countryOfHeadquarters', val)} language={language} placeholder={language === 'tr' ? 'Ülke ara...' : 'Search...'} /></div>

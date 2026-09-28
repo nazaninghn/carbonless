@@ -20,6 +20,7 @@ export default function InventoryLibrary({ tr = false }) {
   const [surveyName, setSurveyName] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [deleteError, setDeleteError] = useState('');
   const [pdfDownloadingId, setPdfDownloadingId] = useState(null);
 
   // Load all inventories
@@ -72,9 +73,13 @@ export default function InventoryLibrary({ tr = false }) {
   const handleDelete = async (reportId) => {
     setDeletingId(reportId);
     try {
+      setDeleteError('');
       const res = await api.deleteReport(reportId);
       if (!res.ok && res.status !== 204) {
-        console.error('Failed to delete inventory:', res.status);
+        setDeleteError(res.status === 403
+          ? (tr ? 'Bu envanteri yalnızca oluşturan kişi veya şirket sahibi/yöneticisi silebilir.'
+                : 'Only the person who created this inventory or a company owner/admin can delete it.')
+          : (tr ? 'Envanter silinemedi. Lütfen tekrar deneyin.' : 'Could not delete the inventory. Please try again.'));
         return;
       }
       setReports(prev => prev.filter(r => r.report_id !== reportId));
@@ -84,6 +89,23 @@ export default function InventoryLibrary({ tr = false }) {
       setDeletingId(null);
       setConfirmDeleteId(null);
     }
+  };
+
+  // What deleting an inventory also removes, shown in the confirm step: the
+  // emission records its questionnaire created — unless another inventory
+  // covers the same year and shares them (the backend applies the same rule).
+  const deleteNote = (report) => {
+    const year = report.reporting_year;
+    if (!year) return tr ? 'Silinsin mi?' : 'Delete?';
+    const shared = reports.some(r => r.report_id !== report.report_id && String(r.reporting_year) === String(year));
+    if (shared) {
+      return tr
+        ? `Silinsin mi? ${year} için başka bir envanter olduğundan emisyon kayıtları silinmez.`
+        : `Delete? Another inventory covers ${year}, so the emission records are kept.`;
+    }
+    return tr
+      ? `Silinsin mi? Bu anketten oluşan ${year} emisyon kayıtları da silinir (sohbet ve formla girilenler kalır).`
+      : `Delete? The ${year} emission records created by this questionnaire are deleted too (chat and form entries stay).`;
   };
 
   // `kind` selects which document: the three-report pack, the full ISO 14064-1
@@ -153,6 +175,12 @@ export default function InventoryLibrary({ tr = false }) {
         </div>
       )}
 
+      {deleteError && (
+        <div role="alert" className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          {deleteError}
+        </div>
+      )}
+
       {/* Start New */}
       <div className="p-6 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -191,6 +219,11 @@ export default function InventoryLibrary({ tr = false }) {
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+                  {report.created_by && (
+                    <p className="text-xs text-[#175022]/50 mt-0.5 truncate">
+                      {tr ? 'Oluşturan' : 'Created by'}: {report.created_by}
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#175022]/60 mt-2">
                     <span>{report.progress?.percent || 0}% {tr ? 'tamamlandı' : 'complete'}</span>
                     <span>{report.progress?.completed || 0} / {report.progress?.total || 120} {tr ? 'soru' : 'questions'}</span>
@@ -200,8 +233,8 @@ export default function InventoryLibrary({ tr = false }) {
                 <div className="flex items-center gap-2 shrink-0">
                   {confirmDeleteId === report.report_id ? (
                     <>
-                      <span className="text-xs font-bold text-red-500">
-                        {tr ? 'Silinsin mi?' : 'Delete?'}
+                      <span className="max-w-xs text-xs font-bold text-red-500">
+                        {deleteNote(report)}
                       </span>
                       <button
                         onClick={() => handleDelete(report.report_id)}
@@ -258,6 +291,11 @@ export default function InventoryLibrary({ tr = false }) {
               >
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+                  {report.created_by && (
+                    <p className="text-xs text-[#175022]/50 mt-0.5 truncate">
+                      {tr ? 'Oluşturan' : 'Created by'}: {report.created_by}
+                    </p>
+                  )}
                   <p className="text-xs text-[#175022]/60 mt-1">
                     {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
                   </p>
@@ -265,8 +303,8 @@ export default function InventoryLibrary({ tr = false }) {
                 <div className="flex items-center gap-2 shrink-0">
                   {confirmDeleteId === report.report_id ? (
                     <>
-                      <span className="text-xs font-bold text-red-500">
-                        {tr ? 'Silinsin mi?' : 'Delete?'}
+                      <span className="max-w-xs text-xs font-bold text-red-500">
+                        {deleteNote(report)}
                       </span>
                       <button
                         onClick={() => handleDelete(report.report_id)}
