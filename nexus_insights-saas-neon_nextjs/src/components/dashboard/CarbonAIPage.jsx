@@ -10,6 +10,7 @@ import {
   Zap, Fuel, Car, Plane, Flame, Droplets, Truck, Calendar, Save, AlertCircle, Pencil, Check,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+import { COUNTRIES } from '@/lib/data/countries';
 import CompletionReportCard from './CompletionReportCard';
 import { InventoryProvider, useInventory } from './InventoryWorkflow';
 import InventoryLibrary from './InventoryLibrary';
@@ -61,7 +62,8 @@ const CHAT_CHAR_LIMIT = 4000;
 // City data
 // ─────────────────────────────────────────────────────────────────────────────
 const CITIES_BY_COUNTRY = {
-  TR: ['Adana','Ankara','Antalya','Bursa','Diyarbakır','Erzurum','Eskişehir','Gaziantep','İstanbul','İzmir','Kayseri','Konya','Malatya','Mersin','Samsun','Trabzon','Şanlıurfa'],
+  // All 81 provinces (il), in Turkish alphabetical order.
+  TR: ['Adana','Adıyaman','Afyonkarahisar','Ağrı','Aksaray','Amasya','Ankara','Antalya','Ardahan','Artvin','Aydın','Balıkesir','Bartın','Batman','Bayburt','Bilecik','Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum','Denizli','Diyarbakır','Düzce','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir','Gaziantep','Giresun','Gümüşhane','Hakkari','Hatay','Iğdır','Isparta','İstanbul','İzmir','Kahramanmaraş','Karabük','Karaman','Kars','Kastamonu','Kayseri','Kilis','Kırıkkale','Kırklareli','Kırşehir','Kocaeli','Konya','Kütahya','Malatya','Manisa','Mardin','Mersin','Muğla','Muş','Nevşehir','Niğde','Ordu','Osmaniye','Rize','Sakarya','Samsun','Şanlıurfa','Siirt','Sinop','Şırnak','Sivas','Tekirdağ','Tokat','Trabzon','Tunceli','Uşak','Van','Yalova','Yozgat','Zonguldak'],
   GB: ['Birmingham','Bristol','Edinburgh','Glasgow','Leeds','Liverpool','London','Manchester','Newcastle','Sheffield'],
   DE: ['Berlin','Bremen','Cologne','Dortmund','Dresden','Düsseldorf','Frankfurt','Hamburg','Hanover','Leipzig','Munich','Nuremberg','Stuttgart'],
   US: ['Atlanta','Austin','Boston','Charlotte','Chicago','Dallas','Denver','Houston','Los Angeles','Miami','Minneapolis','New York','Philadelphia','Phoenix','Portland','San Francisco','Seattle','Washington DC'],
@@ -108,16 +110,18 @@ const CITIES_BY_COUNTRY = {
   OTHER: [],
 };
 
-const COUNTRY_NAMES = {
-  TR:'Turkey',GB:'United Kingdom',DE:'Germany',US:'United States',FR:'France',IT:'Italy',
-  ES:'Spain',NL:'Netherlands',BE:'Belgium',AT:'Austria',CH:'Switzerland',SE:'Sweden',
-  NO:'Norway',DK:'Denmark',FI:'Finland',PL:'Poland',PT:'Portugal',GR:'Greece',
-  RU:'Russia',UA:'Ukraine',CN:'China',JP:'Japan',KR:'South Korea',IN:'India',
-  SA:'Saudi Arabia',AE:'UAE',QA:'Qatar',IL:'Israel',EG:'Egypt',MA:'Morocco',
-  BR:'Brazil',MX:'Mexico',AR:'Argentina',CA:'Canada',AU:'Australia',NZ:'New Zealand',
-  SG:'Singapore',MY:'Malaysia',TH:'Thailand',ID:'Indonesia',VN:'Vietnam',
-  GE:'Georgia',AZ:'Azerbaijan',KZ:'Kazakhstan',OTHER:'Other',
-};
+// Country names in the UI language, from the shared country list.
+const COUNTRY_BY_CODE = Object.fromEntries(COUNTRIES.map(c => [c.code, c]));
+const COUNTRY_CODES = ['TR','GB','DE','US','FR','IT','ES','NL','BE','AT','CH','SE','NO','DK','FI','PL','PT','GR',
+  'RU','UA','CN','JP','KR','IN','SA','AE','QA','IL','EG','MA','BR','MX','AR','CA','AU','NZ',
+  'SG','MY','TH','ID','VN','GE','AZ','KZ','OTHER'];
+function countryName(code, lang) {
+  if (code === 'OTHER') return lang === 'tr' ? 'Diğer' : 'Other';
+  const c = COUNTRY_BY_CODE[code];
+  return c ? (lang === 'tr' ? c.tr : c.en) : code;
+}
+// City <select> value that switches to typing the city name.
+const OTHER_CITY = '__other__';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: map answer for backend
@@ -428,7 +432,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
   if (q.type === 'country_city') {
     const v = value;
     if (!v?.country) return '—';
-    return `${COUNTRY_NAMES[v.country] || v.country}${v.city ? ', ' + v.city : ''}`;
+    return `${countryName(v.country, lang)}${v.city ? ', ' + v.city : ''}`;
   }
   if (q.type === 'multi_select') {
     if (!Array.isArray(value) || value.length === 0) return '—';
@@ -862,33 +866,47 @@ function CountryCityInput({ value, onChange, lang }) {
   const val = value || { country: '', city: '' };
   const cities = val.country ? (CITIES_BY_COUNTRY[val.country] || []) : [];
   const tr = lang === 'tr';
+  // A city that is not in the list (typed via "Diğer") keeps the text box open.
+  const [typing, setTyping] = useState(Boolean(val.city) && cities.length > 0 && !cities.includes(val.city));
+  const showTextBox = val.country && (cities.length === 0 || typing);
+  const inputClass = 'rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20';
+  const countryOptions = [...COUNTRY_CODES].sort((a, b) => {
+    if (a === 'TR' || b === 'OTHER') return -1;
+    if (b === 'TR' || a === 'OTHER') return 1;
+    return countryName(a, lang).localeCompare(countryName(b, lang), tr ? 'tr' : 'en');
+  });
   return (
     <div className="flex flex-col gap-2 w-full">
       <select
-        className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
+        className={inputClass}
         value={val.country}
-        onChange={e => onChange({ country: e.target.value, city: '' })}
+        onChange={e => { setTyping(false); onChange({ country: e.target.value, city: '' }); }}
       >
         <option value="">{tr ? '— Ülke seçin —' : '— Select country —'}</option>
-        {Object.entries(COUNTRY_NAMES).map(([code, name]) => (
-          <option key={code} value={code}>{name}</option>
+        {countryOptions.map(code => (
+          <option key={code} value={code}>{countryName(code, lang)}</option>
         ))}
       </select>
       {val.country && cities.length > 0 && (
         <select
-          className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
-          value={val.city}
-          onChange={e => onChange({ ...val, city: e.target.value })}
+          className={inputClass}
+          value={typing ? OTHER_CITY : val.city}
+          onChange={e => {
+            if (e.target.value === OTHER_CITY) { setTyping(true); onChange({ ...val, city: '' }); }
+            else { setTyping(false); onChange({ ...val, city: e.target.value }); }
+          }}
         >
           <option value="">{tr ? '— Şehir seçin —' : '— Select city —'}</option>
           {cities.map(c => <option key={c} value={c}>{c}</option>)}
+          <option value={OTHER_CITY}>{tr ? 'Diğer (yazın)' : 'Other (type it)'}</option>
         </select>
       )}
-      {val.country && cities.length === 0 && (
+      {showTextBox && (
         <input
-          className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
+          className={inputClass}
           placeholder={tr ? 'Şehir adı' : 'City name'}
           value={val.city}
+          maxLength={100}
           onChange={e => onChange({ ...val, city: e.target.value })}
         />
       )}

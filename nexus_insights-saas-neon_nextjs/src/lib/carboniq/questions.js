@@ -177,7 +177,9 @@ export const CARBONIQ_QUESTIONS = [
     type: 'text',
     subtype: 'numeric',
     required: true,
-    exactLength: 10,
+    // VKN (companies) is 10 digits, TCKN (sole proprietors) is 11.
+    allowedLengths: [10, 11],
+    maxLength: 11,
     numericOnly: true,
     reportField: 'tenant.vkn',
     text: {
@@ -189,8 +191,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '0000000000',
     },
     helper: {
-      tr: '10 haneli VKN / TCKN. Sistem içi kimlik doğrulama için kullanılır, üçüncü taraflarla paylaşılmaz.',
-      en: '10-digit tax ID. It is used for internal identity verification and is not shared with third parties.',
+      tr: '10 haneli VKN veya şahıs şirketleri için 11 haneli TCKN. Sistem içi kimlik doğrulama için kullanılır, üçüncü taraflarla paylaşılmaz.',
+      en: '10-digit tax ID (VKN), or the 11-digit TCKN for sole proprietors. It is used for internal identity verification and is not shared with third parties.',
     },
     validate: {
       requiredMessage: {
@@ -198,8 +200,8 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Tax identification number is required.',
       },
       formatMessage: {
-        tr: 'Lütfen 10 haneli vergi kimlik numaranızı girin (yalnızca rakam).',
-        en: 'Please enter your 10-digit tax identification number using digits only.',
+        tr: 'Lütfen 10 haneli VKN veya 11 haneli TCKN girin (yalnızca rakam).',
+        en: 'Please enter a 10-digit VKN or an 11-digit TCKN, using digits only.',
       },
     },
     next: 'A3',
@@ -6031,7 +6033,7 @@ export function normalizeCarbonIQNumbers(question, value) {
   const isLoopQuantity =
     (question.type === 'fuel_loop' || question.type === 'equipment_loop') &&
     question.units && !(question.options && question.options.length);
-  if (!question.numericOnly && !question.exactLength && typeof value === 'string'
+  if (!question.numericOnly && !question.exactLength && !question.allowedLengths && typeof value === 'string'
       && (question.subtype === 'numeric' || question.type === 'numeric' || isLoopQuantity)) {
     // "1.250,5 kWh" -> "1250.5 kWh": only the amount before the first space.
     const s = value.trim();
@@ -6135,7 +6137,7 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
   // allow decimals and an optional trailing unit ("1500 kWh") — unlike
   // numericOnly above, which is strict integer digits (e.g. tax IDs). Without
   // this, garbage text like "ttt" passed straight through to the backend.
-  if (!question.numericOnly && (question.subtype === 'numeric' || question.type === 'numeric' || isLoopQuantity) && !question.exactLength) {
+  if (!question.numericOnly && (question.subtype === 'numeric' || question.type === 'numeric' || isLoopQuantity) && !question.exactLength && !question.allowedLengths) {
     const s = String(value).trim();
     const spaceIdx = s.indexOf(' ');
     const amountStr = spaceIdx === -1 ? s : s.slice(0, spaceIdx);
@@ -6194,6 +6196,17 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
         (lang === 'tr'
           ? `Tam ${question.exactLength} karakter girin.`
           : `Please enter exactly ${question.exactLength} characters.`),
+    };
+  }
+
+  if (question.allowedLengths && !question.allowedLengths.includes(String(value).length)) {
+    return {
+      ok: false,
+      message:
+        question.validate?.formatMessage?.[lang] ||
+        (lang === 'tr'
+          ? `${question.allowedLengths.join(' veya ')} karakter girin.`
+          : `Please enter ${question.allowedLengths.join(' or ')} characters.`),
     };
   }
 

@@ -382,3 +382,88 @@ class ISOReportTurkishLabelsTests(TestCase):
         self.assertEqual(_factor_name(f, 'en'), 'Road — HGV 40t full load')
         self.assertEqual(_unit_label(f, 'tr'), 'Litre')
         self.assertEqual(_source_label(f, 'tr'), 'Genel / tahmini')
+
+
+class CompanyInventoryAccessTests(TestCase):
+    """Inventories belong to the company: teammates see and open them."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.owner = User.objects.create_user('own', 'own@test.com', 'pass12345')
+        self.admin = User.objects.create_user('adm', 'adm@test.com', 'pass12345')
+        self.entry = User.objects.create_user('ent2', 'ent2@test.com', 'pass12345')
+        self.outsider = User.objects.create_user('out', 'out@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Team Co', tax_number='4',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        other = Company.objects.create(
+            legal_entity_name='Other Co', tax_number='5',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        CompanyMembership.objects.create(user=self.admin, company=self.company, role='admin')
+        CompanyMembership.objects.create(user=self.entry, company=self.company, role='data_entry')
+        CompanyMembership.objects.create(user=self.outsider, company=other, role='owner')
+        self.report = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2024,
+            title='Owner inventory', status=CarbonReport.Status.COMPLETED)
+
+    def _client(self, user):
+        from rest_framework.test import APIClient
+        c = APIClient()
+        c.force_authenticate(user=user)
+        return c
+
+    def _entry(self, description, year=2024):
+        from emissions.models import EmissionEntry, EmissionFactor
+        f, _ = EmissionFactor.objects.get_or_create(
+            slug='t-grid', country='turkey', year=2024,
+            defaults=dict(name='grid', scope='scope2', category='electricity', unit='kwh',
+                          factor_kg_co2e=0.4, source='test'))
+        return EmissionEntry.objects.create(
+            company=self.company, user=self.owner, emission_factor=f, year=year, month=1,
+            quantity=10, calculated_co2e_kg=4, description=description, status='approved')
+
+    def test_teammate_lists_and_opens_the_inventory(self):
+        c = self._client(self.admin)
+        rows = c.get('/api/questionnaire/').data['reports']
+        self.assertEqual([(r['title'], r['created_by']) for r in rows], [('Owner inventory', 'own@test.com')])
+        self.assertEqual(c.get(f'/api/questionnaire/{self.report.id}/').status_code, 200)
+        # The creator's own list doesn't label it.
+        own = self._client(self.owner).get('/api/questionnaire/').data['reports']
+        self.assertIsNone(own[0]['created_by'])
+
+    def test_outsider_cannot_open_it(self):
+        c = self._client(self.outsider)
+        self.assertEqual(c.get(f'/api/questionnaire/{self.report.id}/').status_code, 404)
+        self.assertEqual(c.delete(f'/api/questionnaire/{self.report.id}/').status_code, 404)
+
+    def test_only_creator_owner_or_admin_can_delete(self):
+        r = self._client(self.entry).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.status_code, 403)
+        self.assertTrue(CarbonReport.objects.filter(id=self.report.id).exists())
+        self.assertEqual(self._client(self.admin).delete(f'/api/questionnaire/{self.report.id}/').status_code, 200)
+
+    def test_delete_removes_its_questionnaire_entries_only(self):
+        from emissions.models import EmissionEntry
+        self._entry('Questionnaire step 4A-1')
+        chat = self._entry('Chat: electricity')
+        other_year = self._entry('Questionnaire step 4A-1', year=2023)
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.data, {'deleted_entries': 1})
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), {chat.id, other_year.id})
+
+    def test_delete_keeps_entries_shared_with_another_inventory(self):
+        from emissions.models import EmissionEntry
+        self._entry('Questionnaire step 4A-1')
+        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024, title='Second')
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.data, {'deleted_entries': 0})
+        self.assertEqual(EmissionEntry.objects.count(), 1)
