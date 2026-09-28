@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { authErrorMessage } from '@/lib/authErrors';
 import {
   ArrowLeft, ArrowRight, BadgeCheck, Building2, Check, CheckCircle2,
   ChevronDown, ClipboardCheck, Factory, FileCheck2, Globe2,
@@ -205,7 +206,9 @@ export default function RegisterPage() {
 
       if (!regRes.ok) {
         const d = await regRes.json().catch(() => ({}));
-        const { message, section } = describeRegisterErrors(d, tr);
+        const { message, section } = d?.code === 'rate_limited'
+          ? { message: authErrorMessage(d, tr), section: null }
+          : describeRegisterErrors(d, tr);
         // Every field the signup endpoint validates lives on step 1.
         if (section) setCurrentSection(section);
         setError(message || (language === 'tr' ? 'Kayıt hatası' : 'Registration error'));

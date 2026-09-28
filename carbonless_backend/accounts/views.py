@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import User
 from django_ratelimit.decorators import ratelimit
+from carbonless_api.client_ip import client_ip_key, login_key
 from django.utils.decorators import method_decorator
 from .serializers import RegisterSerializer, UserSerializer, UserProfileSerializer
 from .models import UserProfile
@@ -26,7 +27,7 @@ def _blacklist_all_user_tokens(user):
         BlacklistedToken.objects.get_or_create(token=token)
 
 
-@method_decorator(ratelimit(key='ip', rate='10/h', method='POST', block=True), name='create')
+@method_decorator(ratelimit(key=client_ip_key, rate='10/h', method='POST', block=True), name='create')
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
@@ -175,7 +176,7 @@ class RegisterView(generics.CreateAPIView):
             return False
 
 
-@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='post')
+@method_decorator(ratelimit(key=login_key, rate='10/m', method='POST', block=True), name='post')
 class RateLimitedLoginView(TokenObtainPairView):
     """Login with rate limiting + sets HttpOnly cookies for tokens"""
 
@@ -236,7 +237,7 @@ class RateLimitedLoginView(TokenObtainPairView):
         return response
 
 
-@method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True), name='dispatch')
+@method_decorator(ratelimit(key=client_ip_key, rate='30/m', method='POST', block=True), name='dispatch')
 class GoogleLoginView(generics.GenericAPIView):
     """Sign in (or register) with a Google Identity Services ID token.
 
@@ -600,7 +601,7 @@ def update_profile(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@ratelimit(key='ip', rate='10/h', method='POST', block=True)
+@ratelimit(key=client_ip_key, rate='10/h', method='POST', block=True)
 def password_reset_request(request):
     """Send password reset email with a unique token link"""
     from .models import PasswordResetToken
@@ -881,7 +882,7 @@ def verify_email_code(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@ratelimit(key='ip', rate='10/h', method='POST', block=True)
+@ratelimit(key=client_ip_key, rate='10/h', method='POST', block=True)
 def resend_verification(request):
     """Resend verification code"""
     from .models import EmailVerificationToken
@@ -1014,7 +1015,7 @@ def get_2fa_status(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-@ratelimit(key='ip', rate='5/h', method='POST', block=True)
+@ratelimit(key=client_ip_key, rate='5/h', method='POST', block=True)
 def contact_message(request):
     """Store a contact-form message and email it to the team.
 
