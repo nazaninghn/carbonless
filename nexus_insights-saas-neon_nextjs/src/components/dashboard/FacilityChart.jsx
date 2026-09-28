@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
 import { api } from '@/lib/utils/api';
+import { fixed } from '@/lib/formatNumber';
 
 // Module-level constant — one allocation shared across all renders and instances
 const SCOPE_COLORS = ['#175022', '#2ABD41', '#8BEA99', '#072C0E'];
@@ -67,7 +68,7 @@ export default function FacilityChart({ language, selectedYear, compact }) {
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="truncate text-[11px] font-bold text-[#072C0E]/80">{d.facility_name}</span>
                 <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">
-                  {d.total_tonne.toFixed(2)}t
+                  {fixed(d.total_tonne, 2)}t
                 </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/5">
@@ -96,7 +97,7 @@ export default function FacilityChart({ language, selectedYear, compact }) {
             <div key={d.facility_id ?? i}>
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className="truncate text-xs font-bold text-[#072C0E]">{d.facility_name}</span>
-                <span className="shrink-0 text-xs font-semibold text-[#072C0E]/50">{d.total_tonne.toFixed(2)} tCO₂e</span>
+                <span className="shrink-0 text-xs font-semibold text-[#072C0E]/50">{fixed(d.total_tonne, 2)} tCO₂e</span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-[#072C0E]/5">
                 <div

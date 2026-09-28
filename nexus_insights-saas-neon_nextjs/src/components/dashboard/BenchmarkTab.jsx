@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { BarChart2, Users, TrendingDown, Info, Lock } from 'lucide-react';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
+import { fixed } from '@/lib/formatNumber';
 
 // ─── Static sector benchmark data (NACE-based, anonymized) ────────────────────
 // In production this would come from an API endpoint with real anonymized data.
@@ -165,7 +166,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
     ? Math.round(((benchmark.avg - totalTonne) / benchmark.avg) * 100)
     : 0;
 
-  // Opportunity list (always 3, last one locked for free users)
+  // Opportunity list (always 3; there is no paid tier to unlock, so none is locked)
   const opportunities = useMemo(() => [
     {
       rank: 1,
@@ -186,7 +187,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       title: tr ? 'Yenilenebilir enerji sözleşmesi' : 'Renewable energy contract',
       desc:  tr ? 'PPA veya yeşil tarife geçişi' : 'PPA or green tariff switch',
       saving: `−${Math.round(totalTonne * 0.22)} `,
-      locked: true,
+      locked: false,
     },
   ], [totalTonne, tr]);
 
@@ -206,7 +207,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
         </div>
         <div className="flex items-center gap-2 text-[11px] text-[#072C0E]/45">
           <Users className="h-3.5 w-3.5" />
-          <span>{benchmark.count} {tr ? 'şirket' : 'companies'}</span>
+          <span>{tr ? 'Örnek veri' : 'Sample data'}</span>
         </div>
       </div>
 
@@ -229,7 +230,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
           {
             label: tr ? 'Sizin Emisyonunuz' : 'Your Emissions',
             numeric: totalTonne > 0 ? totalTonne : null,
-            format: (v) => `${v.toFixed(1)} tCO₂e`,
+            format: (v) => `${fixed(v, 1)} tCO₂e`,
             sub:   tr ? 'Bu yıl' : 'This year',
             color: 'text-[#072C0E]',
           },
@@ -293,7 +294,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#072C0E]/35" />
             <p className="text-[11px] text-[#072C0E]/45 leading-relaxed">
               {naceCode
-                ? (tr ? `NACE ${naceCode} sektörü · ${empBand.tr} · ${benchmark.count} anonim şirket verisi` : `NACE ${naceCode} sector · ${empBand.en} · ${benchmark.count} anonymous companies`)
+                ? (tr ? `NACE ${naceCode} sektörü · ${empBand.tr} · örnek veri` : `NACE ${naceCode} sector · ${empBand.en} · sample data`)
                 : (tr ? 'Anket tamamlandığında sektörünüze özgü veriler gösterilir.' : 'Complete the questionnaire to see sector-specific data.')}
             </p>
           </div>
@@ -362,29 +363,17 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
               <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
                 {tr ? 'Azaltım Fırsatları' : 'Reduction Opportunities'}
               </h2>
-              <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Sektörünüze özgü öneriler' : 'Sector-specific recommendations'}</p>
+              <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Genel öneriler · tasarruf rakamları örnek tahmindir' : 'General ideas · savings figures are sample estimates'}</p>
             </div>
           </div>
           <span className="rounded-full bg-[#DEFAE1] px-2 py-0.5 text-[10px] font-bold text-[#175022]">
-            {tr ? 'Ücretsiz' : 'Free'}
+            {tr ? 'Örnek' : 'Sample'}
           </span>
         </div>
         <div className="space-y-2">
           {opportunities.map(opp => (
             <OpportunityRow key={opp.rank} {...opp} tr={tr} />
           ))}
-        </div>
-        {/* Pro unlock banner */}
-        <div className="group/banner mt-3 flex items-center justify-between rounded-xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#072C0E] to-[#1A6126] px-4 py-3 transition-all duration-300 hover:shadow-[0_10px_28px_rgba(23,80,34,0.30)]">
-          <div className="flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5 text-[#8BEA99] transition-transform duration-300 group-hover/banner:scale-110 group-hover/banner:rotate-6" />
-            <p className="text-[12px] font-semibold text-white/80">
-              {tr ? 'Tüm fırsatları görmek için Pro plana geçin' : 'Upgrade to Pro to see all opportunities'}
-            </p>
-          </div>
-          <button className="rounded-lg bg-[#2ABD41] px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#8BEA99]">
-            Pro →
-          </button>
         </div>
       </div>
 

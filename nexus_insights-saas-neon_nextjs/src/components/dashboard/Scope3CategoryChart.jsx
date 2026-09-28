@@ -1,5 +1,6 @@
 'use client';
 import { useMemo } from 'react';
+import { fixed } from '@/lib/formatNumber';
 
 /**
  * Scope3CategoryChart — visualizes Scope 3 emissions broken down by the
@@ -62,7 +63,7 @@ export default function Scope3CategoryChart({ data, language }) {
                 {label}
               </span>
               <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">
-                {tonne < 0.01 ? `${d.total_co2e_kg.toFixed(1)} kg` : `${tonne.toFixed(2)} t`}
+                {tonne < 0.01 ? `${fixed(d.total_co2e_kg, 1)} kg` : `${fixed(tonne, 2)} t`}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/5">

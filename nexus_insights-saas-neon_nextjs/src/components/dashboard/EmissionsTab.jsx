@@ -20,6 +20,7 @@ import {
   MAX_UPLOAD_BYTES as MAX_FILE_BYTES,
   scopeLabel, fmt, unitLabel,
 } from '@/lib/constants/emissions';
+import { fixed } from '@/lib/formatNumber';
 
 // ─── KPI mini card (count-up + hover lift) ─────────────────────────────────
 function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
@@ -36,7 +37,7 @@ function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
         />
       )}
       <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#072C0E]/40 sm:text-[10px]">{label}</p>
-      <p className="mt-1 text-[18px] font-bold leading-none tabular-nums text-[#072C0E] sm:text-xl">{animated.toFixed(decimals)}</p>
+      <p className="mt-1 text-[18px] font-bold leading-none tabular-nums text-[#072C0E] sm:text-xl">{fixed(animated, decimals)}</p>
       <p className="mt-0.5 text-[9px] font-semibold text-[#072C0E]/35">{sub}</p>
     </div>
   );
@@ -134,7 +135,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
       {/* Bottom row */}
       <div className="flex flex-wrap items-center gap-1.5">
         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${sm.bg} ${sm.text}`}>
-          {sm.label}
+          {tr ? sm.label.replace('Scope', 'Kapsam') : sm.label}
         </span>
         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
           {tr ? st.tr : st.en}
@@ -153,7 +154,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
           {fmt(kg)} <span className="text-[9px] font-semibold text-[#072C0E]/40">kg</span>
         </span>
         <span className="text-[11px] text-[#072C0E]/40">
-          {(kg / 1000).toFixed(4)} t
+          {fixed((kg / 1000), 4)} t
         </span>
       </div>
     </div>
@@ -590,9 +591,9 @@ export default function EmissionsTab({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
           { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: totKg/1000, sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
-          { label: 'Scope 1', value: s1kg/1000, sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
-          { label: 'Scope 2', value: s2kg/1000, sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
-          { label: 'Scope 3', value: s3kg/1000, sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
+          { label: tr ? 'Kapsam 1' : 'Scope 1', value: s1kg/1000, sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
+          { label: tr ? 'Kapsam 2' : 'Scope 2', value: s2kg/1000, sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
+          { label: tr ? 'Kapsam 3' : 'Scope 3', value: s3kg/1000, sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
         ].map((k, i) => (
           <EmissionsKPI key={k.label} label={k.label} value={k.value} sub={k.sub} color={k.color} delay={i * 60} />
         ))}
@@ -619,9 +620,9 @@ export default function EmissionsTab({
         <div className="flex gap-1.5">
           {[
             { val: '', label: tr ? 'Tümü' : 'All', count: countAll },
-            { val: 'scope1', label: 'S1', count: countS1 },
-            { val: 'scope2', label: 'S2', count: countS2 },
-            { val: 'scope3', label: 'S3', count: countS3 },
+            { val: 'scope1', label: tr ? 'K1' : 'S1', count: countS1 },
+            { val: 'scope2', label: tr ? 'K2' : 'S2', count: countS2 },
+            { val: 'scope3', label: tr ? 'K3' : 'S3', count: countS3 },
           ].map(p => (
             <button
               key={p.val}
@@ -740,7 +741,7 @@ export default function EmissionsTab({
                    cr.status === 'rejected' ? (tr ? 'Reddedildi' : 'Rejected') :
                    (tr ? 'Beklemede' : 'Pending')}
                   {cr.status === 'approved' && cr.calculated_co2e_kg
-                    ? ` · ${(cr.calculated_co2e_kg / 1000).toFixed(4)} t` : ''}
+                    ? ` · ${fixed((cr.calculated_co2e_kg / 1000), 4)} t` : ''}
                 </span>
               </div>
             ))}
@@ -779,7 +780,7 @@ export default function EmissionsTab({
                 <tr>
                   {[
                     tr ? 'Kaynak' : 'Source',
-                    'Scope',
+                    tr ? 'Kapsam' : 'Scope',
                     tr ? 'Ay' : 'Month',
                     tr ? 'Miktar' : 'Qty',
                     'kg CO₂e',
@@ -839,7 +840,7 @@ export default function EmissionsTab({
                       {/* Scope */}
                       <td className="px-4 py-3">
                         <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${sm.bg} ${sm.text}`}>
-                          {sm.label}
+                          {tr ? sm.label.replace('Scope', 'Kapsam') : sm.label}
                         </span>
                       </td>
                       {/* Month */}
@@ -854,7 +855,7 @@ export default function EmissionsTab({
                       </td>
                       {/* tCO₂e */}
                       <td className="px-4 py-3 text-right text-xs text-[#072C0E]/40">
-                        {(kg / 1000).toFixed(4)}
+                        {fixed((kg / 1000), 4)}
                       </td>
                       {/* Bar */}
                       <td className="px-4 py-3">
@@ -866,7 +867,7 @@ export default function EmissionsTab({
                             />
                           </div>
                           <span className="w-8 text-right text-[9px] font-bold text-[#072C0E]/30">
-                            {barPct.toFixed(0)}%
+                            {fixed(barPct, 0)}%
                           </span>
                         </div>
                       </td>
@@ -903,7 +904,7 @@ export default function EmissionsTab({
                     {fmt(totalKg)}
                   </td>
                   <td className="px-4 py-3 text-right text-xs font-bold text-[#072C0E]/60">
-                    {(totalKg / 1000).toFixed(3)} t
+                    {fixed((totalKg / 1000), 3)} t
                   </td>
                   <td colSpan={2} />
                 </tr>
@@ -934,7 +935,7 @@ export default function EmissionsTab({
               {filtered.length} {tr ? 'kayıt' : 'entries'} · {tr ? 'Toplam' : 'Total'}
             </span>
             <span className="text-sm font-bold text-[#072C0E]">
-              {fmt(totalKg)} kg · {(totalKg / 1000).toFixed(3)} t
+              {fmt(totalKg)} kg · {fixed((totalKg / 1000), 3)} t
             </span>
           </div>
         </div>
@@ -968,12 +969,12 @@ export default function EmissionsTab({
                 <div className="space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Emisyon bilgisi' : 'Emission info'}</p>
                   <div>
-                    <label className={LABEL}>Scope</label>
+                    <label className={LABEL}>{tr ? 'Kapsam' : 'Scope'}</label>
                     <div className="grid grid-cols-3 gap-2">
                       {[
-                        { val: 'scope1', label: 'Scope 1', sub: tr ? 'Doğrudan' : 'Direct' },
-                        { val: 'scope2', label: 'Scope 2', sub: tr ? 'Enerji' : 'Energy' },
-                        { val: 'scope3', label: 'Scope 3', sub: tr ? 'Dolaylı' : 'Indirect' },
+                        { val: 'scope1', label: tr ? 'Kapsam 1' : 'Scope 1', sub: tr ? 'Doğrudan' : 'Direct' },
+                        { val: 'scope2', label: tr ? 'Kapsam 2' : 'Scope 2', sub: tr ? 'Enerji' : 'Energy' },
+                        { val: 'scope3', label: tr ? 'Kapsam 3' : 'Scope 3', sub: tr ? 'Dolaylı' : 'Indirect' },
                       ].map(s => (
                         <button key={s.val} type="button"
                           onClick={() => { setSelScope(s.val); setSelCategory(''); setSelFactor(''); }}
@@ -1037,8 +1038,8 @@ export default function EmissionsTab({
                     <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
                       <p className="text-xs font-bold text-[#175022]">
                         {tr ? 'Tahmini:' : 'Estimated:'}{' '}
-                        {(parseLocalizedNumber(quantity) * parseFloat(selFactorObj.factor_kg_co2e)).toFixed(2)} kg CO₂e
-                        {' '}({((parseLocalizedNumber(quantity) * parseFloat(selFactorObj.factor_kg_co2e)) / 1000).toFixed(4)} t)
+                        {fixed((parseLocalizedNumber(quantity) * parseFloat(selFactorObj.factor_kg_co2e)), 2)} kg CO₂e
+                        {' '}({fixed(((parseLocalizedNumber(quantity) * parseFloat(selFactorObj.factor_kg_co2e)) / 1000), 4)} t)
                       </p>
                     </div>
                   )}
@@ -1237,7 +1238,7 @@ export default function EmissionsTab({
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="custom-form" onSubmit={handleCustom} className="space-y-4">
                 <div>
-                  <label className={LABEL}>Scope</label>
+                  <label className={LABEL}>{tr ? 'Kapsam' : 'Scope'}</label>
                   <div className="grid grid-cols-3 gap-2">
                     {['scope1','scope2','scope3'].map((s, i) => (
                       <button key={s} type="button" onClick={() => setCScope(s)}

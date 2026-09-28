@@ -1,5 +1,7 @@
 // ─── Shared emission constants used across dashboard components ───────────────
 
+import { num } from '@/lib/formatNumber';
+
 export const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 export const MONTHS_EN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 export const getMonths = (tr) => (tr ? MONTHS_TR : MONTHS_EN);
@@ -66,7 +68,8 @@ export const unitLabel = (u, tr) => {
   return typeof l === 'string' ? l : (tr ? l.tr : l.en);
 };
 
-export const fmt = (n, d = 2) => parseFloat(n || 0).toLocaleString(undefined, { maximumFractionDigits: d });
+// In the UI language (see lib/formatNumber).
+export const fmt = (n, d = 2) => num(n, d);
 
 export const ALLOWED_UPLOAD_MIME = new Set([
   'application/pdf',

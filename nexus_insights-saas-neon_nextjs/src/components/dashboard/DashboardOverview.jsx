@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Layers,
   Leaf,
-  Lock,
   Plus,
   Sparkles,
   Target,
@@ -26,6 +25,7 @@ import {
   MONTHS_TR as MONTHS_TR_SHORT,
   MONTHS_EN as MONTHS_EN_SHORT,
 } from '@/lib/constants/emissions';
+import { fixed } from '@/lib/formatNumber';
 
 // ─── Full month names (only needed here for the detailed monthly breakdown) ──
 const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -47,9 +47,9 @@ function DonutChart({ s1, s2, s3, total, tr }) {
   const animatedTotal = useCountUp(total, 900);
 
   const segs = [
-    { label: 'Scope 1', val: s1, color: '#1D9C31' },
-    { label: 'Scope 2', val: s2, color: '#2ABD41' },
-    { label: 'Scope 3', val: s3, color: '#51D766' },
+    { label: tr ? 'Kapsam 1' : 'Scope 1', val: s1, color: '#1D9C31' },
+    { label: tr ? 'Kapsam 2' : 'Scope 2', val: s2, color: '#2ABD41' },
+    { label: tr ? 'Kapsam 3' : 'Scope 3', val: s3, color: '#51D766' },
   ].filter(s => s.val > 0);
 
   let cum = 0;
@@ -82,7 +82,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
         {/* centre label */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-[22px] font-bold leading-none tracking-tight text-[#072C0E]">
-            {animatedTotal.toFixed(1)}
+            {fixed(animatedTotal, 1)}
           </span>
           <span className="mt-0.5 text-[10px] font-bold text-[#072C0E]/40">tCO2e</span>
         </div>
@@ -91,14 +91,14 @@ function DonutChart({ s1, s2, s3, total, tr }) {
       {/* legend */}
       <div className="flex flex-wrap justify-center gap-x-5 gap-y-1.5">
         {[
-          { label: 'Scope 1', val: s1, color: '#1D9C31' },
-          { label: 'Scope 2', val: s2, color: '#2ABD41' },
-          { label: 'Scope 3', val: s3, color: '#51D766' },
+          { label: tr ? 'Kapsam 1' : 'Scope 1', val: s1, color: '#1D9C31' },
+          { label: tr ? 'Kapsam 2' : 'Scope 2', val: s2, color: '#2ABD41' },
+          { label: tr ? 'Kapsam 3' : 'Scope 3', val: s3, color: '#51D766' },
         ].filter(s => s.val > 0).map(s => (
           <div key={s.label} className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: s.color }} />
             <span className="text-[11px] font-semibold text-[#072C0E]/60">{s.label}</span>
-            <span className="text-[10px] font-bold text-[#072C0E]/35">{s.val.toFixed(1)}t</span>
+            <span className="text-[10px] font-bold text-[#072C0E]/35">{fixed(s.val, 1)}t</span>
           </div>
         ))}
       </div>
@@ -145,7 +145,7 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
             {/* Tooltip */}
             {isHovered && hasData && (
               <div className="absolute -top-9 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#072C0E] px-2 py-1.5 text-[10px] font-bold text-white shadow-xl">
-                {(m.total_kg / 1000).toFixed(2)} tCO2e
+                {fixed((m.total_kg / 1000), 2)} tCO2e
                 <div className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-[#072C0E]" />
               </div>
             )}
@@ -207,7 +207,7 @@ function CategoryChart({ entries, tr }) {
           <div key={d.cat}>
             <div className="mb-1.5 flex items-center justify-between gap-2">
               <span className="truncate text-[11px] font-bold text-[#072C0E]/80">{catLabel(d.cat, tr)}</span>
-              <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">{d.tonne.toFixed(2)}t</span>
+              <span className="shrink-0 text-[10px] font-bold text-[#072C0E]/40">{fixed(d.tonne, 2)}t</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[#072C0E]/5">
               <div
@@ -263,7 +263,7 @@ function TargetRing({ target, currentTonne, tr }) {
           />
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-[13px] font-bold leading-none text-[#072C0E]">{(progress * 100).toFixed(0)}%</span>
+          <span className="text-[13px] font-bold leading-none text-[#072C0E]">{fixed((progress * 100), 0)}%</span>
           <span className="text-[9px] font-semibold text-[#072C0E]/40">{tr ? 'tamamlandı' : 'done'}</span>
         </div>
       </div>
@@ -339,7 +339,7 @@ function KPICard({ title, value, decimals = 2, unit, subtitle, accent, icon: Ico
           <p className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/40 sm:text-[10px]">{title}</p>
           <div className="mt-1 flex items-end gap-1">
             <span className="text-[18px] font-bold leading-none tracking-tight text-[#072C0E] tabular-nums sm:text-[22px]">
-              {animated.toFixed(decimals)}
+              {fixed(animated, decimals)}
             </span>
             <span className="mb-0.5 text-[9px] font-bold text-[#072C0E]/35 sm:text-[10px]">{unit}</span>
           </div>
@@ -453,21 +453,21 @@ export default function DashboardOverview({
             {tr ? 'Emisyon Profili' : 'Emission Profile'} · {selectedYear}
           </h1>
           <p className="mt-1 text-sm text-[#072C0E]/55">
-            {tr ? 'Toplam' : 'Total'}: {totalTonne.toFixed(2)} tCO2e
+            {tr ? 'Toplam' : 'Total'}: {fixed(totalTonne, 2)} tCO2e
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
-            <p className="text-xs text-[#072C0E]/50">Scope 1</p>
-            <p className="text-2xl font-black text-[#072C0E]">{s1.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
+            <p className="text-xs text-[#072C0E]/50">{tr ? 'Kapsam 1' : 'Scope 1'}</p>
+            <p className="text-2xl font-black text-[#072C0E]">{fixed(s1, 2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
           <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
-            <p className="text-xs text-[#072C0E]/50">Scope 2</p>
-            <p className="text-2xl font-black text-[#072C0E]">{s2.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
+            <p className="text-xs text-[#072C0E]/50">{tr ? 'Kapsam 2' : 'Scope 2'}</p>
+            <p className="text-2xl font-black text-[#072C0E]">{fixed(s2, 2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
           <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
-            <p className="text-xs text-[#072C0E]/50">Scope 3</p>
-            <p className="text-2xl font-black text-[#072C0E]">{s3.toFixed(2)} <span className="text-sm font-normal">tCO2e</span></p>
+            <p className="text-xs text-[#072C0E]/50">{tr ? 'Kapsam 3' : 'Scope 3'}</p>
+            <p className="text-2xl font-black text-[#072C0E]">{fixed(s3, 2)} <span className="text-sm font-normal">tCO2e</span></p>
           </div>
         </div>
         <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
@@ -636,8 +636,8 @@ export default function DashboardOverview({
           </span>
           <p className="text-[11px] font-semibold leading-5 text-[#072C0E]/65">
             {tr
-              ? `Toplam ${totalTonne.toFixed(1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${avgTonne.toFixed(2)} tCO2e.`
-              : `Total ${totalTonne.toFixed(1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${avgTonne.toFixed(2)} tCO2e.`}
+              ? `Toplam ${fixed(totalTonne, 1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${fixed(avgTonne, 2)} tCO2e.`
+              : `Total ${fixed(totalTonne, 1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${fixed(avgTonne, 2)} tCO2e.`}
           </p>
         </div>
       )}
@@ -663,9 +663,9 @@ export default function DashboardOverview({
       {/* ── KPI CARDS ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
         <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne} unit="tCO2e" accent icon={Leaf} delay={0} />
-        <KPICard title="Scope 1" value={s1} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#1D9C31" delay={60} />
-        <KPICard title="Scope 2" value={s2} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#2ABD41" delay={120} />
-        <KPICard title="Scope 3" value={s3} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#51D766" delay={180} />
+        <KPICard title={tr ? 'Kapsam 1' : 'Scope 1'} value={s1} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#1D9C31" delay={60} />
+        <KPICard title={tr ? 'Kapsam 2' : 'Scope 2'} value={s2} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#2ABD41" delay={120} />
+        <KPICard title={tr ? 'Kapsam 3' : 'Scope 3'} value={s3} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#51D766" delay={180} />
       </div>
 
       {/* ── ROW 2: Monthly trend + Scope donut ──────────────────────── */}
@@ -685,7 +685,7 @@ export default function DashboardOverview({
         {/* Scope Donut */}
         <ChartCard
           title={tr ? 'Kapsam Dağılımı' : 'Scope Distribution'}
-          subtitle={totalTonne > 0 ? `${totalTonne.toFixed(1)} tCO2e` : undefined}
+          subtitle={totalTonne > 0 ? `${fixed(totalTonne, 1)} tCO2e` : undefined}
           icon={Layers}
           iconBg="bg-[#51D766]/20 text-[#1D9C31]"
           delay={300}
@@ -706,7 +706,7 @@ export default function DashboardOverview({
         {/* Benchmark mini (WF-03) */}
         <ChartCard
           title={tr ? 'Sektör Benchmarkı' : 'Sector Benchmark'}
-          subtitle={tr ? 'Anonim karşılaştırma' : 'Anonymous comparison'}
+          subtitle={tr ? 'Örnek verilerle' : 'With sample data'}
           icon={BarChart2}
           iconBg="bg-[#2ABD41]/15 text-[#2ABD41]"
           action={<button onClick={() => setActiveTab('benchmark')} className="text-[11px] font-semibold text-[#2ABD41] hover:underline">{tr ? 'Detay ->' : 'Detail ->'}</button>}
@@ -866,46 +866,11 @@ export default function DashboardOverview({
                   </div>
                 );
               })}
-              {/* Pro notification lock (WF-03) */}
-              <div className="flex items-center justify-between rounded-lg border border-[#072C0E]/8 bg-[#072C0E]/3 px-3 py-2">
-                <div className="flex items-center gap-1.5 text-[11px] text-[#072C0E]/45">
-                  <Lock className="h-3 w-3" />
-                  <span>{tr ? 'Hatırlatma bildirimleri  -  Pro' : 'Reminder notifications  -  Pro'}</span>
-                </div>
-                <button onClick={() => setActiveTab('settings')} className="text-[10px] font-bold text-[#2ABD41] hover:underline">{tr ? 'Yükselt' : 'Upgrade'}</button>
-              </div>
             </div>
           )}
         </ChartCard>
       </div>
 
-      {/* ── UPGRADE BANNER (WF-03 "Pro'ya Geç") ────────────────────── */}
-      <div
-        className="dash-fade-up group flex flex-col items-center justify-between gap-3 rounded-2xl border border-[#2ABD41]/25 bg-gradient-to-r from-[#175022] to-[#1D9C31] px-5 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(29,156,49,0.35)] sm:flex-row sm:gap-4"
-        style={{ animationDelay: '540ms' }}
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#2ABD41]/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
-            <Sparkles className="h-4 w-4 text-[#51D766]" />
-          </span>
-          <div>
-            <p className="text-[13px] font-bold text-white">
-              {tr ? "Pro'ya geç  -  tüm özellikleri aç" : "Upgrade to Pro  -  unlock everything"}
-            </p>
-            <p className="text-[11px] text-white/50">
-              {tr
-                ? 'ISO 14064-1 raporları, AI analitik, sınırsız tesis'
-                : 'ISO 14064-1 reports, AI analytics, unlimited facilities'}
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={() => setActiveTab('settings')}
-          className="shrink-0 rounded-xl bg-[#2ABD41] px-4 py-2 text-[12px] font-bold text-white transition hover:bg-[#51D766]"
-        >
-          {tr ? "Pro'ya Geç ->" : "Upgrade to Pro ->"}
-        </button>
-      </div>
     </div>
   );
 }

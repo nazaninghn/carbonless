@@ -3,11 +3,14 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { translations } from './translations';
 import useIsomorphicLayoutEffect from '@/lib/hooks/useIsomorphicLayoutEffect';
+import { setNumberLanguage } from '@/lib/formatNumber';
 
 const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState('en'); // SSR default — English
+  // Set before the children render, so their numbers use this language.
+  setNumberLanguage(language);
 
   // useLayoutEffect fires synchronously after DOM paint but BEFORE the browser
   // repaints — eliminates the flash of wrong language on client hydration.

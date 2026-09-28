@@ -21,6 +21,17 @@ import {
   MONTHS_TR as MONTHS_TR_SHORT,
   MONTHS_EN as MONTHS_EN_SHORT,
 } from '@/lib/constants/emissions';
+import { fixed } from '@/lib/formatNumber';
+import { getQuestionById } from '@/lib/carboniq/questions';
+
+// The questionnaire option label for a stored answer code
+// ("operational_control" -> "Operasyonel Kontrol"), without "(Önerilen)".
+function answerLabel(questionId, value, tr) {
+  if (!value) return '-';
+  const opt = getQuestionById(questionId)?.options?.find((o) => o.value === value);
+  const label = opt?.label?.[tr ? 'tr' : 'en'];
+  return label ? label.replace(/\s*\((Önerilen|Recommended)\)\s*$/, '') : value;
+}
 
 // Shared card wrapper: entrance stagger + hover lift, same visual language as
 // the Dashboard Overview / Emissions / Targets pages.
@@ -143,16 +154,23 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
 
   // Readiness — useMemo so this is only recalculated when data actually changes,
   // not on every local state update (e.g. pdfLoading spinner toggling).
+  // The questionnaire counts for this year only when an inventory for this
+  // year is completed — a finished 2020 inventory does not make 2026 ready.
+  const inventoryDoneForYear = useMemo(
+    () => allReports.some(r => r.status === 'completed' && String(r.reporting_year) === String(selectedYear))
+      || (!!questionnaireProfile?.is_complete && questionnaireProfile.reporting_year === undefined),
+    [allReports, selectedYear, questionnaireProfile],
+  );
   const { checks, readiness } = useMemo(() => {
     const list = [
-      { done: !!questionnaireProfile?.is_complete, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed' },
+      { done: inventoryDoneForYear, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed' },
       { done: entries.length > 0, label: tr ? 'Emisyon verisi girildi' : 'Emission data entered' },
       { done: entries.length >= 5, label: tr ? 'Yeterli veri (5+ kayıt)' : 'Sufficient data (5+ entries)' },
-      { done: totalTonne > 0, label: tr ? 'Scope haritalama tamam' : 'Scope mapping complete' },
+      { done: totalTonne > 0, label: tr ? 'Kapsam eşleştirmesi tamam' : 'Scope mapping complete' },
       { done: targets.length > 0, label: tr ? 'Azaltma hedefi belirlendi' : 'Reduction target set' },
     ];
     return { checks: list, readiness: Math.round((list.filter(c => c.done).length / list.length) * 100) };
-  }, [questionnaireProfile, entries.length, targets.length, totalTonne, tr]);
+  }, [inventoryDoneForYear, entries.length, targets.length, totalTonne, tr]);
   const animatedReadiness = useCountUp(readiness, 900);
 
   // Monthly chart max — computed once, not inside the render IIFE
@@ -248,7 +266,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
         </div>
         <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
           <p className="text-xs text-[#072C0E]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
-          <p className="text-3xl font-black text-[#072C0E]">{totalTonne.toFixed(2)} tCO₂e</p>
+          <p className="text-3xl font-black text-[#072C0E]">{fixed(totalTonne, 2)} tCO₂e</p>
         </div>
         {dlError && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
@@ -386,7 +404,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           <div className="space-y-3">
             {totalTonne > 0 ? (
               <>
-                <InsightItem text={tr ? `Scope 1 toplam emisyonun %${s1 > 0 ? ((s1/totalTonne)*100).toFixed(0) : 0}'ini oluşturuyor.` : `Scope 1 accounts for ${s1 > 0 ? ((s1/totalTonne)*100).toFixed(0) : 0}% of total emissions.`} />
+                <InsightItem text={tr ? `Kapsam 1 toplam emisyonun %${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}'ini oluşturuyor.` : `Scope 1 accounts for ${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}% of total emissions.`} />
                 {s2 > s1 && <InsightItem text={tr ? 'Elektrik tüketimi Scope 2\'de baskın.' : 'Electricity consumption dominates Scope 2.'} />}
                 {entries.length < 10 && <InsightItem text={tr ? 'Daha fazla veri girişi rapor kalitesini artırır.' : 'More data entries will improve report quality.'} type="warning" />}
                 {entries.some(e => ['transport', 'business_travel', 'employee_commuting', 'mobile_combustion'].includes(e.category)) && (
@@ -414,14 +432,14 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           {totalTonne > 0 ? (
             <div className="space-y-4">
               {[
-                { label: 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#175022] to-[#2ABD41]' },
-                { label: 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#2ABD41] to-[#8BEA99]' },
-                { label: 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#1A7B2A] to-[#8BEA99]' },
+                { label: tr ? 'Kapsam 1' : 'Scope 1', val: s1, pct: (s1/totalTonne*100), color: 'from-[#175022] to-[#2ABD41]' },
+                { label: tr ? 'Kapsam 2' : 'Scope 2', val: s2, pct: (s2/totalTonne*100), color: 'from-[#2ABD41] to-[#8BEA99]' },
+                { label: tr ? 'Kapsam 3' : 'Scope 3', val: s3, pct: (s3/totalTonne*100), color: 'from-[#1A7B2A] to-[#8BEA99]' },
               ].map(s => (
                 <div key={s.label}>
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-xs font-bold">{s.label}</span>
-                    <span className="text-[11px] font-bold text-[#072C0E]/45">{s.pct.toFixed(0)}% · {s.val.toFixed(2)} t</span>
+                    <span className="text-[11px] font-bold text-[#072C0E]/45">{tr ? `%${fixed(s.pct, 0)}` : `${fixed(s.pct, 0)}%`} · {fixed(s.val, 2)} t</span>
                   </div>
                   <div className="h-3 overflow-hidden rounded-full bg-[#072C0E]/6">
                     <div className={`h-full rounded-full bg-gradient-to-r ${s.color} transition-all duration-700 ease-out`} style={{ width: `${mounted ? Math.min(s.pct, 100) : 0}%` }} />
@@ -430,7 +448,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               ))}
               <div className="mt-3 rounded-xl bg-[#F8F8F8] px-3 py-2.5 text-center">
                 <p className="text-[10px] font-bold uppercase text-[#072C0E]/35">{tr ? 'Toplam' : 'Total'}</p>
-                <p className="text-lg font-bold text-[#072C0E]">{totalTonne.toFixed(2)} <span className="text-xs font-semibold text-[#072C0E]/40">tCO₂e</span></p>
+                <p className="text-lg font-bold text-[#072C0E]">{fixed(totalTonne, 2)} <span className="text-xs font-semibold text-[#072C0E]/40">tCO₂e</span></p>
               </div>
             </div>
           ) : (
@@ -641,10 +659,14 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           </div>
           <div className="space-y-2">
             {[
-              { done: entries.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
-              { done: entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
+              // A tick means the requirement is really met for this year: an
+              // ISO 14064-1 / GHG Protocol inventory needs the completed
+              // questionnaire (boundaries, methodology) plus the data, and
+              // "audit ready" needs every readiness check and evidence.
+              { done: inventoryDoneForYear && entries.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
+              { done: inventoryDoneForYear && entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
               { done: entries.some(e => e.proof_document), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
-              { done: readiness >= 80, label: tr ? 'Denetim hazır' : 'Audit ready' },
+              { done: readiness === 100 && entries.some(e => e.proof_document), label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
               <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5 transition-colors duration-300 hover:bg-[#DEFAE1]/60">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
@@ -678,9 +700,9 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           {questionnaireProfile.reporting_year !== undefined ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
               <ConfigItem label={tr ? 'Raporlama Yılı' : 'Reporting Year'} value={questionnaireProfile.reporting_year || '-'} />
-              <ConfigItem label={tr ? 'Faktör Kaynağı' : 'Factor Source'} value={questionnaireProfile.ef_database || '-'} />
-              <ConfigItem label={tr ? 'Organizasyon Sınırı' : 'Org. Boundary'} value={questionnaireProfile.boundary_approach || '-'} />
-              <ConfigItem label={tr ? 'Kapsam 3 Yaklaşımı' : 'Scope 3 Approach'} value={questionnaireProfile.scope3_approach || '-'} />
+              <ConfigItem label={tr ? 'Faktör Kaynağı' : 'Factor Source'} value={answerLabel('D1', questionnaireProfile.ef_database, tr)} />
+              <ConfigItem label={tr ? 'Organizasyon Sınırı' : 'Org. Boundary'} value={answerLabel('D3', questionnaireProfile.boundary_approach, tr)} />
+              <ConfigItem label={tr ? 'Kapsam 3 Yaklaşımı' : 'Scope 3 Approach'} value={answerLabel('D4', questionnaireProfile.scope3_approach, tr)} />
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -764,7 +786,7 @@ function ConfigItem({ label, value }) {
   return (
     <div className="rounded-xl bg-[#F8F8F8] px-3 py-2.5">
       <p className="text-[10px] font-bold uppercase text-[#072C0E]/35">{label}</p>
-      <p className="mt-0.5 text-xs font-bold text-[#072C0E] capitalize">{value}</p>
+      <p className="mt-0.5 text-xs font-bold text-[#072C0E]">{value}</p>
     </div>
   );
 }
