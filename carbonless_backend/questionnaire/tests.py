@@ -319,3 +319,66 @@ class StepEntriesTests(TestCase):
         self.assertEqual([(e.description, float(e.quantity)) for e in entries],
                          [('Questionnaire step 4A-1', 1000.0)])
 
+
+
+class ReuseProfileYearTests(TestCase):
+    """Reusing the company profile never copies the reporting year."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user('reuse', 'reuse@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Reuse Co', tax_number='3',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.user, company=self.company, role='owner')
+        self.old = CarbonReport.objects.create(
+            company=self.company, created_by=self.user, reporting_year=2020,
+            title='Old', status=CarbonReport.Status.COMPLETED, boundary_approach='operational_control')
+        ReportStep.objects.create(report=self.old, step_id='A4', answer={'reporting_year': 2020})
+        ReportStep.objects.create(report=self.old, step_id='A5', answer={'prepared_by': 'Ayşe'})
+        self.new = CarbonReport.objects.create(company=self.company, created_by=self.user, title='New')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _reuse(self, **body):
+        return self.client.post(f'/api/questionnaire/{self.new.id}/reuse-profile/', body, format='json')
+
+    def test_previous_profile_lists_other_inventories(self):
+        data = self.client.get(f'/api/questionnaire/{self.new.id}/previous-profile/').data
+        self.assertEqual([(r['title'], r['reporting_year']) for r in data['other_inventories']], [('Old', 2020)])
+
+    def test_year_is_the_chosen_one(self):
+        r = self._reuse(reporting_year=2021)
+        self.assertEqual(r.status_code, 200)
+        self.new.refresh_from_db()
+        self.assertEqual(self.new.reporting_year, 2021)
+        self.assertEqual(self.new.boundary_approach, 'operational_control')
+        self.assertEqual(r.data['answers']['A4'], {'reporting_year': 2021})
+        self.assertEqual(r.data['answers']['A5'], {'prepared_by': 'Ayşe'})
+        self.assertEqual(ReportStep.objects.get(report=self.new, step_id='A4').answer, {'reporting_year': 2021})
+
+    def test_year_is_required(self):
+        self.assertEqual(self._reuse().status_code, 400)
+        self.assertEqual(self._reuse(reporting_year=3000).status_code, 400)
+        self.new.refresh_from_db()
+        self.assertIsNone(self.new.reporting_year)
+
+
+class ISOReportTurkishLabelsTests(TestCase):
+    def test_boundary_and_factor_names_in_turkish(self):
+        from types import SimpleNamespace
+        from .iso_report_pdf import _boundary_label, _factor_name, _unit_label, _source_label
+        report = SimpleNamespace(boundary_approach='operational_control')
+        self.assertEqual(_boundary_label(report, 'tr'), 'Operasyonel Kontrol')
+        self.assertEqual(_boundary_label(report, 'en'), 'Operational Control')
+        f = SimpleNamespace(name='Road — HGV 40t full load', name_tr='Karayolu — HTC 40t tam dolu',
+                            unit='liters', source='generic',
+                            get_unit_display=lambda: 'Litres', get_source_display=lambda: 'Generic/Estimated')
+        self.assertEqual(_factor_name(f, 'tr'), 'Karayolu — HTC 40t tam dolu')
+        self.assertEqual(_factor_name(f, 'en'), 'Road — HGV 40t full load')
+        self.assertEqual(_unit_label(f, 'tr'), 'Litre')
+        self.assertEqual(_source_label(f, 'tr'), 'Genel / tahmini')

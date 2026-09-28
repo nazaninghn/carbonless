@@ -593,6 +593,21 @@ def _find_previous_profile_source(report):
     )
 
 
+def _other_inventories(report):
+    """The company's other inventories, so the survey can warn before a second
+    inventory is started for a year that already has one: emission entries are
+    kept per company and year, so both would share (and overwrite) one set of
+    numbers."""
+    return [
+        {'report_id': r.id, 'title': r.title, 'reporting_year': r.reporting_year,
+         'status': r.status}
+        for r in (CarbonReport.objects
+                  .filter(company=report.company, reporting_year__isnull=False)
+                  .exclude(id=report.id)
+                  .order_by('-reporting_year', '-created_at'))
+    ]
+
+
 class PreviousCompanyProfileView(APIView):
     """GET /api/questionnaire/<report_id>/previous-profile/
 
@@ -618,6 +633,7 @@ class PreviousCompanyProfileView(APIView):
             return Response({
                 'available': False,
                 'answers': _registration_prefill_answers(report.company),
+                'other_inventories': _other_inventories(report),
             })
 
         # The earlier report's answers win; anything it never answered falls
@@ -635,6 +651,7 @@ class PreviousCompanyProfileView(APIView):
             'reporting_year': source.reporting_year,
             'updated_at': source.updated_at,
             'answers': answers,
+            'other_inventories': _other_inventories(report),
         })
 
 
@@ -657,8 +674,22 @@ class ReuseCompanyProfileView(APIView):
         if not source:
             return Response({'error': 'No previous company profile found to reuse'}, status=404)
 
+        # The reporting year is this inventory's own: it is chosen in the
+        # reuse dialog, never copied (copying it made a "2025" inventory a
+        # second 2020 one that overwrote the first one's numbers).
+        year = request.data.get('reporting_year')
+        try:
+            year = int(year)
+        except (TypeError, ValueError):
+            return Response({'error': 'reporting_year is required', 'code': 'year_required'}, status=400)
+        from django.utils import timezone
+        if not 1990 <= year <= timezone.now().year:
+            return Response({'error': 'Invalid reporting year', 'code': 'invalid_year'}, status=400)
+
         for field in PHASE1_REPORT_FIELDS:
-            setattr(report, field, getattr(source, field))
+            if field != 'reporting_year':
+                setattr(report, field, getattr(source, field))
+        report.reporting_year = year
         # '2A-0' is the real first Stage-2 question id (see questions.js) —
         # more useful than the 'PHASE2' sentinel step_handlers.py normally
         # writes here, which the frontend has no routing entry for.
@@ -667,13 +698,18 @@ class ReuseCompanyProfileView(APIView):
         report.save()
 
         answers = {}
-        for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS):
+        for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS).exclude(step_id='A4'):
             ReportStep.objects.update_or_create(
                 report=report,
                 step_id=step.step_id,
                 defaults={'answer': step.answer, 'is_skipped': False},
             )
             answers[step.step_id] = step.answer
+        ReportStep.objects.update_or_create(
+            report=report, step_id='A4',
+            defaults={'answer': {'reporting_year': year}, 'is_skipped': False},
+        )
+        answers['A4'] = {'reporting_year': year}
 
         return Response({
             'success': True,

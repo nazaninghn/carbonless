@@ -57,6 +57,52 @@ from emissions.models import EmissionEntry, CustomEmissionRequest
 # from emissions.report_pdf — neither of those is touched by this file.
 from emissions.report_pdf import _fonts, _fmt, _localize_num
 from .models import CarbonReport, ReportStep
+from .report_pdf import BOUNDARY_LABELS, _label
+
+# Unit labels for the TR report (EmissionFactor.UNIT_CHOICES are English).
+_UNIT_TR = {
+    'liters': 'Litre', 'kg': 'Kilogram', 'tonne': 'Ton', 'km': 'Kilometre',
+    'pkm': 'Yolcu-km', 'person-km': 'Yolcu-km', 'tonne-km': 'Ton-km',
+    'night': 'Gece', 'nights': 'Gece', 'units': 'Adet', 'packages': 'Paket',
+    'franchises': 'Franchise', 'days': 'Gün', 'employees': 'Çalışan',
+}
+
+
+# Factor source labels for the TR report, used when a factor has no reference text.
+_SOURCE_TR = {
+    'turkey_grid': 'Türkiye şebekesi / ulusal',
+    'atom_kablo': 'Türkiye ISO 14064-1 doğrulanmış envanteri',
+    'turkey_fleet': 'Türkiye filo verisi',
+    'generic': 'Genel / tahmini',
+}
+
+
+def _source_label(f, lang):
+    if lang == 'tr' and f.source in _SOURCE_TR:
+        return _SOURCE_TR[f.source]
+    return f.get_source_display() if hasattr(f, 'get_source_display') else f.source
+
+
+def _factor_name(f, lang):
+    return (f.name_tr or f.name) if lang == 'tr' else f.name
+
+
+def _unit_label(f, lang):
+    if lang == 'tr' and f.unit in _UNIT_TR:
+        return _UNIT_TR[f.unit]
+    return f.get_unit_display() if hasattr(f, 'get_unit_display') else f.unit
+
+
+def _boundary_label(report, lang):
+    return _label(BOUNDARY_LABELS, getattr(report, 'boundary_approach', '') or '', lang)
+
+
+def _ef_database_label(report, lang):
+    if not getattr(report, 'ef_database', None):
+        return None
+    if report.ef_database == 'custom' and lang == 'tr':
+        return 'Özel'
+    return report.get_ef_database_display()
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -660,16 +706,15 @@ def _gather(report, lang):
         iso_cat = iso_category_for(scope, f.category)
         kg = float(e.calculated_co2e_kg or 0)
 
-        key = (iso_cat, f.category, f.name)
+        name = _factor_name(f, lang)
+        key = (iso_cat, f.category, name)
         row = sources.setdefault(key, {
             'iso_cat': iso_cat,
             'category': f.category,
-            'name': f.name,
-            'unit': f.get_unit_display() if hasattr(f, 'get_unit_display') else f.unit,
+            'name': name,
+            'unit': _unit_label(f, lang),
             'factor': float(f.factor_kg_co2e or 0),
-            'reference': f.reference or (
-                f.get_source_display() if hasattr(f, 'get_source_display') else f.source
-            ),
+            'reference': f.reference or _source_label(f, lang),
             'quantity': 0.0,
             'kg': 0.0,
             'count': 0,
@@ -1400,11 +1445,9 @@ def _section1(E, S, D, report, lang, TBL, FIG):
         ('Contact e-mail' if lang == 'en' else 'İletişim e-postası',
          getattr(getattr(report, 'created_by', None), 'email', '') or t('not_declared', lang)),
         ('Organisational boundary approach' if lang == 'en' else 'Organizasyon sınırı yaklaşımı',
-         report.get_boundary_approach_display() if getattr(report, 'boundary_approach', None)
-         else t('not_declared', lang)),
+         _boundary_label(report, lang) or t('not_declared', lang)),
         ('Emission factor database' if lang == 'en' else 'Emisyon faktörü veri tabanı',
-         report.get_ef_database_display() if getattr(report, 'ef_database', None)
-         else t('not_declared', lang)),
+         _ef_database_label(report, lang) or t('not_declared', lang)),
     ]
     E.append(_kv_table(S, basic, lang))
     E.append(Spacer(1, 6*mm))
@@ -2083,7 +2126,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     E.append(Paragraph('3.2.1   ' + ('Calculation Approach' if lang == 'en'
                                       else 'Hesaplama Yaklaşımı'), S['h3']))
     boundary_code = getattr(report, 'boundary_approach', '') or ''
-    boundary_label = report.get_boundary_approach_display() if boundary_code else None
+    boundary_label = _boundary_label(report, lang) if boundary_code else None
     if boundary_code == 'equity_share':
         approach_sentence = (
             'The organisation holds an equity share in one or more of its operations, so '

@@ -283,7 +283,7 @@ export const api = {
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   getPreviousCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/previous-profile/`),
-  reuseCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST' }),
+  reuseCompanyProfile: (reportId, reportingYear) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST', body: JSON.stringify({ reporting_year: reportingYear }) }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
   downloadQuestionnairePdf: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/pdf/?lang=${lang}`),
   // The full ISO 14064-1:2018 inventory report (six categories, boundaries,

@@ -2211,6 +2211,9 @@ export function QuestionnaireTab({
   const [previousProfile, setPreviousProfile] = useState(null);
   const [showReuseDialog, setShowReuseDialog] = useState(false);
   const [reuseLoading, setReuseLoading] = useState(false);
+  // Reporting year chosen in the reuse dialog — the year is this inventory's
+  // own and is never copied from the earlier one.
+  const [reuseYear, setReuseYear] = useState('');
   const previousProfileCheckedRef = useRef(false);
 
   // reportId persistence/restore lives entirely in InventoryWorkflow.jsx now
@@ -2240,7 +2243,12 @@ export function QuestionnaireTab({
       .then(data => {
         if (!isMounted.current) return;
         setPreviousProfile(data);
-        if (data?.available && isFreshStart) setShowReuseDialog(true);
+        if (data?.available && isFreshStart) {
+          const thisYear = new Date().getFullYear();
+          const prev = Number(data.reporting_year);
+          setReuseYear(String(prev ? Math.min(prev + 1, thisYear) : thisYear - 1));
+          setShowReuseDialog(true);
+        }
       })
       .catch(e => console.error('getPreviousCompanyProfile failed:', e));
   }, [reportId, currentId, answers]);
@@ -2253,6 +2261,9 @@ export function QuestionnaireTab({
   // (e.g. navigating back), so it never clobbers a real in-progress edit.
   useEffect(() => {
     if (!previousProfile?.answers || currentId in answers) return;
+    // The reporting year belongs to this inventory — pre-filling the earlier
+    // inventory's year made "continue" silently create a second one for it.
+    if (currentId === 'A4') return;
     const prefilled = unmapPhase1Answer(currentId, previousProfile.answers[currentId]);
     if (prefilled !== undefined) setAnswerValue(prefilled);
   }, [currentId, previousProfile, answers]);
@@ -2261,7 +2272,7 @@ export function QuestionnaireTab({
     if (!reportId || reuseLoading) return;
     setReuseLoading(true);
     try {
-      const res = await api.reuseCompanyProfile(reportId);
+      const res = await api.reuseCompanyProfile(reportId, Number(reuseYear));
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setAnswers(prev => {
@@ -2304,7 +2315,21 @@ export function QuestionnaireTab({
       setReuseLoading(false);
       setShowReuseDialog(false);
     }
-  }, [reportId, reuseLoading, tr, lang, onDirtyChange]);
+  }, [reportId, reuseLoading, reuseYear, tr, lang, onDirtyChange]);
+
+  // Another inventory of this company already covers `year`? Emission entries
+  // are kept per company and year, so a second inventory for the same year
+  // would share — and overwrite — the first one's numbers.
+  const inventoryForYear = useCallback((year) => (
+    (previousProfile?.other_inventories || []).find(r => String(r.reporting_year) === String(year))
+  ), [previousProfile]);
+  const sameYearWarning = useCallback((year) => {
+    const other = inventoryForYear(year);
+    if (!other) return null;
+    return tr
+      ? `${year} yılı için zaten bir envanteriniz var: “${other.title}”. Aynı yıl için ikinci bir envanter, o envanterle aynı emisyon kayıtlarını kullanır — bu envanterde girdiğiniz değerler öncekinin değerlerinin yerine geçer. Farklı bir yıl için hazırlıyorsanız yılı değiştirin.`
+      : `You already have an inventory for ${year}: “${other.title}”. A second inventory for the same year uses the same emission records — the values you enter here replace the earlier ones. If this inventory is for another year, change the year.`;
+  }, [inventoryForYear, tr]);
 
   const handleDeclineReuseProfile = useCallback(() => {
     setShowReuseDialog(false);
@@ -2961,7 +2986,10 @@ export function QuestionnaireTab({
 
     // getQuestionWarning takes (question, value, lang); getTriggeredAssumptions takes (question, value)
     // — lang is resolved at render time for assumptions so language switches show correct text.
-    const warning = getQuestionWarning ? getQuestionWarning(q, value, lang) : null;
+    const warning = [
+      getQuestionWarning ? getQuestionWarning(q, value, lang) : null,
+      q.id === 'A4' ? sameYearWarning(value) : null,
+    ].filter(Boolean).join('\n\n') || null;
     // getSystemMessage resolves the contextual info message for the selected answer (if any).
     // These are defined on 50+ questions (systemMessages) but were previously never displayed.
     const sysMsg = getSystemMessage ? getSystemMessage(q, value, lang) : null;
@@ -3071,7 +3099,7 @@ export function QuestionnaireTab({
         }
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting]);
+  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting, sameYearWarning]);
 
   // After leaving and coming back, this session's `history` is empty, so the
   // back button had nothing to go to. Fall back to the last answered question
@@ -3435,7 +3463,7 @@ export function QuestionnaireTab({
                 assumptions={assumptions}
                 onStartNew={resetFlow}
                 onViewFull={() => {
-                  window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }));
+                  window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting', year: parseInt(answers.A4, 10) || undefined } }));
                 }}
               />
             </div>
@@ -3507,7 +3535,7 @@ export function QuestionnaireTab({
               ) : (
                 <>
                   <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting' } }))}
+                    onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting', year: parseInt(answers.A4, 10) || undefined } }))}
                     className="flex items-center gap-2 rounded-full bg-[#1A7B2A] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1A6126]"
                   >
                     <FileText className="h-3.5 w-3.5" />
@@ -3555,7 +3583,28 @@ export function QuestionnaireTab({
         confirmText={tr ? 'Evet, aynı — atla' : 'Yes, same — skip'}
         cancelText={tr ? 'Hayır, tekrar gireyim' : 'No, let me re-enter'}
         type="warning"
-      />
+      >
+        <div className="mt-4 text-left">
+          <label htmlFor="reuse-year" className="block text-xs font-bold text-[#072C0E]">
+            {tr ? 'Bu envanterin raporlama yılı' : 'Reporting year of this inventory'}
+          </label>
+          <select
+            id="reuse-year"
+            value={reuseYear}
+            onChange={(e) => setReuseYear(e.target.value)}
+            className="mt-1 w-full rounded-xl border border-[#072C0E]/15 bg-white px-3 py-2 text-sm text-[#072C0E]"
+          >
+            {(getQuestionById('A4')?.options || []).map(o => (
+              <option key={o.value} value={o.value}>{o.label?.[lang] || o.value}</option>
+            ))}
+          </select>
+          {sameYearWarning(reuseYear) && (
+            <p role="alert" className="mt-2 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+              {sameYearWarning(reuseYear)}
+            </p>
+          )}
+        </div>
+      </ConfirmDialog>
     </div>
   );
 }
