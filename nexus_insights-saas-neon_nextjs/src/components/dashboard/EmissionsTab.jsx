@@ -18,7 +18,7 @@ import {
   MONTHS_TR, MONTHS_EN,
   ALLOWED_UPLOAD_MIME as ALLOWED_MIME,
   MAX_UPLOAD_BYTES as MAX_FILE_BYTES,
-  scopeLabel, fmt,
+  scopeLabel, fmt, unitLabel,
 } from '@/lib/constants/emissions';
 
 // ─── KPI mini card (count-up + hover lift) ─────────────────────────────────
@@ -70,13 +70,17 @@ async function downloadProofDocument(entryId) {
   }
 }
 
+// A rejected entry stays listed (with its reason) but is not part of the
+// totals — the same rule the backend summary and reports apply.
+const countedKg = (e) => (e.status === 'draft' ? 0 : (parseFloat(e.calculated_co2e_kg) || 0));
+
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
   const tr = language === 'tr';
   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
   const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
   const kg = parseFloat(entry.calculated_co2e_kg) || 0;
-  const barPct = maxKg > 0 ? (kg / maxKg) * 100 : 0;
+  const barPct = maxKg > 0 ? (countedKg(entry) / maxKg) * 100 : 0;
   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
 
   return (
@@ -86,7 +90,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-bold text-[#072C0E]">{name}</p>
           <p className="mt-0.5 text-[10px] text-[#072C0E]/40">
-            {months[entry.month - 1]} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {entry.unit}
+            {months[entry.month - 1]} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {unitLabel(entry.unit, tr)}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -291,13 +295,13 @@ export default function EmissionsTab({
   }, [entries, search, filterScope, filterMonth, filterFacility, sortBy, tr]);
 
   const maxKg = useMemo(
-    () => Math.max(...filtered.map(e => parseFloat(e.calculated_co2e_kg) || 0), 1),
+    () => Math.max(...filtered.map(countedKg), 1),
     [filtered]
   );
 
   // Totals — memoized so the reduce only re-runs when `filtered` actually changes
   const totalKg = useMemo(
-    () => filtered.reduce((a, e) => a + (parseFloat(e.calculated_co2e_kg) || 0), 0),
+    () => filtered.reduce((a, e) => a + countedKg(e), 0),
     [filtered],
   );
 
@@ -318,7 +322,7 @@ export default function EmissionsTab({
   const { countS1, countS2, countS3, s1kg, s2kg, s3kg, totKg } = useMemo(() => {
     let countS1 = 0, countS2 = 0, countS3 = 0, s1kg = 0, s2kg = 0, s3kg = 0;
     for (const e of entries) {
-      const kg = parseFloat(e.calculated_co2e_kg) || 0;
+      const kg = countedKg(e);
       if      (e.scope === 'scope1') { countS1++; s1kg += kg; }
       else if (e.scope === 'scope2') { countS2++; s2kg += kg; }
       else if (e.scope === 'scope3') { countS3++; s3kg += kg; }
@@ -462,6 +466,14 @@ export default function EmissionsTab({
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
     } finally { setEditSaving(false); }
   }, [editing, editQty, editDesc, editFacility, editSaving, tr, toast, fetchData]);
+
+  // Questionnaire records are corrected on their own question: the
+  // Karbon Envanteri tab opens that inventory at that question.
+  const fixInQuestionnaire = useCallback((src) => {
+    try { sessionStorage.setItem('carboniq_open_request', JSON.stringify(src)); } catch {}
+    setEditing(null);
+    window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'questionnaire' } }));
+  }, []);
 
   const openEdit = useCallback((entry) => {
     setEditing(entry);
@@ -773,7 +785,7 @@ export default function EmissionsTab({
                     'kg CO₂e',
                     'tCO₂e',
                     tr ? 'CO₂e payı' : 'CO₂e share',
-                    'actions',
+                    tr ? 'İşlemler' : 'Actions',
                   ].map((h, i) => (
                     <th
                       key={h}
@@ -791,7 +803,7 @@ export default function EmissionsTab({
                   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
                   const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
                   const kg = parseFloat(entry.calculated_co2e_kg) || 0;
-                  const barPct = maxKg > 0 ? (kg / maxKg) * 100 : 0;
+                  const barPct = maxKg > 0 ? (countedKg(entry) / maxKg) * 100 : 0;
                   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
                   return (
                     <tr key={entry.id} className="group/row transition-colors hover:bg-[#DEFAE1]/40">
@@ -834,7 +846,7 @@ export default function EmissionsTab({
                       <td className="px-4 py-3 text-xs text-[#072C0E]/50">{months[entry.month - 1]}</td>
                       {/* Quantity */}
                       <td className="px-4 py-3 text-right text-xs font-semibold text-[#072C0E]/70">
-                        {fmt(entry.quantity)} <span className="text-[#072C0E]/30">{entry.unit}</span>
+                        {fmt(entry.quantity)} <span className="text-[#072C0E]/30">{unitLabel(entry.unit, tr)}</span>
                       </td>
                       {/* kg CO₂e */}
                       <td className="px-4 py-3 text-right text-[13px] font-bold text-[#072C0E]">
@@ -1153,13 +1165,20 @@ export default function EmissionsTab({
                     <p className="font-bold">{tr ? 'Red nedeni' : 'Reason for rejection'}: {editing.rejected_reason}</p>
                   )}
                   <p className="mt-0.5">
-                    {tr ? 'Düzeltip kaydettiğinizde kayıt tekrar onaya gönderilir.' : 'When you fix and save it, the entry is sent for approval again.'}
+                    {tr ? 'Düzelttiğinizde kayıt tekrar onaya gönderilir.' : 'Once corrected, the entry is sent for approval again.'}
                   </p>
                 </div>
               )}
+              {editing.questionnaire_source ? (
+                <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#DEFAE1]/50 px-4 py-3 text-xs leading-5 text-[#175022]">
+                  {tr
+                    ? 'Bu kayıt Karbon Envanteri anketindeki cevabınızdan oluşturuldu. Burada değiştirirseniz anket o soruyu tekrar kaydettiğinde eski değer geri gelir; bu yüzden düzeltmeyi ankette, ilgili soruda yapın.'
+                    : 'This entry was created from your Carbon Inventory answer. A change made here would be overwritten the next time that question is saved, so correct it in the questionnaire, on that question.'}
+                </div>
+              ) : (
               <form id="edit-form" onSubmit={handleEdit} className="space-y-4">
                 <div>
-                  <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({editing.unit})</label>
+                  <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({unitLabel(editing.unit, tr)})</label>
                   <input type="text" inputMode="decimal" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
                 </div>
                 <div>
@@ -1178,10 +1197,15 @@ export default function EmissionsTab({
                   <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
                 </div>
               </form>
+              )}
             </div>
             <div className="flex shrink-0 gap-2 border-t border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
+              {editing.questionnaire_source ? (
+                <button type="button" onClick={() => fixInQuestionnaire(editing.questionnaire_source)} className="flex-1 rounded-full bg-[#072C0E] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/12 transition hover:bg-[#175022]">{tr ? 'Ankette düzelt' : 'Fix in questionnaire'}</button>
+              ) : (
               <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#072C0E] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/12 transition hover:bg-[#175022] disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
+              )}
             </div>
           </div>
         </div>

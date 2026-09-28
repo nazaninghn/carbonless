@@ -55,11 +55,11 @@ def _describe(entry, lang):
     return f'{name} · {qty} {_unit(factor.unit, lang)} · {month} {entry.year}'.strip()
 
 
-def _notify(user, notification_type, title, message):
+def _notify(user, notification_type, title, message, link='/dashboard'):
     from accounts.models import Notification
     Notification.objects.create(
         user=user, notification_type=notification_type,
-        title=title, message=message, link='/dashboard',
+        title=title, message=message, link=link,
     )
 
 
@@ -103,18 +103,23 @@ def notify_entry_reviewed(entry, approved, reviewer):
         what = _describe(entry, lang)
         if approved:
             if lang == 'tr':
-                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.')
+                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}')
             else:
-                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.')
+                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}')
             return
         reason = (entry.rejected_reason or '').strip()
+        # Opens Emisyon Yönetimi on the entry's own year.
+        link = f'/dashboard?tab=emissions&year={entry.year}'
+        from_questionnaire = (entry.description or '').startswith('Questionnaire step ')
         if lang == 'tr':
+            fix = (' Kayıt anketten geldi: Emisyon Yönetimi\'nde "Ankette düzelt" ile ilgili soruyu açıp düzeltin.'
+                   if from_questionnaire else ' Kaydı düzenleyip tekrar gönderebilirsiniz.')
             _notify(entry.user, 'entry_rejected', 'Kaydınız reddedildi',
-                    f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '')
-                    + ' Kaydı düzenleyip tekrar gönderebilirsiniz.')
+                    f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link)
         else:
+            fix = (' It comes from the questionnaire: use "Fix in questionnaire" on the Emissions page to correct that question.'
+                   if from_questionnaire else ' You can edit the entry to send it again.')
             _notify(entry.user, 'entry_rejected', 'Your entry was rejected',
-                    f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '')
-                    + ' You can edit the entry to send it again.')
+                    f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link)
     except Exception:
         logger.exception('Could not notify the author of entry %s', entry.pk)

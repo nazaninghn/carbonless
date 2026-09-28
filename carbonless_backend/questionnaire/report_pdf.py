@@ -369,7 +369,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
     # ════════════════════════════════════════════════
     E.append(Paragraph('5. ' + ('Ölçülen Sera Gazı Emisyonları' if tr else 'Quantified GHG Emissions'), S['h1']))
 
-    entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor') \
+    entries = EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft').select_related('emission_factor') \
         if (EmissionEntry is not None and company) else []
     entry_count = entries.count() if hasattr(entries, 'count') else 0
 

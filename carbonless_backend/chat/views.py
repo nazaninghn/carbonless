@@ -167,7 +167,7 @@ def _get_user_emission_context(user):
         # midnight.  datetime.now(timezone.utc) is always correct regardless of the
         # server's TZ setting.
         year = datetime.now(timezone.utc).year
-        entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
+        entries = EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft').select_related('emission_factor')
         # Fix #71 (query 1 of 2): combined total + count in one aggregate instead of
         # separate aggregate(Sum) + .count() — saves one DB round-trip per AI message.
         agg = entries.aggregate(t=Sum('calculated_co2e_kg'), count=Count('id'))
@@ -177,7 +177,7 @@ def _get_user_emission_context(user):
         if total_kg == 0:
             # Try previous year
             year -= 1
-            entries = EmissionEntry.objects.filter(company=company, year=year).select_related('emission_factor')
+            entries = EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft').select_related('emission_factor')
             agg = entries.aggregate(t=Sum('calculated_co2e_kg'), count=Count('id'))
             total_kg = float(agg['t'] or 0)
             entry_count = agg['count'] or 0

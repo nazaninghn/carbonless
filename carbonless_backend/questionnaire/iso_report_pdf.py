@@ -691,6 +691,7 @@ def _gather(report, lang):
     entries = (
         EmissionEntry.objects
         .filter(company=company, year=year)
+        .exclude(status='draft')
         .select_related('emission_factor', 'facility')
     )
 
@@ -804,7 +805,7 @@ def _gather(report, lang):
     # shown rather than just asserted.
     year_totals = {}
     if company:
-        for row in (EmissionEntry.objects.filter(company=company)
+        for row in (EmissionEntry.objects.filter(company=company).exclude(status='draft')
                     .values('year').annotate(total=Sum('calculated_co2e_kg'))):
             year_totals[row['year']] = year_totals.get(row['year'], 0.0) + float(row['total'] or 0)
         for cr in CustomEmissionRequest.objects.filter(

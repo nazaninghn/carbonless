@@ -91,7 +91,9 @@ export function InventoryProvider({ children }) {
   }, []);
 
   // ✅ Continue existing inventory
-  const continueInventory = useCallback(async (inventoryId) => {
+  // `atStep` opens the inventory on that question instead of where it was
+  // left (used by "Ankette düzelt" on a questionnaire-created record).
+  const continueInventory = useCallback(async (inventoryId, atStep = null) => {
     setLoading(true);
     setError('');
     try {
@@ -105,7 +107,7 @@ export function InventoryProvider({ children }) {
       setActiveInventoryId(inventoryId);
       setInventoryTitle(data.title || `Inventory ${inventoryId}`);
       setInventoryStatus(data.status);
-      setCurrentStep(data.current_step || 'A1');
+      setCurrentStep(atStep || data.current_step || 'A1');
       setAnswers(normalizeHydratedAnswers(data.answers));
       setDirty(false);
       setMode('questionnaire');
@@ -124,6 +126,17 @@ export function InventoryProvider({ children }) {
       setLoading(false);
     }
   }, []);
+
+  // "Ankette düzelt" from Emisyon Yönetimi leaves an open request behind and
+  // switches to this tab; pick it up once the tab is mounted.
+  useEffect(() => {
+    let req = null;
+    try {
+      req = JSON.parse(sessionStorage.getItem('carboniq_open_request') || 'null');
+      sessionStorage.removeItem('carboniq_open_request');
+    } catch { req = null; }
+    if (req?.report_id) continueInventory(req.report_id, req.step_id || null);
+  }, [continueInventory]);
 
   // ✅ Save draft
   const saveDraft = useCallback(async () => {

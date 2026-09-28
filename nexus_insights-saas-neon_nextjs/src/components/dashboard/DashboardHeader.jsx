@@ -111,6 +111,9 @@ export default function DashboardHeader({
   const openNotification = useCallback(async (n) => {
     const tab = NOTIFICATION_TAB[n.notification_type];
     if (tab) setActiveTab?.(tab);
+    // An entry notification opens on the entry's own year.
+    const year = Number(new URLSearchParams((n.link || '').split('?')[1] || '').get('year'));
+    if (year) setSelectedYear?.(year);
     setShowNotifications(false);
     if (!n.is_read) {
       setNotifications(items => items.map(item => (item.id === n.id ? { ...item, is_read: true } : item)));
@@ -118,7 +121,7 @@ export default function DashboardHeader({
       try { await api.markNotificationsRead([n.id]); } catch { /* the badge re-syncs on next load */ }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setActiveTab, setUnreadCount, unreadCount]);
+  }, [setActiveTab, setSelectedYear, setUnreadCount, unreadCount]);
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center border-b border-[#DEFAE1] bg-white px-3 sm:px-4 lg:px-5">
