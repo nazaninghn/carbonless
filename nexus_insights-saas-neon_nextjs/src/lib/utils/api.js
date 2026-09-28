@@ -267,6 +267,7 @@ export const api = {
   updateProfile: (data) => request('/accounts/update-profile/', { method: 'PATCH', body: JSON.stringify(data) }),
   deleteAccount: (password) => request('/accounts/delete-account/', { method: 'DELETE', body: JSON.stringify({ password }) }),
   exportAll: () => request('/emissions/export-all/'),
+  exportAllExcel: (lang = 'en') => request(`/emissions/export-all/?file=xlsx&lang=${lang}`),
 
   startCarbonReport: (title = '', forceNew = false) => request('/questionnaire/start/', {
     method: 'POST',

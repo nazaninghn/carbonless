@@ -67,7 +67,11 @@ class RegisterView(generics.CreateAPIView):
         # Create user as inactive — they must verify email first
         user = serializer.save(is_active=False)
         from .models import UserProfile, EmailVerificationToken
-        UserProfile.objects.create(user=user, role='data_entry')
+        # The language the signup form was filled in is the account's language
+        # (notifications and e-mails use it) until the user picks another.
+        lang = self.request.data.get('language')
+        UserProfile.objects.create(user=user, role='data_entry',
+                                   language_preference=lang if lang in ('tr', 'en') else 'tr')
 
         # Create the user's company now, from the details the three-step
         # registration form collected. This used to be a placeholder
@@ -582,6 +586,8 @@ def update_profile(request):
     if 'phone' in request.data:
         profile.phone = request.data['phone']
     if 'language_preference' in request.data:
+        if request.data['language_preference'] not in ('tr', 'en'):
+            return Response({'error': 'language_preference must be tr or en'}, status=400)
         profile.language_preference = request.data['language_preference']
     if 'notify_approvals' in request.data:
         profile.notify_approvals = request.data['notify_approvals']
