@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { timeAgo } from '@/lib/timeAgo';
 import {
   Bell,
   CalendarDays,
@@ -234,6 +235,11 @@ export default function DashboardHeader({
                     >
                       <p className="text-[12px] font-semibold text-[#072C0E]">{n.title}</p>
                       <p className="text-[10px] text-[#072C0E]/50 mt-0.5">{n.message}</p>
+                      {n.created_at && (
+                        <p className="text-[9px] font-semibold text-[#072C0E]/35 mt-1" title={new Date(n.created_at).toLocaleString(tr ? 'tr-TR' : 'en-GB')}>
+                          {timeAgo(n.created_at, tr)}
+                        </p>
+                      )}
                     </button>
                   ))}
                 </div>

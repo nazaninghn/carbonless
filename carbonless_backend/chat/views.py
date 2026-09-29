@@ -1957,6 +1957,14 @@ def confirm_entry(request):
         except (TypeError, ValueError):
             pass
 
+    from emissions.periods import FUTURE_PERIOD_CODE, future_period_message, is_future_period
+    now = datetime.now(timezone.utc)
+    if is_future_period(entry_data.get('year') or now.year, entry_data.get('month') or now.month):
+        return Response({
+            'error': future_period_message(entry_data.get('language')),
+            'code': FUTURE_PERIOD_CODE,
+        }, status=400)
+
     from emissions.duplicates import find_duplicate, is_confirmed
     if not is_confirmed(entry_data):
         from companies.utils import get_current_company
