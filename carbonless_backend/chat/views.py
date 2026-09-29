@@ -966,6 +966,7 @@ def _build_pending_entries_from_data(emission_blocks, user=None):
                 'factor_name_tr': getattr(factor, 'name_tr', '') or '',
                 'factor_source': getattr(factor, 'source', ''),
                 'factor_source_label': factor.get_source_display() if hasattr(factor, 'get_source_display') else getattr(factor, 'source', ''),
+                'factor_source_label_tr': SOURCE_LABELS_TR.get(getattr(factor, 'source', ''), ''),
                 'factor_reference': getattr(factor, 'reference', ''),
                 'scope': factor.scope,
                 'date_extracted': date_extracted,
@@ -973,6 +974,21 @@ def _build_pending_entries_from_data(emission_blocks, user=None):
         elif err:
             logger.warning('Local emission resolve failed: %s', err)
     return pending_entries
+
+
+# Turkish names for EmissionFactor.source, for the "Kaynak:" line of a
+# Turkish chat answer (the model's choice labels are English).
+SOURCE_LABELS_TR = {
+    'defra_2024': 'Defra/DESNZ 2024',
+    'ipcc_2006': 'IPCC 2006',
+    'ipcc_2019': 'IPCC 2019 + AR6 GWP',
+    'turkey_grid': 'Türkiye ulusal elektrik şebekesi',
+    'atom_kablo': 'Türkiye ISO 14064-1 doğrulanmış envanteri',
+    'icao': 'ICAO',
+    'turkey_fleet': 'Türkiye araç filosu',
+    'generic': 'Genel / tahmini',
+    'custom': 'Özel',
+}
 
 
 def _fmt_number(value, lang):
@@ -996,6 +1012,7 @@ def _build_pending_entries_text(pending_entries, lang=None):
         scope_label = (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else ''
         raw_source = pe.get('factor_source_label') or pe.get('factor_source') or ''
         if tr:
+            raw_source = pe.get('factor_source_label_tr') or SOURCE_LABELS_TR.get(pe.get('factor_source', ''), raw_source)
             activity = pe.get('factor_name_tr') or pe.get('fuel_type', '').replace('_', ' ').capitalize()
             source_label = f'Kayıtlı faktör — {raw_source}' if raw_source else 'Kayıtlı emisyon faktörü'
             date_note = '' if pe.get('date_extracted') else '\n📅 *Dönem: bu ay (kaydetmeden önce değiştirebilirsiniz)*'

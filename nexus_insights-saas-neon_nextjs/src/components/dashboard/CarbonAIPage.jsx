@@ -4437,7 +4437,9 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                             </div>
                             {(pe.factor_source_label || pe.factor_reference) && (
                               <div className="mt-1 text-[10px] text-[#1A7B2A]">
-                                {tr ? 'Kaynak: Kayıtlı faktör — ' : 'Source: Registered factor — '}{pe.factor_reference || pe.factor_source_label}
+                                {tr ? 'Kaynak: Kayıtlı faktör — ' : 'Source: Registered factor — '}
+                                {/* The reference text is English; Turkish users get the source's Turkish name. */}
+                                {tr ? (pe.factor_source_label_tr || pe.factor_source_label || pe.factor_reference) : (pe.factor_reference || pe.factor_source_label)}
                               </div>
                             )}
                             {/* Always shown — the user confirms the period explicitly

@@ -113,6 +113,9 @@ export default function DashboardPage() {
 
   // Add Entry form (showAddForm shared with DashboardOverview)
   const [showAddForm, setShowAddForm] = useState(false);
+  // Set by the command palette's "New reduction target"; the targets tab opens
+  // its form and clears it.
+  const [targetFormRequested, setTargetFormRequested] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('turkey');
   // Emission sources follow the company's headquarters: the Turkish factor
   // set for a company in Turkey, the global set (country grids, DEFRA travel
@@ -333,6 +336,8 @@ export default function DashboardPage() {
                 canEdit={perms.canApprove}
                 selectedYear={selectedYear}
                 onYearChange={setSelectedYear}
+                formRequested={targetFormRequested}
+                onFormRequestHandled={() => setTargetFormRequested(false)}
               />
             </ErrorBoundary>
           )}
@@ -394,6 +399,7 @@ export default function DashboardPage() {
         setActiveTab={setActiveTab}
         entries={entries}
         setShowAddForm={setShowAddForm}
+        onAddTarget={() => setTargetFormRequested(true)}
       />
     </div>
     </ToastProvider>
