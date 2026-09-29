@@ -177,6 +177,27 @@ STORAGES = {
     },
 }
 
+# Render's filesystem is rebuilt on every deploy, so anything under MEDIA_ROOT
+# (proof documents, chat attachments) disappears. When the R2 credentials are
+# set, uploads go to a private Cloudflare R2 bucket instead. Files are still
+# only served through the authenticated download views (which read them via
+# the storage API), never by a public bucket URL.
+if os.environ.get('R2_BUCKET_NAME'):
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.s3.S3Storage',
+        'OPTIONS': {
+            'bucket_name': os.environ['R2_BUCKET_NAME'],
+            'endpoint_url': os.environ['R2_ENDPOINT_URL'],
+            'access_key': os.environ['R2_ACCESS_KEY_ID'],
+            'secret_key': os.environ['R2_SECRET_ACCESS_KEY'],
+            'region_name': 'auto',
+            'signature_version': 's3v4',
+            'default_acl': None,
+            'querystring_auth': True,
+            'file_overwrite': False,
+        },
+    }
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # The login form's "Username or Email" field (and the frontend, which sends
