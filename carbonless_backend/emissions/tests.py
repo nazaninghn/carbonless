@@ -177,7 +177,7 @@ class APITests(TestCase):
     def test_summary(self):
         EmissionEntry.objects.create(
             user=self.user, company=self.company, emission_factor=self.factor,
-            year=2026, month=1, quantity=1000,
+            year=2026, month=1, quantity=1000, status='approved',
         )
         res = self.client.get('/api/emissions/summary/?year=2026')
         self.assertEqual(res.status_code, 200)
@@ -734,3 +734,81 @@ class ProofDocumentTests(EntryChangeRulesTests):
         listed = self.client.get('/api/emissions/entries/?year=2026').json()
         listed = listed.get('results', listed)
         self.assertFalse([e for e in listed if e['id'] == eid][0]['proof_available'])
+
+
+class OnlyApprovedEntriesCountTests(TestCase):
+    """Totals and reports count approved entries only; pending and rejected
+    ones are reported separately, for information."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        self.user = User.objects.create_user('countu', 'count@test.com', 'testpass123')
+        self.company = Company.objects.create(
+            legal_entity_name='Sayım A.Ş.', tax_number='7777777777',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(company=self.company, user=self.user, role='owner')
+        self.factor = EmissionFactor.objects.create(
+            slug='count-gas', name='Count Gas', scope='scope1', category='stationary_combustion',
+            country='global', unit='kg', factor_kg_co2e=2, year=2024, source='generic',
+            is_active=True, is_default=True,
+        )
+        for qty, status in ((100, 'approved'), (40, 'submitted'), (10, 'draft')):
+            EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=self.factor,
+                                         year=2026, month=3, quantity=qty, status=status)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_summary_counts_approved_only_and_reports_the_rest(self):
+        data = self.client.get('/api/emissions/summary/?year=2026').data
+        self.assertAlmostEqual(data['total_kg'], 200.0)
+        self.assertAlmostEqual(data['scope1_kg'], 200.0)
+        self.assertEqual(data['not_counted']['pending'], {'count': 1, 'total_kg': 80.0})
+        self.assertEqual(data['not_counted']['rejected'], {'count': 1, 'total_kg': 20.0})
+
+    def test_year_comparison_and_facility_breakdown_count_approved_only(self):
+        data = self.client.get('/api/emissions/comparison/?year1=2025&year2=2026').data
+        self.assertAlmostEqual(data['year2']['total_kg'], 200.0)
+        from companies.models import Facility
+        fac = Facility.objects.create(company=self.company, name='Fab', country='TR')
+        EmissionEntry.objects.filter(company=self.company).update(facility=fac)
+        rows = self.client.get('/api/emissions/by-facility/?year=2026').data
+        self.assertAlmostEqual(rows[0]['total_kg'], 200.0)
+
+    def test_note_text(self):
+        from .inventory import not_counted, not_counted_note
+        info = not_counted(EmissionEntry.objects.filter(company=self.company, year=2026))
+        tr = not_counted_note(info, tr=True)
+        self.assertIn('1 onay bekleyen kayıt (0,080 tCO₂e)', tr)
+        self.assertIn('1 reddedilen kayıt (0,020 tCO₂e)', tr)
+        self.assertIn('dahil değildir', tr)
+        self.assertEqual(not_counted_note({'pending': {'count': 0}, 'rejected': {'count': 0}}), '')
+
+    def test_emissions_pdf_carries_the_note(self):
+        from io import BytesIO
+        from pypdf import PdfReader
+        res = self.client.get('/api/emissions/report/?year=2026&lang=tr')
+        self.assertEqual(res.status_code, 200)
+        text = ' '.join(' '.join(p.extract_text() for p in PdfReader(BytesIO(res.content)).pages).split())
+        self.assertIn('Toplam emisyon: 0,20 tCO₂e', text)  # approved only
+        self.assertIn('onay bekleyen kayıt', text)
+        self.assertIn('dahil değildir', text)
+
+    def test_legacy_migration_approves_only_approver_entries(self):
+        import importlib
+        from django.apps import apps
+        from companies.models import CompanyMembership
+        member = User.objects.create_user('dataent', 'de@test.com', 'testpass123')
+        CompanyMembership.objects.create(company=self.company, user=member, role='data_entry')
+        mine = EmissionEntry.objects.filter(company=self.company, status='submitted').get()
+        theirs = EmissionEntry.objects.create(user=member, company=self.company, emission_factor=self.factor,
+                                              year=2026, month=4, quantity=5, status='submitted')
+        rejected = EmissionEntry.objects.filter(company=self.company, status='draft').get()
+        mig = importlib.import_module('emissions.migrations.0016_approve_legacy_approver_entries')
+        mig.approve_legacy(apps, None)
+        mine.refresh_from_db(); theirs.refresh_from_db(); rejected.refresh_from_db()
+        self.assertEqual(mine.status, 'approved')
+        self.assertEqual(theirs.status, 'submitted')
+        self.assertEqual(rejected.status, 'draft')

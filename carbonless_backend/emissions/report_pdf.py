@@ -483,7 +483,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     company = get_current_company(user)
     cname = company.legal_entity_name if company else user.username
 
-    entries = EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft').select_related(
+    entries = EmissionEntry.objects.filter(company=company, year=year).filter(status='approved').select_related(
         'emission_factor', 'facility'
     ) if company else EmissionEntry.objects.none()
 
@@ -703,6 +703,11 @@ def generate_report(user, year, lang='tr', page_offset=0):
     # ════════════════════════════════════════════════
     E.append(Paragraph('1. ' + ('Y\u00f6netici \u00d6zeti' if tr else 'Executive Summary'), S['h1']))
     E.append(Paragraph(f"{cname} {_of} {year} {_body}", S['body']))
+    # Pending / rejected entries are not in any figure of this report; say so.
+    from .inventory import not_counted, not_counted_note
+    _note = not_counted_note(not_counted(EmissionEntry.objects.filter(company=company, year=year)), tr) if company else ''
+    if _note:
+        E.append(Paragraph(_note, S['body_sm']))
     E.append(Spacer(1, 8*mm))
 
     # Total KPI - large centered
