@@ -4548,7 +4548,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                       <div className="mt-1 text-[10px] text-[#1A7B2A]">
                         {msg.entryStatus === 'approved'
                           ? (tr ? 'Durum: Onaylandı' : 'Status: Approved')
-                          : (tr ? 'Durum: İnceleme bekliyor' : 'Status: Submitted for review')}
+                          : (tr ? 'Durum: Onay bekliyor. Onaylandığında toplamlara eklenir.' : 'Status: Awaiting approval. It will count in the totals once approved.')}
                       </div>
                     </div>
                   )}
