@@ -337,9 +337,17 @@ class RateLimitKeyTests(TestCase):
     the proxy's own address, which would lock the whole site at once."""
 
     def setUp(self):
+        from types import SimpleNamespace
+        from unittest import mock
         from django.core.cache import cache
         cache.clear()
         self.user = User.objects.create_user('real', 'real@test.com', 'StrongPass123')
+        # django-ratelimit counts in fixed clock windows; attempts that straddle
+        # a window boundary start a new count and the limit is never reached.
+        # Freeze the clock it reads (only there) so these tests are exact.
+        patcher = mock.patch('django_ratelimit.core.time', SimpleNamespace(time=lambda: 1_800_000_000.0))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         from django.core.cache import cache

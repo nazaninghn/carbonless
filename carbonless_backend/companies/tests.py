@@ -230,3 +230,42 @@ class InviteManagementTests(InviteFlowTests):
         CompanyMembership.objects.create(company=self.company, user=clerk, role='data_entry')
         client = APIClient(); client.force_authenticate(user=clerk)
         self.assertEqual(client.get('/api/companies/invites/').status_code, 403)
+
+
+class JoinFromInviteTests(InviteFlowTests):
+    """Signing up from an invite joins the team without a company of one's own."""
+
+    def test_invite_info_shows_company_role_and_email(self):
+        data = self._invite('deniz@test.com')
+        res = APIClient().get('/api/companies/invite-info/', {'token': data['token']})
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data, {'email': 'deniz@test.com', 'role': 'data_entry', 'company': 'Kaya Tekstil A.Ş.'})
+        self.assertEqual(APIClient().get('/api/companies/invite-info/', {'token': 'x'}).status_code, 404)
+
+    def test_signup_with_invite_creates_no_placeholder_company(self):
+        from accounts.models import EmailVerificationToken
+        data = self._invite('deniz@test.com')
+        res = APIClient().post('/api/accounts/register/', {
+            'username': 'deniz', 'email': 'deniz@test.com',
+            'password': 'StrongPass123', 'password2': 'StrongPass123',
+            'invite_token': data['token'], 'language': 'tr',
+        }, format='json')
+        self.assertEqual(res.status_code, 201, res.content)
+        self.assertTrue(res.data['joining_team'])
+        deniz = User.objects.get(username='deniz')
+        self.assertFalse(CompanyMembership.objects.filter(user=deniz).exists())
+        code = EmailVerificationToken.objects.get(user=deniz).code
+        APIClient().post('/api/accounts/verify-email-code/', {'email': 'deniz@test.com', 'code': code}, format='json')
+        memberships = CompanyMembership.objects.filter(user=deniz)
+        self.assertEqual([(m.company_id, m.role) for m in memberships], [(self.company.id, 'data_entry')])
+
+    def test_invite_token_for_another_email_still_gets_own_company(self):
+        data = self._invite('deniz@test.com')
+        APIClient().post('/api/accounts/register/', {
+            'username': 'eve', 'email': 'eve@test.com',
+            'password': 'StrongPass123', 'password2': 'StrongPass123',
+            'invite_token': data['token'],
+        }, format='json')
+        eve = User.objects.get(username='eve')
+        self.assertTrue(CompanyMembership.objects.filter(user=eve, role='owner').exists())
+        self.assertFalse(CompanyMembership.objects.filter(user=eve, company=self.company).exists())

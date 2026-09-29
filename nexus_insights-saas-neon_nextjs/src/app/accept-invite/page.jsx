@@ -93,14 +93,14 @@ function AcceptInviteContent() {
               <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Ekibe davet edildiniz' : "You've been invited to a team"}</h1>
               <p className="mt-2 text-[14px] text-[#072C0E]/60">
                 {tr
-                  ? 'Daveti kabul etmek için davetin gönderildiği e-posta adresiyle giriş yapın. Hesabınız yoksa bu adresle kayıt olun — e-postanızı doğruladığınızda ekibe otomatik olarak eklenirsiniz.'
-                  : 'To accept, log in with the email address the invite was sent to. No account yet? Sign up with that address — you will be added to the team automatically once you verify it.'}
+                  ? 'Daveti kabul etmek için davetin gönderildiği e-posta adresiyle giriş yapın. Hesabınız yoksa "Kayıt Ol" ile sadece kendi hesabınızı oluşturun — şirket bilgisi gerekmez; e-postanızı doğruladığınızda ekibe otomatik olarak eklenirsiniz.'
+                  : 'To accept, log in with the email address the invite was sent to. No account yet? "Sign Up" creates just your account — no company details needed; you join the team once you verify your email.'}
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <Link href="/login" className="inline-flex items-center rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
                   {tr ? 'Giriş Yap' : 'Log In'}
                 </Link>
-                <Link href="/register" className="inline-flex items-center rounded-full border border-[#072C0E]/15 px-6 py-3 text-[14px] font-bold text-[#072C0E] hover:bg-[#F1FCF2] transition">
+                <Link href={`/join?token=${encodeURIComponent(token)}`} className="inline-flex items-center rounded-full border border-[#072C0E]/15 px-6 py-3 text-[14px] font-bold text-[#072C0E] hover:bg-[#F1FCF2] transition">
                   {tr ? 'Kayıt Ol' : 'Sign Up'}
                 </Link>
               </div>
