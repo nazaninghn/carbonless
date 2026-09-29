@@ -10,6 +10,7 @@ import {
   User,
   Shield,
   ChevronRight,
+  History,
 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import CompanySettings from '@/components/CompanySettings';
@@ -18,6 +19,7 @@ import PasswordChange from '@/components/PasswordChange';
 import TeamManagement from '@/components/TeamManagement';
 import { getPermissions, roleLabel } from '@/lib/permissions';
 import ProfileEdit from '@/components/ProfileEdit';
+import CompanyHistory from '@/components/CompanyHistory';
 import NotificationPreferences from '@/components/NotificationPreferences';
 import { api } from '@/lib/utils/api';
 
@@ -29,6 +31,8 @@ const TABS = [
   { id: 'security', icon: Shield, tr: 'Güvenlik', en: 'Security' },
   { id: 'notifications', icon: Bell, tr: 'Bildirimler', en: 'Notifications' },
   { id: 'data', icon: Download, tr: 'Veri', en: 'Data' },
+  // Change history: for the roles that approve or audit data.
+  { id: 'history', icon: History, tr: 'Geçmiş', en: 'History', roles: ['owner', 'admin', 'manager', 'auditor'] },
 ];
 
 export default function SettingsTab({ language, user, fetchData }) {
@@ -141,7 +145,7 @@ export default function SettingsTab({ language, user, fetchData }) {
         {/* Sidebar tabs */}
         <aside className="lg:sticky lg:top-4 lg:h-fit">
           <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#072C0E]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-sm">
-            {TABS.map((tab) => {
+            {TABS.filter((tab) => !tab.roles || tab.roles.includes(user?.role)).map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
@@ -301,6 +305,13 @@ export default function SettingsTab({ language, user, fetchData }) {
             <Panel>
               <PanelTitle icon={Bell} title={tr ? 'Bildirim Tercihleri' : 'Notification Preferences'} />
               <NotificationPreferences language={language} user={user} />
+            </Panel>
+          )}
+
+          {activeTab === 'history' && (
+            <Panel>
+              <PanelTitle icon={History} title={tr ? 'Değişiklik Geçmişi' : 'Change History'} />
+              <CompanyHistory language={language} />
             </Panel>
           )}
 

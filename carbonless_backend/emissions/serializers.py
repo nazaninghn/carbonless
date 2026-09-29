@@ -28,6 +28,9 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     )
     # Who entered it — shown on approval cards so an approver knows whose data it is.
     entered_by = serializers.SerializerMethodField()
+    # Whether the requester entered it: a data-entry member may only change
+    # their own entries, so the UI shows edit/delete only on those.
+    is_mine = serializers.SerializerMethodField()
     # For entries the questionnaire created: which inventory and question they
     # come from, so the UI can send the user there to correct them.
     questionnaire_source = serializers.SerializerMethodField()
@@ -48,6 +51,10 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if not cache[key]:
             return None
         return {'report_id': cache[key], 'step_id': step_id}
+
+    def get_is_mine(self, obj):
+        request = self.context.get('request')
+        return bool(request and obj.user_id and obj.user_id == request.user.id)
 
     def get_entered_by(self, obj):
         u = obj.user
@@ -77,7 +84,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'description', 'facility', 'facility_name',
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
-            'created_at', 'updated_at', 'entered_by', 'questionnaire_source',
+            'created_at', 'updated_at', 'entered_by', 'is_mine', 'questionnaire_source',
         ]
         read_only_fields = [
             'calculated_co2e_kg', 'facility_name',

@@ -45,6 +45,30 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
         return qs
 
 
+APPROVER_ROLES = ('owner', 'admin', 'manager')
+# Fields whose change alters an entry's emissions; changing them on an
+# approved entry sends it back for approval when a data-entry member does it.
+_AMOUNT_FIELDS = ('quantity', 'emission_factor', 'year', 'month')
+
+
+def _log_entry(request, action, entry, detail, **extra):
+    """Audit-trail row for an emission entry, tagged with its company so the
+    company's change history (Settings → History) can list it."""
+    from accounts.models import ActivityLog
+    ActivityLog.objects.create(
+        user=request.user, action=action, detail=detail,
+        ip_address=request.META.get('REMOTE_ADDR'),
+        target_type='EmissionEntry', target_id=str(entry.id),
+        metadata={'company_id': entry.company_id, **extra},
+    )
+
+
+def _entry_summary(entry):
+    return (f'{entry.emission_factor.name} · {entry.year}/{entry.month:02d} · '
+            f'{format(entry.quantity.normalize(), "f") if hasattr(entry.quantity, "normalize") else entry.quantity} '
+            f'{entry.emission_factor.unit}')
+
+
 class EmissionEntryViewSet(viewsets.ModelViewSet):
     """CRUD for emission entries — fully company-scoped via membership"""
     serializer_class = EmissionEntrySerializer
@@ -85,19 +109,22 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         )
         from .notifications import notify_entry_submitted
         notify_entry_submitted(serializer.instance)
-        from accounts.models import ActivityLog
-        ActivityLog.objects.create(
-            user=self.request.user, action='entry_created',
-            detail=f'Created emission entry: {serializer.instance.emission_factor.name}',
-            ip_address=self.request.META.get('REMOTE_ADDR'),
-            target_type='EmissionEntry', target_id=str(serializer.instance.id),
-        )
+        _log_entry(self.request, 'entry_created', serializer.instance, _entry_summary(serializer.instance))
+
+    def _check_can_change(self, instance):
+        """A data-entry member changes or deletes only their own entries;
+        owner/admin/manager may change any entry of the company."""
+        from rest_framework.exceptions import PermissionDenied
+        from companies.permissions import current_role
+        if instance.user_id != self.request.user.id and current_role(self.request.user) not in APPROVER_ROLES:
+            raise PermissionDenied('Only the person who entered this record, or an owner, admin or manager, can change it.')
 
     def update(self, request, *args, **kwargs):
         # A questionnaire-created entry is rebuilt from its questionnaire answer
         # whenever that question is saved again, so an amount changed here
         # would silently come back. It is corrected in the questionnaire.
         instance = self.get_object()
+        self._check_can_change(instance)
         if ((instance.description or '').startswith('Questionnaire step ')
                 and any(k in request.data for k in ('quantity', 'emission_factor', 'year', 'month'))):
             return Response({
@@ -107,34 +134,36 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     def perform_update(self, serializer):
-        # Editing a rejected entry is how its author fixes and resends it:
-        # it goes back through the same approval rule as a new entry.
-        if serializer.instance.status == 'draft':
-            from .factor_lookup import _get_entry_status
+        from .factor_lookup import _get_entry_status
+        from .notifications import notify_entry_submitted
+        before = serializer.instance
+        old = _entry_summary(before)
+        was_status = before.status
+        amount_changed = any(
+            f in serializer.validated_data and serializer.validated_data[f] != getattr(before, f)
+            for f in _AMOUNT_FIELDS
+        )
+        # Editing a rejected entry is how its author fixes and resends it, and
+        # changing the amount of an approved one is a new figure: both go back
+        # through the same approval rule as a new entry (a data-entry member's
+        # change waits for approval; an approver's counts at once).
+        if was_status == 'draft' or (was_status == 'approved' and amount_changed):
             instance = serializer.save(
-                status=_get_entry_status(self.request.user, serializer.instance.company),
+                status=_get_entry_status(self.request.user, before.company),
                 rejected_reason='',
             )
-            from .notifications import notify_entry_submitted
             notify_entry_submitted(instance)
         else:
             instance = serializer.save()
-        from accounts.models import ActivityLog
-        ActivityLog.objects.create(
-            user=self.request.user, action='entry_updated',
-            detail=f'Updated emission entry: {instance.emission_factor.name} ({instance.quantity} {instance.emission_factor.unit})',
-            ip_address=self.request.META.get('REMOTE_ADDR'),
-            target_type='EmissionEntry', target_id=str(instance.id),
-        )
+        new = _entry_summary(instance)
+        _log_entry(self.request, 'entry_updated', instance,
+                   f'{old} → {new}' if old != new else new,
+                   status_before=was_status, status_after=instance.status)
 
     def perform_destroy(self, instance):
-        from accounts.models import ActivityLog
-        ActivityLog.objects.create(
-            user=self.request.user, action='entry_deleted',
-            detail=f'Deleted emission entry: {instance.emission_factor.name} ({instance.quantity} {instance.emission_factor.unit})',
-            ip_address=self.request.META.get('REMOTE_ADDR'),
-            target_type='EmissionEntry', target_id=str(instance.id),
-        )
+        self._check_can_change(instance)
+        _log_entry(self.request, 'entry_deleted', instance, _entry_summary(instance),
+                   status_before=instance.status)
         instance.delete()
 
 
@@ -719,6 +748,7 @@ def approve_entry_view(request, pk):
         entry.save()
         from .notifications import notify_entry_reviewed
         notify_entry_reviewed(entry, approved=True, reviewer=request.user)
+        _log_entry(request, 'entry_approved', entry, _entry_summary(entry))
         return Response({'status': 'approved'})
     elif action == 'reject':
         entry.status = 'draft'
@@ -726,6 +756,7 @@ def approve_entry_view(request, pk):
         entry.save()
         from .notifications import notify_entry_reviewed
         notify_entry_reviewed(entry, approved=False, reviewer=request.user)
+        _log_entry(request, 'entry_rejected', entry, _entry_summary(entry), reason=entry.rejected_reason)
         return Response({'status': 'rejected'})
     return Response({'error': 'action must be approve or reject'}, status=400)
 

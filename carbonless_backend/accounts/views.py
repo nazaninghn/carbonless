@@ -1090,3 +1090,29 @@ def contact_message(request):
     except Exception as e:  # stored anyway; the team can read it in the admin
         logger.error(f'Contact message {msg.pk} saved but email failed: {e}', exc_info=True)
     return Response({'status': 'ok'}, status=201)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def company_history(request):
+    """The current company's change history (who created, changed, deleted,
+    approved or rejected which emission entry, and when) — for owner, admin,
+    manager and auditor. Newest first, at most 300 rows."""
+    from companies.permissions import current_role
+    from companies.utils import get_current_company
+    from .models import ActivityLog
+    company = get_current_company(request.user)
+    if company is None or current_role(request.user) not in ('owner', 'admin', 'manager', 'auditor'):
+        return Response({'error': 'Not allowed'}, status=403)
+    rows = (ActivityLog.objects.filter(metadata__company_id=company.id)
+            .select_related('user').order_by('-created_at')[:300])
+    return Response([{
+        'id': r.id,
+        'action': r.action,
+        'detail': r.detail,
+        'user': (r.user.get_full_name() or r.user.email or r.user.username) if r.user else None,
+        'created_at': r.created_at,
+        'status_before': (r.metadata or {}).get('status_before'),
+        'status_after': (r.metadata or {}).get('status_after'),
+        'reason': (r.metadata or {}).get('reason'),
+    } for r in rows])

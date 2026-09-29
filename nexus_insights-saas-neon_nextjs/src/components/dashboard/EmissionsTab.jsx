@@ -176,6 +176,9 @@ export default function EmissionsTab({
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
+  // A data-entry member changes only the entries they entered; owner, admin
+  // and manager may change any (the backend enforces the same rule).
+  const canChange = useCallback((entry) => canEdit && (canApprove || entry.is_mine !== false), [canEdit, canApprove]);
 
   // ── Local state ──────────────────────────────────────────────────────────
   const [search, setSearch]           = useState('');
@@ -461,8 +464,16 @@ export default function EmissionsTab({
         quantity: parseLocalizedNumber(editQty), description: editDesc, facility: editFacility || null,
       });
       if (res.ok) {
+        const saved = await res.json().catch(() => ({}));
+        const backToReview = editing.status === 'approved' && saved.status === 'submitted';
         setEditing(null); fetchData();
-        toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
+        if (backToReview) {
+          // Changing the amount of an approved entry is a new figure: it
+          // waits for approval again (data-entry members).
+          toast.info(tr ? 'Kayıt güncellendi ve yeniden onaya gönderildi.' : 'Entry updated and sent for approval again.');
+        } else {
+          toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
+        }
       } else {
         toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Güncelleme başarısız' : 'Update failed'));
       }
@@ -890,7 +901,7 @@ export default function EmissionsTab({
                       </td>
                       {/* Actions */}
                       <td className="px-3 py-3">
-                        {canEdit && <div className="flex justify-end gap-1 opacity-0 transition group-hover/row:opacity-100">
+                        {canChange(entry) && <div className="flex justify-end gap-1 opacity-0 transition group-hover/row:opacity-100">
                           <button
                             onClick={() => openEdit(entry)}
                             aria-label={tr ? 'Kaydı düzenle' : 'Edit entry'}
@@ -943,7 +954,7 @@ export default function EmissionsTab({
               maxKg={maxKg}
               onEdit={openEdit}
               onDelete={handleDelete}
-              canEdit={canEdit}
+              canEdit={canChange(entry)}
             />
           ))}
           {/* Mobile totals */}

@@ -5,11 +5,13 @@ from .views import (
     change_password, logout_view, update_profile, delete_account,
     password_reset_request, password_reset_confirm, verify_email, verify_email_code, resend_verification,
     setup_2fa, confirm_2fa, disable_2fa, get_2fa_status, contact_message,
+    company_history,
 )
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('contact/', contact_message, name='contact_message'),
+    path('history/', company_history, name='company_history'),
     path('login/', RateLimitedLoginView.as_view(), name='token_obtain_pair'),
     path('google/', GoogleLoginView.as_view(), name='google_login'),
     path('token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),

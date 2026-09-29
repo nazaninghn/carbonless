@@ -83,6 +83,8 @@ class ActivityLog(models.Model):
         ('entry_created', 'Emission Entry Created'),
         ('entry_deleted', 'Emission Entry Deleted'),
         ('entry_updated', 'Emission Entry Updated'),
+        ('entry_approved', 'Emission Entry Approved'),
+        ('entry_rejected', 'Emission Entry Rejected'),
         ('custom_submitted', 'Custom Request Submitted'),
         ('custom_approved', 'Custom Request Approved'),
         ('custom_rejected', 'Custom Request Rejected'),
