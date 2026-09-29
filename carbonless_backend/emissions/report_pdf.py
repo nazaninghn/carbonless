@@ -240,8 +240,36 @@ def _total_row_style(fnb):
         ('LINEABOVE', (0, -1), (-1, -1), 1.5, OLIVE),
     ])
 
-def _pct(v, total):
-    return f'{v/total*100:.1f}%' if total > 0 else '0.0%'
+def _pct(v, total, tr=False):
+    """'%99,3' in Turkish (sign first, decimal comma), '99.3%' in English."""
+    val = v / total * 100 if total > 0 else 0.0
+    return f'%{val:.1f}'.replace('.', ',') if tr else f'{val:.1f}%'
+
+
+def _scope(n, tr):
+    """'Kapsam 1' in Turkish, 'Scope 1' in English (n: 1/2/3 or 'scope1')."""
+    n = str(n).replace('scope', '')
+    return f'Kapsam {n}' if tr else f'Scope {n}'
+
+
+# Unit codes as stored (lower-case) -> readable label in the report.
+_UNIT_LABELS = {
+    'kwh': 'kWh', 'mwh': 'MWh', 'gj': 'GJ', 'm3': 'm³', 'm2': 'm²', 'kg': 'kg', 'km': 'km',
+    'usd': 'USD', 'tl': 'TL', 'eur': 'EUR',
+}
+_UNIT_LABELS_TR = {
+    'liters': 'litre', 'tonne': 'ton', 'tonne-km': 'ton-km', 'pkm': 'yolcu-km',
+    'person-km': 'yolcu-km', 'night': 'gece', 'nights': 'gece', 'units': 'adet',
+}
+
+
+def _unit(u, tr):
+    u = (u or '').strip()
+    if u.lower() in _UNIT_LABELS:
+        return _UNIT_LABELS[u.lower()]
+    if tr and u.lower() in _UNIT_LABELS_TR:
+        return _UNIT_LABELS_TR[u.lower()]
+    return u
 
 def _localize_num(s, tr):
     """Swap '.'/',' in an already-formatted number string when tr=True.
@@ -279,9 +307,9 @@ def _scope_pie_chart(s1, s2, s3, fn, tr=False, width_mm=170, height_mm=78):
         return None
 
     slices = [
-        ('Scope 1', s1, SCOPE1_COLOR),
-        ('Scope 2', s2, SCOPE2_COLOR),
-        ('Scope 3', s3, SCOPE3_COLOR),
+        (_scope(1, tr), s1, SCOPE1_COLOR),
+        (_scope(2, tr), s2, SCOPE2_COLOR),
+        (_scope(3, tr), s3, SCOPE3_COLOR),
     ]
     # Zero-value scopes render as a degenerate 0-degree wedge — drop them so
     # the pie only ever shows slices that actually exist.
@@ -295,7 +323,7 @@ def _scope_pie_chart(s1, s2, s3, fn, tr=False, width_mm=170, height_mm=78):
     pie.width = 62 * mm
     pie.height = 62 * mm
     pie.data = [val for _, val, _ in slices]
-    pie.labels = [f'{val/total*100:.0f}%' for _, val, _ in slices]
+    pie.labels = [(f'%{val/total*100:.0f}' if tr else f'{val/total*100:.0f}%') for _, val, _ in slices]
     pie.simpleLabels = 1
     pie.sideLabels = 0
     pie.slices.strokeWidth = 1.2
@@ -321,14 +349,14 @@ def _scope_pie_chart(s1, s2, s3, fn, tr=False, width_mm=170, height_mm=78):
     legend.deltay = 14
     legend.alignment = 'left'
     legend.colorNamePairs = [
-        (clr, f'{lbl}   {_localize_num(f"{val/1000:,.2f}", tr)} tCO₂e  ({val/total*100:.1f}%)')
+        (clr, f'{lbl}   {_localize_num(f"{val/1000:,.2f}", tr)} tCO₂e  ({_pct(val, total, tr)})')
         for lbl, val, clr in slices
     ]
     d.add(legend)
     return d
 
 
-def _monthly_trend_chart(monthly_kg, months, fn, width_mm=170, height_mm=68):
+def _monthly_trend_chart(monthly_kg, months, fn, width_mm=170, height_mm=68, tr=False):
     """Line chart of monthly tCO2e totals. Returns None when every month is
     zero (nothing meaningful to plot)."""
     if not any(m > 0 for m in monthly_kg):
@@ -352,7 +380,7 @@ def _monthly_trend_chart(monthly_kg, months, fn, width_mm=170, height_mm=68):
     chart.valueAxis.valueMax = max_v * 1.2
     chart.valueAxis.labels.fontName = fn
     chart.valueAxis.labels.fontSize = 7
-    chart.valueAxis.labelTextFormat = '%0.1f'
+    chart.valueAxis.labelTextFormat = (lambda v: f'{v:.1f}'.replace('.', ',')) if tr else '%0.1f'
     chart.lines[0].strokeColor = OLIVE_DARK
     chart.lines[0].strokeWidth = 2
     chart.lines[0].symbol = makeMarker('FilledCircle')
@@ -500,18 +528,20 @@ def generate_report(user, year, lang='tr', page_offset=0):
     targets_qs = ReductionTarget.objects.filter(company=company) if company else ReductionTarget.objects.none()
     targets_count = targets_qs.count()
 
-    from questionnaire.models import QuestionnaireSession, CarbonReport as _CarbonReport
-    questionnaire_complete = QuestionnaireSession.objects.filter(user=user, is_complete=True).exists()
-    if not questionnaire_complete and company:
-        questionnaire_complete = _CarbonReport.objects.filter(
-            company=company, status=_CarbonReport.Status.COMPLETED
-        ).exists()
+    # Same rule as the Reporting tab: the questionnaire counts for this year
+    # only when an inventory for this year is completed — a finished 2020
+    # inventory does not make the 2026 report ready.
+    from questionnaire.models import CarbonReport as _CarbonReport
+    year_inventory = (_CarbonReport.objects.filter(
+        company=company, status=_CarbonReport.Status.COMPLETED, reporting_year=year,
+    ).order_by('-updated_at').first() if company else None)
+    questionnaire_complete = year_inventory is not None
 
     readiness_checks = [
         (questionnaire_complete, 'Anket tamamlandı' if tr else 'Questionnaire completed'),
         (entry_count > 0, 'Emisyon verisi girildi' if tr else 'Emission data entered'),
         (entry_count >= 5, 'Yeterli veri (5+ kayıt)' if tr else 'Sufficient data (5+ entries)'),
-        (total_kg > 0, 'Scope haritalama tamam' if tr else 'Scope mapping complete'),
+        (total_kg > 0, 'Kapsam eşleştirmesi tamam' if tr else 'Scope mapping complete'),
         (targets_count > 0, 'Azaltma hedefi belirlendi' if tr else 'Reduction target set'),
     ]
     readiness_pct = round(sum(1 for done, _ in readiness_checks if done) / len(readiness_checks) * 100)
@@ -522,18 +552,30 @@ def generate_report(user, year, lang='tr', page_offset=0):
         e.proof_document.storage.exists(e.proof_document.name)
         for e in entries.exclude(proof_document='').exclude(proof_document__isnull=True)
     )
+    # A tick means the requirement is really met for this year (same as the
+    # Reporting tab): ISO 14064-1 / GHG Protocol need this year's completed
+    # inventory (boundaries, methodology) plus the data; "audit ready" needs
+    # every readiness check and evidence.
     compliance_checks = [
-        (entry_count > 0 and total_kg > 0, 'ISO 14064-1'),
-        (entry_count > 0 and total_kg > 0, 'GHG Protocol'),
+        (questionnaire_complete and entry_count > 0 and total_kg > 0, 'ISO 14064-1'),
+        (questionnaire_complete and entry_count > 0 and total_kg > 0, 'GHG Protocol'),
         (has_evidence, 'Kanıt eklendi' if tr else 'Evidence attached'),
-        (readiness_pct >= 80, 'Denetim hazır' if tr else 'Audit ready'),
+        (readiness_pct == 100 and has_evidence, 'Denetim hazır' if tr else 'Audit ready'),
     ]
+
+    # Organisational boundary as the company declared it in this year's
+    # inventory, not a fixed "operational control".
+    if year_inventory is not None and getattr(year_inventory, 'boundary_approach', ''):
+        from questionnaire.report_pdf import BOUNDARY_LABELS, _label
+        boundary_text = _label(BOUNDARY_LABELS, year_inventory.boundary_approach, lang)
+    else:
+        boundary_text = None
 
     ai_insights = []
     if total_kg > 0:
         s1_pct = (s1 / total_kg * 100) if s1 > 0 else 0
         ai_insights.append((
-            f"Scope 1 toplam emisyonun %{s1_pct:.0f}'ini oluşturuyor." if tr
+            f"Kapsam 1 toplam emisyonun %{s1_pct:.0f}'ini oluşturuyor." if tr
             else f"Scope 1 accounts for {s1_pct:.0f}% of total emissions.",
             'info'
         ))
@@ -557,7 +599,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
             ))
         if s3 > s1 + s2:
             ai_insights.append((
-                'Scope 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' if tr
+                'Kapsam 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' if tr
                 else 'Scope 3 dominates — consider supply chain focused reductions.',
                 'info'
             ))
@@ -578,15 +620,27 @@ def generate_report(user, year, lang='tr', page_offset=0):
     _tem  = 'Toplam emisyon' if tr else 'Total emissions'
     _gen  = 'Oluşturma' if tr else 'Generated'
     _of   = 'firmasının' if tr else 'company’s'
-    _body = (
-        'yılına ait sera gazı emisyonları ISO 14064-1:2018 standardına uygun olarak '
-        'hesaplanmış ve bu raporda sunulmuştur. Hesaplamalar GHG Protocol Kurumsal '
-        'Standardı çerçevesinde, operasyonel kontrol yaklaşımı kullanılarak yapılmıştır.'
-        if tr else
-        'greenhouse gas emissions have been calculated in accordance with ISO 14064-1:2018 and are '
-        'presented in this report. Calculations follow the GHG Protocol Corporate Standard using '
-        'the operational control approach.'
-    )
+    if boundary_text:
+        _body = (
+            'yılına ait sera gazı emisyonları ISO 14064-1:2018 standardına uygun olarak '
+            'hesaplanmış ve bu raporda sunulmuştur. Hesaplamalar GHG Protocol Kurumsal '
+            f'Standardı çerçevesinde, envanterde beyan edilen organizasyon sınırı ({boundary_text}) '
+            'esas alınarak yapılmıştır.'
+            if tr else
+            'greenhouse gas emissions have been calculated in accordance with ISO 14064-1:2018 and are '
+            'presented in this report. Calculations follow the GHG Protocol Corporate Standard using '
+            f'the organisational boundary declared in the inventory ({boundary_text}).'
+        )
+    else:
+        _body = (
+            'yılına ait kaydedilmiş faaliyet verilerinden hesaplanan sera gazı emisyonları bu raporda '
+            'sunulmuştur. Bu yıl için tamamlanmış bir karbon envanteri (anket) bulunmadığından '
+            'organizasyon sınırı ve raporlama yaklaşımı henüz beyan edilmemiştir.'
+            if tr else
+            'greenhouse gas emissions calculated from the recorded activity data are presented in this '
+            'report. No carbon inventory (questionnaire) is completed for this year, so the '
+            'organisational boundary and reporting approach have not been declared yet.'
+        )
     _peak = 'En yüksek emisyon ayı' if tr else 'Peak emission month'
 
     # ── Build PDF ───────────────────────────────────
@@ -672,12 +726,12 @@ def generate_report(user, year, lang='tr', page_offset=0):
         [Paragraph(_fmt(s1/1000, tr), S['kpi_num']),
          Paragraph(_fmt(s2/1000, tr), S['kpi_num']),
          Paragraph(_fmt(s3/1000, tr), S['kpi_num'])],
-        [Paragraph('Scope 1 (tCO\u2082e)', S['kpi_label']),
-         Paragraph('Scope 2 (tCO\u2082e)', S['kpi_label']),
-         Paragraph('Scope 3 (tCO\u2082e)', S['kpi_label'])],
-        [Paragraph(_pct(s1, total_kg), S['kpi_pct']),
-         Paragraph(_pct(s2, total_kg), S['kpi_pct']),
-         Paragraph(_pct(s3, total_kg), S['kpi_pct'])],
+        [Paragraph(f'{_scope(1, tr)} (tCO\u2082e)', S['kpi_label']),
+         Paragraph(f'{_scope(2, tr)} (tCO\u2082e)', S['kpi_label']),
+         Paragraph(f'{_scope(3, tr)} (tCO\u2082e)', S['kpi_label'])],
+        [Paragraph(_pct(s1, total_kg, tr), S['kpi_pct']),
+         Paragraph(_pct(s2, total_kg, tr), S['kpi_pct']),
+         Paragraph(_pct(s3, total_kg, tr), S['kpi_pct'])],
     ], colWidths=[53*mm]*3)
     scope_cards.setStyle(TableStyle([
         ('BOX', (0, 0), (0, -1), 0.8, SCOPE1_COLOR),
@@ -699,7 +753,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     # nothing there. Flag it clearly so a reader doesn't mistake "0" for a
     # real, complete figure.
     missing_scopes = [
-        label for label, val in (('Scope 1', s1), ('Scope 2', s2), ('Scope 3', s3)) if val <= 0
+        label for label, val in ((_scope(1, tr), s1), (_scope(2, tr), s2), (_scope(3, tr), s3)) if val <= 0
     ]
     if missing_scopes:
         E.append(Spacer(1, 4*mm))
@@ -731,10 +785,10 @@ def generate_report(user, year, lang='tr', page_offset=0):
 
     scope_tbl = [
         ['Scope', 'A\u00e7\u0131klama' if tr else 'Description', 'kg CO\u2082e', 'tCO\u2082e', '%'],
-        ['Scope 1', 'Do\u011frudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1, tr), _fmt4(s1/1000, tr), _pct(s1, total_kg)],
-        ['Scope 2', 'Enerji Dolayl\u0131' if tr else 'Energy Indirect', _fmt(s2, tr), _fmt4(s2/1000, tr), _pct(s2, total_kg)],
-        ['Scope 3', 'Di\u011fer Dolayl\u0131' if tr else 'Other Indirect', _fmt(s3, tr), _fmt4(s3/1000, tr), _pct(s3, total_kg)],
-        ['TOPLAM' if tr else 'TOTAL', '', _fmt(total_kg, tr), _fmt4(total_t, tr), '100%'],
+        [_scope(1, tr), 'Do\u011frudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1, tr), _fmt4(s1/1000, tr), _pct(s1, total_kg, tr)],
+        [_scope(2, tr), 'Enerji Dolayl\u0131' if tr else 'Energy Indirect', _fmt(s2, tr), _fmt4(s2/1000, tr), _pct(s2, total_kg, tr)],
+        [_scope(3, tr), 'Di\u011fer Dolayl\u0131' if tr else 'Other Indirect', _fmt(s3, tr), _fmt4(s3/1000, tr), _pct(s3, total_kg, tr)],
+        ['TOPLAM' if tr else 'TOTAL', '', _fmt(total_kg, tr), _fmt4(total_t, tr), '%100' if tr else '100%'],
     ]
     st = Table(scope_tbl, colWidths=[22*mm, 52*mm, 32*mm, 28*mm, 16*mm])
     st.setStyle(_tbl_style(fn, fnb))
@@ -761,9 +815,9 @@ def generate_report(user, year, lang='tr', page_offset=0):
     E.append(Paragraph('3. ' + ('Kategori Analizi' if tr else 'Category Analysis'), S['h1']))
     if cats:
         for scope_key, scope_label, scope_color in [
-            ('scope1', 'Scope 1 \u2014 ' + ('Do\u011frudan' if tr else 'Direct'), SCOPE1_COLOR),
-            ('scope2', 'Scope 2 \u2014 ' + ('Enerji Dolayl\u0131' if tr else 'Energy Indirect'), SCOPE2_COLOR),
-            ('scope3', 'Scope 3 \u2014 ' + ('Di\u011fer Dolayl\u0131' if tr else 'Other Indirect'), SCOPE3_COLOR),
+            ('scope1', _scope(1, tr) + ' \u2014 ' + ('Do\u011frudan' if tr else 'Direct'), SCOPE1_COLOR),
+            ('scope2', _scope(2, tr) + ' \u2014 ' + ('Enerji Dolayl\u0131' if tr else 'Energy Indirect'), SCOPE2_COLOR),
+            ('scope3', _scope(3, tr) + ' \u2014 ' + ('Di\u011fer Dolayl\u0131' if tr else 'Other Indirect'), SCOPE3_COLOR),
         ]:
             scope_cats = [c for c in cats if c['emission_factor__scope'] == scope_key]
             if not scope_cats:
@@ -779,9 +833,9 @@ def generate_report(user, year, lang='tr', page_offset=0):
                 t = float(c['total'])
                 data.append([
                     cl.get(c['emission_factor__category'], c['emission_factor__category']),
-                    _fmt(t, tr), _fmt4(t/1000, tr), _pct(t, total_kg)
+                    _fmt(t, tr), _fmt4(t/1000, tr), _pct(t, total_kg, tr)
                 ])
-            data.append(['Alt Toplam' if tr else 'Subtotal', _fmt(scope_total, tr), _fmt4(scope_total/1000, tr), _pct(scope_total, total_kg)])
+            data.append(['Alt Toplam' if tr else 'Subtotal', _fmt(scope_total, tr), _fmt4(scope_total/1000, tr), _pct(scope_total, total_kg, tr)])
             ct = Table(data, colWidths=[62*mm, 32*mm, 28*mm, 16*mm])
             ct.setStyle(_tbl_style(fn, fnb, scope_color))
             ct.setStyle(_total_row_style(fnb))
@@ -793,11 +847,11 @@ def generate_report(user, year, lang='tr', page_offset=0):
     # ── 3.1 Scope 3 Category Breakdown (ISO 14064-1 completeness) ──
     E.append(Spacer(1, 6*mm))
     E.append(Paragraph(
-        '3.1 ' + ('Scope 3 Kategori Dağılımı' if tr else 'Scope 3 Category Breakdown'),
+        '3.1 ' + ('Kapsam 3 Kategori Dağılımı' if tr else 'Scope 3 Category Breakdown'),
         S['h2']
     ))
     E.append(Paragraph(
-        'GHG Protokolü kapsamında 15 Scope 3 kategorisinin tümü aşağıda listelenmiştir. '
+        'GHG Protokolü kapsamında 15 Kapsam 3 kategorisinin tümü aşağıda listelenmiştir. '
         'Sıfır girişi olan kategoriler sınır değerlendirmesinin bütünlüğünü gösterir (ISO 14064-1).'
         if tr else
         'All 15 GHG Protocol Scope 3 categories are listed below. '
@@ -872,7 +926,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     # ════════════════════════════════════════════════
     E.append(Paragraph('4. ' + ('Ayl\u0131k Trend' if tr else 'Monthly Trend'), S['h1']))
     if any(m > 0 for m in monthly):
-        trend_chart = _monthly_trend_chart(monthly, months, fn)
+        trend_chart = _monthly_trend_chart(monthly, months, fn, tr=tr)
         if trend_chart:
             E.append(trend_chart)
             E.append(Spacer(1, 3*mm))
@@ -914,7 +968,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
         fd = [['Tesis' if tr else 'Facility', 'kg CO\u2082e', 'tCO\u2082e', '%']]
         for f in fac_data:
             t = float(f['total'])
-            fd.append([f['facility__name'] or '\u2014', _fmt(t, tr), _fmt4(t/1000, tr), _pct(t, total_kg)])
+            fd.append([f['facility__name'] or '\u2014', _fmt(t, tr), _fmt4(t/1000, tr), _pct(t, total_kg, tr)])
         ft = Table(fd, colWidths=[62*mm, 32*mm, 28*mm, 16*mm])
         ft.setStyle(_tbl_style(fn, fnb, OLIVE))
         E.append(ft)
@@ -927,7 +981,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     # ════════════════════════════════════════════════
     E.append(Paragraph('6. ' + ('Detayl\u0131 Kay\u0131tlar' if tr else 'Detailed Records'), S['h1']))
     if entries.exists():
-        hdr = ['Kaynak' if tr else 'Source', 'Scope', 'Ay' if tr else 'Mo',
+        hdr = ['Kaynak' if tr else 'Source', 'Kapsam' if tr else 'Scope', 'Ay' if tr else 'Mo',
                'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit',
                'Fakt\u00f6r' if tr else 'EF', 'kg CO\u2082e']
         rows = [hdr]
@@ -935,10 +989,10 @@ def generate_report(user, year, lang='tr', page_offset=0):
             ef = e.emission_factor
             nm = (ef.name_tr if tr and ef.name_tr else ef.name)[:28]
             rows.append([
-                nm, ef.scope.replace('scope', 'S'),
+                nm, ef.scope.replace('scope', 'K' if tr else 'S'),
                 months[e.month-1] if 1 <= e.month <= 12 else str(e.month),
-                _localize_num(f'{float(e.quantity):,.1f}', tr), ef.unit,
-                f'{float(ef.factor_kg_co2e):.4f}', _fmt(float(e.calculated_co2e_kg), tr),
+                _localize_num(f'{float(e.quantity):,.1f}', tr), _unit(ef.unit, tr),
+                _localize_num(f'{float(ef.factor_kg_co2e):.4f}', tr), _fmt(float(e.calculated_co2e_kg), tr),
             ])
         dt = Table(rows, colWidths=[42*mm, 10*mm, 10*mm, 20*mm, 13*mm, 18*mm, 28*mm])
         dt.setStyle(_tbl_style(fn, fnb))
@@ -949,9 +1003,9 @@ def generate_report(user, year, lang='tr', page_offset=0):
     if custom_qs.exists():
         E.append(Spacer(1, 6*mm))
         E.append(Paragraph('6.1 ' + ('\u00d6zel Emisyon Kay\u0131tlar\u0131' if tr else 'Custom Emission Entries'), S['h2']))
-        cr_rows = [['Kaynak' if tr else 'Source', 'Scope', 'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit', 'kg CO\u2082e']]
+        cr_rows = [['Kaynak' if tr else 'Source', 'Kapsam' if tr else 'Scope', 'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit', 'kg CO\u2082e']]
         for cr in custom_qs:
-            cr_rows.append([cr.source_name[:35], cr.scope.replace('scope', 'S'),
+            cr_rows.append([cr.source_name[:35], cr.scope.replace('scope', 'K' if tr else 'S'),
                            _localize_num(f'{float(cr.quantity):,.1f}', tr), cr.unit, _fmt(float(cr.calculated_co2e_kg), tr)])
         crt = Table(cr_rows, colWidths=[50*mm, 15*mm, 25*mm, 20*mm, 30*mm])
         crt.setStyle(_tbl_style(fn, fnb, SCOPE2_COLOR))
@@ -967,7 +1021,9 @@ def generate_report(user, year, lang='tr', page_offset=0):
     standards = [
         ('Standart' if tr else 'Standard', 'ISO 14064-1:2018'),
         ('\u00c7er\u00e7eve' if tr else 'Framework', 'GHG Protocol Corporate Standard'),
-        ('S\u0131n\u0131r Yakla\u015f\u0131m\u0131' if tr else 'Boundary', 'Operasyonel kontrol' if tr else 'Operational control'),
+        ('S\u0131n\u0131r Yakla\u015f\u0131m\u0131' if tr else 'Boundary',
+         boundary_text or ('Belirtilmedi (bu y\u0131l i\u00e7in tamamlanm\u0131\u015f envanter yok)' if tr
+                           else 'Not declared (no completed inventory for this year)')),
         ('Sera Gazlar\u0131' if tr else 'GHGs', 'CO\u2082, CH\u2084, N\u2082O (CO\u2082e)'),
         ('GWP', 'IPCC AR6 (100-year)'),
         ('Hesaplama' if tr else 'Calculation', 'Emisyon = Faaliyet Verisi \u00d7 Emisyon Fakt\u00f6r\u00fc' if tr else 'Emission = Activity Data \u00d7 Emission Factor'),
@@ -978,9 +1034,9 @@ def generate_report(user, year, lang='tr', page_offset=0):
 
     E.append(Paragraph('7.2 ' + ('Kapsam Tan\u0131mlar\u0131' if tr else 'Scope Definitions'), S['h2']))
     for scope, desc in [
-        ('Scope 1', '\u015eirketin sahip oldu\u011fu veya kontrol etti\u011fi kaynaklardan do\u011frudan emisyonlar.' if tr else 'Direct GHG emissions from owned or controlled sources.'),
-        ('Scope 2', 'Sat\u0131n al\u0131nan elektrik, buhar, \u0131s\u0131tma ve so\u011futmadan kaynaklanan dolayl\u0131 emisyonlar.' if tr else 'Indirect emissions from purchased electricity, steam, heating and cooling.'),
-        ('Scope 3', 'De\u011fer zincirindeki di\u011fer t\u00fcm dolayl\u0131 emisyonlar (15 kategori).' if tr else 'All other indirect value chain emissions (15 categories).'),
+        (_scope(1, tr), '\u015eirketin sahip oldu\u011fu veya kontrol etti\u011fi kaynaklardan do\u011frudan emisyonlar.' if tr else 'Direct GHG emissions from owned or controlled sources.'),
+        (_scope(2, tr), 'Sat\u0131n al\u0131nan elektrik, buhar, \u0131s\u0131tma ve so\u011futmadan kaynaklanan dolayl\u0131 emisyonlar.' if tr else 'Indirect emissions from purchased electricity, steam, heating and cooling.'),
+        (_scope(3, tr), 'De\u011fer zincirindeki di\u011fer t\u00fcm dolayl\u0131 emisyonlar (15 kategori).' if tr else 'All other indirect value chain emissions (15 categories).'),
     ]:
         E.append(Paragraph(f'<b>{scope}:</b>  {desc}', S['body']))
     E.append(Spacer(1, 5*mm))
@@ -998,7 +1054,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     # \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550
     E.append(Paragraph('8. ' + ('Rapor Haz\u0131rl\u0131\u011f\u0131 ve Uyumluluk Durumu' if tr else 'Report Readiness & Compliance Status'), S['h1']))
 
-    E.append(Paragraph('8.1 ' + ('Rapor Haz\u0131rl\u0131\u011f\u0131' if tr else 'Report Readiness') + f' \u2014 {readiness_pct}%', S['h2']))
+    E.append(Paragraph('8.1 ' + ('Rapor Haz\u0131rl\u0131\u011f\u0131' if tr else 'Report Readiness') + (f' \u2014 %{readiness_pct}' if tr else f' \u2014 {readiness_pct}%'), S['h2']))
     readiness_tbl_rows = [['', 'Kontrol' if tr else 'Check']]
     for done, label in readiness_checks:
         readiness_tbl_rows.append(['\u2713' if done else '\u2014', label])
