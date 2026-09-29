@@ -665,8 +665,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               // "audit ready" needs every readiness check and evidence.
               { done: inventoryDoneForYear && entries.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
               { done: inventoryDoneForYear && entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
-              { done: entries.some(e => e.proof_document), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
-              { done: readiness === 100 && entries.some(e => e.proof_document), label: tr ? 'Denetim hazır' : 'Audit ready' },
+              { done: entries.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
+              { done: readiness === 100 && entries.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
               <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5 transition-colors duration-300 hover:bg-[#DEFAE1]/60">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>

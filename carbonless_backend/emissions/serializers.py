@@ -31,6 +31,9 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     # Whether the requester entered it: a data-entry member may only change
     # their own entries, so the UI shows edit/delete only on those.
     is_mine = serializers.SerializerMethodField()
+    # Whether the recorded proof file is actually in storage (a server disk
+    # wiped by a redeploy leaves the record but loses the file).
+    proof_available = serializers.SerializerMethodField()
     # For entries the questionnaire created: which inventory and question they
     # come from, so the UI can send the user there to correct them.
     questionnaire_source = serializers.SerializerMethodField()
@@ -51,6 +54,15 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if not cache[key]:
             return None
         return {'report_id': cache[key], 'step_id': step_id}
+
+    def get_proof_available(self, obj):
+        f = obj.proof_document
+        if not f:
+            return False
+        try:
+            return f.storage.exists(f.name)
+        except Exception:
+            return False
 
     def get_is_mine(self, obj):
         request = self.context.get('request')
@@ -84,7 +96,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'description', 'facility', 'facility_name',
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
-            'created_at', 'updated_at', 'entered_by', 'is_mine', 'questionnaire_source',
+            'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
         ]
         read_only_fields = [
             'calculated_co2e_kg', 'facility_name',

@@ -3,7 +3,7 @@
 import { noPermissionMessage } from '@/lib/permissions';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
-  AlertCircle, FileText, Leaf, Paperclip,
+  AlertCircle, AlertTriangle, FileText, Leaf, Paperclip,
   Pencil, Plus, Search, Trash2, X,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
@@ -49,10 +49,17 @@ function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
 // unauthenticated when Django does serve it (see carbonless_api/urls.py),
 // and never served at all in production. This calls the dedicated,
 // ownership-checked download endpoint instead.
-async function downloadProofDocument(entryId) {
+async function downloadProofDocument(entryId, toast, tr) {
   try {
     const res = await api.downloadProofDocument(entryId);
-    if (!res.ok) return false;
+    if (!res.ok) {
+      // 410: the record has a proof but the file is no longer on the server.
+      toast?.error(res.status === 410
+        ? (tr ? 'Kanıt dosyası sunucuda bulunamadı. Lütfen kaydı düzenleyip dosyayı yeniden yükleyin.'
+              : 'The proof file is no longer on the server. Please edit the entry and upload it again.')
+        : (tr ? 'Kanıt indirilemedi.' : 'Could not download the proof.'));
+      return false;
+    }
     const blob = await res.blob();
     const disposition = res.headers.get('Content-Disposition') || '';
     const match = disposition.match(/filename="?([^"]+)"?/);
@@ -67,8 +74,28 @@ async function downloadProofDocument(entryId) {
     setTimeout(() => URL.revokeObjectURL(url), 30_000);
     return true;
   } catch {
+    toast?.error(tr ? 'Bağlantı hatası' : 'Connection error');
     return false;
   }
+}
+
+// Paperclip for an entry's proof: amber with a warning when the recorded file
+// is no longer on the server (proof_available false).
+function ProofButton({ entry, tr, toast, className }) {
+  if (!entry.proof_document) return null;
+  const missing = entry.proof_available === false;
+  return (
+    <button
+      type="button"
+      onClick={() => downloadProofDocument(entry.id, toast, tr)}
+      title={missing
+        ? (tr ? 'Kanıt dosyası sunucuda yok — kaydı düzenleyip yeniden yükleyin' : 'Proof file missing on the server — edit the entry to upload it again')
+        : (tr ? 'Kanıtı indir' : 'Download proof')}
+      className={`${className} ${missing ? 'text-amber-500 hover:text-amber-600' : 'text-[#2ABD41] hover:text-[#1D9C31]'}`}
+    >
+      {missing ? <AlertTriangle className="h-3.5 w-3.5" /> : <Paperclip className="h-3.5 w-3.5" />}
+    </button>
+  );
 }
 
 // A rejected entry stays listed (with its reason) but is not part of the
@@ -78,6 +105,7 @@ const countedKg = (e) => (e.status === 'draft' ? 0 : (parseFloat(e.calculated_co
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
   const tr = language === 'tr';
+  const toast = useToast();
   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
   const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
   const kg = parseFloat(entry.calculated_co2e_kg) || 0;
@@ -95,16 +123,8 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {entry.proof_document && (
-            <button
-              type="button"
-              onClick={() => downloadProofDocument(entry.id)}
-              title={tr ? 'Kanıtı indir' : 'Download proof'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#2ABD41] transition hover:bg-[#2ABD41]/10"
-            >
-              <Paperclip className="h-3.5 w-3.5" />
-            </button>
-          )}
+          <ProofButton entry={entry} tr={tr} toast={toast}
+            className="flex h-7 w-7 items-center justify-center rounded-lg transition hover:bg-[#2ABD41]/10" />
           {canEdit && (<>
           <button
             onClick={() => onEdit(entry)}
@@ -205,6 +225,9 @@ export default function EmissionsTab({
   const [editDesc,    setEditDesc]    = useState('');
   const [editFacility,setEditFacility]= useState('');
   const [editSaving,  setEditSaving]  = useState(false);
+  // Proof document of the entry being edited: attach/replace/remove at once.
+  const [proofBusy, setProofBusy] = useState(false);
+  const [confirmProofRemove, setConfirmProofRemove] = useState(false);
 
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState(null); // stores the entry id to delete
@@ -482,6 +505,48 @@ export default function EmissionsTab({
     } finally { setEditSaving(false); }
   }, [editing, editQty, editDesc, editFacility, editSaving, tr, toast, fetchData]);
 
+  const uploadProof = useCallback(async (file) => {
+    if (!editing || !file || proofBusy) return;
+    setProofBusy(true);
+    try {
+      const res = await api.uploadProof(editing.id, file);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setEditing(data);
+        fetchData();
+        toast.success(tr ? 'Kanıt belgesi kaydedildi' : 'Proof document saved');
+      } else if (res.status === 403) {
+        toast.error(noPermissionMessage(tr));
+      } else {
+        const msg = Array.isArray(data?.proof_document) ? data.proof_document[0] : data?.error;
+        toast.error(tr
+          ? (/type not allowed/i.test(msg || '') ? 'Bu dosya türü desteklenmiyor (PDF, JPG, PNG, Word, Excel).'
+             : /10MB/i.test(msg || '') ? 'Dosya 10 MB’tan küçük olmalı.' : 'Kanıt yüklenemedi.')
+          : (msg || 'Could not upload the proof.'));
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setProofBusy(false); }
+  }, [editing, proofBusy, tr, toast, fetchData]);
+
+  const removeProof = useCallback(async () => {
+    if (!editing || proofBusy) return;
+    setProofBusy(true);
+    try {
+      const res = await api.removeProof(editing.id);
+      if (res.ok || res.status === 204) {
+        setEditing({ ...editing, proof_document: null, proof_available: false });
+        setConfirmProofRemove(false);
+        fetchData();
+        toast.success(tr ? 'Kanıt belgesi kaldırıldı' : 'Proof document removed');
+      } else {
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Kanıt kaldırılamadı.' : 'Could not remove the proof.'));
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setProofBusy(false); }
+  }, [editing, proofBusy, tr, toast, fetchData]);
+
   // Questionnaire records are corrected on their own question: the
   // Karbon Envanteri tab opens that inventory at that question.
   const fixInQuestionnaire = useCallback((src) => {
@@ -492,6 +557,7 @@ export default function EmissionsTab({
 
   const openEdit = useCallback((entry) => {
     setEditing(entry);
+    setConfirmProofRemove(false);
     setEditQty(entry.quantity);
     setEditDesc(entry.description || '');
     setEditFacility(entry.facility || '');
@@ -840,16 +906,7 @@ export default function EmissionsTab({
                       <td className="max-w-[220px] px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span className="truncate text-[13px] font-semibold text-[#072C0E]">{name}</span>
-                          {entry.proof_document && (
-                            <button
-                              type="button"
-                              onClick={() => downloadProofDocument(entry.id)}
-                              title={tr ? 'Kanıtı indir' : 'Download proof'}
-                              className="shrink-0 text-[#2ABD41] transition hover:text-[#1D9C31]"
-                            >
-                              <Paperclip className="h-3 w-3" />
-                            </button>
-                          )}
+                          <ProofButton entry={entry} tr={tr} toast={toast} className="shrink-0 transition" />
                         </div>
                         <div className="mt-0.5 flex items-center gap-1.5">
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
@@ -1227,6 +1284,41 @@ export default function EmissionsTab({
                 </div>
               </form>
               )}
+              {/* Proof document — saved at once, separately from the form
+                  (it doesn't change the amount or its approval). */}
+              <div className="mt-4 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] px-4 py-3">
+                <p className={LABEL}>{tr ? 'Kanıt belgesi (fatura, sayaç okuması…)' : 'Proof document (invoice, meter reading…)'}</p>
+                {editing.proof_document ? (
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                    {editing.proof_available === false ? (
+                      <span className="font-semibold text-amber-600">{tr ? 'Dosya sunucuda bulunamadı — yeniden yükleyin.' : 'File missing on the server — upload it again.'}</span>
+                    ) : (
+                      <button type="button" onClick={() => downloadProofDocument(editing.id, toast, tr)} className="inline-flex items-center gap-1 font-semibold text-[#175022] hover:underline">
+                        <Paperclip className="h-3.5 w-3.5" />
+                        {decodeURIComponent(String(editing.proof_document).split('/').pop() || '')}
+                      </button>
+                    )}
+                    {confirmProofRemove ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="text-red-600">{tr ? 'Kaldırılsın mı?' : 'Remove it?'}</span>
+                        <button type="button" disabled={proofBusy} onClick={removeProof} className="font-bold text-red-600 hover:underline">{tr ? 'Evet, kaldır' : 'Yes, remove'}</button>
+                        <button type="button" onClick={() => setConfirmProofRemove(false)} className="text-[#072C0E]/50 hover:underline">{tr ? 'Vazgeç' : 'Cancel'}</button>
+                      </span>
+                    ) : (
+                      <button type="button" disabled={proofBusy} onClick={() => setConfirmProofRemove(true)} className="text-red-500 hover:underline">{tr ? 'Kaldır' : 'Remove'}</button>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-xs text-[#072C0E]/50">{tr ? 'Bu kayda henüz belge eklenmedi.' : 'No document attached yet.'}</p>
+                )}
+                <label className={`mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#175022] transition hover:bg-[#DEFAE1] ${proofBusy ? 'pointer-events-none opacity-60' : ''}`}>
+                  <Paperclip className="h-3.5 w-3.5" />
+                  {proofBusy ? '…' : editing.proof_document ? (tr ? 'Belgeyi değiştir' : 'Replace document') : (tr ? 'Belge ekle' : 'Attach document')}
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadProof(f); }} />
+                </label>
+                <p className="mt-1 text-[10px] text-[#072C0E]/40">PDF, JPG, PNG, Word, Excel · {tr ? 'en fazla 10 MB' : 'max 10 MB'}</p>
+              </div>
             </div>
             <div className="flex shrink-0 gap-2 border-t border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>

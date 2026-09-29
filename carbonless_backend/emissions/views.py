@@ -685,15 +685,25 @@ def export_all_view(request):
     return Response(data)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated, NotAuditorForWrites])
 def download_proof_document(request, pk):
     """
-    Serves an emission entry's proof document via Django's own file storage
-    (works the same in DEBUG and production, unlike the raw /media/ URL —
-    only served when DEBUG=True and with no access control at all when it
-    is). Scoped to the requester's own company so one company's proof
-    documents can never be fetched by guessing/incrementing the entry id.
+    An emission entry's proof document.
+
+    GET serves it via Django's own file storage (works the same in DEBUG and
+    production, unlike the raw /media/ URL — only served when DEBUG=True and
+    with no access control at all when it is). Scoped to the requester's own
+    company so one company's proof documents can never be fetched by
+    guessing/incrementing the entry id. A file that is recorded but no longer
+    in storage (e.g. a server disk wiped by a redeploy) answers 410
+    'proof_missing' instead of a 500.
+
+    POST (multipart 'proof_document') attaches or replaces the proof of an
+    existing entry — the invoice often arrives after the figure was entered,
+    and chat/questionnaire entries have no upload step. DELETE removes it.
+    Both follow the entry-change rule (own entries for data entry, any for
+    owner/admin/manager) and do not touch the amount or its approval.
     """
     company = get_current_company(request.user)
     try:
@@ -703,8 +713,43 @@ def download_proof_document(request, pk):
     if not entry:
         return Response({'error': 'Entry not found'}, status=404)
 
+    if request.method in ('POST', 'DELETE'):
+        from companies.permissions import current_role
+        if entry.user_id != request.user.id and current_role(request.user) not in APPROVER_ROLES:
+            return Response({'error': 'Only the person who entered this record, or an owner, admin '
+                                      'or manager, can change its proof document.'}, status=403)
+        old_name = entry.proof_document.name.rsplit('/', 1)[-1] if entry.proof_document else ''
+        if request.method == 'DELETE':
+            if entry.proof_document:
+                entry.proof_document.delete(save=False)
+            entry.proof_document = None
+            entry.save(update_fields=['proof_document', 'updated_at'])
+            _log_entry(request, 'entry_updated', entry, f'{_entry_summary(entry)} · Kanıt kaldırıldı: {old_name}')
+            return Response(status=204)
+        upload = request.FILES.get('proof_document')
+        if not upload:
+            return Response({'error': 'Choose a file to upload.', 'code': 'proof_required'}, status=400)
+        serializer = EmissionEntrySerializer()
+        try:
+            serializer.validate_proof_document(upload)
+        except Exception as exc:  # serializers.ValidationError
+            detail = getattr(exc, 'detail', [str(exc)])
+            return Response({'proof_document': detail}, status=400)
+        if entry.proof_document:
+            entry.proof_document.delete(save=False)
+        entry.proof_document = upload
+        entry.save(update_fields=['proof_document', 'updated_at'])
+        _log_entry(request, 'entry_updated', entry,
+                   f'{_entry_summary(entry)} · Kanıt eklendi: {entry.proof_document.name.rsplit("/", 1)[-1]}')
+        return Response(EmissionEntrySerializer(entry, context={'request': request}).data)
+
     if not entry.proof_document:
         return Response({'error': 'This entry has no proof document'}, status=404)
+    if not entry.proof_document.storage.exists(entry.proof_document.name):
+        return Response({
+            'error': 'The proof file is no longer on the server. Please upload it again.',
+            'code': 'proof_missing',
+        }, status=410)
 
     from django.http import FileResponse
     return FileResponse(

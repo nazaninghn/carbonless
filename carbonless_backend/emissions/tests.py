@@ -665,3 +665,62 @@ class EntryChangeRulesTests(TestCase):
     def test_data_entry_cannot_read_history(self):
         self._as('veri')
         self.assertEqual(self.client.get('/api/accounts/history/').status_code, 403)
+
+
+class ProofDocumentTests(EntryChangeRulesTests):
+    """Proof can be attached, replaced and removed after an entry exists, and
+    a proof file lost from storage answers 410 instead of a 500."""
+
+    def _pdf(self, name='fatura.pdf'):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        return SimpleUploadedFile(name, b'%PDF-1.4 test', content_type='application/pdf')
+
+    def setUp(self):
+        super().setUp()
+        import tempfile
+        from django.test import override_settings
+        self._media = tempfile.TemporaryDirectory()
+        self._override = override_settings(MEDIA_ROOT=self._media.name)
+        self._override.enable()
+        self.addCleanup(self._override.disable)
+        self.addCleanup(self._media.cleanup)
+
+    def test_attach_replace_and_remove_proof_later(self):
+        self._as('veri')
+        eid = self._entry()
+        res = self.client.post(f'/api/emissions/entries/{eid}/proof/', {'proof_document': self._pdf()}, format='multipart')
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertTrue(res.json()['proof_available'])
+        self.assertEqual(self.client.get(f'/api/emissions/entries/{eid}/proof/').status_code, 200)
+        res = self.client.post(f'/api/emissions/entries/{eid}/proof/', {'proof_document': self._pdf('yeni.pdf')}, format='multipart')
+        self.assertIn('yeni', res.json()['proof_document'])
+        self.assertEqual(self.client.delete(f'/api/emissions/entries/{eid}/proof/').status_code, 204)
+        self.assertFalse(EmissionEntry.objects.get(id=eid).proof_document)
+
+    def test_other_members_entry_proof_is_protected(self):
+        self._as('sahip')
+        eid = self._entry()
+        self._as('veri')
+        res = self.client.post(f'/api/emissions/entries/{eid}/proof/', {'proof_document': self._pdf()}, format='multipart')
+        self.assertEqual(res.status_code, 403)
+
+    def test_bad_file_type_is_refused(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self._as('veri')
+        eid = self._entry()
+        res = self.client.post(f'/api/emissions/entries/{eid}/proof/',
+                               {'proof_document': SimpleUploadedFile('x.exe', b'MZ')}, format='multipart')
+        self.assertEqual(res.status_code, 400)
+
+    def test_lost_file_answers_410(self):
+        self._as('veri')
+        eid = self._entry()
+        self.client.post(f'/api/emissions/entries/{eid}/proof/', {'proof_document': self._pdf()}, format='multipart')
+        entry = EmissionEntry.objects.get(id=eid)
+        entry.proof_document.storage.delete(entry.proof_document.name)
+        res = self.client.get(f'/api/emissions/entries/{eid}/proof/')
+        self.assertEqual(res.status_code, 410)
+        self.assertEqual(res.json()['code'], 'proof_missing')
+        listed = self.client.get('/api/emissions/entries/?year=2026').json()
+        listed = listed.get('results', listed)
+        self.assertFalse([e for e in listed if e['id'] == eid][0]['proof_available'])
