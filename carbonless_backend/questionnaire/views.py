@@ -526,6 +526,13 @@ class ReportStatusView(APIView):
                 'boundary_approach': report.boundary_approach,
                 'scope3_approach': report.scope3_approach,
                 'completed_steps': completed_steps,
+                # Who started this inventory, when it wasn't the requester —
+                # the questionnaire says "baris started it" instead of
+                # "welcome back" to a team mate opening it the first time.
+                'started_by': (
+                    None if not report.created_by_id or report.created_by_id == request.user.id
+                    else (report.created_by.get_full_name() or report.created_by.email or report.created_by.username)
+                ),
                 'progress': _progress(len(completed_steps), report.status, report.client_progress),
             })
         except Exception as e:

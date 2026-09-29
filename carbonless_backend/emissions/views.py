@@ -510,6 +510,54 @@ def comparison_view(request):
 
 import csv
 
+def _export_rows(entries, lang):
+    """Header and rows for the emissions CSV/Excel export, in the UI language:
+    headers, factor names, scopes, categories, months and status (a rejected
+    entry is listed but marked, so a column sum can leave it out). Numbers
+    stay numbers; the CSV writer formats them."""
+    from .report_pdf import _CAT
+    tr = lang == 'tr'
+    status_labels = {
+        'approved': 'Onaylı' if tr else 'Approved',
+        'submitted': 'Beklemede' if tr else 'Pending',
+        'draft': 'Reddedildi' if tr else 'Rejected',
+    }
+    months = (['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos',
+               'Eylül', 'Ekim', 'Kasım', 'Aralık'] if tr else
+              ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+               'September', 'October', 'November', 'December'])
+    header = (
+        ['Kaynak', 'Kapsam', 'Kategori', 'Ay', 'Miktar', 'Birim', 'Faktör (kg CO2e/birim)',
+         'kg CO2e', 'tCO2e', 'Faktör kaynağı', 'Tesis', 'Açıklama', 'Durum', 'Red nedeni'] if tr else
+        ['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit', 'Factor (kg CO2e/unit)',
+         'kg CO2e', 'tCO2e', 'Factor reference', 'Facility', 'Description', 'Status', 'Rejection reason']
+    )
+    rows = []
+    for e in entries:
+        ef = e.emission_factor
+        scope_num = (ef.scope or '').replace('scope', '')
+        rows.append([
+            (ef.name_tr or ef.name) if tr else ef.name,
+            (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
+            _CAT[lang].get(ef.category, ef.category),
+            months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month,
+            float(e.quantity), ef.unit,
+            float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
+            ef.reference or '',
+            e.facility.name if e.facility_id else '', e.description,
+            status_labels.get(e.status, e.status),
+            e.rejected_reason if e.status == 'draft' else '',
+        ])
+    return header, rows
+
+
+def _csv_number(value, tr):
+    """A number as plain text for CSV: no float noise (70.29185550000001),
+    and a decimal comma for Turkish Excel."""
+    text = f'{value:.6f}'.rstrip('0').rstrip('.') if isinstance(value, float) else str(value)
+    return text.replace('.', ',') if tr else text
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def export_csv_view(request):
@@ -528,24 +576,23 @@ def export_csv_view(request):
         if company else EmissionEntry.objects.none()
     )
 
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = f'attachment; filename="emissions_{year}.csv"'
-    response.write('\ufeff')  # BOM for Excel UTF-8
+    # Same columns as the Excel export, in the UI language (?lang=tr). Turkish
+    # Excel reads ";" as the column separator and "," as the decimal mark, so
+    # a comma-separated file with "1250.5" opened as one column or as dates.
+    lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
+    tr = lang == 'tr'
+    header, rows = _export_rows(entries.order_by('month', 'id'), lang)
 
-    writer = csv.writer(response)
-    writer.writerow(['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit',
-                     'Factor (kg CO2e)', 'Emissions (kg CO2e)', 'Emissions (tCO2e)',
-                     'Facility', 'Description', 'Reference'])
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = (f'attachment; filename="emisyonlar_{year}.csv"' if tr
+                                       else f'attachment; filename="emissions_{year}.csv"')
+    response.write('\ufeff')  # BOM so Excel reads UTF-8 (ş, ğ, ı)
 
-    for e in entries:
-        ef = e.emission_factor
-        writer.writerow([
-            ef.name, ef.scope, ef.category, e.month,
-            float(e.quantity), ef.unit, float(ef.factor_kg_co2e),
-            float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
-            e.facility.name if e.facility_id else '', e.description, ef.reference,
-        ])
-
+    writer = csv.writer(response, delimiter=';' if tr else ',')
+    writer.writerow(header)
+    for row in rows:
+        writer.writerow([_csv_number(v, tr) if isinstance(v, (int, float)) and not isinstance(v, bool) else v
+                         for v in row])
     return response
 
 
@@ -774,46 +821,14 @@ def export_excel_view(request):
         if company else EmissionEntry.objects.none()
     )
 
-    # Headers, scopes, categories, factor names and status in the language
-    # the user reads the app in (?lang=tr), instead of English and raw codes
-    # like "scope1" / "stationary_combustion". Numbers stay numeric cells.
-    from .report_pdf import _CAT
     lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
-    tr = lang == 'tr'
-    status_labels = {
-        'approved': 'Onaylı' if tr else 'Approved',
-        'submitted': 'Beklemede' if tr else 'Pending',
-        'draft': 'Reddedildi' if tr else 'Rejected',
-    }
-    months = (['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos',
-               'Eylül', 'Ekim', 'Kasım', 'Aralık'] if tr else
-              ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
-               'September', 'October', 'November', 'December'])
-
+    header, rows = _export_rows(entries.order_by('month', 'id'), lang)
     wb = Workbook()
     ws = wb.active
-    ws.title = f'Emisyonlar {year}' if tr else f'Emissions {year}'
-    ws.append(
-        ['Kaynak', 'Kapsam', 'Kategori', 'Ay', 'Miktar', 'Birim', 'Faktör (kg CO2e/birim)',
-         'kg CO2e', 'tCO2e', 'Tesis', 'Açıklama', 'Durum', 'Red nedeni'] if tr else
-        ['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit', 'Factor (kg CO2e/unit)',
-         'kg CO2e', 'tCO2e', 'Facility', 'Description', 'Status', 'Rejection reason']
-    )
-
-    for e in entries:
-        ef = e.emission_factor
-        scope_num = (ef.scope or '').replace('scope', '')
-        ws.append([
-            (ef.name_tr or ef.name) if tr else ef.name,
-            (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
-            _CAT[lang].get(ef.category, ef.category),
-            months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month,
-            float(e.quantity), ef.unit,
-            float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
-            e.facility.name if e.facility_id else '', e.description,
-            status_labels.get(e.status, e.status),
-            e.rejected_reason if e.status == 'draft' else '',
-        ])
+    ws.title = f'Emisyonlar {year}' if lang == 'tr' else f'Emissions {year}'
+    ws.append(header)
+    for row in rows:
+        ws.append(row)
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="emissions_{year}.xlsx"'

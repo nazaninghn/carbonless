@@ -564,3 +564,35 @@ class RejectedQuestionnaireEntryTests(TestCase):
     def test_rejected_entry_not_in_summary(self):
         s = self.c_owner.get('/api/emissions/summary/?year=2021').data
         self.assertEqual(float(s['total_kg'] if 'total_kg' in s else s['total_tonne']), 0.0)
+
+
+class StartedByTests(TestCase):
+    """The inventory status names who started it when a team mate opens it."""
+
+    def setUp(self):
+        from accounts.models import UserProfile
+        self.company = Company.objects.create(
+            legal_entity_name='Team Co', tax_number='2',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        self.owner = User.objects.create_user('baris', 'baris@test.com', 'pass12345', first_name='Barış', last_name='Demir')
+        self.clerk = User.objects.create_user('mert', 'mert@test.com', 'pass12345')
+        for u, role in [(self.owner, 'owner'), (self.clerk, 'data_entry')]:
+            UserProfile.objects.create(user=u, active_company=self.company)
+            CompanyMembership.objects.create(user=u, company=self.company, role=role)
+        self.report = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2026)
+
+    def _status(self, user):
+        token = str(RefreshToken.for_user(user).access_token)
+        res = self.client.get(f'/api/questionnaire/{self.report.id}/', HTTP_AUTHORIZATION=f'Bearer {token}')
+        self.assertEqual(res.status_code, 200, res.content)
+        return res.json()
+
+    def test_team_mate_sees_who_started_it(self):
+        self.assertEqual(self._status(self.clerk)['started_by'], 'Barış Demir')
+
+    def test_creator_sees_none(self):
+        self.assertIsNone(self._status(self.owner)['started_by'])

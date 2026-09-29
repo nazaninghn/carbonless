@@ -2148,6 +2148,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     activeInventoryId,
     answers: workflowAnswers,
     currentStep: workflowStep,
+    startedBy,
     setDirty,
     backToLibrary,
   } = useInventory();
@@ -2177,6 +2178,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
         initialStep={workflowStep}
+        startedBy={startedBy}
         onDirtyChange={setDirty}
         onExitToLibrary={backToLibrary}
       />
@@ -2196,7 +2198,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 export function QuestionnaireTab({
   language, isVisible = true,
   hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null,
-  onDirtyChange = null, onExitToLibrary = null,
+  onDirtyChange = null, onExitToLibrary = null, startedBy = null,
 }) {
   const tr = language === 'tr';
   const lang = language;
@@ -2470,7 +2472,11 @@ export function QuestionnaireTab({
     const qRef = itemLabel ? `${firstQ.number} (${itemLabel})` : `${firstQ.number}`;
     const intro = isFresh
       ? (tr ? `Karbon envanterinize başlayalım — Soru ${qRef}:` : `Let's start your carbon inventory — Question ${qRef}:`)
-      : (tr ? `Tekrar hoş geldiniz! Kaldığınız yerden devam ediyorsunuz — Soru ${qRef}:` : `Welcome back! Resuming where you left off — Question ${qRef}:`);
+      : startedBy
+        // Opened by a team mate of the one who started it: nothing of theirs
+        // to "resume" — say whose inventory it is and where it stands.
+        ? (tr ? `Bu envanteri ${startedBy} başlattı. Soru ${qRef} ile devam ediyorsunuz:` : `${startedBy} started this inventory. You're continuing at Question ${qRef}:`)
+        : (tr ? `Tekrar hoş geldiniz! Kaldığınız yerden devam ediyorsunuz — Soru ${qRef}:` : `Welcome back! Resuming where you left off — Question ${qRef}:`);
     const welcomeMsg = {
       id: 'welcome',
       role: 'assistant',

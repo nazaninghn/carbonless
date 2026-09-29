@@ -246,7 +246,7 @@ export const api = {
   deleteCustomRequest: (id) => request(`/emissions/custom-requests/${id}/`, { method: 'DELETE' }),
 
   downloadReport: (year, lang) => request(`/emissions/report/?year=${year}&lang=${lang}`),
-  downloadCsv: (year) => request(`/emissions/export-csv/?year=${year}`),
+  downloadCsv: (year, lang = 'en') => request(`/emissions/export-csv/?year=${year}&lang=${lang}`),
   downloadExcel: (year, lang = 'en') => request(`/emissions/export-excel/?year=${year}&lang=${lang}`),
 
   approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),

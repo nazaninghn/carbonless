@@ -21,6 +21,7 @@ function QuestionnaireContent({ language }) {
     activeInventoryId,
     answers: workflowAnswers,
     currentStep: workflowStep,
+    startedBy,
     setDirty,
     backToLibrary,
   } = useInventory();
@@ -47,6 +48,7 @@ function QuestionnaireContent({ language }) {
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
         initialStep={workflowStep}
+        startedBy={startedBy}
         onDirtyChange={setDirty}
         onExitToLibrary={backToLibrary}
       />
