@@ -49,6 +49,7 @@ import {
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
 import { fixed } from '@/lib/formatNumber';
+import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Timing constants
@@ -4486,7 +4487,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                                     className="rounded-md border border-[#175022]/15 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-[#175022]"
                                   >
                                     {monthNames.map((name, i) => (
-                                      <option key={i} value={i + 1}>{name}</option>
+                                      <option key={i} value={i + 1} disabled={isFutureMonth(override.year, i + 1)}>{name}</option>
                                     ))}
                                   </select>
                                   <select
@@ -4511,9 +4512,15 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                             try {
                               let lastStatus = 'approved';
                               let savedCount = 0;
+                              // Check every period first so nothing is half-saved.
+                              const future = msg.pending_entries.some((pe, idx) => {
+                                const o = periodOverrides[`${msg.id}-${idx}`];
+                                return isFutureMonth(o?.year ?? pe.year, o?.month ?? pe.month);
+                              });
+                              if (future) { setError(futurePeriodMessage(tr)); return; }
                               for (const [idx, pe] of msg.pending_entries.entries()) {
                                 const override = periodOverrides[`${msg.id}-${idx}`];
-                                const peToSave = override ? { ...pe, month: override.month, year: override.year } : pe;
+                                const peToSave = { ...(override ? { ...pe, month: override.month, year: override.year } : pe), language };
                                 let res = await api.confirmEmissionEntry(peToSave);
                                 let data = await res.json().catch(() => ({}));
                                 if (res.status === 409 && data.code === 'possible_duplicate') {

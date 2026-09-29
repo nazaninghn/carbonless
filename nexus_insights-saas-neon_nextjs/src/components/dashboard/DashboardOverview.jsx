@@ -379,9 +379,12 @@ export default function DashboardOverview({
   const tr = language === 'tr';
   // Items waiting in "Onay Bekleyenler" (entries + advisor approvals), shown
   // to approvers under Pending Actions so they are not only in the bell.
-  const [pendingApprovals, setPendingApprovals] = useState(0);
+  // Counted apart: "13 kayıt" read as 13 emission entries when 11 were
+  // questionnaire answers waiting for an advisor approval.
+  const [pendingCounts, setPendingCounts] = useState({ entries: 0, advisor: 0 });
+  const pendingApprovals = pendingCounts.entries + pendingCounts.advisor;
   useEffect(() => {
-    if (!canApprove) { setPendingApprovals(0); return; }
+    if (!canApprove) { setPendingCounts({ entries: 0, advisor: 0 }); return; }
     let cancelled = false;
     const count = async (req) => {
       try {
@@ -393,7 +396,7 @@ export default function DashboardOverview({
       } catch { return 0; }
     };
     Promise.all([count(api.getPendingEntries), count(api.getPendingAdvisorApprovals)])
-      .then(([a, b]) => { if (!cancelled) setPendingApprovals(a + b); });
+      .then(([a, b]) => { if (!cancelled) setPendingCounts({ entries: a, advisor: b }); });
     return () => { cancelled = true; };
   }, [canApprove, entries]);
   // Years other than the selected one that have entries (newest first).
@@ -788,8 +791,14 @@ export default function DashboardOverview({
               {
                 dot: 'bg-amber-400',
                 done: pendingApprovals === 0,
-                tr: `${pendingApprovals} kayıt onayınızı bekliyor`,
-                en: `${pendingApprovals} item${pendingApprovals === 1 ? '' : 's'} awaiting your approval`,
+                tr: `${[
+                  pendingCounts.entries ? `${pendingCounts.entries} kayıt` : '',
+                  pendingCounts.advisor ? `${pendingCounts.advisor} danışman onayı` : '',
+                ].filter(Boolean).join(' ve ') || '0 kayıt'} incelemenizi bekliyor`,
+                en: `${[
+                  pendingCounts.entries ? `${pendingCounts.entries} entr${pendingCounts.entries === 1 ? 'y' : 'ies'}` : '',
+                  pendingCounts.advisor ? `${pendingCounts.advisor} advisor approval${pendingCounts.advisor === 1 ? '' : 's'}` : '',
+                ].filter(Boolean).join(' and ') || '0 items'} awaiting your approval`,
                 tab: 'review',
               },
               {

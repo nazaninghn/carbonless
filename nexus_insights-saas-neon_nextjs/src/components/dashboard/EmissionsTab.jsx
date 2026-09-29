@@ -9,6 +9,7 @@ import {
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
 import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import useCountUp from '@/lib/hooks/useCountUp';
@@ -431,6 +432,10 @@ export default function EmissionsTab({
       setFormError(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
       return;
     }
+    if (isFutureMonth(selectedYear, month)) {
+      setFormError(futurePeriodMessage(tr));
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -474,6 +479,8 @@ export default function EmissionsTab({
         } else if (res.status === 403) {
           setFormError(noPermissionMessage(tr));
           toast.error(noPermissionMessage(tr));
+        } else if (String((await res.json().catch(() => ({}))).code || '').includes('future_period')) {
+          setFormError(futurePeriodMessage(tr));
         } else {
           setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
           toast.error(tr ? 'Kayıt eklenemedi' : 'Failed to add entry');
@@ -610,6 +617,10 @@ export default function EmissionsTab({
     // and no pre-submit check.
     if (!(parseLocalizedNumber(cQty) > 0)) {
       toast.error(tr ? 'Geçerli bir miktar girin.' : 'Please enter a valid quantity.');
+      return;
+    }
+    if (isFutureMonth(selectedYear, cMonth)) {
+      toast.error(futurePeriodMessage(tr));
       return;
     }
     setCSaving(true);
@@ -1173,7 +1184,7 @@ export default function EmissionsTab({
                     <div>
                       <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
                       <select value={month} onChange={e => setMonth(e.target.value)} className={FIELD}>
-                        {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                        {months.map((m, i) => <option key={m} value={i + 1} disabled={isFutureMonth(selectedYear, i + 1)}>{m}</option>)}
                       </select>
                     </div>
                     <div>
@@ -1488,7 +1499,7 @@ export default function EmissionsTab({
                 <div>
                   <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
                   <select value={cMonth} onChange={e => setCMonth(e.target.value)} className={FIELD}>
-                    {months.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                    {months.map((m, i) => <option key={m} value={i + 1} disabled={isFutureMonth(selectedYear, i + 1)}>{m}</option>)}
                   </select>
                 </div>
               </form>

@@ -142,6 +142,16 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Facility not found.')
         return value
 
+    def validate(self, attrs):
+        # No entries for a month that hasn't started yet (emissions/periods.py).
+        from emissions.periods import FUTURE_PERIOD_CODE, future_period_message, is_future_period
+        year = attrs.get('year', getattr(self.instance, 'year', None))
+        month = attrs.get('month', getattr(self.instance, 'month', None))
+        if ('year' in attrs or 'month' in attrs) and is_future_period(year, month):
+            raise serializers.ValidationError(
+                {'month': [future_period_message('en')], 'code': FUTURE_PERIOD_CODE})
+        return attrs
+
 
 class ReductionTargetSerializer(serializers.ModelSerializer):
     class Meta:
@@ -186,3 +196,10 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
         if not company or value.company_id != company.id:
             raise serializers.ValidationError('Facility not found.')
         return value
+
+    def validate(self, attrs):
+        from emissions.periods import FUTURE_PERIOD_CODE, future_period_message, is_future_period
+        if is_future_period(attrs.get('year'), attrs.get('month')):
+            raise serializers.ValidationError(
+                {'month': [future_period_message('en')], 'code': FUTURE_PERIOD_CODE})
+        return attrs

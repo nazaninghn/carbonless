@@ -903,3 +903,62 @@ class PublicTransportScopeTests(TestCase):
         importlib.import_module('emissions.migrations.0018_public_transport_scope3').move_to_scope3(apps, None)
         for f in EmissionFactor.objects.filter(slug__in=self.SLUGS):
             self.assertEqual((f.scope, f.category, float(f.factor_kg_co2e)), ('scope3', 'business_travel', 0.05))
+
+
+class FuturePeriodTests(ApprovalNotificationAndDuplicateTests):
+    """No entry, chat save or custom request for a month that hasn't started."""
+
+    def _next_month(self):
+        from datetime import date
+        t = date.today()
+        return (t.year + 1, 1) if t.month == 12 else (t.year, t.month + 1)
+
+    def test_helper(self):
+        from datetime import date
+        from .periods import is_future_period
+        today = date(2026, 9, 29)
+        self.assertFalse(is_future_period(2026, 9, today))
+        self.assertFalse(is_future_period(2025, 12, today))
+        self.assertTrue(is_future_period(2026, 10, today))
+        self.assertTrue(is_future_period(2027, 1, today))
+
+    def test_form_rejects_next_month_but_accepts_this_month(self):
+        from datetime import date
+        self._as('aylin')
+        y, m = self._next_month()
+        res = self._entry(year=y, month=m)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('future_period', str(res.data['code']))
+        t = date.today()
+        self.assertEqual(self._entry(year=t.year, month=t.month).status_code, 201)
+
+    def test_moving_an_entry_into_the_future_is_rejected(self):
+        self._as('aylin')
+        entry_id = self._entry().data['id']
+        y, m = self._next_month()
+        res = self.client.patch(f'/api/emissions/entries/{entry_id}/', {'year': y, 'month': m}, format='json')
+        self.assertEqual(res.status_code, 400)
+        # Changing only the amount still works.
+        self.assertEqual(self.client.patch(f'/api/emissions/entries/{entry_id}/', {'quantity': 11},
+                                           format='json').status_code, 200)
+
+    def test_chat_confirm_rejects_future_month_in_the_users_language(self):
+        self._as('aylin')
+        y, m = self._next_month()
+        res = self.client.post('/api/chat/confirm-entry/', {
+            'fuel_type': 'test-gas-dup', 'quantity': 10, 'unit': 'kg',
+            'year': y, 'month': m, 'language': 'tr',
+        }, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'future_period')
+        self.assertIn('henüz başlamadı', res.data['error'])
+        self.assertEqual(EmissionEntry.objects.count(), 0)
+
+    def test_custom_request_rejects_future_month(self):
+        self._as('aylin')
+        y, m = self._next_month()
+        res = self.client.post('/api/emissions/custom-requests/', {
+            'scope': 'scope1', 'category_name': 'Jeneratör', 'source_name': 'Dizel',
+            'description': 'x', 'unit': 'litre', 'quantity': 5, 'year': y, 'month': m,
+        }, format='json')
+        self.assertEqual(res.status_code, 400)
