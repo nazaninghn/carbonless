@@ -5,14 +5,12 @@ import { useToast } from '@/components/ToastProvider';
 
 export default function NotificationPreferences({ language, user }) {
   const [approvals, setApprovals] = useState(user?.notify_approvals ?? true);
-  const [system, setSystem] = useState(user?.notify_system ?? true);
   const [saving, setSaving] = useState(false);
 
   // Sync checkboxes when the parent delivers the user profile asynchronously
   // (the initial useState snapshot may be undefined if user hasn't loaded yet).
   useEffect(() => {
     setApprovals(user?.notify_approvals ?? true);
-    setSystem(user?.notify_system ?? true);
   }, [user]);
 
   const tr    = language === 'tr';
@@ -23,7 +21,7 @@ export default function NotificationPreferences({ language, user }) {
     if (saving) return;
     setSaving(true);
     try {
-      const res = await api.updateProfile({ notify_approvals: approvals, notify_system: system });
+      const res = await api.updateProfile({ notify_approvals: approvals });
       if (res.ok) {
         toast.success(tr ? 'Bildirim tercihleri kaydedildi ✓' : 'Notification preferences saved ✓');
       } else {
@@ -34,17 +32,23 @@ export default function NotificationPreferences({ language, user }) {
     } finally {
       setSaving(false);
     }
-  }, [approvals, system, saving, tr, toast]);
+  }, [approvals, saving, tr, toast]);
 
   return (
     <div className="space-y-3 max-w-md">
-      <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" checked={approvals} onChange={e => setApprovals(e.target.checked)} className="w-4 h-4 accent-[#2ABD41] rounded" />
-        <span className="text-sm text-[#072C0E]">{tr ? 'Onay bildirimleri' : 'Approval notifications'}</span>
-      </label>
-      <label className="flex items-center gap-3 cursor-pointer">
-        <input type="checkbox" checked={system} onChange={e => setSystem(e.target.checked)} className="w-4 h-4 accent-[#2ABD41] rounded" />
-        <span className="text-sm text-[#072C0E]">{tr ? 'Sistem bildirimleri' : 'System notifications'}</span>
+      {/* The only switch the backend honours (emissions/notifications.py).
+          A "system notifications" switch used to sit here too; it was saved
+          but nothing ever read it, so turning it off changed nothing. */}
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" checked={approvals} onChange={e => setApprovals(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#2ABD41] rounded" />
+        <span>
+          <span className="block text-sm text-[#072C0E]">{tr ? 'Kayıt onay bildirimleri' : 'Entry approval notifications'}</span>
+          <span className="block text-xs text-[#072C0E]/50">
+            {tr
+              ? 'Onayınızı bekleyen yeni kayıtlar ile kayıtlarınızın onaylanması veya reddedilmesi. Kapalıyken bu bildirimler gelmez.'
+              : 'New entries waiting for your approval, and your own entries being approved or rejected. When off, these notifications are not sent.'}
+          </span>
+        </span>
       </label>
       <button
         onClick={handleSave}

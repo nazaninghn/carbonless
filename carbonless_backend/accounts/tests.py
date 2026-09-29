@@ -392,3 +392,48 @@ class RateLimitKeyTests(TestCase):
             self.assertEqual(client_ip(req), '203.0.113.5')
         with override_settings(RATELIMIT_TRUSTED_PROXIES=0):
             self.assertEqual(client_ip(req), '10.0.0.1')
+
+
+class AccountEmailLanguageTests(TestCase):
+    """The verification-code and password-reset e-mails come in the user's
+    language: the page's language when the request sends one, else the
+    account's preference. They used to be English only."""
+
+    def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
+
+    def _user(self, lang):
+        from .models import UserProfile
+        user = User.objects.create_user(f'u{lang}', f'u{lang}@test.com', 'StrongPass123', first_name='Ayşe')
+        UserProfile.objects.create(user=user, language_preference=lang)
+        return user
+
+    def test_password_reset_follows_preference_then_page_language(self):
+        from django.core import mail
+        self._user('tr')
+        APIClient().post('/api/accounts/password-reset/', {'email': 'utr@test.com'}, format='json')
+        self.assertEqual(mail.outbox[-1].subject, 'Carbonless şifrenizi sıfırlayın')
+        self.assertIn('Merhaba Ayşe', mail.outbox[-1].body)
+        self.assertIn('/reset-password?token=', mail.outbox[-1].body)
+        APIClient().post('/api/accounts/password-reset/', {'email': 'utr@test.com', 'language': 'en'}, format='json')
+        self.assertEqual(mail.outbox[-1].subject, 'Reset your Carbonless password')
+        self.assertIn('Hi Ayşe', mail.outbox[-1].body)
+
+    def test_signup_code_uses_the_signup_language(self):
+        from django.core import mail
+        body = {'username': 'mehmet', 'email': 'mehmet@test.com',
+                'password': 'StrongPass123', 'password2': 'StrongPass123', 'language': 'tr'}
+        self.assertEqual(APIClient().post('/api/accounts/register/', body, format='json').status_code, 201)
+        self.assertTrue(mail.outbox[-1].subject.startswith('Carbonless doğrulama kodunuz: '))
+        self.assertIn('Doğrulama kodunuz', mail.outbox[-1].body)
+
+    def test_resend_code_uses_the_page_language(self):
+        from django.core import mail
+        user = self._user('tr')
+        user.is_active = False
+        user.save()
+        APIClient().post('/api/accounts/resend-verification/', {'email': 'utr@test.com', 'language': 'en'}, format='json')
+        self.assertIn('is your Carbonless verification code', mail.outbox[-1].subject)
+        APIClient().post('/api/accounts/resend-verification/', {'email': 'utr@test.com'}, format='json')
+        self.assertTrue(mail.outbox[-1].subject.startswith('Carbonless doğrulama kodunuz: '))

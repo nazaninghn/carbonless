@@ -9,6 +9,7 @@ import { CheckCircle2, XCircle, Loader2, LockKeyhole, Eye, EyeOff } from 'lucide
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const DEAD_LINK_CODES = ['invalid_link', 'link_used', 'link_expired'];
 
 function ResetContent() {
   const searchParams = useSearchParams();
@@ -46,13 +47,44 @@ function ResetContent() {
         setStatus('success');
         setMessage(tr ? 'Şifreniz sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.' : 'Your password has been reset. You can now log in with it.');
       } else {
-        setStatus('error');
+        // A used/expired/unknown link can't be fixed by retyping the password:
+        // drop the form and point to a fresh link instead.
+        setStatus(DEAD_LINK_CODES.includes(data?.code) ? 'dead' : 'error');
         setMessage(authErrorMessage(data, tr, tr ? 'Sıfırlama başarısız. Bağlantının süresi dolmuş olabilir.' : 'Reset failed. The link may have expired.'));
       }
     } catch {
       setStatus('error');
       setMessage(tr ? 'Bağlantı hatası. Lütfen tekrar deneyin.' : 'Connection error. Please try again.');
     }
+  }
+
+  if (status === 'dead') {
+    return (
+      <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="flex justify-center mb-8">
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-10 w-10" />
+              <span className="text-[18px] font-bold text-[#072C0E]">Carbonless</span>
+            </Link>
+          </div>
+          <div className="rounded-2xl border border-[#DEFAE1] bg-white p-8 shadow-sm">
+            <XCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+            <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Bu bağlantı artık geçerli değil' : 'This link is no longer valid'}</h1>
+            <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
+            <Link href="/forgot-password"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+              {tr ? 'Yeni bağlantı iste' : 'Request a new link'}
+            </Link>
+            <div className="mt-3">
+              <Link href="/login" className="text-[13px] font-medium text-[#2ABD41] hover:underline">
+                {tr ? 'Giriş sayfasına dön' : 'Back to login'}
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
   }
 
   if (!token) {
