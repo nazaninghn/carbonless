@@ -53,12 +53,15 @@ EMISSION_FACTORS = [
     # company (Scope 1 would only fit a company-owned aircraft). Migration
     # 0012 and upgrade_factors already moved them, but this seed ran on every
     # deploy and put them back in Scope 1.
+    # Public transport (train, metro, bus, dolmuş) follows the same rule: the
+    # vehicle belongs to a third party, so business trips on it are Scope 3
+    # Cat. 6. (Commuting has its own *-commute factors in Scope 3 Cat. 7.)
     {'slug': 'flight-domestic', 'name': 'Domestic Flight (Turkey)', 'name_tr': 'Yurtiçi Uçuş (Türkiye)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.232, 'source': 'turkey_fleet', 'reference': 'Turkish Airlines 2025 – new fleet'},
     {'slug': 'flight-international', 'name': 'International Flight', 'name_tr': 'Uluslararası Uçuş', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.148, 'source': 'icao', 'reference': 'ICAO 2025'},
-    {'slug': 'train', 'name': 'Train (Turkey)', 'name_tr': 'Tren (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.035, 'source': 'turkey_fleet', 'reference': 'TCDD – electrified lines'},
-    {'slug': 'metro', 'name': 'Metro (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro'},
-    {'slug': 'bus', 'name': 'Bus (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Urban buses'},
-    {'slug': 'dolmus', 'name': 'Dolmuş (shared minibus)', 'name_tr': 'Dolmuş', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.082, 'source': 'turkey_fleet', 'reference': 'Shared urban transport'},
+    {'slug': 'train', 'name': 'Train (Turkey)', 'name_tr': 'Tren (Türkiye)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.035, 'source': 'turkey_fleet', 'reference': 'TCDD – electrified lines'},
+    {'slug': 'metro', 'name': 'Metro (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro'},
+    {'slug': 'bus', 'name': 'Bus (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Urban buses'},
+    {'slug': 'dolmus', 'name': 'Dolmuş (shared minibus)', 'name_tr': 'Dolmuş', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.082, 'source': 'turkey_fleet', 'reference': 'Shared urban transport'},
     {'slug': 'car-gasoline', 'name': 'Car – Gasoline (Turkey)', 'name_tr': 'Otomobil – Benzin (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.172, 'source': 'turkey_fleet', 'reference': 'Turkey fleet 2025 – Euro 6d'},
     {'slug': 'car-diesel', 'name': 'Car – Diesel (Turkey)', 'name_tr': 'Otomobil – Dizel (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.156, 'source': 'turkey_fleet', 'reference': 'Turkey fleet 2025'},
     {'slug': 'car-lpg', 'name': 'Car – LPG (Turkey)', 'name_tr': 'Otomobil – LPG (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.163, 'source': 'turkey_fleet', 'reference': 'Turkey LPG vehicles 2025'},

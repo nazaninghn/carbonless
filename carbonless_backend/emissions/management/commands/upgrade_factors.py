@@ -23,10 +23,10 @@ SOURCE_YEAR_MAP = {
 SCOPE3_FIXES = {
     'flight-domestic': 'business_travel',
     'flight-international': 'business_travel',
-    'train': 'employee_commuting',
-    'metro': 'employee_commuting',
-    'bus': 'employee_commuting',
-    'dolmus': 'employee_commuting',
+    'train': 'business_travel',
+    'metro': 'business_travel',
+    'bus': 'business_travel',
+    'dolmus': 'business_travel',
 }
 
 
