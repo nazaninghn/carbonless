@@ -27,7 +27,8 @@ export default function CompanyHistory({ language }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await api.getCompanyHistory();
+        // Details come back in the UI language (factor names, months, units).
+        const res = await api.getCompanyHistory(tr ? 'tr' : 'en');
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
         if (!cancelled) setRows(Array.isArray(data) ? data : []);
@@ -37,7 +38,7 @@ export default function CompanyHistory({ language }) {
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [tr]);
 
   if (error) return <p className="text-sm text-red-600">{error}</p>;
   if (rows === null) return <p className="text-sm text-[#072C0E]/50">{tr ? 'Yükleniyor…' : 'Loading…'}</p>;

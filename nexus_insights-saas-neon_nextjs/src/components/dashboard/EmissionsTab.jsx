@@ -1410,7 +1410,14 @@ export default function EmissionsTab({
         open={deleteConfirm !== null}
         type="danger"
         title={tr ? 'Kaydı Sil' : 'Delete Entry'}
-        message={tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?'}
+        message={(() => {
+          // Name the entry, so it's clear which of several similar rows goes.
+          const e = entries.find(x => x.id === deleteConfirm);
+          if (!e) return tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?';
+          const name = (tr && e.emission_factor_name_tr) ? e.emission_factor_name_tr : e.emission_factor_name;
+          const what = `${name} · ${months[e.month - 1] || ''} ${e.year} · ${fmt(e.quantity)} ${unitLabel(e.unit, tr)}`;
+          return tr ? `"${what}" kaydını silmek istediğinize emin misiniz?` : `Delete the entry "${what}"?`;
+        })()}
         confirmText={tr ? 'Sil' : 'Delete'}
         cancelText={tr ? 'İptal' : 'Cancel'}
         onConfirm={confirmDelete}
