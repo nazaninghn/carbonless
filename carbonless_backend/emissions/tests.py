@@ -346,6 +346,16 @@ class ApprovalNotificationAndDuplicateTests(TestCase):
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes[0].title, 'Onay bekleyen kayıt')
         self.assertIn('Test Gaz', notes[0].message)
+        # No name on the account: the e-mail stands in for it, as in the
+        # Onay Bekleyenler list ("Giren: …").
+        self.assertTrue(notes[0].message.startswith('ali@test.com '))
+
+    def test_notice_names_the_author_by_full_name(self):
+        self.users['ali'].first_name, self.users['ali'].last_name = 'Ali', 'Kaya'
+        self.users['ali'].save()
+        self._as('ali')
+        self._entry()
+        self.assertTrue(self._notes('aylin', 'entry_submitted')[0].message.startswith('Ali Kaya yeni bir kayıt ekledi'))
 
     def test_owner_entry_needs_no_approval_notice(self):
         self._as('aylin')
