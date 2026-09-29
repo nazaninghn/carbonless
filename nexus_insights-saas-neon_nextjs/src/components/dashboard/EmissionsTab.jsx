@@ -98,9 +98,10 @@ function ProofButton({ entry, tr, toast, className }) {
   );
 }
 
-// A rejected entry stays listed (with its reason) but is not part of the
-// totals — the same rule the backend summary and reports apply.
-const countedKg = (e) => (e.status === 'draft' ? 0 : (parseFloat(e.calculated_co2e_kg) || 0));
+// Only approved entries are part of the totals — the same rule the backend
+// summary and every report apply (emissions/inventory.py). Pending and
+// rejected entries stay listed and are summed separately, for information.
+const countedKg = (e) => (e.status === 'approved' ? (parseFloat(e.calculated_co2e_kg) || 0) : 0);
 
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
@@ -358,6 +359,24 @@ export default function EmissionsTab({
       else if (e.scope === 'scope3') { countS3++; s3kg += kg; }
     }
     return { countS1, countS2, countS3, s1kg, s2kg, s3kg, totKg: s1kg + s2kg + s3kg };
+  }, [entries]);
+
+  // What the cards count: the entries inside their totals (approved only).
+  // The scope filter pills above keep counting every listed entry.
+  const approvedCount = useMemo(() => {
+    const c = { scope1: 0, scope2: 0, scope3: 0 };
+    for (const e of entries) if (e.status === 'approved' && c[e.scope] !== undefined) c[e.scope]++;
+    return c;
+  }, [entries]);
+
+  // Not in any total above; shown under the cards for information.
+  const notCounted = useMemo(() => {
+    const out = { pending: { n: 0, kg: 0 }, rejected: { n: 0, kg: 0 } };
+    for (const e of entries) {
+      const bucket = e.status === 'submitted' ? out.pending : e.status === 'draft' ? out.rejected : null;
+      if (bucket) { bucket.n++; bucket.kg += parseFloat(e.calculated_co2e_kg) || 0; }
+    }
+    return out;
   }, [entries]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -670,14 +689,31 @@ export default function EmissionsTab({
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
-          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: totKg/1000, sub: `${countAll} ${tr?'kayıt':'entries'}`, color: null },
-          { label: tr ? 'Kapsam 1' : 'Scope 1', value: s1kg/1000, sub: `${countS1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
-          { label: tr ? 'Kapsam 2' : 'Scope 2', value: s2kg/1000, sub: `${countS2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
-          { label: tr ? 'Kapsam 3' : 'Scope 3', value: s3kg/1000, sub: `${countS3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
+          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: totKg/1000, sub: `${approvedCount.scope1 + approvedCount.scope2 + approvedCount.scope3} ${tr?'onaylı kayıt':'approved'}`, color: null },
+          { label: tr ? 'Kapsam 1' : 'Scope 1', value: s1kg/1000, sub: `${approvedCount.scope1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
+          { label: tr ? 'Kapsam 2' : 'Scope 2', value: s2kg/1000, sub: `${approvedCount.scope2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
+          { label: tr ? 'Kapsam 3' : 'Scope 3', value: s3kg/1000, sub: `${approvedCount.scope3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
         ].map((k, i) => (
           <EmissionsKPI key={k.label} label={k.label} value={k.value} sub={k.sub} color={k.color} delay={i * 60} />
         ))}
       </div>
+
+      {(notCounted.pending.n > 0 || notCounted.rejected.n > 0) && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs leading-5 text-amber-800">
+          <span className="font-bold">{tr ? 'Bilgi: ' : 'For information: '}</span>
+          {[
+            notCounted.pending.n > 0 && (tr
+              ? `${notCounted.pending.n} onay bekleyen kayıt (${fixed(notCounted.pending.kg / 1000, 3)} t)`
+              : `${notCounted.pending.n} awaiting approval (${fixed(notCounted.pending.kg / 1000, 3)} t)`),
+            notCounted.rejected.n > 0 && (tr
+              ? `${notCounted.rejected.n} reddedilen kayıt (${fixed(notCounted.rejected.kg / 1000, 3)} t)`
+              : `${notCounted.rejected.n} rejected (${fixed(notCounted.rejected.kg / 1000, 3)} t)`),
+          ].filter(Boolean).join(tr ? ' ve ' : ' and ')}
+          {tr
+            ? ' toplamlara ve raporlara dahil değildir. Yalnızca onaylanmış kayıtlar sayılır.'
+            : ' are not included in the totals or reports. Only approved entries are counted.'}
+        </p>
+      )}
 
       {/* ── Search + Scope filter ──────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">

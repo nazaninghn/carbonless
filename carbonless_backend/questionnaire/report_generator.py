@@ -32,7 +32,7 @@ def build_report_summary(report, user):
         entries = EmissionEntry.objects.filter(
             company=company,
             year=report.reporting_year or timezone.now().year
-        ).exclude(status='draft').select_related('emission_factor')
+        ).filter(status='approved').select_related('emission_factor')
 
         total_co2e = entries.aggregate(Sum('calculated_co2e_kg'))['calculated_co2e_kg__sum'] or 0
 

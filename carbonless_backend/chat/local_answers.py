@@ -28,10 +28,10 @@ def _fmt(n, lang, digits=2):
 
 def _entries(company, year):
     from emissions.models import EmissionEntry
-    # Same rule as the dashboard summary: a rejected entry (status 'draft')
-    # is not part of the inventory.
+    # Same rule as the dashboard summary: only approved entries are part of
+    # the inventory (pending and rejected ones are not counted).
     return (EmissionEntry.objects.filter(company=company, year=year)
-            .exclude(status='draft').select_related('emission_factor'))
+            .filter(status='approved').select_related('emission_factor'))
 
 
 def _total_answer(company, year, lang):

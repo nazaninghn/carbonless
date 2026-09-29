@@ -27,6 +27,7 @@ from datetime import datetime
 from html import escape
 
 from django.db.models import Sum
+from emissions.inventory import not_counted as _not_counted, not_counted_note as _not_counted_note
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.lib.pagesizes import A4
@@ -691,7 +692,7 @@ def _gather(report, lang):
     entries = (
         EmissionEntry.objects
         .filter(company=company, year=year)
-        .exclude(status='draft')
+        .filter(status='approved')
         .select_related('emission_factor', 'facility')
     )
 
@@ -805,7 +806,7 @@ def _gather(report, lang):
     # shown rather than just asserted.
     year_totals = {}
     if company:
-        for row in (EmissionEntry.objects.filter(company=company).exclude(status='draft')
+        for row in (EmissionEntry.objects.filter(company=company).filter(status='approved')
                     .values('year').annotate(total=Sum('calculated_co2e_kg'))):
             year_totals[row['year']] = year_totals.get(row['year'], 0.0) + float(row['total'] or 0)
         for cr in CustomEmissionRequest.objects.filter(
@@ -829,6 +830,9 @@ def _gather(report, lang):
         'facility_activity': facility_activity,
         'year_totals': year_totals,
         'answers': _answers(report),
+        # Pending / rejected entries: outside every figure, noted for information.
+        'not_counted': (_not_counted(EmissionEntry.objects.filter(company=company, year=year))
+                        if company else None),
     }
 
 
@@ -2623,6 +2627,9 @@ def _section4(E, S, D, report, lang, TBL, FIG):
          f'faaliyet verisi kaydından hesaplanarak {_fmt(total_t, tr)} ton CO₂ eşdeğeri '
          f'olarak belirlenmiştir. Tanımlanan tüm sera gazı kaynaklarına ait emisyon '
          f'miktarları {tw} {inv_no}’te verilmiştir.'), S['body']))
+    _note = _not_counted_note(D['not_counted'], tr) if D.get('not_counted') else ''
+    if _note:
+        E.append(Paragraph(_note, S['body_sm']))
     E.append(Spacer(1, 3*mm))
     _inventory_table(E, S, D, lang, inv_no)
     E.append(PageBreak())

@@ -369,7 +369,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
     # ════════════════════════════════════════════════
     E.append(Paragraph('5. ' + ('Ölçülen Sera Gazı Emisyonları' if tr else 'Quantified GHG Emissions'), S['h1']))
 
-    entries = EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft').select_related('emission_factor') \
+    entries = EmissionEntry.objects.filter(company=company, year=year).filter(status='approved').select_related('emission_factor') \
         if (EmissionEntry is not None and company) else []
     entry_count = entries.count() if hasattr(entries, 'count') else 0
 
@@ -386,6 +386,10 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
             f"{entry_count} emission entries were identified for {cname} in reporting year {year}. "
             f"Total emissions are calculated at {_fmt(total_kg/1000, tr)} tCO₂e.",
             S['body']))
+        from emissions.inventory import not_counted, not_counted_note
+        _note = not_counted_note(not_counted(EmissionEntry.objects.filter(company=company, year=year)), tr)
+        if _note:
+            E.append(Paragraph(_note, S['body']))
         E.append(Spacer(1, 5 * mm))
 
         scope_tbl = [

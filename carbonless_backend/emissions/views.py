@@ -228,10 +228,10 @@ def emission_summary(request):
     # Fix #63: was hardcoded to 2026 — use current year as the dynamic default
     year = request.query_params.get('year', datetime.now().year)
     company = get_current_company(request.user)
-    # A rejected entry (a rejection moves it to 'draft') is not part of the
-    # inventory; it stays listed, with its reason, on the emissions page until
-    # it is corrected.
-    entries = (EmissionEntry.objects.filter(company=company, year=year).exclude(status='draft')
+    # Only approved entries are part of the inventory (see emissions/inventory.py):
+    # pending ('submitted') and rejected ('draft') ones stay listed on the
+    # emissions page and are reported below under `not_counted`, for information.
+    entries = (EmissionEntry.objects.filter(company=company, year=year).filter(status='approved')
                if company else EmissionEntry.objects.none())
 
     total = float(entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0)
@@ -330,10 +330,15 @@ def emission_summary(request):
             'total_co2e_kg': scope3_totals_map.get(cat_key, 0.0),
         })
 
+    from .inventory import not_counted
     return Response({
         'year': int(year),
         'total_kg': float(total),
         'total_tonne': float(total) / 1000,
+        # Pending / rejected entries of the year: not in any total above,
+        # shown to the client separately as information.
+        'not_counted': (not_counted(EmissionEntry.objects.filter(company=company, year=year))
+                        if company else not_counted(EmissionEntry.objects.none())),
         'scope1_kg': float(scope1),
         'scope2_kg': float(scope2),
         'scope3_kg': float(scope3),
@@ -514,7 +519,7 @@ def comparison_view(request):
 
     def get_year_data(y):
         company = _company
-        qs = (EmissionEntry.objects.filter(company=company, year=y).exclude(status='draft')
+        qs = (EmissionEntry.objects.filter(company=company, year=y).filter(status='approved')
               if company else EmissionEntry.objects.none())
         total = qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s1 = qs.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
@@ -819,7 +824,7 @@ def by_facility_view(request):
     year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
     data = (
         EmissionEntry.objects
-        .filter(company=company, year=year, facility__isnull=False)
+        .filter(company=company, year=year, facility__isnull=False, status='approved')
         .values('facility__name', 'facility__id')
         .annotate(total_kg=Sum('calculated_co2e_kg'))
         .order_by('-total_kg')
