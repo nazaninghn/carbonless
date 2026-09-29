@@ -363,10 +363,30 @@ function MissingFieldsHint({ labels, tr }) {
 // Returns null if the question is not a loop question.
 // Shared by initLoopOrAdvance (on the forward path) and goBack (on the back path).
 // ─────────────────────────────────────────────────────────────────────────────
+// Upper bound for a count-driven loop, so a mistyped "500" doesn't ask 500 times.
+const MAX_LOOP_ITEMS = 50;
+
 function buildLoopItems(loopQuestionId, currentAnswers, lang) {
   const q = getQuestionById(loopQuestionId);
   if (!q?.loopSource) return null;
   const sourceAnswer = currentAnswers[q.loopSource];
+  const countQ = getQuestionById(q.loopSource);
+  // A numeric source ("How many facilities?" → 5) means N items, one per
+  // facility. It used to be read as one text item "5", so a company with five
+  // sites was asked about a single one (name, activity, electricity…).
+  const isCount = countQ && (countQ.subtype === 'numeric' || countQ.type === 'numeric');
+  const count = isCount ? parseInt(String(sourceAnswer ?? '').replace(/\D/g, ''), 10) : NaN;
+  if (isCount && count > 0) {
+    const n = Math.min(count, MAX_LOOP_ITEMS);
+    const names = currentAnswers['2A-2'] && typeof currentAnswers['2A-2'] === 'object' ? currentAnswers['2A-2'] : {};
+    const items = Array.from({ length: n }, (_, i) => String(i + 1));
+    const itemLabels = items.map(k => {
+      const base = `${lang === 'tr' ? 'Tesis' : 'Facility'} ${k}`;
+      const name = loopQuestionId !== '2A-2' ? String(names[k]?.name || '').trim() : '';
+      return name ? `${base} — ${name}` : base;
+    });
+    return { items, itemLabels };
+  }
   let items;
   if (Array.isArray(sourceAnswer)) {
     items = sourceAnswer;
@@ -434,7 +454,11 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
     const sourceQ = getQuestionById(q.loopSource);
     const entries = Object.entries(value).map(([itemKey, itemVal]) => {
       const opt = sourceQ?.options?.find(o => o.value === itemKey);
-      const itemLabel = opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || itemKey) : itemKey;
+      const isCountItem = !opt && /^\d+$/.test(itemKey)
+        && (sourceQ?.subtype === 'numeric' || sourceQ?.type === 'numeric');
+      const itemLabel = opt
+        ? stripOptionCode(opt.label?.[lang] || opt.label?.en || itemKey)
+        : isCountItem ? `${lang === 'tr' ? 'Tesis' : 'Facility'} ${itemKey}` : itemKey;
       const formatted = getDisplayValue(q, itemVal, lang); // recurse on the plain per-item value
       return `${itemLabel}: ${formatted}`;
     });

@@ -576,7 +576,7 @@ CATEGORY_LABELS = {
     'upstream_transport': {'en': 'Upstream transportation', 'tr': 'Yukarı akış taşımacılık'},
     'waste': {'en': 'Waste generated in operations', 'tr': 'Faaliyetlerden kaynaklanan atık'},
     'business_travel': {'en': 'Business travel', 'tr': 'İş seyahatleri'},
-    'employee_commuting': {'en': 'Employee commuting', 'tr': 'Personel servisleri'},
+    'employee_commuting': {'en': 'Employee commuting', 'tr': 'Çalışanların işe gidiş-gelişi'},
     'upstream_leased': {'en': 'Upstream leased assets', 'tr': 'Kiralanan varlıklar (yukarı akış)'},
     'downstream_transport': {'en': 'Downstream transportation', 'tr': 'Aşağı akış taşımacılık'},
     'processing_sold': {'en': 'Processing of sold products', 'tr': 'Satılan ürünlerin işlenmesi'},

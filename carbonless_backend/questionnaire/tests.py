@@ -693,3 +693,46 @@ class TaxIdStepTests(TestCase):
         company.save()
         data = client.get(f'/api/questionnaire/{report.id}/previous-profile/').json()
         self.assertEqual(data['answers']['A2'], {'tax_id': 'DE123456789'})
+
+
+class FacilitySyncTests(TestCase):
+    """Question 2A-2 names the company's real facilities."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from companies.models import Facility
+        self.user = User.objects.create_user('facu', 'fac@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Fac Co', tax_number='9', country_of_headquarters='TR',
+            countries_of_operation='TR', nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=3)
+        CompanyMembership.objects.create(user=self.user, company=self.company, role='owner')
+        self.report = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2026)
+        Facility.objects.create(company=self.company, name='Tesis 1', country='TR')
+        Facility.objects.create(company=self.company, name='Depo Ankara', country='TR')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _names(self):
+        from companies.models import Facility
+        return list(Facility.objects.filter(company=self.company).order_by('id').values_list('name', 'country'))
+
+    def test_answer_renames_placeholders_matches_names_and_adds_the_rest(self):
+        answer = {'answer': {
+            '1': {'name': 'İzmir Fabrika', 'country': 'TR'},
+            '2': {'name': 'Depo Ankara', 'country': 'TR'},
+            '3': {'name': 'Berlin Ofis', 'country': 'DE'},
+        }}
+        res = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                {'step': '2A-2', 'data': answer, 'language': 'tr'}, format='json')
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertEqual(self._names(), [('İzmir Fabrika', 'TR'), ('Depo Ankara', 'TR'), ('Berlin Ofis', 'DE')])
+        # Saving the same answer again changes nothing and deletes nothing.
+        self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                          {'step': '2A-2', 'data': answer, 'language': 'tr'}, format='json')
+        self.assertEqual(len(self._names()), 3)
+
+    def test_never_deletes_facilities(self):
+        from .facility_sync import sync_facilities
+        sync_facilities(self.company, {'answer': {'1': {'name': 'Tek Tesis', 'country': 'TR'}}})
+        self.assertEqual(self._names(), [('Tek Tesis', 'TR'), ('Depo Ankara', 'TR')])
