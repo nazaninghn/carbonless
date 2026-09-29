@@ -878,3 +878,28 @@ class CommercialFlightScopeTests(TestCase):
         importlib.import_module('emissions.migrations.0017_commercial_flights_scope3').move_to_scope3(apps, None)
         f.refresh_from_db()
         self.assertEqual((f.scope, f.category, float(f.factor_kg_co2e)), ('scope3', 'business_travel', 0.232))
+
+
+class PublicTransportScopeTests(TestCase):
+    """Turkish public transport (train, metro, bus, dolmuş) is Scope 3 Cat. 6
+    business travel, like commercial flights."""
+    SLUGS = ('train', 'metro', 'bus', 'dolmus')
+
+    def test_seed_data(self):
+        from . import seed_data
+        rows = [r for rows in (v for v in vars(seed_data).values() if isinstance(v, list)) for r in rows
+                if isinstance(r, dict) and r.get('slug') in self.SLUGS and r.get('country') == 'turkey']
+        self.assertEqual(len(rows), 4)
+        for r in rows:
+            self.assertEqual((r['scope'], r['category']), ('scope3', 'business_travel'))
+
+    def test_migration_moves_existing_rows(self):
+        import importlib
+        from django.apps import apps
+        for slug in self.SLUGS:
+            EmissionFactor.objects.create(slug=slug, name=slug, scope='scope1', category='mobile_combustion',
+                                          country='turkey', unit='km', factor_kg_co2e=0.05, year=2025,
+                                          source='turkey_fleet', is_active=True, is_default=True)
+        importlib.import_module('emissions.migrations.0018_public_transport_scope3').move_to_scope3(apps, None)
+        for f in EmissionFactor.objects.filter(slug__in=self.SLUGS):
+            self.assertEqual((f.scope, f.category, float(f.factor_kg_co2e)), ('scope3', 'business_travel', 0.05))
