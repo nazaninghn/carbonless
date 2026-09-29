@@ -6,7 +6,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import {
   Leaf, BarChart3, FileText, MessageCircle, Shield, Globe,
-  Target, TrendingDown, Upload, Bell, Settings, Users, CheckCircle
+  Target, TrendingDown, Sparkles, Bell, Settings, Users, CheckCircle
 } from 'lucide-react';
 
 export default function FeaturesPage() {
@@ -14,16 +14,16 @@ export default function FeaturesPage() {
   const tr = language === 'tr';
 
   const features = [
-    { icon: Leaf, title: tr ? 'Scope 1/2/3 Emisyon Takibi' : 'Scope 1/2/3 Emission Tracking', desc: tr ? 'DEFRA, IPCC ve Türkiye ulusal emisyon faktörleriyle doğrudan, enerji dolaylı ve diğer dolaylı emisyonlarınızı hesaplayın.' : 'Calculate direct, energy indirect, and other indirect emissions with DEFRA, IPCC and Turkish national emission factors.' },
+    { icon: Leaf, title: tr ? 'Kapsam 1/2/3 Emisyon Takibi' : 'Scope 1/2/3 Emission Tracking', desc: tr ? 'DEFRA, IPCC ve Türkiye ulusal emisyon faktörleriyle doğrudan, enerji dolaylı ve diğer dolaylı emisyonlarınızı hesaplayın.' : 'Calculate direct, energy indirect, and other indirect emissions with DEFRA, IPCC and Turkish national emission factors.' },
     { icon: MessageCircle, title: tr ? 'ISO 14064-1 Envanter Sihirbazı' : 'ISO 14064-1 Questionnaire Wizard', desc: tr ? 'Adım adım anketle envanterinizi yapılandırın: raporlama dönemi, baz yıl, faktör kaynağı, sınırlar ve daha fazlası.' : 'Configure your inventory with a step-by-step questionnaire: reporting period, base year, factor source, boundaries and more.' },
-    { icon: BarChart3, title: tr ? 'Görsel Dashboard' : 'Visual Dashboard', desc: tr ? 'Scope dağılımı, aylık trend, kategori kırılımı ile emisyonlarınızı anlık takip edin.' : 'Track emissions in real-time with scope distribution, monthly trends, and category breakdown.' },
+    { icon: BarChart3, title: tr ? 'Görsel Dashboard' : 'Visual Dashboard', desc: tr ? 'Kapsam dağılımı, aylık trend, kategori kırılımı ile emisyonlarınızı anlık takip edin.' : 'Track emissions in real-time with scope distribution, monthly trends, and category breakdown.' },
     { icon: FileText, title: tr ? 'PDF ve CSV Raporlama' : 'PDF & CSV Reporting', desc: tr ? 'ISO 14064-1 uyumlu profesyonel raporlar. Türkçe ve İngilizce dil desteği.' : 'Professional ISO 14064-1 compliant reports. Turkish and English language support.' },
     { icon: Globe, title: tr ? 'Çoklu Ülke Desteği' : 'Multi-Country Support', desc: tr ? 'Türkiye (ISO 14064-1 doğrulanmış envanter, ulusal veriler) ve Global (Defra, IPCC) emisyon faktörleri.' : 'Turkey (ISO 14064-1 verified inventory, national data) and Global (Defra, IPCC) emission factors.' },
     { icon: Target, title: tr ? 'Azaltma Hedefleri' : 'Reduction Targets', desc: tr ? 'Karbon azaltma hedeflerinizi belirleyin ve ilerlemenizi takip edin.' : 'Set carbon reduction targets and track your progress.' },
     { icon: TrendingDown, title: tr ? 'Yıl Karşılaştırma' : 'Year-over-Year Comparison', desc: tr ? 'Emisyonlarınızı yıllar arasında karşılaştırın ve trendleri analiz edin.' : 'Compare emissions across years and analyze trends.' },
-    { icon: Upload, title: tr ? 'Toplu Veri İçe Aktarma' : 'Bulk Data Import', desc: tr ? 'CSV/JSON formatında toplu emisyon verisi yükleyin.' : 'Upload bulk emission data in CSV/JSON format.' },
-    { icon: Shield, title: tr ? 'Özel Emisyon Talebi' : 'Custom Emission Requests', desc: tr ? 'Listede olmayan kaynaklar için özel talep gönderin, admin onaylasın.' : 'Submit custom requests for sources not in the list, admin reviews and approves.' },
-    { icon: Bell, title: tr ? 'Bildirim Sistemi' : 'Notification System', desc: tr ? 'Talep onayları ve sistem bildirimleri ile her zaman güncel kalın.' : 'Stay updated with request approvals and system notifications.' },
+    { icon: Sparkles, title: tr ? 'AI ile Veri Girişi' : 'AI Data Entry', desc: tr ? 'Faaliyet verilerinizi sohbet ederek yazın; AI doğru emisyon faktörünü bulup kaydı oluşturur.' : 'Type your activity data in a chat; the AI finds the right emission factor and creates the entry.' },
+    { icon: Shield, title: tr ? 'Özel Emisyon Talebi' : 'Custom Emission Requests', desc: tr ? 'Listede olmayan kaynaklar için özel talep gönderin; Carbonless ekibi inceler.' : 'Submit custom requests for sources not in the list; the Carbonless team reviews them.' },
+    { icon: Bell, title: tr ? 'Bildirim Sistemi' : 'Notification System', desc: tr ? 'Onay bekleyen, onaylanan ve reddedilen kayıtlardan anında haberdar olun.' : 'Get notified when entries await approval, are approved or are rejected.' },
     { icon: Users, title: tr ? 'Rol Tabanlı Erişim' : 'Role-Based Access', desc: tr ? 'Admin, yönetici, veri girişi ve denetçi rolleri ile güvenli erişim kontrolü.' : 'Secure access control with admin, manager, data entry, and auditor roles.' },
     { icon: Settings, title: tr ? 'Tesis Yönetimi' : 'Facility Management', desc: tr ? 'Birden fazla tesisinizi yönetin ve her biri için ayrı emisyon takibi yapın.' : 'Manage multiple facilities and track emissions for each separately.' },
   ];

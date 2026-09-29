@@ -172,16 +172,9 @@ class RegisterView(generics.CreateAPIView):
         from django.core.mail import send_mail
         from django.conf import settings
 
-        subject = f'{code} is your Carbonless verification code'
-        message = (
-            f"Hi {user.username},\n\n"
-            f"Your verification code is:\n\n"
-            f"    {code}\n\n"
-            f"Enter this code on the site to activate your account. "
-            f"This code expires in 24 hours.\n\n"
-            f"If you didn't create this account, please ignore this email.\n\n"
-            f"— Carbonless Team"
-        )
+        from .emails import email_language, verification_email
+        subject, message = verification_email(
+            user, code, email_language(user, self.request.data.get('language')))
 
         try:
             send_mail(
@@ -656,17 +649,13 @@ def password_reset_request(request):
     frontend_url = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
     reset_link = f"{frontend_url}/reset-password?token={token_obj.token}"
 
+    from .emails import email_language, password_reset_email
+    subject, message = password_reset_email(
+        user, reset_link, email_language(user, request.data.get('language')))
     try:
         send_mail(
-            subject='Reset your Carbonless password',
-            message=(
-                f"Hi {user.username},\n\n"
-                f"We received a request to reset your password. Click the link below:\n\n"
-                f"{reset_link}\n\n"
-                f"This link expires in 1 hour.\n\n"
-                f"If you didn't request this, please ignore this email.\n\n"
-                f"— Carbonless Team"
-            ),
+            subject=subject,
+            message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=False,
@@ -929,16 +918,13 @@ def resend_verification(request):
     from django.core.mail import send_mail
     from django.conf import settings
 
+    from .emails import email_language, verification_email
+    subject, message = verification_email(
+        user, token_obj.code, email_language(user, request.data.get('language')))
     try:
         send_mail(
-            subject=f'{token_obj.code} is your Carbonless verification code',
-            message=(
-                f"Hi {user.username},\n\n"
-                f"Your verification code is:\n\n"
-                f"    {token_obj.code}\n\n"
-                f"Enter this code on the site to activate your account. "
-                f"This code expires in 24 hours.\n\n— Carbonless Team"
-            ),
+            subject=subject,
+            message=message,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[user.email],
             fail_silently=False,

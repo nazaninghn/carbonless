@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch(`${API_BASE}/accounts/password-reset/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, language }),
         signal: controller.signal,
       }).finally(() => clearTimeout(timer));
       // Fix #66: the backend now always returns 200 (anti-enumeration handled
@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
     } finally {
       setLoading(false);
     }
-  }, [email, tr, loading]);
+  }, [email, tr, loading, language]);
 
   return (
     <div className="bg-gradient-to-br from-[#DEFAE1]/60 via-white to-[#8BEA99]/8 text-[#072C0E] antialiased min-h-screen">
@@ -109,8 +109,8 @@ export default function ForgotPasswordPage() {
                 </h2>
                 <p className="text-sm text-[#072C0E]/60 mb-4">
                   {language === 'tr'
-                    ? `${email} adresine şifre sıfırlama bağlantısı gönderildi. Lütfen gelen kutunuzu kontrol edin.`
-                    : `A password reset link has been sent to ${email}. Please check your inbox.`}
+                    ? `${email} adresiyle kayıtlı bir hesap varsa, şifre sıfırlama bağlantısı gönderildi. Lütfen gelen kutunuzu (ve spam klasörünü) kontrol edin.`
+                    : `If an account is registered with ${email}, a password reset link has been sent. Please check your inbox (and spam folder).`}
                 </p>
               </div>
             )}

@@ -113,7 +113,7 @@ function VerifyContent() {
       const res = await fetch(`${API_BASE}/accounts/resend-verification/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, language }),
       });
       if (res.status === 429) {
         const data = await res.json().catch(() => ({ code: 'rate_limited' }));
