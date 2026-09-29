@@ -206,7 +206,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           : await api.downloadQuestionnairePdf(isoReportId, lang);
       }
       else if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
-      else if (type === 'csv') res = await api.downloadCsv(selectedYear);
+      else if (type === 'csv') res = await api.downloadCsv(selectedYear, tr ? 'tr' : 'en');
       else res = await api.downloadExcel(selectedYear, tr ? 'tr' : 'en');
 
       if (!res.ok) {

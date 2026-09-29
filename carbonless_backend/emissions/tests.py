@@ -499,6 +499,28 @@ class ExcelExportLanguageTests(TestCase):
         self.assertEqual(row[1:3], ['Scope 1', 'Stationary Combustion'])
         self.assertEqual(row[-2], 'Rejected')
 
+    def _csv(self, lang):
+        res = self.client.get(f'/api/emissions/export-csv/?year=2026&lang={lang}')
+        self.assertEqual(res.status_code, 200)
+        text = res.content.decode('utf-8')
+        self.assertTrue(text.startswith('\ufeff'))
+        return [line for line in text.lstrip('\ufeff').splitlines() if line]
+
+    def test_turkish_csv_opens_in_turkish_excel(self):
+        header, row = self._csv('tr')
+        self.assertTrue(header.startswith('Kaynak;Kapsam;Kategori;Ay;Miktar'))
+        cells = row.split(';')
+        self.assertEqual(cells[:5], ['Doğal Gaz (Türkiye)', 'Kapsam 1', 'Sabit Yanma', 'Mart', '10'])
+        self.assertEqual(cells[6], '56,211')       # decimal comma
+        self.assertEqual(cells[8], '0,56211')      # no float noise
+        self.assertEqual(cells[-2:], ['Reddedildi', 'Fatura eksik'])
+
+    def test_english_csv(self):
+        header, row = self._csv('en')
+        self.assertTrue(header.startswith('Source,Scope,Category'))
+        self.assertIn('Rejected', row)
+        self.assertIn('56.211', row)
+
 
 class TargetAndCustomRequestRoleTests(TestCase):
     """Targets are the company's commitment: only owner/admin/manager change

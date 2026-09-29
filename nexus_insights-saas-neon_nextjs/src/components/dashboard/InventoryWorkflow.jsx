@@ -30,6 +30,8 @@ export function InventoryProvider({ children }) {
   // Active inventory
   const [activeInventoryId, setActiveInventoryId] = useState(null);
   const [inventoryTitle, setInventoryTitle] = useState('');
+  // Name of the team mate who started the open inventory (null when it's ours).
+  const [startedBy, setStartedBy] = useState(null);
   const [inventoryStatus, setInventoryStatus] = useState('draft');
 
   // Survey state
@@ -69,6 +71,7 @@ export function InventoryProvider({ children }) {
 
       setActiveInventoryId(data.report_id);
       setInventoryTitle(data.title);
+      setStartedBy(null);
       setInventoryStatus('in_progress');
       setCurrentStep(data.current_step || 'A1');
       setAnswers({});
@@ -106,6 +109,7 @@ export function InventoryProvider({ children }) {
       const data = await res.json();
       setActiveInventoryId(inventoryId);
       setInventoryTitle(data.title || `Inventory ${inventoryId}`);
+      setStartedBy(data.started_by || null);
       setInventoryStatus(data.status);
       setCurrentStep(atStep || data.current_step || 'A1');
       setAnswers(normalizeHydratedAnswers(data.answers));
@@ -213,6 +217,7 @@ export function InventoryProvider({ children }) {
     mode,
     activeInventoryId,
     inventoryTitle,
+    startedBy,
     inventoryStatus,
     answers,
     currentStep,
