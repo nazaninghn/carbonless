@@ -472,6 +472,11 @@ class SubmitStepView(APIView):
         # ── Phase 2: questions that ask for an activity amount (fuel, electricity,
         # freight, waste) become EmissionEntry rows; see step_entries.py ──
         saved_entry = None
+        if step == '2A-2':
+            # The facility names/countries answered here become the company's
+            # real facilities (emissions form, Settings, reports).
+            from .facility_sync import sync_facilities
+            sync_facilities(report.company, data)
         entries = sync_step_entries(request.user, report.company, report, step, data)
         if entries:
             co2e_kg = sum(float(e.calculated_co2e_kg) for e in entries)

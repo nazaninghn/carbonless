@@ -877,7 +877,7 @@ export default function ReductionTargetsTab({
                     <input
                       type="text" inputMode="decimal"
                       value={baseEmit} onChange={e => { baseAutoFilled.current = false; setBaseEmit(e.target.value); }}
-                      placeholder="0.0"
+                      placeholder={tr ? '0,0' : '0.0'}
                       className={FIELD} required
                     />
                     {baseInventory && (
