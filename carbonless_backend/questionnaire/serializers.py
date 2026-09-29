@@ -1,5 +1,6 @@
 from rest_framework import serializers
 import datetime
+import re
 
 
 class StepA1Serializer(serializers.Serializer):
@@ -11,10 +12,29 @@ class StepA1Serializer(serializers.Serializer):
         return value.strip()
 
 
+TURKEY_CODES = {'TR', 'TUR', 'TURKEY', 'TÜRKIYE', 'TÜRKİYE', 'TURKIYE'}
+
+
+def is_turkish_company(company):
+    """Turkish (or not yet set) headquarters: tax IDs are VKN/TCKN."""
+    country = (getattr(company, 'country_of_headquarters', '') or '').strip().upper()
+    return not country or country in TURKEY_CODES
+
+
 class StepA2Serializer(serializers.Serializer):
+    """Tax ID. A Turkish company gives its VKN (10 digits) or TCKN (11); a
+    company based elsewhere gives its own registration / VAT number, which
+    has no single format (GB123456789, DE123456789, 12-3456789, …)."""
     tax_id = serializers.CharField()
 
     def validate_tax_id(self, value):
+        company = self.context.get('company')
+        if company is not None and not is_turkish_company(company):
+            cleaned = ' '.join(value.split()).upper()
+            if not re.fullmatch(r'[A-Z0-9][A-Z0-9 ./-]{3,29}', cleaned) or not re.search(r'\d', cleaned):
+                raise serializers.ValidationError(
+                    "Enter your company's tax or VAT registration number (letters and digits, 4-30 characters).")
+            return cleaned
         digits = value.replace(' ', '').replace('-', '')
         if not digits.isdigit():
             raise serializers.ValidationError("Numbers only.")

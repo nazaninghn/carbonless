@@ -5885,8 +5885,51 @@ export const MAX_QUESTION_NUMBER = CARBONIQ_QUESTIONS.reduce(
   0,
 );
 
+// The company's headquarters country (from its registration), so questions
+// whose format is Turkey-specific can adapt. Set by the questionnaire screen
+// once it knows the company; null = unknown, treated as Turkey.
+let companyCountry = null;
+const TURKEY_CODES = ['TR', 'TUR', 'TURKEY', 'TÜRKIYE', 'TÜRKİYE', 'TURKIYE'];
+
+export function setQuestionnaireCompanyCountry(code) {
+  const c = String(code || '').trim().toUpperCase();
+  companyCountry = c || null;
+}
+
+function isForeignCompany() {
+  return !!companyCountry && !TURKEY_CODES.includes(companyCountry);
+}
+
+// A2 for a company based outside Turkey: VKN/TCKN don't exist there, so take
+// the company's own tax / VAT registration number (GB123456789, 12-3456789…).
+// Mirrors StepA2Serializer on the backend.
+function foreignTaxIdQuestion(base) {
+  return {
+    ...base,
+    subtype: 'single_line',
+    numericOnly: false,
+    allowedLengths: undefined,
+    maxLength: 30,
+    pattern: /^[A-Za-z0-9][A-Za-z0-9 ./-]{3,29}$/,
+    placeholder: { tr: 'Örn: GB123456789', en: 'e.g. GB123456789' },
+    helper: {
+      tr: 'Şirketinizin kayıtlı olduğu ülkedeki vergi veya KDV (VAT) kayıt numarası. Sistem içi kimlik doğrulama için kullanılır, üçüncü taraflarla paylaşılmaz.',
+      en: "Your company's tax or VAT registration number in the country where it is registered. It is used for internal identity verification and is not shared with third parties.",
+    },
+    validate: {
+      ...base.validate,
+      formatMessage: {
+        tr: 'Vergi / KDV numaranızı girin (harf ve rakam, 4-30 karakter).',
+        en: 'Enter your tax / VAT number (letters and digits, 4-30 characters).',
+      },
+    },
+  };
+}
+
 export function getQuestionById(id) {
-  return CARBONIQ_QUESTIONS.find((question) => question.id === id);
+  const question = CARBONIQ_QUESTIONS.find((q) => q.id === id);
+  if (id === 'A2' && question && isForeignCompany()) return foreignTaxIdQuestion(question);
+  return question;
 }
 
 export function getInitialQuestionId() {
@@ -6112,6 +6155,15 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
   }
 
   if (!required && empty) return { ok: true };
+
+  if (question.pattern && (!question.pattern.test(String(value).trim()) || !/\d/.test(String(value)))) {
+    return {
+      ok: false,
+      message:
+        question.validate?.formatMessage?.[lang] ||
+        (lang === 'tr' ? 'Geçersiz biçim.' : 'Invalid format.'),
+    };
+  }
 
   if (question.numericOnly && !/^\d+$/.test(String(value))) {
     return {

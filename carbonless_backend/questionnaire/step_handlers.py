@@ -64,7 +64,7 @@ def handle_A1(report, data):
         'warnings': [],
         'bot_messages': [
             f"✅ Got it! **{data['legal_name']}** has been registered.",
-            "What is your tax identification number? (VKN / TCKN — 10 or 11 digits)"
+            "What is your tax identification number?"
         ]
     }
 
@@ -74,18 +74,13 @@ def handle_A2(report, data):
     tax_id = data['tax_id']
     existing = Company.objects.filter(tax_number=tax_id).exclude(id=report.company.id).first()
     if existing:
+        # Never name the other company here (the view turns this into a
+        # conflict response the user sees).
         return {
             'next_step': 'A2',
             'message': 'Duplicate tax ID.',
             'warnings': ['duplicate_tax_id'],
-            'duplicate': {
-                'company_name': existing.legal_entity_name,
-                'company_id': existing.id,
-            },
-            'bot_messages': [
-                f"⚠️ This tax ID is already registered for **{existing.legal_entity_name}**.",
-                "Do you want to continue with a new report or update the existing one?"
-            ]
+            'duplicate': True,
         }
     report.company.tax_number = tax_id
     report.company.save(update_fields=['tax_number'])

@@ -317,7 +317,7 @@ class SubmitStepView(APIView):
         }
 
         if step in STRICT_STEPS and step in STEP_SERIALIZERS:
-            serializer = STEP_SERIALIZERS[step](data=data)
+            serializer = STEP_SERIALIZERS[step](data=data, context={'company': report.company})
             if not serializer.is_valid():
                 first_error = list(serializer.errors.values())[0]
                 if isinstance(first_error, list):
@@ -333,14 +333,26 @@ class SubmitStepView(APIView):
             result = handle_step(report, step, serializer.validated_data)
 
             if result.get('duplicate'):
+                # A conflict, not a success: the answer was NOT saved. This
+                # used to come back as 200 (so the questionnaire moved on and
+                # the answer was silently lost) and named the other company,
+                # which let anyone look up who is registered under a tax ID.
+                msg = (
+                    'Bu vergi numarası Carbonless\'ta başka bir şirket hesabında kayıtlı. '
+                    'Numarayı kontrol edin; doğruysa bizimle iletişime geçin.'
+                    if request.data.get('language') == 'tr' else
+                    'This tax number is already used by another company account on Carbonless. '
+                    'Please check it; if it is correct, contact us.'
+                )
                 return Response({
                     'success': False,
                     'step': step,
                     'next_step': step,
-                    'duplicate': result['duplicate'],
-                    'bot_messages': result['bot_messages'],
-                    'warnings': result.get('warnings', [])
-                })
+                    'error': msg,
+                    'code': 'duplicate_tax_id',
+                    'bot_messages': [msg],
+                    'warnings': result.get('warnings', []),
+                }, status=409)
 
             _save_report_step(report, step, serializer.validated_data)
             evaluate_advisor_triggers(report, step, serializer.validated_data)
@@ -603,9 +615,11 @@ def _registration_prefill_answers(company):
     if name:
         answers['A1'] = {'legal_name': name}
     tax = (company.tax_number or '').strip()
-    # Registration treats the tax number as optional; A2 accepts exactly 10
-    # digits, so only offer it when it would pass that validation.
-    if tax.isdigit() and len(tax) == 10:
+    # Registration treats the tax number as optional; only offer it when A2
+    # would accept it (VKN/TCKN for a Turkish company, any registration
+    # number for one based elsewhere).
+    from .serializers import StepA2Serializer
+    if tax and StepA2Serializer(data={'tax_id': tax}, context={'company': company}).is_valid():
         answers['A2'] = {'tax_id': tax}
     return answers
 

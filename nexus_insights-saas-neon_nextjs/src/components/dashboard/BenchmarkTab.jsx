@@ -162,6 +162,10 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
   const benchmark  = SECTOR_BENCHMARKS[naceSector] || SECTOR_BENCHMARKS.default;
   const empBand    = EMPLOYEE_BANDS.find(b => b.key === (questionnaireProfile?.employee_band || '1-50')) || EMPLOYEE_BANDS[0];
 
+  // Nothing entered yet: show dashes, not a "below average ✓" verdict or
+  // "−0 tCO₂e" savings worked out from zero.
+  const hasData = totalTonne > 0;
+
   const pctVsAvg = benchmark.avg > 0
     ? Math.round(((benchmark.avg - totalTonne) / benchmark.avg) * 100)
     : 0;
@@ -172,24 +176,24 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       rank: 1,
       title: tr ? 'Elektrik verimliliği' : 'Electricity efficiency',
       desc:  tr ? 'LED aydınlatma + akıllı sensörler' : 'LED lighting + smart sensors',
-      saving: `−${Math.round(totalTonne * 0.08)} `,
+      saving: hasData ? `−${Math.round(totalTonne * 0.08)} ` : '—',
       locked: false,
     },
     {
       rank: 2,
       title: tr ? 'Araç filosu elektrifikasyonu' : 'Fleet electrification',
       desc:  tr ? 'Dizel araçları EV ile değiştirin' : 'Replace diesel vehicles with EVs',
-      saving: `−${Math.round(totalTonne * 0.15)} `,
+      saving: hasData ? `−${Math.round(totalTonne * 0.15)} ` : '—',
       locked: false,
     },
     {
       rank: 3,
       title: tr ? 'Yenilenebilir enerji sözleşmesi' : 'Renewable energy contract',
       desc:  tr ? 'PPA veya yeşil tarife geçişi' : 'PPA or green tariff switch',
-      saving: `−${Math.round(totalTonne * 0.22)} `,
+      saving: hasData ? `−${Math.round(totalTonne * 0.22)} ` : '—',
       locked: false,
     },
-  ], [totalTonne, tr]);
+  ], [totalTonne, hasData, tr]);
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -242,11 +246,17 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
             color: 'text-amber-600',
           },
           {
-            label: tr ? 'Ortalamanın Altında' : 'Below Average',
-            numeric: totalTonne > 0 ? Math.abs(pctVsAvg) : null,
-            format: (v) => `%${Math.round(v)}`,
-            sub:   pctVsAvg > 0 ? (tr ? 'Daha az emisyon ✓' : 'Less emissions ✓') : (tr ? 'Daha fazla emisyon' : 'More emissions'),
-            color: pctVsAvg > 0 ? 'text-[#175022]' : 'text-red-500',
+            label: !hasData
+              ? (tr ? 'Ortalamaya Göre' : 'Versus Average')
+              : pctVsAvg > 0
+                ? (tr ? 'Ortalamanın Altında' : 'Below Average')
+                : (tr ? 'Ortalamanın Üstünde' : 'Above Average'),
+            numeric: hasData ? Math.abs(pctVsAvg) : null,
+            format: (v) => (tr ? `%${Math.round(v)}` : `${Math.round(v)}%`),
+            sub:   !hasData
+              ? (tr ? 'Veri girildiğinde görünür' : 'Shown once data is entered')
+              : pctVsAvg > 0 ? (tr ? 'Daha az emisyon ✓' : 'Less emissions ✓') : (tr ? 'Daha fazla emisyon' : 'More emissions'),
+            color: !hasData ? 'text-[#072C0E]' : pctVsAvg > 0 ? 'text-[#175022]' : 'text-red-500',
           },
           {
             label: tr ? 'Çalışan Grubu' : 'Employee Band',

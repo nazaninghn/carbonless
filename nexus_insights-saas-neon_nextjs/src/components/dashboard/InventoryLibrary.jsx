@@ -53,12 +53,11 @@ export default function InventoryLibrary({ tr = false }) {
     }
   };
 
+  // The name is optional: left empty, startNewInventory names the inventory
+  // after today's date (the dialog says so). The Start button used to stay
+  // disabled until something was typed, so that fallback was unreachable.
   const handleStartNew = async () => {
-    if (!surveyName.trim()) {
-      alert(tr ? 'Lütfen bir isim girin' : 'Please enter a name');
-      return;
-    }
-
+    if (loading) return;
     const success = await startNewInventory(surveyName.trim(), tr);
     if (success) {
       setSurveyName('');
@@ -434,8 +433,13 @@ export default function InventoryLibrary({ tr = false }) {
               }}
               placeholder={tr ? 'Örnek: 2024 Emisyon Denetimi' : 'e.g., 2024 Emissions Audit'}
               autoFocus
-              className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-4"
+              className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
             />
+            <p className="mb-4 text-xs text-[#175022]/60">
+              {tr
+                ? `İsteğe bağlı. Boş bırakırsanız bugünün tarihi kullanılır (${new Date().toLocaleDateString('tr-TR')}).`
+                : `Optional. If left empty, today's date is used (${new Date().toLocaleDateString('en-GB')}).`}
+            </p>
 
             <div className="flex gap-3">
               <button
@@ -449,7 +453,7 @@ export default function InventoryLibrary({ tr = false }) {
               </button>
               <button
                 onClick={handleStartNew}
-                disabled={loading || !surveyName.trim()}
+                disabled={loading}
                 className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white hover:bg-[#175022] transition disabled:opacity-50"
               >
                 {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
