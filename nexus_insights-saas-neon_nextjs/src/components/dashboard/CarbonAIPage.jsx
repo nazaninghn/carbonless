@@ -39,6 +39,7 @@ import {
   getInitialQuestionId,
   getNextQuestionId,
   getQuestionById,
+  setQuestionnaireCompanyCountry,
   getQuestionWarning,
   getSystemMessage,
   getTriggeredAssumptions,
@@ -2259,6 +2260,36 @@ export function QuestionnaireTab({
   // saved on an earlier report, and if so, offer to reuse it instead of
   // re-asking ~20 questions. Runs once per mount — a resumed report (any
   // answers already present) or one that's already past A1 skips this.
+  // The company's HQ country decides what Question 2 (tax ID) accepts: a
+  // VKN/TCKN in Turkey, the local tax / VAT number anywhere else. The state
+  // only exists to re-render once getQuestionById knows the country.
+  const [, setCompanyCountryState] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.getCompanyDetail()
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (cancelled || !data) return;
+        setQuestionnaireCompanyCountry(data.country_of_headquarters);
+        setCompanyCountryState(data.country_of_headquarters || '');
+        // A resumed questionnaire may already show Question 2 with the
+        // VKN/TCKN hint (posted before the country arrived): swap in the
+        // hint that now applies.
+        const base = CARBONIQ_QUESTIONS.find(q => q.id === 'A2');
+        const now = getQuestionById('A2');
+        if (base && now && now.helper !== base.helper) {
+          setMessages(prev => prev.map(m => {
+            if (m.role !== 'assistant' || typeof m.content !== 'string') return m;
+            let content = m.content;
+            for (const l of ['tr', 'en']) content = content.replace(base.helper[l], now.helper[l]);
+            return content === m.content ? m : { ...m, content };
+          }));
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   useEffect(() => {
     if (previousProfileCheckedRef.current) return;
     // Fetch while anywhere in Stage 1 (Company Profile), not only at a fresh
@@ -2636,11 +2667,17 @@ export function QuestionnaireTab({
       // ✅ Parse JSON ONCE
       const respData = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
+      // `success: false` means the answer was NOT stored, whatever the HTTP
+      // status (a 200 used to carry it for a duplicate tax ID, and the
+      // questionnaire moved on as if it had been saved).
+      if (!res.ok || respData?.success === false) {
         setSaveSuccess(false);
+        const botMsg = Array.isArray(respData?.bot_messages) && respData.bot_messages[0]
+          ? String(respData.bot_messages[0]).replace(/^[❌⚠️\s]+/u, '')
+          : '';
         const msg = res.status === 403
           ? noPermissionMessage(lang === 'tr')
-          : (respData?.error || respData?.detail || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
+          : (respData?.error || respData?.detail || botMsg || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
         if (isMounted.current) setSaveError(msg);
         return { success: false, data: {} };
       }

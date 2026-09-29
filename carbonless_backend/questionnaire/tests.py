@@ -631,3 +631,65 @@ class PendingAdvisorAnswerTests(TestCase):
         self.assertEqual(by_q['3A-EF-a']['answer'], {'ef_value': '5', 'ef_unit': 'kgCO2e_kWh'})
         self.assertIsNone(by_q['3D-EF']['answer'])  # no saved step
         self.assertEqual(by_q['6A-2']['reporting_year'], 2025)
+
+
+class TaxIdStepTests(TestCase):
+    """Question 2 (tax ID): VKN/TCKN for a Turkish company, the local tax /
+    VAT number for one based elsewhere; a number another company already
+    uses is refused without naming that company."""
+
+    def _company(self, name, country, tax=''):
+        return Company.objects.create(
+            legal_entity_name=name, tax_number=tax,
+            country_of_headquarters=country, countries_of_operation=country,
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+
+    def _setup(self, country):
+        from rest_framework.test import APIClient
+        user = User.objects.create_user(f'tax{country}', f'tax{country}@test.com', 'pass12345')
+        company = self._company(f'{country} Co', country)
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+        report = CarbonReport.objects.create(company=company, created_by=user, reporting_year=2026)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client, report, company
+
+    def _send(self, client, report, tax_id, lang='en'):
+        return client.patch(f'/api/questionnaire/{report.id}/step/',
+                            {'step': 'A2', 'data': {'tax_id': tax_id}, 'language': lang}, format='json')
+
+    def test_foreign_company_uses_its_own_tax_number(self):
+        client, report, company = self._setup('GB')
+        res = self._send(client, report, 'gb 123 456 789')
+        self.assertEqual(res.status_code, 200, res.content)
+        company.refresh_from_db()
+        self.assertEqual(company.tax_number, 'GB 123 456 789')
+        self.assertTrue(ReportStep.objects.filter(report=report, step_id='A2').exists())
+        self.assertEqual(self._send(client, report, 'ABC').status_code, 400)  # too short, no digit
+
+    def test_turkish_company_still_needs_vkn_or_tckn(self):
+        client, report, _ = self._setup('TR')
+        self.assertEqual(self._send(client, report, 'GB123456789').status_code, 400)
+        self.assertEqual(self._send(client, report, '123456789').status_code, 400)
+        self.assertEqual(self._send(client, report, '1234567891').status_code, 200)
+
+    def test_duplicate_is_a_conflict_and_does_not_name_the_other_company(self):
+        self._company('Gizli Tekstil A.Ş.', 'TR', tax='5555555555')
+        client, report, _ = self._setup('TR')
+        res = self._send(client, report, '5555555555', lang='tr')
+        self.assertEqual(res.status_code, 409)
+        body = res.content.decode()
+        self.assertNotIn('Gizli', body)
+        self.assertEqual(res.json()['code'], 'duplicate_tax_id')
+        self.assertIn('başka bir şirket', res.json()['error'])
+        self.assertFalse(ReportStep.objects.filter(report=report, step_id='A2').exists())
+
+    def test_foreign_registration_tax_number_is_prefilled(self):
+        client, report, company = self._setup('DE')
+        company.tax_number = 'DE123456789'
+        company.save()
+        data = client.get(f'/api/questionnaire/{report.id}/previous-profile/').json()
+        self.assertEqual(data['answers']['A2'], {'tax_id': 'DE123456789'})
