@@ -590,3 +590,78 @@ class TargetAndCustomRequestRoleTests(TestCase):
         res = self.client.delete(f'/api/emissions/custom-requests/{rid}/')
         self.assertEqual(res.status_code, 400)
         self.assertEqual(res.json()['code'], 'already_reviewed')
+
+
+class EntryChangeRulesTests(TestCase):
+    """A data-entry member changes only their own entries; changing the amount
+    of an approved entry sends it back for approval; every change is in the
+    company's history."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        self.factor = EmissionFactor.objects.create(
+            slug='test-gas-rules', name='Test Gas', name_tr='Test Gaz',
+            scope='scope1', category='stationary_combustion', country='global',
+            unit='m3', factor_kg_co2e=2, year=2024, source='generic',
+            is_active=True, is_default=True,
+        )
+        self.company = Company.objects.create(
+            legal_entity_name='Kural A.Ş.', tax_number='1234567892',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        self.users = {}
+        for name, role in [('sahip', 'owner'), ('veri', 'data_entry'), ('denetci', 'auditor')]:
+            u = User.objects.create_user(name, f'{name}@test.com', 'testpass123')
+            UserProfile.objects.create(user=u, active_company=self.company)
+            CompanyMembership.objects.create(company=self.company, user=u, role=role)
+            self.users[name] = u
+        self.client = APIClient()
+
+    def _as(self, name):
+        self.client.force_authenticate(user=self.users[name])
+
+    def _entry(self, qty=300):
+        res = self.client.post('/api/emissions/entries/', {
+            'emission_factor': self.factor.id, 'year': 2026, 'month': 7, 'quantity': qty}, format='json')
+        self.assertEqual(res.status_code, 201, res.content)
+        return res.json()['id']
+
+    def test_data_entry_cannot_change_or_delete_others_entries(self):
+        self._as('sahip')
+        eid = self._entry()
+        self._as('veri')
+        self.assertEqual(self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': 3}, format='json').status_code, 403)
+        self.assertEqual(self.client.delete(f'/api/emissions/entries/{eid}/').status_code, 403)
+        self.assertEqual(EmissionEntry.objects.get(id=eid).quantity, 300)
+
+    def test_changing_an_approved_amount_goes_back_for_approval(self):
+        self._as('veri')
+        eid = self._entry()
+        EmissionEntry.objects.filter(id=eid).update(status='approved')
+        res = self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': 3}, format='json')
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'submitted')
+        # A description-only edit keeps the approval.
+        EmissionEntry.objects.filter(id=eid).update(status='approved')
+        self.client.patch(f'/api/emissions/entries/{eid}/', {'description': 'fatura no 12'}, format='json')
+        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'approved')
+
+    def test_owner_change_stays_approved_and_is_in_history(self):
+        self._as('sahip')
+        eid = self._entry()
+        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'approved')
+        self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': 250}, format='json')
+        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'approved')
+        self._as('denetci')
+        res = self.client.get('/api/accounts/history/')
+        self.assertEqual(res.status_code, 200)
+        actions = [r['action'] for r in res.json()]
+        self.assertEqual(actions[:2], ['entry_updated', 'entry_created'])
+        self.assertIn('300 m3 → Test Gas · 2026/07 · 250 m3', res.json()[0]['detail'])
+
+    def test_data_entry_cannot_read_history(self):
+        self._as('veri')
+        self.assertEqual(self.client.get('/api/accounts/history/').status_code, 403)

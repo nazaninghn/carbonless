@@ -337,6 +337,13 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
         factor_source_snapshot=factor.source,
         status=_get_entry_status(user, company),
     )
+    # Company change history (Settings → History) lists chat entries too.
+    from accounts.models import ActivityLog
+    ActivityLog.objects.create(
+        user=user, action='entry_created', target_type='EmissionEntry', target_id=str(entry.id),
+        detail=f'{factor.name} · {year}/{int(month):02d} · {format(qty.normalize(), "f") if hasattr(qty, "normalize") else qty} {factor.unit}',
+        metadata={'company_id': company.id, 'via': 'chat'},
+    )
     return entry, None
 
 
