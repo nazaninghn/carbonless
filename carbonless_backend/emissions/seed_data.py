@@ -47,8 +47,14 @@ EMISSION_FACTORS = [
     {'slug': 'vehicle-km', 'name': 'Vehicle distance (avg car)', 'name_tr': 'Araç mesafesi (ort. otomobil)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'global', 'unit': 'km', 'factor_kg_co2e': 0.171, 'source': 'generic', 'reference': ''},
 
     # SCOPE 1 - MOBILE / TRANSPORTATION (Turkey)
-    {'slug': 'flight-domestic', 'name': 'Domestic Flight (Turkey)', 'name_tr': 'Yurtiçi Uçuş (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.232, 'source': 'turkey_fleet', 'reference': 'Turkish Airlines 2025 – new fleet'},
-    {'slug': 'flight-international', 'name': 'International Flight', 'name_tr': 'Uluslararası Uçuş', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.148, 'source': 'icao', 'reference': 'ICAO 2025'},
+    # Commercial flights are Scope 3, Category 6 (business travel) under the
+    # GHG Protocol Scope 3 Standard, and ISO 14064-1:2018 Category 3 (transport):
+    # the aircraft is owned and operated by the airline, not by the reporting
+    # company (Scope 1 would only fit a company-owned aircraft). Migration
+    # 0012 and upgrade_factors already moved them, but this seed ran on every
+    # deploy and put them back in Scope 1.
+    {'slug': 'flight-domestic', 'name': 'Domestic Flight (Turkey)', 'name_tr': 'Yurtiçi Uçuş (Türkiye)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.232, 'source': 'turkey_fleet', 'reference': 'Turkish Airlines 2025 – new fleet'},
+    {'slug': 'flight-international', 'name': 'International Flight', 'name_tr': 'Uluslararası Uçuş', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.148, 'source': 'icao', 'reference': 'ICAO 2025'},
     {'slug': 'train', 'name': 'Train (Turkey)', 'name_tr': 'Tren (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.035, 'source': 'turkey_fleet', 'reference': 'TCDD – electrified lines'},
     {'slug': 'metro', 'name': 'Metro (Turkey)', 'name_tr': 'Metro (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.028, 'source': 'turkey_fleet', 'reference': 'Istanbul/Ankara metro'},
     {'slug': 'bus', 'name': 'Bus (Turkey)', 'name_tr': 'Otobüs (Türkiye)', 'scope': 'scope1', 'category': 'mobile_combustion', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.095, 'source': 'turkey_fleet', 'reference': 'Urban buses'},

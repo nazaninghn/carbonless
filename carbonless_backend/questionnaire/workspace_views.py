@@ -66,7 +66,7 @@ def _sync_workspace_to_emission_entries(report, user):
     tag_prefix = f'(report {report.id})'
 
     def _upsert(tag, activity_type, quantity, unit):
-        factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit)
+        factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company)
         if error:
             logger.warning('Workspace sync skipped %s for report %s: %s', tag, report.id, error)
             return

@@ -98,6 +98,14 @@ function ProofButton({ entry, tr, toast, className }) {
   );
 }
 
+// Same mapping as emissions/factor_lookup.py (the AI chat's choice).
+const GRID_BY_COUNTRY = {
+  GB: 'uk-grid', UK: 'uk-grid', US: 'us-grid', CN: 'china-grid', DE: 'germany-grid', FR: 'france-grid',
+  IN: 'india-grid', JP: 'japan-grid', BR: 'brazil-grid', AU: 'australia-grid', CA: 'canada-grid',
+  KR: 'south-korea-grid', SA: 'saudi-arabia-grid', AE: 'uae-grid',
+};
+const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
+
 // Only approved entries are part of the totals — the same rule the backend
 // summary and every report apply (emissions/inventory.py). Pending and
 // rejected entries stay listed and are summed separately, for information.
@@ -184,7 +192,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function EmissionsTab({
-  language, selectedYear, selectedCountry,
+  language, selectedYear, selectedCountry, companyCountry = '',
   entries, factors, facilityList,
   customRequests = [],
   questionnaireProfile,
@@ -269,7 +277,7 @@ export default function EmissionsTab({
       const srcMap = { national: ['turkey_grid','turkey_fleet','atom_kablo'], defra: ['defra_2024'], ipcc: ['ipcc_2006','ipcc_2019'] };
       preferred = srcMap[questionnaireProfile.preferred_factor_source] ?? null;
     }
-    return factors.filter(f => {
+    const list = factors.filter(f => {
       let m = true;
       if (selScope)    m = m && f.scope === selScope;
       if (selCategory) m = m && f.category === selCategory;
@@ -281,7 +289,10 @@ export default function EmissionsTab({
       if (preferred) m = m && preferred.includes(f.source);
       return m;
     });
-  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile]);
+    // The company's own grid first (a UK company sees "UK grid" on top).
+    const ownGrid = GRID_BY_COUNTRY[companyCountry] || (EU_COUNTRIES.has(companyCountry) ? 'eu-grid' : null);
+    return ownGrid ? [...list].sort((a, b) => (b.slug === ownGrid) - (a.slug === ownGrid)) : list;
+  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry]);
 
   const categories = useMemo(() => {
     // Hoist the country-category Set — O(n) not O(n²)
@@ -445,8 +456,17 @@ export default function EmissionsTab({
         });
       }
       if (res.ok) {
+        const saved = await res.json().catch(() => ({}));
         setShowAddForm(false); resetAddForm(); fetchData();
-        toast.success(tr ? 'Kayıt başarıyla eklendi ✓' : 'Entry added successfully ✓');
+        if (saved.status === 'submitted') {
+          // Only approved entries count, so the totals won't move yet —
+          // say so, or the entry looks lost.
+          toast.info(tr
+            ? 'Kayıt eklendi ve onaya gönderildi. Onaylandığında toplamlara eklenir.'
+            : 'Entry added and sent for approval. It will count in the totals once approved.');
+        } else {
+          toast.success(tr ? 'Kayıt başarıyla eklendi ✓' : 'Entry added successfully ✓');
+        }
       } else {
         // Don't expose raw server response — show a user-friendly message
         if (res.status === 409) {
@@ -987,8 +1007,9 @@ export default function EmissionsTab({
                               style={{ width: `${Math.max(barPct, barPct > 0 ? 2 : 0)}%`, backgroundColor: sm.bar }}
                             />
                           </div>
-                          <span className="w-8 text-right text-[9px] font-bold text-[#072C0E]/30">
-                            {fixed(barPct, 0)}%
+                          <span className="w-8 text-right text-[9px] font-bold text-[#072C0E]/30"
+                            title={entry.status !== 'approved' ? (tr ? 'Onaylanmadığı için toplamda yok' : 'Not in the totals until approved') : undefined}>
+                            {entry.status === 'approved' ? `${fixed(barPct, 0)}%` : '—'}
                           </span>
                         </div>
                       </td>
@@ -1020,6 +1041,9 @@ export default function EmissionsTab({
                 <tr>
                   <td colSpan={4} className="px-4 py-3 text-xs font-bold text-[#072C0E]/50">
                     {filtered.length} {tr ? 'kayıt' : 'entries'}
+                    {filtered.some(e => e.status !== 'approved') && (
+                      <span className="font-semibold"> · {tr ? 'toplam yalnızca onaylı kayıtlar' : 'total: approved entries only'}</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-right text-sm font-bold text-[#072C0E]">
                     {fmt(totalKg)}
@@ -1053,7 +1077,9 @@ export default function EmissionsTab({
           {/* Mobile totals */}
           <div className="flex items-center justify-between rounded-xl border border-[#072C0E]/8 bg-white px-4 py-3">
             <span className="text-xs font-bold text-[#072C0E]/40">
-              {filtered.length} {tr ? 'kayıt' : 'entries'} · {tr ? 'Toplam' : 'Total'}
+              {filtered.length} {tr ? 'kayıt' : 'entries'} · {filtered.some(e => e.status !== 'approved')
+                ? (tr ? 'Onaylı toplam' : 'Approved total')
+                : (tr ? 'Toplam' : 'Total')}
             </span>
             <span className="text-sm font-bold text-[#072C0E]">
               {fmt(totalKg)} kg · {fixed((totalKg / 1000), 3)} t

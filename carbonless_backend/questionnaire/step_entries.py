@@ -181,7 +181,7 @@ def _factor_by_slug(slug):
     )
 
 
-def _resolve(activity):
+def _resolve(activity, company=None):
     """(factor, quantity Decimal, co2e_kg Decimal) for one activity, or None."""
     from emissions.factor_lookup import resolve_factor_and_amount
     if 'slug' in activity:
@@ -194,7 +194,7 @@ def _resolve(activity):
             return None
         return factor, qty, qty * factor.factor_kg_co2e
     factor, qty, co2e, error = resolve_factor_and_amount(
-        activity['activity'], activity['quantity'], activity['unit'])
+        activity['activity'], activity['quantity'], activity['unit'], company)
     if error:
         logger.info('Questionnaire activity skipped (%s): %s', activity, error)
         return None
@@ -227,7 +227,7 @@ def sync_step_entries(user, company, report, step_id, data):
     # answers count at once, a data-entry member's wait for approval.
     status = _get_entry_status(user, company)
     activities = activities_for_step(step_id, data)
-    resolved = [(a, _resolve(a)) for a in activities]
+    resolved = [(a, _resolve(a, company)) for a in activities]
 
     _step_entries(company, year, step_id).delete()
 

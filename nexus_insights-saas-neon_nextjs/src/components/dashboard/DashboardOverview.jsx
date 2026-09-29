@@ -408,11 +408,14 @@ export default function DashboardOverview({
 
   // Derived: average monthly (only months with data)  -  memoized so the filter/reduce
   // only re-runs when monthly data changes, not on every local state update.
-  const avgTonne = useMemo(() => {
+  const { avgTonne, activeMonths } = useMemo(() => {
     const active = monthly.filter(m => m.total_kg > 0);
-    return active.length > 0
-      ? active.reduce((a, m) => a + m.total_kg, 0) / active.length / 1000
-      : 0;
+    return {
+      activeMonths: active.length,
+      avgTonne: active.length > 0
+        ? active.reduce((a, m) => a + m.total_kg, 0) / active.length / 1000
+        : 0,
+    };
   }, [monthly]);
 
   // Language-aware month name arrays (used in JSX, not inside any memo)
@@ -636,8 +639,8 @@ export default function DashboardOverview({
           </span>
           <p className="text-[11px] font-semibold leading-5 text-[#072C0E]/65">
             {tr
-              ? `Toplam ${fixed(totalTonne, 1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Aylık ortalama ${fixed(avgTonne, 2)} tCO2e.`
-              : `Total ${fixed(totalTonne, 1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Monthly average ${fixed(avgTonne, 2)} tCO2e.`}
+              ? `Toplam ${fixed(totalTonne, 1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Veri girilen ${activeMonths} ayın ortalaması: ${fixed(avgTonne, 2)} tCO2e/ay.`
+              : `Total ${fixed(totalTonne, 1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Average of the ${activeMonths} month${activeMonths === 1 ? '' : 's'} with data: ${fixed(avgTonne, 2)} tCO2e/month.`}
           </p>
         </div>
       )}

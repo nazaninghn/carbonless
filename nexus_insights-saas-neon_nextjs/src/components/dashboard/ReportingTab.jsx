@@ -161,16 +161,19 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       || (!!questionnaireProfile?.is_complete && questionnaireProfile.reporting_year === undefined),
     [allReports, selectedYear, questionnaireProfile],
   );
+  // Readiness, insights and compliance ticks follow the reports: only
+  // approved entries count (pending / rejected ones are not in any PDF).
+  const counted = useMemo(() => (entries || []).filter(e => e.status === 'approved'), [entries]);
   const { checks, readiness } = useMemo(() => {
     const list = [
       { done: inventoryDoneForYear, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed' },
-      { done: entries.length > 0, label: tr ? 'Emisyon verisi girildi' : 'Emission data entered' },
-      { done: entries.length >= 5, label: tr ? 'Yeterli veri (5+ kayıt)' : 'Sufficient data (5+ entries)' },
+      { done: counted.length > 0, label: tr ? 'Emisyon verisi girildi' : 'Emission data entered' },
+      { done: counted.length >= 5, label: tr ? 'Yeterli veri (5+ kayıt)' : 'Sufficient data (5+ entries)' },
       { done: totalTonne > 0, label: tr ? 'Kapsam eşleştirmesi tamam' : 'Scope mapping complete' },
       { done: targets.length > 0, label: tr ? 'Azaltma hedefi belirlendi' : 'Reduction target set' },
     ];
     return { checks: list, readiness: Math.round((list.filter(c => c.done).length / list.length) * 100) };
-  }, [inventoryDoneForYear, entries.length, targets.length, totalTonne, tr]);
+  }, [inventoryDoneForYear, counted.length, targets.length, totalTonne, tr]);
   const animatedReadiness = useCountUp(readiness, 900);
 
   // Monthly chart max — computed once, not inside the render IIFE
@@ -406,8 +409,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               <>
                 <InsightItem text={tr ? `Kapsam 1 toplam emisyonun %${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}'ini oluşturuyor.` : `Scope 1 accounts for ${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}% of total emissions.`} />
                 {s2 > s1 && <InsightItem text={tr ? 'Elektrik tüketimi Scope 2\'de baskın.' : 'Electricity consumption dominates Scope 2.'} />}
-                {entries.length < 10 && <InsightItem text={tr ? 'Daha fazla veri girişi rapor kalitesini artırır.' : 'More data entries will improve report quality.'} type="warning" />}
-                {entries.some(e => ['transport', 'business_travel', 'employee_commuting', 'mobile_combustion'].includes(e.category)) && (
+                {counted.length < 10 && <InsightItem text={tr ? 'Daha fazla veri girişi rapor kalitesini artırır.' : 'More data entries will improve report quality.'} type="warning" />}
+                {counted.some(e => ['transport', 'business_travel', 'employee_commuting', 'mobile_combustion'].includes(e.category)) && (
                   <InsightItem text={tr ? 'Ulaşım aktivitelerinde azaltma potansiyeli tespit edildi.' : 'Reduction potential detected in transport activities.'} />
                 )}
                 {s3 > s1 + s2 && <InsightItem text={tr ? 'Scope 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' : 'Scope 3 dominates — consider supply chain focused reductions.'} />}
@@ -663,10 +666,10 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               // ISO 14064-1 / GHG Protocol inventory needs the completed
               // questionnaire (boundaries, methodology) plus the data, and
               // "audit ready" needs every readiness check and evidence.
-              { done: inventoryDoneForYear && entries.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
-              { done: inventoryDoneForYear && entries.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
-              { done: entries.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
-              { done: readiness === 100 && entries.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Denetim hazır' : 'Audit ready' },
+              { done: inventoryDoneForYear && counted.length > 0 && totalTonne > 0, label: 'ISO 14064-1' },
+              { done: inventoryDoneForYear && counted.length > 0 && totalTonne > 0, label: 'GHG Protocol' },
+              { done: counted.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
+              { done: readiness === 100 && counted.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
               <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5 transition-colors duration-300 hover:bg-[#DEFAE1]/60">
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
