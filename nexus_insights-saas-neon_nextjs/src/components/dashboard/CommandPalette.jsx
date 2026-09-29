@@ -15,6 +15,8 @@ import {
   TrendingDown,
   X,
 } from 'lucide-react';
+import { num } from '@/lib/formatNumber';
+import { CATEGORY_LABELS, scopeLabel } from '@/lib/constants/emissions';
 
 // ─── Static action catalogue ──────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -46,6 +48,7 @@ export default function CommandPalette({
   setActiveTab,
   entries = [],
   setShowAddForm,
+  onAddTarget,
 }) {
   const [open,        setOpen]        = useState(false);
   const [query,       setQuery]       = useState('');
@@ -82,6 +85,7 @@ export default function CommandPalette({
   // when query, language, or entries change — not on every render.
   const items = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const qLocale = query.trim().toLocaleLowerCase(tr ? 'tr-TR' : 'en-US');
 
     const navResults = NAV_ITEMS
       .filter(a => !q || a[tr ? 'tr' : 'en'].toLowerCase().includes(q))
@@ -93,17 +97,18 @@ export default function CommandPalette({
 
     const entryResults = q
       ? entries
-          .filter(e => {
-            const name = (e.emission_factor_name || '').toLowerCase();
-            return name.includes(q);
-          })
+          // Match the Turkish and English source names, the category
+          // (Elektrik / Electricity) and the description, whatever the UI language.
+          .filter(e => [e.emission_factor_name_tr, e.emission_factor_name, e.description,
+            CATEGORY_LABELS[e.category]?.tr, CATEGORY_LABELS[e.category]?.en]
+            .some(v => (v || '').toLocaleLowerCase(tr ? 'tr-TR' : 'en-US').includes(qLocale)))
           .slice(0, 5)
           .map(e => ({
             id:    `entry_${e.id}`,
             group: 'entry',
             icon:  Leaf,
-            label: e.emission_factor_name,
-            sub:   `${e.scope?.replace('scope', 'S')} · ${(parseFloat(e.calculated_co2e_kg) / 1000).toFixed(4)} t · ${e.year}`,
+            label: (tr && e.emission_factor_name_tr) || e.emission_factor_name || e.emission_factor_name_tr,
+            sub:   `${tr ? scopeLabel(e.scope).replace('Scope', 'Kapsam') : scopeLabel(e.scope)} · ${num(parseFloat(e.calculated_co2e_kg) / 1000, 3)} t · ${e.year}`,
             tab:   'emissions',
             action: null,
           }))
@@ -121,7 +126,10 @@ export default function CommandPalette({
     if (item.action === 'addEntry' && setShowAddForm) {
       setTimeout(() => setShowAddForm(true), 120);
     }
-  }, [setActiveTab, setShowAddForm]);
+    if (item.action === 'addTarget' && onAddTarget) {
+      setTimeout(() => onAddTarget(), 120);
+    }
+  }, [setActiveTab, setShowAddForm, onAddTarget]);
 
   const scrollItemIntoView = useCallback((idx) => {
     if (!listRef.current) return;

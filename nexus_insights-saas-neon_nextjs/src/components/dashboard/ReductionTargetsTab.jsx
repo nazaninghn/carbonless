@@ -280,7 +280,7 @@ function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDele
           <div className="flex items-center gap-1.5">
             <Zap className="h-3.5 w-3.5 text-amber-500" />
             <span className="text-[11px] font-bold text-[#072C0E]/60">
-              {fmt(annualNeededT)} t/yr
+              {fmt(annualNeededT)} {tr ? 't/yıl' : 't/yr'}
             </span>
           </div>
         )}
@@ -292,6 +292,7 @@ function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDele
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function ReductionTargetsTab({
   language, targets, summary, fetchData, canEdit = true, selectedYear, onYearChange,
+  formRequested = false, onFormRequestHandled,
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
@@ -328,6 +329,14 @@ export default function ReductionTargetsTab({
   const [baseEmit,   setBaseEmit]   = useState('');
   const [reducePct,  setReducePct]  = useState('');
   const [saving,     setSaving]     = useState(false);
+
+  // "New reduction target" from the command palette opens the form (for users
+  // who may add targets; others just land on the page).
+  useEffect(() => {
+    if (!formRequested) return;
+    if (canEdit) setShowForm(true);
+    onFormRequestHandled?.();
+  }, [formRequested, canEdit, onFormRequestHandled]);
 
   // The base year's inventory total, used to fill "Base Emissions" so the
   // user doesn't have to look it up. { year, tonne } once loaded.
