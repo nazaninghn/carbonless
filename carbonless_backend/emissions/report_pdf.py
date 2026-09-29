@@ -517,7 +517,11 @@ def generate_report(user, year, lang='tr', page_offset=0):
     readiness_pct = round(sum(1 for done, _ in readiness_checks if done) / len(readiness_checks) * 100)
 
     # Mirrors frontend exactly: entries.some(e => e.proof_document)
-    has_evidence = entries.exclude(proof_document='').exclude(proof_document__isnull=True).exists()
+    # Only files still in storage count (a wiped server disk keeps the record).
+    has_evidence = any(
+        e.proof_document.storage.exists(e.proof_document.name)
+        for e in entries.exclude(proof_document='').exclude(proof_document__isnull=True)
+    )
     compliance_checks = [
         (entry_count > 0 and total_kg > 0, 'ISO 14064-1'),
         (entry_count > 0 and total_kg > 0, 'GHG Protocol'),

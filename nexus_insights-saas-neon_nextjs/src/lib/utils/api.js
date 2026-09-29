@@ -233,6 +233,26 @@ export const api = {
     });
   },
   updateEntry: (id, data) => request(`/emissions/entries/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
+  // Attach or replace an existing entry's proof document (multipart, so it
+  // cannot go through request(), which sends JSON — same refresh path as
+  // createEntryWithFile).
+  uploadProof: async (id, file) => {
+    const send = (token) => {
+      const fd = new FormData();
+      fd.append('proof_document', file);
+      return fetchWithTimeout(`${API_BASE}/emissions/entries/${id}/proof/`, {
+        method: 'POST', credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: fd,
+      });
+    };
+    const res = await send(getToken());
+    if (res.status !== 401) return res;
+    const refreshResult = await doRefresh();
+    if (!refreshResult?.ok) return new Response(null, { status: 401 });
+    return send(refreshResult.access);
+  },
+  removeProof: (id) => request(`/emissions/entries/${id}/proof/`, { method: 'DELETE' }),
   deleteEntry: (id) => request(`/emissions/entries/${id}/`, { method: 'DELETE' }),
   getSummary: (year = new Date().getFullYear()) => request(`/emissions/summary/?year=${year}`),
 
