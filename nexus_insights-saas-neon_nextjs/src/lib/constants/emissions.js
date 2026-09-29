@@ -37,6 +37,10 @@ export const CATEGORY_LABELS = {
   downstream_transport:        { tr: 'Aşağı Akış Taşıma',      en: 'Downstream Transport'    },
   processing_of_sold_products: { tr: 'Satılan Ürün İşleme',    en: 'Processing Sold Products'},
   use_of_sold_products:        { tr: 'Satılan Ürün Kullanımı', en: 'Use of Sold Products'    },
+  // The codes EmissionFactor.category actually uses for these two (the
+  // long forms above never occur there, so the dropdown showed the raw code).
+  processing_sold:             { tr: 'Satılan Ürün İşleme',    en: 'Processing Sold Products'},
+  use_of_sold:                 { tr: 'Satılan Ürün Kullanımı', en: 'Use of Sold Products'    },
   end_of_life:                 { tr: 'Ömür Sonu',              en: 'End of Life'             },
   downstream_leased:           { tr: 'Kiral. Var. (Aşağı)',    en: 'Downstream Leased'       },
   franchises:                  { tr: 'Franchise',              en: 'Franchises'              },
@@ -56,6 +60,7 @@ export const scopeLabel = (s) => SCOPE_META[s]?.label ?? s;
 const UNIT_LABELS = {
   kwh: 'kWh', mwh: 'MWh', gj: 'GJ', m3: 'm³', m2: 'm²', kg: 'kg', km: 'km', usd: 'USD',
   liters: { tr: 'litre', en: 'litres' }, tonne: { tr: 'ton', en: 'tonnes' },
+  tonnes: { tr: 'ton', en: 'tonnes' }, franchises: { tr: 'franchise', en: 'franchises' },
   'tonne-km': { tr: 'ton-km', en: 'tonne-km' }, pkm: { tr: 'yolcu-km', en: 'passenger-km' },
   'person-km': { tr: 'yolcu-km', en: 'passenger-km' }, night: { tr: 'gece', en: 'nights' },
   nights: { tr: 'gece', en: 'nights' }, units: { tr: 'adet', en: 'units' },
@@ -70,6 +75,22 @@ export const unitLabel = (u, tr) => {
 
 // In the UI language (see lib/formatNumber).
 export const fmt = (n, d = 2) => num(n, d);
+
+// "per" form of a unit, for factors: kg CO₂e per litre / tonne / unit.
+const PER_UNIT = {
+  liters: { tr: 'litre', en: 'litre' }, tonne: { tr: 'ton', en: 'tonne' },
+  tonnes: { tr: 'ton', en: 'tonne' }, pkm: { tr: 'yolcu-km', en: 'passenger-km' },
+  'person-km': { tr: 'yolcu-km', en: 'passenger-km' }, night: { tr: 'gece', en: 'night' },
+  nights: { tr: 'gece', en: 'night' }, units: { tr: 'adet', en: 'unit' },
+  packages: { tr: 'paket', en: 'package' }, days: { tr: 'gün', en: 'day' },
+  employees: { tr: 'çalışan', en: 'employee' }, franchises: { tr: 'franchise', en: 'franchise' },
+};
+// An emission factor for display: "25.200 kg CO₂e/kg", "2,68 kg CO₂e/litre"
+// (the stored value, up to 6 decimals, trailing zeros dropped).
+export const factorLabel = (value, unit, tr) => {
+  const per = PER_UNIT[unit] ? PER_UNIT[unit][tr ? 'tr' : 'en'] : unitLabel(unit, tr);
+  return `${num(value, 6)} kg CO₂e/${per}`;
+};
 
 export const ALLOWED_UPLOAD_MIME = new Set([
   'application/pdf',

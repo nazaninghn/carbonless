@@ -18,7 +18,7 @@ import {
   MONTHS_TR, MONTHS_EN,
   ALLOWED_UPLOAD_MIME as ALLOWED_MIME,
   MAX_UPLOAD_BYTES as MAX_FILE_BYTES,
-  scopeLabel, fmt, unitLabel,
+  scopeLabel, fmt, unitLabel, factorLabel,
 } from '@/lib/constants/emissions';
 import { fixed } from '@/lib/formatNumber';
 
@@ -1089,7 +1089,7 @@ export default function EmissionsTab({
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {filteredFactors.map(f => (
                           <option key={f.id} value={f.id}>
-                            {tr && f.name_tr ? f.name_tr : f.name} ({f.factor_kg_co2e} kg CO₂e/{f.unit})
+                            {tr && f.name_tr ? f.name_tr : f.name} ({factorLabel(f.factor_kg_co2e, f.unit, tr)})
                           </option>
                         ))}
                       </select>
@@ -1098,8 +1098,8 @@ export default function EmissionsTab({
 
                   {selFactorObj && (
                     <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
-                      <p className="text-xs font-bold text-[#175022]">{tr ? 'Faktör:' : 'Factor:'} {selFactorObj.factor_kg_co2e} kg CO₂e / {selFactorObj.unit}</p>
-                      <p className="mt-0.5 text-[10px] text-[#175022]/70">⚠️ {tr ? `Miktarı ${selFactorObj.unit} cinsinden girin` : `Enter quantity in ${selFactorObj.unit}`}</p>
+                      <p className="text-xs font-bold text-[#175022]">{tr ? 'Faktör:' : 'Factor:'} {factorLabel(selFactorObj.factor_kg_co2e, selFactorObj.unit, tr)}</p>
+                      <p className="mt-0.5 text-[10px] text-[#175022]/70">⚠️ {tr ? `Miktarı ${unitLabel(selFactorObj.unit, tr)} cinsinden girin` : `Enter quantity in ${unitLabel(selFactorObj.unit, tr)}`}</p>
                     </div>
                   )}
                 </div>
