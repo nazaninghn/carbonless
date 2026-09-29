@@ -566,7 +566,7 @@ def _complete_guided_draft(session, draft):
     family = draft.get('activity_family')
     registry_entry = draft_to_entry_data(draft)
     factor_entry = _map_registry_entry_to_factor_entry(registry_entry)
-    pending_entries = _build_pending_entries_from_data([factor_entry])
+    pending_entries = _build_pending_entries_from_data([factor_entry], session.user)
 
     # Clear guided draft
     session.state = {**(session.state or {}), 'guided_draft': None}
@@ -931,9 +931,13 @@ def _session_to_dict(session, include_messages=False):
 # Moved to chat/local_parser.py — imported at module top as try_local_emission_parse.
 
 
-def _build_pending_entries_from_data(emission_blocks):
-    """Resolve emission data dicts to pending entries using factor_lookup."""
+def _build_pending_entries_from_data(emission_blocks, user=None):
+    """Resolve emission data dicts to pending entries using factor_lookup.
+    `user` picks the company whose country decides the factor (a company
+    based outside Turkey gets global factors and its own electricity grid)."""
     from emissions.factor_lookup import resolve_factor_and_amount
+    from companies.utils import get_current_company
+    company = get_current_company(user) if user else None
     pending_entries = []
     for entry_data in emission_blocks:
         activity_type = entry_data.get('fuel_type', '')
@@ -944,7 +948,7 @@ def _build_pending_entries_from_data(emission_blocks):
         description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
         date_extracted = entry_data.get('date_extracted', False)
 
-        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit)
+        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit, company)
         if factor and co2e_kg is not None:
             pending_entries.append({
                 'fuel_type': activity_type,
@@ -1249,7 +1253,7 @@ def _handle_guided_reply(request, session, content):
             'description': f"{draft.get('vehicle_type', 'vehicle')} travel — {selected.replace('_', ' ')}",
         }
 
-        pending_entries = _build_pending_entries_from_data([entry_data])
+        pending_entries = _build_pending_entries_from_data([entry_data], request.user)
         session.state = {**(session.state or {}), 'guided_draft': None}
         session.save(update_fields=['state', 'updated_at'])
 
@@ -1374,7 +1378,7 @@ def _handle_guided_reply(request, session, content):
             'source': 'guided_flow',
         })
 
-    pending_entries = _build_pending_entries_from_data([entry_data])
+    pending_entries = _build_pending_entries_from_data([entry_data], request.user)
 
     # Clear guided draft from session state
     session.state = {**(session.state or {}), 'guided_draft': None}
@@ -1731,7 +1735,7 @@ def send_message(request, session_id):
             # just as silently as unparsed ones, so they're reported too.
             pending_entries = []
             for entry in local_entries:
-                built = _build_pending_entries_from_data([entry])
+                built = _build_pending_entries_from_data([entry], request.user)
                 if built:
                     pending_entries.extend(built)
                 else:
@@ -1941,7 +1945,8 @@ def confirm_entry(request):
         from companies.utils import get_current_company
         from emissions.factor_lookup import resolve_factor_and_amount
         factor, qty, _co2e, _err = resolve_factor_and_amount(
-            entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''))
+            entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''),
+            get_current_company(request.user))
         now = datetime.now(timezone.utc)
         existing = find_duplicate(
             get_current_company(request.user), factor,

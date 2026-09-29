@@ -190,10 +190,37 @@ def _resolve_unit_and_multiplier(activity_type, raw_unit):
     return None, None
 
 
-def resolve_factor(activity_type, unit):
+# Electricity grid factor for a company based outside Turkey, by the ISO code
+# of its headquarters country. EU members without their own grid factor use
+# the EU average; anything else the global grid average.
+GRID_BY_COUNTRY = {
+    'GB': 'uk-grid', 'UK': 'uk-grid', 'US': 'us-grid', 'CN': 'china-grid', 'DE': 'germany-grid',
+    'FR': 'france-grid', 'IN': 'india-grid', 'JP': 'japan-grid', 'BR': 'brazil-grid',
+    'AU': 'australia-grid', 'CA': 'canada-grid', 'KR': 'south-korea-grid',
+    'SA': 'saudi-arabia-grid', 'AE': 'uae-grid',
+}
+EU_COUNTRIES = {
+    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'GR', 'HU', 'IE', 'IT', 'LV',
+    'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
+}
+
+
+def _foreign_country(company):
+    """HQ country code of a company based outside Turkey, else None."""
+    if company is None:
+        return None
+    from questionnaire.serializers import is_turkish_company
+    if is_turkish_company(company):
+        return None
+    return (company.country_of_headquarters or '').strip().upper()
+
+
+def resolve_factor(activity_type, unit, company=None):
     """
     Resolves (activity_type, unit) to a real EmissionFactor, preferring the
-    Turkey-specific row and falling back to global.
+    Turkey-specific row and falling back to global. For a company based
+    outside Turkey (when `company` is given) the global row comes first and
+    electricity uses that country's grid factor.
     Returns (factor, normalized_unit, quantity_multiplier, error) — multiplier
     is 1 unless a dimensional conversion (e.g. MWh -> kWh) was needed to reach
     a registered unit.
@@ -212,16 +239,29 @@ def resolve_factor(activity_type, unit):
         return None, raw_unit, None, f"'{activity_type}' is not a supported activity type yet."
 
     slug = ACTIVITY_TO_SLUG[(activity_type, norm_unit)]
-    factor = (
-        EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
-        or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
-    )
+    countries = ('turkey', 'global')
+    foreign = _foreign_country(company)
+    if foreign:
+        countries = ('global', 'turkey')
+        if slug == 'turkey-grid':
+            # The country's own grid, else the EU average for an EU member,
+            # else the global grid average — never Turkey's grid.
+            candidates = [GRID_BY_COUNTRY.get(foreign), 'eu-grid' if foreign in EU_COUNTRIES else None, 'grid-average']
+            for grid in filter(None, candidates):
+                if EmissionFactor.objects.filter(slug=grid, country='global', is_active=True, is_default=True).exists():
+                    slug = grid
+                    break
+    factor = None
+    for country in countries:
+        factor = EmissionFactor.objects.filter(slug=slug, country=country, is_active=True, is_default=True).first()
+        if factor:
+            break
     if not factor:
         return None, norm_unit, None, f"No active emission factor found for '{activity_type}' ({unit})."
     return factor, norm_unit, multiplier, None
 
 
-def resolve_factor_and_amount(activity_type, quantity, unit):
+def resolve_factor_and_amount(activity_type, quantity, unit, company=None):
     """
     Resolves (activity_type, unit) to a real factor AND normalizes quantity for
     any dimensional conversion (e.g. tonne -> kg, MWh -> kWh, mile -> km,
@@ -240,7 +280,7 @@ def resolve_factor_and_amount(activity_type, quantity, unit):
     if qty > Decimal('1000000000000'):
         return None, None, None, 'Quantity is unrealistically large — please check the value.'
 
-    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit)
+    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit, company)
     if error:
         return None, None, None, error
 
@@ -320,7 +360,7 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     if not company:
         return None, 'No company found. Please create a company first.'
 
-    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit)
+    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company)
     if error:
         return None, error
 

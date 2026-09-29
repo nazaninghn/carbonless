@@ -98,6 +98,14 @@ function ProofButton({ entry, tr, toast, className }) {
   );
 }
 
+// Same mapping as emissions/factor_lookup.py (the AI chat's choice).
+const GRID_BY_COUNTRY = {
+  GB: 'uk-grid', UK: 'uk-grid', US: 'us-grid', CN: 'china-grid', DE: 'germany-grid', FR: 'france-grid',
+  IN: 'india-grid', JP: 'japan-grid', BR: 'brazil-grid', AU: 'australia-grid', CA: 'canada-grid',
+  KR: 'south-korea-grid', SA: 'saudi-arabia-grid', AE: 'uae-grid',
+};
+const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
+
 // Only approved entries are part of the totals — the same rule the backend
 // summary and every report apply (emissions/inventory.py). Pending and
 // rejected entries stay listed and are summed separately, for information.
@@ -184,7 +192,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function EmissionsTab({
-  language, selectedYear, selectedCountry,
+  language, selectedYear, selectedCountry, companyCountry = '',
   entries, factors, facilityList,
   customRequests = [],
   questionnaireProfile,
@@ -269,7 +277,7 @@ export default function EmissionsTab({
       const srcMap = { national: ['turkey_grid','turkey_fleet','atom_kablo'], defra: ['defra_2024'], ipcc: ['ipcc_2006','ipcc_2019'] };
       preferred = srcMap[questionnaireProfile.preferred_factor_source] ?? null;
     }
-    return factors.filter(f => {
+    const list = factors.filter(f => {
       let m = true;
       if (selScope)    m = m && f.scope === selScope;
       if (selCategory) m = m && f.category === selCategory;
@@ -281,7 +289,10 @@ export default function EmissionsTab({
       if (preferred) m = m && preferred.includes(f.source);
       return m;
     });
-  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile]);
+    // The company's own grid first (a UK company sees "UK grid" on top).
+    const ownGrid = GRID_BY_COUNTRY[companyCountry] || (EU_COUNTRIES.has(companyCountry) ? 'eu-grid' : null);
+    return ownGrid ? [...list].sort((a, b) => (b.slug === ownGrid) - (a.slug === ownGrid)) : list;
+  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry]);
 
   const categories = useMemo(() => {
     // Hoist the country-category Set — O(n) not O(n²)

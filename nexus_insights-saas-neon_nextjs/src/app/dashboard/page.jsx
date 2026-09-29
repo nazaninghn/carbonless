@@ -114,6 +114,25 @@ export default function DashboardPage() {
   // Add Entry form (showAddForm shared with DashboardOverview)
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('turkey');
+  // Emission sources follow the company's headquarters: the Turkish factor
+  // set for a company in Turkey, the global set (country grids, DEFRA travel
+  // factors…) for one based elsewhere. `companyCountry` (ISO code) also puts
+  // that country's own grid first in the electricity list.
+  const [companyCountry, setCompanyCountry] = useState('');
+  useEffect(() => {
+    let cancelled = false;
+    api.getCompanyDetail()
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (cancelled || !data) return;
+        const code = String(data.country_of_headquarters || '').trim().toUpperCase();
+        const turkish = !code || ['TR', 'TUR', 'TURKEY', 'TÜRKIYE', 'TÜRKİYE', 'TURKIYE'].includes(code);
+        setCompanyCountry(code);
+        setSelectedCountry(turkish ? 'turkey' : 'global');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
   // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
@@ -279,6 +298,7 @@ export default function DashboardPage() {
                 language={language}
                 selectedYear={selectedYear}
                 selectedCountry={selectedCountry}
+                companyCountry={companyCountry}
                 entries={entries}
                 factors={factors}
                 facilityList={facilityList}

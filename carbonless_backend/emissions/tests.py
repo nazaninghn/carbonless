@@ -812,3 +812,69 @@ class OnlyApprovedEntriesCountTests(TestCase):
         self.assertEqual(mine.status, 'approved')
         self.assertEqual(theirs.status, 'submitted')
         self.assertEqual(rejected.status, 'draft')
+
+
+class CompanyCountryFactorTests(TestCase):
+    """The AI chat / questionnaire factor lookup follows the company's HQ:
+    Turkish factors for a Turkish company, global ones and the country's own
+    grid for a company based elsewhere."""
+
+    def setUp(self):
+        from companies.models import Company
+        mk = lambda slug, country, value, **kw: EmissionFactor.objects.create(
+            slug=slug, name=slug, scope=kw.get('scope', 'scope2'), category=kw.get('category', 'electricity'),
+            country=country, unit=kw.get('unit', 'kwh'), factor_kg_co2e=value, year=2024,
+            source='generic', is_active=True, is_default=True)
+        mk('turkey-grid', 'turkey', 0.42)
+        mk('uk-grid', 'global', 0.207)
+        mk('eu-grid', 'global', 0.295)
+        mk('grid-average', 'global', 0.475)
+        mk('natural-gas-m3', 'turkey', 2.02, scope='scope1', category='stationary_combustion', unit='m3')
+        mk('natural-gas-m3', 'global', 2.03, scope='scope1', category='stationary_combustion', unit='m3')
+        base = dict(tax_number='', countries_of_operation='x', main_activity_description='x',
+                    number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
+        self.tr = Company.objects.create(legal_entity_name='TR', country_of_headquarters='TR', **base)
+        self.gb = Company.objects.create(legal_entity_name='GB', country_of_headquarters='GB', **base)
+        self.nl = Company.objects.create(legal_entity_name='NL', country_of_headquarters='NL', **base)
+        self.br = Company.objects.create(legal_entity_name='BR', country_of_headquarters='BR', **base)
+
+    def _slug(self, activity, unit, company):
+        from .factor_lookup import resolve_factor
+        factor, _u, _m, err = resolve_factor(activity, unit, company)
+        self.assertIsNone(err)
+        return factor.slug, factor.country
+
+    def test_electricity_grid_follows_the_company_country(self):
+        self.assertEqual(self._slug('electricity', 'kwh', self.tr), ('turkey-grid', 'turkey'))
+        self.assertEqual(self._slug('electricity', 'kwh', None), ('turkey-grid', 'turkey'))
+        self.assertEqual(self._slug('electricity', 'kwh', self.gb), ('uk-grid', 'global'))
+        self.assertEqual(self._slug('electricity', 'kwh', self.nl), ('eu-grid', 'global'))
+        self.assertEqual(self._slug('electricity', 'kwh', self.br), ('grid-average', 'global'))  # no brazil-grid here
+
+    def test_foreign_company_prefers_the_global_version(self):
+        self.assertEqual(self._slug('natural_gas', 'm3', self.tr), ('natural-gas-m3', 'turkey'))
+        self.assertEqual(self._slug('natural_gas', 'm3', self.gb), ('natural-gas-m3', 'global'))
+
+
+class CommercialFlightScopeTests(TestCase):
+    """Commercial flights are Scope 3 Cat. 6 business travel (GHG Protocol),
+    in the seed data and after the migration."""
+
+    def test_seed_data(self):
+        from . import seed_data
+        rows = [r for rows in (v for v in vars(seed_data).values() if isinstance(v, list)) for r in rows
+                if isinstance(r, dict) and r.get('slug') in ('flight-domestic', 'flight-international')]
+        self.assertEqual(len(rows), 2)
+        for r in rows:
+            self.assertEqual((r['scope'], r['category']), ('scope3', 'business_travel'))
+
+    def test_migration_moves_existing_rows(self):
+        import importlib
+        from django.apps import apps
+        f = EmissionFactor.objects.create(slug='flight-domestic', name='Domestic Flight (Turkey)', scope='scope1',
+                                          category='mobile_combustion', country='turkey', unit='km',
+                                          factor_kg_co2e=0.232, year=2025, source='turkey_fleet',
+                                          is_active=True, is_default=True)
+        importlib.import_module('emissions.migrations.0017_commercial_flights_scope3').move_to_scope3(apps, None)
+        f.refresh_from_db()
+        self.assertEqual((f.scope, f.category, float(f.factor_kg_co2e)), ('scope3', 'business_travel', 0.232))
