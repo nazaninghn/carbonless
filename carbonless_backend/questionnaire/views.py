@@ -1026,10 +1026,30 @@ def pending_advisor_approvals_view(request):
         report__company=company, status=AdvisorApproval.Status.PENDING
     ).select_related('report').order_by('-created_at')
 
+    # The flagged answer itself, so the approver sees what they approve
+    # (the card used to show only the question). ReportStep.answer holds
+    # {"answer": <value>} for most steps; older rows hold the value directly.
+    approvals = list(approvals)
+    steps = {
+        (s.report_id, s.step_id): s.answer
+        for s in ReportStep.objects.filter(
+            report_id__in={a.report_id for a in approvals},
+            step_id__in={a.question_id for a in approvals},
+        )
+    }
+
+    def _answer(a):
+        raw = steps.get((a.report_id, a.question_id))
+        if isinstance(raw, dict) and set(raw) == {'answer'}:
+            return raw['answer']
+        return raw
+
     return Response([{
         'id': a.id,
         'report_id': a.report_id,
         'report_title': a.report.title or f'Report {a.report_id}',
+        'reporting_year': a.report.reporting_year,
+        'answer': _answer(a),
         'question_id': a.question_id,
         'field_id': a.field_id,
         'reason_code': a.reason_code,

@@ -596,3 +596,38 @@ class StartedByTests(TestCase):
 
     def test_creator_sees_none(self):
         self.assertIsNone(self._status(self.owner)['started_by'])
+
+
+class PendingAdvisorAnswerTests(TestCase):
+    """The Onay Bekleyenler inbox carries the flagged answer and the
+    inventory's year, so an approver sees what they are approving."""
+
+    def setUp(self):
+        from .models import AdvisorApproval, ReportStep
+        self.user = User.objects.create_user('advuser', 'adv@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Adv Co', tax_number='3',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.user, company=company, role='owner')
+        report = CarbonReport.objects.create(company=company, created_by=self.user, reporting_year=2025)
+        ReportStep.objects.create(report=report, step_id='6A-2', answer={'answer': 'not_controlled'})
+        ReportStep.objects.create(report=report, step_id='3A-EF-a', answer={'answer': {'ef_value': '5', 'ef_unit': 'kgCO2e_kWh'}})
+        for qid in ('6A-2', '3A-EF-a', '3D-EF'):
+            AdvisorApproval.objects.create(report=report, question_id=qid, reason_code=f'r-{qid}',
+                                           trigger_category='x', risk_level='medium')
+        from rest_framework.test import APIClient
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_items_carry_answer_and_year(self):
+        res = self.client.get('/api/questionnaire/advisor-approvals/pending/')
+        self.assertEqual(res.status_code, 200)
+        by_q = {i['question_id']: i for i in res.json()}
+        self.assertEqual(by_q['6A-2']['answer'], 'not_controlled')
+        self.assertEqual(by_q['3A-EF-a']['answer'], {'ef_value': '5', 'ef_unit': 'kgCO2e_kWh'})
+        self.assertIsNone(by_q['3D-EF']['answer'])  # no saved step
+        self.assertEqual(by_q['6A-2']['reporting_year'], 2025)

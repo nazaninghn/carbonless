@@ -5,6 +5,7 @@ import { ClipboardCheck, Check, X, ShieldAlert } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import { noPermissionMessage } from '@/lib/permissions';
 import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
+import { formatAdvisorAnswer } from '@/lib/advisorAnswer';
 import { MONTHS_TR, MONTHS_EN, unitLabel } from '@/lib/constants/emissions';
 const num = (v, tr, digits = 2) =>
   Number(v || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: digits });
@@ -71,6 +72,16 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [rejectTarget]);
+
+  // Same hand-off as Emisyon Yönetimi's "Ankette düzelt": the Karbon
+  // Envanteri tab picks this up and opens the inventory on that question.
+  const openInQuestionnaire = useCallback((item) => {
+    try {
+      sessionStorage.setItem('carboniq_open_request',
+        JSON.stringify({ report_id: item.report_id, step_id: item.question_id }));
+    } catch {}
+    window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'questionnaire' } }));
+  }, []);
 
   const handleApprove = useCallback(async (id, type) => {
     setProcessing(id);
@@ -172,7 +183,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                   ? 'Anketteki bazı cevaplar ISO 14064-1 doğrulamasında açıklama gerektirir. Onaylarsanız cevabın bilerek verildiği kaydedilir; reddederseniz cevabın gözden geçirilip düzeltilmesi gerektiği not edilir. Aynı kural her envanter için ayrı listelenir.'
                   : 'Some questionnaire answers need a justification in an ISO 14064-1 verification. Approving records that the answer was given on purpose; rejecting notes that it must be reviewed and corrected. Each inventory is listed separately.'}
               </p>
-              {advisorPending.map(item => { const reason = advisorReasonText(item, tr); return (
+              {advisorPending.map(item => { const reason = advisorReasonText(item, tr); const given = formatAdvisorAnswer(item.question_id, item.answer, tr); return (
                 <div key={`advisor-${item.id}`} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-1.5">
@@ -182,12 +193,27 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                       {reason.question && (
                         <p className="line-clamp-2 text-[11px] text-[#072C0E]/55">{reason.question}</p>
                       )}
+                      {given && (
+                        <p className="rounded-lg bg-[#F1FCF2] px-2.5 py-1.5 text-[11px] leading-5 text-[#072C0E]/75">
+                          <span className="font-bold text-[#072C0E]">{tr ? 'Verilen cevap: ' : 'Answer given: '}</span>{given}
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${RISK_STYLES[item.risk_level] || 'bg-[#072C0E]/10 text-[#072C0E]'}`}>
                           {tr ? (RISK_LABELS_TR[item.risk_level] || item.risk_level) : item.risk_level?.replace('_', '-')}
                         </span>
                         <span className="text-[11px] font-semibold text-[#072C0E]/50">{advisorCategoryLabel(item.trigger_category, tr)}</span>
-                        <span className="text-[10px] text-[#072C0E]/45">{tr ? 'Envanter' : 'Inventory'}: {item.report_title}</span>
+                        <span className="text-[10px] text-[#072C0E]/45">
+                          {tr ? 'Envanter' : 'Inventory'}: {item.report_title}
+                          {item.reporting_year ? ` (${tr ? 'raporlama yılı' : 'reporting year'} ${item.reporting_year})` : ''}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openInQuestionnaire(item)}
+                          className="text-[10px] font-bold text-[#2ABD41] hover:underline"
+                        >
+                          {tr ? 'Ankette aç →' : 'Open in questionnaire →'}
+                        </button>
                       </div>
                     </div>
                     {canApprove && <div className="flex shrink-0 items-center gap-1.5">

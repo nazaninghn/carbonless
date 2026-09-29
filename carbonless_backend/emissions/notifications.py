@@ -69,7 +69,10 @@ def notify_entry_submitted(entry):
         return
     try:
         from companies.models import CompanyMembership
-        author = entry.user.username if entry.user else '—'
+        # The same name the Onay Bekleyenler list shows ("Giren: Emre"),
+        # not the login name, which for many accounts is an e-mail address.
+        u = entry.user
+        author = (u.get_full_name() or u.email or u.username) if u else '—'
         approvers = (
             CompanyMembership.objects
             .filter(company_id=entry.company_id, is_active=True, role__in=APPROVER_ROLES)
