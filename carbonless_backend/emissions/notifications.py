@@ -24,10 +24,14 @@ _MONTHS = {
 
 # Unit spellings for messages (EmissionFactor.unit is a lower-case code).
 _UNITS = {
-    'kwh': 'kWh', 'gj': 'GJ', 'm3': 'm³', 'm2': 'm²',
+    'kwh': 'kWh', 'mwh': 'MWh', 'gj': 'GJ', 'm3': 'm³', 'm2': 'm²', 'kg': 'kg', 'km': 'km', 'usd': 'USD',
     'liters': {'tr': 'litre', 'en': 'litres'}, 'tonne': {'tr': 'ton', 'en': 'tonnes'},
-    'tonne-km': {'tr': 'ton-km', 'en': 'tonne-km'}, 'person-km': {'tr': 'yolcu-km', 'en': 'passenger-km'},
-    'nights': {'tr': 'gece', 'en': 'nights'}, 'units': {'tr': 'adet', 'en': 'units'}, 'usd': 'USD',
+    'tonnes': {'tr': 'ton', 'en': 'tonnes'}, 'tonne-km': {'tr': 'ton-km', 'en': 'tonne-km'},
+    'pkm': {'tr': 'yolcu-km', 'en': 'passenger-km'}, 'person-km': {'tr': 'yolcu-km', 'en': 'passenger-km'},
+    'night': {'tr': 'gece', 'en': 'nights'}, 'nights': {'tr': 'gece', 'en': 'nights'},
+    'units': {'tr': 'adet', 'en': 'units'}, 'packages': {'tr': 'paket', 'en': 'packages'},
+    'days': {'tr': 'gün', 'en': 'days'}, 'employees': {'tr': 'çalışan', 'en': 'employees'},
+    'franchises': {'tr': 'franchise', 'en': 'franchises'},
 }
 
 

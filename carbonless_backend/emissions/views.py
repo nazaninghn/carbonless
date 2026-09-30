@@ -549,6 +549,8 @@ def _export_rows(entries, lang):
     headers, factor names, scopes, categories, months and status (a rejected
     entry is listed but marked, so a column sum can leave it out). Numbers
     stay numbers; the CSV writer formats them."""
+    from .descriptions import display_description
+    from .notifications import _unit
     from .report_pdf import _CAT
     tr = lang == 'tr'
     status_labels = {
@@ -575,10 +577,10 @@ def _export_rows(entries, lang):
             (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
             _CAT[lang].get(ef.category, ef.category),
             months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month,
-            float(e.quantity), ef.unit,
+            float(e.quantity), _unit(ef.unit, lang),
             float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
             ef.reference or '',
-            e.facility.name if e.facility_id else '', e.description,
+            e.facility.name if e.facility_id else '', display_description(e.description, lang),
             status_labels.get(e.status, e.status),
             e.rejected_reason if e.status == 'draft' else '',
         ])

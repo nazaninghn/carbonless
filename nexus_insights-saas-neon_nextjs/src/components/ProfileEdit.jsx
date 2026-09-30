@@ -1,4 +1,5 @@
 ﻿'use client';
+import { phoneOk, phoneMessage } from '@/lib/companyFields';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -28,9 +29,10 @@ export default function ProfileEdit({ language, user, onUpdate }) {
     e.preventDefault();
     // Fix 26B: prevent double-submit if button fires twice before state updates
     if (saving) return;
-    setSaving(true);
     setMsg('');
     setError('');
+    if (!phoneOk(phone)) { setError(phoneMessage(tr)); return; }
+    setSaving(true);
 
     try {
       const res = await api.updateProfile({

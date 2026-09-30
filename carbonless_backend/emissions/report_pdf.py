@@ -789,7 +789,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
     E.append(Paragraph('2. ' + ('Kapsam Da\u011f\u0131l\u0131m\u0131' if tr else 'Scope Distribution'), S['h1']))
 
     scope_tbl = [
-        ['Scope', 'A\u00e7\u0131klama' if tr else 'Description', 'kg CO\u2082e', 'tCO\u2082e', '%'],
+        ['Kapsam' if tr else 'Scope', 'A\u00e7\u0131klama' if tr else 'Description', 'kg CO\u2082e', 'tCO\u2082e', '%'],
         [_scope(1, tr), 'Do\u011frudan Emisyonlar' if tr else 'Direct Emissions', _fmt(s1, tr), _fmt4(s1/1000, tr), _pct(s1, total_kg, tr)],
         [_scope(2, tr), 'Enerji Dolayl\u0131' if tr else 'Energy Indirect', _fmt(s2, tr), _fmt4(s2/1000, tr), _pct(s2, total_kg, tr)],
         [_scope(3, tr), 'Di\u011fer Dolayl\u0131' if tr else 'Other Indirect', _fmt(s3, tr), _fmt4(s3/1000, tr), _pct(s3, total_kg, tr)],

@@ -512,3 +512,20 @@ class HistoryTextTests(TestCase):
         self.assertEqual(localize_detail('Updated emission entry: Grid (12 kwh)', 'tr', {'Grid': 'Şebeke'}),
                          'Şebeke · 12 kWh')
         self.assertEqual(localize_detail('something else', 'tr', {}), 'something else')
+
+
+class ProfilePhoneTests(TestCase):
+    def test_profile_phone_must_look_like_a_phone(self):
+        from .models import UserProfile
+        user = User.objects.create_user('ph', 'ph@test.com', 'testpass123')
+        UserProfile.objects.create(user=user, language_preference='tr')
+        c = APIClient()
+        c.force_authenticate(user)
+        res = c.patch('/api/accounts/update-profile/', {'first_name': 'Ali', 'phone': 'asdf'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.data['code'], 'invalid_phone')
+        user.refresh_from_db()
+        self.assertEqual(user.first_name, '')  # nothing saved
+        res = c.patch('/api/accounts/update-profile/', {'phone': '+90 532 000 00 00'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(UserProfile.objects.get(user=user).phone, '+90 532 000 00 00')
