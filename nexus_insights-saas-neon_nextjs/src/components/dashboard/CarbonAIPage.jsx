@@ -1179,7 +1179,7 @@ function Scope1SummaryTable({ answers, lang, tr }) {
 // currentLoopItem — for fuel_loop / equipment_loop questions whose `units` is
 // an object keyed by item value (e.g. { natural_gas: ['m³','kWh'], ... }).
 // ─────────────────────────────────────────────────────────────────────────────
-function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, currentLoopItem }) {
+function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, currentLoopItem, answers }) {
   const tr = lang === 'tr';
   // Guard against duplicate auto-submits from rapid double-taps on chip options
   const chipTimerRef = useRef(null);
@@ -1291,9 +1291,16 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   if (type === 'year_select') {
     // Prefer question.options when defined (gives correct range + custom labels)
     if (options && options.length > 0) {
+      // A year that must precede another answer (baseline < reporting year)
+      // only offers the years that can actually be accepted.
+      const rule = question.validateAgainst;
+      const limit = rule?.rule === 'less_than' ? parseInt(answers?.[rule.questionId], 10) : NaN;
+      const yearOptions = Number.isNaN(limit)
+        ? options
+        : options.filter(opt => parseInt(opt.value, 10) < limit);
       return (
         <div role="radiogroup" className="flex flex-wrap gap-2">
-          {options.map(opt => (
+          {yearOptions.map(opt => (
             <Chip
               key={opt.value}
               label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
@@ -1720,8 +1727,8 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
       </div>
       <p className="mb-3 text-xs text-[#175022]/55">
         {tr
-          ? 'Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa **Düzenle** butonunu kullanın.'
-          : 'Your answers for this section are below. Use **Edit** to change any answer before continuing.'}
+          ? <>Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa <strong>Düzenle</strong> butonunu kullanın.</>
+          : <>Your answers for this section are below. Use <strong>Edit</strong> to change any answer before continuing.</>}
       </p>
       <div className="overflow-x-auto rounded-xl border border-[#175022]/8 mb-4">
         <table className="w-full text-xs">
@@ -1852,7 +1859,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
           <span className="text-[10px] font-semibold text-[#175022]/60">
             {totalAnswered} / {applicableTotal}
           </span>
-          <span className="text-[10px] font-bold text-[#2ABD41]">{pct}%</span>
+          <span className="text-[10px] font-bold text-[#2ABD41]">{lang === 'tr' ? `%${pct}` : `${pct}%`}</span>
         </div>
         <div className="h-1.5 w-full rounded-full bg-[#175022]/8">
           <div
@@ -2339,21 +2346,6 @@ export function QuestionnaireTab({
       .catch(e => console.error('getPreviousCompanyProfile failed:', e));
   }, [reportId, currentId, answers]);
 
-  // ✅ Pre-fill Stage-1 (Company Profile) inputs from the previous report once
-  // the user has moved past the reuse dialog — applies whether they declined
-  // reuse (previousProfile stays populated) or no previous profile existed
-  // (previousProfile is {available:false}, so unmapPhase1Answer never matches
-  // and this is a no-op). Skipped for a question the user already answered
-  // (e.g. navigating back), so it never clobbers a real in-progress edit.
-  useEffect(() => {
-    if (!previousProfile?.answers || currentId in answers) return;
-    // The reporting year belongs to this inventory — pre-filling the earlier
-    // inventory's year made "continue" silently create a second one for it.
-    if (currentId === 'A4') return;
-    const prefilled = unmapPhase1Answer(currentId, previousProfile.answers[currentId]);
-    if (prefilled !== undefined) setAnswerValue(prefilled);
-  }, [currentId, previousProfile, answers]);
-
   const handleConfirmReuseProfile = useCallback(async () => {
     if (!reportId || reuseLoading) return;
     setReuseLoading(true);
@@ -2627,6 +2619,23 @@ export function QuestionnaireTab({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]); // only run when the question changes
 
+  // ✅ Pre-fill Stage-1 (Company Profile) inputs from the previous report once
+  // the user has moved past the reuse dialog — applies whether they declined
+  // reuse (previousProfile stays populated) or no previous profile existed
+  // (previousProfile is {available:false}, so unmapPhase1Answer never matches
+  // and this is a no-op). Skipped for a question the user already answered
+  // (e.g. navigating back), so it never clobbers a real in-progress edit.
+  // Declared after the per-question reset above: effects run in order, and
+  // before it the reset wiped a prefill that was already loaded (B4).
+  useEffect(() => {
+    if (!previousProfile?.answers || currentId in answers) return;
+    // The reporting year belongs to this inventory — pre-filling the earlier
+    // inventory's year made "continue" silently create a second one for it.
+    if (currentId === 'A4') return;
+    const prefilled = unmapPhase1Answer(currentId, previousProfile.answers[currentId]);
+    if (prefilled !== undefined) setAnswerValue(prefilled);
+  }, [currentId, previousProfile, answers]);
+
   // Fix #61: Clear stale validationError when the outer dashboard tab makes
   // this component visible again.  QuestionnaireTab is kept alive via CSS
   // hidden (Fix #46) so all state — including a red "Please enter…" banner
@@ -2700,9 +2709,14 @@ export function QuestionnaireTab({
         const botMsg = Array.isArray(respData?.bot_messages) && respData.bot_messages[0]
           ? String(respData.bot_messages[0]).replace(/^[❌⚠️\s]+/u, '')
           : '';
+        // Every rejected field, not just the first (a bad phone AND website
+        // used to show only the phone message).
+        const fieldErrors = respData?.errors && typeof respData.errors === 'object' && !Array.isArray(respData.errors)
+          ? [...new Set(Object.values(respData.errors).flat().filter(m => typeof m === 'string'))].join(' ')
+          : '';
         const msg = res.status === 403
           ? noPermissionMessage(lang === 'tr')
-          : (respData?.error || respData?.detail || botMsg || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
+          : (respData?.error || respData?.detail || fieldErrors || botMsg || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
         if (isMounted.current) setSaveError(msg);
         return { success: false, data: {} };
       }
@@ -2887,13 +2901,17 @@ export function QuestionnaireTab({
 
       // Show user bubble with item context
       const displayVal = getDisplayValue(q, value, lang);
+      const loopBubbleId = `m-${++msgIdRef.current}`;
       if (q.type !== 'info') {
         setMessages(prev => [...prev, {
-          id: `m-${++msgIdRef.current}`,
+          id: loopBubbleId,
           role: 'user',
           content: `${itemLabel}: ${displayVal}`,
         }]);
       }
+      // A rejected answer must not look accepted: drop its chat bubble so it
+      // is not shown as saved (the input keeps the value for correction).
+      const dropRejectedBubble = (bubbleId) => setMessages(prev => prev.filter(m => m.id !== bubbleId));
 
       const nextIndex = currentIndex + 1;
 
@@ -2912,6 +2930,7 @@ export function QuestionnaireTab({
         markSubmitting(true);
         const loopSave = await saveStepToBackend(currentId, newCollected, reportId);
         if (!loopSave.success) {
+          dropRejectedBubble(loopBubbleId);
           markSubmitting(false);
           return;
         }
@@ -2962,6 +2981,12 @@ export function QuestionnaireTab({
       // of silently advancing past bad data. saveStepToBackend already set
       // saveError for display.
       if (!saveRes.success) {
+        // Roll back so the rejected answer is not counted as answered and
+        // the loop can be retried from its last item.
+        dropRejectedBubble(loopBubbleId);
+        setAnswers(answers);
+        setHistory(prev => prev.slice(0, -1));
+        setLoopState(loopState);
         markSubmitting(false);
         return;
       }
@@ -3038,8 +3063,9 @@ export function QuestionnaireTab({
 
     // Add user bubble
     const displayVal = getDisplayValue(q, value, lang);
+    const userBubbleId = `m-${++msgIdRef.current}`;
     if (q.type !== 'info') {
-      setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content: displayVal }]);
+      setMessages(prev => [...prev, { id: userBubbleId, role: 'user', content: displayVal }]);
     }
 
     // Save answer
@@ -3058,6 +3084,11 @@ export function QuestionnaireTab({
     // of silently advancing past bad data. saveStepToBackend already set
     // saveError for display.
     if (!saveRes.success) {
+      // Roll back: a rejected answer is not counted in the progress and its
+      // bubble is removed so it does not look accepted.
+      setMessages(prev => prev.filter(m => m.id !== userBubbleId));
+      setAnswers(answers);
+      setHistory(prev => prev.slice(0, -1));
       markSubmitting(false);
       setIsTyping(false);
       return;
@@ -3601,6 +3632,7 @@ export function QuestionnaireTab({
                   onChange={v => { setAnswerValue(v); setValidationError(''); setShowValidationError(false); }}
                   onSubmit={submitAnswer}
                   lang={lang}
+                  answers={answers}
                   disabled={isTyping || submitting || answerForId !== currentId}
                   currentLoopItem={
                     loopState && loopState.questionId === currentId

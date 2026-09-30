@@ -627,6 +627,11 @@ def _registration_prefill_answers(company):
     from .serializers import StepA2Serializer
     if tax and StepA2Serializer(data={'tax_id': tax}, context={'company': company}).is_valid():
         answers['A2'] = {'tax_id': tax}
+    # Facilities already added (at sign-up or in Settings) give the location
+    # count, so B4 does not start empty and drift from the facility list.
+    facilities = company.facilities.count()
+    if facilities:
+        answers['B4'] = {'number_of_facilities': facilities}
     return answers
 
 

@@ -694,6 +694,15 @@ class TaxIdStepTests(TestCase):
         data = client.get(f'/api/questionnaire/{report.id}/previous-profile/').json()
         self.assertEqual(data['answers']['A2'], {'tax_id': 'DE123456789'})
 
+    def test_location_count_is_prefilled_from_registered_facilities(self):
+        from companies.models import Facility
+        client, report, company = self._setup('TR')
+        url = f'/api/questionnaire/{report.id}/previous-profile/'
+        self.assertNotIn('B4', client.get(url).json()['answers'])
+        Facility.objects.create(company=company, name='Tesis 1', country='TR')
+        Facility.objects.create(company=company, name='Tesis 2', country='TR')
+        self.assertEqual(client.get(url).json()['answers']['B4'], {'number_of_facilities': 2})
+
 
 class FacilitySyncTests(TestCase):
     """Question 2A-2 names the company's real facilities."""
