@@ -405,13 +405,16 @@ export default function InventoryLibrary({ tr = false }) {
           <p className="text-[#175022]/60 mb-6">
             {tr ? 'Henüz envanter yok' : 'No inventories yet'}
           </p>
-          <button
-            onClick={() => setShowNamingDialog(true)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition"
-          >
-            <Plus className="w-5 h-5" />
-            {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
-          </button>
+          {/* An auditor can't start one (the notice above says so). */}
+          {canEdit && (
+            <button
+              onClick={() => setShowNamingDialog(true)}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition"
+            >
+              <Plus className="w-5 h-5" />
+              {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
+            </button>
+          )}
         </div>
       )}
 

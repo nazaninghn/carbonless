@@ -281,6 +281,7 @@ export default function DashboardPage() {
                     setShowAddForm={setShowAddForm}
                     onYearChange={setSelectedYear}
                     canApprove={perms.canApprove}
+                    canEdit={perms.canEdit}
                   />
                 </>
               )}
