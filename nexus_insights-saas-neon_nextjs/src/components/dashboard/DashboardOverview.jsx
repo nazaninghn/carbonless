@@ -375,6 +375,7 @@ export default function DashboardOverview({
   setShowAddForm,
   onYearChange,
   canApprove = false,
+  canEdit = true,
 }) {
   const tr = language === 'tr';
   // Items waiting in "Onay Bekleyenler" (entries + advisor approvals), shown
@@ -617,13 +618,16 @@ export default function DashboardOverview({
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-[#2ABD41] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#1D9C31]"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            {tr ? 'Veri Ekle' : 'Add Data'}
-          </button>
+          {/* An auditor can't add entries (read-only role). */}
+          {canEdit && (
+            <button
+              onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#2ABD41] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#1D9C31]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {tr ? 'Veri Ekle' : 'Add Data'}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('reporting')}
             className="inline-flex items-center gap-1.5 rounded-lg border border-[#072C0E]/10 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-[#072C0E]/60 transition hover:border-[#072C0E]/20"
@@ -773,15 +777,19 @@ export default function DashboardOverview({
           ) : (
             <div className="flex h-20 flex-col items-center justify-center gap-1.5">
               <p className="text-[11px] font-semibold text-[#072C0E]/35">{tr ? 'Veri girilince görünür' : 'Visible once data is entered'}</p>
-              <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#2ABD41] hover:underline">{tr ? 'Veri ekle ->' : 'Add data ->'}</button>
+              {canEdit && <button onClick={() => setActiveTab('emissions')} className="text-[11px] font-bold text-[#2ABD41] hover:underline">{tr ? 'Veri ekle ->' : 'Add data ->'}</button>}
             </div>
           )}
         </ChartCard>
 
         {/* Pending Actions (WF-03) */}
         <ChartCard
-          title={tr ? 'Bekleyen Aksiyonlar' : 'Pending Actions'}
-          subtitle={tr ? 'Tamamlanması gerekenler' : 'Items requiring attention'}
+          // For a read-only auditor these are the company's open items, not
+          // their own to-dos.
+          title={canEdit ? (tr ? 'Bekleyen Aksiyonlar' : 'Pending Actions') : (tr ? 'Şirketin Açık Konuları' : "Company's Open Items")}
+          subtitle={canEdit
+            ? (tr ? 'Tamamlanması gerekenler' : 'Items requiring attention')
+            : (tr ? 'Bilgi amaçlı · ekip tarafından tamamlanır' : 'For information · completed by the team')}
           icon={AlertTriangle}
           iconBg="bg-amber-50 text-amber-500"
           delay={420}

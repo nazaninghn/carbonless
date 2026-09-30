@@ -1,6 +1,6 @@
 'use client';
 
-import { noPermissionMessage } from '@/lib/permissions';
+import { getPermissions, noPermissionMessage } from '@/lib/permissions';
 import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import Image from 'next/image';
 import {
@@ -3737,6 +3737,15 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   const [activeLang, setActiveLang] = useState(language || 'en');
   useEffect(() => { setActiveLang(language || 'en'); }, [language]);
   const tr = activeLang === 'tr';
+  // A read-only role (auditor) sees the calculation but not the save card,
+  // which the server would refuse.
+  const [canEdit, setCanEdit] = useState(true);
+  useEffect(() => {
+    api.getProfile()
+      .then(res => (res.ok ? res.json() : null))
+      .then(profile => { if (profile) setCanEdit(getPermissions(profile).canEdit); })
+      .catch(() => {});
+  }, []);
   const totalTonne = summary?.total_tonne || 0;
   const s1 = summary?.scope1_tonne || 0;
   const s2 = summary?.scope2_tonne || 0;
@@ -4415,7 +4424,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
                     </div>
                   )}
                   {/* ── Save confirmation section ── */}
-                  {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && (
+                  {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && !canEdit && (
+                    <p className="ml-9 mt-3 max-w-[85%] rounded-xl border border-[#175022]/10 bg-[#F1FCF2] px-4 py-2.5 text-[12px] text-[#175022]/70">
+                      {tr
+                        ? 'Denetçi rolünüz salt okunur: sonucu görebilirsiniz, ancak kayıt olarak ekleyemezsiniz.'
+                        : 'Your auditor role is read-only: you can see the result but not save it as an entry.'}
+                    </p>
+                  )}
+                  {msg.pending_entries && msg.pending_entries.length > 0 && !msg.entriesSaved && canEdit && (
                     <div className="ml-9 mt-3 rounded-2xl border border-[#2ABD41]/20 bg-gradient-to-br from-[#F1FCF2] to-white p-4 shadow-sm">
                       <div className="mb-3 flex items-center gap-2">
                         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#2ABD41]/15 text-[#2ABD41]">
