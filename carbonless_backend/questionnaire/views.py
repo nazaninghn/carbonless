@@ -627,12 +627,14 @@ def _registration_prefill_answers(company):
     from .serializers import StepA2Serializer
     if tax and StepA2Serializer(data={'tax_id': tax}, context={'company': company}).is_valid():
         answers['A2'] = {'tax_id': tax}
-    # Facilities already added (at sign-up or in Settings) give the location
-    # count, so B4 does not start empty and drift from the facility list.
-    facilities = company.facilities.count()
-    if facilities:
-        answers['B4'] = {'number_of_facilities': facilities}
     return answers
+
+
+def _facility_count(company):
+    """Facilities registered today (sign-up or Settings). Only a hint for
+    B4: an inventory for an earlier year may have had a different number, so
+    it is never filled in as the answer."""
+    return company.facilities.count() if company else 0
 
 
 def _find_previous_profile_source(report):
@@ -699,11 +701,13 @@ class PreviousCompanyProfileView(APIView):
                 'available': False,
                 'answers': _registration_prefill_answers(report.company),
                 'other_inventories': _other_inventories(report),
+                'facility_count': _facility_count(report.company),
             })
 
         # The earlier report's answers win; anything it never answered falls
         # back to what the company entered at registration.
-        answers = _registration_prefill_answers(report.company)
+        registration = _registration_prefill_answers(report.company)
+        answers = dict(registration)
         answers.update({
             step.step_id: step.answer
             for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS)
@@ -716,7 +720,11 @@ class PreviousCompanyProfileView(APIView):
             'reporting_year': source.reporting_year,
             'updated_at': source.updated_at,
             'answers': answers,
+            # What the user answers "No, let me re-enter" with: only the name
+            # and tax number from sign-up, nothing from the earlier report.
+            'registration_answers': registration,
             'other_inventories': _other_inventories(report),
+            'facility_count': _facility_count(report.company),
         })
 
 

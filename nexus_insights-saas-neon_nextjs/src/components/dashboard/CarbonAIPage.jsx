@@ -210,6 +210,10 @@ function mapAnswerForBackend(questionId, value) {
   }
 }
 
+// Stage-1 answers that change from year to year, never pre-filled from
+// another inventory: employee band, number of locations, revenue band.
+const YEAR_SPECIFIC_STEPS = new Set(['B3', 'B4', 'B6']);
+
 // unmapPhase1Answer, readAnswerValue: imported from questions.js — shared with
 // InventoryWorkflow.jsx (which normalises a resumed report's answers at
 // hydration time and would circularly import this file otherwise).
@@ -2409,9 +2413,15 @@ export function QuestionnaireTab({
       : `You already have an inventory for ${year}: “${other.title}”. A second inventory for the same year uses the same emission records — the values you enter here replace the earlier ones. If this inventory is for another year, change the year.`;
   }, [inventoryForYear, tr]);
 
+  // "No, let me re-enter": the user fills the profile in themselves, so the
+  // earlier report's answers are no longer offered — only the name and tax
+  // number typed at sign-up stay pre-filled.
   const handleDeclineReuseProfile = useCallback(() => {
     setShowReuseDialog(false);
-  }, []);
+    setPreviousProfile(prev => (prev ? { ...prev, answers: prev.registration_answers || {} } : prev));
+    const registered = unmapPhase1Answer(currentId, previousProfile?.registration_answers?.[currentId]);
+    setAnswerValue(registered !== undefined ? registered : getInitialValue(getQuestionById(currentId)));
+  }, [currentId, previousProfile]);
 
   const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
@@ -2632,6 +2642,9 @@ export function QuestionnaireTab({
     // The reporting year belongs to this inventory — pre-filling the earlier
     // inventory's year made "continue" silently create a second one for it.
     if (currentId === 'A4') return;
+    // Employees, locations and revenue belong to a year too: an earlier
+    // inventory's (or today's) figure is not this year's answer.
+    if (YEAR_SPECIFIC_STEPS.has(currentId)) return;
     const prefilled = unmapPhase1Answer(currentId, previousProfile.answers[currentId]);
     if (prefilled !== undefined) setAnswerValue(prefilled);
   }, [currentId, previousProfile, answers]);
@@ -3640,6 +3653,20 @@ export function QuestionnaireTab({
                       : undefined
                   }
                 />
+                {/* The facilities registered today are only a reference for B4:
+                    an inventory for an earlier year may have had a different
+                    number, so the count is shown, never filled in. */}
+                {currentId === 'B4' && previousProfile?.facility_count > 0 && (() => {
+                  const n = previousProfile.facility_count;
+                  const year = readAnswerValue(answers, 'A4');
+                  return (
+                    <p className="text-xs text-[#175022]/60">
+                      {tr
+                        ? `Şu an kayıtlı ${n} tesisiniz var.${year ? ` ${year} yılında sayı farklıysa o yılın sayısını girin.` : ''}`
+                        : `You currently have ${n} registered ${n === 1 ? 'facility' : 'facilities'}.${year ? ` If the number was different in ${year}, enter that year's count.` : ''}`}
+                    </p>
+                  );
+                })()}
                 {/* Inline validation error — only shows after a failed Confirm attempt
                     AND while the current answer is still actually invalid.
                     showValidationError resets when answerValue changes or question/tab switches,
