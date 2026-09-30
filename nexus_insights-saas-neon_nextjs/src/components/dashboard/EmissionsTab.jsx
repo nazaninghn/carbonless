@@ -114,6 +114,14 @@ const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR',
 const countedKg = (e) => (e.status === 'approved' ? (parseFloat(e.calculated_co2e_kg) || 0) : 0);
 
 // ─── Entry Card (mobile) ──────────────────────────────────────────────────────
+// Units offered in the custom-request form (stored as written).
+const CUSTOM_UNITS = [
+  { v: 'litre', tr: 'litre', en: 'litres' }, { v: 'kg', tr: 'kg', en: 'kg' },
+  { v: 'ton', tr: 'ton', en: 'tonnes' }, { v: 'kWh', tr: 'kWh', en: 'kWh' },
+  { v: 'm³', tr: 'm³', en: 'm³' }, { v: 'km', tr: 'km', en: 'km' },
+  { v: 'adet', tr: 'adet', en: 'units' },
+];
+
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
   const tr = language === 'tr';
   const toast = useToast();
@@ -253,6 +261,8 @@ export default function EmissionsTab({
   const [cSrc,    setCSrc]     = useState('');
   const [cDesc,   setCDesc]    = useState('');
   const [cUnit,   setCUnit]    = useState('');
+  // Common units to pick from; "Diğer" opens a short free-text field.
+  const [cUnitOther, setCUnitOther] = useState(false);
   const [cQty,    setCQty]     = useState('');
   const [cMonth,  setCMonth]   = useState(new Date().getMonth() + 1);
   const [cSaving, setCSaving]  = useState(false);
@@ -639,7 +649,7 @@ export default function EmissionsTab({
       });
       if (res.ok) {
         setShowCustom(false);
-        setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCQty('');
+        setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCUnitOther(false); setCQty('');
         fetchData();
         toast.info(tr ? 'Özel talep gönderildi — Carbonless ekibi inceleyecek' : 'Custom request submitted — the Carbonless team will review it');
       } else {
@@ -1027,7 +1037,7 @@ export default function EmissionsTab({
                           </div>
                           <span className="w-8 text-right text-[9px] font-bold text-[#072C0E]/30"
                             title={entry.status !== 'approved' ? (tr ? 'Onaylanmadığı için toplamda yok' : 'Not in the totals until approved') : undefined}>
-                            {entry.status === 'approved' ? `${fixed(barPct, 0)}%` : '—'}
+                            {entry.status === 'approved' ? (tr ? `%${fixed(barPct, 0)}` : `${fixed(barPct, 0)}%`) : '—'}
                           </span>
                         </div>
                       </td>
@@ -1506,7 +1516,22 @@ export default function EmissionsTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className={LABEL}>{tr ? 'Birim' : 'Unit'} *</label>
-                    <input type="text" value={cUnit} onChange={e => setCUnit(e.target.value)} placeholder="litre, kg, kWh…" className={FIELD} required />
+                    <select
+                      value={cUnitOther ? '__other' : cUnit}
+                      onChange={e => {
+                        if (e.target.value === '__other') { setCUnitOther(true); setCUnit(''); }
+                        else { setCUnitOther(false); setCUnit(e.target.value); }
+                      }}
+                      className={FIELD} required={!cUnitOther}
+                    >
+                      <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
+                      {CUSTOM_UNITS.map(u => <option key={u.v} value={u.v}>{tr ? u.tr : u.en}</option>)}
+                      <option value="__other">{tr ? 'Diğer…' : 'Other…'}</option>
+                    </select>
+                    {cUnitOther && (
+                      <input type="text" value={cUnit} onChange={e => setCUnit(e.target.value)} maxLength={20}
+                        placeholder={tr ? 'Birim (örn. paket)' : 'Unit (e.g. packages)'} className={`${FIELD} mt-2`} required autoFocus />
+                    )}
                   </div>
                   <div>
                     <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} *</label>
