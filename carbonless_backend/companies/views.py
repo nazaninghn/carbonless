@@ -43,7 +43,10 @@ class FacilityListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         company = get_current_company(self.request.user)
-        serializer.save(company=company)
+        # A new facility is in the company's own country unless one is given.
+        extra = {} if serializer.validated_data.get('country') else {
+            'country': getattr(company, 'country_of_headquarters', '') or ''}
+        serializer.save(company=company, **extra)
 
 
 class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):

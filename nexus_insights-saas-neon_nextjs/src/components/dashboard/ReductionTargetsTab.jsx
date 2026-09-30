@@ -12,6 +12,14 @@ import { parseLocalizedNumber } from '@/lib/utils/numbers';
 // thousands separators so it reads back unchanged.
 const inputNumber = (n, tr, digits = 2) =>
   Number(n).toLocaleString(tr ? 'tr-TR' : 'en-US', { maximumFractionDigits: digits, useGrouping: false });
+
+// A percentage in the UI language: "%40" / "-%40" in Turkish, "40%" / "-40%" in English.
+const pctLabel = (n, tr) => {
+  const v = Number(n) || 0;
+  const abs = Math.abs(v).toLocaleString(tr ? 'tr-TR' : 'en-US', { maximumFractionDigits: 2 });
+  const sign = v < 0 ? '-' : '';
+  return tr ? `${sign}%${abs}` : `${sign}${abs}%`;
+};
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 
@@ -228,10 +236,10 @@ function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDele
         {/* Overlay text centered under the arc opening */}
         <div className="-mt-2 text-center">
           <p className="text-2xl font-bold leading-none tracking-tight text-[#072C0E]">
-            {Math.round(achievedPct)}<span className="text-sm font-bold">%</span>
+            {tr && <span className="text-sm font-bold">%</span>}{Math.round(achievedPct)}{!tr && <span className="text-sm font-bold">%</span>}
           </p>
           <p className="mt-0.5 text-[10px] font-semibold text-[#072C0E]/40">
-            {tr ? `${reducePct}% hedefine doğru` : `toward ${reducePct}% target`}
+            {tr ? `${pctLabel(reducePct, tr)} hedefine doğru` : `toward ${pctLabel(reducePct, tr)} target`}
           </p>
         </div>
       </div>
@@ -406,7 +414,7 @@ export default function ReductionTargetsTab({
     setEditBaseYear(tgt.base_year);
     setEditTgtYear(tgt.target_year);
     setEditBaseEmit(inputNumber(parseFloat(tgt.base_emissions_kg) / 1000, tr, 6)); // stored value, unrounded
-    setEditReducePct(tgt.target_reduction_percent.toString());
+    setEditReducePct(inputNumber(tgt.target_reduction_percent, tr));
   }, [tr]);
 
   // Escape key handlers — consistent with all other modals in the app
@@ -787,7 +795,7 @@ export default function ReductionTargetsTab({
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
                         <p className="text-sm font-bold">{fmt(parseLocalizedNumber(editBaseEmit))} t</p>
                       </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#175022]">→ -{editReducePct}% →</div>
+                      <div className="flex-1 text-center text-xs font-bold text-[#175022]">→ {pctLabel(-parseLocalizedNumber(editReducePct), tr)} →</div>
                       <div className="text-center">
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
                         <p className="text-sm font-bold text-[#175022]">
@@ -926,7 +934,7 @@ export default function ReductionTargetsTab({
                         <p className="text-sm font-bold">{fmt(parseLocalizedNumber(baseEmit))} t</p>
                       </div>
                       <div className="flex-1 text-center text-xs font-bold text-[#175022]">
-                        → -{reducePct}% →
+                        → {pctLabel(-parseLocalizedNumber(reducePct), tr)} →
                       </div>
                       <div className="text-center">
                         <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>

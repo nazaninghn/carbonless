@@ -172,7 +172,14 @@ export default function TeamManagement({ language }) {
             {tr ? 'Takım Yönetimi' : 'Team Management'}
           </h3>
           <span className="px-2 py-0.5 bg-[#072C0E]/10 text-[#2ABD41] text-xs rounded-full font-medium">
-            {members.length} {tr ? 'üye' : 'members'}
+            {/* Active members; a deactivated one has no access. */}
+            {(() => {
+              const active = members.filter(m => m.is_active).length;
+              const inactive = members.length - active;
+              return tr
+                ? `${active} aktif üye${inactive ? ` · ${inactive} devre dışı` : ''}`
+                : `${active} active member${active === 1 ? '' : 's'}${inactive ? ` · ${inactive} deactivated` : ''}`;
+            })()}
           </span>
         </div>
         <button
@@ -235,6 +242,11 @@ export default function TeamManagement({ language }) {
                         {m.full_name || (m.username !== m.user_email && m.username) || m.user_email || '—'}
                       </p>
                       {m.role === 'owner' && <Crown className="w-3.5 h-3.5 text-amber-500" />}
+                      {!m.is_active && (
+                        <span className="rounded-full bg-[#072C0E]/10 px-2 py-0.5 text-[10px] font-semibold text-[#072C0E]/70">
+                          {tr ? 'Devre dışı' : 'Deactivated'}
+                        </span>
+                      )}
                     </div>
                     {(m.full_name || (m.username && m.username !== m.user_email)) && (
                       <p className="text-xs text-[#072C0E]/55">{m.user_email || '—'}</p>
@@ -275,7 +287,7 @@ export default function TeamManagement({ language }) {
                           : 'border-green-200 text-green-600 hover:bg-green-50'
                       }`}
                     >
-                      {m.is_active ? (tr ? 'Devre Dışı' : 'Deactivate') : (tr ? 'Etkinleştir' : 'Activate')}
+                      {m.is_active ? (tr ? 'Devre Dışı Bırak' : 'Deactivate') : (tr ? 'Etkinleştir' : 'Activate')}
                     </button>
                   )}
                 </div>

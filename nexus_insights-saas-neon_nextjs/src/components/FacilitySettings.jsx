@@ -101,6 +101,14 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
       setFormError(tr ? 'Tesis adı zorunludur' : 'Facility name is required');
       return;
     }
+    // Same rule as the server: one name per facility, or they can't be told apart.
+    const lower = (v) => (v || '').trim().toLocaleLowerCase(tr ? 'tr-TR' : 'en-US');
+    if (facilities.some(f => f.id !== editingId && lower(f.name) === lower(name))) {
+      setFormError(tr
+        ? `"${name.trim()}" adında bir tesis zaten var. Farklı bir ad girin.`
+        : `A facility named "${name.trim()}" already exists. Choose a different name.`);
+      return;
+    }
 
     setSaving(true);
 
@@ -156,7 +164,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
     } finally {
       setSaving(false);
     }
-  }, [name, city, country, facilityType, saving, editingId, onChange, tr, toast, fetchFacilities, resetForm]); // saving added
+  }, [name, city, country, facilityType, saving, editingId, facilities, onChange, tr, toast, fetchFacilities, resetForm]); // saving added
 
   /* ─── Loading ─── */
   if (loading) {
