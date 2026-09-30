@@ -37,24 +37,25 @@ const TONE_STYLES = {
   dark: { bg: '#175022', text: '#FFFFFF' },
 };
 
-function ColumnArrow({ label, sub, tone, items, delay }) {
+function ColumnArrow({ label, sub, tone, items, delay, tr }) {
   const { bg, text } = TONE_STYLES[tone];
   return (
     <div className="dash-fade-up flex flex-col items-center" style={{ animationDelay: `${delay}ms` }}>
       <p className="text-[11px] font-bold text-[#072C0E]">{label}</p>
       <p className="text-[8px] font-bold uppercase tracking-wide text-[#072C0E]/40">{sub}</p>
       <div
-        className="scope-arrow-pulse relative mt-1.5 flex flex-col-reverse items-center gap-2.5 px-2 pb-3 pt-5"
+        className="scope-arrow-pulse relative mt-1.5 flex flex-col-reverse items-center gap-2.5 px-4 pb-3 pt-5"
         style={{
           background: bg,
-          clipPath: 'polygon(50% 0%, 100% 14%, 78% 14%, 78% 100%, 22% 100%, 22% 14%, 0% 14%)',
+          // The shaft (12%–88%) is wider than the labels, so none is cut off.
+          clipPath: 'polygon(50% 0%, 100% 14%, 88% 14%, 88% 100%, 12% 100%, 12% 14%, 0% 14%)',
         }}
       >
         {items.map(({ icon: Icon, en, tr: trLabel }, i) => (
-          <div key={i} className="scope-icon-bounce flex w-[76px] flex-col items-center gap-1 text-center cursor-pointer">
+          <div key={i} className="scope-icon-bounce flex w-[80px] flex-col items-center gap-1 text-center cursor-pointer">
             <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: text }} />
             <p className="text-[8.5px] font-medium leading-[1.15]" style={{ color: text }}>
-              {trLabel ?? en}
+              {tr ? (trLabel ?? en) : en}
             </p>
           </div>
         ))}
@@ -80,7 +81,7 @@ export default function ScopeFlowDiagram({ tr = false }) {
     },
     {
       id: 'scope2',
-      label: 'Scope 2',
+      label: tr ? 'Kapsam 2' : 'Scope 2',
       sub: tr ? 'DOLAYLI' : 'INDIRECT',
       tone: 'mid',
       items: [
@@ -100,7 +101,7 @@ export default function ScopeFlowDiagram({ tr = false }) {
     },
     {
       id: 'scope1',
-      label: 'Scope 1',
+      label: tr ? 'Kapsam 1' : 'Scope 1',
       sub: tr ? 'DOĞRUDAN' : 'DIRECT',
       tone: 'dark',
       items: [
@@ -154,7 +155,7 @@ export default function ScopeFlowDiagram({ tr = false }) {
 
         {/* Five-column scope flow */}
         <div className="flex items-end justify-center gap-2.5">
-          {columns.map((col, i) => <ColumnArrow key={col.id} {...col} delay={60 + i * 60} />)}
+          {columns.map((col, i) => <ColumnArrow key={col.id} {...col} tr={tr} delay={60 + i * 60} />)}
         </div>
 
         {/* Bottom band */}
