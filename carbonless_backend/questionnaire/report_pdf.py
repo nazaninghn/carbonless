@@ -26,7 +26,7 @@ from reportlab.platypus import (
 from django.db.models import Sum
 
 from emissions.report_pdf import (
-    _fonts, _styles, _tbl_style, _total_row_style, _fmt, _fmt4, _pct,
+    _fonts, _styles, _tbl_style, _total_row_style, _fmt, _fmt4, _pct, _scope,
     _ReportDocTemplate, _scope_pie_chart,
     BRAND_DARK, OLIVE, OLIVE_DARK, OLIVE_LIGHT, CREAM, CREAM_LIGHT,
     GRAY_50, GRAY_100, GRAY_200, GRAY_400, GRAY_600, GRAY_800, WHITE,
@@ -393,11 +393,11 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
         E.append(Spacer(1, 5 * mm))
 
         scope_tbl = [
-            ['Scope', 'kg CO₂e', 'tCO₂e', '%'],
-            ['Scope 1', _fmt(s1, tr), _fmt4(s1 / 1000, tr), _pct(s1, total_kg)],
-            ['Scope 2', _fmt(s2, tr), _fmt4(s2 / 1000, tr), _pct(s2, total_kg)],
-            ['Scope 3', _fmt(s3, tr), _fmt4(s3 / 1000, tr), _pct(s3, total_kg)],
-            ['TOPLAM' if tr else 'TOTAL', _fmt(total_kg, tr), _fmt4(total_kg / 1000, tr), '100%'],
+            ['Kapsam' if tr else 'Scope', 'kg CO₂e', 'tCO₂e', '%'],
+            [_scope(1, tr), _fmt(s1, tr), _fmt4(s1 / 1000, tr), _pct(s1, total_kg, tr)],
+            [_scope(2, tr), _fmt(s2, tr), _fmt4(s2 / 1000, tr), _pct(s2, total_kg, tr)],
+            [_scope(3, tr), _fmt(s3, tr), _fmt4(s3 / 1000, tr), _pct(s3, total_kg, tr)],
+            ['TOPLAM' if tr else 'TOTAL', _fmt(total_kg, tr), _fmt4(total_kg / 1000, tr), '%100' if tr else '100%'],
         ]
         sct = Table(scope_tbl, colWidths=[30 * mm, 40 * mm, 35 * mm, 20 * mm])
         sct.setStyle(_tbl_style(fn, fnb))
@@ -408,7 +408,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
         # always means it hasn't been measured yet, not that it's genuinely
         # nil — flag it so a reader doesn't mistake "0" for a complete figure.
         missing_scopes = [
-            label for label, val in (('Scope 1', s1), ('Scope 2', s2), ('Scope 3', s3)) if val <= 0
+            _scope(n, tr) for n, val in ((1, s1), (2, s2), (3, s3)) if val <= 0
         ]
         if missing_scopes:
             E.append(Spacer(1, 4 * mm))
