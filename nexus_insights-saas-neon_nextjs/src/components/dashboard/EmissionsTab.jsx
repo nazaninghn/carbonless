@@ -10,6 +10,7 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
+import { autoDescriptionLabel, isLinkedDescription } from '@/lib/entryDescription';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
 import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import useCountUp from '@/lib/hooks/useCountUp';
@@ -530,7 +531,11 @@ export default function EmissionsTab({
     try {
       // Fix 24B: coerce empty string to null — Django FK rejects '' but accepts null
       const res = await api.updateEntry(editing.id, {
-        quantity: parseLocalizedNumber(editQty), description: editDesc, facility: editFacility || null,
+        quantity: parseLocalizedNumber(editQty), facility: editFacility || null,
+        // Keep a system-written description unless the user typed a new one;
+        // never touch the questionnaire's own (it finds its entries by it).
+        ...(isLinkedDescription(editing.description) || (autoDescriptionLabel(editing.description, tr) && !editDesc.trim())
+          ? {} : { description: editDesc }),
       });
       if (res.ok) {
         const saved = await res.json().catch(() => ({}));
@@ -605,9 +610,11 @@ export default function EmissionsTab({
     setEditing(entry);
     setConfirmProofRemove(false);
     setEditQty(entry.quantity);
-    setEditDesc(entry.description || '');
+    // A system-written description ("AI Chat: …") opens empty, with its
+    // readable form as the placeholder; typing replaces it.
+    setEditDesc(autoDescriptionLabel(entry.description, tr) ? '' : (entry.description || ''));
     setEditFacility(entry.facility || '');
-  }, []);
+  }, [tr]);
 
   const handleCustom = useCallback(async (e) => {
     e.preventDefault();
@@ -1353,7 +1360,10 @@ export default function EmissionsTab({
                 </div>
                 <div>
                   <label className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
-                  <textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
+                  <textarea value={isLinkedDescription(editing.description) ? autoDescriptionLabel(editing.description, tr) : editDesc}
+                    readOnly={isLinkedDescription(editing.description)}
+                    placeholder={autoDescriptionLabel(editing.description, tr) || ''}
+                    onChange={e => setEditDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
                 </div>
               </form>
               )}

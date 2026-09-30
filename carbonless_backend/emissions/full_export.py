@@ -141,6 +141,7 @@ def _sheet(wb, title, header, rows):
 
 def backup_workbook_response(data, tr):
     from openpyxl import Workbook
+    from .descriptions import display_description
     from .notifications import _unit
     from .report_pdf import _CAT
     lang = 'tr' if tr else 'en'
@@ -176,7 +177,7 @@ def backup_workbook_response(data, tr):
             _CAT[lang].get(e.get('category'), e.get('category') or ''),
             _number(e.get('quantity')), _unit(e.get('unit') or '', lang),
             kg, kg / 1000 if isinstance(kg, float) else '',
-            e.get('facility_name') or '', e.get('description') or '',
+            e.get('facility_name') or '', display_description(e.get('description'), lang),
             pick(_ENTRY_STATUS.get(e.get('status'), (e.get('status'), e.get('status')))),
             e.get('rejected_reason') if e.get('status') == 'draft' else '',
             e.get('entered_by') or '',

@@ -503,6 +503,15 @@ class ExcelExportLanguageTests(TestCase):
         self.assertEqual(row[:4], ['Doğal Gaz (Türkiye)', 'Kapsam 1', 'Sabit Yanma', 'Mart'])
         self.assertEqual(row[-2:], ['Reddedildi', 'Fatura eksik'])
 
+    def test_unit_and_system_description_are_readable(self):
+        EmissionEntry.objects.update(description='AI Chat: natural_gas 10 gj')
+        header, row = self._rows('tr')
+        self.assertEqual(row[header.index('Birim')], 'GJ')
+        self.assertEqual(row[header.index('Açıklama')], 'AI sohbetinden')
+        EmissionEntry.objects.update(description='Questionnaire step 3A-5 · Merkez')
+        header, row = self._rows('en')
+        self.assertEqual(row[header.index('Description')], 'From the questionnaire — 3A-5 · Merkez')
+
     def test_english_export(self):
         header, row = self._rows('en')
         self.assertEqual(header[-2:], ['Status', 'Rejection reason'])

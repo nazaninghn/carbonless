@@ -596,6 +596,12 @@ class CookieTokenRefreshView(TokenRefreshView):
 def update_profile(request):
     """Update user profile (name, department, phone)"""
     user = request.user
+    # Same phone check as the company's (companies/contact.py), before
+    # anything is saved.
+    from companies.contact import message, phone_ok
+    if 'phone' in request.data and not phone_ok(request.data['phone']):
+        lang = getattr(getattr(user, 'profile', None), 'language_preference', 'tr')
+        return Response({'error': message('invalid_phone', lang), 'code': 'invalid_phone'}, status=400)
     if 'first_name' in request.data:
         user.first_name = request.data['first_name']
     if 'last_name' in request.data:
@@ -614,7 +620,7 @@ def update_profile(request):
     if 'department' in request.data:
         profile.department = request.data['department']
     if 'phone' in request.data:
-        profile.phone = request.data['phone']
+        profile.phone = (request.data['phone'] or '').strip()
     if 'language_preference' in request.data:
         if request.data['language_preference'] not in ('tr', 'en'):
             return Response({'error': 'language_preference must be tr or en'}, status=400)
