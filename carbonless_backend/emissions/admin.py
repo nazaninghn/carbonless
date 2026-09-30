@@ -163,14 +163,14 @@ class CustomEmissionRequestAdmin(ModelAdmin):
             from accounts.models import Notification
             if obj.status == 'approved':
                 Notification.objects.create(
-                    user=obj.user, notification_type='custom_approved',
+                    user=obj.user, company=obj.company, notification_type='custom_approved',
                     title='Özel talep onaylandı',
                     message=f'{obj.source_name}: {obj.calculated_co2e_kg or 0:.2f} kg CO2e',
                     link='/dashboard',
                 )
             elif obj.status == 'rejected':
                 Notification.objects.create(
-                    user=obj.user, notification_type='custom_rejected',
+                    user=obj.user, company=obj.company, notification_type='custom_rejected',
                     title='Özel talep reddedildi',
                     message=f'{obj.source_name}: {obj.admin_notes or ""}',
                     link='/dashboard',

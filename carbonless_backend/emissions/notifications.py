@@ -55,10 +55,10 @@ def _describe(entry, lang):
     return f'{name} · {qty} {_unit(factor.unit, lang)} · {month} {entry.year}'.strip()
 
 
-def _notify(user, notification_type, title, message, link='/dashboard'):
+def _notify(user, notification_type, title, message, link='/dashboard', company_id=None):
     from accounts.models import Notification
     Notification.objects.create(
-        user=user, notification_type=notification_type,
+        user=user, company_id=company_id, notification_type=notification_type,
         title=title, message=message, link=link,
     )
 
@@ -86,11 +86,11 @@ def notify_entry_submitted(entry):
             if lang == 'tr':
                 _notify(membership.user, 'entry_submitted', 'Onay bekleyen kayıt',
                         f'{author} yeni bir kayıt ekledi: {_describe(entry, lang)}. '
-                        f'Onay Bekleyenler sayfasından inceleyebilirsiniz.')
+                        f'Onay Bekleyenler sayfasından inceleyebilirsiniz.', company_id=entry.company_id)
             else:
                 _notify(membership.user, 'entry_submitted', 'Entry awaiting approval',
                         f'{author} added a new entry: {_describe(entry, lang)}. '
-                        f'Review it on the Pending Review page.')
+                        f'Review it on the Pending Review page.', company_id=entry.company_id)
     except Exception:  # a notification must never break saving the entry
         logger.exception('Could not notify approvers about entry %s', entry.pk)
 
@@ -106,9 +106,9 @@ def notify_entry_reviewed(entry, approved, reviewer):
         what = _describe(entry, lang)
         if approved:
             if lang == 'tr':
-                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}')
+                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}', company_id=entry.company_id)
             else:
-                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}')
+                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}', company_id=entry.company_id)
             return
         reason = (entry.rejected_reason or '').strip()
         # Opens Emisyon Yönetimi on the entry's own year.
@@ -118,11 +118,11 @@ def notify_entry_reviewed(entry, approved, reviewer):
             fix = (' Kayıt anketten geldi: Emisyon Yönetimi\'nde "Ankette düzelt" ile ilgili soruyu açıp düzeltin.'
                    if from_questionnaire else ' Kaydı düzenleyip tekrar gönderebilirsiniz.')
             _notify(entry.user, 'entry_rejected', 'Kaydınız reddedildi',
-                    f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link)
+                    f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
         else:
             fix = (' It comes from the questionnaire: use "Fix in questionnaire" on the Emissions page to correct that question.'
                    if from_questionnaire else ' You can edit the entry to send it again.')
             _notify(entry.user, 'entry_rejected', 'Your entry was rejected',
-                    f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link)
+                    f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
     except Exception:
         logger.exception('Could not notify the author of entry %s', entry.pk)

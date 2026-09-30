@@ -441,11 +441,21 @@ from .models import Notification
 from .serializers import NotificationSerializer
 
 
+def _my_notifications(user):
+    """The user's notices for the company they are working in, plus notices
+    that belong to no company (see Notification.company)."""
+    from django.db.models import Q
+    from companies.utils import get_current_company
+    company = get_current_company(user)
+    qs = Notification.objects.filter(user=user)
+    return qs.filter(Q(company__isnull=True) | Q(company=company)) if company else qs.filter(company__isnull=True)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def notification_list(request):
     """Get user notifications"""
-    notifs = Notification.objects.filter(user=request.user)[:50]
+    notifs = _my_notifications(request.user)[:50]
     return Response(NotificationSerializer(notifs, many=True).data)
 
 
@@ -464,7 +474,7 @@ def mark_notifications_read(request):
         valid_ids = [i for i in ids if isinstance(i, int) or (isinstance(i, str) and i.isdigit())]
         Notification.objects.filter(user=request.user, id__in=valid_ids).update(is_read=True)
     else:
-        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        _my_notifications(request.user).filter(is_read=False).update(is_read=True)
     return Response({'status': 'ok'})
 
 
@@ -472,7 +482,7 @@ def mark_notifications_read(request):
 @permission_classes([IsAuthenticated])
 def unread_count(request):
     """Get unread notification count"""
-    count = Notification.objects.filter(user=request.user, is_read=False).count()
+    count = _my_notifications(request.user).filter(is_read=False).count()
     return Response({'unread_count': count})
 
 
@@ -1092,10 +1102,15 @@ def company_history(request):
         return Response({'error': 'Not allowed'}, status=403)
     rows = (ActivityLog.objects.filter(metadata__company_id=company.id)
             .select_related('user').order_by('-created_at')[:300])
+    # Details in the reader's language (?lang=tr|en; default the profile's).
+    from .history_text import factor_names_tr, localize_detail
+    lang = request.query_params.get('lang') or getattr(getattr(request.user, 'profile', None),
+                                                       'language_preference', 'tr')
+    names = factor_names_tr() if lang == 'tr' else {}
     return Response([{
         'id': r.id,
         'action': r.action,
-        'detail': r.detail,
+        'detail': localize_detail(r.detail, lang, names),
         'user': (r.user.get_full_name() or r.user.email or r.user.username) if r.user else None,
         'created_at': r.created_at,
         'status_before': (r.metadata or {}).get('status_before'),

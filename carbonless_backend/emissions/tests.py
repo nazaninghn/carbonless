@@ -670,7 +670,8 @@ class EntryChangeRulesTests(TestCase):
         self.assertEqual(res.status_code, 200)
         actions = [r['action'] for r in res.json()]
         self.assertEqual(actions[:2], ['entry_updated', 'entry_created'])
-        self.assertIn('300 m3 → Test Gas · 2026/07 · 250 m3', res.json()[0]['detail'])
+        # Shown in the reader's language (accounts/history_text.py).
+        self.assertIn('300 m³ → Test Gaz · Temmuz 2026 · 250 m³', res.json()[0]['detail'])
 
     def test_data_entry_cannot_read_history(self):
         self._as('veri')

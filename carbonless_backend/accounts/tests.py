@@ -437,3 +437,74 @@ class AccountEmailLanguageTests(TestCase):
         self.assertIn('is your Carbonless verification code', mail.outbox[-1].subject)
         APIClient().post('/api/accounts/resend-verification/', {'email': 'utr@test.com'}, format='json')
         self.assertTrue(mail.outbox[-1].subject.startswith('Carbonless doğrulama kodunuz: '))
+
+
+class NotificationCompanyTests(TestCase):
+    """A member of several companies sees a company's notices only while
+    working in it; company-less notices show everywhere."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from .models import Notification, UserProfile
+        kw = dict(country_of_headquarters='TR', countries_of_operation='TR', main_activity_description='x',
+                  number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
+        self.a = Company.objects.create(legal_entity_name='A A.Ş.', tax_number='1111111111', **kw)
+        self.b = Company.objects.create(legal_entity_name='B A.Ş.', tax_number='2222222222', **kw)
+        self.user = User.objects.create_user('multi', 'multi@test.com', 'testpass123')
+        self.profile = UserProfile.objects.create(user=self.user, active_company=self.a)
+        for c in (self.a, self.b):
+            CompanyMembership.objects.create(company=c, user=self.user, role='owner')
+        for company, title in ((self.a, 'about A'), (self.b, 'about B'), (None, 'billing')):
+            Notification.objects.create(user=self.user, company=company, notification_type='system',
+                                        title=title, message='x')
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def _titles(self):
+        return sorted(n['title'] for n in self.client.get('/api/accounts/notifications/').data)
+
+    def test_list_count_and_mark_all_follow_the_active_company(self):
+        self.assertEqual(self._titles(), ['about A', 'billing'])
+        self.assertEqual(self.client.get('/api/accounts/notifications/unread-count/').data['unread_count'], 2)
+        self.client.post('/api/accounts/notifications/read/', {}, format='json')
+        from .models import Notification
+        self.assertFalse(Notification.objects.get(title='about B').is_read)
+        self.profile.active_company = self.b
+        self.profile.save()
+        self.assertEqual(self._titles(), ['about B', 'billing'])
+        self.assertEqual(self.client.get('/api/accounts/notifications/unread-count/').data['unread_count'], 1)
+
+    def test_entry_notice_is_tagged_with_the_entrys_company(self):
+        from emissions.models import EmissionEntry, EmissionFactor
+        from emissions.notifications import notify_entry_submitted
+        from companies.models import CompanyMembership
+        from .models import Notification
+        member = User.objects.create_user('de', 'de@test.com', 'testpass123')
+        CompanyMembership.objects.create(company=self.b, user=member, role='data_entry')
+        f = EmissionFactor.objects.create(slug='n-f', name='F', scope='scope1', category='stationary_combustion',
+                                          country='global', unit='kg', factor_kg_co2e=1, source='generic')
+        entry = EmissionEntry.objects.create(user=member, company=self.b, emission_factor=f, year=2026, month=1,
+                                             quantity=1, calculated_co2e_kg=1, status='submitted')
+        notify_entry_submitted(entry)
+        self.assertEqual(Notification.objects.get(notification_type='entry_submitted').company, self.b)
+
+
+class HistoryTextTests(TestCase):
+    def test_turkish_reader_gets_turkish_name_month_unit_and_number(self):
+        from .history_text import localize_detail
+        names = {'Natural Gas (Turkey)': 'Doğal Gaz (Türkiye)'}
+        self.assertEqual(
+            localize_detail('Natural Gas (Turkey) · 2026/09 · 1250.5 gj · Kanıt eklendi: f.pdf', 'tr', names),
+            'Doğal Gaz (Türkiye) · Eylül 2026 · 1.250,5 GJ · Kanıt eklendi: f.pdf')
+
+    def test_english_reader_and_changes(self):
+        from .history_text import localize_detail
+        self.assertEqual(
+            localize_detail('Grid · 2026/08 · 45 kwh → Grid · 2026/08 · 50 kwh · Kanıt kaldırıldı: a.pdf', 'en', {}),
+            'Grid · August 2026 · 45 kWh → Grid · August 2026 · 50 kWh · Proof removed: a.pdf')
+
+    def test_legacy_and_unknown_text(self):
+        from .history_text import localize_detail
+        self.assertEqual(localize_detail('Updated emission entry: Grid (12 kwh)', 'tr', {'Grid': 'Şebeke'}),
+                         'Şebeke · 12 kWh')
+        self.assertEqual(localize_detail('something else', 'tr', {}), 'something else')

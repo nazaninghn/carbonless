@@ -306,7 +306,7 @@ export const api = {
     body: JSON.stringify(data),
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
-  getCompanyHistory: () => request('/accounts/history/'),
+  getCompanyHistory: (lang) => request(`/accounts/history/${lang ? `?lang=${lang}` : ''}`),
   getPreviousCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/previous-profile/`),
   reuseCompanyProfile: (reportId, reportingYear) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST', body: JSON.stringify({ reporting_year: reportingYear }) }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),

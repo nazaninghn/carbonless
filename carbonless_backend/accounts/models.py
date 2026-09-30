@@ -63,6 +63,12 @@ class Notification(models.Model):
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    # The company the notice is about. A member of several companies sees a
+    # company's notices only while working in it (null = not company-specific,
+    # e.g. billing), so "entry awaiting approval" never points at another
+    # company's review list.
+    company = models.ForeignKey('companies.Company', on_delete=models.CASCADE, null=True, blank=True,
+                                related_name='notifications')
     notification_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
     title = models.CharField(max_length=255)
     message = models.TextField()
