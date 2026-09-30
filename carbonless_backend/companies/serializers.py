@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from .contact import message, phone_ok, website_ok
 from .models import Company, Facility, CompanyMembership
 
 
@@ -19,6 +20,22 @@ class CompanySerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    # The report prints these as stated (companies/contact.py).
+    def _lang(self):
+        request = self.context.get('request')
+        profile = getattr(getattr(request, 'user', None), 'profile', None)
+        return getattr(profile, 'language_preference', 'tr')
+
+    def validate_telephone(self, value):
+        if not phone_ok(value):
+            raise serializers.ValidationError(message('invalid_phone', self._lang()), code='invalid_phone')
+        return (value or '').strip()
+
+    def validate_website(self, value):
+        if not website_ok(value):
+            raise serializers.ValidationError(message('invalid_website', self._lang()), code='invalid_website')
+        return (value or '').strip()
 
 
 class FacilitySerializer(serializers.ModelSerializer):

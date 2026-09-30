@@ -1,4 +1,5 @@
 ﻿'use client';
+import { phoneOk, websiteOk, phoneMessage, websiteMessage } from '@/lib/companyFields';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -148,6 +149,9 @@ export default function CompanySettings({ language, readOnly = false }) {
       setError(tr ? 'Şirket adı zorunludur' : 'Company name is required');
       return;
     }
+    // Printed as stated in the ISO report: must look like a phone / website.
+    if (!phoneOk(form.telephone)) { setError(phoneMessage(tr)); return; }
+    if (!websiteOk(form.website)) { setError(websiteMessage(tr)); return; }
     setSaving(true);
     try {
       const res = await api.updateCompany({
@@ -339,10 +343,10 @@ export default function CompanySettings({ language, readOnly = false }) {
           <input type="text" value={field('trade_registry_number')} onChange={set('trade_registry_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Telefon' : 'Telephone'}>
-          <input type="text" value={field('telephone')} onChange={set('telephone')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <input type="tel" inputMode="tel" placeholder="+90 212 555 01 23" value={field('telephone')} onChange={set('telephone')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'İnternet Sitesi' : 'Website'}>
-          <input type="text" value={field('website')} onChange={set('website')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <input type="text" inputMode="url" placeholder={tr ? 'www.sirketiniz.com.tr' : 'www.yourcompany.com'} value={field('website')} onChange={set('website')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Kayıtlı Adres' : 'Registered Address'} full>
           <textarea value={field('registered_address')} onChange={set('registered_address')} rows={2} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
