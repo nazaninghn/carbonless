@@ -269,3 +269,46 @@ class JoinFromInviteTests(InviteFlowTests):
         eve = User.objects.get(username='eve')
         self.assertTrue(CompanyMembership.objects.filter(user=eve, role='owner').exists())
         self.assertFalse(CompanyMembership.objects.filter(user=eve, company=self.company).exists())
+
+
+class CompanyContactValidationTests(TestCase):
+    """Telephone and website are printed as stated in the ISO report, so they
+    must look like a phone number and a web address."""
+
+    def setUp(self):
+        from accounts.models import UserProfile
+        self.user = User.objects.create_user('contact', 'contact@test.com', 'testpass123')
+        UserProfile.objects.create(user=self.user, language_preference='tr')
+        company = Company.objects.create(
+            legal_entity_name='İletişim A.Ş.', tax_number='1234567890', country_of_headquarters='TR',
+            countries_of_operation='TR', main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(company=company, user=self.user, role='owner')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def _patch(self, **data):
+        return self.client.patch('/api/companies/detail/', data, format='json')
+
+    def test_valid_contact_details_are_saved(self):
+        res = self._patch(telephone='+90 212 555 01 23', website='https://www.iletisim.com.tr')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['telephone'], '+90 212 555 01 23')
+        self.assertEqual(self._patch(telephone='', website='').status_code, 200)
+
+    def test_text_is_not_a_phone_or_website(self):
+        res = self._patch(telephone='Kaya Tekstil')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('telefon', str(res.data['telephone']))
+        self.assertEqual(self._patch(telephone='123').status_code, 400)
+        res = self._patch(website='Kaya Tekstil')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('internet sitesi', str(res.data['website']))
+
+    def test_questionnaire_step_uses_the_same_check(self):
+        from questionnaire.serializers import StepA7bSerializer
+        s = StepA7bSerializer(data={'telephone': 'abc', 'website': 'kaya'}, context={'lang': 'tr'})
+        self.assertFalse(s.is_valid())
+        self.assertEqual(set(s.errors), {'telephone', 'website'})
+        self.assertTrue(StepA7bSerializer(data={'telephone': '0212 555 01 23', 'website': 'kaya.com'}).is_valid())

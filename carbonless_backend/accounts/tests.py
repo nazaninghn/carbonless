@@ -329,6 +329,10 @@ class FullBackupTests(TestCase):
         self.assertEqual(wb.sheetnames, ['Şirket', 'Tesisler', 'Emisyon Kayıtları', 'Hedefler',
                                          'Envanterler', 'Anket Cevapları'])
         self.assertEqual(wb['Anket Cevapları']['C2'].value, '4A-1')
+        # Readable for people: the answer as text, labels and statuses in Turkish.
+        self.assertEqual(wb['Anket Cevapları']['D2'].value, 'Merkez: 1000 kWh')
+        self.assertEqual(wb['Şirket']['A2'].value, 'Şirket adı')
+        self.assertEqual(wb['Envanterler']['C2'].value, 'Taslak')
 
 
 class RateLimitKeyTests(TestCase):

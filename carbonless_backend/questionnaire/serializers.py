@@ -121,6 +121,19 @@ class StepA7bSerializer(serializers.Serializer):
     certificates = serializers.CharField(max_length=2000, **_opt)
     del _opt
 
+    # Same checks as Company Settings (companies/contact.py).
+    def validate_telephone(self, value):
+        from companies.contact import message, phone_ok
+        if not phone_ok(value):
+            raise serializers.ValidationError(message('invalid_phone', self.context.get('lang')))
+        return value
+
+    def validate_website(self, value):
+        from companies.contact import message, website_ok
+        if not website_ok(value):
+            raise serializers.ValidationError(message('invalid_website', self.context.get('lang')))
+        return value
+
 
 class StepB1Serializer(serializers.Serializer):
     nace_code = serializers.CharField(max_length=50)

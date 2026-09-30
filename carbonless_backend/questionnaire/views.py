@@ -317,7 +317,8 @@ class SubmitStepView(APIView):
         }
 
         if step in STRICT_STEPS and step in STEP_SERIALIZERS:
-            serializer = STEP_SERIALIZERS[step](data=data, context={'company': report.company})
+            serializer = STEP_SERIALIZERS[step](data=data, context={
+                'company': report.company, 'lang': request.data.get('language') or 'en'})
             if not serializer.is_valid():
                 first_error = list(serializer.errors.values())[0]
                 if isinstance(first_error, list):
