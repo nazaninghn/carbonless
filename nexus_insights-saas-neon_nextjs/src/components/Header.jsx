@@ -16,9 +16,10 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
    with — but stays reachable from the mobile dropdown and the footer. */
 const NAV_ITEMS = [
   { key: 'home', href: '/', en: 'Home', tr: 'Ana Sayfa', desktop: false },
+  { key: 'features', href: '/features', en: 'Features', tr: 'Özellikler', desktop: true },
   { key: 'about', href: '/about', en: 'About', tr: 'Hakkında', desktop: true },
   { key: 'ai', href: '/ai', en: 'AI', tr: 'AI', desktop: true },
-  { key: 'faq', href: '/#faq', en: 'FAQ', tr: 'FAQ', desktop: true },
+  { key: 'faq', href: '/#faq', en: 'FAQ', tr: 'SSS', desktop: true },
 ];
 
 /* Dinnect-style floating pill navbar — shared across every page so the

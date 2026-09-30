@@ -58,9 +58,10 @@ export default function Footer() {
                 {lang === 'tr' ? 'Ürün' : 'Product'}
               </h4>
               <ul className="mt-5 space-y-3.5 text-[13px] sm:text-[14px]">
-                <li><Link href="/ai" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Carbonless AI' : 'Carbonless AI'}</Link></li>
+                <li><Link href="/features" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Özellikler' : 'Features'}</Link></li>
+                <li><Link href="/ai" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">Carbonless AI</Link></li>
                 <li><a href="/#pricing" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Fiyatlandırma' : 'Pricing'}</a></li>
-                <li><a href="/#faq" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">FAQ</a></li>
+                <li><a href="/#faq" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Sıkça Sorulan Sorular' : 'FAQ'}</a></li>
                 <li><Link href="/register" className="text-[#072C0E]/70 transition hover:text-[#2ABD41]">{lang === 'tr' ? 'Ücretsiz Başlayın' : 'Get Started Free'}</Link></li>
               </ul>
             </div>
@@ -95,14 +96,6 @@ export default function Footer() {
             <span className="text-[11px] sm:text-[12px] text-[#072C0E]/40">
               &copy; {year} Carbonless. {lang === 'tr' ? 'Tüm hakları saklıdır.' : 'All rights reserved.'}
             </span>
-            <div className="flex gap-6">
-              <Link href="/privacy" className="text-[11px] sm:text-[12px] text-[#072C0E]/40 transition hover:text-[#072C0E]/80">
-                {lang === 'tr' ? 'Gizlilik' : 'Privacy Policy'}
-              </Link>
-              <Link href="/terms" className="text-[11px] sm:text-[12px] text-[#072C0E]/40 transition hover:text-[#072C0E]/80">
-                {lang === 'tr' ? 'Kullanım Koşulları' : 'Terms of Service'}
-              </Link>
-            </div>
           </div>
         </div>
       </div>

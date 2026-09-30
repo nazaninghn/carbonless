@@ -1395,8 +1395,12 @@ def _section1(E, S, D, report, lang, TBL, FIG):
          getattr(company, 'countries_of_operation', None) or t('not_declared', lang)),
         ('Number of employees' if lang == 'en' else 'Çalışan sayısı',
          getattr(company, 'number_of_employees', None) or t('not_declared', lang)),
+        # The registered facilities (the ones the facility table lists), so the
+        # report doesn't state 5 and then list 2; the declared number only
+        # when none are registered yet.
         ('Number of facilities' if lang == 'en' else 'Tesis sayısı',
-         getattr(company, 'number_of_facilities', None) if company else t('not_declared', lang)),
+         (company.facilities.count() or getattr(company, 'number_of_facilities', None))
+         if company else t('not_declared', lang)),
         ('Annual turnover' if lang == 'en' else 'Yıllık ciro',
          getattr(company, 'annual_turnover_range', None) or t('not_declared', lang)),
         ('Overseas operations' if lang == 'en' else 'Yurt dışı faaliyetler',

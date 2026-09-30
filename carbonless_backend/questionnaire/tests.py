@@ -736,3 +736,38 @@ class FacilitySyncTests(TestCase):
         from .facility_sync import sync_facilities
         sync_facilities(self.company, {'answer': {'1': {'name': 'Tek Tesis', 'country': 'TR'}}})
         self.assertEqual(self._names(), [('Tek Tesis', 'TR'), ('Depo Ankara', 'TR')])
+
+
+class ReportTextTests(CombinedReportTests):
+    """Turkish wording in the inventory profile; the ISO report's facility
+    count matches the facilities it lists."""
+
+    def _text(self, url):
+        import io
+        import re
+        from pypdf import PdfReader
+        res = self.client.get(url, **self._auth())
+        self.assertEqual(res.status_code, 200)
+        text = '\n'.join(p.extract_text() or '' for p in PdfReader(io.BytesIO(res.content)).pages)
+        return re.sub(r'\s+', ' ', text)
+
+    def test_profile_scope_table_is_turkish(self):
+        from emissions.models import EmissionEntry, EmissionFactor
+        f = EmissionFactor.objects.create(slug='pt-gas', name='Gas', name_tr='Gaz', scope='scope1',
+                                          category='stationary_combustion', country='turkey', unit='m3',
+                                          factor_kg_co2e=2, source='generic')
+        EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=f, year=2026,
+                                     month=1, quantity=10, calculated_co2e_kg=20, status='approved')
+        text = self._text(f'/api/questionnaire/{self.report.id}/pdf/?lang=tr')
+        self.assertIn('Kapsam 1 20,00', text)
+        self.assertIn('%100,0', text)
+        self.assertNotIn('Scope 1', text)
+
+    def test_iso_report_counts_registered_facilities(self):
+        from companies.models import Facility
+        self.company.number_of_facilities = 5
+        self.company.save()
+        for name in ('Gebze', 'Bursa'):
+            Facility.objects.create(company=self.company, name=name)
+        text = self._text(f'/api/questionnaire/{self.report.id}/iso-report/?lang=tr')
+        self.assertIn('Tesis sayısı 2', text)
