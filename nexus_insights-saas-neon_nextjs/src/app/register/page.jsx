@@ -261,7 +261,7 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="mb-3">
-                <div className="mb-1.5 flex items-center justify-between text-[10px] font-bold text-[#072C0E]/55"><span>{language === 'tr' ? 'İlerleme' : 'Progress'}</span><span>{progress}%</span></div>
+                <div className="mb-1.5 flex items-center justify-between text-[10px] font-bold text-[#072C0E]/55"><span>{language === 'tr' ? 'İlerleme' : 'Progress'}</span><span>{language === 'tr' ? `%${progress}` : `${progress}%`}</span></div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/10"><div className="h-full rounded-full bg-gradient-to-r from-[#51D766] to-[#2ABD41] transition-all duration-500" style={{ width: `${progress}%` }} /></div>
               </div>
               <div className="grid gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
@@ -303,10 +303,15 @@ export default function RegisterPage() {
                 <Panel title={language === 'tr' ? 'Temel Kurumsal Bilgiler' : 'Corporate Information'} icon={Building2}>
                   <div className="grid gap-3 md:grid-cols-2">
                     <TextField label={language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} required value={formData.legalEntityName} onChange={e => handleInputChange('legalEntityName', e.target.value)} icon={Building2} placeholder={language === 'tr' ? 'örn: ABC Teknoloji A.Ş.' : 'e.g. ABC Technology Inc.'} />
-                    <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={11} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 11))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel  -  VKN (10) veya TCKN (11)' : 'Optional  -  VKN (10) or TCKN (11 digits)'} /></div>
+                    <div><Label>{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input type="text" inputMode="numeric" maxLength={11} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 11))} className="field-premium" placeholder={language === 'tr' ? 'Opsiyonel — VKN (10) veya TCKN (11)' : 'Optional — VKN (10) or TCKN (11 digits)'} /></div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    <div><Label required>{language === 'tr' ? 'Merkez Ülkesi' : 'Country of HQ'}</Label><CountryPicker value={formData.countryOfHeadquarters} onChange={val => handleInputChange('countryOfHeadquarters', val)} language={language} placeholder={language === 'tr' ? 'Ülke ara...' : 'Search...'} /></div>
+                    <div><Label required>{language === 'tr' ? 'Merkez Ülkesi' : 'Country of HQ'}</Label><CountryPicker value={formData.countryOfHeadquarters} onChange={val => {
+                      handleInputChange('countryOfHeadquarters', val);
+                      // Most companies operate where they are based: start the
+                      // operations list with it (still editable).
+                      if (val && !formData.countriesOfOperation.trim()) handleInputChange('countriesOfOperation', val);
+                    }} language={language} placeholder={language === 'tr' ? 'Ülke ara...' : 'Search...'} /></div>
                     <div><Label required>{language === 'tr' ? 'Faaliyet Ülkeleri' : 'Countries of Operation'}</Label><CountryPicker value={formData.countriesOfOperation} onChange={val => handleInputChange('countriesOfOperation', val)} language={language} multi placeholder={language === 'tr' ? 'Ülke ekle...' : 'Add countries...'} /></div>
                   </div>
                 </Panel>
