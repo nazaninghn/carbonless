@@ -192,7 +192,7 @@ export default function CompletionReportCard({
                   <span className="text-[11px] font-bold text-[#175022]/50 shrink-0">
                     {notApplicable
                       ? (tr ? 'Uygulanmadı' : 'Not applicable')
-                      : `${stage.answeredCount}/${stage.totalCount} · ${pct}%`}
+                      : `${stage.answeredCount}/${stage.totalCount} · ${tr ? `%${pct}` : `${pct}%`}`}
                   </span>
                 </div>
               );

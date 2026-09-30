@@ -187,6 +187,13 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Quantity is unrealistically large — please check the value.')
         return value
 
+    def validate_unit(self, value):
+        # A unit, not a sentence (the form offers a list plus a short "other").
+        value = (value or '').strip()
+        if len(value) > 20:
+            raise serializers.ValidationError('Enter a short unit (at most 20 characters), e.g. litre, kg, kWh.')
+        return value
+
     def validate_facility(self, value):
         if value is None:
             return value

@@ -972,3 +972,16 @@ class FuturePeriodTests(ApprovalNotificationAndDuplicateTests):
             'description': 'x', 'unit': 'litre', 'quantity': 5, 'year': y, 'month': m,
         }, format='json')
         self.assertEqual(res.status_code, 400)
+
+
+class CustomRequestUnitTests(ApprovalNotificationAndDuplicateTests):
+    def test_unit_must_be_short(self):
+        self._as('aylin')
+        data = {'scope': 'scope1', 'category_name': 'Jeneratör', 'source_name': 'Dizel', 'description': 'x',
+                'quantity': 5, 'year': 2026, 'month': 1}
+        res = self.client.post('/api/emissions/custom-requests/', {**data, 'unit': 'Soğutma gazı R-410A dolumu'},
+                               format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('unit', res.data)
+        self.assertEqual(self.client.post('/api/emissions/custom-requests/', {**data, 'unit': 'litre'},
+                                          format='json').status_code, 201)
