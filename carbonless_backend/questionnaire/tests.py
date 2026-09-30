@@ -351,6 +351,14 @@ class ReuseProfileYearTests(TestCase):
         data = self.client.get(f'/api/questionnaire/{self.new.id}/previous-profile/').data
         self.assertEqual([(r['title'], r['reporting_year']) for r in data['other_inventories']], [('Old', 2020)])
 
+    def test_declining_reuse_keeps_only_sign_up_answers(self):
+        # "No, let me re-enter" falls back to registration_answers: the
+        # earlier report's answers (A5 here) are not offered again.
+        data = self.client.get(f'/api/questionnaire/{self.new.id}/previous-profile/').data
+        self.assertEqual(data['answers']['A5'], {'prepared_by': 'Ayşe'})
+        self.assertNotIn('A5', data['registration_answers'])
+        self.assertEqual(data['registration_answers'].get('A1'), {'legal_name': 'Reuse Co'})
+
     def test_year_is_the_chosen_one(self):
         r = self._reuse(reporting_year=2021)
         self.assertEqual(r.status_code, 200)
@@ -693,6 +701,19 @@ class TaxIdStepTests(TestCase):
         company.save()
         data = client.get(f'/api/questionnaire/{report.id}/previous-profile/').json()
         self.assertEqual(data['answers']['A2'], {'tax_id': 'DE123456789'})
+
+    def test_registered_facility_count_is_a_hint_not_an_answer(self):
+        # The count at sign-up is today's; an inventory for an earlier year
+        # may have had a different one, so B4 is never pre-answered with it.
+        from companies.models import Facility
+        client, report, company = self._setup('TR')
+        url = f'/api/questionnaire/{report.id}/previous-profile/'
+        self.assertEqual(client.get(url).json()['facility_count'], 0)
+        Facility.objects.create(company=company, name='Tesis 1', country='TR')
+        Facility.objects.create(company=company, name='Tesis 2', country='TR')
+        data = client.get(url).json()
+        self.assertEqual(data['facility_count'], 2)
+        self.assertNotIn('B4', data['answers'])
 
 
 class FacilitySyncTests(TestCase):

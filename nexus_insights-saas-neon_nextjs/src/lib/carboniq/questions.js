@@ -1,5 +1,6 @@
 import { COUNTRIES } from '@/lib/data/countries';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
+import { phoneOk, websiteOk, phoneMessage, websiteMessage } from '@/lib/companyFields';
 
 // A4's year-select options and current-year assumption/warning triggers were
 // previously hardcoded to a fixed 2020-2026 list with 2026 hardcoded as "the
@@ -412,7 +413,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: 'A7a',
-    number: 8,
+    number: '7a',
     stage: 1,
     block: 'A',
     isoRef: 'ISO 14064-1 §7.5',
@@ -508,6 +509,8 @@ export const CARBONIQ_QUESTIONS = [
         required: false,
         maxLength: 50,
         label: { tr: 'Telefon', en: 'Telephone' },
+        placeholder: { tr: 'Örn: +90 212 555 01 23', en: 'e.g. +90 212 555 01 23' },
+        format: 'phone',
       },
       {
         id: 'website',
@@ -515,6 +518,8 @@ export const CARBONIQ_QUESTIONS = [
         required: false,
         maxLength: 255,
         label: { tr: 'İnternet sitesi', en: 'Website' },
+        placeholder: { tr: 'Örn: www.sirketiniz.com.tr', en: 'e.g. www.yourcompany.com' },
+        format: 'website',
       },
       {
         id: 'inventory_declaration_scope',
@@ -6011,6 +6016,10 @@ function validateCompoundFields(fields, obj, lang) {
           : `"${flabel}" must be at most ${field.maxLength} characters.`,
       };
     }
+    // Contact details use the same rules as the server (companies/contact.py),
+    // so a bad phone or website is caught here, next to the form.
+    if (field.format === 'phone' && !phoneOk(String(fv))) return { ok: false, message: phoneMessage(lang === 'tr') };
+    if (field.format === 'website' && !websiteOk(String(fv))) return { ok: false, message: websiteMessage(lang === 'tr') };
     // Numeric compound sub-fields (distance, weight, quantity, spend amount,
     // etc.) were only checked for "non-empty" — a user could type "abc" into
     // "Distance (km)" and the Confirm/Done button never blocked it; the
