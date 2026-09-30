@@ -60,6 +60,20 @@ class FacilityTests(TestCase):
         }, format='json')
         self.assertEqual(res.status_code, 201)
 
+    def test_duplicate_name_is_rejected_and_country_defaults(self):
+        res = self.client.post('/api/companies/facilities/', {'name': 'Gebze Fabrika'}, format='json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.data['country'], 'TR')  # the company's own country
+        res = self.client.post('/api/companies/facilities/', {'name': '  gebze fabrika '}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('name', res.data)
+        other = self.client.post('/api/companies/facilities/', {'name': 'Bursa Depo'}, format='json').data
+        # Renaming onto an existing name is refused; keeping its own name is fine.
+        self.assertEqual(self.client.patch(f"/api/companies/facilities/{other['id']}/",
+                                           {'name': 'Gebze Fabrika'}, format='json').status_code, 400)
+        self.assertEqual(self.client.patch(f"/api/companies/facilities/{other['id']}/",
+                                           {'name': 'Bursa Depo', 'city': 'Bursa'}, format='json').status_code, 200)
+
     def test_list_facilities(self):
         Facility.objects.create(company=self.company, name='HQ', city='Istanbul')
         res = self.client.get('/api/companies/facilities/')

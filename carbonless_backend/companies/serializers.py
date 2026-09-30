@@ -45,6 +45,29 @@ class FacilitySerializer(serializers.ModelSerializer):
     def get_entry_count(self, obj):
         return obj.emission_entries.count()
 
+    def validate_name(self, value):
+        # Two facilities with one name can't be told apart in the entry form,
+        # the filters and the reports, and the questionnaire matches its
+        # facility answers to facilities by name (questionnaire/facility_sync).
+        value = (value or '').strip()
+        request = self.context.get('request')
+        company = self.instance.company if self.instance else None
+        if company is None and request is not None:
+            from .utils import get_current_company
+            company = get_current_company(request.user)
+        if company is not None:
+            clash = Facility.objects.filter(company=company, name__iexact=value)
+            if self.instance:
+                clash = clash.exclude(pk=self.instance.pk)
+            if clash.exists():
+                profile = getattr(getattr(request, 'user', None), 'profile', None)
+                tr = getattr(profile, 'language_preference', 'tr') == 'tr'
+                raise serializers.ValidationError(
+                    f'"{value}" adında bir tesis zaten var. Farklı bir ad girin.' if tr
+                    else f'A facility named "{value}" already exists. Choose a different name.',
+                    code='duplicate_name')
+        return value
+
     class Meta:
         model = Facility
         fields = ['id', 'company', 'name', 'address', 'city', 'country',
