@@ -877,3 +877,20 @@ class SupplierEFDocumentTests(TestCase):
         self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'asset_type': 'KV-04', 'owner_declaration': False}}, lang='tr'), (True, None))
         prod = {'product': 'Sülfürik asit', 'quantity': '120', 'unit': 'tonnes'}
         self.assertEqual(validate_generic_step('K3C10-1', {'answer': prod}, lang='tr'), (True, None))
+
+    def test_cat13_14_15_follow_up_fields(self):
+        from .carboniq_validation import validate_generic_step
+        asset = {'asset_description': 'Depo Ankara - 2. kat', 'tenant_data_available': True, 'tenant_kwh': '8000'}
+        self.assertEqual(validate_generic_step('K3C13-1', {'answer': {'items': [asset]}}, lang='tr'), (True, None))
+        # tenant data "Evet" needs the kWh, "Hayır" needs the area
+        self.assertFalse(validate_generic_step('K3C13-1', {'answer': {'items': [{**asset, 'tenant_kwh': ''}]}}, lang='tr')[0])
+        no_data = {'asset_description': 'Ofis', 'tenant_data_available': False}
+        self.assertFalse(validate_generic_step('K3C13-1', {'answer': {'items': [no_data]}}, lang='tr')[0])
+        self.assertEqual(validate_generic_step('K3C13-1', {'answer': {'items': [{**no_data, 'area_m2': '300'}]}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C14-1', {'answer': {'franchise_count': '12', 'total_tco2e': '340'}}, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('K3C14-2', {'answer': {'franchise_count': '12'}}, lang='tr')[0])
+        inv = {'asset_class': 'VA-01', 'investment_amount': '5000000', 'company_value': '50000000', 'ghg_report_available': True}
+        # GHG report "Evet" now needs the company's emissions
+        self.assertFalse(validate_generic_step('K3C15-1', {'answer': {'items': [inv]}}, lang='tr')[0])
+        self.assertEqual(validate_generic_step('K3C15-1', {'answer': {'items': [{**inv, 'company_emissions_tco2e': '1200'}]}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3-TY-edit', {'answer': 'K3C13-0'}, lang='tr'), (True, None))

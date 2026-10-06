@@ -5261,8 +5261,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Product type, sales volume and average use lifetime?',
     },
     helper: {
-      tr: 'Kullanım ömrü bilinmiyorsa sektör standardı uygulanır. LCA belgesi varsa Seviye 1\'e geçilir.',
-      en: 'If use lifetime is unknown, sector standard is applied. If an LCA certificate is available, upgrade to Level 1.',
+      tr: 'Kullanım ömrü bilinmiyorsa sektör standardı uygulanır. Ürününüz için LCA belgesi varsa, belgedeki değer kullanılır (daha doğru sonuç).',
+      en: 'If use lifetime is unknown, sector standard is applied. If your product has an LCA document, its value is used (more accurate).',
     },
     placeholder: { tr: 'Ürün: Elektrikli ısıtıcı | Satış: 1.200 adet | Ömür: 10 yıl', en: 'Product: Electric heater | Sales: 1,200 units | Lifetime: 10 years' },
     fields: [
@@ -5303,8 +5303,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Are your sold products physical goods (not services)?',
     },
     helper: {
-      tr: 'Müşterinin ürünü bertaraf etmesi veya geri dönüştürmesinden kaynaklanan emisyonlar bu kapsamda. Hizmet şirketleri için genellikle uygulanamaz. Not: Kat.5 sizin sahanızdaki atık — bu ise müşterinin bertarafıdır.',
-      en: 'Emissions from customers disposing of or recycling your products fall in this scope. Usually not applicable for service companies. Note: Cat.5 is waste at your site — this is customer disposal.',
+      tr: 'Müşterinin ürünü bertaraf etmesi veya geri dönüştürmesinden kaynaklanan emisyonlar bu kapsamda. Hizmet şirketleri için genellikle uygulanamaz. Not: Kendi tesisinizdeki atıklar burada değil, Kategori 5\'te (Faaliyetlerde oluşan atık) sorulur.',
+      en: 'Emissions from customers disposing of or recycling your products fall in this scope. Usually not applicable for service companies. Note: waste at your own sites is asked in Category 5 (Waste generated in operations), not here.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet — fiziksel ürün satıyoruz', en: 'Yes — we sell physical products' } },
@@ -5337,6 +5337,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     fields: [
       { id: 'product_name', type: 'text', required: true, label: { tr: 'Ürün adı', en: 'Product name' }, maxLength: 100 },
+      { id: 'units_sold', type: 'numeric', required: false, label: { tr: 'Raporlama yılında satılan adet', en: 'Units sold in the reporting year' } },
       { id: 'weight_kg', type: 'numeric', required: true, label: { tr: 'Birim ürün ağırlığı (kg)', en: 'Unit product weight (kg)' } },
       { id: 'primary_material', type: 'select', required: true, label: { tr: 'Ana malzeme', en: 'Primary material' }, options: WT_OPTIONS },
       { id: 'disposal_method', type: 'select', required: true, label: { tr: 'Beklenen bertaraf yöntemi', en: 'Expected disposal method' }, options: WASTE_DISPOSAL_OPTIONS },
@@ -5358,20 +5359,13 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Do you lease any assets to others?',
     },
     helper: {
-      tr: 'Aşama 2\'de \'Kiracı yönetiyor\' seçilen tesisler bu kategoriye otomatik eklendi. Kiracıdan enerji tüketim verisi alınabiliyor mu?',
-      en: 'Facilities where \'Tenant manages\' was selected in Stage 2 have been automatically added here. Can energy consumption data be obtained from the tenant?',
+      tr: 'Sahibi olduğunuz bir binayı, depoyu, aracı veya ekipmanı başka bir şirkete kiraya veriyorsanız \'Evet\' seçin. Bir sonraki adımda her varlığı ayrı ayrı gireceksiniz.',
+      en: 'Select \'Yes\' if you lease a building, warehouse, vehicle or equipment you own to another company. You will enter each asset in the next step.',
     },
     options: [
-      { value: 'yes', label: { tr: 'Evet / Otomatik tespit edildi', en: 'Yes / Automatically detected' } },
+      { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
       { value: 'no', label: { tr: 'Hayır', en: 'No' } },
     ],
-    systemMessages: {
-      // Was keyed 'auto_detect' — not a valid option value, never fired.
-      yes: {
-        tr: 'Aşama 2\'de bu tesis için kiracı yönetiyor seçtiniz. Bu tesis Kategori 13 kapsamında. Kiracıdan enerji tüketim verisi alabilir misiniz?',
-        en: 'In Stage 2 you selected \'tenant manages\' for this facility. It falls under Category 13. Can you obtain energy consumption data from the tenant?',
-      },
-    },
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     // Was a dead end (next: 'K3C14-0' regardless of answer) — Question Map's
     // k3c13_asset_description field was never asked.
@@ -5399,6 +5393,8 @@ export const CARBONIQ_QUESTIONS = [
     fields: [
       { id: 'asset_description', type: 'text', required: true, label: { tr: 'Varlık açıklaması', en: 'Asset description' }, maxLength: 150 },
       { id: 'tenant_data_available', type: 'boolean', required: true, label: { tr: 'Kiracıdan enerji verisi alınabiliyor mu?', en: 'Can energy data be obtained from tenant?' } },
+      { id: 'tenant_kwh', type: 'numeric', required: true, conditionalOn: 'tenant_data_available', label: { tr: 'Kiracının yıllık enerji tüketimi (kWh)', en: 'Tenant annual energy consumption (kWh)' } },
+      { id: 'area_m2', type: 'numeric', required: true, conditionalOn: 'tenant_data_available', conditionalOnValue: [false, 'false'], label: { tr: 'Kiraya verilen alan (m²)', en: 'Leased area (m²)' } },
     ],
     systemMessages: {
       selected: {
@@ -5435,6 +5431,59 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'no', label: { tr: 'Hayır — tahmin kullanacağız', en: 'No — we will use an estimate' } },
       { value: 'na', label: { tr: 'Uygulanamaz — franchise modelimiz yok', en: 'Not applicable — we have no franchise model' } },
     ],
+    nextByValue: { yes: 'K3C14-1', no: 'K3C14-2', na: 'K3C15-0' },
+  },
+  {
+    // "Evet — GHG raporları var" used to lead nowhere. Collected only — the
+    // reported totals are stored for the report; nothing is calculated here.
+    id: 'K3C14-1',
+    number: '104a',
+    stage: 5,
+    block: '5N',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    reportField: 'scope3.cat14.reported',
+    text: {
+      tr: 'Franchise işletmelerinizin raporladığı toplam emisyon nedir?',
+      en: 'What total emissions do your franchisees report?',
+    },
+    helper: {
+      tr: 'Franchise işletmelerinin GHG raporlarındaki Kapsam 1 ve 2 toplamını girin. Bazı işletmelerin raporu yoksa, raporu olanların toplamını yazın.',
+      en: 'Enter the Scope 1 and 2 total from the franchisees\' GHG reports. If some franchisees have no report, enter the total of those that do.',
+    },
+    fields: [
+      { id: 'franchise_count', type: 'numeric', required: true, label: { tr: 'Franchise işletme sayısı', en: 'Number of franchise outlets' } },
+      { id: 'reporting_count', type: 'numeric', required: false, label: { tr: 'Raporu olan işletme sayısı', en: 'Outlets with a GHG report' } },
+      { id: 'total_tco2e', type: 'numeric', required: true, label: { tr: 'Raporlanan toplam emisyon (tCO₂e)', en: 'Total reported emissions (tCO₂e)' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    next: 'K3C15-0',
+  },
+  {
+    // "Hayır — tahmin kullanacağız" used to lead nowhere: an estimate needs
+    // at least the outlet count and size. Collected only.
+    id: 'K3C14-2',
+    number: '104b',
+    stage: 5,
+    block: '5N',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    reportField: 'scope3.cat14.estimate_inputs',
+    text: {
+      tr: 'Franchise işletmelerinizin sayısı ve toplam alanı nedir?',
+      en: 'How many franchise outlets do you have and what is their total area?',
+    },
+    helper: {
+      tr: 'Tahmin için işletme sayısı ve yaklaşık toplam kapalı alan kullanılır. Kesin bilmiyorsanız yaklaşık değer girebilirsiniz.',
+      en: 'The estimate uses the outlet count and approximate total floor area. Approximate values are fine.',
+    },
+    fields: [
+      { id: 'franchise_count', type: 'numeric', required: true, label: { tr: 'Franchise işletme sayısı', en: 'Number of franchise outlets' } },
+      { id: 'total_area_m2', type: 'numeric', required: true, label: { tr: 'Toplam kapalı alan (m²)', en: 'Total floor area (m²)' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C15-0',
   },
   {
@@ -5451,8 +5500,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Do you have financial investments?',
     },
     helper: {
-      tr: 'PCAF standardına göre hisse senedi, tahvil, gayrimenkul kredisi gibi finansal yatırımların emisyon payı hesaplanır. Finans sektörü için en kritik Kapsam 3 kategorisidir. NACE K dışındaki şirketler için opsiyoneldir.',
-      en: 'Per PCAF standard, the emission share of financial investments (equities, bonds, real estate loans) is calculated. Most critical Scope 3 category for the finance sector. Optional for non-NACE K companies.',
+      tr: 'Hisse senedi, tahvil, proje finansmanı veya kredi gibi finansal yatırımlarınız varsa, yatırım yaptığınız şirketin emisyonundan payınıza düşen kısım raporlanır. Bankalar ve finans şirketleri için en önemli Kapsam 3 kategorisidir; diğer şirketler için isteğe bağlıdır.',
+      en: 'If you hold financial investments such as shares, bonds, project finance or loans, your share of the investee company\'s emissions is reported. Most important Scope 3 category for banks and financial companies; optional for other companies.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -5504,11 +5553,11 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'VA-07', label: { tr: 'VA-07 — Özel sermaye', en: 'VA-07 — Private equity' } },
         ],
       },
-      { id: 'investment_amount', type: 'numeric', required: true, label: { tr: 'Yatırım tutarı', en: 'Investment amount' } },
-      { id: 'company_value', type: 'numeric', required: true, label: { tr: 'Şirket değeri', en: 'Company value' } },
-      { id: 'company_debt', type: 'numeric', required: false, label: { tr: 'Şirket borcu', en: 'Company debt' } },
+      { id: 'investment_amount', type: 'numeric', required: true, label: { tr: 'Yatırım tutarı (TL)', en: 'Investment amount (TRY)' } },
+      { id: 'company_value', type: 'numeric', required: true, label: { tr: 'Şirket değeri (TL)', en: 'Company value (TRY)' } },
+      { id: 'company_debt', type: 'numeric', required: false, label: { tr: 'Şirket borcu (TL)', en: 'Company debt (TRY)' } },
       { id: 'ghg_report_available', type: 'boolean', required: true, label: { tr: 'GHG raporu mevcut mu?', en: 'GHG report available?' } },
-      { id: 'company_emissions_tco2e', type: 'numeric', required: false, conditionalOn: 'ghg_report_available', label: { tr: 'Şirket emisyonları (tCO₂e)', en: 'Company emissions (tCO₂e)' } },
+      { id: 'company_emissions_tco2e', type: 'numeric', required: true, conditionalOn: 'ghg_report_available', label: { tr: 'Şirket emisyonları (tCO₂e)', en: 'Company emissions (tCO₂e)' } },
     ],
     systemMessages: {
       pcaf_calc: {
@@ -5533,7 +5582,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Scope 3 summary: Are all categories and quantities correct?',
     },
     helper: {
-      tr: 'Tüm Kapsam 3 kategorileriniz özetlendi. Düzenleme yapabilir, atlanan kategorileri sonradan ekleyebilirsiniz.',
+      tr: 'Kapsam 3 kategorilerinde girdikleriniz aşağıda. Bir kategoriyi düzenleyebilir veya atladığınız bir kategoriyi ekleyebilirsiniz; bitince bu özete geri dönersiniz.',
       en: 'All your Scope 3 categories are summarised. You can make edits or add skipped categories later.',
     },
     options: [
@@ -5554,7 +5603,63 @@ export const CARBONIQ_QUESTIONS = [
         en: '[X]% of your data is Level 3 (spend-based estimate). Would you like to see which categories you can improve by collecting supplier data?',
       },
     },
-    nextByValue: { confirmed: '6-GİRİŞ', edit: 'K3C1-0', add_category: 'K3C1-0' },
+    // Scope3SummaryTable is rendered above the answer chips.
+    showSummaryTable: 'scope3',
+    // Was 'K3C1-0' for both — editing one category meant walking all of
+    // Scope 3 (Q81 onwards) again. The picker jumps to one category and the
+    // flow returns here when it ends (scope1EditReturn / SECTION_EDIT_FLOWS).
+    nextByValue: { confirmed: '6-GİRİŞ', edit: 'K3-TY-edit', add_category: 'K3-TY-edit' },
+  },
+  {
+    id: 'K3-TY-edit',
+    number: '107a',
+    stage: 5,
+    block: '5P',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'section_picker',
+    required: true,
+    text: {
+      tr: 'Hangi Kapsam 3 kategorisine gitmek istiyorsunuz?',
+      en: 'Which Scope 3 category do you want to go to?',
+    },
+    helper: {
+      tr: 'Seçtiğiniz kategorinin ilk sorusuna yönlendirileceksiniz. O kategoriyi bitirince Kapsam 3 özetine geri dönersiniz.',
+      en: 'You will be taken to the first question of the chosen category. When you finish it you return to the Scope 3 summary.',
+    },
+    options: [
+      { value: 'K3C1-0', label: { tr: 'Kategori 1 — Satın alınan mal ve hizmetler', en: 'Category 1 — Purchased goods and services' } },
+      { value: 'K3C2-0', label: { tr: 'Kategori 2 — Sermaye malları', en: 'Category 2 — Capital goods' } },
+      { value: 'K3C3-INFO', label: { tr: 'Kategori 3 — Yakıt ve enerjiyle ilgili faaliyetler', en: 'Category 3 — Fuel- and energy-related activities' } },
+      { value: 'K3C4-0', label: { tr: 'Kategori 4 — Yukarı akış nakliye ve dağıtım', en: 'Category 4 — Upstream transportation and distribution' } },
+      { value: 'K3C5-0', label: { tr: 'Kategori 5 — Faaliyetlerde oluşan atık', en: 'Category 5 — Waste generated in operations' } },
+      { value: 'K3C6-0', label: { tr: 'Kategori 6 — İş seyahatleri', en: 'Category 6 — Business travel' } },
+      { value: 'K3C7-0', label: { tr: 'Kategori 7 — Çalışan ulaşımı', en: 'Category 7 — Employee commuting' } },
+      { value: 'K3C8-0', label: { tr: 'Kategori 8 — Kiralanan varlıklar', en: 'Category 8 — Upstream leased assets' } },
+      { value: 'K3C9-0', label: { tr: 'Kategori 9 — Aşağı akış nakliye ve dağıtım', en: 'Category 9 — Downstream transportation and distribution' } },
+      { value: 'K3C10-0', label: { tr: 'Kategori 10 — Satılan ürünlerin işlenmesi', en: 'Category 10 — Processing of sold products' } },
+      { value: 'K3C11-0', label: { tr: 'Kategori 11 — Satılan ürünlerin kullanımı', en: 'Category 11 — Use of sold products' } },
+      { value: 'K3C12-0', label: { tr: 'Kategori 12 — Satılan ürünlerin ömür sonu', en: 'Category 12 — End-of-life treatment of sold products' } },
+      { value: 'K3C13-0', label: { tr: 'Kategori 13 — Kiraya verilen varlıklar', en: 'Category 13 — Downstream leased assets' } },
+      { value: 'K3C14-0', label: { tr: 'Kategori 14 — Franchise\'lar', en: 'Category 14 — Franchises' } },
+      { value: 'K3C15-0', label: { tr: 'Kategori 15 — Yatırımlar', en: 'Category 15 — Investments' } },
+    ],
+    nextByValue: {
+      'K3C1-0': 'K3C1-0',
+      'K3C2-0': 'K3C2-0',
+      'K3C3-INFO': 'K3C3-INFO',
+      'K3C4-0': 'K3C4-0',
+      'K3C5-0': 'K3C5-0',
+      'K3C6-0': 'K3C6-0',
+      'K3C7-0': 'K3C7-0',
+      'K3C8-0': 'K3C8-0',
+      'K3C9-0': 'K3C9-0',
+      'K3C10-0': 'K3C10-0',
+      'K3C11-0': 'K3C11-0',
+      'K3C12-0': 'K3C12-0',
+      'K3C13-0': 'K3C13-0',
+      'K3C14-0': 'K3C14-0',
+      'K3C15-0': 'K3C15-0',
+    },
   },
 
   // ── STAGE 6 ─ Exclusions, Assumptions, Exceptions ────────────────────────
