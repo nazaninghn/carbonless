@@ -454,6 +454,18 @@ function getInitialValue(q) {
 // answer and must NOT set this, since a per-item compound answer like 3D-4's
 // {refill_kg, capacity_kg} has the same "object of scalars" shape as an
 // aggregate and would otherwise be misread as one.
+// A compound sub-field's value as the user saw it: a select shows its option
+// label ("R-410A (GWP: 2.088)", not the stored "R410A"), a boolean Evet/Hayır.
+function fieldValueText(field, v, lang) {
+  if (Array.isArray(field?.options)) {
+    const opt = field.options.find(o => String(o.value) === String(v));
+    if (opt) return stripOptionCode(opt.label?.[lang] || opt.label?.en || String(v));
+  }
+  if (v === true || v === 'true') return lang === 'tr' ? 'Evet' : 'Yes';
+  if (v === false || v === 'false') return lang === 'tr' ? 'Hayır' : 'No';
+  return v;
+}
+
 function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
   if (!q || value === undefined || value === null || value === '') return '—';
   if (isAggregate && q.loopSource && typeof value === 'object' && !Array.isArray(value)) {
@@ -496,7 +508,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
           .map(([k, v]) => {
             const field = q.fields?.find(f => f.id === k);
             const label = field?.label?.[lang] || field?.label?.en || k;
-            return `${label}: ${v}`;
+            return `${label}: ${fieldValueText(field, v, lang)}`;
           })
           .join(', ');
         return `#${i + 1} ${inner}`;
@@ -510,7 +522,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
       .map(([k, v]) => {
         const field = q.fields?.find(f => f.id === k);
         const label = field?.label?.[lang] || field?.label?.en || k;
-        return `${label}: ${v}`;
+        return `${label}: ${fieldValueText(field, v, lang)}`;
       })
       .join(' · ') || '—';
   }
@@ -1731,6 +1743,18 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 // ─────────────────────────────────────────────────────────────────────────────
 // Block summary helpers
 // ─────────────────────────────────────────────────────────────────────────────
+// Editing one Scope 1 section from the summary (TY-1 = "edit", TY-edit = the
+// section's first question): once the flow would leave that section, go
+// back to the summary instead of walking every later section again — as
+// TY-edit promises. Returns the next question id to use.
+function scope1EditReturn(fromQ, nextId, answers) {
+  if (readAnswerValue(answers, 'TY-1') !== 'edit') return nextId;
+  const block = getQuestionById(readAnswerValue(answers, 'TY-edit'))?.block;
+  if (!block || fromQ?.stage !== 3 || fromQ?.block !== block) return nextId;
+  const next = getQuestionById(nextId);
+  return next && next.stage === 3 && next.block === block ? nextId : 'TY-1';
+}
+
 function getBlockId(q) {
   if (!q) return null;
   if (q.stage === 1) return `S1-${q.block}`;
@@ -3140,9 +3164,12 @@ export function QuestionnaireTab({
           if (conditionalShowMatches(candidate.conditionalShow, finalAnswers)) break;
           nextId = candidate.next || candidate.loopNext || null;
         }
+        const loopEditNextId = scope1EditReturn(q, nextId, finalAnswers);
+        const loopDirectJump = loopEditNextId !== nextId;
+        nextId = loopEditNextId;
         const currLoopBlockId = getBlockId(q);
         const nextLoopBlockId = getBlockId(getQuestionById(nextId));
-        if (nextId && nextLoopBlockId && currLoopBlockId && currLoopBlockId !== nextLoopBlockId) {
+        if (!loopDirectJump && nextId && nextLoopBlockId && currLoopBlockId && currLoopBlockId !== nextLoopBlockId) {
           setBlockSummaryState({ blockId: currLoopBlockId, stageId: q.stage, nextId });
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,
@@ -3292,6 +3319,11 @@ export function QuestionnaireTab({
           nextId = candidate.next || candidate.loopNext || null;
         }
       }
+      const editNextId = scope1EditReturn(q, nextId, newAnswers);
+      // Jumping to a chosen section, or back to the Scope 1 summary after
+      // editing one, is not the end of a block: no "section complete" table.
+      const directJump = q.type === 'section_picker' || editNextId !== nextId;
+      nextId = editNextId;
 
       if (!nextId) {
         // ✅ This branch fires when the client-side traversal (getNextQuestionId)
@@ -3325,7 +3357,7 @@ export function QuestionnaireTab({
         const currBlockId = getBlockId(q);
         const nextQ = getQuestionById(nextId);
         const nextBlockId = getBlockId(nextQ);
-        if (nextBlockId && currBlockId && currBlockId !== nextBlockId) {
+        if (!directJump && nextBlockId && currBlockId && currBlockId !== nextBlockId) {
           setBlockSummaryState({ blockId: currBlockId, stageId: q.stage, nextId });
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,

@@ -3053,7 +3053,10 @@ export const CARBONIQ_QUESTIONS = [
     },
     options: [
       { value: 'AR6', label: { tr: 'Onayla — IPCC AR6 (2021) kullanılsın (önerilen)', en: 'Approve — Use IPCC AR6 (2021) (recommended)' } },
-      { value: 'AR4', label: { tr: 'Farklı GWP referansı seçmek istiyorum (AR4/AR5)', en: 'I want to select a different GWP reference (AR4/AR5)' } },
+      // Was one "AR4/AR5" option that silently recorded AR4 — AR5 could not
+      // be chosen at all.
+      { value: 'AR5', label: { tr: 'IPCC AR5 (2014) kullanılsın', en: 'Use IPCC AR5 (2014)' } },
+      { value: 'AR4', label: { tr: 'IPCC AR4 (2007) kullanılsın', en: 'Use IPCC AR4 (2007)' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen GWP referansını onaylayın.', en: 'Please approve the GWP reference.' },
