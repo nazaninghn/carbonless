@@ -1040,3 +1040,50 @@ class AdvisorFlagsFollowAnswersTests(TestCase):
         from .report_pdf import _answered_by_stage
         counts = _answered_by_stage({'A1', '2A-1', 'TY-1', 'K3C1-0', 'K3-TY', '6A-1', '7C-2', '6-GİRİŞ'})
         self.assertEqual(counts, [1, 1, 1, 0, 2, 1, 1])
+
+
+class NewInventoryYearTests(TestCase):
+    """The reporting year is chosen when an inventory is created and carried along."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.owner = User.objects.create_user('yrown', 'yrown@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Year Co', tax_number='12',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.owner)
+
+    def test_year_on_create_previous_facilities_and_progress(self):
+        prev = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2025,
+            title='Prev', status=CarbonReport.Status.COMPLETED)
+        ReportStep.objects.create(report=prev, step_id='A1', answer={'legal_name': 'Year Co'})
+        ReportStep.objects.create(report=prev, step_id='2A-2', answer={'answer': {
+            '2': {'name': 'Depo', 'country': 'TR'}, '1': {'name': 'Fabrika', 'country': 'TR'},
+            '10': {'name': 'Ofis', 'country': 'DE'}}})
+        res = self.client.post('/api/questionnaire/start/', {'title': 'Year Co 2024', 'force_new': True, 'reporting_year': 2024}, format='json')
+        self.assertEqual(res.status_code, 201)
+        rid = res.json()['report_id']
+        self.assertEqual(CarbonReport.objects.get(id=rid).reporting_year, 2024)
+        bad = self.client.post('/api/questionnaire/start/', {'force_new': True, 'reporting_year': 1800}, format='json')
+        self.assertEqual(bad.status_code, 400)
+
+        data = self.client.get(f'/api/questionnaire/{rid}/previous-profile/').json()
+        self.assertEqual(data['current_reporting_year'], 2024)
+        self.assertEqual([f['name'] for f in data['previous_facilities']], ['Fabrika', 'Depo', 'Ofis'])
+
+        res = self.client.post(f'/api/questionnaire/{rid}/reuse-profile/',
+                               {'reporting_year': 2024, 'progress': {'answered': 21, 'total': 131}}, format='json')
+        self.assertEqual(res.status_code, 200)
+        lst = {r['report_id']: r for r in self.client.get('/api/questionnaire/').json()['reports']}
+        self.assertEqual((lst[rid]['progress']['completed'], lst[rid]['progress']['total']), (21, 131))
+
+        # restarting forgets the old progress
+        self.client.post(f'/api/questionnaire/{rid}/restart/')
+        self.assertIsNone(CarbonReport.objects.get(id=rid).client_progress)

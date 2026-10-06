@@ -35,6 +35,29 @@ def _client_progress_from(payload):
     return {'answered': answered, 'total': total}
 
 
+def datetime_now_year():
+    from django.utils import timezone
+    return timezone.now().year
+
+
+def _previous_facilities(source):
+    """[{'name', 'country'}] from the source report's 2A-2, in its order."""
+    step = source.steps.filter(step_id='2A-2').first() if source else None
+    raw = step.answer if step else None
+    if isinstance(raw, dict) and set(raw) == {'answer'}:
+        raw = raw['answer']
+    if not isinstance(raw, dict):
+        return []
+    def _key(k):
+        return (0, int(k)) if str(k).isdigit() else (1, str(k))
+    out = []
+    for k in sorted(raw, key=_key):
+        v = raw[k]
+        if isinstance(v, dict):
+            out.append({'name': str(v.get('name') or ''), 'country': str(v.get('country') or '')})
+    return out
+
+
 def _progress(completed_count, status, client_progress=None):
     """Coarse progress for report *lists*.
 
@@ -256,10 +279,21 @@ class StartReportView(APIView):
             from datetime import datetime
             title = f"Carbon Report — {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
+        # The reporting year chosen in the "new inventory" dialog — the
+        # reuse dialog and A4 start from it instead of guessing.
+        year = request.data.get('reporting_year')
+        try:
+            year = int(year) if year not in (None, '') else None
+        except (TypeError, ValueError):
+            year = None
+        if year is not None and not 1990 <= year <= datetime_now_year():
+            return Response({'error': 'Invalid reporting year', 'code': 'invalid_year'}, status=400)
+
         report = CarbonReport.objects.create(
             company=company,
             created_by=request.user,
             title=title,
+            reporting_year=year,
             status=CarbonReport.Status.IN_PROGRESS,
             current_step='A1'
         )
@@ -716,6 +750,8 @@ class PreviousCompanyProfileView(APIView):
                 'answers': _registration_prefill_answers(report.company),
                 'other_inventories': _other_inventories(report),
                 'facility_count': _facility_count(report.company),
+                'current_reporting_year': report.reporting_year,
+                'previous_facilities': [],
             })
 
         # The earlier report's answers win; anything it never answered falls
@@ -739,6 +775,10 @@ class PreviousCompanyProfileView(APIView):
             'registration_answers': registration,
             'other_inventories': _other_inventories(report),
             'facility_count': _facility_count(report.company),
+            'current_reporting_year': report.reporting_year,
+            # The earlier inventory's facilities in its own order: 2A-2 is
+            # pre-filled from them so "Tesis 1" stays the same site.
+            'previous_facilities': _previous_facilities(source),
         })
 
 
@@ -782,6 +822,11 @@ class ReuseCompanyProfileView(APIView):
         # writes here, which the frontend has no routing entry for.
         report.current_step = '2A-0'
         report.status = CarbonReport.Status.IN_PROGRESS
+        # The survey's own answered/total after the copy, so the inventory
+        # list shows the same numbers as the questionnaire.
+        client_progress = _client_progress_from(request.data.get('progress'))
+        if client_progress:
+            report.client_progress = client_progress
         report.save()
 
         answers = {}
@@ -952,7 +997,8 @@ class RestartReportView(APIView):
             AdvisorApproval.objects.filter(report=report, status=AdvisorApproval.Status.PENDING).delete()
             report.current_step = 'A1'
             report.status = CarbonReport.Status.IN_PROGRESS
-            report.save(update_fields=['current_step', 'status', 'updated_at'])
+            report.client_progress = None
+            report.save(update_fields=['current_step', 'status', 'client_progress', 'updated_at'])
         return Response({'success': True, 'report_id': report.id})
 
 

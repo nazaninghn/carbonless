@@ -292,9 +292,9 @@ export const api = {
   exportAll: () => request('/emissions/export-all/'),
   exportAllExcel: (lang = 'en') => request(`/emissions/export-all/?file=xlsx&lang=${lang}`),
 
-  startCarbonReport: (title = '', forceNew = false) => request('/questionnaire/start/', {
+  startCarbonReport: (title = '', forceNew = false, reportingYear = null) => request('/questionnaire/start/', {
     method: 'POST',
-    body: JSON.stringify({ title, force_new: forceNew })
+    body: JSON.stringify({ title, force_new: forceNew, ...(reportingYear ? { reporting_year: reportingYear } : {}) })
   }),
   resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
   restartReport: (reportId) => request(`/questionnaire/${reportId}/restart/`, { method: 'POST' }),
@@ -309,7 +309,7 @@ export const api = {
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   getCompanyHistory: (lang) => request(`/accounts/history/${lang ? `?lang=${lang}` : ''}`),
   getPreviousCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/previous-profile/`),
-  reuseCompanyProfile: (reportId, reportingYear) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST', body: JSON.stringify({ reporting_year: reportingYear }) }),
+  reuseCompanyProfile: (reportId, reportingYear, progress = null) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST', body: JSON.stringify({ reporting_year: reportingYear, ...(progress ? { progress } : {}) }) }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
   downloadQuestionnairePdf: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/pdf/?lang=${lang}`),
   // The full ISO 14064-1:2018 inventory report (six categories, boundaries,
