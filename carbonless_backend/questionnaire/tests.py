@@ -753,6 +753,18 @@ class FacilitySyncTests(TestCase):
                           {'step': '2A-2', 'data': answer, 'language': 'tr'}, format='json')
         self.assertEqual(len(self._names()), 3)
 
+    def test_same_name_for_two_facilities_is_rejected(self):
+        answer = {'answer': {
+            '1': {'name': 'Fabrika', 'country': 'TR'},
+            '2': {'name': 'fabrika ', 'country': 'TR'},
+        }}
+        res = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                {'step': '2A-2', 'data': answer, 'language': 'tr'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertEqual(res.json()['code'], 'duplicate_facility_name')
+        self.assertIn('farklı bir ad', res.json()['error'])
+        self.assertEqual(self._names(), [('Tesis 1', 'TR'), ('Depo Ankara', 'TR')])
+
     def test_never_deletes_facilities(self):
         from .facility_sync import sync_facilities
         sync_facilities(self.company, {'answer': {'1': {'name': 'Tek Tesis', 'country': 'TR'}}})

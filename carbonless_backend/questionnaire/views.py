@@ -410,6 +410,20 @@ class SubmitStepView(APIView):
                 'bot_messages': [f'❌ {validation_error}'],
             }, status=400)
 
+        if step == '2A-2':
+            from .facility_sync import duplicate_name, duplicate_message
+            dup = duplicate_name(data)
+            if dup:
+                msg = duplicate_message(dup, lang)
+                return Response({
+                    'success': False,
+                    'step': step,
+                    'next_step': step,
+                    'error': msg,
+                    'code': 'duplicate_facility_name',
+                    'bot_messages': [f'❌ {msg}'],
+                }, status=400)
+
         _save_report_step(report, step, data if data else {})
         evaluate_advisor_triggers(report, step, data)
 

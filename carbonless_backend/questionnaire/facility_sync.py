@@ -29,6 +29,26 @@ def _rows(data):
     return rows
 
 
+def duplicate_name(data):
+    """The first facility name given twice in a 2A-2 answer (case-insensitive),
+    or None. Each facility needs its own name: identical names are
+    indistinguishable in the emissions form and break the per-company unique
+    name rule Settings enforces."""
+    seen = set()
+    for name, _country in _rows(data):
+        key = name.lower()
+        if key in seen:
+            return name
+        seen.add(key)
+    return None
+
+
+def duplicate_message(name, lang):
+    if str(lang).lower().startswith('tr'):
+        return f'"{name}" adını birden fazla tesis için kullandınız. Her tesise farklı bir ad verin.'
+    return f'You used the name "{name}" for more than one facility. Give each facility its own name.'
+
+
 def sync_facilities(company, data):
     """Apply a 2A-2 answer to `company`'s facilities. Returns how many changed."""
     from companies.models import Facility
