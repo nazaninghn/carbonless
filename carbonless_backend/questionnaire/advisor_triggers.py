@@ -177,7 +177,7 @@ def _match_biomass(qid, answer, report):
 
 
 def _match_ar6_gwp(qid, answer, report):
-    # 3D-EF is a per-equipment loop; finished answer is {equipmentId: 'AR6'|'AR4', ...}.
+    # 3D-EF is a per-equipment loop; finished answer is {equipmentId: 'AR6'|'AR5'|'AR4', ...}.
     if 'AR6' in _flatten_scalar_values(_answer_value(answer)):
         return {'reason_code': 'ar6_gwp_confirmed', 'category': 'Metodoloji', 'risk': 'low',
                 'description': f'{qid}: IPCC AR6 (2021) GWP reference confirmed.'}

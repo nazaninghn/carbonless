@@ -826,3 +826,8 @@ class SupplierEFDocumentTests(TestCase):
     def test_vehicle_amount_step(self):
         from .carboniq_validation import validate_generic_step
         self.assertEqual(validate_generic_step('3B-7', {'answer': {'EQ-3B-01': '12000 litre'}}, lang='tr'), (True, None))
+
+    def test_gwp_reference_offers_ar5(self):
+        from .carboniq_validation import validate_generic_step
+        for ref in ('AR6', 'AR5', 'AR4'):
+            self.assertEqual(validate_generic_step('3D-EF', {'answer': {'EQ-3D-01': ref}}, lang='tr'), (True, None))
