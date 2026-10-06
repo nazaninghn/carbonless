@@ -46,6 +46,7 @@ import {
   validateCarbonIQAnswer,
   normalizeCarbonIQNumbers,
   readAnswerValue,
+  resolveFieldOptions,
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
 import { fixed } from '@/lib/formatNumber';
@@ -1436,7 +1437,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     // is { items: [...committed entries], draft: {...entry being edited} }.
     // "+ Add Another" commits the draft and clears it for a new entry; "Done"
     // commits the draft (if complete) and submits the whole items array.
-    const fields = question.fields || [];
+    const fields = resolveFieldOptions(question.fields || [], answers);
     const val = (value && typeof value === 'object' && !Array.isArray(value)) ? value : { items: [], draft: {} };
     const items = Array.isArray(val.items) ? val.items : [];
     const draft = (val.draft && typeof val.draft === 'object') ? val.draft : {};
@@ -1508,7 +1509,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   }
 
   if (type === 'compound') {
-    const fields = question.fields || [];
+    const fields = resolveFieldOptions(question.fields || [], answers);
     const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     const requiredFields = fields.filter(f => f.required !== false);
     // Fix #100: skip fields whose conditionalOn condition is not met — they are
@@ -2584,6 +2585,26 @@ export function QuestionnaireTab({
   // Keep a ref so the init effect can read the latest answers without being
   // re-triggered on every setAnswers call (which would race with submitAnswer).
   const answersRef = useRef(answers);
+  // Facilities already registered (sign-up / Settings): 2A-2's per-facility
+  // name+country starts from them instead of blank. Sign-up's placeholder
+  // names ("Tesis 1") are not offered as a name, only their country.
+  const registeredFacilitiesRef = useRef([]);
+  useEffect(() => {
+    api.getFacilities()
+      .then(res => (res.ok ? res.json() : []))
+      .then(data => {
+        const list = Array.isArray(data) ? data : (data?.results || []);
+        registeredFacilitiesRef.current = list.filter(f => f && f.is_active !== false);
+      })
+      .catch(() => {});
+  }, []);
+  const facilityPrefill = (q, index) => {
+    if (q?.id !== '2A-2') return undefined;
+    const f = registeredFacilitiesRef.current[index];
+    if (!f) return undefined;
+    const name = String(f.name || '').trim();
+    return { name: /^(tesis|facility)\s*\d+$/i.test(name) ? '' : name, country: f.country || '' };
+  };
   useEffect(() => { answersRef.current = answers; }, [answers]);
 
   // Init answer value when the QUESTION changes (navigation / goBack).
@@ -2605,14 +2626,22 @@ export function QuestionnaireTab({
       let existing;
       if (loopState && loopState.questionId === currentId) {
         const item = loopState.items[loopState.currentIndex];
-        existing = loopState.collected[item] ?? loopItemValue(answersRef.current[currentId], item);
+        existing = loopState.collected[item] ?? loopItemValue(answersRef.current[currentId], item)
+          ?? facilityPrefill(currentQuestion, loopState.currentIndex);
       } else if (currentQuestion.loopSource) {
         // The loop has not been (re)entered yet — e.g. on resume, where the
         // resume effect starts it at item 0 in this same pass.
         const firstItem = buildLoopItems(currentId, answersRef.current, lang)?.items?.[0];
-        existing = loopItemValue(answersRef.current[currentId], firstItem);
+        existing = loopItemValue(answersRef.current[currentId], firstItem) ?? facilityPrefill(currentQuestion, 0);
       } else {
         existing = answersRef.current[currentId];
+        // prefillFrom: the question repeats an earlier one (2A-1 asks the
+        // facility count B4 already did) — start from that answer, as its
+        // helper text promises, instead of blank.
+        if (existing === undefined && currentQuestion.prefillFrom) {
+          const src = readAnswerValue(answersRef.current, currentQuestion.prefillFrom);
+          if (src !== undefined && src !== null && typeof src !== 'object' && String(src).trim() !== '') existing = String(src);
+        }
       }
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
       // Marks answerValue as belonging to THIS question. React usually runs
@@ -2910,6 +2939,19 @@ export function QuestionnaireTab({
     if (loopState && loopState.questionId === currentId) {
       const { items, itemLabels, currentIndex, collected } = loopState;
       const itemLabel = itemLabels[currentIndex] || items[currentIndex] || `#${currentIndex + 1}`;
+      // Each facility needs its own name (the server rejects a repeat too):
+      // two facilities called the same can't be told apart anywhere else.
+      if (currentId === '2A-2') {
+        const nm = String(value?.name || '').trim().toLocaleLowerCase('tr');
+        const clash = nm && Object.entries(collected || {}).some(([k, v]) =>
+          k !== String(items[currentIndex]) && String(v?.name || '').trim().toLocaleLowerCase('tr') === nm);
+        if (clash) {
+          setSaveError(tr
+            ? `"${String(value.name).trim()}" adını başka bir tesis için zaten kullandınız. Her tesise farklı bir ad verin.`
+            : `You already used "${String(value.name).trim()}" for another facility. Give each facility its own name.`);
+          return;
+        }
+      }
       const newCollected = { ...collected, [items[currentIndex]]: value };
 
       // Show user bubble with item context
@@ -2953,7 +2995,8 @@ export function QuestionnaireTab({
         // concurrent mutation even though isSubmittingRef currently prevents it.
         setLoopState(prev => prev ? { ...prev, currentIndex: nextIndex, collected: newCollected } : null);
         const earlierItemValue = loopItemValue(answersRef.current[currentId], items[nextIndex]);
-        setAnswerValue(earlierItemValue !== undefined ? normalizeAnswerValue(q, earlierItemValue) : getInitialValue(q));
+        const nextItemValue = earlierItemValue !== undefined ? earlierItemValue : facilityPrefill(q, nextIndex);
+        setAnswerValue(nextItemValue !== undefined ? normalizeAnswerValue(q, nextItemValue) : getInitialValue(q));
 
         // Clear the mutex AFTER setIsTyping(true) to eliminate the window where
         // both guards are simultaneously false.

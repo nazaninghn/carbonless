@@ -1339,28 +1339,28 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: 'D3', includesValue: 'operational_control' },
     reportField: 'org_boundary.facilities[N].sets_op_policies',
     text: {
-      tr: '[Tesis N] Bu tesiste operasyonel politikaları siz mi belirliyorsunuz?',
-      en: '[Facility N] Do you set the operational policies at this facility?',
+      tr: 'Tesislerinizde operasyonel politikaları siz mi belirliyorsunuz?',
+      en: 'Do you set the operational policies at your facilities?',
     },
     helper: {
-      tr: 'Operasyonel kontrol yaklaşımında envantere yalnızca operasyonel politikalarını belirleme yetkisine sahip olduğunuz tesisler dahil edilir. Bu tesis için bu yetkiye sahip misiniz?',
-      en: 'Under the operational control approach, only facilities where you have the authority to set operating policies are included. Do you have this authority for this facility?',
+      tr: 'Operasyonel kontrol yaklaşımında envantere yalnızca operasyonel politikalarını belirleme yetkisine sahip olduğunuz tesisler dahil edilir. Bu soru tanımladığınız tüm tesisler için geçerlidir: yetkinizin olmadığı bir tesis varsa "Hayır" seçin.',
+      en: 'Under the operational control approach, only facilities where you have the authority to set operating policies are included. This question covers all the facilities you listed: if there is one where you lack this authority, choose "No".',
     },
     options: [
-      { value: 'yes', label: { tr: 'Evet — operasyonel politikaları ben belirliyorum', en: 'Yes — I set the operational policies' } },
-      { value: 'no', label: { tr: 'Hayır — bu yetkiye sahip değilim', en: 'No — I do not have this authority' } },
+      { value: 'yes', label: { tr: 'Evet — tüm tesislerde politikaları biz belirliyoruz', en: 'Yes — we set the policies at all facilities' } },
+      { value: 'no', label: { tr: 'Hayır — en az bir tesiste bu yetkimiz yok', en: 'No — we lack this authority at one or more facilities' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
     systemMessages: {
       yes: {
-        tr: 'Bu tesis operasyonel kontrol kapsamında envantere dahil edilecek.',
-        en: 'This facility will be included in the inventory under operational control.',
+        tr: 'Tesisleriniz operasyonel kontrol kapsamında envantere dahil edilecek.',
+        en: 'Your facilities will be included in the inventory under operational control.',
       },
       no: {
-        tr: 'Bu tesis operasyonel kontrol kapsamı dışında tutulacak. Sınır dışı bırakma gerekçesi Aşama 2C\'de belgelenecek.',
-        en: 'This facility will be excluded from operational control scope. The exclusion reason will be documented in Stage 2C.',
+        tr: 'Yetkinizin olmadığı tesisler operasyonel kontrol kapsamı dışında tutulacak. Sınır dışı bırakma gerekçesi Aşama 2C\'de belgelenecek.',
+        en: 'Facilities where you lack this authority will be excluded from operational control scope. The exclusion reason will be documented in Stage 2C.',
       },
     },
     nextByValue: {
@@ -1380,8 +1380,8 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: '2B-OC1', includesValue: 'yes' },
     reportField: 'org_boundary.facilities[N].daily_ops_manager',
     text: {
-      tr: '[OC1 = Evet] Bu tesiste günlük operasyonları kim yönetiyor?',
-      en: '[OC1 = Yes] Who manages the day-to-day operations at this facility?',
+      tr: 'Tesislerinizde günlük operasyonları kim yönetiyor?',
+      en: 'Who manages the day-to-day operations at your facilities?',
     },
     helper: {
       tr: 'Günlük operasyon yönetimi, envanter sınırının doğru kurulması açısından önemlidir. En uygun seçeneği seçin.',
@@ -1389,7 +1389,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     options: [
       { value: 'central_mgmt', label: { tr: 'Merkezi yönetim (ana şirket)', en: 'Central management (parent company)' } },
-      { value: 'local_mgmt', label: { tr: 'Yerel yönetim (bu tesis)', en: 'Local management (this facility)' } },
+      { value: 'local_mgmt', label: { tr: 'Yerel yönetim (her tesisin kendisi)', en: 'Local management (each facility)' } },
       { value: 'shared', label: { tr: 'Paylaşımlı yönetim', en: 'Shared management' } },
     ],
     validate: {
@@ -1408,28 +1408,28 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: 'D3', includesValue: 'financial_control' },
     reportField: 'org_boundary.facilities[N].in_consolidated_statements',
     text: {
-      tr: '[Tesis N] Bu tesis konsolide finansal tablolarınızda yer alıyor mu?',
-      en: '[Facility N] Is this facility included in your consolidated financial statements?',
+      tr: 'Tesisleriniz konsolide finansal tablolarınızda yer alıyor mu?',
+      en: 'Are your facilities included in your consolidated financial statements?',
     },
     helper: {
       tr: 'Finansal kontrol yaklaşımında yalnızca konsolide finansal tablolarda yer alan birimler envantere dahil edilir.',
       en: 'Under the financial control approach, only entities included in consolidated financial statements are added to the inventory.',
     },
     options: [
-      { value: 'yes', label: { tr: 'Evet — konsolide tablolarda yer alıyor', en: 'Yes — included in consolidated statements' } },
-      { value: 'no', label: { tr: 'Hayır — konsolide tablolarda yer almıyor', en: 'No — not in consolidated statements' } },
+      { value: 'yes', label: { tr: 'Evet — tümü konsolide tablolarda yer alıyor', en: 'Yes — all are in the consolidated statements' } },
+      { value: 'no', label: { tr: 'Hayır — en az biri konsolide tablolarda yer almıyor', en: 'No — one or more are not in the consolidated statements' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
     systemMessages: {
       yes: {
-        tr: 'Bu tesis finansal kontrol kapsamında envantere dahil edilecek.',
-        en: 'This facility will be included in the inventory under financial control.',
+        tr: 'Tesisleriniz finansal kontrol kapsamında envantere dahil edilecek.',
+        en: 'Your facilities will be included in the inventory under financial control.',
       },
       no: {
-        tr: 'Bu tesis finansal kontrol kapsamı dışında tutulacak.',
-        en: 'This facility will be excluded from the financial control scope.',
+        tr: 'Konsolide tablolarda yer almayan tesisler finansal kontrol kapsamı dışında tutulacak.',
+        en: 'Facilities not in the consolidated statements will be excluded from the financial control scope.',
       },
     },
     nextByValue: {
@@ -1449,8 +1449,8 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: '2B-FC1', includesValue: 'yes' },
     reportField: 'org_boundary.facilities[N].has_fin_op_authority',
     text: {
-      tr: '[FC1 = Evet] Bu tesiste finansal ve operasyonel politikaları belirleme yetkisi sizde mi?',
-      en: '[FC1 = Yes] Do you have the authority to set financial and operating policies at this facility?',
+      tr: 'Tesislerinizde finansal ve operasyonel politikaları belirleme yetkisi sizde mi?',
+      en: 'Do you have the authority to set financial and operating policies at your facilities?',
     },
     helper: {
       tr: 'Finansal kontrol, yalnızca finansal VE operasyonel politikaları yönetme yetkisine sahip olduğunuz tesisleri kapsar.',
@@ -1869,6 +1869,9 @@ export const CARBONIQ_QUESTIONS = [
         maxLength: 200,
         label: { tr: 'Tesis', en: 'Site' },
         placeholder: { tr: 'Örn: İstanbul Ofisi', en: 'e.g. Istanbul Office' },
+        // A pick-list of the facilities named in 2A-2 when there are any
+        // (resolveFieldOptions); typed text only as a fallback.
+        optionsFrom: 'facilities',
       },
     ],
     validate: {
@@ -2322,6 +2325,9 @@ export const CARBONIQ_QUESTIONS = [
         maxLength: 200,
         label: { tr: 'Tesis', en: 'Site' },
         placeholder: { tr: 'Örn: İstanbul', en: 'e.g. Istanbul' },
+        // A pick-list of the facilities named in 2A-2 when there are any
+        // (resolveFieldOptions); typed text only as a fallback.
+        optionsFrom: 'facilities',
       },
       {
         id: 'size_band',
@@ -2860,6 +2866,9 @@ export const CARBONIQ_QUESTIONS = [
         maxLength: 200,
         label: { tr: 'Tesis', en: 'Site' },
         placeholder: { tr: 'Örn: İstanbul', en: 'e.g. Istanbul' },
+        // A pick-list of the facilities named in 2A-2 when there are any
+        // (resolveFieldOptions); typed text only as a fallback.
+        optionsFrom: 'facilities',
       },
       {
         id: 'gas_type',
@@ -6394,6 +6403,39 @@ export function getSystemMessage(question, value, lang = 'en') {
 // CarbonAIPage.jsx (conditionalShow checks, display formatting, goBack/edit) —
 // lives here rather than in either component so both can import it without a
 // circular dependency (CarbonAIPage already imports from InventoryWorkflow).
+// The facility names answered in 2A-2, in order, without duplicates.
+export function facilityNameOptions(answersMap) {
+  const raw = readAnswerValue(answersMap || {}, '2A-2');
+  if (!raw || typeof raw !== 'object') return [];
+  const order = (k) => (/^\d+$/.test(k) ? [0, Number(k)] : [1, k]);
+  const keys = Object.keys(raw).sort((a, b) => {
+    const [ga, va] = order(a); const [gb, vb] = order(b);
+    return ga - gb || (va < vb ? -1 : va > vb ? 1 : 0);
+  });
+  const seen = new Set();
+  const out = [];
+  for (const k of keys) {
+    const name = String(raw[k]?.name || '').trim();
+    if (!name || seen.has(name.toLowerCase())) continue;
+    seen.add(name.toLowerCase());
+    out.push({ value: name, label: { tr: name, en: name } });
+  }
+  return out;
+}
+
+// Compound fields marked optionsFrom: 'facilities' become a select of the
+// facilities defined in 2A-2, so equipment is tied to a real facility
+// instead of a free-typed name. With no facilities answered yet they stay
+// a text input.
+export function resolveFieldOptions(fields, answersMap) {
+  if (!Array.isArray(fields) || !fields.some(f => f.optionsFrom === 'facilities')) return fields || [];
+  const options = facilityNameOptions(answersMap);
+  if (options.length === 0) return fields;
+  return fields.map(f => (f.optionsFrom === 'facilities'
+    ? { ...f, type: 'select', renderAs: 'native_select', options }
+    : f));
+}
+
 export function readAnswerValue(answersMap, questionId) {
   const v = answersMap?.[questionId];
   if (v && typeof v === 'object' && !Array.isArray(v) && 'answer' in v) return v.answer;
