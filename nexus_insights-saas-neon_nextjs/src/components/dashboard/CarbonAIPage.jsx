@@ -464,7 +464,21 @@ function fieldValueText(field, v, lang) {
   }
   if (v === true || v === 'true') return lang === 'tr' ? 'Evet' : 'Yes';
   if (v === false || v === 'false') return lang === 'tr' ? 'Hayır' : 'No';
+  // Numbers as the user typed them in their locale: 1,2 · 5.000.000 (not 1.2 / 5000000).
+  if (field?.type === 'numeric' && field.format !== 'year' && v !== '' && Number.isFinite(Number(v))) {
+    return Number(v).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 });
+  }
   return v;
+}
+
+// A compound answer's entries in the order the form shows its fields (the
+// stored object's key order follows whichever field was touched first).
+function orderedFieldEntries(q, obj) {
+  const idx = (k) => {
+    const i = (q?.fields || []).findIndex(f => f.id === k);
+    return i === -1 ? Infinity : i;
+  };
+  return Object.entries(obj || {}).sort(([a], [b]) => idx(a) - idx(b));
 }
 
 function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
@@ -504,7 +518,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
     if (items.length === 0) return '—';
     return items
       .map((item, i) => {
-        const inner = Object.entries(item || {})
+        const inner = orderedFieldEntries(q, item)
           .filter(([, v]) => v !== '' && v !== undefined && v !== null)
           .map(([k, v]) => {
             const field = q.fields?.find(f => f.id === k);
@@ -518,7 +532,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
   }
   if (q.type === 'compound') {
     if (!value || typeof value !== 'object') return '—';
-    return Object.entries(value)
+    return orderedFieldEntries(q, value)
       .filter(([, v]) => v !== '' && v !== undefined && v !== null)
       .map(([k, v]) => {
         const field = q.fields?.find(f => f.id === k);
@@ -1321,6 +1335,85 @@ function Scope2SummaryTable({ answers, lang, tr }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Questionnaire: Scope3SummaryTable
+// Shown under K3-TY (the Scope 3 summary question): one row per category with
+// what the user entered there. Only what was entered — no emissions computed.
+// ─────────────────────────────────────────────────────────────────────────────
+const SCOPE3_CATEGORIES = [
+  ['5A', 1, 'Satın alınan mal ve hizmetler', 'Purchased goods and services'],
+  ['5B', 2, 'Sermaye malları', 'Capital goods'],
+  ['5C', 3, 'Yakıt ve enerjiyle ilgili faaliyetler', 'Fuel- and energy-related activities'],
+  ['5D', 4, 'Yukarı akış nakliye ve dağıtım', 'Upstream transportation and distribution'],
+  ['5E', 5, 'Faaliyetlerde oluşan atık', 'Waste generated in operations'],
+  ['5F', 6, 'İş seyahatleri', 'Business travel'],
+  ['5G', 7, 'Çalışan ulaşımı', 'Employee commuting'],
+  ['5H', 8, 'Kiralanan varlıklar', 'Upstream leased assets'],
+  ['5I', 9, 'Aşağı akış nakliye ve dağıtım', 'Downstream transportation and distribution'],
+  ['5J', 10, 'Satılan ürünlerin işlenmesi', 'Processing of sold products'],
+  ['5K', 11, 'Satılan ürünlerin kullanımı', 'Use of sold products'],
+  ['5L', 12, 'Satılan ürünlerin ömür sonu', 'End-of-life treatment of sold products'],
+  ['5M', 13, 'Kiraya verilen varlıklar', 'Downstream leased assets'],
+  ['5N', 14, 'Franchise\'lar', 'Franchises'],
+  ['5O', 15, 'Yatırımlar', 'Investments'],
+];
+const SCOPE3_NOT_APPLICABLE = ['no', 'na'];
+
+function Scope3SummaryTable({ answers, lang, tr }) {
+  const rows = SCOPE3_CATEGORIES.map(([block, n, trName, enName]) => {
+    const qs = CARBONIQ_QUESTIONS.filter(q => q.stage === 5 && q.block === block && q.type !== 'info');
+    const [gate, ...details] = qs;
+    const asked = qs.some(q => q.id in answers);
+    const gateVal = gate ? readAnswerValue(answers, gate.id) : undefined;
+    const skipped = SCOPE3_NOT_APPLICABLE.includes(gateVal);
+    // A category with no detail questions (Kat. 3 is one confirmation) shows
+    // the gate answer itself.
+    const extra = details
+      .filter(q => q.id in answers)
+      .map(q => getDisplayValue(q, readAnswerValue(answers, q.id), lang, { isAggregate: !!q.loopSource }))
+      .filter(t => t && t !== '—')
+      .join(' · ') || (gate && gate.id in answers && !skipped ? getDisplayValue(gate, gateVal, lang) : '');
+    return {
+      id: `K${n}`,
+      label: tr ? trName : enName,
+      notAsked: !asked,
+      skipped,
+      extra: extra.length > 240 ? `${extra.slice(0, 240)}…` : extra,
+    };
+  });
+
+  return (
+    <div className="rounded-2xl border border-[#2ABD41]/30 bg-[#F1FCF2] overflow-hidden text-[#175022]">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#2ABD41]/15 border-b border-[#2ABD41]/20">
+        <ClipboardList className="h-3.5 w-3.5 text-[#175022] shrink-0" />
+        <span className="text-[11px] font-bold text-[#175022] uppercase tracking-wider">
+          {tr ? 'Kapsam 3 Özeti' : 'Scope 3 Summary'}
+        </span>
+      </div>
+      <div className="divide-y divide-[#175022]/6">
+        {rows.map(r => (
+          <div key={r.id} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="shrink-0 mt-0.5 rounded-md bg-[#175022]/8 px-1.5 py-0.5 text-[10px] font-bold text-[#175022]/50 leading-tight">{r.id}</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[12px] font-semibold text-[#175022]/80">{r.label}</span>
+              {r.notAsked ? (
+                <span className="ml-2 text-[11px] text-[#175022]/35 italic">{tr ? 'sorulmadı' : 'not asked'}</span>
+              ) : r.skipped ? (
+                <span className="ml-2 text-[11px] text-[#175022]/35 italic">{tr ? 'yok' : 'none'}</span>
+              ) : r.extra ? (
+                <p className="text-[11px] text-[#175022] mt-0.5 leading-relaxed font-medium">{r.extra}</p>
+              ) : (
+                <span className="ml-2 text-[11px] text-[#175022]/30 italic">{tr ? 'veri girilmedi' : 'no data entered'}</span>
+              )}
+            </div>
+            <span className={`shrink-0 mt-1 h-2 w-2 rounded-full ${r.notAsked || r.skipped ? 'bg-[#175022]/15' : r.extra ? 'bg-[#2ABD41]' : 'bg-amber-400'}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: AnswerInput
 // currentLoopItem — for fuel_loop / equipment_loop questions whose `units` is
 // an object keyed by item value (e.g. { natural_gas: ['m³','kWh'], ... }).
@@ -1600,7 +1693,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     const draftMissing = draftIsEmpty ? [] : missingRequiredLabels(requiredFields, draft, lang);
     const summarize = (item) => fields
       .filter(f => item[f.id] !== undefined && item[f.id] !== '' && item[f.id] !== null)
-      .map(f => `${f.label?.[lang] || f.label?.en || f.id}: ${item[f.id]}`)
+      .map(f => `${f.label?.[lang] || f.label?.en || f.id}: ${fieldValueText(f, item[f.id], lang)}`)
       .join(' · ');
     return (
       <div className="flex flex-col gap-4 w-full max-w-lg">
@@ -1829,16 +1922,29 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 // ─────────────────────────────────────────────────────────────────────────────
 // Block summary helpers
 // ─────────────────────────────────────────────────────────────────────────────
-// Editing one Scope 1 section from the summary (TY-1 = "edit", TY-edit = the
-// section's first question): once the flow would leave that section, go
-// back to the summary instead of walking every later section again — as
-// TY-edit promises. Returns the next question id to use.
+// Editing one section from a scope summary (TY-1 / K3-TY = "edit", then the
+// picker TY-edit / K3-TY-edit = the section's first question): once the flow
+// would leave that section, go back to the summary instead of walking every
+// later section again — as the picker promises. Returns the next question id.
+const SECTION_EDIT_FLOWS = [
+  { summary: 'TY-1', picker: 'TY-edit', stage: 3, editValues: ['edit'] },
+  { summary: 'K3-TY', picker: 'K3-TY-edit', stage: 5, editValues: ['edit', 'add_category'] },
+];
 function scope1EditReturn(fromQ, nextId, answers) {
-  if (readAnswerValue(answers, 'TY-1') !== 'edit') return nextId;
-  const block = getQuestionById(readAnswerValue(answers, 'TY-edit'))?.block;
-  if (!block || fromQ?.stage !== 3 || fromQ?.block !== block) return nextId;
-  const next = getQuestionById(nextId);
-  return next && next.stage === 3 && next.block === block ? nextId : 'TY-1';
+  for (const f of SECTION_EDIT_FLOWS) {
+    if (!f.editValues.includes(readAnswerValue(answers, f.summary))) continue;
+    const block = getQuestionById(readAnswerValue(answers, f.picker))?.block;
+    if (!block || fromQ?.stage !== f.stage || fromQ?.block !== block) continue;
+    const next = getQuestionById(nextId);
+    return next && next.stage === f.stage && next.block === block ? nextId : f.summary;
+  }
+  return nextId;
+}
+
+// A block whose only answers are info screens or a scope-summary confirmation
+// has nothing to review — skip the "section complete" table for it.
+function blockNeedsSummary(blockId, answers) {
+  return getBlockAnsweredQuestions(blockId, answers).some(q => !q.showSummaryTable && q.type !== 'section_picker');
 }
 
 // Resuming a saved inventory: from Stage 2 on the server's current_step is
@@ -3281,7 +3387,7 @@ export function QuestionnaireTab({
         nextId = loopEditNextId;
         const currLoopBlockId = getBlockId(q);
         const nextLoopBlockId = getBlockId(getQuestionById(nextId));
-        if (!loopDirectJump && nextId && nextLoopBlockId && currLoopBlockId && currLoopBlockId !== nextLoopBlockId) {
+        if (!loopDirectJump && nextId && nextLoopBlockId && currLoopBlockId && currLoopBlockId !== nextLoopBlockId && blockNeedsSummary(currLoopBlockId, finalAnswers)) {
           setBlockSummaryState({ blockId: currLoopBlockId, stageId: q.stage, nextId });
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,
@@ -3470,7 +3576,7 @@ export function QuestionnaireTab({
         const currBlockId = getBlockId(q);
         const nextQ = getQuestionById(nextId);
         const nextBlockId = getBlockId(nextQ);
-        if (!directJump && nextBlockId && currBlockId && currBlockId !== nextBlockId) {
+        if (!directJump && nextBlockId && currBlockId && currBlockId !== nextBlockId && blockNeedsSummary(currBlockId, newAnswers)) {
           setBlockSummaryState({ blockId: currBlockId, stageId: q.stage, nextId });
           setMessages(prev => [...prev, {
             id: `m-${++msgIdRef.current}`,
@@ -3782,7 +3888,9 @@ export function QuestionnaireTab({
             {currentQuestion?.showSummaryTable && !isTyping && !completed && (
               currentQuestion.showSummaryTable === 'scope2'
                 ? <Scope2SummaryTable answers={answers} lang={lang} tr={tr} />
-                : <Scope1SummaryTable answers={answers} lang={lang} tr={tr} />
+                : currentQuestion.showSummaryTable === 'scope3'
+                  ? <Scope3SummaryTable answers={answers} lang={lang} tr={tr} />
+                  : <Scope1SummaryTable answers={answers} lang={lang} tr={tr} />
             )}
             {/* Block summary table — shown at block/stage transitions for review & edit */}
             {blockSummaryState && !isTyping && (

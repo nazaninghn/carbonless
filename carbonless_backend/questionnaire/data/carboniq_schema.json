@@ -4684,6 +4684,19 @@
         "options": null
       },
       {
+        "id": "units_sold",
+        "type": "numeric",
+        "subtype": null,
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      },
+      {
         "id": "weight_kg",
         "type": "numeric",
         "subtype": null,
@@ -4810,6 +4823,35 @@
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null
+      },
+      {
+        "id": "tenant_kwh",
+        "type": "numeric",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": "tenant_data_available",
+        "conditionalOnValue": null,
+        "options": null
+      },
+      {
+        "id": "area_m2",
+        "type": "numeric",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": "tenant_data_available",
+        "conditionalOnValue": [
+          false,
+          "false"
+        ],
+        "options": null
       }
     ],
     "sumRange": null
@@ -4835,6 +4877,111 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
+    "sumRange": null
+  },
+  "K3C14-1": {
+    "id": "K3C14-1",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "franchise_count",
+        "type": "numeric",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      },
+      {
+        "id": "reporting_count",
+        "type": "numeric",
+        "subtype": null,
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      },
+      {
+        "id": "total_tco2e",
+        "type": "numeric",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      }
+    ],
+    "sumRange": null
+  },
+  "K3C14-2": {
+    "id": "K3C14-2",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "franchise_count",
+        "type": "numeric",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      },
+      {
+        "id": "total_area_m2",
+        "type": "numeric",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      }
+    ],
     "sumRange": null
   },
   "K3C15-0": {
@@ -4953,7 +5100,7 @@
         "id": "company_emissions_tco2e",
         "type": "numeric",
         "subtype": null,
-        "required": false,
+        "required": true,
         "numericOnly": false,
         "exactLength": null,
         "maxLength": null,
@@ -4981,6 +5128,41 @@
       "confirmed",
       "edit",
       "add_category"
+    ],
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": null,
+    "sumRange": null
+  },
+  "K3-TY-edit": {
+    "id": "K3-TY-edit",
+    "type": "section_picker",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": [
+      "K3C1-0",
+      "K3C2-0",
+      "K3C3-INFO",
+      "K3C4-0",
+      "K3C5-0",
+      "K3C6-0",
+      "K3C7-0",
+      "K3C8-0",
+      "K3C9-0",
+      "K3C10-0",
+      "K3C11-0",
+      "K3C12-0",
+      "K3C13-0",
+      "K3C14-0",
+      "K3C15-0"
     ],
     "units": null,
     "repeatable": false,
