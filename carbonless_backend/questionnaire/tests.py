@@ -899,3 +899,63 @@ class SupplierEFDocumentTests(TestCase):
         from .carboniq_validation import validate_generic_step
         self.assertEqual(validate_generic_step('6A-1a', {'answer': 'Kocaeli Ofis — kiralık'}, lang='tr'), (True, None))
         self.assertFalse(validate_generic_step('6A-1a', {'answer': ''}, lang='tr')[0])
+
+    def test_stage6_7_exceptions_and_sign_off(self):
+        from .carboniq_validation import validate_generic_step
+        exc = {'exception_description': 'Ulusal faktör kullanıldı', 'materiality_pct': '2.5', 'justification': 'Beyan gelmedi'}
+        # 6C-2 is repeatable now ("birden fazla istisna")
+        self.assertEqual(validate_generic_step('6C-2', {'answer': {'items': [exc, {**exc, 'materiality_pct': '1'}]}}, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('6C-2', {'answer': {'items': [{**exc, 'materiality_pct': '150'}]}}, lang='tr')[0])
+        sign = {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'}
+        self.assertEqual(validate_generic_step('7C-2', {'answer': sign}, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('7C-2', {'answer': {**sign, 'signatory_name': '123'}}, lang='tr')[0])
+        self.assertEqual(validate_generic_step('7C-edit', {'answer': '3A-0'}, lang='tr'), (True, None))
+
+
+class ISOReportDeclarationsTests(TestCase):
+    """Stage 6/7 answers the questionnaire promises to put in the report."""
+
+    def test_sign_off_assumptions_base_year_and_exceptions_in_pdf(self):
+        import io
+        from pypdf import PdfReader
+        from .iso_report_pdf import generate_iso_report
+        owner = User.objects.create_user('isodecl', 'isodecl@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Decl Co', tax_number='9',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=owner, company=company, role='owner')
+        report = CarbonReport.objects.create(
+            company=company, created_by=owner, reporting_year=2025,
+            title='Decl', status=CarbonReport.Status.COMPLETED)
+        steps = {
+            '7C-2': {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Sürdürülebilirlik Müdürü',
+                     'declaration_accepted': 'accepted'},
+            '6B-OV': {'answer': 'review_detail'},
+            '6B-2': {'answer': 'uncertain'},
+            '6B-3': {'answer': 'Ocak ayı tüketimi tahmin edildi.'},
+            '6F-1': {'answer': ['facility_open']},
+            '6F-2': {'answer': 'yes'},
+            '6F-3': {'answer': 'recalculate_partial'},
+            '6C-1': {'answer': 'multiple'},
+            '6C-2': {'items': [
+                {'exception_description': 'Birinci istisna', 'materiality_pct': '2.5', 'justification': 'a'},
+                {'exception_description': 'İkinci istisna', 'materiality_pct': '1', 'justification': 'b'},
+            ]},
+        }
+        for sid, ans in steps.items():
+            ReportStep.objects.create(report=report, step_id=sid, answer=ans)
+        pdf = generate_iso_report(report, lang='tr')
+        text = ' '.join(' '.join(p.extract_text() for p in PdfReader(io.BytesIO(pdf)).pages).split())
+        self.assertIn('Ayşe Demir — Sürdürülebilirlik Müdürü', text)
+        self.assertIn('İmza tarihi', text)
+        self.assertIn('Ocak ayı tüketimi tahmin edildi.', text)
+        self.assertIn('etkinin yönü belirlenemiyor', text)
+        self.assertIn('yeni tesis açılması', text)
+        self.assertIn('kısmi yeniden hesaplama', text)
+        self.assertIn('Birinci istisna', text)
+        self.assertIn('İkinci istisna', text)
+        self.assertIn('%2,5', text)

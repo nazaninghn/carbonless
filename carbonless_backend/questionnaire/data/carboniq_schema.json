@@ -5402,7 +5402,7 @@
     "maxValue": null,
     "options": null,
     "units": null,
-    "repeatable": false,
+    "repeatable": true,
     "loopSource": false,
     "fields": [
       {
@@ -5426,7 +5426,7 @@
         "numericOnly": false,
         "exactLength": null,
         "maxLength": 5,
-        "format": null,
+        "format": "percent",
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null
@@ -5620,6 +5620,31 @@
     "fields": null,
     "sumRange": null
   },
+  "7C-edit": {
+    "id": "7C-edit",
+    "type": "section_picker",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": [
+      "2A-0",
+      "3A-0",
+      "4A-0",
+      "K3C1-0",
+      "6A-1"
+    ],
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": null,
+    "sumRange": null
+  },
   "7C-2": {
     "id": "7C-2",
     "type": "compound",
@@ -5645,7 +5670,7 @@
         "numericOnly": false,
         "exactLength": null,
         "maxLength": 100,
-        "format": null,
+        "format": "name",
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null

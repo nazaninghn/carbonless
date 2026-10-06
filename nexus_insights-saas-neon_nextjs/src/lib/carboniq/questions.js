@@ -5677,8 +5677,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Stage 6 Introduction — Final steps: data quality, exclusions, exceptions and ISO compliance checks.',
     },
     helper: {
-      tr: 'Aşama 6, tüm veri girişi bittikten sonra çalışır. 6 bölümden oluşur: (6A) Hariç tutulan varlıklar · (6B) Kabuller · (6C) İstisnalar · (6D) %5 materyal eşiği · (6E) Belirsizlik analizi · (6F) Baz yıl politikası. Bu aşama raporunuzun ISO 14064-1 uyumunu güvence altına alır.',
-      en: 'Stage 6 runs after all data entry is complete. It consists of 6 sections: (6A) Excluded entities · (6B) Assumptions · (6C) Exceptions · (6D) 5% materiality threshold · (6E) Uncertainty analysis · (6F) Base year policy. This stage ensures your report\'s ISO 14064-1 compliance.',
+      tr: 'Bu aşamada raporunuz için birkaç beyan alınır: hariç tuttuğunuz kaynaklar, yaptığınız varsayımlar, standart yöntemden sapmalar, %5 önemlilik eşiği, belirsizlik ve baz yıl. Cevaplarınız ISO 14064-1 raporunuzda yer alır.',
+      en: 'In this stage you make a few declarations for your report: excluded sources, assumptions you made, deviations from the standard method, the 5% materiality threshold, uncertainty and the base year. Your answers appear in your ISO 14064-1 report.',
     },
     next: '6A-1',
   },
@@ -5955,6 +5955,8 @@ export const CARBONIQ_QUESTIONS = [
     block: '6C',
     isoRef: 'ISO 14064-1 §5.2',
     type: 'compound',
+    // repeatable — 6C-1 offers "birden fazla istisna var".
+    repeatable: true,
     required: true,
     reportField: 'exceptions.detail',
     text: {
@@ -5979,10 +5981,11 @@ export const CARBONIQ_QUESTIONS = [
         id: 'materiality_pct',
         type: 'text',
         subtype: 'numeric',
+        format: 'percent',
         required: true,
         maxLength: 5,
         label: { tr: 'Toplam emisyonlara tahmini etki (%)', en: 'Estimated impact on total emissions (%)' },
-        placeholder: { tr: 'Örn: 2.5', en: 'Example: 2.5' },
+        placeholder: { tr: 'Örn: 2,5', en: 'Example: 2.5' },
       },
       {
         id: 'justification',
@@ -6163,11 +6166,11 @@ export const CARBONIQ_QUESTIONS = [
       en: 'What is your base year recalculation decision?',
     },
     helper: {
-      tr: 'Baz yıl yeniden hesaplaması, raporunuzun yıllık karşılaştırılabilirliğini sağlar. Yeniden hesaplama politikanız ve yönteminiz ISO 14064-1 uyarınca raporlanacaktır.',
-      en: 'Base year recalculation ensures the annual comparability of your report. Your recalculation policy and method will be reported in accordance with ISO 14064-1.',
+      tr: 'Baz yıl yeniden hesaplaması, raporunuzun yıllık karşılaştırılabilirliğini sağlar. Seçtiğiniz karar raporunuzda belirtilir; sistem baz yıl rakamlarını kendiliğinden değiştirmez.',
+      en: 'Base year recalculation keeps your report comparable year to year. The decision you choose is stated in your report; the system does not change base year figures by itself.',
     },
     options: [
-      { value: 'recalculate_full', label: { tr: 'Tam yeniden hesaplama — tüm yıllar revize edilecek', en: 'Full recalculation — all years will be revised' } },
+      { value: 'recalculate_full', label: { tr: 'Tam yeniden hesaplama — tüm yıllar revize edilecek (karar raporda belirtilir)', en: 'Full recalculation — all years to be revised (decision stated in the report)' } },
       { value: 'recalculate_partial', label: { tr: 'Kısmi yeniden hesaplama — yalnızca etkilenen yıllar', en: 'Partial recalculation — affected years only' } },
       { value: 'defer', label: { tr: 'Ertele — sonraki raporlama döneminde ele alınacak', en: 'Defer — to be addressed in the next reporting period' } },
     ],
@@ -6193,8 +6196,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Stage 7 Introduction — Report Generation and Sign-Off',
     },
     helper: {
-      tr: 'Tebrikler! Tüm veri girişi ve uyum kontrolleri tamamlandı. Bu son aşamada: (7C-1) son alan kontrolü yapılacak, (7C-2) raporunuz imzalanacak ve (7A-INFO + 7B-INFO) raporunuz teslim edilecek.',
-      en: 'Congratulations! All data entry and compliance checks are complete. In this final stage: (7C-1) a final field check will be performed, (7C-2) your report will be signed, and (7A-INFO + 7B-INFO) your report will be delivered.',
+      tr: 'Tebrikler, veri girişi tamamlandı! Bu son aşamada önce cevaplarınızın eksiksiz olduğunu onaylayacak, ardından raporu imzalayacaksınız. Sonunda raporunuzu indirebilir ve görüntüleyebilirsiniz.',
+      en: 'Congratulations, data entry is complete! In this final stage you first confirm that your answers are complete, then sign the report. At the end you can download and view your report.',
     },
     next: '7C-1',
   },
@@ -6218,12 +6221,39 @@ export const CARBONIQ_QUESTIONS = [
     },
     options: [
       { value: 'all_complete', label: { tr: 'Evet — tüm alanlar tamamlandı, imzalamaya geç', en: 'Yes — all fields complete, proceed to signing' } },
-      { value: 'fix_missing', label: { tr: 'Hayır — eksik alanlar var, düzeltmem gerekiyor', en: 'No — missing fields exist, I need to correct' } },
+      { value: 'fix_missing', label: { tr: 'Hayır — bir bölüme dönüp düzeltmek istiyorum', en: 'No — I want to go back and fix a section' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
-    nextByValue: { all_complete: '7C-2', fix_missing: '7-GİRİŞ' },
+    // Was fix_missing: '7-GİRİŞ' — the intro, which leads straight back here:
+    // a loop with no way to reach the section to fix.
+    nextByValue: { all_complete: '7C-2', fix_missing: '7C-edit' },
+  },
+  {
+    id: '7C-edit',
+    number: '125a',
+    stage: 7,
+    block: '7C',
+    isoRef: 'ISO 14064-1 §7.5',
+    type: 'section_picker',
+    required: true,
+    text: {
+      tr: 'Hangi aşamayı düzeltmek istiyorsunuz?',
+      en: 'Which stage do you want to fix?',
+    },
+    helper: {
+      tr: 'Seçtiğiniz aşamanın ilk sorusuna yönlendirileceksiniz. Önceki cevaplarınız korunur; o aşamayı bitirince imzalama adımına geri dönersiniz.',
+      en: 'You will be taken to the first question of the chosen stage. Your earlier answers are kept; when you finish that stage you return to the signing step.',
+    },
+    options: [
+      { value: '2A-0', label: { tr: 'Aşama 2 — Organizasyon Sınırı', en: 'Stage 2 — Organizational Boundary' } },
+      { value: '3A-0', label: { tr: 'Aşama 3 — Kapsam 1 (doğrudan emisyonlar)', en: 'Stage 3 — Scope 1 (direct emissions)' } },
+      { value: '4A-0', label: { tr: 'Aşama 4 — Kapsam 2 (satın alınan enerji)', en: 'Stage 4 — Scope 2 (purchased energy)' } },
+      { value: 'K3C1-0', label: { tr: 'Aşama 5 — Kapsam 3', en: 'Stage 5 — Scope 3' } },
+      { value: '6A-1', label: { tr: 'Aşama 6 — Hariç Tutmalar ve Kabuller', en: 'Stage 6 — Exclusions and Assumptions' } },
+    ],
+    nextByValue: { '2A-0': '2A-0', '3A-0': '3A-0', '4A-0': '4A-0', 'K3C1-0': 'K3C1-0', '6A-1': '6A-1' },
   },
   // #125
   {
@@ -6250,6 +6280,7 @@ export const CARBONIQ_QUESTIONS = [
         subtype: 'single_line',
         required: true,
         maxLength: 100,
+        format: 'name',
         label: { tr: 'Yetkili adı soyadı', en: 'Authorized name and surname' },
         placeholder: { tr: 'Örn: Ahmet Yılmaz', en: 'Example: John Smith' },
       },
@@ -6289,8 +6320,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Your Report is Ready',
     },
     helper: {
-      tr: 'ISO 14064-1 uyumlu GHG envanter raporunuz başarıyla oluşturuldu. Raporu indirebilir, dashboard\'da görüntüleyebilir, doğrulama için gönderebilir veya bir sonraki döneme hazırlık başlatabilirsiniz.',
-      en: 'Your ISO 14064-1 compliant GHG inventory report has been successfully generated. You can download the report, view it in the dashboard, send it for verification, or start preparing for the next period.',
+      tr: 'ISO 14064-1 uyumlu GHG envanter raporunuz oluşturuldu. Son adımdan sonra raporu indirme ve görüntüleme seçenekleri gösterilir; raporlarınıza "Raporlama" bölümünden de ulaşabilirsiniz.',
+      en: 'Your ISO 14064-1 compliant GHG inventory report has been generated. After the last step you will see options to download and view it; your reports are also available under "Reporting".',
     },
     next: '7B-INFO',
   },
@@ -6663,8 +6694,8 @@ function validateCompoundFields(fields, obj, lang) {
       return {
         ok: false,
         message: lang === 'tr'
-          ? `"${flabel}" için tedarikçinin veya raporun adını yazın.`
-          : `For "${flabel}", enter the supplier's or report's name.`,
+          ? `"${flabel}" için bir ad yazın; yalnızca rakam veya işaretten oluşamaz.`
+          : `For "${flabel}", enter a name; it cannot be only digits or symbols.`,
       };
     }
     // Contact details use the same rules as the server (companies/contact.py),

@@ -624,6 +624,52 @@ EXCEPTION_TYPE_LABELS = {
                 'tr': 'beyan edilen metodolojiye ilişkin birden fazla istisna geçerlidir'},
 }
 
+# 6F-1 / 6F-3 / 6B-2 option labels, same source as above.
+STRUCTURAL_CHANGE_LABELS = {
+    'merger': {'en': 'merger or acquisition', 'tr': 'birleşme veya satın alma'},
+    'divestiture': {'en': 'sale or divestiture', 'tr': 'satış veya elden çıkarma'},
+    'facility_open': {'en': 'a new facility opened', 'tr': 'yeni tesis açılması'},
+    'facility_close': {'en': 'a facility closed', 'tr': 'tesis kapatılması'},
+    'outsource_change': {'en': 'a change in outsourcing', 'tr': 'dış kaynak kullanımında değişiklik'},
+    'control_method': {'en': 'a change in control methodology', 'tr': 'kontrol metodolojisinde değişiklik'},
+}
+BASE_YEAR_DECISION_LABELS = {
+    'recalculate_full': {'en': 'full recalculation of the base year',
+                         'tr': 'baz yılın tamamen yeniden hesaplanması'},
+    'recalculate_partial': {'en': 'partial recalculation (affected years only)',
+                            'tr': 'kısmi yeniden hesaplama (yalnızca etkilenen yıllar)'},
+    'defer': {'en': 'deferred to the next reporting period',
+              'tr': 'sonraki raporlama dönemine ertelenmesi'},
+}
+IMPACT_DIRECTION_LABELS = {
+    'overestimate': {'en': 'may overstate actual emissions', 'tr': 'gerçek emisyonları olduğundan yüksek gösterebilir'},
+    'underestimate': {'en': 'may understate actual emissions', 'tr': 'gerçek emisyonları olduğundan düşük gösterebilir'},
+    'uncertain': {'en': 'direction of the effect cannot be determined', 'tr': 'etkinin yönü belirlenemiyor'},
+    'neutral': {'en': 'no significant effect expected', 'tr': 'önemli bir etki beklenmiyor'},
+}
+
+
+def _pct_text(v, lang):
+    """'2.5' -> '%2,5' (tr) / '2.5 %' (en); anything non-numeric as typed."""
+    try:
+        n = float(str(v).replace(',', '.'))
+    except (TypeError, ValueError):
+        return escape(str(v))
+    num = f'{n:,.2f}'.rstrip('0').rstrip('.')
+    return f'%{_localize_num(num, True)}' if lang == 'tr' else f'{num} %'
+
+
+def _sign_off(report, A):
+    """(signatory 'Name — Title', signing date) from the 7C-2 sign-off step."""
+    raw = _raw_answer(A, '7C-2')
+    if not isinstance(raw, dict) or not str(raw.get('signatory_name') or '').strip():
+        return None, None
+    who = str(raw.get('signatory_name')).strip()
+    title = str(raw.get('signatory_title') or '').strip()
+    step = ReportStep.objects.filter(report=report, step_id='7C-2').only('completed_at').first()
+    when = step.completed_at.strftime('%d.%m.%Y') if step and step.completed_at else None
+    return (f'{who} — {title}' if title else who), when
+
 
 def t(key, lang):
     return T.get(key, {}).get(lang, T.get(key, {}).get('en', key))
@@ -1437,6 +1483,7 @@ def _section1(E, S, D, report, lang, TBL, FIG):
 
     # Basic report information
     E.append(Paragraph(t('s1_basic', lang), S['h2']))
+    signer, signed_on = _sign_off(report, D['answers'])
     period = (f"1 January {D['year']} – 31 December {D['year']}" if lang == 'en'
               else f"1 Ocak {D['year']} – 31 Aralık {D['year']}")
     basic = [
@@ -1451,6 +1498,10 @@ def _section1(E, S, D, report, lang, TBL, FIG):
         (t('reporting_period', lang), period),
         ('Person responsible for the report' if lang == 'en' else 'Rapordan sorumlu kişi',
          report.prepared_by or t('not_declared', lang)),
+        *([] if not signer else [
+            ('Approved and signed by' if lang == 'en' else 'Onaylayan ve imzalayan', signer),
+            ('Date of signature' if lang == 'en' else 'İmza tarihi', signed_on or t('not_declared', lang)),
+        ]),
         ('Contact e-mail' if lang == 'en' else 'İletişim e-postası',
          getattr(getattr(report, 'created_by', None), 'email', '') or t('not_declared', lang)),
         ('Organisational boundary approach' if lang == 'en' else 'Organizasyon sınırı yaklaşımı',
@@ -2128,6 +2179,37 @@ def _section3(E, S, D, report, lang, TBL, FIG):
          'hatanın tespit edilmesi.'),
     ):
         E.append(Paragraph('•  ' + (_en if lang == 'en' else _tr), S['body']))
+    # What the organisation declared for this period (6F-1 / 6F-2 / 6F-3).
+    changes = _raw_answer(A, '6F-1')
+    changes = [c for c in (changes if isinstance(changes, list) else [changes]) if c and c != 'none']
+    if changes:
+        names = ', '.join(STRUCTURAL_CHANGE_LABELS.get(c, {}).get(lang, c) for c in changes)
+        E.append(Spacer(1, 2*mm))
+        E.append(Paragraph(
+            (f'<b>Structural changes declared for this reporting period:</b> {names}.'
+             if lang == 'en' else
+             f'<b>Bu raporlama döneminde beyan edilen yapısal değişiklikler:</b> {names}.'), S['body']))
+        over5 = _raw_answer(A, '6F-2')
+        if over5 in ('yes', 'no'):
+            E.append(Paragraph(
+                ('The organisation assessed the impact on total emissions as '
+                 + ('above 5 %.' if over5 == 'yes' else 'below 5 %; recalculation is optional.'))
+                if lang == 'en' else
+                ('Kuruluş, toplam emisyonlar üzerindeki etkiyi '
+                 + ("%5'in üzerinde değerlendirmiştir." if over5 == 'yes'
+                    else "%5'in altında değerlendirmiştir; yeniden hesaplama isteğe bağlıdır.")),
+                S['body']))
+        decision = BASE_YEAR_DECISION_LABELS.get(_raw_answer(A, '6F-3'), {}).get(lang)
+        if over5 == 'yes' and decision:
+            E.append(Paragraph(
+                (f'<b>Base year decision:</b> {decision}.' if lang == 'en'
+                 else f'<b>Baz yıl kararı:</b> {decision}.'), S['body']))
+    elif _raw_answer(A, '6F-1') is not None:
+        E.append(Spacer(1, 2*mm))
+        E.append(Paragraph(
+            'No significant structural change was declared for this reporting period.'
+            if lang == 'en' else
+            'Bu raporlama döneminde önemli bir yapısal değişiklik beyan edilmemiştir.', S['body']))
     E.append(Spacer(1, 4*mm))
 
     # 3.2.1 Calculation approach — which consolidation basis (control/equity)
@@ -2339,37 +2421,68 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     if exc_type and exc_type != 'none':
         type_label = EXCEPTION_TYPE_LABELS.get(exc_type, {}).get(lang)
         if type_label:
-            sentence = (f'An exception to the standard methodology applies: {type_label}.'
-                        if lang == 'en' else
-                        f'Standart metodolojiye ilişkin bir istisna geçerlidir: {type_label}.')
+            if exc_type == 'multiple':
+                sentence = type_label[0].upper() + type_label[1:] + '.'
+            else:
+                sentence = (f'An exception to the standard methodology applies: {type_label}.'
+                            if lang == 'en' else
+                            f'Standart metodolojiye ilişkin bir istisna geçerlidir: {type_label}.')
             E.append(Paragraph(sentence, S['body']))
+        # 6C-2 used to hold one exception; it is now repeatable ({'items': [...]}).
         detail = _raw_answer(A, '6C-2')
-        if isinstance(detail, dict):
-            desc = detail.get('exception_description')
-            pct = detail.get('materiality_pct')
-            just = detail.get('justification')
+        if isinstance(detail, dict) and isinstance(detail.get('items'), list):
+            details = [d for d in detail['items'] if isinstance(d, dict)]
+        else:
+            details = [detail] if isinstance(detail, dict) else []
+        for i, d in enumerate(details, 1):
+            desc = d.get('exception_description')
+            pct = d.get('materiality_pct')
+            just = d.get('justification')
+            if len(details) > 1:
+                E.append(Paragraph(
+                    f'<b>{"Exception" if lang == "en" else "İstisna"} {i}</b>', S['body']))
             if desc:
                 E.append(Paragraph(
-                    f'<b>{"Description" if lang == "en" else "Açıklama"}:</b> {desc}', S['body']))
+                    f'<b>{"Description" if lang == "en" else "Açıklama"}:</b> {escape(str(desc))}', S['body']))
             if just:
                 E.append(Paragraph(
-                    f'<b>{"Justification" if lang == "en" else "Gerekçe"}:</b> {just}', S['body']))
+                    f'<b>{"Justification" if lang == "en" else "Gerekçe"}:</b> {escape(str(just))}', S['body']))
             if pct not in (None, ''):
                 E.append(Paragraph(
                     (f'<b>{"Estimated impact on total emissions" if lang == "en" else "Toplam emisyonlara tahmini etki"}'
-                     f':</b> {pct} %'), S['body']))
+                     f':</b> {_pct_text(pct, lang)}'), S['body']))
         commitment = _answer_text(A, '6C-3', lang, default=None)
         if commitment and commitment != t('not_declared', lang):
             E.append(Paragraph(
                 (f'<b>{"Improvement commitment" if lang == "en" else "İyileştirme taahhüdü"}'
-                 f':</b> {commitment}'), S['body']))
+                 f':</b> {escape(commitment)}'), S['body']))
         E.append(Spacer(1, 3*mm))
+    # The organisation's own assumptions (6B-2 direction, 6B-3 methodology,
+    # 6B-4 boundary) — entered when it chose to add assumptions at 6B-OV.
+    if _raw_answer(A, '6B-OV') == 'review_detail':
+        direction = IMPACT_DIRECTION_LABELS.get(_raw_answer(A, '6B-2'), {}).get(lang)
+        own = [x for x in (
+            (('Overall effect of the factors used: ' if lang == 'en'
+              else 'Kullanılan faktörlerin genel etkisi: ') + direction) if direction else None,
+            _answer_text(A, '6B-3', lang, default=None),
+            _answer_text(A, '6B-4', lang, default=None),
+        ) if x and x != t('not_declared', lang)]
+        if own:
+            E.append(Paragraph(
+                'Assumptions declared by the organisation:' if lang == 'en'
+                else 'Kuruluş tarafından beyan edilen kabuller:', S['body']))
+            E.extend(_bullets(S, [escape(x) for x in own]))
+            E.append(Spacer(1, 3*mm))
+    plan = _answer_text(A, '6E-1', lang, default=None)
+    if plan and plan != t('not_declared', lang):
         E.append(Paragraph(
-            'The following assumptions apply to the quantification regardless of the '
-            'exception above:'
-            if lang == 'en' else
-            'Aşağıdaki kabuller, yukarıdaki istisnadan bağımsız olarak nicelendirmenin '
-            'tümünde geçerlidir:', S['body']))
+            (f'<b>{"Planned data-quality improvements" if lang == "en" else "Planlanan veri kalitesi iyileştirmeleri"}'
+             f':</b> {escape(plan)}'), S['body']))
+        E.append(Spacer(1, 3*mm))
+    E.append(Paragraph(
+        'The following platform assumptions apply to the whole quantification:'
+        if lang == 'en' else
+        'Aşağıdaki platform kabulleri nicelendirmenin tümünde geçerlidir:', S['body']))
     # The platform's own methodological assumptions hold whether or not the
     # organisation declared an exception, so they are listed either way.
     E.extend(_bullets(S, (

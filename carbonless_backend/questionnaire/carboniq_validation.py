@@ -102,8 +102,8 @@ _MESSAGES = {
         'tr': '{prefix}0 ile 100 arasında olmalıdır.',
     },
     'name_needs_letter': {
-        'en': "{prefix}Enter the supplier's or report's name.",
-        'tr': '{prefix}Tedarikçinin veya raporun adını yazın.',
+        'en': '{prefix}Enter a name; it cannot be only digits or symbols.',
+        'tr': '{prefix}Bir ad yazın; yalnızca rakam veya işaretten oluşamaz.',
     },
     'year_min': {
         'en': '{prefix}Year must be >= {n}.',
