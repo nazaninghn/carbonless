@@ -2589,6 +2589,8 @@ export function QuestionnaireTab({
   // showReuseDialog drives the confirm modal, reuseLoading guards the button
   // while the copy-over request is in flight.
   const [previousProfile, setPreviousProfile] = useState(null);
+  // This inventory's reporting year as chosen when it was created.
+  const reportYearRef = useRef(null);
   const [showReuseDialog, setShowReuseDialog] = useState(false);
   const [reuseLoading, setReuseLoading] = useState(false);
   // Reporting year chosen in the reuse dialog — the year is this inventory's
@@ -2653,10 +2655,14 @@ export function QuestionnaireTab({
       .then(data => {
         if (!isMounted.current) return;
         setPreviousProfile(data);
+        if (data?.current_reporting_year) reportYearRef.current = data.current_reporting_year;
         if (data?.available && isFreshStart) {
           const thisYear = new Date().getFullYear();
           const prev = Number(data.reporting_year);
-          setReuseYear(String(prev ? Math.min(prev + 1, thisYear) : thisYear - 1));
+          // The year chosen when the inventory was created; otherwise the
+          // year after the earlier inventory.
+          const own = Number(data.current_reporting_year);
+          setReuseYear(String(own || (prev ? Math.min(prev + 1, thisYear) : thisYear - 1)));
           setShowReuseDialog(true);
         }
       })
@@ -2667,7 +2673,16 @@ export function QuestionnaireTab({
     if (!reportId || reuseLoading) return;
     setReuseLoading(true);
     try {
-      const res = await api.reuseCompanyProfile(reportId, Number(reuseYear));
+      // The answers about to be copied, so the inventory list gets the same
+      // answered/total the questionnaire will show.
+      const copied = { ...answersRef.current };
+      Object.entries(previousProfile?.answers || {}).forEach(([stepId, backendAnswer]) => {
+        const raw = unmapPhase1Answer(stepId, backendAnswer);
+        if (raw !== undefined) copied[stepId] = raw;
+      });
+      copied.A4 = String(reuseYear);
+      const { answered, total } = computeSurveyProgress(copied);
+      const res = await api.reuseCompanyProfile(reportId, Number(reuseYear), { answered, total });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setAnswers(prev => {
@@ -2710,7 +2725,7 @@ export function QuestionnaireTab({
       setReuseLoading(false);
       setShowReuseDialog(false);
     }
-  }, [reportId, reuseLoading, reuseYear, tr, lang, onDirtyChange]);
+  }, [reportId, reuseLoading, reuseYear, tr, lang, onDirtyChange, previousProfile]);
 
   // Another inventory of this company already covers `year`? Emission entries
   // are kept per company and year, so a second inventory for the same year
@@ -2900,24 +2915,67 @@ export function QuestionnaireTab({
   // Facilities already registered (sign-up / Settings): 2A-2's per-facility
   // name+country starts from them instead of blank. Sign-up's placeholder
   // names ("Tesis 1") are not offered as a name, only their country.
+  // Also the facilities of the company's earlier inventory, in that
+  // inventory's order, so "Tesis 1" stays the same site year to year.
+  // Kept as state: on a resumed 2A-2 the lists arrive after the question
+  // is already on screen, and must still fill it (see the effect below).
+  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], loaded: false });
   const registeredFacilitiesRef = useRef([]);
+  // Read through a ref so callbacks created before the lists arrived (the
+  // loop's next-item step) still see them.
+  const facilitySourcesRef = useRef(facilitySources);
+  facilitySourcesRef.current = facilitySources;
   useEffect(() => {
     api.getFacilities()
       .then(res => (res.ok ? res.json() : []))
       .then(data => {
         const list = Array.isArray(data) ? data : (data?.results || []);
         registeredFacilitiesRef.current = list.filter(f => f && f.is_active !== false);
+        setFacilitySources(prev => ({ ...prev, registered: registeredFacilitiesRef.current }));
       })
       .catch(() => {});
   }, []);
+  const previousFacilitiesFetchedRef = useRef(false);
+  useEffect(() => {
+    if (!reportId || previousFacilitiesFetchedRef.current) return;
+    if (currentId !== '2A-1' && currentId !== '2A-2') return;
+    previousFacilitiesFetchedRef.current = true;
+    api.getPreviousCompanyProfile(reportId)
+      .then(res => (res.ok ? res.json() : {}))
+      .then(data => {
+        if (!isMounted.current) return;
+        setFacilitySources(prev => ({ ...prev, previous: Array.isArray(data?.previous_facilities) ? data.previous_facilities : [], loaded: true }));
+      })
+      .catch(() => setFacilitySources(prev => ({ ...prev, loaded: true })));
+  }, [reportId, currentId]);
   const facilityPrefill = (q, index) => {
     if (q?.id !== '2A-2') return undefined;
-    const f = registeredFacilitiesRef.current[index];
-    if (!f) return undefined;
-    const name = String(f.name || '').trim();
-    return { name: /^(tesis|facility)\s*\d+$/i.test(name) ? '' : name, country: f.country || '' };
+    const clean = (n) => { const name = String(n || '').trim(); return /^(tesis|facility)\s*\d+$/i.test(name) ? '' : name; };
+    // The earlier inventory's list first (its order), then registered
+    // facilities it did not have.
+    const previous = facilitySourcesRef.current.previous.map(f => ({ name: clean(f.name), country: f.country || '' }));
+    const seen = new Set(previous.map(f => f.name.toLocaleLowerCase('tr-TR')).filter(Boolean));
+    const extra = registeredFacilitiesRef.current
+      .map(f => ({ name: clean(f.name), country: f.country || '' }))
+      .filter(f => !f.name || !seen.has(f.name.toLocaleLowerCase('tr-TR')));
+    const f = [...previous, ...extra][index];
+    return f ? { name: f.name, country: f.country } : undefined;
   };
   useEffect(() => { answersRef.current = answers; }, [answers]);
+
+  // A resumed 2A-2 is on screen before the facility lists arrive: fill the
+  // open item once they do, unless something is already entered there.
+  useEffect(() => {
+    if (currentId !== '2A-2') return;
+    const index = loopState && loopState.questionId === '2A-2' ? loopState.currentIndex : 0;
+    const pre = facilityPrefill(currentQuestion, index);
+    if (!pre) return;
+    setAnswerValue(v => {
+      const empty = !v || typeof v !== 'object'
+        || (!String(v.name || '').trim() && !String(v.country || '').trim());
+      return empty ? normalizeAnswerValue(currentQuestion, pre) : v;
+    });
+  }, [facilitySources]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Init answer value when the QUESTION changes (navigation / goBack).
   // Deliberately excludes `answers` from the dep array — the ref above is used
@@ -2953,6 +3011,10 @@ export function QuestionnaireTab({
         if (existing === undefined && currentQuestion.prefillFrom) {
           const src = readAnswerValue(answersRef.current, currentQuestion.prefillFrom);
           if (src !== undefined && src !== null && typeof src !== 'object' && String(src).trim() !== '') existing = String(src);
+        }
+        // A4 (reporting year): the year chosen when the inventory was created.
+        if (existing === undefined && currentId === 'A4' && reportYearRef.current) {
+          existing = String(reportYearRef.current);
         }
       }
       setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
@@ -3881,7 +3943,7 @@ export function QuestionnaireTab({
             )}
             {resetConfirm ? (
               <div className="flex items-center gap-1">
-                <span className="text-[10px] font-bold text-red-500">{tr ? 'Emin misin?' : 'Sure?'}</span>
+                <span className="text-[10px] font-bold text-red-500">{tr ? 'Emin misiniz?' : 'Sure?'}</span>
                 <button
                   onClick={() => { setResetConfirm(false); resetFlow(); }}
                   className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-bold text-white transition hover:bg-red-600"
@@ -4034,6 +4096,16 @@ export function QuestionnaireTab({
                 {/* The facilities registered today are only a reference for B4:
                     an inventory for an earlier year may have had a different
                     number, so the count is shown, never filled in. */}
+                {/* 2A-1: the copied count may be last year's — show what is
+                    registered now and what the earlier inventory had, so a
+                    facility is not dropped unnoticed. Shown, never filled in. */}
+                {currentId === '2A-1' && (facilitySources.registered.length > 0 || facilitySources.previous.length > 0) && (
+                  <p className="text-xs text-[#175022]/60">
+                    {tr
+                      ? `Şu an kayıtlı ${facilitySources.registered.length} tesisiniz var${facilitySources.previous.length ? `; önceki envanterinizde ${facilitySources.previous.length} tesis girmiştiniz` : ''}. Bu envanterin yılı için sayı farklıysa düzeltin.`
+                      : `You have ${facilitySources.registered.length} registered ${facilitySources.registered.length === 1 ? 'facility' : 'facilities'}${facilitySources.previous.length ? `; your earlier inventory listed ${facilitySources.previous.length}` : ''}. If the number differs for this inventory's year, correct it.`}
+                  </p>
+                )}
                 {currentId === 'B4' && previousProfile?.facility_count > 0 && (() => {
                   const n = previousProfile.facility_count;
                   const year = readAnswerValue(answers, 'A4');

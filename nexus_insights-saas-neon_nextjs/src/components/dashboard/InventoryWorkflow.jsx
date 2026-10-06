@@ -53,7 +53,7 @@ export function InventoryProvider({ children }) {
   // language of its own, callers pass it through so the one hardcoded
   // fallback below (when the backend doesn't return its own error text)
   // isn't stuck in English regardless of the selected language.
-  const startNewInventory = useCallback(async (name, tr = false) => {
+  const startNewInventory = useCallback(async (name, tr = false, reportingYear = null) => {
     setLoading(true);
     setError('');
     try {
@@ -62,7 +62,7 @@ export function InventoryProvider({ children }) {
       // way the user reads dates (27.09.2026, not 9/27/2026, 11:50:01 PM).
       const title = (name || '').trim()
         || new Date().toLocaleDateString(tr ? 'tr-TR' : 'en-GB');
-      const res = await api.startCarbonReport(title, true);
+      const res = await api.startCarbonReport(title, true, reportingYear);
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {

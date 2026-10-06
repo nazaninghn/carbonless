@@ -5,6 +5,7 @@ import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Package, Lo
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
 import { getPermissions } from '@/lib/permissions';
+import { getQuestionById } from '@/lib/carboniq/questions';
 
 export default function InventoryLibrary({ tr = false }) {
   const {
@@ -19,6 +20,9 @@ export default function InventoryLibrary({ tr = false }) {
   const [loadingReports, setLoadingReports] = useState(true);
   const [showNamingDialog, setShowNamingDialog] = useState(false);
   const [surveyName, setSurveyName] = useState('');
+  // Reporting year of the new inventory — asked here so it is not left to a
+  // later default (which made an inventory named "2024" a 2026 one).
+  const [surveyYear, setSurveyYear] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [deleteError, setDeleteError] = useState('');
@@ -58,7 +62,7 @@ export default function InventoryLibrary({ tr = false }) {
   // disabled until something was typed, so that fallback was unreachable.
   const handleStartNew = async () => {
     if (loading) return;
-    const success = await startNewInventory(surveyName.trim(), tr);
+    const success = await startNewInventory(surveyName.trim(), tr, Number(surveyYear) || null);
     if (success) {
       setSurveyName('');
       setShowNamingDialog(false);
@@ -156,6 +160,18 @@ export default function InventoryLibrary({ tr = false }) {
   };
 
   const drafts = reports.filter(r => r.status === 'draft' || r.status === 'in_progress');
+  const yearOptions = getQuestionById('A4')?.options || [];
+  // Default: the year after the latest completed inventory (not past this
+  // year), otherwise last year — the usual year to report on.
+  const openNewDialog = () => {
+    const thisYear = new Date().getFullYear();
+    const latest = Math.max(0, ...reports.filter(r => r.status === 'completed').map(r => Number(r.reporting_year) || 0));
+    setSurveyYear(String(latest ? Math.min(latest + 1, thisYear) : thisYear - 1));
+    setShowNamingDialog(true);
+  };
+  // A year typed in the name that differs from the chosen reporting year.
+  const nameYear = (surveyName.match(/\b(19|20)\d{2}\b/) || [])[0];
+  const nameYearMismatch = nameYear && surveyYear && nameYear !== surveyYear;
   const completed = reports.filter(r => r.status === 'completed');
 
   if (loadingReports) {
@@ -211,7 +227,7 @@ export default function InventoryLibrary({ tr = false }) {
             </p>
           </div>
           <button
-            onClick={() => setShowNamingDialog(true)}
+            onClick={openNewDialog}
             disabled={loading}
             className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition disabled:opacity-50 shrink-0"
           >
@@ -244,6 +260,9 @@ export default function InventoryLibrary({ tr = false }) {
                     </p>
                   )}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#175022]/60 mt-2">
+                    {report.reporting_year && (
+                      <span className="font-semibold text-[#175022]/80">{tr ? 'Raporlama yılı' : 'Reporting year'}: {report.reporting_year}</span>
+                    )}
                     <span>{report.progress?.percent || 0}% {tr ? 'tamamlandı' : 'complete'}</span>
                     <span>{report.progress?.completed || 0} / {report.progress?.total || 120} {tr ? 'soru' : 'questions'}</span>
                     <span>{tr ? 'Güncelleme' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}</span>
@@ -408,7 +427,7 @@ export default function InventoryLibrary({ tr = false }) {
           {/* An auditor can't start one (the notice above says so). */}
           {canEdit && (
             <button
-              onClick={() => setShowNamingDialog(true)}
+              onClick={openNewDialog}
               className="inline-flex items-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition"
             >
               <Plus className="w-5 h-5" />
@@ -443,6 +462,31 @@ export default function InventoryLibrary({ tr = false }) {
                 ? `İsteğe bağlı. Boş bırakırsanız bugünün tarihi kullanılır (${new Date().toLocaleDateString('tr-TR')}).`
                 : `Optional. If left empty, today's date is used (${new Date().toLocaleDateString('en-GB')}).`}
             </p>
+
+            <label htmlFor="new-inventory-year" className="block text-sm font-bold text-[#175022] mb-1">
+              {tr ? 'Raporlama yılı' : 'Reporting year'}
+            </label>
+            <select
+              id="new-inventory-year"
+              value={surveyYear}
+              onChange={(e) => setSurveyYear(e.target.value)}
+              className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
+            >
+              {yearOptions.map(o => (
+                <option key={o.value} value={o.value}>{o.label?.[tr ? 'tr' : 'en'] || o.value}</option>
+              ))}
+            </select>
+            {nameYearMismatch ? (
+              <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                {tr
+                  ? `Adda ${nameYear} yazıyor ama raporlama yılı ${surveyYear} seçili. Doğru yılı seçtiğinizden emin olun.`
+                  : `The name says ${nameYear} but the reporting year is ${surveyYear}. Make sure the right year is selected.`}
+              </p>
+            ) : (
+              <p className="mb-4 text-xs text-[#175022]/60">
+                {tr ? 'Bu envanterdeki tüm veriler bu yıla ait olacak.' : 'All data in this inventory will be for this year.'}
+              </p>
+            )}
 
             <div className="flex gap-3">
               <button
