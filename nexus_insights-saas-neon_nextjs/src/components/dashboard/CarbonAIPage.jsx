@@ -48,6 +48,7 @@ import {
   readAnswerValue,
   resolveFieldOptions,
   employeeCountWarning,
+  exclusionShareWarning,
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
 import { fixed } from '@/lib/formatNumber';
@@ -1954,10 +1955,15 @@ function blockNeedsSummary(blockId, answers) {
 // the resume effect re-enters a loop at its first unanswered item.
 function resumeQuestionId(stepId, answersMap) {
   const q = getQuestionById(stepId);
-  if (!q || q.stage < 2 || q.loopSource || q.type === 'info') return stepId;
+  if (!q || q.stage < 2 || q.loopSource) return stepId;
   const value = readAnswerValue(answersMap || {}, stepId);
-  if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) return stepId;
-  let nextId = getNextQuestionId(q, value);
+  // An info screen the user already continued past, or an optional question
+  // they left empty, is saved with an empty answer — that still counts as
+  // answered, otherwise reopening shows it again.
+  const saved = answersMap && stepId in answersMap;
+  const empty = value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0);
+  if (empty && !(saved && (q.type === 'info' || !q.required))) return stepId;
+  let nextId = q.type === 'info' ? (q.next || null) : getNextQuestionId(q, value);
   if (nextId === '4-GİRİŞ' && readAnswerValue(answersMap, 'SCOPE-GROUPING') !== 'separate') {
     nextId = getQuestionById('4-GİRİŞ')?.next || nextId;
   }
@@ -3476,6 +3482,7 @@ export function QuestionnaireTab({
       getQuestionWarning ? getQuestionWarning(q, value, lang) : null,
       q.id === 'A4' ? sameYearWarning(value) : null,
       employeeCountWarning(q, value, newAnswers, lang),
+      exclusionShareWarning(q, value, newAnswers, lang),
     ].filter(Boolean).join('\n\n') || null;
     // getSystemMessage resolves the contextual info message for the selected answer (if any).
     // These are defined on 50+ questions (systemMessages) but were previously never displayed.

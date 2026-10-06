@@ -894,3 +894,8 @@ class SupplierEFDocumentTests(TestCase):
         self.assertFalse(validate_generic_step('K3C15-1', {'answer': {'items': [inv]}}, lang='tr')[0])
         self.assertEqual(validate_generic_step('K3C15-1', {'answer': {'items': [{**inv, 'company_emissions_tco2e': '1200'}]}}, lang='tr'), (True, None))
         self.assertEqual(validate_generic_step('K3-TY-edit', {'answer': 'K3C13-0'}, lang='tr'), (True, None))
+
+    def test_exclusion_source_question(self):
+        from .carboniq_validation import validate_generic_step
+        self.assertEqual(validate_generic_step('6A-1a', {'answer': 'Kocaeli Ofis — kiralık'}, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('6A-1a', {'answer': ''}, lang='tr')[0])
