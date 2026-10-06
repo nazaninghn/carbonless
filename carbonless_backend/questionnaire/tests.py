@@ -804,3 +804,25 @@ class ReportTextTests(CombinedReportTests):
             Facility.objects.create(company=self.company, name=name)
         text = self._text(f'/api/questionnaire/{self.report.id}/iso-report/?lang=tr')
         self.assertIn('Tesis sayısı 2', text)
+
+
+class SupplierEFDocumentTests(TestCase):
+    """The supplier EF document's year and source are checked server-side
+    too, and the vehicle amount question (3B-7) is a known step."""
+
+    def test_declaration_year_and_source(self):
+        from .carboniq_validation import validate_generic_step
+        ok = {'answer': {'ef_value': '0.2', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ Doğalgaz', 'ef_year': '2023'}}
+        self.assertEqual(validate_generic_step('3A-EF-a', ok, lang='tr'), (True, None))
+        bad_year = {'answer': {**ok['answer'], 'ef_year': '5'}}
+        valid, msg = validate_generic_step('3A-EF-a', bad_year, lang='tr')
+        self.assertFalse(valid)
+        self.assertIn('4 haneli', msg)
+        future = {'answer': {**ok['answer'], 'ef_year': '2999'}}
+        self.assertFalse(validate_generic_step('3A-EF-a', future, lang='tr')[0])
+        no_name = {'answer': {**ok['answer'], 'ef_source': '5'}}
+        self.assertFalse(validate_generic_step('3B-EF-a', no_name, lang='tr')[0])
+
+    def test_vehicle_amount_step(self):
+        from .carboniq_validation import validate_generic_step
+        self.assertEqual(validate_generic_step('3B-7', {'answer': {'EQ-3B-01': '12000 litre'}}, lang='tr'), (True, None))

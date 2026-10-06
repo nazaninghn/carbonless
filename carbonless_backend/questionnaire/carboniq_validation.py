@@ -93,6 +93,10 @@ _MESSAGES = {
         'en': '{prefix}Expected a 4-digit year, got {value!r}.',
         'tr': '{prefix}4 haneli bir yıl bekleniyor, girilen: {value!r}.',
     },
+    'name_needs_letter': {
+        'en': "{prefix}Enter the supplier's or report's name.",
+        'tr': '{prefix}Tedarikçinin veya raporun adını yazın.',
+    },
     'year_min': {
         'en': '{prefix}Year must be >= {n}.',
         'tr': '{prefix}Yıl {n} veya daha büyük olmalıdır.',
@@ -316,6 +320,30 @@ def _validate_compound_item(obj, fields, prefix='', enforce_required=True, lang=
         err = _validate_scalar_against_question(v, f, f"{prefix}Field {fid!r}: ", lang)
         if err:
             return err
+        err = _validate_field_format(v, f, f"{prefix}Field {fid!r}: ", lang)
+        if err:
+            return err
+    return None
+
+
+def _validate_field_format(value, f, prefix, lang):
+    """`format` on a compound field (mirrors validateCompoundFields):
+    'year' — a 4-digit year from 1990 to this year (a document's declaration
+    year); 'name' — contains at least one letter (a supplier/report name)."""
+    fmt = f.get('format')
+    if fmt == 'year':
+        from django.utils import timezone
+        text = str(value).strip()
+        if not re.match(r'^\d{4}$', text):
+            return _msg(lang, 'invalid_year', prefix=prefix, value=value)
+        year = int(text)
+        if year < 1990:
+            return _msg(lang, 'year_min', prefix=prefix, n=1990)
+        if year > timezone.now().year:
+            return _msg(lang, 'year_max', prefix=prefix, n=timezone.now().year)
+    elif fmt == 'name':
+        if not any(ch.isalpha() for ch in str(value)):
+            return _msg(lang, 'name_needs_letter', prefix=prefix)
     return None
 
 
