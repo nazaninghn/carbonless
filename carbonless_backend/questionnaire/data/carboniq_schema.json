@@ -16,7 +16,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A2": {
     "id": "A2",
@@ -35,7 +36,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A3": {
     "id": "A3",
@@ -60,7 +62,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A4": {
     "id": "A4",
@@ -87,7 +90,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A5": {
     "id": "A5",
@@ -106,7 +110,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A6": {
     "id": "A6",
@@ -131,7 +136,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A7": {
     "id": "A7",
@@ -154,7 +160,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A7a": {
     "id": "A7a",
@@ -185,7 +192,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "A7b": {
     "id": "A7b",
@@ -309,7 +317,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "B1": {
     "id": "B1",
@@ -348,7 +357,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "B2": {
     "id": "B2",
@@ -367,7 +377,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "B3": {
     "id": "B3",
@@ -392,7 +403,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "B4": {
     "id": "B4",
@@ -411,7 +423,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "B5": {
     "id": "B5",
@@ -438,7 +451,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "B6": {
     "id": "B6",
@@ -464,7 +478,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "C1": {
     "id": "C1",
@@ -486,7 +501,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "C2": {
     "id": "C2",
@@ -508,7 +524,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "C3": {
     "id": "C3",
@@ -530,7 +547,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "D1": {
     "id": "D1",
@@ -555,7 +573,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "D2": {
     "id": "D2",
@@ -574,7 +593,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "D3": {
     "id": "D3",
@@ -597,7 +617,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "D4": {
     "id": "D4",
@@ -619,7 +640,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 1
   },
   "2A-0": {
     "id": "2A-0",
@@ -638,7 +660,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2A-1": {
     "id": "2A-1",
@@ -657,7 +680,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2A-2": {
     "id": "2A-2",
@@ -775,7 +799,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2A-3": {
     "id": "2A-3",
@@ -794,7 +819,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2A-4": {
     "id": "2A-4",
@@ -912,7 +938,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2A-5": {
     "id": "2A-5",
@@ -933,7 +960,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2B-OC1": {
     "id": "2B-OC1",
@@ -955,7 +983,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2B-OC2": {
     "id": "2B-OC2",
@@ -978,7 +1007,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2B-FC1": {
     "id": "2B-FC1",
@@ -1000,7 +1030,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2B-FC2": {
     "id": "2B-FC2",
@@ -1022,7 +1053,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2B-EQ1": {
     "id": "2B-EQ1",
@@ -1043,7 +1075,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2C-1": {
     "id": "2C-1",
@@ -1069,7 +1102,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2C-2": {
     "id": "2C-2",
@@ -1093,7 +1127,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "2C-3": {
     "id": "2C-3",
@@ -1116,7 +1151,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "SCOPE-GROUPING": {
     "id": "SCOPE-GROUPING",
@@ -1138,7 +1174,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 2
   },
   "3-GİRİŞ": {
     "id": "3-GİRİŞ",
@@ -1157,7 +1194,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-0": {
     "id": "3A-0",
@@ -1179,7 +1217,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-1": {
     "id": "3A-1",
@@ -1225,7 +1264,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-1a": {
     "id": "3A-1a",
@@ -1244,7 +1284,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-2b": {
     "id": "3A-2b",
@@ -1266,7 +1307,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-2": {
     "id": "3A-2",
@@ -1312,7 +1354,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-3": {
     "id": "3A-3",
@@ -1337,7 +1380,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-4": {
     "id": "3A-4",
@@ -1364,7 +1408,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-5": {
     "id": "3A-5",
@@ -1412,7 +1457,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-6": {
     "id": "3A-6",
@@ -1435,7 +1481,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-6a": {
     "id": "3A-6a",
@@ -1454,7 +1501,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-EF": {
     "id": "3A-EF",
@@ -1476,7 +1524,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3A-EF-a": {
     "id": "3A-EF-a",
@@ -1554,7 +1603,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-0": {
     "id": "3B-0",
@@ -1576,7 +1626,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-1": {
     "id": "3B-1",
@@ -1620,7 +1671,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-2": {
     "id": "3B-2",
@@ -1644,7 +1696,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-3": {
     "id": "3B-3",
@@ -1703,7 +1756,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-4": {
     "id": "3B-4",
@@ -1728,7 +1782,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-5": {
     "id": "3B-5",
@@ -1753,7 +1808,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-6": {
     "id": "3B-6",
@@ -1776,7 +1832,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-7": {
     "id": "3B-7",
@@ -1799,7 +1856,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-EF": {
     "id": "3B-EF",
@@ -1821,7 +1879,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3B-EF-a": {
     "id": "3B-EF-a",
@@ -1899,7 +1958,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3C-0": {
     "id": "3C-0",
@@ -1921,7 +1981,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3C-1": {
     "id": "3C-1",
@@ -1955,7 +2016,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3C-2": {
     "id": "3C-2",
@@ -2005,7 +2067,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3C-EF": {
     "id": "3C-EF",
@@ -2027,7 +2090,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3C-EF-a": {
     "id": "3C-EF-a",
@@ -2105,7 +2169,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3D-0": {
     "id": "3D-0",
@@ -2141,7 +2206,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3D-2": {
     "id": "3D-2",
@@ -2209,7 +2275,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3D-4": {
     "id": "3D-4",
@@ -2255,7 +2322,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3D-4-zero-decision": {
     "id": "3D-4-zero-decision",
@@ -2277,7 +2345,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "3D-EF": {
     "id": "3D-EF",
@@ -2300,7 +2369,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "TY-1": {
     "id": "TY-1",
@@ -2323,7 +2393,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "TY-edit": {
     "id": "TY-edit",
@@ -2347,7 +2418,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "TY-2": {
     "id": "TY-2",
@@ -2366,7 +2438,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 3
   },
   "4-GİRİŞ": {
     "id": "4-GİRİŞ",
@@ -2385,7 +2458,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-0": {
     "id": "4A-0",
@@ -2407,7 +2481,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-1": {
     "id": "4A-1",
@@ -2429,7 +2504,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-1a": {
     "id": "4A-1a",
@@ -2448,7 +2524,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-2": {
     "id": "4A-2",
@@ -2470,7 +2547,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-2a": {
     "id": "4A-2a",
@@ -2492,7 +2570,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-2b": {
     "id": "4A-2b",
@@ -2511,7 +2590,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-2c": {
     "id": "4A-2c",
@@ -2557,7 +2637,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-3": {
     "id": "4A-3",
@@ -2579,7 +2660,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-3a": {
     "id": "4A-3a",
@@ -2638,7 +2720,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-EF": {
     "id": "4A-EF",
@@ -2660,7 +2743,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4A-EF-a": {
     "id": "4A-EF-a",
@@ -2736,7 +2820,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4B-0": {
     "id": "4B-0",
@@ -2758,7 +2843,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4B-1": {
     "id": "4B-1",
@@ -2782,7 +2868,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4B-2": {
     "id": "4B-2",
@@ -2819,7 +2906,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4B-EF": {
     "id": "4B-EF",
@@ -2841,7 +2929,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4B-EF-a": {
     "id": "4B-EF-a",
@@ -2918,7 +3007,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "4C-1": {
     "id": "4C-1",
@@ -2942,7 +3032,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 4
   },
   "K3C1-0": {
     "id": "K3C1-0",
@@ -2964,7 +3055,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C1-1": {
     "id": "K3C1-1",
@@ -2996,7 +3088,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C1-2": {
     "id": "K3C1-2",
@@ -3019,7 +3112,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C1-3": {
     "id": "K3C1-3",
@@ -3041,7 +3135,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C1-3a": {
     "id": "K3C1-3a",
@@ -3067,7 +3162,8 @@
     "repeatable": false,
     "loopSource": true,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C1-4": {
     "id": "K3C1-4",
@@ -3089,7 +3185,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C1-4a": {
     "id": "K3C1-4a",
@@ -3166,7 +3263,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C2-0": {
     "id": "K3C2-0",
@@ -3188,7 +3286,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C2-1": {
     "id": "K3C2-1",
@@ -3273,7 +3372,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C3-INFO": {
     "id": "K3C3-INFO",
@@ -3295,7 +3395,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C4-0": {
     "id": "K3C4-0",
@@ -3317,7 +3418,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C4-1": {
     "id": "K3C4-1",
@@ -3340,7 +3442,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C4-2c": {
     "id": "K3C4-2c",
@@ -3399,7 +3502,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C4-2": {
     "id": "K3C4-2",
@@ -3481,7 +3585,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C4-2b": {
     "id": "K3C4-2b",
@@ -3500,7 +3605,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C5-0": {
     "id": "K3C5-0",
@@ -3522,7 +3628,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C5-1": {
     "id": "K3C5-1",
@@ -3546,7 +3653,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C5-2c": {
     "id": "K3C5-2c",
@@ -3605,7 +3713,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C5-2": {
     "id": "K3C5-2",
@@ -3685,7 +3794,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C5-2b": {
     "id": "K3C5-2b",
@@ -3704,7 +3814,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C6-0": {
     "id": "K3C6-0",
@@ -3726,7 +3837,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C6-1": {
     "id": "K3C6-1",
@@ -3749,7 +3861,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C6-2c": {
     "id": "K3C6-2c",
@@ -3808,7 +3921,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C6-2": {
     "id": "K3C6-2",
@@ -3941,7 +4055,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C6-2b": {
     "id": "K3C6-2b",
@@ -3960,7 +4075,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C7-0": {
     "id": "K3C7-0",
@@ -3982,7 +4098,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C7-1": {
     "id": "K3C7-1",
@@ -4041,7 +4158,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C7-2": {
     "id": "K3C7-2",
@@ -4060,7 +4178,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C7-3": {
     "id": "K3C7-3",
@@ -4141,7 +4260,8 @@
       ],
       "min": 90,
       "max": 110
-    }
+    },
+    "stage": 5
   },
   "K3C7-6": {
     "id": "K3C7-6",
@@ -4164,7 +4284,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C7-4": {
     "id": "K3C7-4",
@@ -4183,7 +4304,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C7-5": {
     "id": "K3C7-5",
@@ -4202,7 +4324,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C8-0": {
     "id": "K3C8-0",
@@ -4224,7 +4347,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C8-1": {
     "id": "K3C8-1",
@@ -4307,7 +4431,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C9-0": {
     "id": "K3C9-0",
@@ -4329,7 +4454,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C9-1": {
     "id": "K3C9-1",
@@ -4398,7 +4524,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C10-0": {
     "id": "K3C10-0",
@@ -4420,7 +4547,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C10-1": {
     "id": "K3C10-1",
@@ -4498,7 +4626,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C11-0": {
     "id": "K3C11-0",
@@ -4520,7 +4649,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C11-1": {
     "id": "K3C11-1",
@@ -4629,7 +4759,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C12-0": {
     "id": "K3C12-0",
@@ -4651,7 +4782,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C12-1": {
     "id": "K3C12-1",
@@ -4757,7 +4889,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C13-0": {
     "id": "K3C13-0",
@@ -4779,7 +4912,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C13-1": {
     "id": "K3C13-1",
@@ -4854,7 +4988,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C14-0": {
     "id": "K3C14-0",
@@ -4877,7 +5012,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C14-1": {
     "id": "K3C14-1",
@@ -4936,7 +5072,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C14-2": {
     "id": "K3C14-2",
@@ -4982,7 +5119,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C15-0": {
     "id": "K3C15-0",
@@ -5004,7 +5142,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3C15-1": {
     "id": "K3C15-1",
@@ -5110,7 +5249,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3-TY": {
     "id": "K3-TY",
@@ -5133,7 +5273,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "K3-TY-edit": {
     "id": "K3-TY-edit",
@@ -5168,7 +5309,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 5
   },
   "6-GİRİŞ": {
     "id": "6-GİRİŞ",
@@ -5187,7 +5329,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-1": {
     "id": "6A-1",
@@ -5209,7 +5352,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-1a": {
     "id": "6A-1a",
@@ -5228,7 +5372,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-2": {
     "id": "6A-2",
@@ -5254,7 +5399,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-3": {
     "id": "6A-3",
@@ -5273,7 +5419,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-4": {
     "id": "6A-4",
@@ -5298,7 +5445,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-5": {
     "id": "6A-5",
@@ -5317,7 +5465,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6A-6": {
     "id": "6A-6",
@@ -5339,7 +5488,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6B-OV": {
     "id": "6B-OV",
@@ -5361,7 +5511,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6C-1": {
     "id": "6C-1",
@@ -5386,7 +5537,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6C-2": {
     "id": "6C-2",
@@ -5445,7 +5597,8 @@
         "options": null
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6C-3": {
     "id": "6C-3",
@@ -5464,7 +5617,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6D-1": {
     "id": "6D-1",
@@ -5486,7 +5640,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6E-1": {
     "id": "6E-1",
@@ -5505,7 +5660,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6F-1": {
     "id": "6F-1",
@@ -5532,7 +5688,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6F-2": {
     "id": "6F-2",
@@ -5554,7 +5711,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6F-3": {
     "id": "6F-3",
@@ -5577,7 +5735,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "7-GİRİŞ": {
     "id": "7-GİRİŞ",
@@ -5596,7 +5755,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 7
   },
   "7C-1": {
     "id": "7C-1",
@@ -5618,7 +5778,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 7
   },
   "7C-edit": {
     "id": "7C-edit",
@@ -5643,7 +5804,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 7
   },
   "7C-2": {
     "id": "7C-2",
@@ -5704,7 +5866,8 @@
         ]
       }
     ],
-    "sumRange": null
+    "sumRange": null,
+    "stage": 7
   },
   "7A-INFO": {
     "id": "7A-INFO",
@@ -5723,7 +5886,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 7
   },
   "7B-INFO": {
     "id": "7B-INFO",
@@ -5745,7 +5909,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 7
   },
   "6B-0": {
     "id": "6B-0",
@@ -5764,7 +5929,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6B-1": {
     "id": "6B-1",
@@ -5786,7 +5952,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6B-2": {
     "id": "6B-2",
@@ -5810,7 +5977,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6B-3": {
     "id": "6B-3",
@@ -5829,7 +5997,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6B-4": {
     "id": "6B-4",
@@ -5848,7 +6017,8 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   },
   "6B-5": {
     "id": "6B-5",
@@ -5870,6 +6040,7 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
-    "sumRange": null
+    "sumRange": null,
+    "stage": 6
   }
 }

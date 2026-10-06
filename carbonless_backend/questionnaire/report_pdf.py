@@ -97,6 +97,13 @@ STAGE_BLOCKS = [
 ]
 
 
+SCOPE2_METHOD_LABELS = {
+    'location_based': {'tr': 'Konum bazlı', 'en': 'Location-based'},
+    'market_based': {'tr': 'Piyasa bazlı', 'en': 'Market-based'},
+    'dual': {'tr': 'Konum ve piyasa bazlı', 'en': 'Location- and market-based'},
+}
+
+
 def _label(map_, key, lang):
     if not key:
         return None
@@ -116,15 +123,20 @@ def _bool_label(value, lang):
     return yes if value else no
 
 
-def _step_stage_index(step_id):
-    """Map a ReportStep.step_id (e.g. '3B-EF', 'A1', '5C-2') to a STAGE_BLOCKS index."""
-    for i, (_, prefixes) in enumerate(STAGE_BLOCKS):
-        for p in prefixes:
-            if step_id == p or step_id.startswith(p + '-') or step_id.startswith(p):
-                # Guard against '3A' matching before a more specific check needed —
-                # prefixes are already distinct per stage so first match is correct.
-                return i
-    return None
+def _answered_by_stage(answered_ids):
+    """Answered questions per STAGE_BLOCKS row, by each question's own stage
+    in the questionnaire schema. Matching on id prefixes missed every Scope 3
+    question (they are 'K3C…', not '5A…') and summary steps like 'TY-1', so
+    the rows did not add up to the total. Info screens are not questions."""
+    from .carboniq_validation import _load_schema
+    schema = _load_schema()
+    counts = [0] * len(STAGE_BLOCKS)
+    for step_id in answered_ids:
+        q = schema.get(step_id)
+        stage = q.get('stage') if q else None
+        if q and q.get('type') != 'info' and isinstance(stage, int) and 1 <= stage <= len(STAGE_BLOCKS):
+            counts[stage - 1] += 1
+    return counts
 
 
 def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0) -> bytes:
@@ -145,6 +157,8 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
 
     steps = list(ReportStep.objects.filter(report=report))
     answered_ids = {s.step_id for s in steps}
+    stage_counts = _answered_by_stage(answered_ids)
+    answered_total = sum(stage_counts)
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
@@ -195,7 +209,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
     E.append(Spacer(1, 6 * mm))
     E.append(HRFlowable(width='100%', thickness=0.5, color=GRAY_200, spaceAfter=4 * mm))
     E.append(Paragraph(
-        f"{'Toplam yanıtlanan soru' if tr else 'Total questions answered'}: {len(answered_ids)}  •  "
+        f"{'Toplam yanıtlanan soru' if tr else 'Total questions answered'}: {answered_total}  •  "
         f"{'Oluşturma' if tr else 'Generated'}: {datetime.now().strftime('%d.%m.%Y %H:%M')}",
         S['body_sm']))
     E.append(PageBreak())
@@ -282,7 +296,9 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
         ('Organizasyon Sınırı Yaklaşımı' if tr else 'Organizational Boundary Approach', boundary_label or '—'),
         ('Emisyon Faktör Veritabanı' if tr else 'Emission Factor Database', ef_label or '—'),
         ('Kapsam 3 Yaklaşımı' if tr else 'Scope 3 Approach', scope3_label or '—'),
-        ('Kapsam 2 Yöntemi' if tr else 'Scope 2 Method', (report.scope2_method or '').replace('_', ' ').title() or '—'),
+        ('Kapsam 2 Yöntemi' if tr else 'Scope 2 Method',
+         _label(SCOPE2_METHOD_LABELS, report.scope2_method, lang)
+         or (report.scope2_method or '').replace('_', ' ').title() or '—'),
     ]
     ft = Table([[k, v] for k, v in framework_rows], colWidths=[55 * mm, 95 * mm])
     ft.setStyle(TableStyle([
@@ -347,17 +363,11 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
         S['body']))
     E.append(Spacer(1, 4 * mm))
 
-    stage_counts = [0] * len(STAGE_BLOCKS)
-    for step_id in answered_ids:
-        idx = _step_stage_index(step_id)
-        if idx is not None:
-            stage_counts[idx] += 1
-
     cov_rows = [['#', 'Bölüm' if tr else 'Section', 'Yanıtlanan' if tr else 'Answered']]
     for i, (title, _prefixes) in enumerate(STAGE_BLOCKS):
         label = title.get(lang) or title.get('en')
         cov_rows.append([str(i + 1), label, str(stage_counts[i])])
-    cov_rows.append(['', 'TOPLAM' if tr else 'TOTAL', str(len(answered_ids))])
+    cov_rows.append(['', 'TOPLAM' if tr else 'TOTAL', str(answered_total)])
     cov = Table(cov_rows, colWidths=[10 * mm, 110 * mm, 30 * mm])
     cov.setStyle(_tbl_style(fn, fnb))
     cov.setStyle(_total_row_style(fnb))

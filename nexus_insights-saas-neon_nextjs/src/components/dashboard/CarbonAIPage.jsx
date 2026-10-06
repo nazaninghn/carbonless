@@ -2492,6 +2492,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     activeInventoryId,
     answers: workflowAnswers,
     currentStep: workflowStep,
+    stepExact: workflowStepExact,
     startedBy,
     setDirty,
     backToLibrary,
@@ -2522,6 +2523,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         initialReportId={activeInventoryId}
         initialAnswers={workflowAnswers}
         initialStep={workflowStep}
+        initialStepExact={workflowStepExact}
         startedBy={startedBy}
         onDirtyChange={setDirty}
         onExitToLibrary={backToLibrary}
@@ -2541,7 +2543,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 // instead of landing on this component's own (now-legacy) picker first.
 export function QuestionnaireTab({
   language, isVisible = true,
-  hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null,
+  hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null, initialStepExact = false,
   onDirtyChange = null, onExitToLibrary = null, startedBy = null,
 }) {
   const tr = language === 'tr';
@@ -2549,7 +2551,11 @@ export function QuestionnaireTab({
 
   // State
   const [started, setStarted] = useState(() => hydrated && !!initialReportId);
-  const [currentId, setCurrentId] = useState(() => (hydrated && initialStep && resumeQuestionId(initialStep, initialAnswers)) || getInitialQuestionId());
+  // A question opened on purpose ("Ankette aç") is shown as is; a resumed
+  // inventory steps past the last answered question.
+  const [currentId, setCurrentId] = useState(() => (hydrated && initialStep && (
+    initialStepExact && getQuestionById(initialStep) ? initialStep : resumeQuestionId(initialStep, initialAnswers)
+  )) || getInitialQuestionId());
   const [answers, setAnswers] = useState(() => (hydrated && initialAnswers) || {});
   const [answerValue, setAnswerValue] = useState('');
   const [history, setHistory] = useState([]);
@@ -3754,11 +3760,20 @@ export function QuestionnaireTab({
     if (saveSuccessTimerRef.current) { clearTimeout(saveSuccessTimerRef.current); saveSuccessTimerRef.current = null; }
     markSubmitting(false);
 
-    // Tell backend to reset the session so a new one can be created
-    try {
-      await api.resetQuestionnaire();
-    } catch (e) {
-      console.warn('Backend reset failed (non-critical):', e);
+    // Clear this inventory's answers only. (The old /reset/ call marked every
+    // in-progress inventory of the company "completed" — a half-filled one
+    // then showed up as a finished report.)
+    if (reportId) {
+      try {
+        const res = await api.restartReport(reportId);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } catch (e) {
+        console.warn('Restart failed:', e);
+        setSaveError(tr ? 'Envanter sıfırlanamadı. Lütfen tekrar deneyin.' : 'Could not reset the inventory. Please try again.');
+        setResetConfirm(false);
+        markSubmitting(false);
+        return;
+      }
     }
 
     const initId = getInitialQuestionId();
@@ -3786,7 +3801,7 @@ export function QuestionnaireTab({
     // next inventory now. Unmounts this component before the started=false
     // update above could ever paint the (now-removed) internal picker.
     onExitToLibrary?.();
-  }, [onExitToLibrary, markSubmitting]);
+  }, [onExitToLibrary, markSubmitting, reportId, tr]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
   // This component is only ever mounted hydrated (with started=true from the

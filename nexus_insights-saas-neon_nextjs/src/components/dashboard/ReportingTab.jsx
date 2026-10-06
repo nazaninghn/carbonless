@@ -106,6 +106,16 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
     [allReports],
   );
 
+  // The inventory the Profile / ISO / pack downloads use, and its year — it
+  // can differ from the dashboard year that the Emissions Report follows.
+  const isoYear = useMemo(() => {
+    const r = completedReports.find(x => String(x.report_id ?? x.id) === String(isoReportId));
+    return r?.reporting_year ?? null;
+  }, [completedReports, isoReportId]);
+  const inventoryScope = tr
+    ? `Seçili envanter${isoYear ? ` · ${isoYear} yılı` : ''}`
+    : `Selected inventory${isoYear ? ` · year ${isoYear}` : ''}`;
+
   // Why the inventory-keyed reports are locked, shown on the page itself (a
   // hover-only title never reaches touch users). The common trap: the
   // inventory IS complete, but for a different reporting year than the one
@@ -203,7 +213,9 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
         res = type === 'pack'
           // The pack builds all three reports server-side, so it is the one
           // download that can take tens of seconds on a large inventory.
-          ? await api.downloadCombinedReport(isoReportId, lang, selectedYear)
+          // No year: the server uses the inventory's own reporting year so
+          // all three parts cover one period (the dashboard year could differ).
+          ? await api.downloadCombinedReport(isoReportId, lang)
           : type === 'iso'
           ? await api.downloadIsoReport(isoReportId, lang)
           : await api.downloadQuestionnairePdf(isoReportId, lang);
@@ -407,13 +419,13 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           <div className="space-y-3">
             {totalTonne > 0 ? (
               <>
-                <InsightItem text={tr ? `Kapsam 1 toplam emisyonun %${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}'ini oluşturuyor.` : `Scope 1 accounts for ${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}% of total emissions.`} />
-                {s2 > s1 && <InsightItem text={tr ? 'Elektrik tüketimi Scope 2\'de baskın.' : 'Electricity consumption dominates Scope 2.'} />}
+                <InsightItem text={tr ? `Kapsam 1, toplam emisyonun %${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0} kadarını oluşturuyor.` : `Scope 1 accounts for ${s1 > 0 ? fixed(((s1/totalTonne)*100), 0) : 0}% of total emissions.`} />
+                {s2 > s1 && <InsightItem text={tr ? 'Elektrik tüketimi Kapsam 2\'de baskın.' : 'Electricity consumption dominates Scope 2.'} />}
                 {counted.length < 10 && <InsightItem text={tr ? 'Daha fazla veri girişi rapor kalitesini artırır.' : 'More data entries will improve report quality.'} type="warning" />}
                 {counted.some(e => ['transport', 'business_travel', 'employee_commuting', 'mobile_combustion'].includes(e.category)) && (
                   <InsightItem text={tr ? 'Ulaşım aktivitelerinde azaltma potansiyeli tespit edildi.' : 'Reduction potential detected in transport activities.'} />
                 )}
-                {s3 > s1 + s2 && <InsightItem text={tr ? 'Scope 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' : 'Scope 3 dominates — consider supply chain focused reductions.'} />}
+                {s3 > s1 + s2 && <InsightItem text={tr ? 'Kapsam 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' : 'Scope 3 dominates — consider supply chain focused reductions.'} />}
               </>
             ) : (
               <InsightItem text={tr ? 'Veri girildikten sonra AI analizi burada görünecek.' : 'AI analysis will appear here after data entry.'} type="neutral" />
@@ -555,7 +567,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
             <ReportType
               icon={FileText}
               title={tr ? 'Emisyon Raporu' : 'Emissions Report'}
-              scope={`${selectedYear}`}
+              scope={tr ? `${selectedYear} yılı (üstteki yıl seçimi)` : `Year ${selectedYear} (year selector above)`}
               desc={tr
                 ? 'Girilen faaliyet verisinden hesaplanan emisyonlar: kapsam ve kategori dağılımı, aylık trend.'
                 : 'Emissions calculated from entered activity data: scope and category breakdown, monthly trend.'}
@@ -571,7 +583,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
             <ReportType
               icon={ClipboardList}
               title={tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile'}
-              scope={tr ? 'Seçili envanter' : 'Selected inventory'}
+              scope={inventoryScope}
               desc={tr
                 ? 'Anket cevaplarınızdan oluşan kısa profil: kurumsal bilgiler, raporlama çerçevesi ve sınırlar, anket tamamlanma durumu. Tam ISO 14064-1 envanteri için aşağıdaki rapora bakın.'
                 : 'A short profile built from your questionnaire answers: organisational details, reporting framework and boundaries, and questionnaire completion. For the full ISO 14064-1 inventory, see the report below.'}
@@ -587,7 +599,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
             <ReportType
               icon={Shield}
               title={tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report'}
-              scope={tr ? 'Seçili envanter' : 'Selected inventory'}
+              scope={inventoryScope}
               desc={tr
                 ? 'Denetim-hazır tam rapor: metodoloji ve faktör referansları, gaz bazında envanter tablosu, altı kategorinin analizi, tesis ve faaliyet bazında değerlendirme, önemlilik, belirsizlik ve kalite yönetimi.'
                 : 'Audit-ready full report: methodology and factor references, per-gas inventory table, analysis of all six categories, location- and activity-level evaluation, significance, uncertainty and quality management.'}
@@ -612,8 +624,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                   </p>
                   <p className="text-[10px] text-[#072C0E]/50">
                     {tr
-                      ? 'Kesintisiz sayfa numaraları, içindekiler ve bölüm yer imleri. Biraz sürebilir.'
-                      : 'Continuous page numbering, a contents page and per-part bookmarks. Takes a moment.'}
+                      ? `Seçili envanterin yılı (${isoYear ?? '—'}) için; kesintisiz sayfa numaraları, içindekiler ve bölüm yer imleri. Biraz sürebilir.`
+                      : `For the selected inventory's year (${isoYear ?? '—'}); continuous page numbering, a contents page and per-part bookmarks. Takes a moment.`}
                   </p>
                 </div>
               </div>
