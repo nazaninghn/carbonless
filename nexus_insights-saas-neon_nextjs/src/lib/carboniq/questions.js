@@ -5035,8 +5035,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Do you lease any buildings or long-term equipment?',
     },
     helper: {
-      tr: 'D3=Operasyonel Kontrol seçtiyseniz kiralık binalarınız zaten K1\'de raporlandı — bu kategori büyük olasılıkla boş kalacak.',
-      en: 'If you selected D3=Operational Control, your leased buildings are already reported in K1 — this category will likely be empty.',
+      tr: 'Organizasyon sınırında Operasyonel Kontrol yaklaşımını seçtiyseniz kiralık binalarınız zaten Kapsam 1 ve 2\'de raporlandı — bu kategori büyük olasılıkla boş kalacak.',
+      en: 'If you chose the Operational Control approach for your organisational boundary, your leased buildings are already reported in Scope 1 and 2 — this category will likely be empty.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -5083,9 +5083,11 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'KV-05', label: { tr: 'KV-05 — Kiralık veri merkezi/co-location', en: 'KV-05 — Leased data centre/co-location' } },
         ],
       },
-      { id: 'area_m2', type: 'numeric', required: true, label: { tr: 'Alan (m²)', en: 'Area (m²)' } },
+      // Buildings only — leased equipment (KV-04) has no floor area.
+      { id: 'area_m2', type: 'numeric', required: true, conditionalOn: 'asset_type', conditionalOnValue: ['KV-01', 'KV-02', 'KV-03', 'KV-05'], label: { tr: 'Alan (m²)', en: 'Area (m²)' } },
       { id: 'owner_declaration', type: 'boolean', required: true, label: { tr: 'Bina sahibi enerji beyanı var mı?', en: 'Building owner energy declaration available?' } },
-      { id: 'declaration_kwh', type: 'numeric', required: false, conditionalOn: 'owner_declaration', label: { tr: 'Beyan edilen tüketim (kWh)', en: 'Declared consumption (kWh)' } },
+      // Required once the owner declaration is answered "Evet" (hidden otherwise).
+      { id: 'declaration_kwh', type: 'numeric', required: true, conditionalOn: 'owner_declaration', label: { tr: 'Beyan edilen tüketim (kWh)', en: 'Declared consumption (kWh)' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C9-0',
@@ -5180,6 +5182,39 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'yes', label: { tr: 'Evet — müşteri proses yapıyor', en: 'Yes — customer processes further' } },
       { value: 'no', label: { tr: 'Hayır — son ürün satıyoruz', en: 'No — we sell final products' } },
     ],
+    nextByValue: {
+      yes: 'K3C10-1',
+      no: 'K3C11-0',
+    },
+    next: 'K3C11-0',
+  },
+  {
+    // "Evet — müşteri proses yapıyor" used to lead straight to Category 11:
+    // nothing about the processed products was ever asked. Collected only.
+    id: 'K3C10-1',
+    number: '99a',
+    stage: 5,
+    block: '5J',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    conditionalShow: { questionId: 'K3C10-0', equals: 'yes' },
+    reportField: 'scope3.cat10.intermediate_products',
+    text: {
+      tr: 'Müşteride işlenen ürün ve satış miktarı nedir?',
+      en: 'Which product is processed by customers, and how much was sold?',
+    },
+    helper: {
+      tr: 'Ara ürününüzü, raporlama yılında satılan miktarı ve müşterinin uyguladığı işlemi girin.',
+      en: 'Enter your intermediate product, the quantity sold in the reporting year and the processing the customer applies.',
+    },
+    fields: [
+      { id: 'product', format: 'name', type: 'text', required: true, maxLength: 200, label: { tr: 'Ara ürün', en: 'Intermediate product' }, placeholder: { tr: 'Örn: Sülfürik asit', en: 'e.g. Sulphuric acid' } },
+      { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Satılan miktar', en: 'Quantity sold' } },
+      { id: 'unit', type: 'select', required: true, label: { tr: 'Birim', en: 'Unit' }, options: [{ value: 'tonnes', label: { tr: 'ton', en: 'tonnes' } }, { value: 'kg', label: { tr: 'kg', en: 'kg' } }, { value: 'm3', label: { tr: 'm³', en: 'm³' } }, { value: 'litres', label: { tr: 'litre', en: 'litres' } }, { value: 'units', label: { tr: 'adet', en: 'units' } }] },
+      { id: 'customer_process', type: 'text', required: false, maxLength: 300, label: { tr: 'Müşterideki işlem (opsiyonel)', en: 'Processing at the customer (optional)' }, placeholder: { tr: 'Örn: boya üretiminde hammadde', en: 'e.g. raw material in paint production' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C11-0',
   },
   {
@@ -5245,9 +5280,11 @@ export const CARBONIQ_QUESTIONS = [
         ],
       },
       { id: 'sales_volume', type: 'numeric', required: true, label: { tr: 'Satış hacmi', en: 'Sales volume' } },
-      { id: 'sales_unit', type: 'select', required: true, label: { tr: 'Satış birimi', en: 'Sales unit' }, options: [{ value: 'units' }, { value: 'kg' }, { value: 'tonnes' }, { value: 'litres' }] },
+      { id: 'sales_unit', type: 'select', required: true, label: { tr: 'Satış birimi', en: 'Sales unit' }, options: [{ value: 'units', label: { tr: 'adet', en: 'units' } }, { value: 'kg', label: { tr: 'kg', en: 'kg' } }, { value: 'tonnes', label: { tr: 'ton', en: 'tonnes' } }, { value: 'litres', label: { tr: 'litre', en: 'litres' } }] },
       { id: 'use_lifetime_years', type: 'numeric', required: false, label: { tr: 'Kullanım ömrü (yıl)', en: 'Use lifetime (years)' } },
       { id: 'lca_available', type: 'boolean', required: false, label: { tr: 'LCA belgesi mevcut mu?', en: 'LCA certificate available?' } },
+      // The LCA's own figure, asked once "Evet" is chosen (collected only).
+      { id: 'lca_kgco2e_per_unit', type: 'numeric', required: true, conditionalOn: 'lca_available', label: { tr: 'LCA\'daki kullanım aşaması emisyonu (kg CO₂e / birim)', en: 'Use-phase emissions in the LCA (kg CO₂e / unit)' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C12-0',

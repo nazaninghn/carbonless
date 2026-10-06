@@ -320,6 +320,16 @@ def _validate_compound_item(obj, fields, prefix='', enforce_required=True, lang=
     if not isinstance(obj, dict):
         return _msg(lang, 'expected_object', prefix=prefix, fields=list(fields))
     for fid, f in fields.items():
+        # A field shown only when another field has a given value
+        # (conditionalOn / conditionalOnValue, same rule as the questionnaire)
+        # is neither required nor checked while hidden.
+        cond = f.get('conditionalOn')
+        if cond:
+            cond_val = obj.get(cond)
+            allowed = f.get('conditionalOnValue')
+            shown = (cond_val in allowed) if allowed else (cond_val is True or cond_val == 'true')
+            if not shown:
+                continue
         v = obj.get(fid)
         if _is_empty(v):
             if enforce_required and f.get('required', True):
