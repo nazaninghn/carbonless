@@ -277,7 +277,7 @@ export default function CompletionReportCard({
           className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition flex-1"
         >
           <RotateCcw className="w-4 h-4" />
-          {tr ? 'Yeni Anket' : 'New Survey'}
+          {tr ? 'Envanter Listesine Dön' : 'Back to Inventory List'}
         </button>
         <button
           onClick={onViewFull}
@@ -291,7 +291,7 @@ export default function CompletionReportCard({
       {/* Additional Info */}
       <p className="text-xs text-[#175022]/50 text-center mt-4">
         {tr
-          ? 'Raporlarınıza istediğiniz zaman "Raporlar" bölümünden erişebilirsiniz.'
+          ? 'Raporlarınıza istediğiniz zaman "Raporlama" bölümünden erişebilirsiniz.'
           : 'You can access all your reports anytime from the Reports section.'}
       </p>
     </div>

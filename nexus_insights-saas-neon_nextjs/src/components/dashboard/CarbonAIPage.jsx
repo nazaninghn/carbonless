@@ -306,7 +306,10 @@ function normalizeAnswerValue(q, raw) {
   if (q.type === 'multi_select') return Array.isArray(raw) ? raw : (raw ? [raw] : []);
   if (q.type === 'compound') {
     if (q.repeatable) {
-      const items = (raw && typeof raw === 'object' && Array.isArray(raw.items)) ? raw.items : [];
+      // A question made repeatable later (e.g. 6C-2) may still hold one plain
+      // object from before — keep it as the first item instead of dropping it.
+      const items = (raw && typeof raw === 'object' && Array.isArray(raw.items)) ? raw.items
+        : (raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0) ? [raw] : [];
       return { items, draft: {} };
     }
     return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
@@ -466,7 +469,7 @@ function fieldValueText(field, v, lang) {
   if (v === true || v === 'true') return lang === 'tr' ? 'Evet' : 'Yes';
   if (v === false || v === 'false') return lang === 'tr' ? 'Hayır' : 'No';
   // Numbers as the user typed them in their locale: 1,2 · 5.000.000 (not 1.2 / 5000000).
-  if (field?.type === 'numeric' && field.format !== 'year' && v !== '' && Number.isFinite(Number(v))) {
+  if ((field?.type === 'numeric' || field?.subtype === 'numeric') && field.format !== 'year' && v !== '' && Number.isFinite(Number(v))) {
     return Number(v).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 });
   }
   return v;
@@ -1930,10 +1933,18 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 const SECTION_EDIT_FLOWS = [
   { summary: 'TY-1', picker: 'TY-edit', stage: 3, editValues: ['edit'] },
   { summary: 'K3-TY', picker: 'K3-TY-edit', stage: 5, editValues: ['edit', 'add_category'] },
+  // 7C-1 "Hayır": fix a whole stage, then come back to the sign-off check.
+  { summary: '7C-1', picker: '7C-edit', level: 'stage', editValues: ['fix_missing'] },
 ];
 function scope1EditReturn(fromQ, nextId, answers) {
   for (const f of SECTION_EDIT_FLOWS) {
     if (!f.editValues.includes(readAnswerValue(answers, f.summary))) continue;
+    if (f.level === 'stage') {
+      const stage = getQuestionById(readAnswerValue(answers, f.picker))?.stage;
+      if (!stage || fromQ?.stage !== stage) continue;
+      const next = getQuestionById(nextId);
+      return next && next.stage === stage ? nextId : f.summary;
+    }
     const block = getQuestionById(readAnswerValue(answers, f.picker))?.block;
     if (!block || fromQ?.stage !== f.stage || fromQ?.block !== block) continue;
     const next = getQuestionById(nextId);
@@ -1943,9 +1954,13 @@ function scope1EditReturn(fromQ, nextId, answers) {
 }
 
 // A block whose only answers are info screens or a scope-summary confirmation
-// has nothing to review — skip the "section complete" table for it.
+// has nothing to review — skip the "section complete" table for it. Same for
+// a block with a single question: its answer is the bubble right above, so
+// the table only added a "Devam Et" click (Stage 6 had one after nearly
+// every question).
 function blockNeedsSummary(blockId, answers) {
-  return getBlockAnsweredQuestions(blockId, answers).some(q => !q.showSummaryTable && q.type !== 'section_picker');
+  return getBlockAnsweredQuestions(blockId, answers)
+    .filter(q => !q.showSummaryTable && q.type !== 'section_picker').length > 1;
 }
 
 // Resuming a saved inventory: from Stage 2 on the server's current_step is
@@ -3964,7 +3979,7 @@ export function QuestionnaireTab({
                 tr={tr}
                 stageBreakdown={completionStageBreakdown}
                 assumptions={assumptions}
-                onStartNew={resetFlow}
+                onStartNew={() => onExitToLibrary?.()}
                 onViewFull={() => {
                   window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting', year: parseInt(answers.A4, 10) || undefined } }));
                 }}
@@ -4038,36 +4053,6 @@ export function QuestionnaireTab({
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-        {completed && (
-          <div className="shrink-0 border-t border-[#175022]/6 px-4 py-4 sm:px-6">
-            <div className="mx-auto w-full max-w-2xl flex items-center justify-center gap-3">
-              {resetConfirm ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-[#175022]/60">{tr ? 'Tüm yanıtlar silinecek. Emin misin?' : 'All answers will be cleared. Sure?'}</span>
-                  <button onClick={() => { setResetConfirm(false); resetFlow(); }} className="rounded-full bg-red-500 px-4 py-2 text-xs font-bold text-white transition hover:bg-red-600">{tr ? 'Evet, Sıfırla' : 'Yes, Reset'}</button>
-                  <button onClick={() => setResetConfirm(false)} className="rounded-full border border-[#175022]/15 px-4 py-2 text-xs font-bold text-[#175022]/50 transition hover:bg-[#175022]/5">{tr ? 'İptal' : 'Cancel'}</button>
-                </div>
-              ) : (
-                <>
-                  <button
-                    onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'reporting', year: parseInt(answers.A4, 10) || undefined } }))}
-                    className="flex items-center gap-2 rounded-full bg-[#1A7B2A] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#1A6126]"
-                  >
-                    <FileText className="h-3.5 w-3.5" />
-                    {tr ? 'Raporu Görüntüle' : 'View Report'}
-                  </button>
-                  <button
-                    onClick={() => setResetConfirm(true)}
-                    className="flex items-center gap-2 rounded-full border border-[#175022]/12 bg-white px-5 py-2.5 text-sm font-semibold text-[#175022]/70 shadow-sm transition hover:bg-[#175022]/5"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    {tr ? 'Yeniden Başla' : 'Start Over'}
-                  </button>
-                </>
-              )}
             </div>
           </div>
         )}
