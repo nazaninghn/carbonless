@@ -2255,6 +2255,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         band_code = _raw_answer(A, '6A-4')
         band = EXCLUSION_BAND_LABELS.get(band_code, {}).get(lang) if band_code else None
         future_plan = _answer_text(A, '6A-5', lang, default=None)
+        excluded = _answer_text(A, '6A-1a', lang, default=None)
 
         # The reason labels are noun phrases ('data inaccessible', 'outside
         # operational control'), so they are introduced as a stated reason
@@ -2266,6 +2267,10 @@ def _section3(E, S, D, report, lang, TBL, FIG):
             sentence = 'Beyan edilen sınırdan bir veya daha fazla kaynak hariç tutulmuştur'
             sentence += f'. Beyan edilen gerekçe: {reason}.' if reason else '.'
         E.append(Paragraph(sentence, S['body']))
+        if excluded and excluded != t('not_declared', lang):
+            E.append(Paragraph(
+                (f'<b>{"Excluded" if lang == "en" else "Hariç tutulan"}:</b> {escape(excluded)}'),
+                S['body']))
         if justification and justification != t('not_declared', lang):
             E.append(Paragraph(
                 (f'<b>{"Justification" if lang == "en" else "Gerekçe"}:</b> {justification}'),

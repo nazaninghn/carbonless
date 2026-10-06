@@ -5211,6 +5211,25 @@
     "fields": null,
     "sumRange": null
   },
+  "6A-1a": {
+    "id": "6A-1a",
+    "type": "text",
+    "subtype": "single_line",
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": 200,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": null,
+    "sumRange": null
+  },
   "6A-2": {
     "id": "6A-2",
     "type": "single_select",

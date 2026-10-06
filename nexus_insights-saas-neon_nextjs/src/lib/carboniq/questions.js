@@ -5694,21 +5694,49 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'exclusions.flagged',
     text: {
-      tr: 'Sistem, envanter sınırınızın dışında kalan varlıklar veya tesisler tespit etti. Bu hariç tutmaları onaylamak ve belgelemek ister misiniz?',
-      en: 'The system detected entities or facilities outside your inventory boundary. Would you like to confirm and document these exclusions?',
+      tr: 'Envanterinize dahil etmediğiniz (raporlamadığınız) bir tesis, faaliyet veya emisyon kaynağı var mı?',
+      en: 'Is there a facility, activity or emission source you have not included (not reported) in your inventory?',
     },
     helper: {
       tr: 'ISO 14064-1 §5.1 uyarınca, önemli GHG kaynakları hariç tutuluyorsa bunların gerekçesiyle birlikte belgelenmesi zorunludur.',
       en: 'Under ISO 14064-1 §5.1, if significant GHG sources are excluded, they must be documented with justification.',
     },
     options: [
-      { value: 'yes', label: { tr: 'Evet — belgelemek istiyorum', en: 'Yes — I want to document them' } },
+      { value: 'yes', label: { tr: 'Evet — hariç tuttuğum bir kaynak var', en: 'Yes — I excluded a source' } },
       { value: 'none_flagged', label: { tr: 'Hayır — hariç tutma yok', en: 'No — no exclusions' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
-    nextByValue: { yes: '6A-2', none_flagged: '6B-OV' },
+    nextByValue: { yes: '6A-1a', none_flagged: '6B-OV' },
+  },
+  {
+    // The exclusion questions asked why, how much and until when — never
+    // *what* was excluded.
+    id: '6A-1a',
+    number: '109a',
+    stage: 6,
+    block: '6A',
+    isoRef: 'ISO 14064-1 §5.1',
+    type: 'text',
+    subtype: 'single_line',
+    required: true,
+    maxLength: 200,
+    reportField: 'exclusions.excluded_sources',
+    text: {
+      tr: 'Hangi tesis, faaliyet veya kaynak hariç tutuldu?',
+      en: 'Which facility, activity or source was excluded?',
+    },
+    placeholder: {
+      tr: 'Örn: Kocaeli Ofis — kiralık bina, enerji verisi alınamıyor',
+      en: 'E.g. Kocaeli Office — leased building, no energy data available',
+    },
+    helper: {
+      tr: 'Birden fazla kaynak varsa virgülle ayırarak yazın. Bu bilgi raporunuzun "Hariç tutmalar" bölümünde yer alır.',
+      en: 'If there is more than one, separate them with commas. This appears in the "Exclusions" section of your report.',
+    },
+    validate: { requiredMessage: { tr: 'Lütfen hariç tutulan kaynağı yazın.', en: 'Please enter the excluded source.' } },
+    next: '6A-2',
   },
   // #109
   {
@@ -5818,8 +5846,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Do you plan to include this source in future inventories? (Optional)',
     },
     placeholder: {
-      tr: 'Örn: 2025 raporunda dahil edilmesi hedeflenmektedir; tedarikçi veri paylaşımı protokolü müzakeresindedir.',
-      en: 'Example: Planned for inclusion in 2025 report; supplier data sharing protocol is under negotiation.',
+      tr: 'Örn: Gelecek yılın raporuna dahil edilmesi hedeflenmektedir; tedarikçi veri paylaşımı protokolü müzakeresindedir.',
+      en: 'Example: Planned for inclusion in the next year\'s report; supplier data sharing protocol is under negotiation.',
     },
     helper: {
       tr: 'Gelecek dahil etme planı, hariç tutmaların geçici niteliğini belgeler ve iyileştirme taahhüdünü gösterir.',
@@ -5870,21 +5898,21 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'assumptions.overview_decision',
     text: {
-      tr: 'Sistem hesaplamalarınızda kullandığı metodolojik kabulleri otomatik olarak belgeledi. Kabulleri onaylıyor musunuz?',
-      en: 'The system automatically documented the methodological assumptions used in your calculations. Do you approve the assumptions?',
+      tr: 'Envanterinizde yaptığınız varsayımları (kabulleri) rapora eklemek ister misiniz?',
+      en: 'Would you like to add the assumptions you made in your inventory to the report?',
     },
     helper: {
-      tr: 'ISO 14064-1 §7.3, tüm önemli metodolojik kabullerin raporlanmasını zorunlu kılar. "Detay İncele" seçeneği her kabul için ayrıntılı inceleme ve düzenleme imkânı sunar.',
-      en: 'ISO 14064-1 §7.3 requires all significant methodological assumptions to be reported. The "Review Details" option provides detailed review and editing for each assumption.',
+      tr: 'ISO 14064-1 §7.3, önemli varsayımların raporlanmasını ister. Örnek: eksik bir ayın tüketimini tahminle tamamlamak, tedarikçi değeri yerine ulusal ortalama faktör kullanmak, bir tesisi sınır dışında bırakmak. "Evet" derseniz bunları üç kısa soruda girersiniz.',
+      en: 'ISO 14064-1 §7.3 asks for significant assumptions to be reported. Examples: estimating a missing month\'s consumption, using a national average factor instead of a supplier value, leaving a site outside the boundary. If you choose "Yes" you enter them in three short questions.',
     },
     options: [
-      { value: 'approve_all', label: { tr: 'Tümünü Onayla — sistem kabullerini kabul ediyorum', en: 'Approve All — I accept system assumptions' } },
-      { value: 'review_detail', label: { tr: 'Detay İncele — her kabulu tek tek gözden geçirim', en: 'Review Details — I\'ll review each assumption individually' } },
+      { value: 'approve_all', label: { tr: 'Hayır — eklenecek varsayım yok', en: 'No — no assumptions to add' } },
+      { value: 'review_detail', label: { tr: 'Evet — varsayımlarımı gireceğim', en: 'Yes — I will enter my assumptions' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
-    nextByValue: { approve_all: '6C-1', review_detail: '6B-0' },
+    nextByValue: { approve_all: '6C-1', review_detail: '6B-2' },
     next: '6C-1', // safe fallback for skip-loop (conditionalShow hidden path)
   },
 
@@ -5986,8 +6014,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Do you have an improvement commitment for this exception in the future period? (Optional)',
     },
     placeholder: {
-      tr: 'Örn: 2025 döneminde tedarikçiden birincil veri toplanacak; istisna kaldırılacak.',
-      en: 'Example: Primary data will be collected from the supplier in the 2025 period; the exception will be removed.',
+      tr: 'Örn: Gelecek dönemde tedarikçiden birincil veri toplanacak; istisna kaldırılacak.',
+      en: 'Example: Primary data will be collected from the supplier in the next period; the exception will be removed.',
     },
     helper: {
       tr: 'İyileştirme taahhüdü, raporunuzu doğrulayacak üçüncü taraf denetçilere olumlu bir sinyal verir.',
@@ -6046,8 +6074,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Are there any planned improvements to reduce data quality and uncertainty? (Optional)',
     },
     placeholder: {
-      tr: 'Örn: Kapsam 3 Kat.1 için tedarikçi anket sistemi 2025\'te devreye alınacak; doğal gaz sayaçları akıllı sisteme geçirilecek.',
-      en: 'Example: Supplier survey system for Scope 3 Cat.1 will go live in 2025; natural gas meters will be upgraded to smart system.',
+      tr: 'Örn: Kapsam 3 Kat.1 için tedarikçi anket sistemi gelecek yıl devreye alınacak; doğal gaz sayaçları akıllı sisteme geçirilecek.',
+      en: 'Example: Supplier survey system for Scope 3 Cat.1 will go live next year; natural gas meters will be upgraded to smart system.',
     },
     helper: {
       tr: 'ISO 14064-1 §7.3, belirsizlik değerlendirmesi ve sürekli iyileştirme taahhüdünü raporlamanızı teşvik eder.',
@@ -6181,12 +6209,12 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'report.field_check',
     text: {
-      tr: 'Sistem son alan kontrolünü tamamladı. Tüm zorunlu alanlar dolduruldu mu?',
-      en: 'The system has completed the final field check. Have all required fields been filled in?',
+      tr: 'İmzalamadan önce: girdiğiniz bilgilerin eksiksiz olduğundan emin misiniz?',
+      en: 'Before signing: are you sure the information you entered is complete?',
     },
     helper: {
-      tr: 'Sistem, zorunlu alanları otomatik olarak kontrol eder. Eksik alan varsa size hangi aşamaya döneceğinizi gösterir. Tüm alanlar tamamsa imzalama adımına geçebilirsiniz.',
-      en: 'The system automatically checks required fields. If there are missing fields, it will show you which stage to return to. If all fields are complete, you can proceed to the signing step.',
+      tr: 'Bir cevabı düzeltmek isterseniz "Önceki soru" ile geri dönebilir veya bölüm özetlerindeki "Düzenle" butonunu kullanabilirsiniz. Her şey tamamsa imzalama adımına geçin.',
+      en: 'To correct an answer, go back with "Previous question" or use the "Edit" button in the section summaries. If everything is complete, proceed to signing.',
     },
     options: [
       { value: 'all_complete', label: { tr: 'Evet — tüm alanlar tamamlandı, imzalamaya geç', en: 'Yes — all fields complete, proceed to signing' } },
@@ -6281,15 +6309,15 @@ export const CARBONIQ_QUESTIONS = [
       en: 'GHG Inventory Complete',
     },
     helper: {
-      tr: 'Tüm aşamalar başarıyla tamamlandı. GHG envanter süreciniz ISO 14064-1 standardına uygun biçimde yürütüldü. Sistem kabullerinizi gözden geçirmek isterseniz Kabuller Detay ekranına gidebilirsiniz.',
-      en: 'All stages have been successfully completed. Your GHG inventory process was conducted in compliance with ISO 14064-1. If you wish to review the system assumptions, you can go to the Assumptions Detail screen.',
+      tr: 'Tüm aşamalar başarıyla tamamlandı. GHG envanter süreciniz ISO 14064-1 standardına uygun biçimde yürütüldü. Girdiğiniz varsayımları görmek veya değiştirmek isterseniz "Kabulleri Gözden Geçir"i seçin.',
+      en: 'All stages have been successfully completed. Your GHG inventory process was conducted in compliance with ISO 14064-1. To see or change the assumptions you entered, choose "Review Assumptions".',
     },
     options: [
       { value: 'view_assumptions', label: { tr: 'Kabulleri Gözden Geçir', en: 'Review Assumptions' } },
       { value: 'done', label: { tr: 'Tamamlandı — kapat', en: 'Done — close' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
-    nextByValue: { view_assumptions: '6B-0' },
+    nextByValue: { view_assumptions: '6B-2' },
   },
 
   // ── STAGE 6B-DETAILED ─ Assumptions Detail Review ────────────────────────
@@ -6308,8 +6336,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Assumptions Detail — Methodological Assumptions Review',
     },
     helper: {
-      tr: 'Bu ekran, sistemin hesaplamalarınızda kullandığı tüm metodolojik kabulleri listeler. Kabuller üç tipte gruplanır: (A) Etki yönü, (B) Metodoloji kabulü, (C) Sınır kararı.',
-      en: 'This screen lists all methodological assumptions the system used in your calculations. Assumptions are grouped in three types: (A) Impact direction, (B) Methodology assumption, (C) Boundary decision.',
+      tr: 'Varsayımlarınızı üç tipte girersiniz: (A) Etki yönü, (B) Metodoloji kabulü, (C) Sınır kararı.',
+      en: 'You enter your assumptions in three types: (A) Impact direction, (B) Methodology assumption, (C) Boundary decision.',
     },
     next: '6B-1',
   },
@@ -6343,7 +6371,7 @@ export const CARBONIQ_QUESTIONS = [
   // #130
   {
     id: '6B-2',
-    number: 131,
+    number: '115a',
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -6372,7 +6400,7 @@ export const CARBONIQ_QUESTIONS = [
   // #131
   {
     id: '6B-3',
-    number: 132,
+    number: '115b',
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -6401,7 +6429,7 @@ export const CARBONIQ_QUESTIONS = [
   // #132
   {
     id: '6B-4',
-    number: 133,
+    number: '115c',
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -6430,7 +6458,7 @@ export const CARBONIQ_QUESTIONS = [
   // #133
   {
     id: '6B-5',
-    number: 134,
+    number: '115d',
     stage: 6,
     block: '6B',
     isoRef: 'ISO 14064-1 §7.3',
@@ -6459,7 +6487,7 @@ export const CARBONIQ_QUESTIONS = [
     // materiality), 6E (uncertainty), 6F (base year) and all of Stage 7
     // (sign-off/report generation) — while "Approve All" correctly continued
     // to 6C-1. The careful path was punished; the fast path worked.
-    nextByValue: { confirmed: '6C-1', edit: '6B-1' },
+    nextByValue: { confirmed: '6C-1', edit: '6B-2' },
   },
 ];
 
@@ -6953,6 +6981,20 @@ export function employeeCountWarning(question, value, answers, lang = 'en') {
   return lang === 'tr'
     ? `Girdiğiniz toplam çalışan sayısı (${n}), Aşama 1'de seçtiğiniz aralıkla (${bandText} çalışan) uyuşmuyor. Sayılar doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
     : `The total headcount you entered (${n}) does not match the range chosen in Stage 1 (${bandText} employees). If the numbers are right you can continue; otherwise go back with "Previous question" to fix them.`;
+}
+
+// Soru 114 asks whether all exclusions together stay under 5%, right after
+// Soru 112 recorded the excluded source's own share. Saying "under 5%" when
+// 112 alone was 5% or more is a contradiction the user should see — this
+// only points it out; nothing is recalculated.
+const EXCLUSION_BANDS_OVER_5 = { '5_10': ['%5–10', '5–10%'], '10_20': ['%10–20', '10–20%'], gt20: ['>%20', '>20%'] };
+export function exclusionShareWarning(question, value, answers, lang = 'en') {
+  if (question?.id !== '6A-6' || value !== 'ok') return null;
+  const band = EXCLUSION_BANDS_OVER_5[readAnswerValue(answers || {}, '6A-4')];
+  if (!band) return null;
+  return lang === 'tr'
+    ? `Soru 112'de hariç tutulan kaynağın payını ${band[0]} olarak belirttiniz; bu tek başına %5 eşiğinin üzerinde. Bu cevap doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
+    : `In question 112 you gave the excluded source's share as ${band[1]}, which on its own is above the 5% threshold. If this answer is right you can continue; otherwise go back with "Previous question" to fix it.`;
 }
 
 export function getQuestionWarning(question, value, lang = 'en') {
