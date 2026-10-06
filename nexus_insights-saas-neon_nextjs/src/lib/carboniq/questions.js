@@ -1266,6 +1266,8 @@ export const CARBONIQ_QUESTIONS = [
     block: '2A',
     isoRef: 'ISO 14064-1 §5.1',
     type: 'compound',
+    // repeatable — a company can have several subsidiaries.
+    repeatable: true,
     required: false,
     conditionalShow: { questionId: 'C1', includesValue: 'yes' },
     reportField: 'org_boundary.subsidiaries[N].name_country',
@@ -1274,14 +1276,14 @@ export const CARBONIQ_QUESTIONS = [
       en: 'What is the name and country of your subsidiary or affiliate?',
     },
     helper: {
-      tr: 'C1\'de "Evet" yanıtı verdiyseniz her bağlı şirket veya iştirak için bu soruyu yanıtlayın. Birden fazla varsa her biri için tekrarlayın.',
-      en: 'If you answered "Yes" to C1, answer this question for each subsidiary or affiliate. Repeat for each one if there are multiple.',
+      tr: 'Her bağlı şirket veya iştirak için adını ve ülkesini girin. Birden fazlaysa "+ Başka Ekle" ile ekleyin.',
+      en: 'Enter the name and country of each subsidiary or affiliate. If there are several, add them with "+ Add Another".',
     },
     fields: [
       {
         id: 'name',
         type: 'text',
-        required: false,
+        required: true,
         maxLength: 200,
         label: { tr: 'Bağlı şirket adı', en: 'Subsidiary name' },
         placeholder: { tr: 'Örn: XYZ Lojistik A.Ş.', en: 'e.g. XYZ Logistics Ltd.' },
@@ -1359,15 +1361,41 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Your facilities will be included in the inventory under operational control.',
       },
       no: {
-        tr: 'Yetkinizin olmadığı tesisler operasyonel kontrol kapsamı dışında tutulacak. Sınır dışı bırakma gerekçesi Aşama 2C\'de belgelenecek.',
-        en: 'Facilities where you lack this authority will be excluded from operational control scope. The exclusion reason will be documented in Stage 2C.',
+        tr: 'Şimdi hangi tesislerde bu yetkinizin olmadığını ve gerekçesini soracağız.',
+        en: 'Next we ask at which facilities you lack this authority, and why.',
       },
     },
+    // "No" used to go straight on: which facility was never asked, and the
+    // 2C exclusion questions the message promises never appeared.
     nextByValue: {
       yes: '2B-OC2',
-      no: '2B-FC1',
+      no: '2B-OC1a',
     },
     next: '2B-OC2',
+  },
+  {
+    id: '2B-OC1a',
+    number: '28a',
+    stage: 2,
+    block: '2B',
+    isoRef: 'ISO 14064-1 §5.1',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    reportField: 'org_boundary.no_operational_control_sites',
+    text: {
+      tr: 'Hangi tesislerde operasyonel politikaları siz belirlemiyorsunuz?',
+      en: 'At which facilities do you not set the operating policies?',
+    },
+    helper: {
+      tr: 'Tanımladığınız tesislerden seçin; birden fazlaysa "+ Başka Ekle" ile ekleyin. Gerekçeyi sonraki sorularda belirteceksiniz.',
+      en: 'Choose from the facilities you defined; add more with "+ Add Another". You give the reason in the next questions.',
+    },
+    fields: [
+      { id: 'facility', type: 'text', optionsFrom: 'facilities', required: true, label: { tr: 'Tesis', en: 'Facility' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen en az bir tesis seçin.', en: 'Please choose at least one facility.' } },
+    next: '2B-FC1',
   },
   {
     id: '2B-OC2',
@@ -1505,10 +1533,12 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.1',
     type: 'single_select',
     required: false,
-    conditionalShow: { questionId: 'org_boundary.any_exclusions', includesValue: 'yes' },
+    // Was keyed to 'org_boundary.any_exclusions', which no question sets, so
+    // these were never asked. Shown when a facility is outside operational control.
+    conditionalShow: { questionId: '2B-OC1', equals: 'no' },
     reportField: 'org_boundary.exclusions[N].reason_category',
     text: {
-      tr: 'Bu varlığı neden hariç tutuyorsunuz?',
+      tr: 'Bu tesisleri neden envanter sınırı dışında tutuyorsunuz?',
       en: 'Why are you excluding this asset?',
     },
     helper: {
@@ -1536,10 +1566,12 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.1',
     type: 'single_select',
     required: false,
-    conditionalShow: { questionId: 'org_boundary.any_exclusions', includesValue: 'yes' },
+    // Was keyed to 'org_boundary.any_exclusions', which no question sets, so
+    // these were never asked. Shown when a facility is outside operational control.
+    conditionalShow: { questionId: '2B-OC1', equals: 'no' },
     reportField: 'org_boundary.exclusions[N].magnitude',
     text: {
-      tr: 'Bu varlığın tahmini emisyon büyüklüğü nedir?',
+      tr: 'Bu tesislerin tahmini emisyon büyüklüğü nedir?',
       en: 'What is the estimated emission magnitude of this asset?',
     },
     helper: {
@@ -1568,10 +1600,12 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.1',
     type: 'single_select',
     required: false,
-    conditionalShow: { questionId: 'org_boundary.any_exclusions', includesValue: 'yes' },
+    // Was keyed to 'org_boundary.any_exclusions', which no question sets, so
+    // these were never asked. Shown when a facility is outside operational control.
+    conditionalShow: { questionId: '2B-OC1', equals: 'no' },
     reportField: 'org_boundary.exclusions[N].future_inclusion_plan',
     text: {
-      tr: 'Bu varlığı ileride rapora dahil etmeyi düşünüyor musunuz?',
+      tr: 'Bu tesisleri ileride rapora dahil etmeyi düşünüyor musunuz?',
       en: 'Do you plan to include this asset in future reports?',
     },
     helper: {
