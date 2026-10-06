@@ -314,48 +314,113 @@ for _q in K3_GATE_QUESTIONS:
     FIELD_RULES[_q] = _match_k3_category_no
 
 
+# Cross-question checks: (questions whose save re-runs it, the question the
+# flag is filed under, its reason code, the check).
+CROSS_CHECKS = [
+    (('6F-2', '6F-3'), '6F-3', 'no_base_year_recalc', _check_no_base_year_recalc),
+    (('C2', '2A-2'), '2A-2', 'overseas_site_c2_conflict', _check_overseas_site_c2_conflict),
+    (('B4', '2A-2'), '2A-2', 'site_count_mismatch', _check_site_count_mismatch),
+]
+
+# An answer that closes a branch: flags raised on the questions behind it no
+# longer apply (their old answers stay stored but are not part of the report).
+BRANCH_CLOSERS = {
+    ('6A-1', 'none_flagged'): ('6A-1a', '6A-2', '6A-4', '6A-5', '6A-6'),
+}
+
+
+def _branch_closed(report, question_id):
+    """True when the question sits behind a branch the current answers close
+    (e.g. 6A-2 after 6A-1 = "no exclusions")."""
+    from .models import ReportStep
+    for (closer, value), dependents in BRANCH_CLOSERS.items():
+        if question_id in dependents:
+            step = ReportStep.objects.filter(report=report, step_id=closer).first()
+            if step and _answer_value(step.answer) == value:
+                return True
+    return False
+
+
 def evaluate_advisor_triggers(report, question_id, answer):
-    """Called right after a ReportStep is saved. Creates any newly-triggered
-    AdvisorApproval rows (idempotent via unique_together — re-saving the same
-    answer does not create duplicate pending flags)."""
+    """Called right after a ReportStep is saved. Brings the report's pending
+    AdvisorApproval rows for this question in line with the new answer:
+    creates newly-triggered flags, refreshes the text of ones still true and
+    removes pending ones the answer no longer triggers. Flags the user has
+    already approved or rejected are left as they are."""
     from .models import AdvisorApproval
 
     matches = []
+    # (question_id, reason_code) pairs this evaluation decides; reason_code
+    # None = every reason on that question (its own field rule).
+    authority = set()
 
     matcher = FIELD_RULES.get(question_id)
     if matcher:
+        authority.add((question_id, None))
+    if matcher and not _branch_closed(report, question_id):
         result = matcher(question_id, answer, report)
         if isinstance(result, list):
             matches.extend(result)
         elif result:
             matches.append(result)
 
-    if question_id in ('6F-2', '6F-3'):
-        result = _check_no_base_year_recalc(report)
-        if result:
-            matches.append(result)
-    if question_id in ('C2', '2A-2'):
-        result = _check_overseas_site_c2_conflict(report)
-        if result:
-            matches.append(result)
-    if question_id in ('B4', '2A-2'):
-        result = _check_site_count_mismatch(report)
-        if result:
-            matches.append(result)
+    for triggers, target, reason, check in CROSS_CHECKS:
+        if question_id in triggers:
+            authority.add((target, reason))
+            result = check(report)
+            if result:
+                matches.append(result)
+
+    value = _answer_value(answer)
+    closed = BRANCH_CLOSERS.get((question_id, value), ()) if isinstance(value, str) else ()
+
+    produced = {(m.get('question_id', question_id), m['reason_code']) for m in matches}
+    pending = AdvisorApproval.objects.filter(report=report, status=AdvisorApproval.Status.PENDING)
+    for a in pending:
+        key = (a.question_id, a.reason_code)
+        governed = (a.question_id, None) in authority or key in authority
+        if a.question_id in closed or (governed and key not in produced):
+            a.delete()
 
     created = []
     for m in matches:
+        fields = {
+            'field_id': m.get('field_id', ''),
+            'trigger_category': m['category'],
+            'risk_level': m['risk'],
+            'description': m['description'],
+        }
         obj, was_created = AdvisorApproval.objects.get_or_create(
             report=report,
             question_id=m.get('question_id', question_id),
             reason_code=m['reason_code'],
-            defaults={
-                'field_id': m.get('field_id', ''),
-                'trigger_category': m['category'],
-                'risk_level': m['risk'],
-                'description': m['description'],
-            },
+            defaults=fields,
         )
         if was_created:
             created.append(obj)
+        elif obj.status == AdvisorApproval.Status.PENDING and obj.description != m['description']:
+            for k, v in fields.items():
+                setattr(obj, k, v)
+            obj.save(update_fields=list(fields))
     return created
+
+
+def reconcile_advisor_approvals(report):
+    """Re-check a report's pending flags against its current answers — for
+    flags raised before evaluate_advisor_triggers kept them in sync, whose
+    answer has since changed or been removed."""
+    from .models import AdvisorApproval, ReportStep
+
+    qids = set(AdvisorApproval.objects.filter(
+        report=report, status=AdvisorApproval.Status.PENDING).values_list('question_id', flat=True))
+    if not qids:
+        return
+    for (closer, _value), dependents in BRANCH_CLOSERS.items():
+        if qids & set(dependents):
+            qids.add(closer)
+    steps = {s.step_id: s.answer for s in ReportStep.objects.filter(report=report, step_id__in=qids)}
+    # A flag whose question has no saved step is left alone — nothing to
+    # re-check it against.
+    for qid in sorted(qids):
+        if qid in steps:
+            evaluate_advisor_triggers(report, qid, steps[qid])

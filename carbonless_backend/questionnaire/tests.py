@@ -959,3 +959,84 @@ class ISOReportDeclarationsTests(TestCase):
         self.assertIn('Birinci istisna', text)
         self.assertIn('İkinci istisna', text)
         self.assertIn('%2,5', text)
+
+
+class AdvisorFlagsFollowAnswersTests(TestCase):
+    """Pending advisor flags follow the current answers; reset touches one inventory."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user('flagown', 'flagown@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Flag Co', tax_number='11',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        self.report = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2025,
+            title='Flags', status=CarbonReport.Status.IN_PROGRESS)
+
+    def _save(self, step_id, answer):
+        from .advisor_triggers import evaluate_advisor_triggers
+        ReportStep.objects.update_or_create(report=self.report, step_id=step_id, defaults={'answer': answer})
+        evaluate_advisor_triggers(self.report, step_id, answer)
+
+    def _pending(self):
+        from .models import AdvisorApproval
+        return set(AdvisorApproval.objects.filter(report=self.report, status='pending')
+                   .values_list('question_id', 'reason_code'))
+
+    def test_flags_removed_or_updated_when_answers_change(self):
+        from .models import AdvisorApproval
+        self._save('6A-1', {'answer': 'yes'})
+        self._save('6A-2', {'answer': 'no_data'})
+        self._save('6A-4', {'answer': '10_20'})
+        self.assertIn(('6A-4', '6c_medium_materiality'), self._pending())
+        # a lower band no longer triggers its own flag
+        self._save('6A-4', {'answer': 'lt1'})
+        self.assertNotIn(('6A-4', '6c_medium_materiality'), self._pending())
+        # "no exclusions" closes the branch: its old flags go
+        self._save('6A-1', {'answer': 'none_flagged'})
+        self.assertFalse({q for q, _ in self._pending()} & {'6A-2', '6A-4'})
+        # facility count: the text follows the current number
+        self._save('B4', {'number_of_facilities': 2})
+        self._save('2A-2', {'answer': {'1': {'name': 'A', 'country': 'TR'}}})
+        flag = AdvisorApproval.objects.get(report=self.report, reason_code='site_count_mismatch')
+        self.assertIn('but 1 were entered', flag.description)
+        self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR'} for i in (1, 2, 3)}})
+        flag.refresh_from_db()
+        self.assertIn('but 3 were entered', flag.description)
+        self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR'} for i in (1, 2)}})
+        self.assertNotIn(('2A-2', 'site_count_mismatch'), self._pending())
+
+    def test_decided_flags_are_kept(self):
+        from .models import AdvisorApproval
+        self._save('6A-4', {'answer': 'gt20'})
+        AdvisorApproval.objects.filter(report=self.report).update(status='approved')
+        self._save('6A-4', {'answer': 'lt1'})
+        self.assertTrue(AdvisorApproval.objects.filter(report=self.report, status='approved').exists())
+
+    def test_restart_clears_only_this_inventory(self):
+        from rest_framework.test import APIClient
+        other = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2024,
+            title='Other', status=CarbonReport.Status.IN_PROGRESS)
+        ReportStep.objects.create(report=other, step_id='A1', answer={'answer': 'x'})
+        self._save('6A-4', {'answer': 'gt20'})
+        c = APIClient(); c.force_authenticate(user=self.owner)
+        res = c.post(f'/api/questionnaire/{self.report.id}/restart/')
+        self.assertEqual(res.status_code, 200)
+        self.report.refresh_from_db(); other.refresh_from_db()
+        self.assertEqual(self.report.current_step, 'A1')
+        self.assertEqual(self.report.status, CarbonReport.Status.IN_PROGRESS)
+        self.assertFalse(ReportStep.objects.filter(report=self.report).exists())
+        self.assertFalse(self._pending())
+        self.assertEqual(other.status, CarbonReport.Status.IN_PROGRESS)
+        self.assertTrue(ReportStep.objects.filter(report=other).exists())
+
+    def test_profile_counts_by_stage(self):
+        from .report_pdf import _answered_by_stage
+        counts = _answered_by_stage({'A1', '2A-1', 'TY-1', 'K3C1-0', 'K3-TY', '6A-1', '7C-2', '6-GİRİŞ'})
+        self.assertEqual(counts, [1, 1, 1, 0, 2, 1, 1])

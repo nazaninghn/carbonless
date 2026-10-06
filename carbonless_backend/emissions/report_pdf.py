@@ -575,13 +575,13 @@ def generate_report(user, year, lang='tr', page_offset=0):
     if total_kg > 0:
         s1_pct = (s1 / total_kg * 100) if s1 > 0 else 0
         ai_insights.append((
-            f"Kapsam 1 toplam emisyonun %{s1_pct:.0f}'ini oluşturuyor." if tr
+            f"Kapsam 1, toplam emisyonun %{s1_pct:.0f} kadarını oluşturuyor." if tr
             else f"Scope 1 accounts for {s1_pct:.0f}% of total emissions.",
             'info'
         ))
         if s2 > s1:
             ai_insights.append((
-                'Elektrik tüketimi Scope 2\'de baskın.' if tr else 'Electricity consumption dominates Scope 2.',
+                'Elektrik tüketimi Kapsam 2\'de baskın.' if tr else 'Electricity consumption dominates Scope 2.',
                 'info'
             ))
         if entry_count < 10:

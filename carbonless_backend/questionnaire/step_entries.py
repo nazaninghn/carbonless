@@ -201,6 +201,10 @@ def _resolve(activity, company=None):
     return factor, qty, co2e
 
 
+# Steps whose answers create EmissionEntry rows (see activities_for_step).
+ENTRY_STEPS = ('3A-5', '4A-1', 'K3C4-2', 'K3C9-1', 'K3C5-2')
+
+
 def _step_entries(company, year, step_id):
     """Entries earlier saves of this step created ("Questionnaire step 4A-1",
     "Questionnaire step 4A-1 · …") — but not those of 4A-1a."""

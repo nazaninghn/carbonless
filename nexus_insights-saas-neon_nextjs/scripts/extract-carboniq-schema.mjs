@@ -81,6 +81,7 @@ try {
       loopSource: !!q.loopSource,
       fields: Array.isArray(q.fields) ? q.fields.map(extractField) : null,
       sumRange: q.sumRange || null,
+      stage: q.stage ?? null,
     };
   }
 

@@ -922,6 +922,40 @@ class CombinedReportView(APIView):
         return response
 
 
+class RestartReportView(APIView):
+    """POST /api/questionnaire/<report_id>/restart/
+
+    The questionnaire's "Sıfırla" (start over): clears this inventory's
+    answers — and the emission entries and pending advisor flags those
+    answers created — and puts it back at the first question. Other
+    inventories are not touched (the old reset endpoint marked every
+    in-progress inventory of the company as completed)."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+
+    def post(self, request, report_id):
+        from django.db import transaction
+        from .step_entries import ENTRY_STEPS, _step_entries
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=404)
+        if report.status == CarbonReport.Status.COMPLETED:
+            return Response({'error': 'A completed inventory cannot be restarted.'}, status=400)
+
+        with transaction.atomic():
+            answered = set(ReportStep.objects.filter(report=report).values_list('step_id', flat=True))
+            if report.company_id and report.reporting_year:
+                for step_id in ENTRY_STEPS:
+                    if step_id in answered:
+                        _step_entries(report.company, report.reporting_year, step_id).delete()
+            ReportStep.objects.filter(report=report).delete()
+            AdvisorApproval.objects.filter(report=report, status=AdvisorApproval.Status.PENDING).delete()
+            report.current_step = 'A1'
+            report.status = CarbonReport.Status.IN_PROGRESS
+            report.save(update_fields=['current_step', 'status', 'updated_at'])
+        return Response({'success': True, 'report_id': report.id})
+
+
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]
@@ -1068,6 +1102,12 @@ def pending_advisor_approvals_view(request):
     company = get_current_company(request.user)
     if not company:
         return Response([])
+
+    # Flags raised before answers changed may no longer apply.
+    from .advisor_triggers import reconcile_advisor_approvals
+    for r in CarbonReport.objects.filter(
+            company=company, advisor_approvals__status=AdvisorApproval.Status.PENDING).distinct():
+        reconcile_advisor_approvals(r)
 
     approvals = AdvisorApproval.objects.filter(
         report__company=company, status=AdvisorApproval.Status.PENDING

@@ -37,6 +37,9 @@ export function InventoryProvider({ children }) {
   // Survey state
   const [answers, setAnswers] = useState({});
   const [currentStep, setCurrentStep] = useState('A1');
+  // true when currentStep is a question the user asked to open ("Ankette aç"),
+  // not the last answered one — the survey then shows exactly that question.
+  const [stepExact, setStepExact] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -74,6 +77,7 @@ export function InventoryProvider({ children }) {
       setStartedBy(null);
       setInventoryStatus('in_progress');
       setCurrentStep(data.current_step || 'A1');
+      setStepExact(false);
       setAnswers({});
       setDirty(false);
       setMode('questionnaire');
@@ -112,6 +116,7 @@ export function InventoryProvider({ children }) {
       setStartedBy(data.started_by || null);
       setInventoryStatus(data.status);
       setCurrentStep(atStep || data.current_step || 'A1');
+      setStepExact(!!atStep);
       setAnswers(normalizeHydratedAnswers(data.answers));
       setDirty(false);
       setMode('questionnaire');
@@ -198,6 +203,7 @@ export function InventoryProvider({ children }) {
       setActiveInventoryId(null);
       setAnswers({});
       setCurrentStep('A1');
+      setStepExact(false);
       setDirty(false);
     });
   }, [requestExit]);
@@ -221,6 +227,7 @@ export function InventoryProvider({ children }) {
     inventoryStatus,
     answers,
     currentStep,
+    stepExact,
     dirty,
     loading,
     error,
