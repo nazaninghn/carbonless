@@ -840,3 +840,16 @@ class SupplierEFDocumentTests(TestCase):
         pcf = {'answer': {'supplier': 'XYZ Ambalaj', 'value': '1.25', 'unit': 'kgCO2e_kg', 'year': '2024'}}
         self.assertEqual(validate_generic_step('K3C1-4a', pcf, lang='tr'), (True, None))
         self.assertEqual(validate_generic_step('K3C1-3a', {'answer': {'SC-01': '12000 kg'}}, lang='tr'), (True, None))
+
+    def test_capital_year_load_factor_and_glec_report(self):
+        from .carboniq_validation import validate_generic_step
+        row = {'category': 'CG-01', 'purchase_year': '2025', 'spend_amount': '5000', 'currency': 'TL'}
+        self.assertEqual(validate_generic_step('K3C2-1', {'answer': {'items': [row]}}, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('K3C2-1', {'answer': {'items': [{**row, 'purchase_year': '1000'}]}}, lang='tr')[0])
+        ship = {'transport_mode': 'TM-01', 'load_tonne': '20', 'distance_km': '300', 'load_factor_pct': '60'}
+        self.assertEqual(validate_generic_step('K3C4-2', {'answer': {'items': [ship]}}, lang='tr'), (True, None))
+        valid, msg = validate_generic_step('K3C4-2', {'answer': {'items': [{**ship, 'load_factor_pct': '250'}]}}, lang='tr')
+        self.assertFalse(valid)
+        self.assertIn('0 ile 100', msg)
+        glec = {'answer': {'provider': 'XYZ Lojistik', 'total_tco2e': '12.5', 'year': '2024'}}
+        self.assertEqual(validate_generic_step('K3C4-2c', glec, lang='tr'), (True, None))

@@ -3030,7 +3030,7 @@
         "numericOnly": false,
         "exactLength": null,
         "maxLength": null,
-        "format": null,
+        "format": "year",
         "options": null
       },
       {
@@ -3125,6 +3125,58 @@
     "loopSource": false,
     "fields": null
   },
+  "K3C4-2c": {
+    "id": "K3C4-2c",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "provider",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "format": "name",
+        "options": null
+      },
+      {
+        "id": "total_tco2e",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": null
+      },
+      {
+        "id": "year",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": "year",
+        "options": null
+      }
+    ]
+  },
   "K3C4-2": {
     "id": "K3C4-2",
     "type": "compound",
@@ -3193,7 +3245,7 @@
         "numericOnly": false,
         "exactLength": null,
         "maxLength": null,
-        "format": null,
+        "format": "percent",
         "options": null
       }
     ]
