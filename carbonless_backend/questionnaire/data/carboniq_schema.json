@@ -2496,6 +2496,73 @@
     "loopSource": false,
     "fields": null
   },
+  "4A-EF-a": {
+    "id": "4A-EF-a",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "ef_value",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": null
+      },
+      {
+        "id": "ef_unit",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": [
+          "kgCO2e_kWh",
+          "kgCO2e_MWh",
+          "other"
+        ]
+      },
+      {
+        "id": "ef_source",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "format": "name",
+        "options": null
+      },
+      {
+        "id": "ef_year",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": "year",
+        "options": null
+      }
+    ]
+  },
   "4B-0": {
     "id": "4B-0",
     "type": "single_select",
@@ -2596,6 +2663,74 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null
+  },
+  "4B-EF-a": {
+    "id": "4B-EF-a",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "ef_value",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": null
+      },
+      {
+        "id": "ef_unit",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": [
+          "kgCO2e_GJ",
+          "kgCO2e_MWh",
+          "kgCO2e_kWh",
+          "other"
+        ]
+      },
+      {
+        "id": "ef_source",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "format": "name",
+        "options": null
+      },
+      {
+        "id": "ef_year",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": "year",
+        "options": null
+      }
+    ]
   },
   "4C-1": {
     "id": "4C-1",
@@ -2715,6 +2850,31 @@
     "loopSource": false,
     "fields": null
   },
+  "K3C1-3a": {
+    "id": "K3C1-3a",
+    "type": "equipment_loop",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": [
+      "kg",
+      "ton",
+      "adet",
+      "m²",
+      "m³",
+      "litre"
+    ],
+    "repeatable": false,
+    "loopSource": true,
+    "fields": null
+  },
   "K3C1-4": {
     "id": "K3C1-4",
     "type": "single_select",
@@ -2735,6 +2895,74 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null
+  },
+  "K3C1-4a": {
+    "id": "K3C1-4a",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "supplier",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "format": "name",
+        "options": null
+      },
+      {
+        "id": "value",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": null
+      },
+      {
+        "id": "unit",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": [
+          "tCO2e_total",
+          "kgCO2e_kg",
+          "kgCO2e_unit",
+          "other"
+        ]
+      },
+      {
+        "id": "year",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": "year",
+        "options": null
+      }
+    ]
   },
   "K3C2-0": {
     "id": "K3C2-0",

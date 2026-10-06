@@ -1235,6 +1235,91 @@ function Scope1SummaryTable({ answers, lang, tr }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Questionnaire: Scope2SummaryTable
+// Shown under 4C-1 (the Scope 2 summary question): the electricity, shared
+// building, on-site generation and purchased heat/steam amounts the user
+// entered. Only what was entered — no emissions are computed here.
+// ─────────────────────────────────────────────────────────────────────────────
+function Scope2SummaryTable({ answers, lang, tr }) {
+  const ra = (qId) => readAnswerValue(answers, qId);
+  const num = (v) => {
+    const n = Number(v);
+    return v !== '' && v !== null && v !== undefined && Number.isFinite(n)
+      ? n.toLocaleString(tr ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 })
+      : String(v ?? '');
+  };
+  const amountText = (v) => {
+    const m = String(v ?? '').trim().match(/^([\d.,]+)\s*(.*)$/);
+    return m ? `${num(m[1])}${m[2] ? ` ${m[2]}` : ''}` : String(v ?? '');
+  };
+  const facilities = ra('2A-2') || {};
+  const siteName = (k) => String(facilities?.[k]?.name || '').trim() || `${tr ? 'Tesis' : 'Site'} ${k}`;
+  const perSite = (obj) => (obj && typeof obj === 'object' && !Array.isArray(obj)
+    ? Object.entries(obj).filter(([, v]) => v !== '' && v != null).map(([k, v]) => `${siteName(k)}: ${amountText(v)}`).join(' · ')
+    : null);
+
+  const shared = ra('4A-2') === 'yes';
+  const share = ra('4A-2b');
+  const area = ra('4A-2c');
+  const sharedText = !shared ? null : share
+    ? `${tr ? 'Bina yönetimi payı' : 'Building management share'}: ${amountText(share)} kWh`
+    : (area && typeof area === 'object' && area.company_m2)
+      ? `${tr ? 'Alan' : 'Area'}: ${num(area.company_m2)} / ${num(area.building_m2)} m²`
+      : (tr ? 'Paylaşımlı bina' : 'Shared building');
+
+  const gen = ra('4A-3a');
+  const genText = ra('4A-3') !== 'yes' ? null : (gen && typeof gen === 'object' && gen.production_kwh)
+    ? `${tr ? 'Üretim' : 'Production'}: ${num(gen.production_kwh)} kWh${gen.grid_sales && gen.grid_sales_kwh ? ` · ${tr ? 'şebekeye satış' : 'sold to grid'}: ${num(gen.grid_sales_kwh)} kWh` : ''}`
+    : null;
+
+  const heatQ = getQuestionById('4B-1');
+  const heatLabel = (k) => {
+    const opt = heatQ?.options?.find(o => o.value === k);
+    return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || k) : k;
+  };
+  const heat = ra('4B-2');
+  const heatText = heat && typeof heat === 'object'
+    ? Object.entries(heat).filter(([, v]) => v).map(([k, v]) => `${heatLabel(k)}: ${amountText(v)}`).join(' · ') || null
+    : null;
+
+  const rows = [
+    { id: '4A', label: tr ? 'Satın alınan elektrik' : 'Purchased electricity', skipped: ra('4A-0') === 'no', extra: perSite(ra('4A-1')) },
+    ...(sharedText ? [{ id: '4A', label: tr ? 'Paylaşımlı bina' : 'Shared building', extra: sharedText }] : []),
+    ...(genText ? [{ id: '4A', label: tr ? 'Sahada yenilenebilir üretim' : 'On-site renewable generation', extra: genText }] : []),
+    { id: '4B', label: tr ? 'Satın alınan ısı / buhar / soğutma' : 'Purchased heat / steam / cooling', skipped: ra('4B-0') === 'no', extra: heatText },
+  ];
+
+  return (
+    <div className="rounded-2xl border border-[#2ABD41]/30 bg-[#F1FCF2] overflow-hidden text-[#175022]">
+      <div className="flex items-center gap-2 px-4 py-2.5 bg-[#2ABD41]/15 border-b border-[#2ABD41]/20">
+        <ClipboardList className="h-3.5 w-3.5 text-[#175022] shrink-0" />
+        <span className="text-[11px] font-bold text-[#175022] uppercase tracking-wider">
+          {tr ? 'Kapsam 2 Özeti' : 'Scope 2 Summary'}
+        </span>
+      </div>
+      <div className="divide-y divide-[#175022]/6">
+        {rows.map((r, i) => (
+          <div key={`${r.id}-${i}`} className="flex items-start gap-3 px-4 py-2.5">
+            <span className="shrink-0 mt-0.5 rounded-md bg-[#175022]/8 px-1.5 py-0.5 text-[10px] font-bold text-[#175022]/50 leading-tight">{r.id}</span>
+            <div className="flex-1 min-w-0">
+              <span className="text-[12px] font-semibold text-[#175022]/80">{r.label}</span>
+              {r.skipped ? (
+                <span className="ml-2 text-[11px] text-[#175022]/35 italic">{tr ? 'yok' : 'none'}</span>
+              ) : r.extra ? (
+                <p className="text-[11px] text-[#175022] mt-0.5 leading-relaxed font-medium">{r.extra}</p>
+              ) : (
+                <span className="ml-2 text-[11px] text-[#175022]/30 italic">{tr ? 'veri girilmedi' : 'no data entered'}</span>
+              )}
+            </div>
+            <span className={`shrink-0 mt-1 h-2 w-2 rounded-full ${r.skipped ? 'bg-[#175022]/15' : r.extra ? 'bg-[#2ABD41]' : 'bg-amber-400'}`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: AnswerInput
 // currentLoopItem — for fuel_loop / equipment_loop questions whose `units` is
 // an object keyed by item value (e.g. { natural_gas: ['m³','kWh'], ... }).
@@ -1753,6 +1838,32 @@ function scope1EditReturn(fromQ, nextId, answers) {
   if (!block || fromQ?.stage !== 3 || fromQ?.block !== block) return nextId;
   const next = getQuestionById(nextId);
   return next && next.stage === 3 && next.block === block ? nextId : 'TY-1';
+}
+
+// Resuming a saved inventory: from Stage 2 on the server's current_step is
+// the question last *answered* (Stage 1 stores the next one), so reopening
+// there showed an already-answered question to be submitted again. Step past
+// it the same way submitting would. Loop questions are left as they are —
+// the resume effect re-enters a loop at its first unanswered item.
+function resumeQuestionId(stepId, answersMap) {
+  const q = getQuestionById(stepId);
+  if (!q || q.stage < 2 || q.loopSource || q.type === 'info') return stepId;
+  const value = readAnswerValue(answersMap || {}, stepId);
+  if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) return stepId;
+  let nextId = getNextQuestionId(q, value);
+  if (nextId === '4-GİRİŞ' && readAnswerValue(answersMap, 'SCOPE-GROUPING') !== 'separate') {
+    nextId = getQuestionById('4-GİRİŞ')?.next || nextId;
+  }
+  if (q.type !== 'section_picker') {
+    while (nextId) {
+      const candidate = getQuestionById(nextId);
+      if (!candidate?.conditionalShow) break;
+      if (conditionalShowMatches(candidate.conditionalShow, answersMap)) break;
+      nextId = candidate.next || candidate.loopNext || null;
+    }
+  }
+  nextId = scope1EditReturn(q, nextId, answersMap);
+  return nextId && getQuestionById(nextId) ? nextId : stepId;
 }
 
 function getBlockId(q) {
@@ -2310,7 +2421,7 @@ export function QuestionnaireTab({
 
   // State
   const [started, setStarted] = useState(() => hydrated && !!initialReportId);
-  const [currentId, setCurrentId] = useState(() => (hydrated && initialStep) || getInitialQuestionId());
+  const [currentId, setCurrentId] = useState(() => (hydrated && initialStep && resumeQuestionId(initialStep, initialAnswers)) || getInitialQuestionId());
   const [answers, setAnswers] = useState(() => (hydrated && initialAnswers) || {});
   const [answerValue, setAnswerValue] = useState('');
   const [history, setHistory] = useState([]);
@@ -3667,7 +3778,9 @@ export function QuestionnaireTab({
                 Rendered as a live component so it always reflects the latest answers
                 and switches language instantly without needing a re-ask. */}
             {currentQuestion?.showSummaryTable && !isTyping && !completed && (
-              <Scope1SummaryTable answers={answers} lang={lang} tr={tr} />
+              currentQuestion.showSummaryTable === 'scope2'
+                ? <Scope2SummaryTable answers={answers} lang={lang} tr={tr} />
+                : <Scope1SummaryTable answers={answers} lang={lang} tr={tr} />
             )}
             {/* Block summary table — shown at block/stage transitions for review & edit */}
             {blockSummaryState && !isTyping && (
