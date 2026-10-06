@@ -56,6 +56,8 @@ try {
       exactLength: f.exactLength || null,
       maxLength: f.maxLength || null,
       format: f.format || null,
+      conditionalOn: f.conditionalOn || null,
+      conditionalOnValue: Array.isArray(f.conditionalOnValue) ? f.conditionalOnValue : null,
       options: Array.isArray(f.options) ? f.options.map(o => o.value) : null,
     };
   }
