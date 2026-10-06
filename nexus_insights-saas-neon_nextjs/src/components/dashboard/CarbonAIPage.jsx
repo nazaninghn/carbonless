@@ -1963,14 +1963,49 @@ function blockNeedsSummary(blockId, answers) {
     .filter(q => !q.showSummaryTable && q.type !== 'section_picker').length > 1;
 }
 
+// A per-item (loop) question's saved items: which items it has and the
+// first one without an answer (-1 when every item is answered).
+function loopResumeState(q, answersMap) {
+  const items = buildLoopItems(q.id, answersMap || {}, 'en')?.items || [];
+  const saved = readAnswerValue(answersMap || {}, q.id);
+  const agg = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  const has = (v) => v !== undefined && v !== null && v !== ''
+    && !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0);
+  return { items, agg, firstOpen: items.findIndex(it => !has(agg[it])) };
+}
+
 // Resuming a saved inventory: from Stage 2 on the server's current_step is
 // the question last *answered* (Stage 1 stores the next one), so reopening
 // there showed an already-answered question to be submitted again. Step past
-// it the same way submitting would. Loop questions are left as they are —
-// the resume effect re-enters a loop at its first unanswered item.
+// it the same way submitting would. A loop question is stepped past once
+// every item is answered (it used to restart at item 1 — all facilities had
+// to be confirmed again after every reload); a partly answered one is kept,
+// and the resume effect re-enters it at its first unanswered item.
 function resumeQuestionId(stepId, answersMap) {
   const q = getQuestionById(stepId);
-  if (!q || q.stage < 2 || q.loopSource) return stepId;
+  if (!q || q.stage < 2) return stepId;
+  if (q.loopSource) {
+    const st = loopResumeState(q, answersMap);
+    if (st.items.length === 0 || st.firstOpen !== -1) return stepId;
+    let nextId = q.loopNext || q.next || null;
+    // Same walk as finishing the loop: skip following loops that are already
+    // complete or have no items, and questions whose condition is not met.
+    while (nextId) {
+      const candidate = getQuestionById(nextId);
+      if (candidate?.loopSource) {
+        const cs = loopResumeState(candidate, answersMap);
+        if (cs.items.length === 0 || cs.firstOpen === -1) { nextId = candidate.loopNext || candidate.next || null; continue; }
+        break;
+      }
+      if (candidate?.conditionalShow && !conditionalShowMatches(candidate.conditionalShow, answersMap)) {
+        nextId = candidate.next || candidate.loopNext || null;
+        continue;
+      }
+      break;
+    }
+    nextId = scope1EditReturn(q, nextId, answersMap);
+    return nextId && getQuestionById(nextId) ? nextId : stepId;
+  }
   const value = readAnswerValue(answersMap || {}, stepId);
   // An info screen the user already continued past, or an optional question
   // they left empty, is saved with an empty answer — that still counts as
@@ -2845,14 +2880,19 @@ export function QuestionnaireTab({
     // Same cleanup the live flow applies: strips the "[Equipment name] —"
     // doc placeholder that loop questions carry in their raw text.
     const qText = stripDocLabels(firstQ.text?.[lang] || firstQ.text?.en || '');
-    // Resuming onto a loop question: re-enter the loop from item 0, exactly as
-    // goBack does, so the item is named and submitAnswer takes the loop path.
+    // Resuming onto a loop question: re-enter the loop at its first
+    // unanswered item, carrying the answered ones, so the item is named and
+    // submitAnswer takes the loop path.
     let itemLabel = null;
     if (firstQ.loopSource) {
       const built = buildLoopItems(currentId, answers, lang);
       if (built && built.items.length > 0) {
-        setLoopState({ questionId: currentId, items: built.items, itemLabels: built.itemLabels, currentIndex: 0, collected: {} });
-        itemLabel = built.itemLabels[0] || built.items[0];
+        const { agg, firstOpen } = loopResumeState(firstQ, answers);
+        const index = firstOpen >= 0 ? firstOpen : 0;
+        const collected = {};
+        built.items.forEach((it, i) => { if (i < index && agg[it] !== undefined) collected[it] = agg[it]; });
+        setLoopState({ questionId: currentId, items: built.items, itemLabels: built.itemLabels, currentIndex: index, collected });
+        itemLabel = built.itemLabels[index] || built.items[index];
       }
     }
     const qRef = itemLabel ? `${firstQ.number} (${itemLabel})` : `${firstQ.number}`;
@@ -2919,7 +2959,7 @@ export function QuestionnaireTab({
   // inventory's order, so "Tesis 1" stays the same site year to year.
   // Kept as state: on a resumed 2A-2 the lists arrive after the question
   // is already on screen, and must still fill it (see the effect below).
-  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], loaded: false });
+  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], activities: {}, subsidiaries: [], loaded: false });
   const registeredFacilitiesRef = useRef([]);
   // Read through a ref so callbacks created before the lists arrived (the
   // loop's next-item step) still see them.
@@ -2938,17 +2978,31 @@ export function QuestionnaireTab({
   const previousFacilitiesFetchedRef = useRef(false);
   useEffect(() => {
     if (!reportId || previousFacilitiesFetchedRef.current) return;
-    if (currentId !== '2A-1' && currentId !== '2A-2') return;
+    if (!['2A-1', '2A-2', '2A-3', '2A-4'].includes(currentId)) return;
     previousFacilitiesFetchedRef.current = true;
     api.getPreviousCompanyProfile(reportId)
       .then(res => (res.ok ? res.json() : {}))
       .then(data => {
         if (!isMounted.current) return;
-        setFacilitySources(prev => ({ ...prev, previous: Array.isArray(data?.previous_facilities) ? data.previous_facilities : [], loaded: true }));
+        setFacilitySources(prev => ({
+          ...prev,
+          previous: Array.isArray(data?.previous_facilities) ? data.previous_facilities : [],
+          activities: data?.previous_facility_activities && typeof data.previous_facility_activities === 'object' ? data.previous_facility_activities : {},
+          subsidiaries: Array.isArray(data?.previous_subsidiaries) ? data.previous_subsidiaries : [],
+          loaded: true,
+        }));
       })
       .catch(() => setFacilitySources(prev => ({ ...prev, loaded: true })));
   }, [reportId, currentId]);
   const facilityPrefill = (q, index) => {
+    // 2A-3 (what the facility does): last year's answer for the facility
+    // with the same name, whatever its position.
+    if (q?.id === '2A-3') {
+      const sites = readAnswerValue(answersRef.current, '2A-2');
+      const name = String(sites?.[String(index + 1)]?.name || '').trim();
+      const prev = name ? facilitySourcesRef.current.activities?.[name] : undefined;
+      return prev || undefined;
+    }
     if (q?.id !== '2A-2') return undefined;
     const clean = (n) => { const name = String(n || '').trim(); return /^(tesis|facility)\s*\d+$/i.test(name) ? '' : name; };
     // The earlier inventory's list first (its order), then registered
@@ -2966,13 +3020,24 @@ export function QuestionnaireTab({
   // A resumed 2A-2 is on screen before the facility lists arrive: fill the
   // open item once they do, unless something is already entered there.
   useEffect(() => {
-    if (currentId !== '2A-2') return;
-    const index = loopState && loopState.questionId === '2A-2' ? loopState.currentIndex : 0;
+    if (currentId === '2A-4') {
+      const subs = facilitySources.subsidiaries;
+      if (!subs?.length || answersRef.current['2A-4'] !== undefined) return;
+      setAnswerValue(v => {
+        const empty = !v || ((!v.items || v.items.length === 0)
+          && !Object.values(v.draft || {}).some(x => String(x ?? '').trim()));
+        return empty ? normalizeAnswerValue(currentQuestion, { items: subs, draft: {} }) : v;
+      });
+      return;
+    }
+    if (currentId !== '2A-2' && currentId !== '2A-3') return;
+    const index = loopState && loopState.questionId === currentId ? loopState.currentIndex : 0;
     const pre = facilityPrefill(currentQuestion, index);
     if (!pre) return;
     setAnswerValue(v => {
-      const empty = !v || typeof v !== 'object'
-        || (!String(v.name || '').trim() && !String(v.country || '').trim());
+      const empty = typeof pre === 'string'
+        ? !String(v ?? '').trim()
+        : (!v || typeof v !== 'object' || (!String(v.name || '').trim() && !String(v.country || '').trim()));
       return empty ? normalizeAnswerValue(currentQuestion, pre) : v;
     });
   }, [facilitySources]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -3011,6 +3076,10 @@ export function QuestionnaireTab({
         if (existing === undefined && currentQuestion.prefillFrom) {
           const src = readAnswerValue(answersRef.current, currentQuestion.prefillFrom);
           if (src !== undefined && src !== null && typeof src !== 'object' && String(src).trim() !== '') existing = String(src);
+        }
+        // 2A-4 (subsidiaries): the earlier inventory's list, to confirm or edit.
+        if (existing === undefined && currentId === '2A-4' && facilitySourcesRef.current.subsidiaries?.length) {
+          existing = { items: facilitySourcesRef.current.subsidiaries, draft: {} };
         }
         // A4 (reporting year): the year chosen when the inventory was created.
         if (existing === undefined && currentId === 'A4' && reportYearRef.current) {

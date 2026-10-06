@@ -836,14 +836,14 @@
     "maxValue": null,
     "options": null,
     "units": null,
-    "repeatable": false,
+    "repeatable": true,
     "loopSource": false,
     "fields": [
       {
         "id": "name",
         "type": "text",
         "subtype": null,
-        "required": false,
+        "required": true,
         "numericOnly": false,
         "exactLength": null,
         "maxLength": 200,
@@ -983,6 +983,40 @@
     "repeatable": false,
     "loopSource": false,
     "fields": null,
+    "sumRange": null,
+    "stage": 2
+  },
+  "2B-OC1a": {
+    "id": "2B-OC1a",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": true,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "facility",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      }
+    ],
     "sumRange": null,
     "stage": 2
   },

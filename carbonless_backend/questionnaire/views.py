@@ -58,6 +58,41 @@ def _previous_facilities(source):
     return out
 
 
+def _previous_stage2(source):
+    """Earlier inventory's facility activities (2A-3, keyed by facility name,
+    since the order may differ) and subsidiaries (2A-4) — offered as
+    pre-fills only."""
+    if not source:
+        return {}, []
+    def _val(step_id):
+        step = source.steps.filter(step_id=step_id).first()
+        raw = step.answer if step else None
+        if isinstance(raw, dict) and set(raw) == {'answer'}:
+            raw = raw['answer']
+        return raw
+    names = {}
+    facilities = _val('2A-2')
+    if isinstance(facilities, dict):
+        names = {str(k): str((v or {}).get('name') or '').strip() for k, v in facilities.items() if isinstance(v, dict)}
+    activities = {}
+    acts = _val('2A-3')
+    if isinstance(acts, dict):
+        for k, v in acts.items():
+            name = names.get(str(k))
+            if name and isinstance(v, str) and v.strip():
+                activities[name] = v.strip()
+    subs = _val('2A-4')
+    if isinstance(subs, dict) and isinstance(subs.get('items'), list):
+        subs = subs['items']
+    elif isinstance(subs, dict):
+        subs = [subs]
+    subsidiaries = [
+        {'name': str(x.get('name') or ''), 'country': str(x.get('country') or '')}
+        for x in (subs if isinstance(subs, list) else []) if isinstance(x, dict) and (x.get('name') or x.get('country'))
+    ]
+    return activities, subsidiaries
+
+
 def _progress(completed_count, status, client_progress=None):
     """Coarse progress for report *lists*.
 
@@ -752,6 +787,8 @@ class PreviousCompanyProfileView(APIView):
                 'facility_count': _facility_count(report.company),
                 'current_reporting_year': report.reporting_year,
                 'previous_facilities': [],
+                'previous_facility_activities': {},
+                'previous_subsidiaries': [],
             })
 
         # The earlier report's answers win; anything it never answered falls
@@ -763,6 +800,7 @@ class PreviousCompanyProfileView(APIView):
             for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS)
         })
 
+        activities, subsidiaries = _previous_stage2(source)
         return Response({
             'available': True,
             'source_report_id': source.id,
@@ -779,6 +817,8 @@ class PreviousCompanyProfileView(APIView):
             # The earlier inventory's facilities in its own order: 2A-2 is
             # pre-filled from them so "Tesis 1" stays the same site.
             'previous_facilities': _previous_facilities(source),
+            'previous_facility_activities': activities,
+            'previous_subsidiaries': subsidiaries,
         })
 
 

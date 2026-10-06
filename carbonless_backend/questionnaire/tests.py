@@ -1087,3 +1087,21 @@ class NewInventoryYearTests(TestCase):
         # restarting forgets the old progress
         self.client.post(f'/api/questionnaire/{rid}/restart/')
         self.assertIsNone(CarbonReport.objects.get(id=rid).client_progress)
+
+    def test_previous_stage2_answers_and_new_steps(self):
+        from .carboniq_validation import validate_generic_step
+        prev = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2025,
+            title='Prev', status=CarbonReport.Status.COMPLETED)
+        ReportStep.objects.create(report=prev, step_id='A1', answer={'legal_name': 'Year Co'})
+        ReportStep.objects.create(report=prev, step_id='2A-2', answer={'answer': {
+            '1': {'name': 'Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}}})
+        ReportStep.objects.create(report=prev, step_id='2A-3', answer={'answer': {'1': 'Üretim', '2': 'Depolama'}})
+        ReportStep.objects.create(report=prev, step_id='2A-4', answer={'answer': {'name': 'Lojistik', 'country': 'TR'}})
+        rid = self.client.post('/api/questionnaire/start/', {'force_new': True, 'reporting_year': 2024}, format='json').json()['report_id']
+        data = self.client.get(f'/api/questionnaire/{rid}/previous-profile/').json()
+        self.assertEqual(data['previous_facility_activities'], {'Fabrika': 'Üretim', 'Depo': 'Depolama'})
+        self.assertEqual(data['previous_subsidiaries'], [{'name': 'Lojistik', 'country': 'TR'}])
+        ok = lambda sid, ans: validate_generic_step(sid, {'answer': ans}, lang='tr')
+        self.assertEqual(ok('2B-OC1a', {'items': [{'facility': 'Depo'}]}), (True, None))
+        self.assertEqual(ok('2A-4', {'items': [{'name': 'Lojistik', 'country': 'TR'}, {'name': 'Kimya GmbH', 'country': 'DE'}]}), (True, None))
