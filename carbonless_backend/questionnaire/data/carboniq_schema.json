@@ -1321,29 +1321,6 @@
     "sumRange": null,
     "stage": 3
   },
-  "3A-2b": {
-    "id": "3A-2b",
-    "type": "single_select",
-    "subtype": null,
-    "required": true,
-    "numericOnly": false,
-    "exactLength": null,
-    "maxLength": null,
-    "minYear": null,
-    "maxYear": null,
-    "minValue": null,
-    "maxValue": null,
-    "options": [
-      "yes",
-      "no"
-    ],
-    "units": null,
-    "repeatable": false,
-    "loopSource": true,
-    "fields": null,
-    "sumRange": null,
-    "stage": 3
-  },
   "3A-2": {
     "id": "3A-2",
     "type": "compound",
@@ -1388,6 +1365,29 @@
         "options": null
       }
     ],
+    "sumRange": null,
+    "stage": 3
+  },
+  "3A-2b": {
+    "id": "3A-2b",
+    "type": "single_select",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": [
+      "yes",
+      "no"
+    ],
+    "units": null,
+    "repeatable": false,
+    "loopSource": true,
+    "fields": null,
     "sumRange": null,
     "stage": 3
   },

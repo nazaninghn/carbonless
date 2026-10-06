@@ -1105,3 +1105,18 @@ class NewInventoryYearTests(TestCase):
         ok = lambda sid, ans: validate_generic_step(sid, {'answer': ans}, lang='tr')
         self.assertEqual(ok('2B-OC1a', {'items': [{'facility': 'Depo'}]}), (True, None))
         self.assertEqual(ok('2A-4', {'items': [{'name': 'Lojistik', 'country': 'TR'}, {'name': 'Kimya GmbH', 'country': 'DE'}]}), (True, None))
+
+    def test_previous_equipment_selections_are_listed(self):
+        prev = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2025,
+            title='Prev', status=CarbonReport.Status.COMPLETED)
+        ReportStep.objects.create(report=prev, step_id='A1', answer={'legal_name': 'Year Co'})
+        ReportStep.objects.create(report=prev, step_id='3A-1', answer={'answer': ['EQ-3A-01']})
+        ReportStep.objects.create(report=prev, step_id='3B-1', answer={'answer': ['EQ-3B-01', 'EQ-3B-05']})
+        ReportStep.objects.create(report=prev, step_id='3A-5', answer={'answer': {'natural_gas': '5 m³'}})
+        rid = self.client.post('/api/questionnaire/start/', {'force_new': True, 'reporting_year': 2024}, format='json').json()['report_id']
+        data = self.client.get(f'/api/questionnaire/{rid}/previous-profile/').json()
+        # Only the source lists, never the year's amounts.
+        self.assertEqual(data['previous_selections'], {'3A-1': ['EQ-3A-01'], '3B-1': ['EQ-3B-01', 'EQ-3B-05']})
+        self.assertEqual(data['previous_year'], 2025)
+
