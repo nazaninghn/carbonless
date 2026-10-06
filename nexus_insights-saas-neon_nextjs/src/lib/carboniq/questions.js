@@ -1821,46 +1821,6 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       maxLengthMessage: { tr: 'Ekipman açıklaması en fazla 150 karakter olabilir.', en: 'Equipment description must be at most 150 characters.' },
     },
-    next: '3A-2b',
-  },
-  {
-    // Question Map: 3A-2b (rf.op_control_3a, advisor_approval: true) — was
-    // entirely missing. Without it every stationary combustion source was
-    // silently assumed to be Scope 1, even when the company doesn't operate
-    // the facility (e.g. equipment at a site leased out to a tenant), which
-    // belongs in Scope 3 Category 8 (Upstream Leased Assets) instead. Mirrors
-    // the same scope-boundary pattern already used by 3B-2 for vehicles.
-    id: '3A-2b',
-    number: '40b',
-    stage: 3,
-    block: '3A',
-    isoRef: 'ISO 14064-1 §5.2',
-    type: 'single_select',
-    loopSource: '3A-1',
-    loopNext: '3A-2',
-    required: true,
-    reportField: 'scope1.stationary_combustion.op_control',
-    text: {
-      tr: '[Ekipman adı] — Bu ekipmanın bulunduğu tesis üzerinde işletme kontrolünüz var mı?',
-      en: '[Equipment name] — Do you have operational control over the facility where this equipment is located?',
-    },
-    helper: {
-      tr: 'İşletme kontrolü: tesisin işletme politikalarını siz belirliyor ve günlük operasyonu siz yönetiyorsanız "Evet". Ekipman kiraya verdiğiniz veya başka bir tarafın işlettiği bir tesisteyse "Hayır" — bu durumda emisyon Kapsam 1 yerine Kapsam 3 Kategori 8\'e (Yukarı Akış Kiralanan Varlıklar) girer.',
-      en: 'Operational control: answer "Yes" if you set the facility\'s operating policies and manage day-to-day operations. If the equipment is at a facility you lease out to a tenant or that another party operates, answer "No" — this moves the emissions from Scope 1 to Scope 3 Category 8 (Upstream Leased Assets).',
-    },
-    options: [
-      { value: 'yes', label: { tr: 'Evet — işletme kontrolümüz var → Kapsam 1', en: 'Yes — we have operational control → Scope 1' }, scope: 1 },
-      { value: 'no', label: { tr: 'Hayır — başka taraf işletiyor → Kapsam 3 (Kategori 8)', en: 'No — another party operates it → Scope 3 (Category 8)' }, scope: 3 },
-    ],
-    validate: {
-      requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
-    },
-    systemMessages: {
-      no: {
-        tr: 'İşletme kontrolünüz olmadığından bu kaynak Kapsam 1\'e dahil edilmeyecek — Kapsam 3 Kategori 8 (Yukarı Akış Kiralanan Varlıklar) altında değerlendirilecek ve danışman onayına gönderilecek.',
-        en: 'Since you do not have operational control, this source will not be included in Scope 1 — it will be assessed under Scope 3 Category 8 (Upstream Leased Assets) and sent for advisor approval.',
-      },
-    },
     next: '3A-2',
   },
   {
@@ -1876,7 +1836,7 @@ export const CARBONIQ_QUESTIONS = [
     // and 3D-4 (refill+capacity).
     type: 'compound',
     loopSource: '3A-1',
-    loopNext: '3A-3',
+    loopNext: '3A-2b',
     required: true,
     reportField: 'scope1.stationary_combustion.equipment_details',
     text: {
@@ -1884,8 +1844,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Equipment name] — How many units and at which site?',
     },
     helper: {
-      tr: 'Aynı türde birden fazla ekipmanınız varsa adedi girin. Farklı tesislerdeyse her tesis için ayrı kayıt oluşturabilirsiniz.',
-      en: 'If you have multiple units of the same type, enter the count. If at different sites, you can create separate records for each site.',
+      tr: 'Aynı türde birden fazla ekipmanınız varsa toplam adedi girin. Farklı tesislerdeyse çoğunun bulunduğu tesisi seçin.',
+      en: 'If you have several units of the same type, enter the total count. If they are at different sites, choose the site where most of them are.',
     },
     fields: [
       {
@@ -1910,6 +1870,48 @@ export const CARBONIQ_QUESTIONS = [
     ],
     validate: {
       requiredMessage: { tr: 'Adet ve tesis zorunludur.', en: 'Count and site are required.' },
+    },
+    next: '3A-2b',
+  },
+  {
+    // Question Map: 3A-2b (rf.op_control_3a, advisor_approval: true) — was
+    // entirely missing. Without it every stationary combustion source was
+    // silently assumed to be Scope 1, even when the company doesn't operate
+    // the facility (e.g. equipment at a site leased out to a tenant), which
+    // belongs in Scope 3 Category 8 (Upstream Leased Assets) instead. Mirrors
+    // the same scope-boundary pattern already used by 3B-2 for vehicles.
+    id: '3A-2b',
+    number: '41b',
+    stage: 3,
+    block: '3A',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'single_select',
+    loopSource: '3A-1',
+    loopNext: '3A-3',
+    required: true,
+    reportField: 'scope1.stationary_combustion.op_control',
+    // Asked after 3A-2 so the site is already known; pre-answered from 2B-OC1a
+    // (sites declared outside operational control) — the user still confirms.
+    text: {
+      tr: '[Ekipman adı] — Bu ekipmanın bulunduğu tesis üzerinde işletme kontrolünüz var mı?',
+      en: '[Equipment name] — Do you have operational control over the facility where this equipment is located?',
+    },
+    helper: {
+      tr: 'İşletme kontrolü: tesisin işletme politikalarını siz belirliyor ve günlük operasyonu siz yönetiyorsanız "Evet". Ekipman kiraya verdiğiniz veya başka bir tarafın işlettiği bir tesisteyse "Hayır" — bu durumda emisyon Kapsam 1 yerine Kapsam 3 Kategori 8\'e (Yukarı Akış Kiralanan Varlıklar) girer.',
+      en: 'Operational control: answer "Yes" if you set the facility\'s operating policies and manage day-to-day operations. If the equipment is at a facility you lease out to a tenant or that another party operates, answer "No" — this moves the emissions from Scope 1 to Scope 3 Category 8 (Upstream Leased Assets).',
+    },
+    options: [
+      { value: 'yes', label: { tr: 'Evet — işletme kontrolümüz var → Kapsam 1', en: 'Yes — we have operational control → Scope 1' }, scope: 1 },
+      { value: 'no', label: { tr: 'Hayır — başka taraf işletiyor → Kapsam 3 (Kategori 8)', en: 'No — another party operates it → Scope 3 (Category 8)' }, scope: 3 },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
+    },
+    systemMessages: {
+      no: {
+        tr: 'İşletme kontrolünüz olmadığından bu kaynak Kapsam 1\'e dahil edilmeyecek — Kapsam 3 Kategori 8 (Yukarı Akış Kiralanan Varlıklar) altında değerlendirilecek ve danışman onayına gönderilecek.',
+        en: 'Since you do not have operational control, this source will not be included in Scope 1 — it will be assessed under Scope 3 Category 8 (Upstream Leased Assets) and sent for advisor approval.',
+      },
     },
     next: '3A-3',
   },
@@ -1987,8 +1989,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope1.stationary_combustion.consumption',
     text: {
-      tr: '[Ekipman] — [Yakıt türü] yıllık tüketim miktarı nedir?',
-      en: '[Equipment] — [Fuel type] annual consumption quantity?',
+      tr: '[Ekipman] — [Yakıt türü] — Raporlama yılındaki toplam tüketim miktarı nedir?',
+      en: '[Equipment] — [Fuel type] — What was the total consumption in the reporting year?',
     },
     placeholder: { tr: 'Örn: 15.000 m³', en: 'Example: 15,000 m³' },
     helper: {
@@ -2027,7 +2029,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope1.stationary_combustion.data_source',
     text: {
-      tr: '[Yakıt türü] tüketim verisi nasıl elde edildi?',
+      tr: '[Yakıt türü] — Tüketim verisi nasıl elde edildi?',
       en: '[Fuel type] — How was this consumption data obtained?',
     },
     helper: {
@@ -2470,7 +2472,9 @@ export const CARBONIQ_QUESTIONS = [
     options: [
       { value: 'fuel_litres', label: { tr: 'Yıllık yakıt tüketimi (litre) — Seviye 1 — tercih edilen', en: 'Annual fuel consumption (litres) — Level 1 — preferred' }, dataQuality: 'high' },
       { value: 'annual_km', label: { tr: 'Yıllık km — Seviye 2 — sistem ortalama tüketim uygular', en: 'Annual km — Level 2 — system applies average consumption' }, dataQuality: 'medium' },
-      { value: 'tonne_km', label: { tr: 'Yük araçları: Ton-km — Seviye 1', en: 'Heavy goods vehicles: Tonne-km — Level 1' }, dataQuality: 'high' },
+      { value: 'tonne_km', label: { tr: 'Yük araçları: Ton-km — Seviye 1', en: 'Heavy goods vehicles: Tonne-km — Level 1' }, dataQuality: 'high',
+        // Goods-carrying vehicle types only (and "Other").
+        onlyForItems: ['EQ-3B-05', 'EQ-3B-06', 'EQ-3B-07', 'EQ-3B-08', 'EQ-3B-09', 'EQ-3B-10', 'EQ-3B-17', 'EQ-3B-18', 'EQ-3B-22', 'EQ-3B-23', 'EQ-3B-99'] },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen aktivite verisi türünü seçin.', en: 'Please select the activity data type.' },
@@ -2504,10 +2508,12 @@ export const CARBONIQ_QUESTIONS = [
     },
     placeholder: { tr: 'Örn: 12.000', en: 'e.g. 12,000' },
     helper: {
-      tr: 'Bir önceki soruda seçtiğiniz veri türüne göre bu araç tipinin yıllık toplamını girin ve birimini seçin: yakıt tüketimi (litre), mesafe (km) veya yük taşımacılığı (ton-km).',
-      en: 'Enter the annual total for this vehicle type according to the data type you chose in the previous question, and pick its unit: fuel consumption (litres), distance (km) or freight (tonne-km).',
+      tr: 'Bir önceki soruda seçtiğiniz veri türüne göre bu araç tipinin yıllık toplamını girin: yakıt tüketimi (litre), mesafe (km) veya yük taşımacılığı (ton-km).',
+      en: 'Enter the annual total for this vehicle type according to the data type you chose in the previous question: fuel consumption (litres), distance (km) or freight (tonne-km).',
     },
     units: ['litre', 'km', 'ton-km'],
+    // Only the unit of the data type picked in 3B-6 for this vehicle.
+    unitFrom: { questionId: '3B-6', map: { fuel_litres: 'litre', annual_km: 'km', tonne_km: 'ton-km' } },
     validate: {
       requiredMessage: { tr: 'Lütfen yıllık miktarı girin.', en: 'Please enter the annual amount.' },
     },

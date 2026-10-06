@@ -289,6 +289,46 @@ function computeSurveyProgress(answersMap, completed = false) {
   return { answered, total, percent };
 }
 
+// Supplier EF form → the step whose consumption amounts it applies to.
+const EF_SOURCE_STEP = { '3A-EF-a': '3A-5', '3B-EF-a': '3B-7', '4A-EF-a': '4A-1', '4B-EF-a': '4B-2' };
+const UNIT_GROUP = {
+  kwh: 'energy', mwh: 'energy', gj: 'energy',
+  litre: 'liquid', l: 'liquid', lt: 'liquid',
+  kg: 'mass', ton: 'mass', tonne: 'mass', tonnes: 'mass',
+  'm³': 'gas', m3: 'gas',
+  km: 'distance', 'ton-km': 'freight',
+};
+// The consumption units entered for an EF form's source step (["m³"]), and
+// whether the chosen "kg CO₂e / <unit>" fits none of them. Only a hint for
+// the user to re-check the document — nothing is converted or recalculated.
+function efUnitMismatch(questionId, efUnit, answers) {
+  const src = EF_SOURCE_STEP[questionId];
+  const m = /^kgCO2e_(.+)$/.exec(String(efUnit || ''));
+  if (!src || !m) return null;
+  const efGroup = UNIT_GROUP[m[1].toLowerCase()];
+  if (!efGroup) return null;
+  const units = new Set();
+  const walk = (v) => {
+    if (typeof v === 'string') {
+      const u = v.trim().match(/[\d.,]+\s*(\S+)$/);
+      if (u) units.add(u[1]);
+    } else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+  };
+  walk(readAnswerValue(answers, src));
+  const list = [...units];
+  if (!list.length || list.some(u => UNIT_GROUP[u.toLowerCase()] === efGroup)) return null;
+  return list;
+}
+
+// Facilities the user declared outside operational control in 2B-OC1a
+// (lower-cased), [] when 2B-OC1 was answered "yes".
+function noControlSites(answers) {
+  if (readAnswerValue(answers, '2B-OC1') !== 'no') return [];
+  const raw = readAnswerValue(answers, '2B-OC1a');
+  const rows = Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
+  return rows.map(r => String(r?.facility || '').trim().toLocaleLowerCase('tr-TR')).filter(Boolean);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire helpers
 // ─────────────────────────────────────────────────────────────────────────────
@@ -316,6 +356,9 @@ function normalizeAnswerValue(q, raw) {
   }
   return raw ?? '';
 }
+
+// Source lists whose earlier-inventory answer is shown as a reminder (3A-1 …).
+const PREVIOUS_SELECTION_STEPS = ['3A-1', '3B-1', '3C-1', '3D-0'];
 
 // Clean option labels for user-facing display:
 // 1. Strip leading code prefixes like "EQ-3B-13 — ", "SC-01 — "
@@ -485,6 +528,16 @@ function orderedFieldEntries(q, obj) {
   return Object.entries(obj || {}).sort(([a], [b]) => idx(a) - idx(b));
 }
 
+// "12000 m³" (stored with a plain dot decimal) → "12.000 m³" in Turkish.
+function amountWithUnitText(q, value, lang) {
+  if (!q?.units || typeof value !== 'string') return null;
+  const m = /^(-?\d+(?:\.\d+)?)\s+(\S.*)$/.exec(value.trim());
+  if (!m) return null;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n)) return null;
+  return `${n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 })} ${m[2]}`;
+}
+
 function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
   if (!q || value === undefined || value === null || value === '') return '—';
   if (isAggregate && q.loopSource && typeof value === 'object' && !Array.isArray(value)) {
@@ -515,7 +568,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
   }
   if (q.type === 'single_select' || q.type === 'year_select' || q.type === 'equipment_loop' || q.type === 'fuel_loop' || q.type === 'section_picker') {
     const opt = q.options?.find(o => o.value === value);
-    return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || String(value)) : String(value);
+    return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || String(value)) : (amountWithUnitText(q, value, lang) ?? String(value));
   }
   if (q.type === 'compound' && q.repeatable) {
     const items = Array.isArray(value?.items) ? value.items : (Array.isArray(value) ? value : []);
@@ -545,7 +598,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
       })
       .join(' · ') || '—';
   }
-  return String(value);
+  return amountWithUnitText(q, value, lang) ?? String(value);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1443,9 +1496,16 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   //   • string[]  — one list for all items (e.g. ['kWh','MWh'])
   //   • object    — keyed by fuel/item type (e.g. { natural_gas: ['m³','kWh'] })
   const rawUnits = question?.units;
-  const unitList = rawUnits
+  let unitList = rawUnits
     ? (Array.isArray(rawUnits) ? rawUnits : (currentLoopItem ? (rawUnits[currentLoopItem] || []) : []))
     : [];
+  // unitFrom: the unit follows the data type picked for this item in an
+  // earlier question (3B-7 takes litre / km / ton-km from 3B-6).
+  if (question?.unitFrom && currentLoopItem && answers) {
+    const picked = loopItemValue(readAnswerValue(answers, question.unitFrom.questionId), currentLoopItem);
+    const only = question.unitFrom.map?.[picked];
+    if (only && unitList.includes(only)) unitList = [only];
+  }
 
   // Parse stored "amount unit" string back into parts when value has a space-separated unit.
   const parseStored = (v) => {
@@ -1576,9 +1636,12 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   }
 
   if (type === 'single_select') {
+    // An option with onlyForItems is offered only for those loop items
+    // (3B-6 "ton-km" only for goods vehicles, not for a passenger car).
+    const shown = (options || []).filter(o => !o.onlyForItems || !currentLoopItem || o.onlyForItems.includes(currentLoopItem));
     return (
       <div role="radiogroup" className="flex flex-wrap gap-2">
-        {(options || []).map(opt => (
+        {shown.map(opt => (
           <Chip
             key={opt.value}
             label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
@@ -1747,7 +1810,11 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   }
 
   if (type === 'compound') {
-    const fields = resolveFieldOptions(question.fields || [], answers);
+    // A document-year example follows this inventory's year ("Örn: 2024"),
+    // not a fixed 2023.
+    const invYear = String(readAnswerValue(answers, 'A4') || '').trim();
+    const fields = resolveFieldOptions(question.fields || [], answers).map(f =>
+      (f.id === 'ef_year' && /^\d{4}$/.test(invYear)) ? { ...f, placeholder: { tr: `Örn: ${invYear}`, en: `e.g. ${invYear}` } } : f);
     const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     const requiredFields = fields.filter(f => f.required !== false);
     // Fix #100: skip fields whose conditionalOn condition is not met — they are
@@ -1984,8 +2051,12 @@ function loopResumeState(q, answersMap) {
 function resumeQuestionId(stepId, answersMap) {
   const q = getQuestionById(stepId);
   if (!q || q.stage < 2) return stepId;
-  if (q.loopSource) {
-    const st = loopResumeState(q, answersMap);
+  // A per-item question whose list is empty but which was still asked and
+  // answered as a plain question (3D-EF after "no fugitive sources") steps
+  // on like any other answer — it used to be shown again on every reopen.
+  const loopSt = q.loopSource ? loopResumeState(q, answersMap) : null;
+  if (loopSt && (loopSt.items.length > 0 || !(answersMap && stepId in answersMap))) {
+    const st = loopSt;
     if (st.items.length === 0 || st.firstOpen !== -1) return stepId;
     let nextId = q.loopNext || q.next || null;
     // Same walk as finishing the loop: skip following loops that are already
@@ -2018,8 +2089,19 @@ function resumeQuestionId(stepId, answersMap) {
     nextId = getQuestionById('4-GİRİŞ')?.next || nextId;
   }
   if (q.type !== 'section_picker') {
+    // Per-item questions with nothing to loop over (3D-0 "none of these")
+    // are skipped, as submitting does — reopening used to land on 3D-2 and
+    // ask refrigerant details for zero sources. Like submitting, only the run
+    // of loop questions straight after this one (3D-EF, after a hidden
+    // question, is still asked).
+    let leadingLoops = true;
     while (nextId) {
       const candidate = getQuestionById(nextId);
+      if (leadingLoops && candidate?.loopSource && loopResumeState(candidate, answersMap).items.length === 0) {
+        nextId = candidate.loopNext || candidate.next || null;
+        continue;
+      }
+      leadingLoops = false;
       if (!candidate?.conditionalShow) break;
       if (conditionalShowMatches(candidate.conditionalShow, answersMap)) break;
       nextId = candidate.next || candidate.loopNext || null;
@@ -2040,13 +2122,25 @@ const BLOCK_LABELS = {
   'S1-B': { tr: 'Blok B — Faaliyet Profili', en: 'Block B — Activity Profile' },
   'S1-C': { tr: 'Blok C — Yapısal Bilgiler', en: 'Block C — Structural Info' },
   'S1-D': { tr: 'Blok D — Raporlama Tercihleri', en: 'Block D — Reporting Preferences' },
+  // A summary closes one block, not the whole stage: "Kapsam 1 — Özet —
+  // Tamamlandı" after stationary combustion read as if vehicles were done too.
+  'S2-2A': { tr: 'Tesisler — Özet', en: 'Facilities — Summary' },
+  'S2-2B': { tr: 'Kontrol Yaklaşımı — Özet', en: 'Control Approach — Summary' },
+  'S2-2C': { tr: 'Kontrol Dışı Tesisler — Özet', en: 'Facilities Outside Control — Summary' },
+  'S3-3A': { tr: 'Kapsam 1 · Sabit Yanma — Özet', en: 'Scope 1 · Stationary Combustion — Summary' },
+  'S3-3B': { tr: 'Kapsam 1 · Araçlar (Hareketli Yanma) — Özet', en: 'Scope 1 · Vehicles (Mobile Combustion) — Summary' },
+  'S3-3C': { tr: 'Kapsam 1 · Proses Emisyonları — Özet', en: 'Scope 1 · Process Emissions — Summary' },
+  'S3-3D': { tr: 'Kapsam 1 · Kaçak Emisyonlar — Özet', en: 'Scope 1 · Fugitive Emissions — Summary' },
+  'S4-4A': { tr: 'Kapsam 2 · Satın Alınan Elektrik — Özet', en: 'Scope 2 · Purchased Electricity — Summary' },
+  'S4-4B': { tr: 'Kapsam 2 · Satın Alınan Isı / Buhar / Soğutma — Özet', en: 'Scope 2 · Purchased Heat / Steam / Cooling — Summary' },
 };
 
 function getBlockLabel(blockId, stageId) {
   if (BLOCK_LABELS[blockId]) return BLOCK_LABELS[blockId];
   const stage = CARBONIQ_STAGES.find(s => s.id === stageId);
-  const name = stage ? (stage.title.tr || stage.title.en) : `Aşama ${stageId}`;
-  return { tr: `${name} — Özet`, en: `${name} — Summary` };
+  const nameTr = stage ? (stage.title.tr || stage.title.en) : `Aşama ${stageId}`;
+  const nameEn = stage ? (stage.title.en || stage.title.tr) : `Stage ${stageId}`;
+  return { tr: `${nameTr} — Özet`, en: `${nameEn} — Summary` };
 }
 
 function getBlockAnsweredQuestions(blockId, answers) {
@@ -2608,6 +2702,8 @@ export function QuestionnaireTab({
   const [showValidationError, setShowValidationError] = useState(false);
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
+  // Generic loop info messages already shown ("questionId|text"), so they appear once per loop.
+  const loopSysMsgShownRef = useRef(new Set());
   // blockSummaryState: shown at block/stage transitions; null when not active
   const [blockSummaryState, setBlockSummaryState] = useState(null);
   // On mobile sidebar starts closed; desktop starts open
@@ -2959,7 +3055,7 @@ export function QuestionnaireTab({
   // inventory's order, so "Tesis 1" stays the same site year to year.
   // Kept as state: on a resumed 2A-2 the lists arrive after the question
   // is already on screen, and must still fill it (see the effect below).
-  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], activities: {}, subsidiaries: [], loaded: false });
+  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], activities: {}, subsidiaries: [], selections: {}, previousYear: null, loaded: false });
   const registeredFacilitiesRef = useRef([]);
   // Read through a ref so callbacks created before the lists arrived (the
   // loop's next-item step) still see them.
@@ -2978,7 +3074,7 @@ export function QuestionnaireTab({
   const previousFacilitiesFetchedRef = useRef(false);
   useEffect(() => {
     if (!reportId || previousFacilitiesFetchedRef.current) return;
-    if (!['2A-1', '2A-2', '2A-3', '2A-4'].includes(currentId)) return;
+    if (!['2A-1', '2A-2', '2A-3', '2A-4', ...PREVIOUS_SELECTION_STEPS].includes(currentId)) return;
     previousFacilitiesFetchedRef.current = true;
     api.getPreviousCompanyProfile(reportId)
       .then(res => (res.ok ? res.json() : {}))
@@ -2989,12 +3085,23 @@ export function QuestionnaireTab({
           previous: Array.isArray(data?.previous_facilities) ? data.previous_facilities : [],
           activities: data?.previous_facility_activities && typeof data.previous_facility_activities === 'object' ? data.previous_facility_activities : {},
           subsidiaries: Array.isArray(data?.previous_subsidiaries) ? data.previous_subsidiaries : [],
+          selections: data?.previous_selections && typeof data.previous_selections === 'object' ? data.previous_selections : {},
+          previousYear: data?.previous_year || null,
           loaded: true,
         }));
       })
       .catch(() => setFacilitySources(prev => ({ ...prev, loaded: true })));
   }, [reportId, currentId]);
   const facilityPrefill = (q, index) => {
+    // 3A-2b: the site was just given in 3A-2 — a site declared outside
+    // operational control in 2B-OC1a starts on "no", any other on "yes".
+    if (q?.id === '3A-2b') {
+      const eq = readAnswerValue(answersRef.current, '3A-1');
+      const item = Array.isArray(eq) ? eq[index] : undefined;
+      const site = String(loopItemValue(readAnswerValue(answersRef.current, '3A-2'), item)?.site || '').trim();
+      if (!site) return undefined;
+      return noControlSites(answersRef.current).includes(site.toLocaleLowerCase('tr-TR')) ? 'no' : 'yes';
+    }
     // 2A-3 (what the facility does): last year's answer for the facility
     // with the same name, whatever its position.
     if (q?.id === '2A-3') {
@@ -3064,10 +3171,14 @@ export function QuestionnaireTab({
         existing = loopState.collected[item] ?? loopItemValue(answersRef.current[currentId], item)
           ?? facilityPrefill(currentQuestion, loopState.currentIndex);
       } else if (currentQuestion.loopSource) {
-        // The loop has not been (re)entered yet — e.g. on resume, where the
-        // resume effect starts it at item 0 in this same pass.
-        const firstItem = buildLoopItems(currentId, answersRef.current, lang)?.items?.[0];
-        existing = loopItemValue(answersRef.current[currentId], firstItem) ?? facilityPrefill(currentQuestion, 0);
+        // The loop has not been (re)entered yet — on resume, where the resume
+        // effect starts it at the first unanswered item in this same pass. Take
+        // that item's value: reading item 0 here pre-filled a half-answered
+        // loop's open item with the first item's answer (a second vehicle got
+        // the first one's count, site and size).
+        const { items: resumeItems, firstOpen } = loopResumeState(currentQuestion, answersRef.current);
+        const index = firstOpen >= 0 ? firstOpen : 0;
+        existing = loopItemValue(answersRef.current[currentId], resumeItems[index]) ?? facilityPrefill(currentQuestion, index);
       } else {
         existing = answersRef.current[currentId];
         // prefillFrom: the question repeats an earlier one (2A-1 asks the
@@ -3396,6 +3507,19 @@ export function QuestionnaireTab({
         }
       }
       const newCollected = { ...collected, [items[currentIndex]]: value };
+      // The per-answer info message (e.g. 3B-2 "operational lease → not
+      // Scope 1") — the loop path used to skip these entirely. A generic
+      // message is shown once per loop, not once per item.
+      const rawLoopSysMsg = getSystemMessage ? getSystemMessage(q, value, lang) : null;
+      const loopSysMsgKey = `${currentId}|${rawLoopSysMsg}`;
+      const genericMsg = q.systemMessages?.selected;
+      const genericText = genericMsg && typeof genericMsg === 'object' ? (genericMsg[lang] || genericMsg.en) : genericMsg;
+      const itemSpecificMsg = !!rawLoopSysMsg && rawLoopSysMsg !== genericText;
+      let loopSysMsg = null;
+      if (rawLoopSysMsg && (itemSpecificMsg || !loopSysMsgShownRef.current.has(loopSysMsgKey))) {
+        loopSysMsgShownRef.current.add(loopSysMsgKey);
+        loopSysMsg = items.length > 1 && itemSpecificMsg ? `**${itemLabel}:** ${rawLoopSysMsg}` : rawLoopSysMsg;
+      }
 
       // Show user bubble with item context
       const displayVal = getDisplayValue(q, value, lang);
@@ -3450,6 +3574,9 @@ export function QuestionnaireTab({
           typingTimerRef.current = null;
           if (!isMounted.current) return;
           setIsTyping(false);
+          if (loopSysMsg) {
+            setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'info', content: loopSysMsg }]);
+          }
           const loopText = stripDocLabels(q?.text?.[lang] || q?.text?.en || '');
           const loopHelper = q?.helper?.[lang] || q?.helper?.en || '';
           let content = `**${tr ? 'Soru' : 'Question'} ${q?.number}** _(${nextLabel})_\n\n${loopText}`;
@@ -3528,6 +3655,9 @@ export function QuestionnaireTab({
         setIsTyping(false);
         if (warning) {
           setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'warning', content: warning }]);
+        }
+        if (loopSysMsg) {
+          setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'info', content: loopSysMsg }]);
         }
         // Advance past loop, skipping any conditionalShow-hidden questions.
         // Use candidate.next (not getNextQuestionId) for the skip step — getNextQuestionId
@@ -4175,6 +4305,71 @@ export function QuestionnaireTab({
                       : `You have ${facilitySources.registered.length} registered ${facilitySources.registered.length === 1 ? 'facility' : 'facilities'}${facilitySources.previous.length ? `; your earlier inventory listed ${facilitySources.previous.length}` : ''}. If the number differs for this inventory's year, correct it.`}
                   </p>
                 )}
+                {/* Annual amounts: say which year they are for. */}
+                {['3A-5', '3B-7', '4A-1', '4B-2'].includes(currentId) && /^\d{4}$/.test(String(readAnswerValue(answers, 'A4') || '').trim()) && (
+                  <p className="text-xs text-[#175022]/60">
+                    {tr
+                      ? `Bu envanter ${String(readAnswerValue(answers, 'A4')).trim()} yılı içindir — 1 Ocak – 31 Aralık ${String(readAnswerValue(answers, 'A4')).trim()} toplamını girin.`
+                      : `This inventory is for ${String(readAnswerValue(answers, 'A4')).trim()} — enter the total for 1 January – 31 December ${String(readAnswerValue(answers, 'A4')).trim()}.`}
+                  </p>
+                )}
+                {/* 4A-1: the reminder 3B-5 promises for electric vehicles. */}
+                {currentId === '4A-1' && (() => {
+                  const fuels = readAnswerValue(answers, '3B-5');
+                  const evs = fuels && typeof fuels === 'object'
+                    ? Object.entries(fuels).filter(([, f]) => f === 'electric' || f === 'hybrid').map(([k]) => k) : [];
+                  if (!evs.length) return null;
+                  const vq = getQuestionById('3B-1');
+                  const names = evs.map(k => {
+                    const o = (vq?.options || []).find(x => x.value === k);
+                    return o ? stripOptionCode(o.label?.[lang] || o.label?.en || k) : k;
+                  });
+                  return (
+                    <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
+                      {tr
+                        ? `Hatırlatma: Soru 53'te elektrikli / hibrit araç belirttiniz (${names.join(', ')}). Tesislerinizde şarj ediliyorsa bu şarj elektriğinin burada girdiğiniz tüketime dahil olduğundan emin olun.`
+                        : `Reminder: in Question 53 you listed electric / hybrid vehicles (${names.join(', ')}). If they are charged at your facilities, make sure that charging electricity is included in the consumption you enter here.`}
+                    </p>
+                  );
+                })()}
+                {/* Supplier EF forms: the unit does not fit the consumption entered. */}
+                {EF_SOURCE_STEP[currentId] && (() => {
+                  const units = efUnitMismatch(currentId, answerValue?.ef_unit, answers);
+                  if (!units) return null;
+                  const opt = (currentQuestion?.fields || []).find(f => f.id === 'ef_unit')?.options?.find(o => o.value === answerValue.ef_unit);
+                  const efLabel = opt ? (opt.label?.[lang] || opt.label?.en) : answerValue.ef_unit;
+                  return (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                      {tr
+                        ? `Seçtiğiniz birim (${efLabel}) tüketimi girdiğiniz birimle (${units.join(', ')}) uyuşmuyor. Belgedeki birimi kontrol edin.`
+                        : `The unit you chose (${efLabel}) does not match the unit you entered consumption in (${units.join(', ')}). Check the unit on the document.`}
+                    </p>
+                  );
+                })()}
+                {/* 3A-2: a site the user put outside operational control in 28a. */}
+                {currentId === '3A-2' && answerValue?.site && noControlSites(answers).includes(String(answerValue.site).trim().toLocaleLowerCase('tr-TR')) && (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                    {tr
+                      ? `"${String(answerValue.site).trim()}" tesisini Soru 28a'da işletme kontrolünüz dışında olarak belirttiniz. Doğruysa devam edin — sonraki soruda bu ekipman için "Hayır" seçili gelecek.`
+                      : `You marked "${String(answerValue.site).trim()}" as outside your operational control in Question 28a. If that is right, continue — the next question will start on "No" for this equipment.`}
+                  </p>
+                )}
+                {/* 3A-1/3B-1/3C-1/3D-0: what the earlier inventory listed, as a
+                    reminder only — nothing is pre-selected for a new year. */}
+                {PREVIOUS_SELECTION_STEPS.includes(currentId) && currentQuestion && (facilitySources.selections[currentId] || []).length > 0 && (() => {
+                  const labels = facilitySources.selections[currentId].map(v => {
+                    const opt = (currentQuestion.options || []).find(o => o.value === v);
+                    return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || v) : v;
+                  });
+                  const yr = facilitySources.previousYear;
+                  return (
+                    <p className="text-xs text-[#175022]/60">
+                      {tr
+                        ? `Önceki envanterinizde${yr ? ` (${yr})` : ''} seçtikleriniz: ${labels.join(', ')}. Bu yıl da varsa yeniden seçin.`
+                        : `Your earlier inventory${yr ? ` (${yr})` : ''} listed: ${labels.join(', ')}. Select them again if they still apply this year.`}
+                    </p>
+                  );
+                })()}
                 {currentId === 'B4' && previousProfile?.facility_count > 0 && (() => {
                   const n = previousProfile.facility_count;
                   const year = readAnswerValue(answers, 'A4');

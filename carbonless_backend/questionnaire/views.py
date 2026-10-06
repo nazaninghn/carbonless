@@ -789,6 +789,8 @@ class PreviousCompanyProfileView(APIView):
                 'previous_facilities': [],
                 'previous_facility_activities': {},
                 'previous_subsidiaries': [],
+                'previous_selections': {},
+                'previous_year': None,
             })
 
         # The earlier report's answers win; anything it never answered falls
@@ -819,7 +821,27 @@ class PreviousCompanyProfileView(APIView):
             'previous_facilities': _previous_facilities(source),
             'previous_facility_activities': activities,
             'previous_subsidiaries': subsidiaries,
+            # Which equipment / vehicle / process / fugitive sources the
+            # earlier inventory listed — shown as a reminder next to the
+            # question, never pre-selected (each year is answered on its own).
+            'previous_selections': _previous_selections(source),
+            'previous_year': source.reporting_year,
         })
+
+
+# Source-list questions whose earlier answer is worth a reminder in a new year.
+PREVIOUS_SELECTION_STEPS = ('3A-1', '3B-1', '3C-1', '3D-0')
+
+
+def _previous_selections(source):
+    out = {}
+    for step in source.steps.filter(step_id__in=PREVIOUS_SELECTION_STEPS, is_skipped=False):
+        answer = step.answer.get('answer') if isinstance(step.answer, dict) else step.answer
+        if isinstance(answer, list):
+            values = [str(v) for v in answer if isinstance(v, (str, int))]
+            if values:
+                out[step.step_id] = values
+    return out
 
 
 class ReuseCompanyProfileView(APIView):
