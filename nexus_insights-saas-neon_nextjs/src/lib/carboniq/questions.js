@@ -4257,7 +4257,7 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'CG-08', label: { tr: 'CG-08 — Diğer sermaye malları', en: 'CG-08 — Other capital goods' } },
         ],
       },
-      { id: 'purchase_year', type: 'numeric', required: true, label: { tr: 'Satın alma yılı', en: 'Purchase year' } },
+      { id: 'purchase_year', type: 'numeric', format: 'year', required: true, label: { tr: 'Satın alma yılı', en: 'Purchase year' } },
       { id: 'spend_amount', type: 'numeric', required: true, label: { tr: 'Harcama tutarı', en: 'Spend amount' } },
       { id: 'currency', type: 'select', required: true, label: { tr: 'Para birimi', en: 'Currency' }, options: [{ value: 'TL' }, { value: 'USD' }, { value: 'EUR' }] },
     ],
@@ -4284,15 +4284,15 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat3.confirmed',
     text: {
-      tr: 'Kategori 3 otomatik hesaplandı — onayınızı bekliyoruz.',
-      en: 'Category 3 calculated automatically — please confirm.',
+      tr: 'Kategori 3 (yakıt ve enerji ile ilgili faaliyetler) bu yöntemle hesaplansın mı?',
+      en: 'Should Category 3 (fuel- and energy-related activities) be calculated this way?',
     },
     helper: {
-      tr: 'Kapsam 1 yakıt verilerinizden DEFRA WTT faktörleri, Kapsam 2 elektrik verilerinizden IEA T&D kayıp oranları kullanılarak Kategori 3 otomatik hesaplandı.',
-      en: 'Category 3 was automatically calculated using DEFRA WTT factors from your Scope 1 fuel data and IEA T&D loss rates from your Scope 2 electricity data.',
+      tr: 'Kategori 3, Kapsam 1 yakıt verilerinizden DEFRA WTT faktörleri ve Kapsam 2 elektrik verilerinizden IEA T&D kayıp oranları kullanılarak hesaplanacak.',
+      en: 'Category 3 will be calculated with DEFRA WTT factors from your Scope 1 fuel data and IEA T&D loss rates from your Scope 2 electricity data.',
     },
     options: [
-      { value: 'confirmed', label: { tr: 'Evet, doğru — onayla', en: 'Yes, correct — confirm' } },
+      { value: 'confirmed', label: { tr: 'Evet — bu yöntemle devam et', en: 'Yes — continue with this method' } },
       { value: 'custom', label: { tr: 'Hayır, farklı bir WTT/T&D faktörü kullanmak istiyorum', en: 'No, I want to use a different WTT/T&D factor' } },
     ],
     systemMessages: {
@@ -4361,12 +4361,66 @@ export const CARBONIQ_QUESTIONS = [
     // data level the user has, then jumped straight to Waste with no shipment
     // data ever captured. Question Map: k3c4_transport_mode/load/distance are
     // all "required" fields that this question alone can't satisfy.
-    nextByValue: { S1: 'K3C4-2', S2: 'K3C4-2', S3: 'K3C4-2b' },
+    nextByValue: { S1: 'K3C4-2c', S2: 'K3C4-2', S3: 'K3C4-2b' },
+  },
+  {
+    // "GLEC/ISO 14083 raporu var — Seviye 1" used to open the same tonne-km
+    // form as Level 2, and the report itself was never asked for. Collected
+    // only; the shipment rows (K3C4-2) that follow are unchanged.
+    id: 'K3C4-2c',
+    number: '90a',
+    stage: 5,
+    block: '5D',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    conditionalShow: { questionId: 'K3C4-1', equals: 'S1' },
+    reportField: 'scope3.cat4.glec_report',
+    text: {
+      tr: 'Lojistik firmasının GLEC / ISO 14083 emisyon raporunun bilgilerini girin',
+      en: "Enter the details of the logistics company's GLEC / ISO 14083 emission report",
+    },
+    helper: {
+      tr: 'Raporu hazırlayan firmayı, rapordaki toplam emisyonu ve raporun yılını girin. Ardından sevkiyat bilgilerini de soracağız.',
+      en: 'Enter the company that issued the report, the total emissions in it and the report year. Shipment details are asked next.',
+    },
+    fields: [
+      {
+        id: 'provider',
+        format: 'name',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Lojistik firması', en: 'Logistics company' },
+        placeholder: { tr: 'Örn: XYZ Lojistik A.Ş.', en: 'e.g. XYZ Logistics Ltd.' },
+      },
+      {
+        id: 'total_tco2e',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Rapordaki toplam emisyon (t CO₂e)', en: 'Total emissions in the report (t CO₂e)' },
+        placeholder: { tr: 'Örn: 12,5', en: 'e.g. 12.5' },
+      },
+      {
+        id: 'year',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        format: 'year',
+        label: { tr: 'Rapor yılı', en: 'Report year' },
+        placeholder: { tr: 'Örn: 2024', en: 'e.g. 2024' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüm rapor alanlarını doldurun.', en: 'Please fill in all report fields.' },
+    },
+    next: 'K3C4-2',
   },
   {
     // repeatable: a company ships via more than one mode/route over a year.
     id: 'K3C4-2',
-    number: '90a',
+    number: '90b',
     stage: 5,
     block: '5D',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4386,7 +4440,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'transport_mode', type: 'select', required: true, label: { tr: 'Taşıma modu', en: 'Transport mode' }, options: TM_OPTIONS },
       { id: 'load_tonne', type: 'numeric', required: true, label: { tr: 'Yük (ton)', en: 'Load (tonnes)' } },
       { id: 'distance_km', type: 'numeric', required: true, label: { tr: 'Mesafe (km)', en: 'Distance (km)' } },
-      { id: 'load_factor_pct', type: 'numeric', required: false, label: { tr: 'Doluluk oranı (%) — opsiyonel', en: 'Load factor (%) — optional' } },
+      { id: 'load_factor_pct', type: 'numeric', format: 'percent', required: false, label: { tr: 'Doluluk oranı (%) — opsiyonel', en: 'Load factor (%) — optional' } },
     ],
     systemMessages: {
       selected: {
@@ -4403,7 +4457,7 @@ export const CARBONIQ_QUESTIONS = [
     // field into that compound, to avoid mixing two mutually-exclusive data
     // models (activity-based vs. spend-based) into one entry schema.
     id: 'K3C4-2b',
-    number: '90b',
+    number: '90c',
     stage: 5,
     block: '5D',
     isoRef: 'ISO 14064-1 §5.4',
@@ -6312,6 +6366,18 @@ function validateCompoundFields(fields, obj, lang) {
           message: lang === 'tr'
             ? `"${flabel}" 1990 ile ${CURRENT_YEAR} arasında 4 haneli bir yıl olmalıdır.`
             : `"${flabel}" must be a 4-digit year between 1990 and ${CURRENT_YEAR}.`,
+        };
+      }
+    }
+    if (field.format === 'percent') {
+      const pct = parseLocalizedNumber(fv);
+      if (!Number.isNaN(pct) && (pct < 0 || pct > 100)) {
+        const flabel = field.label?.[lang] || field.label?.en || field.id;
+        return {
+          ok: false,
+          message: lang === 'tr'
+            ? `"${flabel}" 0 ile 100 arasında olmalıdır.`
+            : `"${flabel}" must be between 0 and 100.`,
         };
       }
     }

@@ -93,6 +93,10 @@ _MESSAGES = {
         'en': '{prefix}Expected a 4-digit year, got {value!r}.',
         'tr': '{prefix}4 haneli bir yıl bekleniyor, girilen: {value!r}.',
     },
+    'percent_range': {
+        'en': '{prefix}Must be between 0 and 100.',
+        'tr': '{prefix}0 ile 100 arasında olmalıdır.',
+    },
     'name_needs_letter': {
         'en': "{prefix}Enter the supplier's or report's name.",
         'tr': '{prefix}Tedarikçinin veya raporun adını yazın.',
@@ -329,7 +333,8 @@ def _validate_compound_item(obj, fields, prefix='', enforce_required=True, lang=
 def _validate_field_format(value, f, prefix, lang):
     """`format` on a compound field (mirrors validateCompoundFields):
     'year' — a 4-digit year from 1990 to this year (a document's declaration
-    year); 'name' — contains at least one letter (a supplier/report name)."""
+    year); 'percent' — 0 to 100; 'name' — contains at least one letter (a
+    supplier/report name)."""
     fmt = f.get('format')
     if fmt == 'year':
         from django.utils import timezone
@@ -341,6 +346,13 @@ def _validate_field_format(value, f, prefix, lang):
             return _msg(lang, 'year_min', prefix=prefix, n=1990)
         if year > timezone.now().year:
             return _msg(lang, 'year_max', prefix=prefix, n=timezone.now().year)
+    elif fmt == 'percent':
+        try:
+            pct = float(str(value).replace(',', '.'))
+        except ValueError:
+            return None  # the numeric check reports non-numbers
+        if pct < 0 or pct > 100:
+            return _msg(lang, 'percent_range', prefix=prefix)
     elif fmt == 'name':
         if not any(ch.isalpha() for ch in str(value)):
             return _msg(lang, 'name_needs_letter', prefix=prefix)
