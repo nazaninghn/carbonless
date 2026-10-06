@@ -831,3 +831,12 @@ class SupplierEFDocumentTests(TestCase):
         from .carboniq_validation import validate_generic_step
         for ref in ('AR6', 'AR5', 'AR4'):
             self.assertEqual(validate_generic_step('3D-EF', {'answer': {'EQ-3D-01': ref}}, lang='tr'), (True, None))
+
+    def test_scope2_and_cat1_declaration_forms(self):
+        from .carboniq_validation import validate_generic_step
+        elec = {'answer': {'ef_value': '0.41', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ Elektrik', 'ef_year': '2024'}}
+        self.assertEqual(validate_generic_step('4A-EF-a', elec, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('4B-EF-a', {'answer': {**elec['answer'], 'ef_year': '24'}}, lang='tr')[0])
+        pcf = {'answer': {'supplier': 'XYZ Ambalaj', 'value': '1.25', 'unit': 'kgCO2e_kg', 'year': '2024'}}
+        self.assertEqual(validate_generic_step('K3C1-4a', pcf, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C1-3a', {'answer': {'SC-01': '12000 kg'}}, lang='tr'), (True, None))

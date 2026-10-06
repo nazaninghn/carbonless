@@ -3343,8 +3343,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope2.facility_shared_building',
     text: {
-      tr: '[Tesis adı] — Bu tesis paylaşımlı veya kiralık bir binada mı?',
-      en: '[Site name] — Is this site located in a shared or rented building?',
+      tr: 'Tesislerinizden biri veya birkaçı paylaşımlı ya da kiralık bir binada mı?',
+      en: 'Are any of your sites in a shared or rented building?',
     },
     helper: {
       tr: 'Ofis binanızı başka şirketlerle paylaşıyorsanız veya kiracıysanız \'Evet\' seçin. Tüketim payını bina yönetiminden belgesiyle veya metrekare oranıyla hesaplayacağız.',
@@ -3421,16 +3421,16 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: '4A-2a', equals: 'yes' },
     reportField: 'scope2.building_mgmt_kwh',
     text: {
-      tr: '[Belge var] Bina yönetiminin beyan ettiği tüketim payı (kWh) nedir?',
-      en: '[Document available] What is the consumption share declared by building management (kWh)?',
+      tr: 'Bina yönetiminin beyan ettiği yıllık tüketim payınız (kWh) nedir?',
+      en: 'What annual consumption share (kWh) has building management declared for you?',
     },
     placeholder: {
       tr: 'Örn: 18.500 kWh',
       en: 'Example: 18,500 kWh',
     },
     helper: {
-      tr: 'Bina yönetiminin size ilettiği yıllık kWh değerini girin. Bu değer 4A-1\'de girdiğinizin üzerine yazacak.',
-      en: 'Enter the annual kWh value communicated to you by building management. This value will overwrite what you entered in 4A-1.',
+      tr: 'Paylaşımlı binadaki tesisiniz için bina yönetiminin size ilettiği yıllık kWh değerini girin. Değer yanıtlarınızla birlikte kaydedilir.',
+      en: 'Enter the annual kWh value building management communicated for your site in the shared building. It is saved with your answers.',
     },
     systemMessages: {
       higher: {
@@ -3572,7 +3572,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope2.supplier_ef_declaration',
     text: {
-      tr: '[Tesis adı] — Elektrik tedarikçinizin resmi emisyon beyanı var mı?',
+      tr: 'Elektrik tedarikçinizin resmi emisyon beyanı var mı?',
       en: '[Site name] — Does your electricity supplier have an official emission declaration?',
     },
     helper: {
@@ -3595,6 +3595,74 @@ export const CARBONIQ_QUESTIONS = [
     },
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
+    },
+    nextByValue: {
+      yes: '4A-EF-a',
+      no: '4B-0',
+    },
+    next: '4B-0',
+  },
+  {
+    // "Evet" on 4A-EF used to lead nowhere — the document was never asked
+    // for. Collected only, like 3A-EF-a; no factor is applied from it here.
+    id: '4A-EF-a',
+    number: '76a',
+    stage: 4,
+    block: '4A',
+    isoRef: 'ISO 14064-1 §5.3',
+    type: 'compound',
+    required: true,
+    reportField: 'scope2.supplier_ef_document',
+    conditionalShow: { questionId: '4A-EF', equals: 'yes' },
+    text: {
+      tr: 'Tedarikçi emisyon beyanının bilgilerini girin',
+      en: 'Enter the supplier emission declaration details',
+    },
+    helper: {
+      tr: 'Elektrik tedarikçinizin beyanındaki emisyon faktörünü, birimini, belge adını ve yılını girin. Bu bilgiler raporunuzda belgelenir.',
+      en: 'Enter the emission factor, its unit, the document name and year from the electricity supplier declaration. This is documented in your report.',
+    },
+    fields: [
+      {
+        id: 'ef_value',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Emisyon faktörü değeri', en: 'Emission factor value' },
+        placeholder: { tr: 'Örn: 0.2023', en: 'e.g. 0.2023' },
+      },
+      {
+        id: 'ef_unit',
+        type: 'select',
+        required: true,
+        label: { tr: 'Birim', en: 'Unit' },
+        options: [
+          { value: 'kgCO2e_kWh', label: { tr: 'kg CO₂e / kWh', en: 'kg CO₂e / kWh' } },
+          { value: 'kgCO2e_MWh', label: { tr: 'kg CO₂e / MWh', en: 'kg CO₂e / MWh' } },
+          { value: 'other', label: { tr: 'Diğer', en: 'Other' } },
+        ],
+      },
+      {
+        id: 'ef_source',
+        format: 'name',
+        type: 'text',
+        required: true,
+        label: { tr: 'Belge kaynağı (tedarikçi / rapor adı)', en: 'Document source (supplier / report name)' },
+        placeholder: { tr: 'Örn: XYZ Elektrik A.Ş. — Emisyon Beyanı 2023', en: 'e.g. XYZ Electricity Ltd. — Emission Declaration 2023' },
+        maxLength: 200,
+      },
+      {
+        id: 'ef_year',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        format: 'year',
+        label: { tr: 'Beyan yılı', en: 'Declaration year' },
+        placeholder: { tr: 'Örn: 2023', en: 'e.g. 2023' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüm beyan alanlarını doldurun.', en: 'Please fill in all declaration fields.' },
     },
     next: '4B-0',
   },
@@ -3712,7 +3780,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope2.heat_supplier_ef_declaration',
     text: {
-      tr: '[Enerji türü] için tedarikçinin emisyon beyanı var mı?',
+      tr: 'Satın aldığınız ısı, buhar veya soğutma için tedarikçinin emisyon beyanı var mı?',
       en: '[Energy type] — Does your supplier have an emission declaration?',
     },
     helper: {
@@ -3732,6 +3800,75 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' },
     },
+    nextByValue: {
+      yes: '4B-EF-a',
+      no: '4C-1',
+    },
+    next: '4C-1',
+  },
+  {
+    // "Evet" on 4B-EF used to lead nowhere — the document was never asked
+    // for. Collected only, like 3A-EF-a; no factor is applied from it here.
+    id: '4B-EF-a',
+    number: '79a',
+    stage: 4,
+    block: '4B',
+    isoRef: 'ISO 14064-1 §5.3',
+    type: 'compound',
+    required: true,
+    reportField: 'scope2.heat_supplier_ef_document',
+    conditionalShow: { questionId: '4B-EF', equals: 'yes' },
+    text: {
+      tr: 'Tedarikçi emisyon beyanının bilgilerini girin',
+      en: 'Enter the supplier emission declaration details',
+    },
+    helper: {
+      tr: 'Isı/buhar tedarikçinizin beyanındaki emisyon faktörünü, birimini, belge adını ve yılını girin. Bu bilgiler raporunuzda belgelenir.',
+      en: 'Enter the emission factor, its unit, the document name and year from the heat/steam supplier declaration. This is documented in your report.',
+    },
+    fields: [
+      {
+        id: 'ef_value',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Emisyon faktörü değeri', en: 'Emission factor value' },
+        placeholder: { tr: 'Örn: 0.2023', en: 'e.g. 0.2023' },
+      },
+      {
+        id: 'ef_unit',
+        type: 'select',
+        required: true,
+        label: { tr: 'Birim', en: 'Unit' },
+        options: [
+          { value: 'kgCO2e_GJ', label: { tr: 'kg CO₂e / GJ', en: 'kg CO₂e / GJ' } },
+          { value: 'kgCO2e_MWh', label: { tr: 'kg CO₂e / MWh', en: 'kg CO₂e / MWh' } },
+          { value: 'kgCO2e_kWh', label: { tr: 'kg CO₂e / kWh', en: 'kg CO₂e / kWh' } },
+          { value: 'other', label: { tr: 'Diğer', en: 'Other' } },
+        ],
+      },
+      {
+        id: 'ef_source',
+        format: 'name',
+        type: 'text',
+        required: true,
+        label: { tr: 'Belge kaynağı (tedarikçi / rapor adı)', en: 'Document source (supplier / report name)' },
+        placeholder: { tr: 'Örn: XYZ Isı Dağıtım A.Ş. — Emisyon Beyanı 2023', en: 'e.g. XYZ District Heating — Emission Declaration 2023' },
+        maxLength: 200,
+      },
+      {
+        id: 'ef_year',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        format: 'year',
+        label: { tr: 'Beyan yılı', en: 'Declaration year' },
+        placeholder: { tr: 'Örn: 2023', en: 'e.g. 2023' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüm beyan alanlarını doldurun.', en: 'Please fill in all declaration fields.' },
+    },
     next: '4C-1',
   },
   {
@@ -3742,13 +3879,15 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.3',
     type: 'single_select',
     required: true,
+    // The questionnaire renders Scope2SummaryTable (entered amounts) under it.
+    showSummaryTable: 'scope2',
     reportField: 'scope2.confirmed',
     text: {
       tr: 'Kapsam 2 özeti: Tespit edilen enerji kaynakları ve miktarlar doğru mu?',
       en: 'Scope 2 summary: Are the identified energy sources and quantities correct?',
     },
     helper: {
-      tr: 'Tüm Kapsam 2 kaynaklarınız ve hesaplanan emisyonlar aşağıda. Yanlış veya eksik bir şey varsa düzenleyebilirsiniz.',
+      tr: 'Kapsam 2 için girdiğiniz enerji kaynakları ve miktarlar aşağıda. Yanlış veya eksik bir şey varsa düzenleyebilirsiniz.',
       en: 'All your Scope 2 sources and calculated emissions are shown below. You can edit if anything is incorrect or missing.',
     },
     options: [
@@ -3759,8 +3898,8 @@ export const CARBONIQ_QUESTIONS = [
     ],
     systemMessages: {
       confirmed: {
-        tr: 'Kapsam 2 tamamlandı! Toplam: [X tCO₂e] ([N] tesis, [enerji türleri]). Veri kalitesi: %[S1] Seviye 1 · %[S2] Seviye 2 · %[S3] Seviye 3. Şimdi Kapsam 3 — değer zinciri emisyonlarına geçiyoruz.',
-        en: 'Scope 2 complete! Total: [X tCO₂e] ([N] sites, [energy types]). Data quality: [S1]% Level 1 · [S2]% Level 2 · [S3]% Level 3. Moving to Scope 3 — value chain emissions.',
+        tr: 'Kapsam 2 tamamlandı! Şimdi Kapsam 3 — değer zinciri emisyonlarına geçiyoruz.',
+        en: 'Scope 2 complete! Moving to Scope 3 — value chain emissions.',
       },
       scope3cat3: {
         tr: 'Not: Kapsam 2 verilerinizden Kapsam 3 Kategori 3 (enerji ilişkili emisyonlar) otomatik hesaplanacak. Ayrıca veri girmenize gerek yok.',
@@ -3916,6 +4055,39 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'yes', label: { tr: 'Evet — miktar biliyorum (Seviye 2)', en: 'Yes — I have quantity data (Level 2)' } },
       { value: 'no', label: { tr: 'Hayır — harcama yeterli (Seviye 3)', en: 'No — spend data is sufficient (Level 3)' } },
     ],
+    nextByValue: {
+      yes: 'K3C1-3a',
+      no: 'K3C1-4',
+    },
+    next: 'K3C1-4',
+  },
+  {
+    // "Evet — miktar biliyorum" used to lead nowhere. Collected per category
+    // (same loop as K3C1-2); nothing is calculated from it here.
+    id: 'K3C1-3a',
+    number: '84a',
+    stage: 5,
+    block: '5A',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'equipment_loop',
+    loopSource: 'K3C1-1',
+    loopNext: 'K3C1-4',
+    required: true,
+    conditionalShow: { questionId: 'K3C1-3', equals: 'yes' },
+    reportField: 'scope3.cat1.quantity',
+    text: {
+      tr: '[Kategori] — Raporlama yılında satın alınan miktar nedir?',
+      en: '[Category] — What quantity was purchased in the reporting year?',
+    },
+    placeholder: { tr: 'Örn: 12.000', en: 'e.g. 12,000' },
+    helper: {
+      tr: 'Bu kategoride yıl içinde satın aldığınız toplam miktarı girin ve birimini seçin.',
+      en: 'Enter the total quantity purchased in this category during the year and pick its unit.',
+    },
+    units: ['kg', 'ton', 'adet', 'm²', 'm³', 'litre'],
+    validate: {
+      requiredMessage: { tr: 'Lütfen miktarı girin.', en: 'Please enter the quantity.' },
+    },
     next: 'K3C1-4',
   },
   {
@@ -3949,6 +4121,75 @@ export const CARBONIQ_QUESTIONS = [
         tr: 'Bu tedarikçinin beyanı S3 tahmininden çok yüksek. Beyan değerini ve kaynağını kontrol etmenizi öneririz.',
         en: 'This supplier\'s declaration is much higher than the Level 3 estimate. We recommend verifying the declaration value and source.',
       },
+    },
+    nextByValue: {
+      yes: 'K3C1-4a',
+      no: 'K3C2-0',
+    },
+    next: 'K3C2-0',
+  },
+  {
+    // "Evet — tedarikçi beyanı var" said "girin" but there was nothing to fill
+    // in. Collected only; nothing is calculated from it here.
+    id: 'K3C1-4a',
+    number: '85a',
+    stage: 5,
+    block: '5A',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    conditionalShow: { questionId: 'K3C1-4', equals: 'yes' },
+    reportField: 'scope3.cat1.supplier_declaration_document',
+    text: {
+      tr: 'Tedarikçi emisyon beyanının bilgilerini girin',
+      en: 'Enter the supplier emission declaration details',
+    },
+    helper: {
+      tr: 'PCF belgesi, EPD veya tedarikçi GHG raporundaki değeri, birimini, tedarikçi adını ve yılını girin.',
+      en: "Enter the value, its unit, the supplier's name and the year from the PCF, EPD or supplier GHG report.",
+    },
+    fields: [
+      {
+        id: 'supplier',
+        format: 'name',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Tedarikçi / belge adı', en: 'Supplier / document name' },
+        placeholder: { tr: 'Örn: XYZ Ambalaj A.Ş. — EPD 2024', en: 'e.g. XYZ Packaging Ltd. — EPD 2024' },
+      },
+      {
+        id: 'value',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Beyan edilen değer', en: 'Declared value' },
+        placeholder: { tr: 'Örn: 1,25', en: 'e.g. 1.25' },
+      },
+      {
+        id: 'unit',
+        type: 'select',
+        required: true,
+        label: { tr: 'Birim', en: 'Unit' },
+        options: [
+          { value: 'tCO2e_total', label: { tr: 't CO₂e (toplam)', en: 't CO₂e (total)' } },
+          { value: 'kgCO2e_kg', label: { tr: 'kg CO₂e / kg', en: 'kg CO₂e / kg' } },
+          { value: 'kgCO2e_unit', label: { tr: 'kg CO₂e / adet', en: 'kg CO₂e / unit' } },
+          { value: 'other', label: { tr: 'Diğer', en: 'Other' } },
+        ],
+      },
+      {
+        id: 'year',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        format: 'year',
+        label: { tr: 'Beyan yılı', en: 'Declaration year' },
+        placeholder: { tr: 'Örn: 2024', en: 'e.g. 2024' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüm beyan alanlarını doldurun.', en: 'Please fill in all declaration fields.' },
     },
     next: 'K3C2-0',
   },
@@ -5107,8 +5348,8 @@ export const CARBONIQ_QUESTIONS = [
     },
     systemMessages: {
       success: {
-        tr: 'Kapsam 3 tamamlandı! Toplam: [X tCO₂e] ([N] kategori aktif). Veri kalitesi: %[S1] Seviye 1 · %[S2] Seviye 2 · %[S3] Seviye 3. En büyük kategori: [Kat.N] — [tCO₂e].',
-        en: 'Scope 3 complete! Total: [X tCO₂e] ([N] categories active). Data quality: [S1]% Level 1 · [S2]% Level 2 · [S3]% Level 3. Largest category: [Cat.N] — [tCO₂e].',
+        tr: 'Kapsam 3 tamamlandı!',
+        en: 'Scope 3 complete!',
       },
       high_s3_ratio: {
         tr: 'Verilerinizin %[X]\'i Seviye 3 (harcama bazlı tahmin). Raporunuzu iyileştirmek için hangi kategorilerde tedarikçi verisi toplayabileceğinizi görmek ister misiniz?',
