@@ -47,6 +47,7 @@ import {
   normalizeCarbonIQNumbers,
   readAnswerValue,
   resolveFieldOptions,
+  employeeCountWarning,
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
 import { fixed } from '@/lib/formatNumber';
@@ -3368,6 +3369,7 @@ export function QuestionnaireTab({
     const warning = [
       getQuestionWarning ? getQuestionWarning(q, value, lang) : null,
       q.id === 'A4' ? sameYearWarning(value) : null,
+      employeeCountWarning(q, value, newAnswers, lang),
     ].filter(Boolean).join('\n\n') || null;
     // getSystemMessage resolves the contextual info message for the selected answer (if any).
     // These are defined on 50+ questions (systemMessages) but were previously never displayed.

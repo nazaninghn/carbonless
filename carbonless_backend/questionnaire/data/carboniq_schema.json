@@ -15,7 +15,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A2": {
     "id": "A2",
@@ -33,7 +34,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A3": {
     "id": "A3",
@@ -57,7 +59,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A4": {
     "id": "A4",
@@ -83,7 +86,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A5": {
     "id": "A5",
@@ -101,7 +105,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A6": {
     "id": "A6",
@@ -125,7 +130,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A7": {
     "id": "A7",
@@ -147,7 +153,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A7a": {
     "id": "A7a",
@@ -177,7 +184,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "A7b": {
     "id": "A7b",
@@ -284,7 +292,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "B1": {
     "id": "B1",
@@ -322,7 +331,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "B2": {
     "id": "B2",
@@ -340,7 +350,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "B3": {
     "id": "B3",
@@ -364,7 +375,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "B4": {
     "id": "B4",
@@ -382,7 +394,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "B5": {
     "id": "B5",
@@ -408,7 +421,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "B6": {
     "id": "B6",
@@ -433,7 +447,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "C1": {
     "id": "C1",
@@ -454,7 +469,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "C2": {
     "id": "C2",
@@ -475,7 +491,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "C3": {
     "id": "C3",
@@ -496,7 +513,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "D1": {
     "id": "D1",
@@ -520,7 +538,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "D2": {
     "id": "D2",
@@ -538,7 +557,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "D3": {
     "id": "D3",
@@ -560,7 +580,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "D4": {
     "id": "D4",
@@ -581,7 +602,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2A-0": {
     "id": "2A-0",
@@ -599,7 +621,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2A-1": {
     "id": "2A-1",
@@ -617,7 +640,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2A-2": {
     "id": "2A-2",
@@ -730,7 +754,8 @@
           "SY"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "2A-3": {
     "id": "2A-3",
@@ -748,7 +773,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2A-4": {
     "id": "2A-4",
@@ -861,7 +887,8 @@
           "SY"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "2A-5": {
     "id": "2A-5",
@@ -881,7 +908,8 @@
     ],
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2B-OC1": {
     "id": "2B-OC1",
@@ -902,7 +930,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2B-OC2": {
     "id": "2B-OC2",
@@ -924,7 +953,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2B-FC1": {
     "id": "2B-FC1",
@@ -945,7 +975,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2B-FC2": {
     "id": "2B-FC2",
@@ -966,7 +997,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2B-EQ1": {
     "id": "2B-EQ1",
@@ -986,7 +1018,8 @@
     ],
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2C-1": {
     "id": "2C-1",
@@ -1011,7 +1044,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2C-2": {
     "id": "2C-2",
@@ -1034,7 +1068,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "2C-3": {
     "id": "2C-3",
@@ -1056,7 +1091,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "SCOPE-GROUPING": {
     "id": "SCOPE-GROUPING",
@@ -1077,7 +1113,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3-GİRİŞ": {
     "id": "3-GİRİŞ",
@@ -1095,7 +1132,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-0": {
     "id": "3A-0",
@@ -1116,7 +1154,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-1": {
     "id": "3A-1",
@@ -1161,7 +1200,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-1a": {
     "id": "3A-1a",
@@ -1179,7 +1219,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-2b": {
     "id": "3A-2b",
@@ -1200,7 +1241,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-2": {
     "id": "3A-2",
@@ -1241,7 +1283,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3A-3": {
     "id": "3A-3",
@@ -1265,7 +1308,8 @@
     ],
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-4": {
     "id": "3A-4",
@@ -1291,7 +1335,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-5": {
     "id": "3A-5",
@@ -1338,7 +1383,8 @@
     },
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-6": {
     "id": "3A-6",
@@ -1360,7 +1406,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-6a": {
     "id": "3A-6a",
@@ -1378,7 +1425,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-EF": {
     "id": "3A-EF",
@@ -1399,7 +1447,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3A-EF-a": {
     "id": "3A-EF-a",
@@ -1468,7 +1517,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3B-0": {
     "id": "3B-0",
@@ -1489,7 +1539,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-1": {
     "id": "3B-1",
@@ -1532,7 +1583,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-2": {
     "id": "3B-2",
@@ -1555,7 +1607,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-3": {
     "id": "3B-3",
@@ -1607,7 +1660,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3B-4": {
     "id": "3B-4",
@@ -1631,7 +1685,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-5": {
     "id": "3B-5",
@@ -1655,7 +1710,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-6": {
     "id": "3B-6",
@@ -1677,7 +1733,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-7": {
     "id": "3B-7",
@@ -1699,7 +1756,8 @@
     ],
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-EF": {
     "id": "3B-EF",
@@ -1720,7 +1778,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3B-EF-a": {
     "id": "3B-EF-a",
@@ -1789,7 +1848,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3C-0": {
     "id": "3C-0",
@@ -1810,7 +1870,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3C-1": {
     "id": "3C-1",
@@ -1843,7 +1904,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3C-2": {
     "id": "3C-2",
@@ -1888,7 +1950,8 @@
           "calculation_tier1"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3C-EF": {
     "id": "3C-EF",
@@ -1909,7 +1972,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3C-EF-a": {
     "id": "3C-EF-a",
@@ -1978,7 +2042,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3D-0": {
     "id": "3D-0",
@@ -2013,7 +2078,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3D-2": {
     "id": "3D-2",
@@ -2074,7 +2140,8 @@
           "unknown"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3D-4": {
     "id": "3D-4",
@@ -2115,7 +2182,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "3D-4-zero-decision": {
     "id": "3D-4-zero-decision",
@@ -2136,7 +2204,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "3D-EF": {
     "id": "3D-EF",
@@ -2158,7 +2227,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "TY-1": {
     "id": "TY-1",
@@ -2180,7 +2250,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "TY-edit": {
     "id": "TY-edit",
@@ -2203,7 +2274,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "TY-2": {
     "id": "TY-2",
@@ -2221,7 +2293,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4-GİRİŞ": {
     "id": "4-GİRİŞ",
@@ -2239,7 +2312,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-0": {
     "id": "4A-0",
@@ -2260,7 +2334,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-1": {
     "id": "4A-1",
@@ -2281,7 +2356,8 @@
     ],
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-1a": {
     "id": "4A-1a",
@@ -2299,7 +2375,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-2": {
     "id": "4A-2",
@@ -2320,7 +2397,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-2a": {
     "id": "4A-2a",
@@ -2341,7 +2419,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-2b": {
     "id": "4A-2b",
@@ -2359,7 +2438,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-2c": {
     "id": "4A-2c",
@@ -2400,7 +2480,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "4A-3": {
     "id": "4A-3",
@@ -2421,7 +2502,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-3a": {
     "id": "4A-3a",
@@ -2473,7 +2555,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "4A-EF": {
     "id": "4A-EF",
@@ -2494,7 +2577,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4A-EF-a": {
     "id": "4A-EF-a",
@@ -2561,7 +2645,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "4B-0": {
     "id": "4B-0",
@@ -2582,7 +2667,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4B-1": {
     "id": "4B-1",
@@ -2605,7 +2691,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4B-2": {
     "id": "4B-2",
@@ -2641,7 +2728,8 @@
     },
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4B-EF": {
     "id": "4B-EF",
@@ -2662,7 +2750,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "4B-EF-a": {
     "id": "4B-EF-a",
@@ -2730,7 +2819,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "4C-1": {
     "id": "4C-1",
@@ -2753,7 +2843,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-0": {
     "id": "K3C1-0",
@@ -2774,7 +2865,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-1": {
     "id": "K3C1-1",
@@ -2805,7 +2897,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-2": {
     "id": "K3C1-2",
@@ -2827,7 +2920,8 @@
     ],
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-3": {
     "id": "K3C1-3",
@@ -2848,7 +2942,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-3a": {
     "id": "K3C1-3a",
@@ -2873,7 +2968,8 @@
     ],
     "repeatable": false,
     "loopSource": true,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-4": {
     "id": "K3C1-4",
@@ -2894,7 +2990,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C1-4a": {
     "id": "K3C1-4a",
@@ -2962,7 +3059,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C2-0": {
     "id": "K3C2-0",
@@ -2983,7 +3081,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C2-1": {
     "id": "K3C2-1",
@@ -3059,7 +3158,8 @@
           "EUR"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C3-INFO": {
     "id": "K3C3-INFO",
@@ -3080,7 +3180,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C4-0": {
     "id": "K3C4-0",
@@ -3101,7 +3202,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C4-1": {
     "id": "K3C4-1",
@@ -3123,7 +3225,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C4-2c": {
     "id": "K3C4-2c",
@@ -3175,7 +3278,8 @@
         "format": "year",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C4-2": {
     "id": "K3C4-2",
@@ -3248,7 +3352,8 @@
         "format": "percent",
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C4-2b": {
     "id": "K3C4-2b",
@@ -3266,7 +3371,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C5-0": {
     "id": "K3C5-0",
@@ -3287,7 +3393,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C5-1": {
     "id": "K3C5-1",
@@ -3310,7 +3417,61 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
+  },
+  "K3C5-2c": {
+    "id": "K3C5-2c",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "provider",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "format": "name",
+        "options": null
+      },
+      {
+        "id": "total_tco2e",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": null
+      },
+      {
+        "id": "year",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": "year",
+        "options": null
+      }
+    ],
+    "sumRange": null
   },
   "K3C5-2": {
     "id": "K3C5-2",
@@ -3383,7 +3544,8 @@
           "licensed_contractor"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C5-2b": {
     "id": "K3C5-2b",
@@ -3401,7 +3563,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C6-0": {
     "id": "K3C6-0",
@@ -3422,7 +3585,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C6-1": {
     "id": "K3C6-1",
@@ -3444,7 +3608,61 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
+  },
+  "K3C6-2c": {
+    "id": "K3C6-2c",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "provider",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 200,
+        "format": "name",
+        "options": null
+      },
+      {
+        "id": "total_tco2e",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "options": null
+      },
+      {
+        "id": "year",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": "year",
+        "options": null
+      }
+    ],
+    "sumRange": null
   },
   "K3C6-2": {
     "id": "K3C6-2",
@@ -3552,7 +3770,8 @@
           "luxury"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C6-2b": {
     "id": "K3C6-2b",
@@ -3570,7 +3789,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C7-0": {
     "id": "K3C7-0",
@@ -3591,7 +3811,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C7-1": {
     "id": "K3C7-1",
@@ -3643,7 +3864,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C7-2": {
     "id": "K3C7-2",
@@ -3661,7 +3883,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C7-3": {
     "id": "K3C7-3",
@@ -3724,7 +3947,17 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": {
+      "fields": [
+        "car_pct",
+        "transit_pct",
+        "shuttle_pct",
+        "walk_pct"
+      ],
+      "min": 90,
+      "max": 110
+    }
   },
   "K3C7-6": {
     "id": "K3C7-6",
@@ -3746,7 +3979,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C7-4": {
     "id": "K3C7-4",
@@ -3764,7 +3998,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C7-5": {
     "id": "K3C7-5",
@@ -3782,7 +4017,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C8-0": {
     "id": "K3C8-0",
@@ -3803,7 +4039,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C8-1": {
     "id": "K3C8-1",
@@ -3872,7 +4109,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C9-0": {
     "id": "K3C9-0",
@@ -3893,7 +4131,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C9-1": {
     "id": "K3C9-1",
@@ -3955,7 +4194,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C10-0": {
     "id": "K3C10-0",
@@ -3976,7 +4216,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C11-0": {
     "id": "K3C11-0",
@@ -3997,7 +4238,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C11-1": {
     "id": "K3C11-1",
@@ -4082,7 +4324,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C12-0": {
     "id": "K3C12-0",
@@ -4103,7 +4346,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C12-1": {
     "id": "K3C12-1",
@@ -4187,7 +4431,8 @@
           "licensed_contractor"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C13-0": {
     "id": "K3C13-0",
@@ -4208,7 +4453,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C13-1": {
     "id": "K3C13-1",
@@ -4249,7 +4495,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3C14-0": {
     "id": "K3C14-0",
@@ -4271,7 +4518,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C15-0": {
     "id": "K3C15-0",
@@ -4292,7 +4540,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "K3C15-1": {
     "id": "K3C15-1",
@@ -4385,7 +4634,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "K3-TY": {
     "id": "K3-TY",
@@ -4407,7 +4657,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6-GİRİŞ": {
     "id": "6-GİRİŞ",
@@ -4425,7 +4676,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6A-1": {
     "id": "6A-1",
@@ -4446,7 +4698,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6A-2": {
     "id": "6A-2",
@@ -4471,7 +4724,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6A-3": {
     "id": "6A-3",
@@ -4489,7 +4743,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6A-4": {
     "id": "6A-4",
@@ -4513,7 +4768,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6A-5": {
     "id": "6A-5",
@@ -4531,7 +4787,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6A-6": {
     "id": "6A-6",
@@ -4552,7 +4809,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-OV": {
     "id": "6B-OV",
@@ -4573,7 +4831,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6C-1": {
     "id": "6C-1",
@@ -4597,7 +4856,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6C-2": {
     "id": "6C-2",
@@ -4649,7 +4909,8 @@
         "format": null,
         "options": null
       }
-    ]
+    ],
+    "sumRange": null
   },
   "6C-3": {
     "id": "6C-3",
@@ -4667,7 +4928,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6D-1": {
     "id": "6D-1",
@@ -4688,7 +4950,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6E-1": {
     "id": "6E-1",
@@ -4706,7 +4969,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6F-1": {
     "id": "6F-1",
@@ -4732,7 +4996,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6F-2": {
     "id": "6F-2",
@@ -4753,7 +5018,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6F-3": {
     "id": "6F-3",
@@ -4775,7 +5041,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "7-GİRİŞ": {
     "id": "7-GİRİŞ",
@@ -4793,7 +5060,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "7C-1": {
     "id": "7C-1",
@@ -4814,7 +5082,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "7C-2": {
     "id": "7C-2",
@@ -4868,7 +5137,8 @@
           "accepted"
         ]
       }
-    ]
+    ],
+    "sumRange": null
   },
   "7A-INFO": {
     "id": "7A-INFO",
@@ -4886,7 +5156,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "7B-INFO": {
     "id": "7B-INFO",
@@ -4907,7 +5178,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-0": {
     "id": "6B-0",
@@ -4925,7 +5197,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-1": {
     "id": "6B-1",
@@ -4946,7 +5219,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-2": {
     "id": "6B-2",
@@ -4969,7 +5243,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-3": {
     "id": "6B-3",
@@ -4987,7 +5262,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-4": {
     "id": "6B-4",
@@ -5005,7 +5281,8 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   },
   "6B-5": {
     "id": "6B-5",
@@ -5026,6 +5303,7 @@
     "units": null,
     "repeatable": false,
     "loopSource": false,
-    "fields": null
+    "fields": null,
+    "sumRange": null
   }
 }

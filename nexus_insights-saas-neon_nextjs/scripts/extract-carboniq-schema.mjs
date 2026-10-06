@@ -78,6 +78,7 @@ try {
       repeatable: !!q.repeatable,
       loopSource: !!q.loopSource,
       fields: Array.isArray(q.fields) ? q.fields.map(extractField) : null,
+      sumRange: q.sumRange || null,
     };
   }
 

@@ -4535,7 +4535,59 @@ export const CARBONIQ_QUESTIONS = [
     // Was a dead end (next: 'K3C6-0') — the helper text promises "we will ask
     // for quantity and disposal method for each type" but nothing after this
     // question ever asked for it, for any of the four data levels.
-    nextByValue: { S1: 'K3C5-2', S2_type: 'K3C5-2', S2_total: 'K3C5-2b', S3: 'K3C6-0' },
+    nextByValue: { S1: 'K3C5-2c', S2_type: 'K3C5-2', S2_total: 'K3C5-2b', S3: 'K3C6-0' },
+  },
+  {
+    // "Bertaraf firması emisyon beyanı var — Seviye 1" used to open the Level 2 rows only; the declaration was never asked for. Collected only; the rows after it are unchanged.
+    id: 'K3C5-2c',
+    number: '92a',
+    stage: 5,
+    block: '5E',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    conditionalShow: { questionId: 'K3C5-1', equals: 'S1' },
+    reportField: 'scope3.cat5.disposal_declaration',
+    text: {
+      tr: 'Bertaraf firmasının emisyon beyanının bilgilerini girin',
+      en: 'Enter the details of the disposal company emission declaration',
+    },
+    helper: {
+      tr: 'Beyanı veren bertaraf firmasını, beyandaki toplam emisyonu ve yılını girin. Ardından atık türlerini de soracağız.',
+      en: 'Enter the disposal company, the total emissions in its declaration and the year. Waste types are asked next.',
+    },
+    fields: [
+      {
+        id: 'provider',
+        format: 'name',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Bertaraf firması', en: 'Disposal company' },
+        placeholder: { tr: 'Örn: XYZ Geri Dönüşüm A.Ş.', en: 'e.g. XYZ Recycling Ltd.' },
+      },
+      {
+        id: 'total_tco2e',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Rapordaki toplam emisyon (t CO₂e)', en: 'Total emissions in the report (t CO₂e)' },
+        placeholder: { tr: 'Örn: 12,5', en: 'e.g. 12.5' },
+      },
+      {
+        id: 'year',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        format: 'year',
+        label: { tr: 'Rapor yılı', en: 'Report year' },
+        placeholder: { tr: 'Örn: 2024', en: 'e.g. 2024' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüm rapor alanlarını doldurun.', en: 'Please fill in all report fields.' },
+    },
+    next: 'K3C5-2',
   },
   {
     // repeatable — a company has more than one waste stream (paper, plastic,
@@ -4543,7 +4595,7 @@ export const CARBONIQ_QUESTIONS = [
     // S2_type (known type+quantity) — both need the same per-type breakdown,
     // S1 just has better-quality data behind the EF questions that follow.
     id: 'K3C5-2',
-    number: '92a',
+    number: '92b',
     stage: 5,
     block: '5E',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4577,7 +4629,7 @@ export const CARBONIQ_QUESTIONS = [
     // S2_total fallback — user only knows the overall waste quantity, not a
     // per-type breakdown. A blended DEFRA mixed-waste EF is applied.
     id: 'K3C5-2b',
-    number: '92b',
+    number: '92c',
     stage: 5,
     block: '5E',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4636,8 +4688,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Travel data level and modes used?',
     },
     helper: {
-      tr: 'Acente raporu varsa tıklayın ve bitirin. Yoksa hangi seyahat modlarını kullandığınızı işaretleyin.',
-      en: 'If you have an agency report, click and finish. Otherwise mark which travel modes you used.',
+      tr: 'Acente veya platform raporunuz varsa önce rapordaki toplam emisyonu, ardından seyahat ayrıntılarını gireceksiniz. Yoksa veri düzeyinize uygun seçeneği işaretleyin.',
+      en: 'If you have an agency or platform report, you will enter its total emissions first, then the trip details. Otherwise pick the option matching your data.',
     },
     options: [
       { value: 'S1', label: { tr: 'Seyahat acentesi / platform emisyon raporu (SAP Concur, TravelPerk vb.) — Seviye 1', en: 'Travel agency / platform emission report (SAP Concur, TravelPerk, etc.) — Level 1' } },
@@ -4647,12 +4699,64 @@ export const CARBONIQ_QUESTIONS = [
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
     // Was a dead end (next: 'K3C7-0') — the cabin-class/RFI system messages
     // below (moved to K3C6-2) promised data that was never actually asked for.
-    nextByValue: { S1: 'K3C6-2', S2: 'K3C6-2', S3: 'K3C6-2b' },
+    nextByValue: { S1: 'K3C6-2c', S2: 'K3C6-2', S3: 'K3C6-2b' },
+  },
+  {
+    // "Seyahat acentesi / platform raporu — Seviye 1" used to open the Level 2 trip rows only; the report was never asked for. Collected only; the trip rows after it are unchanged.
+    id: 'K3C6-2c',
+    number: '94a',
+    stage: 5,
+    block: '5F',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    conditionalShow: { questionId: 'K3C6-1', equals: 'S1' },
+    reportField: 'scope3.cat6.agency_report',
+    text: {
+      tr: 'Seyahat acentesi / platform emisyon raporunun bilgilerini girin',
+      en: 'Enter the details of the travel agency / platform emission report',
+    },
+    helper: {
+      tr: 'Raporu sağlayan acenteyi veya platformu, rapordaki toplam emisyonu ve yılını girin. Ardından seyahat ayrıntılarını da soracağız.',
+      en: 'Enter the agency or platform, the total emissions in its report and the year. Trip details are asked next.',
+    },
+    fields: [
+      {
+        id: 'provider',
+        format: 'name',
+        type: 'text',
+        required: true,
+        maxLength: 200,
+        label: { tr: 'Acente / platform', en: 'Agency / platform' },
+        placeholder: { tr: 'Örn: SAP Concur', en: 'e.g. SAP Concur' },
+      },
+      {
+        id: 'total_tco2e',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        label: { tr: 'Rapordaki toplam emisyon (t CO₂e)', en: 'Total emissions in the report (t CO₂e)' },
+        placeholder: { tr: 'Örn: 12,5', en: 'e.g. 12.5' },
+      },
+      {
+        id: 'year',
+        type: 'text',
+        subtype: 'numeric',
+        required: true,
+        format: 'year',
+        label: { tr: 'Rapor yılı', en: 'Report year' },
+        placeholder: { tr: 'Örn: 2024', en: 'e.g. 2024' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen tüm rapor alanlarını doldurun.', en: 'Please fill in all report fields.' },
+    },
+    next: 'K3C6-2',
   },
   {
     // repeatable — a company has more than one trip/mode over a year.
     id: 'K3C6-2',
-    number: '94a',
+    number: '94b',
     stage: 5,
     block: '5F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4704,7 +4808,7 @@ export const CARBONIQ_QUESTIONS = [
   {
     // S3 fallback — only total travel spend is available, no per-trip data.
     id: 'K3C6-2b',
-    number: '94b',
+    number: '94c',
     stage: 5,
     block: '5F',
     isoRef: 'ISO 14064-1 §5.4',
@@ -4823,8 +4927,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Commute modal split?',
     },
     helper: {
-      tr: 'Dört değer toplamda yaklaşık %100 olmalı. Anketiniz yoksa Soru 95a\'daki örnek dağılıma yakın bir tahmin girebilirsiniz.',
-      en: 'The four values should add up to roughly 100%. If you have no survey, you can enter an estimate close to the example distribution shown earlier.',
+      tr: 'Dört değer toplamda yaklaşık %100 olmalı. Anketiniz yoksa en yakın tahmininizi girin.',
+      en: 'The four values should add up to roughly 100%. If you have no survey, enter your best estimate.',
     },
     fields: [
       { id: 'car_pct', type: 'numeric', required: true, label: { tr: 'Özel araç (%)', en: 'Private car (%)' } },
@@ -4833,6 +4937,9 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'walk_pct', type: 'numeric', required: true, label: { tr: 'Yürüme / bisiklet (%)', en: 'Walk / cycle (%)' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
+    // The four shares must add up to about 100 % (checked in validateCarbonIQAnswer
+    // and on the server); 12 % in total used to be accepted.
+    sumRange: { fields: ['car_pct', 'transit_pct', 'shuttle_pct', 'walk_pct'], min: 90, max: 110 },
     next: 'K3C7-6',
   },
   {
@@ -6499,7 +6606,23 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
   // compound — validate each sub-field individually
   if (question.type === 'compound') {
     const obj = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
-    return validateCompoundFields(question.fields, obj, lang);
+    const fieldsErr = validateCompoundFields(question.fields, obj, lang);
+    if (!fieldsErr.ok) return fieldsErr;
+    // Shares that must add up to ~100 % (K3C7-3's commute modal split).
+    if (question.sumRange) {
+      const { fields: ids, min, max } = question.sumRange;
+      const total = ids.reduce((sum, id) => sum + (parseLocalizedNumber(obj[id]) || 0), 0);
+      if (total < min || total > max) {
+        const shown = Math.round(total * 10) / 10;
+        return {
+          ok: false,
+          message: lang === 'tr'
+            ? `Yüzdelerin toplamı %${shown}; toplam yaklaşık %100 olmalı (%${min}–%${max}).`
+            : `The percentages add up to ${shown}%; the total should be about 100% (${min}–${max}%).`,
+        };
+      }
+    }
+    return { ok: true };
   }
 
   // country_city requires both fields to be non-empty
@@ -6670,6 +6793,24 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
   }
 
   return { ok: true };
+}
+
+// K3C7-1 (office / hybrid / remote headcount) against the employee band
+// chosen in Stage 1 (B3). Only a warning — the headcount may really have
+// changed — shown when the total falls outside that band.
+const EMPLOYEE_BANDS = { '1_50': [1, 50], '51_250': [51, 250], '251_1000': [251, 1000], '1001_5000': [1001, 5000], '5000_plus': [5001, Infinity] };
+export function employeeCountWarning(question, value, answers, lang = 'en') {
+  if (question?.id !== 'K3C7-1' || !value || typeof value !== 'object') return null;
+  const band = EMPLOYEE_BANDS[readAnswerValue(answers || {}, 'B3')];
+  if (!band) return null;
+  const total = ['fulltime_count', 'hybrid_count', 'remote_count']
+    .reduce((sum, k) => sum + (parseLocalizedNumber(value[k]) || 0), 0);
+  if (total >= band[0] && total <= band[1]) return null;
+  const bandText = band[1] === Infinity ? `${band[0] - 1}+` : `${band[0]}–${band[1]}`;
+  const n = total.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US');
+  return lang === 'tr'
+    ? `Girdiğiniz toplam çalışan sayısı (${n}), Aşama 1'de seçtiğiniz aralıkla (${bandText} çalışan) uyuşmuyor. Sayılar doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
+    : `The total headcount you entered (${n}) does not match the range chosen in Stage 1 (${bandText} employees). If the numbers are right you can continue; otherwise go back with "Previous question" to fix them.`;
 }
 
 export function getQuestionWarning(question, value, lang = 'en') {
