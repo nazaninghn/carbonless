@@ -2084,7 +2084,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3A-EF-a',
-    number: '46a',
+    number: '47a',
     stage: 3,
     block: '3A',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2124,6 +2124,7 @@ export const CARBONIQ_QUESTIONS = [
       },
       {
         id: 'ef_source',
+        format: 'name',
         type: 'text',
         required: true,
         label: { tr: 'Belge kaynağı (tedarikçi / rapor adı)', en: 'Document source (supplier / report name)' },
@@ -2135,6 +2136,7 @@ export const CARBONIQ_QUESTIONS = [
         type: 'text',
         subtype: 'numeric',
         required: true,
+        format: 'year',
         label: { tr: 'Beyan yılı', en: 'Declaration year' },
         placeholder: { tr: 'Örn: 2023', en: 'e.g. 2023' },
       },
@@ -2420,16 +2422,12 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'single_select',
     loopSource: '3B-1',
-    loopNext: '3B-EF',
+    loopNext: '3B-7',
     required: true,
     reportField: 'scope1.mobile_combustion.activity_data',
     text: {
       tr: '[Araç tipi] — Aktivite verisi: yakıt tüketimi mi, mesafe mi?',
       en: '[Vehicle type] — Activity data: fuel consumption or distance?',
-    },
-    placeholder: {
-      tr: 'Yakıt: 12.000 litre VEYA Mesafe: 80.000 km',
-      en: 'Fuel: 12,000 litres OR Distance: 80,000 km',
     },
     helper: {
       tr: 'Yakıt faturası varsa onu kullanın — daha doğru sonuç verir (Seviye 1). Yalnızca km bilginiz varsa onu da kabul ederiz (Seviye 2 — sistem ortalama tüketim faktörü uygular).',
@@ -2448,6 +2446,36 @@ export const CARBONIQ_QUESTIONS = [
         tr: 'Mesafe bazlı hesaplama tahmini bir sonuç üretir — yakıt faturası verisine göre %10–30 sapma olabilir. Raporunuzda "Mesafe bazlı — Seviye 2 tahmini" olarak işaretlenecek.',
         en: 'Distance-based calculation produces an estimated result — may deviate 10–30% from fuel invoice data. Will be marked as "Distance-based — Level 2 estimate" in your report.',
       },
+    },
+    next: '3B-7',
+  },
+  {
+    // The amount itself — 3B-6 only picks fuel vs distance, and nothing
+    // asked how many litres / km, so vehicles reached the summary and the
+    // report with no activity data at all. Collected only: turning it into
+    // emissions is a calculation decision, not made here.
+    id: '3B-7',
+    number: '54a',
+    stage: 3,
+    block: '3B',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'equipment_loop',
+    loopSource: '3B-1',
+    loopNext: '3B-EF',
+    required: true,
+    reportField: 'scope1.mobile_combustion.activity_amount',
+    text: {
+      tr: '[Araç tipi] — Raporlama yılındaki toplam miktar nedir?',
+      en: '[Vehicle type] — What is the total amount for the reporting year?',
+    },
+    placeholder: { tr: 'Örn: 12.000', en: 'e.g. 12,000' },
+    helper: {
+      tr: 'Bir önceki soruda seçtiğiniz veri türüne göre bu araç tipinin yıllık toplamını girin ve birimini seçin: yakıt tüketimi (litre), mesafe (km) veya yük taşımacılığı (ton-km).',
+      en: 'Enter the annual total for this vehicle type according to the data type you chose in the previous question, and pick its unit: fuel consumption (litres), distance (km) or freight (tonne-km).',
+    },
+    units: ['litre', 'km', 'ton-km'],
+    validate: {
+      requiredMessage: { tr: 'Lütfen yıllık miktarı girin.', en: 'Please enter the annual amount.' },
     },
     next: '3B-EF',
   },
@@ -2489,7 +2517,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3B-EF-a',
-    number: '54a',
+    number: '55a',
     stage: 3,
     block: '3B',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2529,6 +2557,7 @@ export const CARBONIQ_QUESTIONS = [
       },
       {
         id: 'ef_source',
+        format: 'name',
         type: 'text',
         required: true,
         label: { tr: 'Belge kaynağı (üretici / tedarikçi / rapor adı)', en: 'Document source (manufacturer / supplier / report name)' },
@@ -2540,6 +2569,7 @@ export const CARBONIQ_QUESTIONS = [
         type: 'text',
         subtype: 'numeric',
         required: true,
+        format: 'year',
         label: { tr: 'Beyan yılı', en: 'Declaration year' },
         placeholder: { tr: 'Örn: 2023', en: 'e.g. 2023' },
       },
@@ -2712,7 +2742,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     id: '3C-EF-a',
-    number: '58a',
+    number: '59a',
     stage: 3,
     block: '3C',
     isoRef: 'ISO 14064-1 §5.2',
@@ -2752,6 +2782,7 @@ export const CARBONIQ_QUESTIONS = [
       },
       {
         id: 'ef_source',
+        format: 'name',
         type: 'text',
         required: true,
         label: { tr: 'Kaynak (ölçüm raporu / mühendislik hesabı açıklaması)', en: 'Source (measurement report / engineering calculation description)' },
@@ -2763,6 +2794,7 @@ export const CARBONIQ_QUESTIONS = [
         type: 'text',
         subtype: 'numeric',
         required: true,
+        format: 'year',
         label: { tr: 'Ölçüm / hesap yılı', en: 'Measurement / calculation year' },
         placeholder: { tr: 'Örn: 2023', en: 'e.g. 2023' },
       },
@@ -3043,8 +3075,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Scope 1 summary: Are the identified sources and quantities correct?',
     },
     helper: {
-      tr: 'Tüm Kapsam 1 kaynaklarınız ve tahmini emisyon miktarları gösterildi. Yanlış veya eksik bir şey varsa düzenleyebilirsiniz. EF seviyesi düşük olanlar iyileştirme için işaretlendi.',
-      en: 'All your Scope 1 sources and estimated emission amounts are shown. If anything is incorrect or missing, you can edit. Low EF level items are marked for improvement.',
+      tr: 'Kapsam 1 için girdiğiniz kaynaklar ve miktarlar aşağıda. Yanlış veya eksik bir şey varsa düzenleyebilirsiniz.',
+      en: 'The Scope 1 sources and amounts you entered are shown below. If anything is incorrect or missing, you can edit.',
     },
     options: [
       { value: 'confirmed', label: { tr: 'Onayla — Kapsam 1 tamamlandı', en: 'Approve — Scope 1 complete' } },
@@ -6023,6 +6055,29 @@ function validateCompoundFields(fields, obj, lang) {
         message: lang === 'tr'
           ? `"${flabel}" en fazla ${field.maxLength} karakter olabilir.`
           : `"${flabel}" must be at most ${field.maxLength} characters.`,
+      };
+    }
+    // A declaration year is a real 4-digit year, not in the future; a
+    // document source names something (a supplier or report), not just "5".
+    if (field.format === 'year') {
+      const flabel = field.label?.[lang] || field.label?.en || field.id;
+      const y = /^\d{4}$/.test(String(fv).trim()) ? Number(String(fv).trim()) : NaN;
+      if (Number.isNaN(y) || y < 1990 || y > CURRENT_YEAR) {
+        return {
+          ok: false,
+          message: lang === 'tr'
+            ? `"${flabel}" 1990 ile ${CURRENT_YEAR} arasında 4 haneli bir yıl olmalıdır.`
+            : `"${flabel}" must be a 4-digit year between 1990 and ${CURRENT_YEAR}.`,
+        };
+      }
+    }
+    if (field.format === 'name' && !/\p{L}/u.test(String(fv))) {
+      const flabel = field.label?.[lang] || field.label?.en || field.id;
+      return {
+        ok: false,
+        message: lang === 'tr'
+          ? `"${flabel}" için tedarikçinin veya raporun adını yazın.`
+          : `For "${flabel}", enter the supplier's or report's name.`,
       };
     }
     // Contact details use the same rules as the server (companies/contact.py),

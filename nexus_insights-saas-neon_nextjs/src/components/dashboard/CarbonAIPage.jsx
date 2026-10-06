@@ -1092,7 +1092,35 @@ function Scope1SummaryTable({ answers, lang, tr }) {
     const lbl = FUEL_LABELS[lang] || FUEL_LABELS.en;
     const entries = Object.entries(loopObj).filter(([, v]) => v);
     if (entries.length === 0) return null;
-    return entries.map(([k, v]) => `${lbl[k] || k}: ${v}`).join(' · ');
+    return entries.map(([k, v]) => `${lbl[k] || k}: ${amountText(v)}`).join(' · ');
+  };
+
+  // Per-item amounts the later questions collected, keyed by the item code
+  // ({ 'EQ-3B-01': '12000 litre' }, { 'EQ-3C-01': { quantity: '5', … } }) →
+  // "Binek araç: 12.000 litre · …". Only what the user entered — no
+  // emissions are computed here.
+  const num = (v) => {
+    const n = Number(v);
+    return v !== '' && v !== null && v !== undefined && Number.isFinite(n)
+      ? n.toLocaleString(tr ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 })
+      : String(v ?? '');
+  };
+  const amountText = (v) => {
+    const m = String(v ?? '').trim().match(/^([\d.,]+)\s*(.*)$/);
+    return m ? `${num(m[1])}${m[2] ? ` ${m[2]}` : ''}` : String(v ?? '');
+  };
+  // "R410A" → "R-410A" (the option label without its GWP note).
+  const gasLabel = (code) => {
+    const opt = (getQuestionById('3D-2')?.fields || []).find(f => f.id === 'gas_type')?.options?.find(o => o.value === code);
+    const raw = opt ? (opt.label?.[lang] || opt.label?.en || code) : code;
+    return String(raw).replace(/\s*\(GWP[^)]*\).*$/, '');
+  };
+  const fmtPerItem = (listQ, loopObj, describe) => {
+    if (!loopObj || typeof loopObj !== 'object' || Array.isArray(loopObj)) return null;
+    const parts = Object.entries(loopObj)
+      .map(([k, v]) => { const d = describe(v); return d ? `${optLabel(listQ, k)}: ${d}` : null; })
+      .filter(Boolean);
+    return parts.length ? parts.join(' · ') : null;
   };
 
   // A report resumed from the backend stores every answer as { answer: value }
@@ -1113,21 +1141,36 @@ function Scope1SummaryTable({ answers, lang, tr }) {
       label: tr ? 'Mobil Yanma' : 'Mobile Combustion',
       skipped: ra('3B-0') === 'no',
       items: fmtList('3B-1', ra('3B-1')),
-      extra: null,
+      extra: fmtPerItem('3B-1', ra('3B-7'), v => (v ? amountText(v) : null)),
     },
     {
       id: '3C',
       label: tr ? 'Proses Emisyonları' : 'Process Emissions',
       skipped: ra('3C-0') === 'no',
       items: fmtList('3C-1', ra('3C-1')),
-      extra: null,
+      extra: fmtPerItem('3C-1', ra('3C-2'), v => (v?.quantity ? `${tr ? 'üretim' : 'production'} ${num(v.quantity)}` : null)),
     },
     {
       id: '3D',
       label: tr ? 'Kaçak Emisyonlar' : 'Fugitive Emissions',
       skipped: Array.isArray(ra('3D-0')) && ra('3D-0').every(v => v === 'none'),
       items: fmtList('3D-0', ra('3D-0')),
-      extra: null,
+      extra: (() => {
+        const units = ra('3D-2') || {};
+        const refills = ra('3D-4') || {};
+        if (typeof units !== 'object' || typeof refills !== 'object') return null;
+        const keys = [...new Set([...Object.keys(units), ...Object.keys(refills)])];
+        const parts = keys.map(k => {
+          const u = units[k] || {}; const r = refills[k] || {};
+          const bits = [
+            u.unit_count ? `${num(u.unit_count)} ${tr ? 'adet' : 'units'}` : null,
+            u.gas_type ? gasLabel(u.gas_type) : null,
+            r.refill_kg !== undefined && r.refill_kg !== '' ? `${tr ? 'dolum' : 'refill'} ${num(r.refill_kg)} kg` : null,
+          ].filter(Boolean);
+          return bits.length ? `${optLabel('3D-0', k)}: ${bits.join(', ')}` : null;
+        }).filter(Boolean);
+        return parts.length ? parts.join(' · ') : null;
+      })(),
     },
   ];
 

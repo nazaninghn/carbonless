@@ -26,11 +26,22 @@ const repoRoot = join(__dirname, '..');
 const scratch = mkdtempSync(join(tmpdir(), 'carboniq-schema-'));
 
 try {
-  const questionsSrc = readFileSync(join(repoRoot, 'src/lib/carboniq/questions.js'), 'utf-8')
-    .replace("@/lib/data/countries", "./countries.mjs");
-  const countriesSrc = readFileSync(join(repoRoot, 'src/lib/data/countries.js'), 'utf-8');
+  // Every "@/" module questions.js imports, copied next to it as .mjs.
+  const deps = {
+    '@/lib/data/countries': 'src/lib/data/countries.js',
+    '@/lib/utils/numbers': 'src/lib/utils/numbers.js',
+    '@/lib/companyFields': 'src/lib/companyFields.js',
+  };
+  let questionsSrc = readFileSync(join(repoRoot, 'src/lib/carboniq/questions.js'), 'utf-8');
+  for (const [alias, file] of Object.entries(deps)) {
+    const local = `./${alias.split('/').pop()}.mjs`;
+    questionsSrc = questionsSrc.replace(`'${alias}'`, `'${local}'`);
+    writeFileSync(join(scratch, local), readFileSync(join(repoRoot, file), 'utf-8'));
+  }
+  if (/from '@\//.test(questionsSrc)) {
+    throw new Error('questions.js imports an "@/" module this script does not copy yet — add it to deps.');
+  }
 
-  writeFileSync(join(scratch, 'countries.mjs'), countriesSrc);
   writeFileSync(join(scratch, 'questions.mjs'), questionsSrc);
 
   const { CARBONIQ_QUESTIONS } = await import(pathToFileURL(join(scratch, 'questions.mjs')));
@@ -44,6 +55,7 @@ try {
       numericOnly: !!f.numericOnly,
       exactLength: f.exactLength || null,
       maxLength: f.maxLength || null,
+      format: f.format || null,
       options: Array.isArray(f.options) ? f.options.map(o => o.value) : null,
     };
   }
