@@ -93,6 +93,10 @@ _MESSAGES = {
         'en': '{prefix}Expected a 4-digit year, got {value!r}.',
         'tr': '{prefix}4 haneli bir yıl bekleniyor, girilen: {value!r}.',
     },
+    'sum_range': {
+        'en': '{prefix}The percentages add up to {total}%; the total should be about 100% ({min}–{max}%).',
+        'tr': '{prefix}Yüzdelerin toplamı %{total}; toplam yaklaşık %100 olmalı (%{min}–%{max}).',
+    },
     'percent_range': {
         'en': '{prefix}Must be between 0 and 100.',
         'tr': '{prefix}0 ile 100 arasında olmalıdır.',
@@ -388,7 +392,27 @@ def _validate_compound(value, q, lang='en'):
                 return err
         return None
 
-    return _validate_compound_item(value, fields, enforce_required=True, lang=lang)
+    err = _validate_compound_item(value, fields, enforce_required=True, lang=lang)
+    if err:
+        return err
+    return _validate_sum_range(value, q, lang)
+
+
+def _validate_sum_range(value, q, lang):
+    """`sumRange` on a compound (mirrors validateCarbonIQAnswer): the listed
+    fields are shares that must add up to min..max (K3C7-3's modal split)."""
+    rule = q.get('sumRange')
+    if not rule or not isinstance(value, dict):
+        return None
+    total = 0.0
+    for fid in rule.get('fields', []):
+        try:
+            total += float(str(value.get(fid) or 0).replace(',', '.'))
+        except ValueError:
+            return None  # the field checks report non-numbers
+    if total < rule['min'] or total > rule['max']:
+        return _msg(lang, 'sum_range', prefix='', total=round(total, 1), min=rule['min'], max=rule['max'])
+    return None
 
 
 def _validate_loop_aggregate(value, q, lang='en'):

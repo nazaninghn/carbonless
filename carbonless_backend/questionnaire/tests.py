@@ -853,3 +853,14 @@ class SupplierEFDocumentTests(TestCase):
         self.assertIn('0 ile 100', msg)
         glec = {'answer': {'provider': 'XYZ Lojistik', 'total_tco2e': '12.5', 'year': '2024'}}
         self.assertEqual(validate_generic_step('K3C4-2c', glec, lang='tr'), (True, None))
+
+    def test_report_forms_and_modal_split_total(self):
+        from .carboniq_validation import validate_generic_step
+        rep = {'answer': {'provider': 'XYZ Geri Dönüşüm', 'total_tco2e': '3.2', 'year': '2024'}}
+        self.assertEqual(validate_generic_step('K3C5-2c', rep, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C6-2c', rep, lang='tr'), (True, None))
+        split = {'car_pct': '40', 'transit_pct': '35', 'shuttle_pct': '15', 'walk_pct': '10'}
+        self.assertEqual(validate_generic_step('K3C7-3', {'answer': split}, lang='tr'), (True, None))
+        valid, msg = validate_generic_step('K3C7-3', {'answer': {k: '3' for k in split}}, lang='tr')
+        self.assertFalse(valid)
+        self.assertIn('%12', msg)
