@@ -49,6 +49,7 @@ import {
   resolveFieldOptions,
   employeeCountWarning,
   exclusionShareWarning,
+  scope3RowWarning,
   unmapPhase1Answer,
 } from '@/lib/carboniq/questions';
 import { fixed } from '@/lib/formatNumber';
@@ -354,9 +355,16 @@ function normalizeAnswerValue(q, raw) {
     if (q.repeatable) {
       // A question made repeatable later (e.g. 6C-2) may still hold one plain
       // object from before — keep it as the first item instead of dropping it.
-      const items = (raw && typeof raw === 'object' && Array.isArray(raw.items)) ? raw.items
-        : (raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0) ? [raw] : [];
-      return { items, draft: {} };
+      if (raw && typeof raw === 'object' && Array.isArray(raw.items)) return { items: raw.items, draft: {} };
+      if (raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0) {
+        // …unless it lacks a field the question requires now (K3C1-4a's new
+        // category): then it opens in the form to be completed, since a row
+        // in the list can only be removed, not edited.
+        const missing = (q.fields || []).some(f => f.required !== false && !f.conditionalOn
+          && String(raw[f.id] ?? '').trim() === '');
+        return missing ? { items: [], draft: raw } : { items: [raw], draft: {} };
+      }
+      return { items: [], draft: {} };
     }
     return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
   }
@@ -598,6 +606,9 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
     const opt = q.options?.find(o => o.value === value);
     return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || String(value)) : (amountWithUnitText(q, value, lang) ?? String(value));
   }
+  // Fields whose options come from other answers (K3C1-4a's category) show
+  // their label, not the stored code, when the answers are at hand.
+  const shownFields = answers ? resolveFieldOptions(q.fields || [], answers) : q.fields;
   if (q.type === 'compound' && q.repeatable) {
     const items = Array.isArray(value?.items) ? value.items : (Array.isArray(value) ? value : []);
     if (items.length === 0) return '—';
@@ -606,7 +617,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
         const inner = orderedFieldEntries(q, item)
           .filter(([, v]) => v !== '' && v !== undefined && v !== null)
           .map(([k, v]) => {
-            const field = q.fields?.find(f => f.id === k);
+            const field = shownFields?.find(f => f.id === k);
             const label = field?.label?.[lang] || field?.label?.en || k;
             return `${label}: ${fieldValueText(field, v, lang)}`;
           })
@@ -620,7 +631,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
     return orderedFieldEntries(q, value)
       .filter(([, v]) => v !== '' && v !== undefined && v !== null)
       .map(([k, v]) => {
-        const field = q.fields?.find(f => f.id === k);
+        const field = shownFields?.find(f => f.id === k);
         const label = field?.label?.[lang] || field?.label?.en || k;
         return `${label}: ${fieldValueText(field, v, lang)}`;
       })
@@ -1459,7 +1470,7 @@ function Scope3SummaryTable({ answers, lang, tr }) {
     // the gate answer itself.
     const extra = details
       .filter(q => q.id in answers)
-      .map(q => getDisplayValue(q, readAnswerValue(answers, q.id), lang, { isAggregate: !!q.loopSource }))
+      .map(q => getDisplayValue(q, readAnswerValue(answers, q.id), lang, { isAggregate: !!q.loopSource, answers }))
       .filter(t => t && t !== '—')
       .join(' · ') || (gate && gate.id in answers && !skipped ? getDisplayValue(gate, gateVal, lang) : '');
     return {
@@ -1569,6 +1580,15 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question?.id, currentLoopItem]); // intentionally exclude unitList (derived)
+
+  // An earlier answer restored into the input ("100.000 USD") brings its
+  // unit along: the chip used to stay on the first unit (TL), so confirming
+  // the shown value silently saved it as "100000 TL".
+  useEffect(() => {
+    const u = parseStored(value).unit;
+    if (u && u !== selectedUnit) setSelectedUnit(u);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   if (!question) return null;
 
@@ -1945,7 +1965,8 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   const charCount = String(amountStr).length;
   const isEmpty = !String(amountStr).trim();
   // Final value to submit: "15000 m³" for physical units, or just the number for %
-  const buildSubmitValue = () => shouldCombineUnit ? `${amountStr} ${selectedUnit}` : amountStr;
+  // An empty optional amount is submitted empty, not as a bare " kg".
+  const buildSubmitValue = () => (shouldCombineUnit && String(amountStr).trim()) ? `${amountStr} ${selectedUnit}` : amountStr;
 
   return (
     <div className="flex flex-col gap-2 w-full max-w-sm">
@@ -2072,7 +2093,10 @@ function loopResumeState(q, answersMap) {
   const agg = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
   const has = (v) => v !== undefined && v !== null && v !== ''
     && !(typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length === 0);
-  return { items, agg, firstOpen: items.findIndex(it => !has(agg[it])) };
+  // An optional per-item question (84a) may be left blank for an item: a
+  // saved empty value is answered too, or reopening would ask it again.
+  const done = (it) => has(agg[it]) || (q.required === false && Object.prototype.hasOwnProperty.call(agg, it));
+  return { items, agg, firstOpen: items.findIndex(it => !done(it)) };
 }
 
 // Resuming a saved inventory: from Stage 2 on the server's current_step is
@@ -2167,6 +2191,21 @@ const BLOCK_LABELS = {
   'S3-3D': { tr: 'Kapsam 1 · Kaçak Emisyonlar — Özet', en: 'Scope 1 · Fugitive Emissions — Summary' },
   'S4-4A': { tr: 'Kapsam 2 · Satın Alınan Elektrik — Özet', en: 'Scope 2 · Purchased Electricity — Summary' },
   'S4-4B': { tr: 'Kapsam 2 · Satın Alınan Isı / Buhar / Soğutma — Özet', en: 'Scope 2 · Purchased Heat / Steam / Cooling — Summary' },
+  'S5-5A': { tr: 'Kapsam 3 · Kat.1 Satın Alınan Mal ve Hizmetler — Özet', en: 'Scope 3 · Cat.1 Purchased Goods and Services — Summary' },
+  'S5-5B': { tr: 'Kapsam 3 · Kat.2 Sermaye Malları — Özet', en: 'Scope 3 · Cat.2 Capital Goods — Summary' },
+  'S5-5C': { tr: 'Kapsam 3 · Kat.3 Yakıt ve Enerji ile İlgili Faaliyetler — Özet', en: 'Scope 3 · Cat.3 Fuel- and Energy-Related Activities — Summary' },
+  'S5-5D': { tr: 'Kapsam 3 · Kat.4 Yukarı Akış Taşımacılık — Özet', en: 'Scope 3 · Cat.4 Upstream Transportation — Summary' },
+  'S5-5E': { tr: 'Kapsam 3 · Kat.5 Faaliyetlerde Oluşan Atık — Özet', en: 'Scope 3 · Cat.5 Waste Generated in Operations — Summary' },
+  'S5-5F': { tr: 'Kapsam 3 · Kat.6 İş Seyahatleri — Özet', en: 'Scope 3 · Cat.6 Business Travel — Summary' },
+  'S5-5G': { tr: 'Kapsam 3 · Kat.7 Çalışanların İşe Gidiş-Gelişi — Özet', en: 'Scope 3 · Cat.7 Employee Commuting — Summary' },
+  'S5-5H': { tr: 'Kapsam 3 · Kat.8 Kiralanan Varlıklar — Özet', en: 'Scope 3 · Cat.8 Upstream Leased Assets — Summary' },
+  'S5-5I': { tr: 'Kapsam 3 · Kat.9 Aşağı Akış Taşımacılık — Özet', en: 'Scope 3 · Cat.9 Downstream Transportation — Summary' },
+  'S5-5J': { tr: 'Kapsam 3 · Kat.10 Satılan Ürünlerin İşlenmesi — Özet', en: 'Scope 3 · Cat.10 Processing of Sold Products — Summary' },
+  'S5-5K': { tr: 'Kapsam 3 · Kat.11 Satılan Ürünlerin Kullanımı — Özet', en: 'Scope 3 · Cat.11 Use of Sold Products — Summary' },
+  'S5-5L': { tr: 'Kapsam 3 · Kat.12 Ürünlerin Ömür Sonu — Özet', en: 'Scope 3 · Cat.12 End-of-Life of Sold Products — Summary' },
+  'S5-5M': { tr: 'Kapsam 3 · Kat.13 Kiraya Verilen Varlıklar — Özet', en: 'Scope 3 · Cat.13 Downstream Leased Assets — Summary' },
+  'S5-5N': { tr: 'Kapsam 3 · Kat.14 Franchise — Özet', en: 'Scope 3 · Cat.14 Franchises — Summary' },
+  'S5-5O': { tr: 'Kapsam 3 · Kat.15 Yatırımlar — Özet', en: 'Scope 3 · Cat.15 Investments — Summary' },
 };
 
 function getBlockLabel(blockId, stageId) {
@@ -3556,7 +3595,7 @@ export function QuestionnaireTab({
       }
 
       // Show user bubble with item context
-      const displayVal = getDisplayValue(q, value, lang);
+      const displayVal = getDisplayValue(q, value, lang, { answers });
       const loopBubbleId = `m-${++msgIdRef.current}`;
       if (q.type !== 'info') {
         setMessages(prev => [...prev, {
@@ -3728,7 +3767,7 @@ export function QuestionnaireTab({
     // ── End loop handling ──────────────────────────────────────────────────────
 
     // Add user bubble
-    const displayVal = getDisplayValue(q, value, lang);
+    const displayVal = getDisplayValue(q, value, lang, { answers });
     const userBubbleId = `m-${++msgIdRef.current}`;
     if (q.type !== 'info') {
       setMessages(prev => [...prev, { id: userBubbleId, role: 'user', content: displayVal }]);
@@ -3799,6 +3838,7 @@ export function QuestionnaireTab({
       q.id === 'A4' ? sameYearWarning(value) : null,
       employeeCountWarning(q, value, newAnswers, lang),
       exclusionShareWarning(q, value, newAnswers, lang),
+      scope3RowWarning(q, value, newAnswers, lang),
     ].filter(Boolean).join('\n\n') || null;
     // getSystemMessage resolves the contextual info message for the selected answer (if any).
     // These are defined on 50+ questions (systemMessages) but were previously never displayed.
@@ -4340,7 +4380,7 @@ export function QuestionnaireTab({
                   </p>
                 )}
                 {/* Annual amounts: say which year they are for. */}
-                {['3A-5', '3B-7', '4A-1', '4B-2'].includes(currentId) && /^\d{4}$/.test(String(readAnswerValue(answers, 'A4') || '').trim()) && (
+                {['3A-5', '3B-7', '4A-1', '4B-2', 'K3C1-2', 'K3C1-3a'].includes(currentId) && /^\d{4}$/.test(String(readAnswerValue(answers, 'A4') || '').trim()) && (
                   <p className="text-xs text-[#175022]/60">
                     {tr
                       ? `Bu envanter ${String(readAnswerValue(answers, 'A4')).trim()} yılı içindir — 1 Ocak – 31 Aralık ${String(readAnswerValue(answers, 'A4')).trim()} toplamını girin.`
