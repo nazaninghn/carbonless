@@ -405,7 +405,28 @@ def _validate_compound(value, q, lang='en'):
     err = _validate_compound_item(value, fields, enforce_required=True, lang=lang)
     if err:
         return err
-    return _validate_sum_range(value, q, lang)
+    return _validate_sum_range(value, q, lang) or _validate_not_above(value, q, lang)
+
+
+def _validate_not_above(value, q, lang):
+    """`notAbove` on a compound (mirrors validateCarbonIQAnswer): one amount
+    may not exceed another — 4A-2c company m² vs building m², 4A-3a grid
+    sales vs production. Skipped while either side is empty."""
+    from chat.local_parser import parse_localized_number
+    if not isinstance(value, dict):
+        return None
+    for rule in q.get('notAbove') or []:
+        raw_a, raw_b = value.get(rule.get('field')), value.get(rule.get('max'))
+        if raw_a in (None, '') or raw_b in (None, ''):
+            continue
+        try:
+            a, b = parse_localized_number(str(raw_a)), parse_localized_number(str(raw_b))
+        except (ValueError, TypeError):
+            continue  # the field checks report non-numbers
+        if a is not None and b is not None and a > b:
+            msg = rule.get('message') or {}
+            return msg.get(lang) or msg.get('en') or 'Invalid values.'
+    return None
 
 
 def _validate_sum_range(value, q, lang):

@@ -13,13 +13,13 @@ import time
 
 # Denominator for a draft's progress in report lists: the questions every
 # user is asked — CARBONIQ_QUESTIONS that are not `type: 'info'` screens and
-# have no `conditionalShow` (120 of the 157 objects). It is the same number the
-# survey's own progress sidebar starts from ("0 / 120"), so the inventory
-# library and the survey agree; the raw object count (157) made a draft look
+# have no `conditionalShow` (127 of the 174 objects). It is the same number the
+# survey's own progress sidebar starts from ("0 / 127"), so the inventory
+# library and the survey agree; the raw object count (174) made a draft look
 # far less complete there than the survey itself said. Keep in sync with
 # questions.js:
 #   CARBONIQ_QUESTIONS.filter(q => q.type !== 'info' && !q.conditionalShow).length
-BASELINE_QUESTIONS = 120
+BASELINE_QUESTIONS = 127
 
 
 def _client_progress_from(payload):
