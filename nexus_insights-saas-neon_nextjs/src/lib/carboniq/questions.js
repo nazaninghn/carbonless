@@ -3303,8 +3303,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Example: 45,000 kWh',
     },
     helper: {
-      tr: 'Yıllık toplam tüketim. Fatura veya sayaç verisi en doğru kaynaktır. Farklı birimdeyse (MWh, GJ) sistem dönüşüm yapar. Bilmiyorsanız tahmin ile başlayabilirsiniz.',
-      en: 'Annual total consumption. Invoice or meter data is the most accurate source. If in a different unit (MWh, GJ), the system will convert. You can start with an estimate if unsure.',
+      tr: 'Yıllık toplam tüketim. Fatura veya sayaç verisi en doğru kaynaktır. Faturanız MWh ise birim olarak MWh seçin. Bilmiyorsanız tahmin ile başlayabilirsiniz.',
+      en: 'Annual total consumption. Invoice or meter data is the most accurate source. If your invoice is in MWh, choose MWh as the unit. You can start with an estimate if unsure.',
     },
     units: ['kWh', 'MWh'],
     systemMessages: {
@@ -3321,8 +3321,8 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Invoice amount entered. We will estimate kWh from the monetary amount — less accurate.',
       },
       zeroWarning: {
-        tr: 'Bu tesis hiç elektrik tüketmiyor mu? Evet ise atlamak ister misiniz?',
-        en: 'Does this site have zero electricity consumption? Would you like to skip it?',
+        tr: 'Bu tesis için 0 kWh girdiniz. Tesis o yıl hiç elektrik kullanmadıysa doğru; değilse "Önceki soru" ile dönüp düzeltin.',
+        en: 'You entered 0 kWh for this facility. That is right if it used no electricity that year; otherwise go back with "Previous question" and correct it.',
       },
       empty: {
         tr: 'Lütfen yıllık elektrik tüketimini girin.',
@@ -3345,10 +3345,11 @@ export const CARBONIQ_QUESTIONS = [
     type: 'text',
     subtype: 'numeric',
     required: false,
-    // conditionalShow removed: 4A-1 is a per-facility loop question whose answer is
-    // a collected object, not the string 'tl'. The condition could never match.
-    // 4A-1a is now always shown after the loop as an optional follow-up; users who
-    // entered kWh values can leave it blank and continue.
+    // Only when some site's consumption was entered as an invoice amount in
+    // TL. 4A-1 offers kWh / MWh only today, so this stays hidden — it was
+    // asked of everyone, with a helper about converting an amount nobody
+    // could have entered.
+    conditionalShow: { questionId: '4A-1', unitIn: ['TL'] },
     reportField: 'scope2.facility_unit_price',
     text: {
       tr: '[Fatura tutarı girilmişse] Birim elektrik fiyatı nedir? (İsteğe bağlı)',
@@ -3405,8 +3406,38 @@ export const CARBONIQ_QUESTIONS = [
     },
     nextByValue: {
       no: '4A-3',
-      yes: '4A-2a',
+      yes: '4A-2s',
     },
+  },
+  {
+    // Which sites the shared-building questions are about — 4A-2a…2c used
+    // to be asked once with no site named, so it was unclear which of
+    // several facilities the share or the m² belonged to.
+    id: '4A-2s',
+    number: '70a',
+    stage: 4,
+    block: '4A',
+    isoRef: 'ISO 14064-1 §5.3',
+    type: 'compound',
+    repeatable: true,
+    required: true,
+    conditionalShow: { questionId: '4A-2', equals: 'yes' },
+    reportField: 'scope2.shared_building_sites',
+    text: {
+      tr: 'Hangi tesis(ler) paylaşımlı ya da kiralık bir binada?',
+      en: 'Which facilities are in a shared or leased building?',
+    },
+    helper: {
+      tr: 'Tanımladığınız tesislerden seçin; birden fazlaysa "+ Başka Ekle" ile ekleyin.',
+      en: 'Choose from the facilities you defined; add more with "+ Add Another".',
+    },
+    fields: [
+      { id: 'facility', type: 'text', optionsFrom: 'facilities', required: true, label: { tr: 'Tesis', en: 'Facility' } },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen en az bir tesis seçin.', en: 'Please choose at least one facility.' },
+    },
+    next: '4A-2a',
   },
   {
     id: '4A-2a',
@@ -3527,6 +3558,9 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Her iki alan da zorunludur.', en: 'Both fields are required.' },
       logicMessage: { tr: 'Şirket alanı bina alanından büyük olamaz.', en: 'Company area cannot exceed building area.' },
     },
+    notAbove: [
+      { field: 'company_m2', max: 'building_m2', message: { tr: 'Şirket kira alanı, bina toplam alanından büyük olamaz. Lütfen değerleri kontrol edin.', en: 'Company lease area cannot be greater than the building total area. Please check the values.' } },
+    ],
     next: '4A-3',
   },
   {
@@ -3587,6 +3621,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'You can obtain the annual production amount from inverter or meter data. The portion sold to the grid will be recorded separately — grid sales do not reduce Scope 2, they are only reported.',
     },
     fields: [
+      // Which site generates — the question used to name none.
+      { id: 'facility', type: 'text', optionsFrom: 'facilities', required: true, label: { tr: 'Üretimin yapıldığı tesis', en: 'Facility where it is generated' } },
       { id: 'production_kwh', label: { tr: 'Yıllık üretim (kWh)', en: 'Annual production (kWh)' }, type: 'numeric', required: true },
       { id: 'grid_sales', label: { tr: 'Şebekeye satış var mı?', en: 'Any grid sales?' }, type: 'boolean', required: true },
       { id: 'grid_sales_kwh', label: { tr: 'Şebeke satış miktarı (kWh)', en: 'Grid sales amount (kWh)' }, type: 'numeric', required: false, conditionalOn: 'grid_sales' },
@@ -3600,6 +3636,9 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Üretim miktarı zorunludur.', en: 'Production amount is required.' },
     },
+    notAbove: [
+      { field: 'grid_sales_kwh', max: 'production_kwh', message: { tr: 'Şebekeye satış, yıllık üretimden fazla olamaz. Lütfen değerleri kontrol edin.', en: 'Grid sales cannot be more than the annual production. Please check the values.' } },
+    ],
     next: '4A-EF',
   },
   {
@@ -3751,12 +3790,12 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope2.purchased_energy_types',
     text: {
-      tr: 'Satın aldığınız enerji türleri ve yıllık miktarlar neler?',
-      en: 'What types of energy do you purchase and in what quantities?',
+      tr: 'Satın aldığınız enerji türleri hangileri?',
+      en: 'Which types of energy do you purchase?',
     },
     helper: {
-      tr: 'Her enerji türü için yıllık tüketim miktarını girin. Birim olarak GJ veya MWh tercih edilir — faturanızda hangisi yazıyorsa onu kullanın.',
-      en: 'Enter the annual consumption amount for each energy type. GJ or MWh is preferred — use whichever appears on your invoice.',
+      tr: 'Satın aldığınız türlerin hepsini seçin — her biri için yıllık miktarı bir sonraki soruda gireceksiniz. Birim olarak GJ veya MWh tercih edilir — faturanızda hangisi yazıyorsa onu kullanın.',
+      en: 'Select every type you buy — you enter the annual amount for each in the next question. GJ or MWh is preferred — use whichever appears on your invoice.',
     },
     options: [
       { value: 'heat', label: { tr: 'Isı / Merkezi ısıtma (district heating)', en: 'Heat / District heating' }, unit: ['GJ', 'MWh'] },
@@ -3955,14 +3994,52 @@ export const CARBONIQ_QUESTIONS = [
     },
     nextByValue: {
       confirmed: 'K3C1-0',
-      edit: '4A-0',
-      add_source: '4A-0',
+      // A picker, as for Scope 1 (TY-edit): only the chosen section is gone
+      // through again, then back here — "Düzenle" used to restart at Q67.
+      edit: '4C-edit',
+      add_source: '4C-edit',
       skip_to_report: '6-GİRİŞ',
     },
   },
 
   // ── STAGE 5 ─ Scope 3 Emissions ───────────────────────────────────────────
   // 27 questions · #80–#106 · DOCX v3.0
+  {
+    id: '4C-edit',
+    number: '80a',
+    stage: 4,
+    block: '4C',
+    isoRef: 'ISO 14064-1 §5.3',
+    type: 'section_picker',
+    required: true,
+    text: {
+      tr: 'Hangi Kapsam 2 bölümünü düzenlemek istiyorsunuz?',
+      en: 'Which Scope 2 section would you like to edit?',
+    },
+    helper: {
+      tr: 'Seçtiğiniz bölümün ilk sorusuna yönlendirileceksiniz. Önceki yanıtlarınız dolu gelir; yalnızca değiştirmek istediğinizi güncelleyip Kapsam 2 özet ekranına dönersiniz.',
+      en: 'You will be taken to the first question of the selected section. Your earlier answers are filled in; change only what you need and return to the Scope 2 summary.',
+    },
+    options: [
+      {
+        value: '4A-0',
+        label: { tr: '4A — Satın Alınan Elektrik', en: '4A — Purchased Electricity' },
+        description: { tr: 'Tesis tüketimleri, paylaşımlı bina, sahada üretim, tedarikçi beyanı', en: 'Site consumption, shared building, on-site generation, supplier declaration' },
+      },
+      {
+        value: '4B-0',
+        label: { tr: '4B — Satın Alınan Isı / Buhar / Soğutma', en: '4B — Purchased Heat / Steam / Cooling' },
+        description: { tr: 'Bölgesel ısıtma, buhar, soğutma, basınçlı hava', en: 'District heating, steam, cooling, compressed air' },
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen bir bölüm seçin.', en: 'Please choose a section.' },
+    },
+    nextByValue: {
+      '4A-0': '4A-0',
+      '4B-0': '4B-0',
+    },
+  },
   {
     id: 'K3C1-0',
     number: 81,
@@ -6849,6 +6926,15 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     const obj = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     const fieldsErr = validateCompoundFields(question.fields, obj, lang);
     if (!fieldsErr.ok) return fieldsErr;
+    // One amount that cannot exceed another (4A-2c company m² ≤ building m²,
+    // 4A-3a grid sales ≤ production). Skipped while either is empty.
+    for (const rule of question.notAbove || []) {
+      const a = parseLocalizedNumber(obj[rule.field]);
+      const b = parseLocalizedNumber(obj[rule.max]);
+      if (Number.isFinite(a) && Number.isFinite(b) && String(obj[rule.field] ?? '').trim() !== '' && String(obj[rule.max] ?? '').trim() !== '' && a > b) {
+        return { ok: false, message: rule.message?.[lang] || rule.message?.en };
+      }
+    }
     // Shares that must add up to ~100 % (K3C7-3's commute modal split).
     if (question.sumRange) {
       const { fields: ids, min, max } = question.sumRange;
@@ -7117,6 +7203,16 @@ export function getSystemMessage(question, value, lang = 'en') {
     const msg = keyedMsg ?? (hasValue ? msgs['selected'] : undefined);
     if (!msg) return null;
     return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+  }
+
+  // An amount question answered with 0 ("0 kWh"): its zeroWarning, if any
+  // (4A-1 — a site with no electricity use is rare enough to double-check).
+  if ((question.type === 'text' || question.type === 'equipment_loop' || question.type === 'fuel_loop') && msgs.zeroWarning && typeof value === 'string') {
+    const amount = parseLocalizedNumber(value.trim().split(/\s+/)[0]);
+    if (amount === 0) {
+      const msg = msgs.zeroWarning;
+      return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+    }
   }
 
   // Country/city: key = selected country code (e.g. 'TR', 'GB', 'OTHER').

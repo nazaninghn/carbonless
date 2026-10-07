@@ -282,7 +282,7 @@ class StepEntriesTests(TestCase):
     def test_supplier_ef_document_creates_no_entry(self):
         self._step('3A-EF-a', {'ef_year': '2026', 'ef_unit': 'kgCO2e_kWh', 'ef_value': '5', 'ef_source': 'X'})
         self._step('4A-1a', '5')
-        self._step('4A-3a', {'production_kwh': '5', 'grid_sales': True, 'grid_sales_kwh': '5'})
+        self._step('4A-3a', {'facility': 'Fabrika', 'production_kwh': '5', 'grid_sales': True, 'grid_sales_kwh': '5'})
         self.assertEqual(self._entries(), [])
 
     def test_each_fuel_gets_its_own_factor(self):
@@ -1119,4 +1119,18 @@ class NewInventoryYearTests(TestCase):
         # Only the source lists, never the year's amounts.
         self.assertEqual(data['previous_selections'], {'3A-1': ['EQ-3A-01'], '3B-1': ['EQ-3B-01', 'EQ-3B-05']})
         self.assertEqual(data['previous_year'], 2025)
+
+    def test_scope2_amounts_cannot_exceed_their_total(self):
+        from .carboniq_validation import validate_generic_step
+        ok = lambda sid, ans: validate_generic_step(sid, {'answer': ans}, lang='tr')
+        self.assertEqual(ok('4A-2c', {'company_m2': '350', 'building_m2': '2400'}), (True, None))
+        valid, msg = ok('4A-2c', {'company_m2': '3000', 'building_m2': '2400'})
+        self.assertFalse(valid)
+        self.assertIn('bina toplam alanından büyük olamaz', msg)
+        gen = {'facility': 'Gebze Fabrika', 'production_kwh': '20000', 'grid_sales': True}
+        self.assertEqual(ok('4A-3a', {**gen, 'grid_sales_kwh': '5000'}), (True, None))
+        self.assertFalse(ok('4A-3a', {**gen, 'grid_sales_kwh': '25000'})[0])
+        # No sales amount given: nothing to compare.
+        self.assertEqual(ok('4A-3a', gen), (True, None))
+        self.assertEqual(ok('4A-2s', {'items': [{'facility': 'Depo Ankara'}]}), (True, None))
 

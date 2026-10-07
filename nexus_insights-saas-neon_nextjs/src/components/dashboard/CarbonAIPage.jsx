@@ -236,8 +236,14 @@ const YEAR_SPECIFIC_STEPS = new Set(['B3', 'B4', 'B6']);
 // answer) before the value/membership check runs.
 function conditionalShowMatches(conditionalShow, answersMap) {
   if (!conditionalShow) return true;
-  const { questionId, field, includesValue, inValues, equals, greaterThan } = conditionalShow;
+  const { questionId, field, includesValue, inValues, equals, greaterThan, unitIn } = conditionalShow;
   const raw = readAnswerValue(answersMap, questionId);
+  // unitIn: an "amount unit" answer (or any item of a per-site loop) was
+  // given in one of these units — 4A-1a only for a TL invoice amount.
+  if (unitIn) {
+    const vals = raw && typeof raw === 'object' ? Object.values(raw) : [raw];
+    return vals.some(v => typeof v === 'string' && unitIn.includes(v.trim().split(/\s+/).pop()));
+  }
 
   let candidates;
   if (Array.isArray(raw)) {
@@ -355,6 +361,18 @@ function normalizeAnswerValue(q, raw) {
     return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
   }
   return raw ?? '';
+}
+
+// An earlier amount comes back in its stored form ("120000 kWh", "2.1");
+// put it in the input the way the user types numbers ("120.000", "2,1").
+function localizeStoredAmount(q, v, lang) {
+  const numericQ = q?.subtype === 'numeric' || q?.type === 'numeric' || !!q?.units;
+  if (!numericQ || typeof v !== 'string') return v;
+  const m = /^(\d+(?:\.\d+)?)(\s+\S.*)?$/.exec(v.trim());
+  if (!m) return v;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n) || (n < 1000 && !m[1].includes('.'))) return v;
+  return `${n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 6 })}${m[2] || ''}`;
 }
 
 // Source lists whose earlier-inventory answer is shown as a reminder (3A-1 …).
@@ -528,6 +546,12 @@ function orderedFieldEntries(q, obj) {
   return Object.entries(obj || {}).sort(([a], [b]) => idx(a) - idx(b));
 }
 
+// Unit codes that need a Turkish label (the stored value keeps the code).
+const UNIT_LABELS_TR = { tonnes: 'ton', litres: 'litre' };
+function unitLabel(u, lang) {
+  return (lang === 'tr' && UNIT_LABELS_TR[u]) || u;
+}
+
 // "12000 m³" (stored with a plain dot decimal) → "12.000 m³" in Turkish.
 function amountWithUnitText(q, value, lang) {
   if (!q?.units || typeof value !== 'string') return null;
@@ -535,10 +559,10 @@ function amountWithUnitText(q, value, lang) {
   if (!m) return null;
   const n = Number(m[1]);
   if (!Number.isFinite(n)) return null;
-  return `${n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 })} ${m[2]}`;
+  return `${n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 4 })} ${unitLabel(m[2], lang)}`;
 }
 
-function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
+function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers = null } = {}) {
   if (!q || value === undefined || value === null || value === '') return '—';
   if (isAggregate && q.loopSource && typeof value === 'object' && !Array.isArray(value)) {
     const sourceQ = getQuestionById(q.loopSource);
@@ -546,9 +570,13 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false } = {}) {
       const opt = sourceQ?.options?.find(o => o.value === itemKey);
       const isCountItem = !opt && /^\d+$/.test(itemKey)
         && (sourceQ?.subtype === 'numeric' || sourceQ?.type === 'numeric');
+      // Per-facility loops (4A-1, 2A-3) are keyed "1", "2"…: show the
+      // facility's name from 2A-2 when known, not "Tesis 1".
+      const siteName = isCountItem && answers
+        ? String(readAnswerValue(answers, '2A-2')?.[itemKey]?.name || '').trim() : '';
       const itemLabel = opt
         ? stripOptionCode(opt.label?.[lang] || opt.label?.en || itemKey)
-        : isCountItem ? `${lang === 'tr' ? 'Tesis' : 'Facility'} ${itemKey}` : itemKey;
+        : isCountItem ? (siteName || `${lang === 'tr' ? 'Tesis' : 'Facility'} ${itemKey}`) : itemKey;
       const formatted = getDisplayValue(q, itemVal, lang); // recurse on the plain per-item value
       return `${itemLabel}: ${formatted}`;
     });
@@ -1322,7 +1350,7 @@ function Scope2SummaryTable({ answers, lang, tr }) {
   };
   const amountText = (v) => {
     const m = String(v ?? '').trim().match(/^([\d.,]+)\s*(.*)$/);
-    return m ? `${num(m[1])}${m[2] ? ` ${m[2]}` : ''}` : String(v ?? '');
+    return m ? `${num(m[1])}${m[2] ? ` ${unitLabel(m[2], tr ? 'tr' : 'en')}` : ''}` : String(v ?? '');
   };
   const facilities = ra('2A-2') || {};
   const siteName = (k) => String(facilities?.[k]?.name || '').trim() || `${tr ? 'Tesis' : 'Site'} ${k}`;
@@ -1333,15 +1361,20 @@ function Scope2SummaryTable({ answers, lang, tr }) {
   const shared = ra('4A-2') === 'yes';
   const share = ra('4A-2b');
   const area = ra('4A-2c');
-  const sharedText = !shared ? null : share
+  const sharedSites = (() => {
+    const v = ra('4A-2s');
+    const rows = Array.isArray(v?.items) ? v.items : Array.isArray(v) ? v : [];
+    return rows.map(r => String(r?.facility || '').trim()).filter(Boolean).join(', ');
+  })();
+  const sharedText = !shared ? null : (sharedSites ? `${sharedSites} — ` : '') + (share
     ? `${tr ? 'Bina yönetimi payı' : 'Building management share'}: ${amountText(share)} kWh`
     : (area && typeof area === 'object' && area.company_m2)
       ? `${tr ? 'Alan' : 'Area'}: ${num(area.company_m2)} / ${num(area.building_m2)} m²`
-      : (tr ? 'Paylaşımlı bina' : 'Shared building');
+      : (tr ? 'Paylaşımlı bina' : 'Shared building'));
 
   const gen = ra('4A-3a');
   const genText = ra('4A-3') !== 'yes' ? null : (gen && typeof gen === 'object' && gen.production_kwh)
-    ? `${tr ? 'Üretim' : 'Production'}: ${num(gen.production_kwh)} kWh${gen.grid_sales && gen.grid_sales_kwh ? ` · ${tr ? 'şebekeye satış' : 'sold to grid'}: ${num(gen.grid_sales_kwh)} kWh` : ''}`
+    ? `${gen.facility ? `${gen.facility} — ` : ''}${tr ? 'Üretim' : 'Production'}: ${num(gen.production_kwh)} kWh${gen.grid_sales && gen.grid_sales_kwh ? ` · ${tr ? 'şebekeye satış' : 'sold to grid'}: ${num(gen.grid_sales_kwh)} kWh` : ''}`
     : null;
 
   const heatQ = getQuestionById('4B-1');
@@ -1973,7 +2006,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
                   : 'border-[#175022]/10 bg-white text-[#175022]/55 hover:border-[#175022]/20 hover:bg-[#F1FCF2]'
               }`}
             >
-              {u}
+              {unitLabel(u, lang)}
             </button>
           ))}
         </div>
@@ -1999,6 +2032,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 // later section again — as the picker promises. Returns the next question id.
 const SECTION_EDIT_FLOWS = [
   { summary: 'TY-1', picker: 'TY-edit', stage: 3, editValues: ['edit'] },
+  { summary: '4C-1', picker: '4C-edit', stage: 4, editValues: ['edit', 'add_source'] },
   { summary: 'K3-TY', picker: 'K3-TY-edit', stage: 5, editValues: ['edit', 'add_category'] },
   // 7C-1 "Hayır": fix a whole stage, then come back to the sign-off check.
   { summary: '7C-1', picker: '7C-edit', level: 'stage', editValues: ['fix_missing'] },
@@ -2192,7 +2226,7 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
               // answers[q.id] directly showed literally "[object Object]" for
               // every row once a report had been reloaded/resumed even once.
               const answer = readAnswerValue(answers, q.id);
-              const displayVal = getDisplayValue(q, answer, lang, { isAggregate: true });
+              const displayVal = getDisplayValue(q, answer, lang, { isAggregate: true, answers });
               const qText = stripDocLabels(q.text?.[lang] || q.text?.en || q.id);
               return (
                 <tr key={q.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-[#175022]/2'}>
@@ -3013,7 +3047,7 @@ export function QuestionnaireTab({
       ? loopItemValue(readAnswerValue(answers, currentId), buildLoopItems(currentId, answers, lang)?.items?.[0])
       : undefined;
     setAnswerValue(itemLabel
-      ? (resumeLoopValue !== undefined ? normalizeAnswerValue(firstQ, resumeLoopValue) : getInitialValue(firstQ))
+      ? (resumeLoopValue !== undefined ? localizeStoredAmount(firstQ, normalizeAnswerValue(firstQ, resumeLoopValue), lang) : getInitialValue(firstQ))
       : normalizeAnswerValue(firstQ, readAnswerValue(answers, currentId)) ?? getInitialValue(firstQ));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -3197,7 +3231,7 @@ export function QuestionnaireTab({
           existing = String(reportYearRef.current);
         }
       }
-      setAnswerValue(existing !== undefined ? normalizeAnswerValue(currentQuestion, existing) : getInitialValue(currentQuestion));
+      setAnswerValue(existing !== undefined ? localizeStoredAmount(currentQuestion, normalizeAnswerValue(currentQuestion, existing), lang) : getInitialValue(currentQuestion));
       // Marks answerValue as belonging to THIS question. React usually runs
       // this effect before the browser paints, but on a transcript this long
       // the new question's options can paint first, leaving a window where they
@@ -3563,7 +3597,7 @@ export function QuestionnaireTab({
         setLoopState(prev => prev ? { ...prev, currentIndex: nextIndex, collected: newCollected } : null);
         const earlierItemValue = loopItemValue(answersRef.current[currentId], items[nextIndex]);
         const nextItemValue = earlierItemValue !== undefined ? earlierItemValue : facilityPrefill(q, nextIndex);
-        setAnswerValue(nextItemValue !== undefined ? normalizeAnswerValue(q, nextItemValue) : getInitialValue(q));
+        setAnswerValue(nextItemValue !== undefined ? localizeStoredAmount(q, normalizeAnswerValue(q, nextItemValue), lang) : getInitialValue(q));
 
         // Clear the mutex AFTER setIsTyping(true) to eliminate the window where
         // both guards are simultaneously false.
@@ -4314,7 +4348,7 @@ export function QuestionnaireTab({
                   </p>
                 )}
                 {/* 4A-1: the reminder 3B-5 promises for electric vehicles. */}
-                {currentId === '4A-1' && (() => {
+                {currentId === '4A-1' && !(loopState?.questionId === '4A-1' && loopState.currentIndex > 0) && (() => {
                   const fuels = readAnswerValue(answers, '3B-5');
                   const evs = fuels && typeof fuels === 'object'
                     ? Object.entries(fuels).filter(([, f]) => f === 'electric' || f === 'hybrid').map(([k]) => k) : [];
