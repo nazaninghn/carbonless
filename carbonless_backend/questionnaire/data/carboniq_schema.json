@@ -4085,6 +4085,21 @@
         ]
       },
       {
+        "id": "other_desc",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 120,
+        "format": null,
+        "conditionalOn": "waste_type",
+        "conditionalOnValue": [
+          "WT-99"
+        ],
+        "options": null
+      },
+      {
         "id": "quantity_kg",
         "type": "numeric",
         "subtype": null,
@@ -4306,6 +4321,21 @@
         "format": null,
         "conditionalOn": null,
         "conditionalOnValue": null,
+        "options": null
+      },
+      {
+        "id": "other_desc",
+        "type": "text",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": 120,
+        "format": null,
+        "conditionalOn": "travel_mode",
+        "conditionalOnValue": [
+          "BT-99"
+        ],
         "options": null
       },
       {
