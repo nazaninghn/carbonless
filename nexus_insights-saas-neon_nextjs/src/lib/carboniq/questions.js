@@ -4677,7 +4677,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'What is your data level and waste types?',
     },
     helper: {
-      tr: 'Veri düzeyinizi seçip ardından sahip olduğunuz atık türlerini işaretleyin. Her tür için miktar ve bertaraf yöntemi soracağız.',
+      tr: 'Veri düzeyinizi seçin. Bertaraf firmasının beyanı varsa önce beyandaki toplam emisyonu, ardından atık türlerinizi, miktarlarını ve bertaraf yöntemlerini gireceksiniz; diğer düzeylerde doğrudan bu ayrıntılara geçersiniz.',
       en: 'Select your data level then mark the waste types you have. We will ask for quantity and disposal method for each type.',
     },
     options: [
@@ -4768,7 +4768,9 @@ export const CARBONIQ_QUESTIONS = [
     },
     fields: [
       { id: 'waste_type', type: 'select', required: true, label: { tr: 'Atık türü', en: 'Waste type' }, options: WT_OPTIONS },
-      { id: 'quantity_kg', type: 'numeric', required: true, label: { tr: 'Miktar (kg)', en: 'Quantity (kg)' } },
+      // "Diğer" said nothing about what the waste is.
+      { id: 'other_desc', type: 'text', required: true, maxLength: 120, conditionalOn: 'waste_type', conditionalOnValue: ['WT-99'], label: { tr: 'Atık türü açıklaması', en: 'Waste type description' }, placeholder: { tr: 'Örn: Kimyasal çamur', en: 'e.g. chemical sludge' } },
+      { id: 'quantity_kg', type: 'numeric', required: true, placeholder: { tr: 'Örn: 50.000 (50 ton = 50.000 kg)', en: 'e.g. 50,000 (50 t = 50,000 kg)' }, label: { tr: 'Miktar (kg)', en: 'Quantity (kg)' } },
       { id: 'disposal_method', type: 'select', required: true, label: { tr: 'Bertaraf yöntemi', en: 'Disposal method' }, options: WASTE_DISPOSAL_OPTIONS },
     ],
     systemMessages: {
@@ -4929,26 +4931,29 @@ export const CARBONIQ_QUESTIONS = [
     },
     fields: [
       { id: 'travel_mode', type: 'select', required: true, label: { tr: 'Seyahat modu', en: 'Travel mode' }, options: BT_OPTIONS },
-      { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Kişi-km / km / gece', en: 'Person-km / km / nights' } },
+      // The label names the unit for the chosen mode (labelByValue).
+      { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Kişi-km / km / gece', en: 'Person-km / km / nights' },
+        labelByValue: { field: 'travel_mode', labels: { 'BT-01': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-02': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-03': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-04': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-05': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-06': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-07': { tr: 'Km', en: 'Km' }, 'BT-08': { tr: 'Km', en: 'Km' }, 'BT-09': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-10': { tr: 'Gece sayısı', en: 'Number of nights' } } } },
+      { id: 'other_desc', type: 'text', required: true, maxLength: 120, conditionalOn: 'travel_mode', conditionalOnValue: ['BT-99'], label: { tr: 'Seyahat türü açıklaması', en: 'Travel type description' }, placeholder: { tr: 'Örn: Charter uçuş', en: 'e.g. charter flight' } },
       {
         id: 'cabin_class', type: 'select', required: false,
         conditionalOn: 'travel_mode', conditionalOnValue: BT_FLIGHT_MODES,
-        label: { tr: '[Uçuş] Kabin sınıfı', en: '[Flight] Cabin class' }, options: CABIN_CLASS_OPTIONS,
+        label: { tr: 'Kabin sınıfı', en: 'Cabin class' }, options: CABIN_CLASS_OPTIONS,
       },
       {
         id: 'rfi_applied', type: 'boolean', required: false,
         conditionalOn: 'travel_mode', conditionalOnValue: BT_FLIGHT_MODES,
-        label: { tr: '[Uçuş] RFI (radyatif zorlama, 1.9x) uygulansın mı?', en: '[Flight] Apply RFI (radiative forcing, 1.9x)?' },
+        label: { tr: 'RFI (radyatif zorlama, 1.9x) uygulansın mı?', en: 'Apply RFI (radiative forcing, 1.9x)?' },
       },
       {
         id: 'rental_fuel', type: 'select', required: false,
         conditionalOn: 'travel_mode', conditionalOnValue: ['BT-07'],
-        label: { tr: '[Kiralık araç] Yakıt türü', en: '[Rental car] Fuel type' }, options: RENTAL_FUEL_OPTIONS,
+        label: { tr: 'Yakıt türü', en: 'Fuel type' }, options: RENTAL_FUEL_OPTIONS,
       },
       {
         id: 'hotel_class', type: 'select', required: false,
         conditionalOn: 'travel_mode', conditionalOnValue: ['BT-10'],
-        label: { tr: '[Otel] Kategori', en: '[Hotel] Category' }, options: HOTEL_CLASS_OPTIONS,
+        label: { tr: 'Otel kategorisi', en: 'Hotel category' }, options: HOTEL_CLASS_OPTIONS,
       },
     ],
     systemMessages: {
@@ -4994,7 +4999,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.data_source',
     text: {
-      tr: 'Çalışanlar işe nasıl geliyor? Commute anketi yapıldı mı?',
+      tr: 'Çalışanlar işe nasıl geliyor? İşe gidiş-geliş anketi yapıldı mı?',
       en: 'How do employees commute? Has a commute survey been conducted?',
     },
     helper: {
@@ -5103,6 +5108,7 @@ export const CARBONIQ_QUESTIONS = [
     stage: 5,
     block: '5G',
     isoRef: 'ISO 14064-1 §5.4',
+    summaryLabel: { tr: 'Servis', en: 'Shuttle' },
     type: 'single_select',
     required: true,
     conditionalShow: { questionId: 'K3C7-3', field: 'shuttle_pct', greaterThan: 0 },
@@ -5139,6 +5145,7 @@ export const CARBONIQ_QUESTIONS = [
     stage: 5,
     block: '5G',
     isoRef: 'ISO 14064-1 §5.4',
+    summaryLabel: { tr: 'Ortalama mesafe (km)', en: 'Average distance (km)' },
     type: 'text',
     subtype: 'numeric',
     required: true,
@@ -5161,6 +5168,7 @@ export const CARBONIQ_QUESTIONS = [
     stage: 5,
     block: '5G',
     isoRef: 'ISO 14064-1 §5.4',
+    summaryLabel: { tr: 'Elektrikli araç kullanan', en: 'EV users' },
     type: 'text',
     subtype: 'numeric',
     required: false,
@@ -5171,8 +5179,8 @@ export const CARBONIQ_QUESTIONS = [
     },
     placeholder: { tr: 'Örn: 4 (yoksa 0 girin)', en: 'Example: 4 (enter 0 if none)' },
     helper: {
-      tr: 'Elektrikli araç kullananlar için Kapsam 2\'deki şebeke emisyon faktörü uygulanır — fosil yakıtlı araçlardan daha düşük emisyon. Bilmiyorsanız boş bırakabilirsiniz.',
-      en: 'Electric vehicle users get the Scope 2 grid emission factor applied — lower emissions than fossil-fuel vehicles. You may leave this blank if unknown.',
+      tr: 'Elektrikli araç kullananlar için Kapsam 2\'deki şebeke emisyon faktörü uygulanır — fosil yakıtlı araçlardan daha düşük emisyon.',
+      en: 'Electric vehicle users get the Scope 2 grid emission factor applied — lower emissions than fossil-fuel vehicles.',
     },
     next: 'K3C8-0',
   },
@@ -7198,6 +7206,31 @@ export function scope3RowWarning(question, value, answers, lang = 'en') {
     return tr
       ? `${years} yılında alınan varlık girdiniz; bu envanter ${year} yılı içindir. Kategori 2 kuralına göre başka yılda alınan varlıklar bu envantere dahil edilmez. Yıl yanlışsa "Düzenle" ile düzeltin.`
       : `You entered an asset bought in ${years}; this inventory is for ${year}. Under the Category 2 rule, assets bought in another year are not included. If the year is wrong, correct it with "Edit".`;
+  }
+  if (question?.id === 'K3C7-5') {
+    // EV users among car commuters: more than the car commuters themselves
+    // (office + hybrid staff × car share from 95c) cannot be right.
+    const ev = parseLocalizedNumber(value);
+    const heads = readAnswerValue(answers || {}, 'K3C7-1') || {};
+    const split = readAnswerValue(answers || {}, 'K3C7-3') || {};
+    const staff = (parseLocalizedNumber(heads.fulltime_count) || 0) + (parseLocalizedNumber(heads.hybrid_count) || 0);
+    const carPct = parseLocalizedNumber(split.car_pct);
+    if (!Number.isFinite(ev) || !Number.isFinite(carPct) || !staff) return null;
+    const carUsers = Math.round(staff * carPct / 100);
+    if (ev <= carUsers) return null;
+    const n = (x) => x.toLocaleString(tr ? 'tr-TR' : 'en-US');
+    return tr
+      ? `Elektrikli araç kullanan ${n(ev)} çalışan girdiniz; ama girdiklerinize göre özel araçla gelen yaklaşık ${n(carUsers)} kişi var (${n(staff)} ofis/hibrit çalışan × %${n(carPct)}). Sayılardan biri yanlışsa düzeltin.`
+      : `You entered ${n(ev)} EV users, but your answers give about ${n(carUsers)} car commuters (${n(staff)} office/hybrid staff × ${n(carPct)}%). Correct whichever number is wrong.`;
+  }
+  if (question?.id === 'K3C7-6' && value === 'company_owned') {
+    // Company shuttles belong in Scope 1 — only useful if one was entered there.
+    const vehicles = readAnswerValue(answers || {}, '3B-1');
+    const list = Array.isArray(vehicles) ? vehicles : [];
+    if (list.includes('EQ-3B-02') || list.includes('EQ-3B-03')) return null;
+    return tr
+      ? 'Kapsam 1\'de (Soru 49) minibüs veya otobüs/servis aracı girmediniz. Şirkete ait servisin yakıtı orada sayılır; eklemezseniz bu servis hiçbir yerde sayılmaz.'
+      : 'You did not enter a minibus or bus/shuttle in Scope 1 (Question 49). A company-owned shuttle\'s fuel is counted there; if you do not add it, the shuttle is not counted anywhere.';
   }
   if (question?.id === 'K3C4-2') {
     const notes = [];

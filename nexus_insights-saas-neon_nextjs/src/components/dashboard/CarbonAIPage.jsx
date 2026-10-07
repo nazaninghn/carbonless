@@ -355,16 +355,24 @@ function normalizeAnswerValue(q, raw) {
     if (q.repeatable) {
       // A question made repeatable later (e.g. 6C-2) may still hold one plain
       // object from before — keep it as the first item instead of dropping it.
-      if (raw && typeof raw === 'object' && Array.isArray(raw.items)) return { items: raw.items, draft: {} };
-      if (raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0) {
-        // …unless it lacks a field the question requires now (K3C1-4a's new
-        // category): then it opens in the form to be completed, since a row
-        // in the list can only be removed, not edited.
-        const missing = (q.fields || []).some(f => f.required !== false && !f.conditionalOn
-          && String(raw[f.id] ?? '').trim() === '');
-        return missing ? { items: [], draft: raw } : { items: [raw], draft: {} };
-      }
-      return { items: [], draft: {} };
+      // A saved row that lacks a field the question requires now (K3C1-4a's
+      // category, the description of a "Diğer" waste) opens in the form to
+      // be completed: a row in the list can only be removed, not edited.
+      const incomplete = (row) => (q.fields || []).some(f => {
+        if (f.required === false) return false;
+        if (f.conditionalOn) {
+          const c = row[f.conditionalOn];
+          const met = f.conditionalOnValue ? f.conditionalOnValue.includes(c) : (c === true || c === 'true');
+          if (!met) return false;
+        }
+        return String(row[f.id] ?? '').trim() === '';
+      });
+      let rows = [];
+      if (raw && typeof raw === 'object' && Array.isArray(raw.items)) rows = raw.items;
+      else if (raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0) rows = [raw];
+      const firstOpen = rows.findIndex(r => r && typeof r === 'object' && incomplete(r));
+      if (firstOpen === -1) return { items: rows, draft: {} };
+      return { items: rows.filter((_, i) => i !== firstOpen), draft: rows[firstOpen] };
     }
     return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
   }
@@ -609,6 +617,11 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
   // Fields whose options come from other answers (K3C1-4a's category) show
   // their label, not the stored code, when the answers are at hand.
   const shownFields = answers ? resolveFieldOptions(q.fields || [], answers) : q.fields;
+  // A field whose label follows another field's value (K3C6-2 quantity).
+  const fieldLabel = (field, k, obj) => {
+    const l = field?.labelByValue?.labels?.[obj?.[field.labelByValue.field]] || field?.label;
+    return l?.[lang] || l?.en || k;
+  };
   if (q.type === 'compound' && q.repeatable) {
     const items = Array.isArray(value?.items) ? value.items : (Array.isArray(value) ? value : []);
     if (items.length === 0) return '—';
@@ -618,7 +631,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
           .filter(([, v]) => v !== '' && v !== undefined && v !== null)
           .map(([k, v]) => {
             const field = shownFields?.find(f => f.id === k);
-            const label = field?.label?.[lang] || field?.label?.en || k;
+            const label = fieldLabel(field, k, item);
             return `${label}: ${fieldValueText(field, v, lang)}`;
           })
           .join(', ');
@@ -632,7 +645,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
       .filter(([, v]) => v !== '' && v !== undefined && v !== null)
       .map(([k, v]) => {
         const field = shownFields?.find(f => f.id === k);
-        const label = field?.label?.[lang] || field?.label?.en || k;
+        const label = fieldLabel(field, k, value);
         return `${label}: ${fieldValueText(field, v, lang)}`;
       })
       .join(' · ') || '—';
@@ -1103,7 +1116,13 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
         return (
           <div key={field.id} className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-[#175022]/70">
-              {field.label?.[lang] || field.label?.en || field.id}
+              {/* labelByValue: the label follows another field's choice
+                  (K3C6-2's quantity says "Gece sayısı" for a hotel). */}
+              {(() => {
+                const byVal = field.labelByValue?.labels?.[val[field.labelByValue.field]];
+                const lbl = byVal || field.label;
+                return lbl?.[lang] || lbl?.en || field.id;
+              })()}
               {field.required && <span className="ml-1 text-red-400">*</span>}
             </label>
             {field.type === 'boolean' ? (
@@ -1470,7 +1489,13 @@ function Scope3SummaryTable({ answers, lang, tr }) {
     // the gate answer itself.
     const extra = details
       .filter(q => q.id in answers)
-      .map(q => getDisplayValue(q, readAnswerValue(answers, q.id), lang, { isAggregate: !!q.loopSource, answers }))
+      .map(q => {
+        const t = getDisplayValue(q, readAnswerValue(answers, q.id), lang, { isAggregate: !!q.loopSource, answers });
+        // A bare value ("15", "300") says nothing on its own: a question
+        // with a summaryLabel is shown as "Label: value".
+        const lbl = q.summaryLabel?.[lang] || q.summaryLabel?.en;
+        return lbl && t && t !== '—' ? `${lbl}: ${t}` : t;
+      })
       .filter(t => t && t !== '—')
       .join(' · ') || (gate && gate.id in answers && !skipped ? getDisplayValue(gate, gateVal, lang) : '');
     return {

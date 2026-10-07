@@ -1144,3 +1144,14 @@ class NewInventoryYearTests(TestCase):
         self.assertEqual(ok('K3C1-4a', {'items': [row, {**row, 'category': 'SC-10'}]}), (True, None))
         self.assertEqual(ok('K3C3-custom', {'factor_type': 'td_loss', 'value': '2.1', 'unit': '%', 'source': 'TEİAŞ 2024'}), (True, None))
         self.assertFalse(ok('K3C3-custom', {'factor_type': 'td_loss', 'value': '2.1', 'unit': '%'})[0])
+
+    def test_other_waste_and_travel_need_a_description(self):
+        from .carboniq_validation import validate_generic_step
+        ok = lambda sid, ans: validate_generic_step(sid, {'answer': ans}, lang='tr')
+        waste = {'waste_type': 'WT-99', 'quantity_kg': '5000', 'disposal_method': 'incineration'}
+        self.assertFalse(ok('K3C5-2', {'items': [waste]})[0])
+        self.assertEqual(ok('K3C5-2', {'items': [{**waste, 'other_desc': 'Kimyasal çamur'}]}), (True, None))
+        self.assertEqual(ok('K3C5-2', {'items': [{**waste, 'waste_type': 'WT-01'}]}), (True, None))
+        trip = {'travel_mode': 'BT-99', 'quantity': '300'}
+        self.assertFalse(ok('K3C6-2', {'items': [trip]})[0])
+        self.assertEqual(ok('K3C6-2', {'items': [{**trip, 'other_desc': 'Charter uçuş'}]}), (True, None))
