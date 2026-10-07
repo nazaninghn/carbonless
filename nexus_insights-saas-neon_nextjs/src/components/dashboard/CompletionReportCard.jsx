@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Download, RotateCcw, CheckCircle2, Building2, AlertTriangle, Loader2 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 
@@ -44,6 +44,20 @@ export default function CompletionReportCard({
   // so a single boolean would grey out both buttons whichever was clicked.
   const [downloading, setDownloading] = useState(null); // 'profile' | 'iso' | 'pack' | null
   const [pdfError, setPdfError] = useState('');
+  // Advisor approvals still open for this inventory: the report is finished
+  // but not reviewed until they are decided, so the card says so.
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  useEffect(() => {
+    if (!report?.report_id) return;
+    let alive = true;
+    api.getPendingAdvisorApprovals()
+      .then(res => (res.ok ? res.json() : []))
+      .then(rows => {
+        if (alive && Array.isArray(rows)) setPendingApprovals(rows.filter(r => r.report_id === report.report_id).length);
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [report?.report_id]);
 
   const download = async (kind) => {
     if (downloading || !report?.report_id) return;
@@ -121,6 +135,24 @@ export default function CompletionReportCard({
                 ? 'Karbon raporunuz başarıyla oluşturuldu. Tüm ayrıntıları aşağıda inceleyin.'
                 : 'Your carbon report has been successfully created. Review the full details below.'}
             </p>
+
+            {pendingApprovals > 0 && (
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span className="flex-1 min-w-0">
+                  {tr
+                    ? `Bu envanterde ${pendingApprovals} danışman onayı bekliyor. Rapor bu kararlar verilene kadar gözden geçirilmiş sayılmaz.`
+                    : `${pendingApprovals} advisor approval${pendingApprovals > 1 ? 's are' : ' is'} pending for this inventory. The report is not reviewed until they are decided.`}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'review' } }))}
+                  className="rounded-md bg-amber-600 px-3 py-1 text-xs font-semibold text-white hover:bg-amber-700"
+                >
+                  {tr ? 'Onay Bekleyenler' : 'Review'}
+                </button>
+              </div>
+            )}
 
             {/* Key facts grid */}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 p-4 bg-white/60 rounded-lg">

@@ -47,7 +47,10 @@ export function formatAdvisorAnswer(questionId, answer, tr) {
   const q = getQuestionById(questionId);
   let text = '';
 
-  if (q?.fields?.length && answer && typeof answer === 'object' && !Array.isArray(answer)) {
+  if (q?.fields?.length && answer && Array.isArray(answer.items)) {
+    // repeatable compound: { items: [...], draft: {...} } — one part per row
+    text = answer.items.map((v) => compound(v, q.fields, lang)).filter(Boolean).join(' | ');
+  } else if (q?.fields?.length && answer && typeof answer === 'object' && !Array.isArray(answer)) {
     const isPerItem = Object.values(answer).length > 0
       && Object.values(answer).every((v) => v && typeof v === 'object' && !Array.isArray(v));
     text = isPerItem

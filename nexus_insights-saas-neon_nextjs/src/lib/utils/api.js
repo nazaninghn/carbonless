@@ -308,6 +308,7 @@ export const api = {
   }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   getCompanyHistory: (lang) => request(`/accounts/history/${lang ? `?lang=${lang}` : ''}`),
+  getReportAssumptions: (reportId, lang) => request(`/questionnaire/${reportId}/assumptions/?lang=${lang === 'en' ? 'en' : 'tr'}`),
   getPreviousCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/previous-profile/`),
   reuseCompanyProfile: (reportId, reportingYear, progress = null) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST', body: JSON.stringify({ reporting_year: reportingYear, ...(progress ? { progress } : {}) }) }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),

@@ -270,28 +270,60 @@ function conditionalShowMatches(conditionalShow, answersMap) {
   return candidates.includes(includesValue);
 }
 
-// Questions the user will actually be asked, given what they've answered so far.
-// The raw CARBONIQ_QUESTIONS count (138) is the wrong progress denominator: 8
-// entries are `type: 'info'` screens (not questions at all) and 21 are
-// conditional branches most users never see — so a finished survey used to stall
-// around 80% and could never reach 100%. An already-answered question always
-// counts, even if its condition no longer holds, so the denominator can't shrink
-// below what the user has already done.
-function getApplicableQuestions(answersMap) {
-  return CARBONIQ_QUESTIONS.filter(q => {
-    if (q.type === 'info') return false;
-    if (q.id in answersMap) return true;
-    return conditionalShowMatches(q.conditionalShow, answersMap);
-  });
+// The questions on this user's route through the survey, in order: walked
+// from the first question along the answers given (nextByValue branches,
+// loops, hidden conditional questions), and past the last answer along each
+// question's default next. Answers left behind on a branch the user later
+// turned away from (6A-2 after switching 6A-1 to "none flagged") are not on
+// the route, so the summaries and the progress count no longer include them.
+// Section pickers and go-back answers only lead back into earlier sections
+// while editing, so the walk takes the forward branch instead.
+function questionPath(answersMap) {
+  const src = answersMap || {};
+  const path = [];
+  const seen = new Set();
+  let id = getInitialQuestionId();
+  while (id && !seen.has(id) && path.length < 2000) {
+    const q = getQuestionById(id);
+    if (!q) break;
+    seen.add(id);
+    if (q.conditionalShow && !(id in src) && !conditionalShowMatches(q.conditionalShow, src)) {
+      id = q.next || q.loopNext || null;
+      continue;
+    }
+    if (q.loopSource && !(id in src) && loopResumeState(q, src).items.length === 0) {
+      id = q.loopNext || q.next || null;
+      continue;
+    }
+    if (q.type === 'section_picker') { id = q.next || null; continue; }
+    path.push(q);
+    const answered = id in src;
+    const value = answered ? readAnswerValue(src, id) : undefined;
+    let next;
+    if (q.loopSource) next = q.loopNext || q.next || null;
+    else if (q.type === 'info' || !answered) {
+      next = q.next || q.loopNext || (q.nextByValue ? Object.values(q.nextByValue).find(Boolean) : null) || null;
+    } else next = getNextQuestionId(q, value);
+    if (next === '4-GİRİŞ' && readAnswerValue(src, 'SCOPE-GROUPING') !== 'separate') {
+      next = getQuestionById('4-GİRİŞ')?.next || next;
+    }
+    const backwards = (n) => !n || seen.has(n) || getQuestionById(n)?.type === 'section_picker';
+    if (next && backwards(next)) {
+      const alts = [q.next, ...Object.values(q.nextByValue || {}), q.loopNext];
+      next = alts.find(n => n && !backwards(n)) || null;
+    }
+    id = next;
+  }
+  return path;
 }
 
 // The survey's progress: real questions answered over the questions that
 // apply given the answers so far. Shown in the sidebar and sent with every
 // saved step, so the inventory library shows the very same numbers.
 function computeSurveyProgress(answersMap, completed = false) {
-  const answered = Object.keys(answersMap)
-    .filter(qid => { const q = getQuestionById(qid); return q && q.type !== 'info'; }).length;
-  const total = completed ? answered : getApplicableQuestions(answersMap).length;
+  const route = questionPath(answersMap).filter(q => q.type !== 'info');
+  const answered = route.filter(q => q.id in answersMap).length;
+  const total = completed ? answered : route.length;
   const percent = completed ? 100 : (total ? Math.min(100, Math.round((answered / total) * 100)) : 0);
   return { answered, total, percent };
 }
@@ -325,6 +357,22 @@ function efUnitMismatch(questionId, efUnit, answers) {
   const list = [...units];
   if (!list.length || list.some(u => UNIT_GROUP[u.toLowerCase()] === efGroup)) return null;
   return list;
+}
+
+// 109a rows pre-filled from Stage 2: the sites put outside operational
+// control in 28a, with the reason given in 2C-1 (the share is left to the
+// user — 2C-2 is in tCO2e, not a share).
+const STAGE2_REASON_TO_6A = {
+  no_control: 'not_controlled', operational_boundary: 'not_controlled', no_data: 'no_data',
+  immaterial: 'materiality', sold_divested: 'other', other: 'other',
+};
+function stage2ExclusionRows(answers) {
+  if (readAnswerValue(answers, '2B-OC1') !== 'no') return [];
+  const raw = readAnswerValue(answers, '2B-OC1a');
+  const rows = Array.isArray(raw?.items) ? raw.items : Array.isArray(raw) ? raw : [];
+  const reason = STAGE2_REASON_TO_6A[readAnswerValue(answers, '2C-1')] || '';
+  return rows.map(r => String(r?.facility || '').trim()).filter(Boolean)
+    .map(source => ({ source, reason, share: '' }));
 }
 
 // Facilities the user declared outside operational control in 2B-OC1a
@@ -368,7 +416,18 @@ function normalizeAnswerValue(q, raw) {
         return String(row[f.id] ?? '').trim() === '';
       });
       let rows = [];
-      if (raw && typeof raw === 'object' && Array.isArray(raw.items)) rows = raw.items;
+      // An answer saved when the question was one line of text (6A-1a) opens
+      // as the first row's name instead of being dropped.
+      if (typeof raw === 'string' && raw.trim() && q.fields?.[0]) {
+        return { items: [], draft: { [q.fields[0].id]: raw.trim() } };
+      }
+      if (raw && typeof raw === 'object' && Array.isArray(raw.items)) {
+        // A form that already holds something (a pre-filled row) stays as is.
+        if (raw.draft && typeof raw.draft === 'object' && Object.values(raw.draft).some(v => String(v ?? '').trim())) {
+          return { items: raw.items, draft: raw.draft };
+        }
+        rows = raw.items;
+      }
       else if (raw && typeof raw === 'object' && !Array.isArray(raw) && Object.keys(raw).length > 0) rows = [raw];
       const firstOpen = rows.findIndex(r => r && typeof r === 'object' && incomplete(r));
       if (firstOpen === -1) return { items: rows, draft: {} };
@@ -2242,9 +2301,11 @@ function getBlockLabel(blockId, stageId) {
 }
 
 function getBlockAnsweredQuestions(blockId, answers) {
-  // ✅ Include ALL answered questions in block, even if conditionally shown
+  // Answered questions of the block on the user's route — an answer left on
+  // a branch they turned away from is not part of their inventory any more.
+  const onRoute = new Set(questionPath(answers).map(q => q.id));
   return CARBONIQ_QUESTIONS.filter(
-    q => getBlockId(q) === blockId && q.id in answers && q.type !== 'info',
+    q => getBlockId(q) === blockId && q.id in answers && q.type !== 'info' && onRoute.has(q.id),
   );
 }
 
@@ -2338,14 +2399,10 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
   // folded into a single "Scope 1 & 2" row — same underlying questions, just a
   // different display grouping (see the question's own comment for why).
   const { displayStages, stageStats, totalAnswered, applicableTotal, pct } = useMemo(() => {
-    const allAnswered = Object.keys(answers);
-    // Count only real questions — info screens are stored in `answers` too (they
-    // advance via the same submit path), so including them would let the
-    // numerator outrun a denominator that excludes them.
-    const countForStage = (stageId) => allAnswered.filter(qid => {
-      const q = getQuestionById(qid);
-      return q && q.stage === stageId && q.type !== 'info';
-    }).length;
+    // Count only real questions on the user's route — info screens are stored
+    // in `answers` too, and answers left on an abandoned branch no longer apply.
+    const routeAnswered = questionPath(answers).filter(q => q.type !== 'info' && q.id in answers);
+    const countForStage = (stageId) => routeAnswered.filter(q => q.stage === stageId).length;
 
     const displayStages = scopesCombined
       ? [
@@ -2361,11 +2418,8 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
         ? stage.stageIds.reduce((sum, id) => sum + countForStage(id), 0)
         : countForStage(stage.id),
     }));
-    // getApplicableQuestions only knows about conditionalShow, not nextByValue
-    // routing, so questions a "No" answer jumped past still count while the
-    // survey is running. Once it is completed, every question this user was
-    // routed through has been answered — the rest never applied to them — so
-    // the answered count IS the total and the bar reads 100%.
+    // Once the survey is completed every question on the route is answered,
+    // so the answered count IS the total and the bar reads 100%.
     const { answered: totalAnswered, total: applicableTotal, percent: pct } =
       computeSurveyProgress(answers, completed);
     return { displayStages, stageStats, totalAnswered, applicableTotal, pct };
@@ -3032,7 +3086,15 @@ export function QuestionnaireTab({
   // preferred over local `answers` state once available.
   const completionStageBreakdown = useMemo(() => {
     if (!completed) return [];
-    const src = completedReport?.answers || answers;
+    // The backend echoes each step as it was saved (Stage 1 as named fields,
+    // the rest as { answer }); the route walk reads widget values, so
+    // normalise them the way a resumed inventory is.
+    const src = completedReport?.answers
+      ? Object.fromEntries(Object.entries(completedReport.answers).map(([qid, raw]) => {
+          const unmapped = unmapPhase1Answer(qid, raw);
+          return [qid, unmapped !== undefined ? unmapped : readAnswerValue({ [qid]: raw }, qid)];
+        }))
+      : answers;
     const combined = readAnswerValue(src, 'SCOPE-GROUPING') !== 'separate';
     const stagesToShow = combined
       ? [
@@ -3043,7 +3105,7 @@ export function QuestionnaireTab({
       : CARBONIQ_STAGES;
     // Same "applicable" rule as the live progress bar, so a completed survey
     // reads 100% here too instead of counting branches this user never saw.
-    const applicable = getApplicableQuestions(src);
+    const applicable = questionPath(src).filter(q => q.type !== 'info');
     return stagesToShow.map(stage => {
       const stageIds = stage.stageIds || [stage.id];
       const stageQuestions = applicable.filter(q => stageIds.includes(q.stage));
@@ -3169,6 +3231,18 @@ export function QuestionnaireTab({
       })
       .catch(() => {});
   }, []);
+  // 6B-OV: the assumptions the answers already imply (estimates, defaults)
+  // — the questions promised these would be documented; listed so the user
+  // sees them before deciding whether to add their own.
+  const [recordedAssumptions, setRecordedAssumptions] = useState(null);
+  useEffect(() => {
+    if (!reportId || currentId !== '6B-OV') return;
+    api.getReportAssumptions(reportId, lang)
+      .then(res => (res.ok ? res.json() : {}))
+      .then(data => { if (isMounted.current) setRecordedAssumptions(Array.isArray(data?.assumptions) ? data.assumptions : []); })
+      .catch(() => {});
+  }, [reportId, currentId, lang]);
+
   const previousFacilitiesFetchedRef = useRef(false);
   useEffect(() => {
     if (!reportId || previousFacilitiesFetchedRef.current) return;
@@ -3289,6 +3363,13 @@ export function QuestionnaireTab({
         // 2A-4 (subsidiaries): the earlier inventory's list, to confirm or edit.
         if (existing === undefined && currentId === '2A-4' && facilitySourcesRef.current.subsidiaries?.length) {
           existing = { items: facilitySourcesRef.current.subsidiaries, draft: {} };
+        }
+        // 6A-1a: the sites declared outside operational control in Stage 2.
+        if (existing === undefined && currentId === '6A-1a') {
+          const pre = stage2ExclusionRows(answersRef.current);
+          // The first site opens in the form (its share still to pick); the
+          // 109 hint names them all.
+          if (pre.length) existing = { items: [], draft: pre[0] };
         }
         // A4 (reporting year): the year chosen when the inventory was created.
         if (existing === undefined && currentId === 'A4' && reportYearRef.current) {
@@ -4442,6 +4523,49 @@ export function QuestionnaireTab({
                       {tr
                         ? `Seçtiğiniz birim (${efLabel}) tüketimi girdiğiniz birimle (${units.join(', ')}) uyuşmuyor. Belgedeki birimi kontrol edin.`
                         : `The unit you chose (${efLabel}) does not match the unit you entered consumption in (${units.join(', ')}). Check the unit on the document.`}
+                    </p>
+                  );
+                })()}
+                {/* 6A-1: what Stage 2 already put outside the boundary. */}
+                {currentId === '6A-1' && stage2ExclusionRows(answers).length > 0 && (
+                  <p className="text-xs text-[#175022]/60">
+                    {tr
+                      ? `Soru 28a'da işletme kontrolü dışında belirttiğiniz tesisler: ${stage2ExclusionRows(answers).map(r => r.source).join(', ')}. "Evet" derseniz ${stage2ExclusionRows(answers).length > 1 ? 'ilki forma dolu gelir; diğerlerini "+ Başka Ekle" ile ekleyin' : 'hariç tutma formuna dolu gelir'}.`
+                      : `In Question 28a you marked these sites as outside operational control: ${stage2ExclusionRows(answers).map(r => r.source).join(', ')}. Answer "Yes" and the first comes pre-filled in the exclusion form${stage2ExclusionRows(answers).length > 1 ? '; add the others with "+ Add Another"' : ''}.`}
+                  </p>
+                )}
+                {currentId === '6B-OV' && recordedAssumptions?.length > 0 && (
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+                    <p className="font-semibold">
+                      {tr
+                        ? 'Cevaplarınızdan raporun "Kabuller" bölümüne kendiliğinden eklenecek kabuller:'
+                        : 'Assumptions your answers already add to the report\'s "Assumptions" section:'}
+                    </p>
+                    <ul className="mt-1 list-disc pl-4 space-y-0.5">
+                      {recordedAssumptions.map((a, i) => <li key={i}>{a.text}</li>)}
+                    </ul>
+                    <p className="mt-1">
+                      {tr
+                        ? 'Bunları tekrar girmenize gerek yok. Başka bir varsayımınız yoksa "Hayır" seçebilirsiniz.'
+                        : 'No need to enter these again. If you have no other assumptions, you can choose "No".'}
+                    </p>
+                  </div>
+                )}
+                {/* 6C-1: own factors the user already gave earlier. */}
+                {currentId === '6C-1' && (() => {
+                  const own = [
+                    ['3A-EF', tr ? 'Soru 47 — sabit yanma tedarikçi faktörü' : 'Q47 — stationary combustion supplier factor'],
+                    ['3B-EF', tr ? 'Soru 55 — araç tedarikçi faktörü' : 'Q55 — vehicle supplier factor'],
+                    ['4A-EF', tr ? 'Soru 76 — elektrik tedarikçi beyanı' : 'Q76 — electricity supplier declaration'],
+                    ['4B-EF', tr ? 'Soru 79 — ısı/buhar tedarikçi beyanı' : 'Q79 — heat/steam supplier declaration'],
+                  ].filter(([id]) => readAnswerValue(answers, id) === 'yes').map(([, l]) => l);
+                  if (readAnswerValue(answers, 'K3C3-INFO') === 'custom') own.push(tr ? 'Soru 88a — kendi WTT / T&D faktörünüz' : 'Q88a — your own WTT / T&D factor');
+                  if (!own.length) return null;
+                  return (
+                    <p className="text-xs text-[#175022]/60">
+                      {tr
+                        ? `Önceki cevaplarınızda kendi emisyon faktörlerinizi girdiniz: ${own.join('; ')}. Bunlar standart faktör yerine kullanıldıysa "farklı emisyon faktörü" seçeneği uygun olabilir.`
+                        : `Earlier you entered your own emission factors: ${own.join('; ')}. If they replace the standard factors, the "different emission factor" option may apply.`}
                     </p>
                   );
                 })()}

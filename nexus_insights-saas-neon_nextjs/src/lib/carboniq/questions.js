@@ -5881,25 +5881,41 @@ export const CARBONIQ_QUESTIONS = [
     stage: 6,
     block: '6A',
     isoRef: 'ISO 14064-1 §5.1',
-    type: 'text',
-    subtype: 'single_line',
+    // One row per excluded source, each with its own reason and share: a
+    // single free-text line ("Kocaeli Ofis, İzmir deposu") used to get one
+    // reason (old Q110) and one share (old Q112) for all of them.
+    type: 'compound',
+    repeatable: true,
     required: true,
-    maxLength: 200,
     reportField: 'exclusions.excluded_sources',
     text: {
       tr: 'Hangi tesis, faaliyet veya kaynak hariç tutuldu?',
       en: 'Which facility, activity or source was excluded?',
     },
-    placeholder: {
-      tr: 'Örn: Kocaeli Ofis — kiralık bina, enerji verisi alınamıyor',
-      en: 'E.g. Kocaeli Office — leased building, no energy data available',
-    },
     helper: {
-      tr: 'Birden fazla kaynak varsa virgülle ayırarak yazın. Bu bilgi raporunuzun "Hariç tutmalar" bölümünde yer alır.',
-      en: 'If there is more than one, separate them with commas. This appears in the "Exclusions" section of your report.',
+      tr: 'Her hariç tutulan kaynak için adını, temel gerekçesini ve tahmini emisyon payını girin; birden fazlaysa "+ Başka Ekle" ile ekleyin. Bu bilgiler raporunuzun "Hariç tutmalar" bölümünde yer alır.',
+      en: 'For each excluded source enter its name, main reason and estimated emission share; add more with "+ Add Another". This appears in the "Exclusions" section of your report.',
     },
-    validate: { requiredMessage: { tr: 'Lütfen hariç tutulan kaynağı yazın.', en: 'Please enter the excluded source.' } },
-    next: '6A-2',
+    fields: [
+      { id: 'source', type: 'text', required: true, maxLength: 200, label: { tr: 'Hariç tutulan tesis / faaliyet / kaynak', en: 'Excluded facility / activity / source' }, placeholder: { tr: 'Örn: Kocaeli Ofis', en: 'e.g. Kocaeli Office' } },
+      { id: 'reason', type: 'select', required: true, label: { tr: 'Temel gerekçe', en: 'Main reason' }, options: [
+          { value: 'not_controlled', label: { tr: 'Operasyonel kontrol dışında', en: 'Outside operational control' }, isoRef: '§5.1a' },
+          { value: 'no_data', label: { tr: 'Veri erişilemez', en: 'Data inaccessible' }, isoRef: '§5.1b' },
+          { value: 'materiality', label: { tr: 'Materyalite eşiği altında (<%5)', en: 'Below materiality threshold (<5%)' }, isoRef: '§5.1c' },
+          { value: 'legal', label: { tr: 'Yasal veya idari engel', en: 'Legal or regulatory barrier' }, isoRef: '§5.1d' },
+          { value: 'technical', label: { tr: 'Teknik sınırlama', en: 'Technical limitation' }, isoRef: '§5.1e' },
+          { value: 'other', label: { tr: 'Diğer', en: 'Other' }, isoRef: '§5.1f' },
+      ] },
+      { id: 'share', type: 'select', required: true, label: { tr: 'Tahmini emisyon payı', en: 'Estimated emission share' }, options: [
+          { value: 'lt1', label: { tr: '<%1 — ihmal edilebilir düzeyde', en: '<1% — negligible' } },
+          { value: '1_5', label: { tr: '%1–5 — düşük etki', en: '1–5% — low impact' } },
+          { value: '5_10', label: { tr: '%5–10 — orta etki', en: '5–10% — medium impact' } },
+          { value: '10_20', label: { tr: '%10–20 — yüksek etki', en: '10–20% — high impact' } },
+          { value: 'gt20', label: { tr: '>%20 — kritik düzeyde', en: '>20% — critical level' } },
+      ] },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen en az bir hariç tutulan kaynak girin.', en: 'Please enter at least one excluded source.' } },
+    next: '6A-3',
   },
   // #109
   {
@@ -5960,7 +5976,7 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Lütfen gerekçeyi açıklayın.', en: 'Please describe the justification.' },
       maxLengthMessage: { tr: 'Gerekçe en fazla 500 karakter olabilir.', en: 'Justification must be at most 500 characters.' },
     },
-    next: '6A-4',
+    next: '6A-5',
   },
   // #111
   {
@@ -6045,6 +6061,14 @@ export const CARBONIQ_QUESTIONS = [
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen eşik durumunu belirtin.', en: 'Please specify the threshold status.' },
+    },
+    systemMessages: {
+      // "Eşik aşılıyor" used to send the user back to Q109 with no word on
+      // what to do there.
+      go_back: {
+        tr: 'Eşik aşılıyorsa iki yol var: (1) hariç tuttuğunuz kaynağın verisini envantere ekleyin — ilgili bölüme 7. aşamadaki "Hayır — bir bölüme dönüp düzeltmek istiyorum" seçeneğiyle veya "Önceki soru" ile dönebilirsiniz; (2) hariç tutma listesini ve paylarını gözden geçirin. Şimdi hariç tutma sorularına dönüyoruz.',
+        en: 'If the threshold is exceeded there are two ways forward: (1) add the excluded source\'s data to the inventory — go back to that section via "No — I want to go back and fix a section" in stage 7 or "Previous question"; (2) review the exclusion list and shares. Taking you back to the exclusion questions now.',
+      },
     },
     nextByValue: { ok: '6B-OV', go_back: '6A-1' },
   },
@@ -6218,6 +6242,14 @@ export const CARBONIQ_QUESTIONS = [
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen eşik durumunu onaylayın.', en: 'Please confirm the threshold status.' },
+    },
+    systemMessages: {
+      // "Eşik aşılıyor" used to send the user back to Q109 with no word on
+      // what to do there.
+      go_back: {
+        tr: 'Eşik aşılıyorsa iki yol var: (1) hariç tuttuğunuz kaynağın verisini envantere ekleyin — ilgili bölüme 7. aşamadaki "Hayır — bir bölüme dönüp düzeltmek istiyorum" seçeneğiyle veya "Önceki soru" ile dönebilirsiniz; (2) hariç tutma listesini ve paylarını gözden geçirin. Şimdi hariç tutma sorularına dönüyoruz.',
+        en: 'If the threshold is exceeded there are two ways forward: (1) add the excluded source\'s data to the inventory — go back to that section via "No — I want to go back and fix a section" in stage 7 or "Previous question"; (2) review the exclusion list and shares. Taking you back to the exclusion questions now.',
+      },
     },
     nextByValue: { ok: '6E-1', go_back: '6A-1' },
   },
@@ -6503,8 +6535,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'GHG Inventory Complete',
     },
     helper: {
-      tr: 'Tüm aşamalar başarıyla tamamlandı. GHG envanter süreciniz ISO 14064-1 standardına uygun biçimde yürütüldü. Girdiğiniz varsayımları görmek veya değiştirmek isterseniz "Kabulleri Gözden Geçir"i seçin.',
-      en: 'All stages have been successfully completed. Your GHG inventory process was conducted in compliance with ISO 14064-1. To see or change the assumptions you entered, choose "Review Assumptions".',
+      tr: 'Tüm aşamalar tamamlandı. Envanteriniz ISO 14064-1 yapısına göre hazırlandı; bekleyen danışman onayları varsa "Onay Bekleyenler" sayfasında karara bağlanmalıdır. Girdiğiniz varsayımları görmek veya değiştirmek isterseniz "Kabulleri Gözden Geçir"i seçin.',
+      en: 'All stages are complete. Your inventory has been prepared following the ISO 14064-1 structure; any pending advisor approvals still need a decision on the "Review" page. To see or change the assumptions you entered, choose "Review Assumptions".',
     },
     options: [
       { value: 'view_assumptions', label: { tr: 'Kabulleri Gözden Geçir', en: 'Review Assumptions' } },
@@ -7207,6 +7239,30 @@ export function scope3RowWarning(question, value, answers, lang = 'en') {
       ? `${years} yılında alınan varlık girdiniz; bu envanter ${year} yılı içindir. Kategori 2 kuralına göre başka yılda alınan varlıklar bu envantere dahil edilmez. Yıl yanlışsa "Düzenle" ile düzeltin.`
       : `You entered an asset bought in ${years}; this inventory is for ${year}. Under the Category 2 rule, assets bought in another year are not included. If the year is wrong, correct it with "Edit".`;
   }
+  if (question?.id === '6A-1a') {
+    // An excluded site that still has Scope 1/2 data entered for it: the two
+    // answers contradict each other (nothing is removed here).
+    const a = answers || {};
+    const norm = (x) => String(x || '').trim().toLocaleLowerCase('tr-TR');
+    const sites = readAnswerValue(a, '2A-2') || {};
+    const used = new Set();
+    for (const sid of ['3A-2', '3B-3', '3C-2', '3D-2']) {
+      const v = readAnswerValue(a, sid);
+      if (v && typeof v === 'object') Object.values(v).forEach(r => { if (r && typeof r === 'object' && r.site) used.add(norm(r.site)); });
+    }
+    const elec = readAnswerValue(a, '4A-1');
+    if (elec && typeof elec === 'object') {
+      Object.entries(elec).forEach(([k, v]) => {
+        const n = parseLocalizedNumber(String(v || '').trim().split(/\s+/)[0]);
+        if (Number.isFinite(n) && n > 0 && sites[k]?.name) used.add(norm(sites[k].name));
+      });
+    }
+    const hit = rows.map(r => String(r?.source || '').trim()).filter(src => src && used.has(norm(src)));
+    if (!hit.length) return null;
+    return tr
+      ? `Hariç tuttuğunuz ${hit.join(', ')} için Kapsam 1 veya 2'de veri girdiniz (ekipman/araç tesisi veya elektrik tüketimi). Hariç tutma doğruysa o verileri gözden geçirin; değilse bu satırı kaldırın.`
+      : `You excluded ${hit.join(', ')} but entered Scope 1 or 2 data for it (equipment/vehicle site or electricity use). If the exclusion is right, review that data; otherwise remove this row.`;
+  }
   if (question?.id === 'K3C7-5') {
     // EV users among car commuters: more than the car commuters themselves
     // (office + hybrid staff × car share from 95c) cannot be right.
@@ -7261,8 +7317,19 @@ export function scope3RowWarning(question, value, answers, lang = 'en') {
 const EXCLUSION_BANDS_OVER_5 = { '5_10': ['%5–10', '5–10%'], '10_20': ['%10–20', '10–20%'], gt20: ['>%20', '>20%'] };
 export function exclusionShareWarning(question, value, answers, lang = 'en') {
   if (question?.id !== '6A-6' || value !== 'ok') return null;
+  // Shares now sit on each 109a row; an older inventory may still have the
+  // single Q112 answer.
+  const rows = readAnswerValue(answers || {}, '6A-1a');
+  const list = Array.isArray(rows?.items) ? rows.items : Array.isArray(rows) ? rows : [];
+  const over = list.filter(r => EXCLUSION_BANDS_OVER_5[r?.share]);
+  if (over.length) {
+    const names = over.map(r => `${String(r.source || '').trim()} (${EXCLUSION_BANDS_OVER_5[r.share][lang === 'tr' ? 0 : 1]})`).join(', ');
+    return lang === 'tr'
+      ? `Soru 109a'da şu kaynakların payını tek başına %5'in üzerinde belirttiniz: ${names}. Bu cevap doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
+      : `In question 109a you gave these sources a share above 5% on their own: ${names}. If this is right you can continue; otherwise go back with "Previous question" to fix it.`;
+  }
   const band = EXCLUSION_BANDS_OVER_5[readAnswerValue(answers || {}, '6A-4')];
-  if (!band) return null;
+  if (!band || list.length) return null;
   return lang === 'tr'
     ? `Soru 112'de hariç tutulan kaynağın payını ${band[0]} olarak belirttiniz; bu tek başına %5 eşiğinin üzerinde. Bu cevap doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
     : `In question 112 you gave the excluded source's share as ${band[1]}, which on its own is above the 5% threshold. If this answer is right you can continue; otherwise go back with "Previous question" to fix it.`;
