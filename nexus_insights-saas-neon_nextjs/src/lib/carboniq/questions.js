@@ -4084,8 +4084,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Which categories of goods and services do you purchase?',
     },
     helper: {
-      tr: 'Sektörünüze göre en materyel kategoriler öne çıkarıldı. Her seçilen kategori için yıllık harcama tutarı soracağız — bu Seviye 3 varsayılan hesap için yeterli.',
-      en: 'Most material categories for your sector are highlighted. We will ask for annual spend for each selected category — sufficient for a Level 3 default calculation.',
+      tr: 'Satın aldığınız kategorilerin hepsini seçin. Her seçilen kategori için yıllık harcama tutarı soracağız — bu Seviye 3 varsayılan hesap için yeterli.',
+      en: 'Select every category you purchase. We will ask for annual spend for each selected category — sufficient for a Level 3 default calculation.',
     },
     placeholder: { tr: 'Kategori arayın veya listeden seçin...', en: 'Search or select from list...' },
     options: [
@@ -4102,14 +4102,16 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'SC-11', label: { tr: 'SC-11 — Su ve atık su hizmetleri', en: 'SC-11 — Water and wastewater services' } },
       { value: 'SC-12', label: { tr: 'SC-12 — Diğer mal ve hizmetler', en: 'SC-12 — Other goods and services' } },
     ],
+    // Keyed by option value so they actually show when the option is picked
+    // (they were 'sc08_warning' / 'sc10_warning' and never matched).
     systemMessages: {
-      sc08_warning: {
+      'SC-08': {
         tr: 'Lojistik hizmetleri satın alıyorsunuz. Aynı harcamayı Kategori 4\'e de girmeyin — bu çift sayıma yol açar.',
         en: 'You purchase logistics services. Do not enter the same spend in Category 4 — this causes double counting.',
       },
-      sc10_warning: {
-        tr: 'K1 girişlerinizle örtüşüyor mu? Çift sayımı önlemek için kontrol edin.',
-        en: 'Does this overlap with your Scope 1 entries? Check to avoid double counting.',
+      'SC-10': {
+        tr: 'Enerji ilişkili ürünler seçtiniz. Kapsam 1\'de girdiğiniz yakıtları (Soru 44, 54a) burada tekrar harcama olarak girmeyin — bu çift sayıma yol açar.',
+        en: 'You chose energy-related products. Do not enter the fuels you already gave in Scope 1 (Questions 44, 54a) again here as spend — this causes double counting.',
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen en az bir seçenek belirtin.', en: 'Please select at least one option.' } },
@@ -4143,9 +4145,9 @@ export const CARBONIQ_QUESTIONS = [
         tr: '[Kategori] için tahmini Seviye 3 emisyon: ≈ [X] tCO₂e. Bu tahmin EPA USEEIO sektör faktörüne dayanır. Daha doğru değer için tedarikçi verisi ekleyebilirsiniz.',
         en: 'Estimated Level 3 emission for [Category]: ≈ [X] tCO₂e. Based on EPA USEEIO sector factor. You can add supplier data for more accuracy.',
       },
-      zero_warning: {
-        tr: 'Bu kategoride hiç harcama yok mu?',
-        en: 'Is there really no spend in this category?',
+      zeroWarning: {
+        tr: 'Bu kategori için 0 harcama girdiniz. Gerçekten harcama yoksa bu kategoriyi Soru 82\'de seçmeyebilirsiniz; varsa "Önceki soru" ile düzeltin.',
+        en: 'You entered 0 spend for this category. If there really is none you can leave it unselected in Question 82; otherwise go back with "Previous question" and correct it.',
       },
     },
     validate: { requiredMessage: { tr: 'Bu alan zorunludur.', en: 'This field is required.' } },
@@ -4189,7 +4191,9 @@ export const CARBONIQ_QUESTIONS = [
     type: 'equipment_loop',
     loopSource: 'K3C1-1',
     loopNext: 'K3C1-4',
-    required: true,
+    // Optional per category: a user who knows the quantity for one category
+    // only had to invent numbers for the others to get past this question.
+    required: false,
     conditionalShow: { questionId: 'K3C1-3', equals: 'yes' },
     reportField: 'scope3.cat1.quantity',
     text: {
@@ -4198,8 +4202,8 @@ export const CARBONIQ_QUESTIONS = [
     },
     placeholder: { tr: 'Örn: 12.000', en: 'e.g. 12,000' },
     helper: {
-      tr: 'Bu kategoride yıl içinde satın aldığınız toplam miktarı girin ve birimini seçin.',
-      en: 'Enter the total quantity purchased in this category during the year and pick its unit.',
+      tr: 'Bu kategoride yıl içinde satın aldığınız toplam miktarı girin ve birimini seçin. Bu kategorinin miktarını bilmiyorsanız boş bırakıp devam edin.',
+      en: 'Enter the total quantity purchased in this category during the year and pick its unit. If you do not know it for this category, leave it blank and continue.',
     },
     units: ['kg', 'ton', 'adet', 'm²', 'm³', 'litre'],
     validate: {
@@ -4254,18 +4258,22 @@ export const CARBONIQ_QUESTIONS = [
     block: '5A',
     isoRef: 'ISO 14064-1 §5.4',
     type: 'compound',
+    // One row per declaration, each tied to a Q82 category — there used to
+    // be room for a single supplier and no way to say what it covered.
+    repeatable: true,
     required: true,
     conditionalShow: { questionId: 'K3C1-4', equals: 'yes' },
     reportField: 'scope3.cat1.supplier_declaration_document',
     text: {
-      tr: 'Tedarikçi emisyon beyanının bilgilerini girin',
+      tr: 'Tedarikçi emisyon beyanlarının bilgilerini girin',
       en: 'Enter the supplier emission declaration details',
     },
     helper: {
-      tr: 'PCF belgesi, EPD veya tedarikçi GHG raporundaki değeri, birimini, tedarikçi adını ve yılını girin.',
-      en: "Enter the value, its unit, the supplier's name and the year from the PCF, EPD or supplier GHG report.",
+      tr: 'Her beyan için kategoriyi, tedarikçiyi, PCF belgesi, EPD veya tedarikçi GHG raporundaki değeri, birimini ve yılını girin. Birden fazla beyan varsa "+ Başka Ekle" ile ekleyin.',
+      en: 'For each declaration enter the category, the supplier, and the value, unit and year from the PCF, EPD or supplier GHG report. Add more with "+ Add Another".',
     },
     fields: [
+      { id: 'category', type: 'text', optionsFrom: 'answer:K3C1-1', required: true, label: { tr: 'Kategori', en: 'Category' } },
       {
         id: 'supplier',
         format: 'name',
@@ -4419,6 +4427,40 @@ export const CARBONIQ_QUESTIONS = [
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen bir seçenek belirtin.', en: 'Please select an option.' } },
+    nextByValue: { confirmed: 'K3C4-0', custom: 'K3C3-custom' },
+    next: 'K3C4-0',
+  },
+  {
+    // "Hayır, farklı bir faktör" used to lead straight on with nothing
+    // asked: the factor the user wanted to give was never recorded. Only
+    // recorded here — how it is used is not decided by this question.
+    id: 'K3C3-custom',
+    number: '88a',
+    stage: 5,
+    block: '5C',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'compound',
+    required: true,
+    conditionalShow: { questionId: 'K3C3-INFO', equals: 'custom' },
+    reportField: 'scope3.cat3.custom_factor',
+    text: {
+      tr: 'Kullanmak istediğiniz WTT / T&D faktörünü girin',
+      en: 'Enter the WTT / T&D factor you want to use',
+    },
+    helper: {
+      tr: 'Faktörü, birimini ve kaynağını girin. Bu bilgiler envanterinize kaydedilir ve danışman incelemesinde görülür.',
+      en: 'Enter the factor, its unit and its source. This is saved with your inventory and shown in the advisor review.',
+    },
+    fields: [
+      { id: 'factor_type', type: 'select', required: true, label: { tr: 'Faktör türü', en: 'Factor type' }, options: [
+        { value: 'wtt', label: { tr: 'WTT (yakıt üretimi ve taşınması)', en: 'WTT (well-to-tank)' } },
+        { value: 'td_loss', label: { tr: 'T&D kayıp oranı (iletim ve dağıtım)', en: 'T&D loss rate' } },
+      ] },
+      { id: 'value', type: 'text', subtype: 'numeric', required: true, label: { tr: 'Değer', en: 'Value' }, placeholder: { tr: 'Örn: 0,0386 veya %2,1', en: 'e.g. 0.0386 or 2.1%' } },
+      { id: 'unit', type: 'text', required: true, maxLength: 60, label: { tr: 'Birim', en: 'Unit' }, placeholder: { tr: 'Örn: kg CO₂e / kWh veya %', en: 'e.g. kg CO₂e / kWh or %' } },
+      { id: 'source', type: 'text', format: 'name', required: true, maxLength: 200, label: { tr: 'Kaynak', en: 'Source' }, placeholder: { tr: 'Örn: TEİAŞ 2024 kayıp raporu', en: 'e.g. national grid operator 2024 loss report' } },
+    ],
+    validate: { requiredMessage: { tr: 'Lütfen tüm alanları doldurun.', en: 'Please fill in all fields.' } },
     next: 'K3C4-0',
   },
   {
@@ -4455,7 +4497,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat4.data_level',
     text: {
-      tr: 'Upstream taşımacılık verisi hakkında ne kadar bilginiz var?',
+      tr: 'Yukarı akış taşımacılık (tedarikçiden size gelen sevkiyat) verisi hakkında ne kadar bilginiz var?',
       en: 'What level of upstream transport data do you have?',
     },
     helper: {
@@ -4559,12 +4601,8 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'distance_km', type: 'numeric', required: true, label: { tr: 'Mesafe (km)', en: 'Distance (km)' } },
       { id: 'load_factor_pct', type: 'numeric', format: 'percent', required: false, label: { tr: 'Doluluk oranı (%) — opsiyonel', en: 'Load factor (%) — optional' } },
     ],
-    systemMessages: {
-      selected: {
-        tr: 'Doluluk oranı girilmezse GLEC Tier 1 %50 varsayılanı uygulanır — bu bir Tip A kabul kaydı oluşturur.',
-        en: 'If load factor is left blank, the GLEC Tier 1 50% default is applied — this creates a Type A assumption record.',
-      },
-    },
+    // The "left blank → 50 % default" note is shown by scope3RowWarning only
+    // for a row without a load factor (it used to show for every answer).
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C5-0',
   },
@@ -4960,7 +4998,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'How do employees commute? Has a commute survey been conducted?',
     },
     helper: {
-      tr: 'Anket veriniz varsa daha doğru. Yoksa şehir ve sektör bazlı modal split tahmini uygularız. Elektrikli araç kullanım oranı da girebilirsiniz.',
+      tr: 'Anket veriniz varsa daha doğru. Yoksa şehir ve sektör bazlı ulaşım modu dağılımı tahmini uygularız. Elektrikli araç kullanım oranı da girebilirsiniz.',
       en: 'If you have survey data, results will be more accurate. Otherwise we apply a city and sector-based modal split estimate. You can also enter EV usage rate.',
     },
     options: [
@@ -4971,7 +5009,7 @@ export const CARBONIQ_QUESTIONS = [
       // Was keyed 'istanbul_split' — not a valid option value, so it never fired.
       // Renamed to the 'estimate' option it's actually describing.
       estimate: {
-        tr: 'Şehir/sektör bazlı bir modal split tahmini örneği: Özel araç %45 · Toplu taşıma %40 · Diğer %15, ortalama mesafe 18 km. Aşağıdaki sorularda kendi tahmininizi girebilir veya bu değerlere yakın bir dağılım kullanabilirsiniz.',
+        tr: 'Şehir/sektör bazlı bir ulaşım modu dağılımı tahmini örneği: Özel araç %45 · Toplu taşıma %40 · Diğer %15, ortalama mesafe 18 km. Aşağıdaki sorularda kendi tahmininizi girebilir veya bu değerlere yakın bir dağılım kullanabilirsiniz.',
         en: 'An example city/sector-based modal split estimate: Private car 45% · Public transport 40% · Other 15%, average distance 18 km. You can enter your own estimate in the following questions, or use a distribution close to this.',
       },
     },
@@ -4992,16 +5030,16 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.headcount_split',
     text: {
-      tr: 'Tam zamanlı ofis, hybrid ve uzaktan çalışan sayısı?',
+      tr: 'Tam zamanlı ofis, hibrit ve uzaktan çalışan sayısı?',
       en: 'Full-time office, hybrid and remote employee counts?',
     },
     helper: {
-      tr: 'Toplamı Aşama 1\'deki çalışan sayınızla yaklaşık eşleşmeli. Hybrid çalışma modeli varsa ofis günlerinde commute EF, uzaktan günlerde DEFRA ev ofis EF (2.49 kg CO₂e/gün) uygulanır.',
+      tr: 'Toplamı Aşama 1\'deki çalışan sayınızla yaklaşık eşleşmeli. Hibrit çalışma modeli varsa ofis günlerinde işe gidiş-geliş emisyon faktörü, uzaktan günlerde DEFRA ev ofis EF (2.49 kg CO₂e/gün) uygulanır.',
       en: 'The total should roughly match your Stage 1 employee count. For hybrid employees, commute EF applies on office days and DEFRA home office EF (2.49 kg CO₂e/day) on remote days.',
     },
     fields: [
       { id: 'fulltime_count', type: 'numeric', required: true, label: { tr: 'Tam zamanlı ofis çalışanı', en: 'Full-time office employees' } },
-      { id: 'hybrid_count', type: 'numeric', required: true, label: { tr: 'Hybrid çalışan', en: 'Hybrid employees' } },
+      { id: 'hybrid_count', type: 'numeric', required: true, label: { tr: 'Hibrit çalışan', en: 'Hybrid employees' } },
       { id: 'remote_count', type: 'numeric', required: true, label: { tr: 'Uzaktan çalışan', en: 'Remote employees' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
@@ -5019,7 +5057,7 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: 'K3C7-1', field: 'hybrid_count', greaterThan: 0 },
     reportField: 'scope3.cat7.hybrid_office_days',
     text: {
-      tr: 'Hybrid çalışanlar haftada kaç gün ofise geliyor?',
+      tr: 'Hibrit çalışanlar haftada kaç gün ofise geliyor?',
       en: 'How many days per week do hybrid employees come to the office?',
     },
     placeholder: { tr: 'Örn: 3', en: 'Example: 3' },
@@ -5040,7 +5078,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.modal_split',
     text: {
-      tr: 'Ulaşım modu dağılımı (modal split)?',
+      tr: 'Çalışanlar işe nasıl geliyor? (ulaşım modu dağılımı)',
       en: 'Commute modal split?',
     },
     helper: {
@@ -5088,7 +5126,7 @@ export const CARBONIQ_QUESTIONS = [
         en: 'Fuel consumption for a company-owned shuttle should be reported in Scope 1 (3B) — it will not be double-counted here.',
       },
       contracted: {
-        tr: 'Sözleşmeli nakliye hizmeti Kategori 4\'e (Upstream Taşıma) dahil edilmelidir — çift sayımı önlemek için burada hariç tutulacak.',
+        tr: 'Sözleşmeli nakliye hizmeti Kategori 4\'e (Yukarı Akış Taşımacılık) dahil edilmelidir — çift sayımı önlemek için burada hariç tutulacak.',
         en: 'A contracted transport service should be included in Category 4 (Upstream Transport) — it will be excluded here to avoid double counting.',
       },
     },
@@ -5106,7 +5144,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.avg_distance_km',
     text: {
-      tr: 'Ortalama tek yön commute mesafesi (km)?',
+      tr: 'Ortalama tek yön ev–iş mesafesi (km)?',
       en: 'Average one-way commute distance (km)?',
     },
     placeholder: { tr: 'Örn: 15', en: 'Example: 15' },
@@ -5223,7 +5261,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Are goods shipped to customers or distribution channels?',
     },
     helper: {
-      tr: 'Şirketten müşteriye giden her türlü nakliye bu kapsamda. Kat.4 (upstream) ile fark: bu sefer siz gönderensiniz.',
+      tr: 'Şirketten müşteriye giden her türlü nakliye bu kapsamda. Kat.4 (yukarı akış) ile fark: bu sefer siz gönderensiniz.',
       en: 'All freight from the company to customers falls in this scope. Difference from Cat.4 (upstream): this time you are the sender.',
     },
     options: [
@@ -7140,6 +7178,49 @@ export function employeeCountWarning(question, value, answers, lang = 'en') {
     : `The total headcount you entered (${n}) does not match the range chosen in Stage 1 (${bandText} employees). If the numbers are right you can continue; otherwise go back with "Previous question" to fix them.`;
 }
 
+// Scope 3 rows that look inconsistent with what the user said elsewhere —
+// pointed out only; nothing is excluded or recalculated here.
+//  - K3C2-1: a capital good bought in another year than this inventory's
+//    (the question's own helper says such rows are left out).
+//  - K3C4-2: a mode that already states its load ("tam dolu", "%50 dolu")
+//    with a different load factor typed in; and the 50 % default note for
+//    rows without one.
+const MODE_LOAD_PCT = { 'TM-01': 100, 'TM-02': 50 };
+export function scope3RowWarning(question, value, answers, lang = 'en') {
+  const tr = lang === 'tr';
+  const rows = Array.isArray(value?.items) ? value.items : Array.isArray(value) ? value : [];
+  if (question?.id === 'K3C2-1') {
+    const year = String(readAnswerValue(answers || {}, 'A4') || '').trim();
+    if (!/^\d{4}$/.test(year)) return null;
+    const other = rows.filter(r => /^\d{4}$/.test(String(r?.purchase_year || '').trim()) && String(r.purchase_year).trim() !== year);
+    if (!other.length) return null;
+    const years = [...new Set(other.map(r => String(r.purchase_year).trim()))].join(', ');
+    return tr
+      ? `${years} yılında alınan varlık girdiniz; bu envanter ${year} yılı içindir. Kategori 2 kuralına göre başka yılda alınan varlıklar bu envantere dahil edilmez. Yıl yanlışsa "Düzenle" ile düzeltin.`
+      : `You entered an asset bought in ${years}; this inventory is for ${year}. Under the Category 2 rule, assets bought in another year are not included. If the year is wrong, correct it with "Edit".`;
+  }
+  if (question?.id === 'K3C4-2') {
+    const notes = [];
+    const clash = rows.filter(r => {
+      const stated = MODE_LOAD_PCT[r?.transport_mode];
+      const typed = parseLocalizedNumber(r?.load_factor_pct);
+      return stated !== undefined && String(r?.load_factor_pct ?? '').trim() !== '' && Number.isFinite(typed) && typed !== stated;
+    });
+    if (clash.length) {
+      notes.push(tr
+        ? 'Seçtiğiniz taşıma modu doluluğu zaten belirtiyor ("tam dolu" = %100, "%50 dolu" = %50), ama farklı bir doluluk oranı girdiniz. Hangisi doğruysa modu veya oranı düzeltin.'
+        : 'The transport mode you chose already states its load ("full load" = 100%, "50% load" = 50%), but you entered a different load factor. Correct the mode or the factor, whichever is wrong.');
+    }
+    if (rows.some(r => String(r?.load_factor_pct ?? '').trim() === '')) {
+      notes.push(tr
+        ? 'Doluluk oranı girilmeyen satırlar için GLEC Tier 1 %50 varsayılanı uygulanır — bu bir Tip A kabul kaydı oluşturur.'
+        : 'For rows without a load factor the GLEC Tier 1 50% default is applied — this creates a Type A assumption record.');
+    }
+    return notes.length ? notes.join('\n\n') : null;
+  }
+  return null;
+}
+
 // Soru 114 asks whether all exclusions together stay under 5%, right after
 // Soru 112 recorded the excluded source's own share. Saying "under 5%" when
 // 112 alone was 5% or more is a contradiction the user should see — this
@@ -7228,21 +7309,18 @@ export function getSystemMessage(question, value, lang = 'en') {
   // Multi-select: show the message for the first matched selected value.
   // Also checks option.infoKey — some options map to a named key in systemMessages
   // (e.g. A6 legal_obligation → infoKey: 'legalInfo' → systemMessages.legalInfo).
+  // Every matching message is shown (K3C1-1 picks both SC-08 and SC-10, each
+  // with its own double-counting warning), not only the first.
   if (question.type === 'multi_select' && Array.isArray(value)) {
+    const out = [];
     for (const v of value) {
-      // Direct key match
-      if (msgs[v]) {
-        const msg = msgs[v];
-        return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
-      }
-      // infoKey indirection
       const opt = (question.options || []).find(o => o.value === v);
-      if (opt?.infoKey && msgs[opt.infoKey]) {
-        const msg = msgs[opt.infoKey];
-        return typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
-      }
+      const msg = msgs[v] || (opt?.infoKey ? msgs[opt.infoKey] : undefined);
+      if (!msg) continue;
+      const text = typeof msg === 'object' ? (msg[lang] || msg.en || null) : String(msg);
+      if (text && !out.includes(text)) out.push(text);
     }
-    return null;
+    return out.length ? out.join('\n\n') : null;
   }
 
   return null;
@@ -7285,12 +7363,27 @@ export function facilityNameOptions(answersMap) {
 // instead of a free-typed name. With no facilities answered yet they stay
 // a text input.
 export function resolveFieldOptions(fields, answersMap) {
-  if (!Array.isArray(fields) || !fields.some(f => f.optionsFrom === 'facilities')) return fields || [];
-  const options = facilityNameOptions(answersMap);
-  if (options.length === 0) return fields;
-  return fields.map(f => (f.optionsFrom === 'facilities'
-    ? { ...f, type: 'select', renderAs: 'native_select', options }
-    : f));
+  if (!Array.isArray(fields) || !fields.some(f => f.optionsFrom)) return fields || [];
+  return fields.map(f => {
+    if (!f.optionsFrom) return f;
+    let options = [];
+    if (f.optionsFrom === 'facilities') {
+      options = facilityNameOptions(answersMap);
+    } else if (typeof f.optionsFrom === 'string' && f.optionsFrom.startsWith('answer:')) {
+      // 'answer:K3C1-1': the options the user picked in that question, with
+      // their labels (K3C1-4a's category of each supplier declaration).
+      const srcId = f.optionsFrom.slice('answer:'.length);
+      const src = CARBONIQ_QUESTIONS.find(q => q.id === srcId);
+      const picked = readAnswerValue(answersMap || {}, srcId);
+      const values = Array.isArray(picked) ? picked : [];
+      options = values.map(v => {
+        const o = (src?.options || []).find(x => x.value === v);
+        const strip = (t) => String(t || v).replace(/^[A-Z0-9-]+ — /, '').replace(/\s*\(⚠[^)]*\)/g, '').replace(/\s*\(NACE[^)]*\)/g, '').trim();
+        return { value: v, label: { tr: strip(o?.label?.tr), en: strip(o?.label?.en) } };
+      });
+    }
+    return options.length ? { ...f, type: 'select', renderAs: 'native_select', options } : f;
+  });
 }
 
 export function readAnswerValue(answersMap, questionId) {

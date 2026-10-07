@@ -837,7 +837,7 @@ class SupplierEFDocumentTests(TestCase):
         elec = {'answer': {'ef_value': '0.41', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ Elektrik', 'ef_year': '2024'}}
         self.assertEqual(validate_generic_step('4A-EF-a', elec, lang='tr'), (True, None))
         self.assertFalse(validate_generic_step('4B-EF-a', {'answer': {**elec['answer'], 'ef_year': '24'}}, lang='tr')[0])
-        pcf = {'answer': {'supplier': 'XYZ Ambalaj', 'value': '1.25', 'unit': 'kgCO2e_kg', 'year': '2024'}}
+        pcf = {'answer': {'items': [{'category': 'SC-02', 'supplier': 'XYZ Ambalaj', 'value': '1.25', 'unit': 'kgCO2e_kg', 'year': '2024'}]}}
         self.assertEqual(validate_generic_step('K3C1-4a', pcf, lang='tr'), (True, None))
         self.assertEqual(validate_generic_step('K3C1-3a', {'answer': {'SC-01': '12000 kg'}}, lang='tr'), (True, None))
 
@@ -1134,3 +1134,13 @@ class NewInventoryYearTests(TestCase):
         self.assertEqual(ok('4A-3a', gen), (True, None))
         self.assertEqual(ok('4A-2s', {'items': [{'facility': 'Depo Ankara'}]}), (True, None))
 
+
+    def test_scope3_cat1_optional_quantity_and_declarations(self):
+        from .carboniq_validation import validate_generic_step
+        ok = lambda sid, ans: validate_generic_step(sid, {'answer': ans}, lang='tr')
+        # A category whose quantity is unknown is left blank.
+        self.assertEqual(ok('K3C1-3a', {'SC-01': '500 ton', 'SC-08': ''}), (True, None))
+        row = {'category': 'SC-01', 'supplier': 'X A.Ş.', 'value': '120', 'unit': 'tCO2e_total', 'year': '2024'}
+        self.assertEqual(ok('K3C1-4a', {'items': [row, {**row, 'category': 'SC-10'}]}), (True, None))
+        self.assertEqual(ok('K3C3-custom', {'factor_type': 'td_loss', 'value': '2.1', 'unit': '%', 'source': 'TEİAŞ 2024'}), (True, None))
+        self.assertFalse(ok('K3C3-custom', {'factor_type': 'td_loss', 'value': '2.1', 'unit': '%'})[0])
