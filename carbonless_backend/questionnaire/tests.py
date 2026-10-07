@@ -897,8 +897,12 @@ class SupplierEFDocumentTests(TestCase):
 
     def test_exclusion_source_question(self):
         from .carboniq_validation import validate_generic_step
-        self.assertEqual(validate_generic_step('6A-1a', {'answer': 'Kocaeli Ofis — kiralık'}, lang='tr'), (True, None))
-        self.assertFalse(validate_generic_step('6A-1a', {'answer': ''}, lang='tr')[0])
+        row = {'source': 'Kocaeli Ofis — kiralık', 'reason': 'not_controlled', 'share': 'lt1'}
+        self.assertEqual(validate_generic_step('6A-1a', {'answer': {'items': [row]}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('6A-1a', {'answer': {'items': [row, {**row, 'source': 'Depo', 'share': '5_10'}]}}, lang='tr'), (True, None))
+        # every row names its reason and estimated share
+        self.assertFalse(validate_generic_step('6A-1a', {'answer': {'items': [{'source': 'Depo', 'reason': 'no_data'}]}}, lang='tr')[0])
+        self.assertFalse(validate_generic_step('6A-1a', {'answer': {'items': [{**row, 'share': 'big'}]}}, lang='tr')[0])
 
     def test_stage6_7_exceptions_and_sign_off(self):
         from .carboniq_validation import validate_generic_step
@@ -1010,6 +1014,47 @@ class AdvisorFlagsFollowAnswersTests(TestCase):
         self.assertIn('but 3 were entered', flag.description)
         self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR'} for i in (1, 2)}})
         self.assertNotIn(('2A-2', 'site_count_mismatch'), self._pending())
+
+    def test_exclusion_rows_flag_entity_and_largest_band(self):
+        from .models import AdvisorApproval
+        self._save('6A-1', {'answer': 'yes'})
+        rows = [{'source': 'Kocaeli Ofis', 'reason': 'not_controlled', 'share': 'lt1'},
+                {'source': 'İzmir Depo', 'reason': 'no_data', 'share': '10_20'}]
+        self._save('6A-1a', {'answer': {'items': rows}})
+        self.assertIn(('6A-1a', '6a_entity_exclusion'), self._pending())
+        self.assertIn(('6A-1a', '6c_medium_materiality'), self._pending())
+        flag = AdvisorApproval.objects.get(report=self.report, question_id='6A-1a', reason_code='6c_medium_materiality')
+        self.assertIn('İzmir Depo', flag.description)
+        self._save('6A-1a', {'answer': {'items': [rows[0], {**rows[1], 'share': 'gt20'}]}})
+        self.assertIn(('6A-1a', '6c_high_materiality'), self._pending())
+        self.assertNotIn(('6A-1a', '6c_medium_materiality'), self._pending())
+        self._save('6A-1a', {'answer': {'items': [rows[0]]}})
+        self.assertEqual({r for q, r in self._pending() if q == '6A-1a'}, {'6a_entity_exclusion'})
+        self._save('6A-1', {'answer': 'none_flagged'})
+        self.assertFalse({q for q, _ in self._pending()} & {'6A-1a'})
+
+    def test_assumptions_derived_from_answers(self):
+        from rest_framework.test import APIClient
+        from .assumptions import derive_assumptions
+        self.assertEqual(derive_assumptions({'3A-6': {'answer': {'natural_gas': 'invoice_meter'}}}), [])
+        self._save('3A-6', {'answer': {'natural_gas': 'engineering_estimate', 'lpg': 'invoice_meter'}})
+        self._save('3B-6', {'answer': {'EQ-3B-01': 'annual_km', 'EQ-3B-05': 'fuel_litres'}})
+        self._save('4A-2a', {'answer': 'no'})
+        self._save('K3C4-2', {'answer': {'items': [
+            {'transport_mode': 'TM-01', 'load_tonne': '20', 'distance_km': '300', 'load_factor_pct': '60'},
+            {'transport_mode': 'TM-03', 'load_tonne': '2', 'distance_km': '80'}], 'draft': {}}})
+        self._save('K3C7-0', {'answer': 'estimate'})
+        c = APIClient(); c.force_authenticate(user=self.owner)
+        res = c.get(f'/api/questionnaire/{self.report.id}/assumptions/')
+        self.assertEqual(res.status_code, 200)
+        by_step = {a['step_id']: a for a in res.data['assumptions']}
+        self.assertEqual(set(by_step), {'3A-6', '3B-6', '4A-2a', 'K3C4-2', 'K3C7-0'})
+        self.assertIn('Doğalgaz', by_step['3A-6']['text'])
+        self.assertNotIn('LPG', by_step['3A-6']['text'])
+        self.assertIn('1 araç', by_step['3B-6']['text'])
+        self.assertIn('1 satır', by_step['K3C4-2']['text'])
+        res = c.get(f'/api/questionnaire/{self.report.id}/assumptions/?lang=en')
+        self.assertIn('Natural gas', res.data['assumptions'][0]['text'])
 
     def test_decided_flags_are_kept(self):
         from .models import AdvisorApproval

@@ -207,6 +207,35 @@ def _match_6a_emission_band(qid, answer, report):
     return None
 
 
+_EXCLUSION_BAND_ORDER = ['lt1', '1_5', '5_10', '10_20', 'gt20']
+
+
+def _match_6a_exclusion_rows(qid, answer, report):
+    """6A-1a lists each excluded source on its own row with its reason and
+    estimated share. One exclusion flag for the list, plus a materiality flag
+    for the largest share band when it is 5% or more."""
+    value = _answer_value(answer)
+    rows = []
+    if isinstance(value, dict) and isinstance(value.get('items'), list):
+        rows = [r for r in value['items'] if isinstance(r, dict) and r.get('source')]
+    elif isinstance(value, str) and value.strip():
+        rows = [{'source': value.strip()}]  # older free-text answer
+    if not rows:
+        return None
+    names = ', '.join(str(r['source']) for r in rows)
+    out = [{'reason_code': '6a_entity_exclusion', 'category': 'Kapsam', 'risk': 'high',
+            'description': f'{qid}: excluded from the inventory boundary — {names}.'}]
+    bands = [r.get('share') for r in rows if r.get('share') in _EXCLUSION_BAND_ORDER]
+    if bands:
+        top = max(bands, key=_EXCLUSION_BAND_ORDER.index)
+        band = _match_6a_emission_band(qid, top, report)
+        if band:
+            big = ', '.join(str(r['source']) for r in rows if r.get('share') == top)
+            band['description'] = f'{qid}: excluded source estimated emission share is {top.replace("_", "-")}% ({big}).'
+            out.append(band)
+    return out
+
+
 def _match_pct5_exceeded(qid, answer, report):
     if _answer_value(answer) == 'go_back':
         return {'reason_code': 'pct5_exceeded', 'category': 'Kapsam', 'risk': 'critical',
@@ -299,6 +328,7 @@ FIELD_RULES = {
     '3D-EF': _match_ar6_gwp,
     'D1': _match_ef_database_change,
     'K3C6-2': _match_rfi,
+    '6A-1a': _match_6a_exclusion_rows,
     '6A-2': _match_6a_reason,
     '6A-4': _match_6a_emission_band,
     '6D-1': _match_pct5_exceeded,
@@ -325,7 +355,7 @@ CROSS_CHECKS = [
 # An answer that closes a branch: flags raised on the questions behind it no
 # longer apply (their old answers stay stored but are not part of the report).
 BRANCH_CLOSERS = {
-    ('6A-1', 'none_flagged'): ('6A-1a', '6A-2', '6A-4', '6A-5', '6A-6'),
+    ('6A-1', 'none_flagged'): ('6A-1a', '6A-2', '6A-3', '6A-4', '6A-5', '6A-6'),
 }
 
 

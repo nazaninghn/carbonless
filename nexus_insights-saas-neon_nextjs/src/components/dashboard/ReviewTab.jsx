@@ -122,6 +122,41 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
     }
   }, [rejectTarget, rejectReason, tr, toast, fetchPending, fetchData]);
 
+  // One inventory can raise a dozen flags (every Scope 3 category answered
+  // "No" is one); approving them one by one was the only way. Each inventory
+  // gets a single "approve all", behind a confirmation listing the count.
+  const advisorByReport = advisorPending.reduce((acc, item) => {
+    const g = acc.find(x => x.report_id === item.report_id);
+    if (g) g.items.push(item);
+    else acc.push({ report_id: item.report_id, title: item.report_title, items: [item] });
+    return acc;
+  }, []);
+
+  const handleApproveAll = useCallback(async (group) => {
+    const ok = window.confirm(tr
+      ? `"${group.title}" envanterindeki ${group.items.length} danışman onayının tümü onaylanacak. Her birinin cevabın bilerek verildiği anlamına geldiğini doğruluyor musunuz?`
+      : `All ${group.items.length} advisor approvals of "${group.title}" will be approved. Do you confirm each answer was given on purpose?`);
+    if (!ok) return;
+    setProcessing(`report-${group.report_id}`);
+    let failed = 0;
+    let forbidden = false;
+    try {
+      for (const item of group.items) {
+        const res = await api.approveAdvisorApproval(item.id, 'approve');
+        if (!res.ok) { failed += 1; if (res.status === 403) forbidden = true; }
+      }
+      if (forbidden) toast.error(noPermissionMessage(tr));
+      else if (failed) toast.error(tr ? `${failed} onay başarısız oldu` : `${failed} approvals failed`);
+      else toast.success(tr ? `${group.items.length} onay verildi ✓` : `${group.items.length} approved ✓`);
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      await fetchPending();
+      if (fetchData) fetchData();
+      setProcessing(null);
+    }
+  }, [tr, toast, fetchPending, fetchData]);
+
   const totalPending = pending.length + advisorPending.length;
 
   return (
@@ -183,6 +218,24 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                   ? 'Anketteki bazı cevaplar ISO 14064-1 doğrulamasında açıklama gerektirir. Onaylarsanız cevabın bilerek verildiği kaydedilir; reddederseniz cevabın gözden geçirilip düzeltilmesi gerektiği not edilir. Aynı kural her envanter için ayrı listelenir.'
                   : 'Some questionnaire answers need a justification in an ISO 14064-1 verification. Approving records that the answer was given on purpose; rejecting notes that it must be reviewed and corrected. Each inventory is listed separately.'}
               </p>
+              {canApprove && advisorByReport.some(g => g.items.length > 1) && (
+                <div className="flex flex-wrap gap-2 px-1">
+                  {advisorByReport.filter(g => g.items.length > 1).map(g => (
+                    <button
+                      key={`all-${g.report_id}`}
+                      type="button"
+                      disabled={processing !== null}
+                      onClick={() => handleApproveAll(g)}
+                      className="inline-flex items-center gap-1 rounded-xl border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-[11px] font-bold text-[#175022] hover:bg-[#F1FCF2] disabled:opacity-50"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {processing === `report-${g.report_id}`
+                        ? (tr ? 'Onaylanıyor…' : 'Approving…')
+                        : (tr ? `${g.title} — tümünü onayla (${g.items.length})` : `${g.title} — approve all (${g.items.length})`)}
+                    </button>
+                  ))}
+                </div>
+              )}
               {advisorPending.map(item => { const reason = advisorReasonText(item, tr); const given = formatAdvisorAnswer(item.question_id, item.answer, tr); return (
                 <div key={`advisor-${item.id}`} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -219,7 +272,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                     {canApprove && <div className="flex shrink-0 items-center gap-1.5">
                       <button
                         onClick={() => handleApprove(item.id, 'advisor')}
-                        disabled={processing === item.id}
+                        disabled={processing === item.id || String(processing).startsWith("report-")}
                         className="inline-flex items-center gap-1 rounded-full bg-[#2ABD41]/12 px-3 py-2 text-[11px] font-bold text-[#175022] transition hover:bg-[#2ABD41]/22 disabled:opacity-50"
                       >
                         <Check className="h-3 w-3" />
@@ -227,7 +280,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                       </button>
                       <button
                         onClick={() => setRejectTarget({ id: item.id, type: 'advisor' })}
-                        disabled={processing === item.id}
+                        disabled={processing === item.id || String(processing).startsWith("report-")}
                         className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-2 text-[11px] font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
                       >
                         <X className="h-3 w-3" />

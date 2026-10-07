@@ -758,6 +758,24 @@ def _other_inventories(report):
     ]
 
 
+class ReportAssumptionsView(APIView):
+    """GET /api/questionnaire/<report_id>/assumptions/?lang=tr
+
+    The assumptions the inventory's own answers imply (a distance instead of
+    a fuel bill, a floor-area share, the GLEC default load factor …), so the
+    user sees at 6B-OV what is already recorded before adding their own."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, report_id):
+        from .assumptions import report_assumptions
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=404)
+        lang = 'en' if request.query_params.get('lang') == 'en' else 'tr'
+        return Response({'assumptions': report_assumptions(report, lang)})
+
+
 class PreviousCompanyProfileView(APIView):
     """GET /api/questionnaire/<report_id>/previous-profile/
 

@@ -10,6 +10,7 @@ from .views import (
     ISOInventoryReportView,
     CombinedReportView,
     PreviousCompanyProfileView,
+    ReportAssumptionsView,
     ReuseCompanyProfileView,
     get_report_summary,
     pending_advisor_approvals_view,
@@ -37,6 +38,7 @@ urlpatterns = [
     path('<int:report_id>/pdf/', QuestionnairePDFView.as_view(), name='questionnaire-pdf'),
     path('<int:report_id>/iso-report/', ISOInventoryReportView.as_view(), name='questionnaire-iso-report'),
     path('<int:report_id>/combined-report/', CombinedReportView.as_view(), name='questionnaire-combined-report'),
+    path('<int:report_id>/assumptions/', ReportAssumptionsView.as_view(), name='questionnaire-assumptions'),
     path('<int:report_id>/previous-profile/', PreviousCompanyProfileView.as_view(), name='questionnaire-previous-profile'),
     path('<int:report_id>/reuse-profile/', ReuseCompanyProfileView.as_view(), name='questionnaire-reuse-profile'),
 

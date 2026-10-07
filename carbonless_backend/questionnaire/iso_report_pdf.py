@@ -2337,18 +2337,42 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         band_code = _raw_answer(A, '6A-4')
         band = EXCLUSION_BAND_LABELS.get(band_code, {}).get(lang) if band_code else None
         future_plan = _answer_text(A, '6A-5', lang, default=None)
-        excluded = _answer_text(A, '6A-1a', lang, default=None)
+        # 6A-1a lists each excluded source on its own row with its reason and
+        # estimated share; older inventories stored one free-text answer with
+        # a single reason (6A-2) and band (6A-4) for all of them.
+        raw_rows = _raw_answer(A, '6A-1a')
+        rows = ([r for r in raw_rows.get('items', []) if isinstance(r, dict) and r.get('source')]
+                if isinstance(raw_rows, dict) else [])
+        excluded = None if rows else _answer_text(A, '6A-1a', lang, default=None)
 
         # The reason labels are noun phrases ('data inaccessible', 'outside
         # operational control'), so they are introduced as a stated reason
         # rather than pushed behind a 'because' that will not fit them.
-        if lang == 'en':
+        if rows:
+            E.append(Paragraph(
+                'The following sources have been excluded from the declared boundary:'
+                if lang == 'en' else
+                'Aşağıdaki kaynaklar beyan edilen sınırdan hariç tutulmuştur:', S['body']))
+            lines = []
+            for r in rows:
+                parts = [escape(str(r['source']))]
+                r_reason = EXCLUSION_REASON_LABELS.get(r.get('reason'), {}).get(lang)
+                r_band = EXCLUSION_BAND_LABELS.get(r.get('share'), {}).get(lang)
+                if r_reason:
+                    parts.append(f'{"reason" if lang == "en" else "gerekçe"}: {r_reason}')
+                if r_band:
+                    parts.append(f'{"estimated share" if lang == "en" else "tahmini pay"}: {r_band}')
+                lines.append(parts[0] + (f' ({"; ".join(parts[1:])})' if len(parts) > 1 else ''))
+            E.extend(_bullets(S, lines))
+            reason = band = None
+        elif lang == 'en':
             sentence = 'One or more sources have been excluded from the declared boundary'
             sentence += f'. Reason declared: {reason}.' if reason else '.'
+            E.append(Paragraph(sentence, S['body']))
         else:
             sentence = 'Beyan edilen sınırdan bir veya daha fazla kaynak hariç tutulmuştur'
             sentence += f'. Beyan edilen gerekçe: {reason}.' if reason else '.'
-        E.append(Paragraph(sentence, S['body']))
+            E.append(Paragraph(sentence, S['body']))
         if excluded and excluded != t('not_declared', lang):
             E.append(Paragraph(
                 (f'<b>{"Excluded" if lang == "en" else "Hariç tutulan"}:</b> {escape(excluded)}'),
@@ -2473,6 +2497,17 @@ def _section3(E, S, D, report, lang, TBL, FIG):
                 else 'Kuruluş tarafından beyan edilen kabuller:', S['body']))
             E.extend(_bullets(S, [escape(x) for x in own]))
             E.append(Spacer(1, 3*mm))
+    # Assumptions the answers themselves imply (estimates, defaults) — the
+    # questions told the user these would be documented here.
+    from .assumptions import derive_assumptions
+    # (the exclusions are already listed in 3.4)
+    recorded = [x for x in derive_assumptions(A, lang) if x['step_id'] != '6A-1a']
+    if recorded:
+        E.append(Paragraph(
+            'Assumptions recorded while the inventory was compiled:' if lang == 'en'
+            else 'Envanter hazırlanırken kaydedilen kabuller:', S['body']))
+        E.extend(_bullets(S, [escape(x['text']) for x in recorded]))
+        E.append(Spacer(1, 3*mm))
     plan = _answer_text(A, '6E-1', lang, default=None)
     if plan and plan != t('not_declared', lang):
         E.append(Paragraph(
