@@ -1405,10 +1405,32 @@
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null
+      },
+      {
+        "id": "group_count",
+        "type": "text",
+        "subtype": "numeric",
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
       }
     ],
     "sumRange": null,
-    "notAbove": null,
+    "notAbove": [
+      {
+        "field": "group_count",
+        "max": "unit_count",
+        "message": {
+          "tr": "Grup sayısı adetten fazla olamaz.",
+          "en": "The number of groups cannot exceed the number of units."
+        }
+      }
+    ],
     "stage": 3
   },
   "3A-2b": {
@@ -1842,10 +1864,32 @@
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null
+      },
+      {
+        "id": "group_count",
+        "type": "text",
+        "subtype": "numeric",
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
       }
     ],
     "sumRange": null,
-    "notAbove": null,
+    "notAbove": [
+      {
+        "field": "group_count",
+        "max": "unit_count",
+        "message": {
+          "tr": "Grup sayısı adetten fazla olamaz.",
+          "en": "The number of groups cannot exceed the number of units."
+        }
+      }
+    ],
     "stage": 3
   },
   "3B-4": {
@@ -2374,10 +2418,32 @@
           "SF6",
           "unknown"
         ]
+      },
+      {
+        "id": "group_count",
+        "type": "text",
+        "subtype": "numeric",
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
       }
     ],
     "sumRange": null,
-    "notAbove": null,
+    "notAbove": [
+      {
+        "field": "group_count",
+        "max": "unit_count",
+        "message": {
+          "tr": "Grup sayısı adetten fazla olamaz.",
+          "en": "The number of groups cannot exceed the number of units."
+        }
+      }
+    ],
     "stage": 3
   },
   "3D-4": {
@@ -2422,6 +2488,28 @@
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null
+      },
+      {
+        "id": "gas_type",
+        "type": "select",
+        "subtype": null,
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": [
+          "R410A",
+          "R32",
+          "R22",
+          "R134a",
+          "R404A",
+          "R1234yf",
+          "SF6",
+          "unknown"
+        ]
       }
     ],
     "sumRange": null,

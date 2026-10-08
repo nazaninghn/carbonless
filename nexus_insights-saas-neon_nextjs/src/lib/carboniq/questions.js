@@ -1844,8 +1844,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Equipment name] — How many units and at which site?',
     },
     helper: {
-      tr: 'Aynı türde birden fazla ekipmanınız varsa toplam adedi girin. Farklı tesislerdeyse çoğunun bulunduğu tesisi seçin.',
-      en: 'If you have several units of the same type, enter the total count. If they are at different sites, choose the site where most of them are.',
+      tr: 'Aynı türde birden fazla ekipmanınız varsa toplam adedi girin. Farklı tesislerdeyse çoğunun bulunduğu tesisi seçin. Bu tipteki ekipmanların yakıtı veya kapasitesi farklıysa kaç farklı grup olduğunu yazın — sonraki sorular her grup için ayrı sorulur.',
+      en: 'If you have several units of the same type, enter the total count. If they are at different sites, choose the site where most of them are. If units of this type differ in fuel or capacity, enter how many groups there are — the next questions are asked once per group.',
     },
     fields: [
       {
@@ -1867,6 +1867,19 @@ export const CARBONIQ_QUESTIONS = [
         // (resolveFieldOptions); typed text only as a fallback.
         optionsFrom: 'facilities',
       },
+      {
+        // Units of one type that differ (fuel, model year, gas …): the
+        // questions after this one are asked once per group (groupedLoopItems).
+        id: 'group_count',
+        type: 'text',
+        subtype: 'numeric',
+        required: false,
+        label: { tr: 'Farklı grup sayısı — opsiyonel (yakıt veya kapasite farklıysa)', en: 'Number of different groups — optional (if fuel or capacity differs)' },
+        placeholder: { tr: 'Hepsi aynıysa boş bırakın', en: 'Leave empty if they are all the same' },
+      },
+    ],
+    notAbove: [
+      { field: 'group_count', max: 'unit_count', message: { tr: 'Grup sayısı adetten fazla olamaz.', en: 'The number of groups cannot exceed the number of units.' } },
     ],
     validate: {
       requiredMessage: { tr: 'Adet ve tesis zorunludur.', en: 'Count and site are required.' },
@@ -2344,8 +2357,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Vehicle type] — How many units, at which site, and what size/tonnage band?',
     },
     helper: {
-      tr: 'Büyüklük/tonaj DEFRA emisyon faktörü tablosunda doğru sütunu seçmek için gerekli. Binek araçlar için motor hacmi, ticari araçlar için GVW (brüt araç ağırlığı) kullanılır.',
-      en: 'Size/tonnage is needed to select the correct column in the DEFRA emission factor table. Engine displacement for passenger cars, GVW (Gross Vehicle Weight) for commercial vehicles.',
+      tr: 'Büyüklük/tonaj DEFRA emisyon faktörü tablosunda doğru sütunu seçmek için gerekli. Binek araçlar için motor hacmi, ticari araçlar için GVW (brüt araç ağırlığı) kullanılır. Bu tipteki araçların yakıtı, model yılı veya kullanımı farklıysa (örn. 2 dizel, 1 elektrikli) kaç farklı grup olduğunu yazın — sonraki sorular her grup için ayrı sorulur.',
+      en: 'Size/tonnage is needed to select the correct column in the DEFRA emission factor table. Engine displacement for passenger cars, GVW (Gross Vehicle Weight) for commercial vehicles. If vehicles of this type differ in fuel, model year or use (e.g. 2 diesel, 1 electric), enter how many groups there are — the next questions are asked once per group.',
     },
     fields: [
       {
@@ -2375,6 +2388,19 @@ export const CARBONIQ_QUESTIONS = [
         label: { tr: 'Büyüklük / tonaj bandı', en: 'Size / tonnage band' },
         placeholder: { tr: 'Örn: Orta (1.4–2.0L)', en: 'e.g. Medium (1.4–2.0L)' },
       },
+      {
+        // Units of one type that differ (fuel, model year, gas …): the
+        // questions after this one are asked once per group (groupedLoopItems).
+        id: 'group_count',
+        type: 'text',
+        subtype: 'numeric',
+        required: false,
+        label: { tr: 'Farklı grup sayısı — opsiyonel (yakıt, model yılı veya kullanım farklıysa)', en: 'Number of different groups — optional (if fuel, model year or use differs)' },
+        placeholder: { tr: 'Hepsi aynıysa boş bırakın', en: 'Leave empty if they are all the same' },
+      },
+    ],
+    notAbove: [
+      { field: 'group_count', max: 'unit_count', message: { tr: 'Grup sayısı adetten fazla olamaz.', en: 'The number of groups cannot exceed the number of units.' } },
     ],
     validate: {
       requiredMessage: { tr: 'Adet ve tesis zorunludur.', en: 'Count and site are required.' },
@@ -2919,8 +2945,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Equipment] — Number of units, site, and refrigerant/gas type?',
     },
     helper: {
-      tr: 'Gaz türü ekipman tipine göre önerildi. Emin değilseniz klima veya soğutma servis fişinizi kontrol edin — gaz türü orada yazıyor.',
-      en: 'Gas type was suggested based on equipment type. If unsure, check your AC or refrigeration service receipt — the gas type is listed there.',
+      tr: 'Gaz türü ekipman tipine göre önerildi. Emin değilseniz klima veya soğutma servis fişinizi kontrol edin — gaz türü orada yazıyor. Bu tipteki ekipmanların gaz türü veya dolum miktarı farklıysa kaç farklı grup olduğunu yazın — dolum sorusu her grup için ayrı sorulur ve her grubun gazını orada seçebilirsiniz.',
+      en: 'Gas type was suggested based on equipment type. If unsure, check your AC or refrigeration service receipt — the gas type is listed there. If units of this type differ in gas type or refill, enter how many groups there are — the refill question is asked once per group and you can pick each group’s gas there.',
     },
     fields: [
       {
@@ -2958,6 +2984,19 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'unknown', label: { tr: 'Bilinmiyor — sistem konservatif değer uygular', en: 'Unknown — system applies conservative value' }, gwp: null },
         ],
       },
+      {
+        // Units of one type that differ (fuel, model year, gas …): the
+        // questions after this one are asked once per group (groupedLoopItems).
+        id: 'group_count',
+        type: 'text',
+        subtype: 'numeric',
+        required: false,
+        label: { tr: 'Farklı grup sayısı — opsiyonel (gaz türü veya dolum farklıysa)', en: 'Number of different groups — optional (if gas type or refill differs)' },
+        placeholder: { tr: 'Hepsi aynıysa boş bırakın', en: 'Leave empty if they are all the same' },
+      },
+    ],
+    notAbove: [
+      { field: 'group_count', max: 'unit_count', message: { tr: 'Grup sayısı adetten fazla olamaz.', en: 'The number of groups cannot exceed the number of units.' } },
     ],
     validate: {
       requiredMessage: { tr: 'Adet, tesis ve gaz türü zorunludur.', en: 'Count, site and gas type are required.' },
@@ -3014,6 +3053,25 @@ export const CARBONIQ_QUESTIONS = [
         required: false,
         label: { tr: 'Sistem kapasitesi (kg) — opsiyonel', en: 'System capacity (kg) — optional' },
         placeholder: { tr: 'Örn: 8', en: 'e.g. 8' },
+      },
+      {
+        // Only for the 2nd, 3rd … group of a type split at 3D-2 (groupOnly):
+        // the gas chosen there is the first group's.
+        id: 'gas_type',
+        type: 'select',
+        required: false,
+        groupOnly: true,
+        label: { tr: 'Bu grubun soğutucu / gaz türü (Soru 61\'dekinden farklıysa)', en: 'This group’s refrigerant / gas type (if different from Question 61)' },
+        options: [
+          { value: 'R410A', label: { tr: 'R-410A (GWP: 2.088)', en: 'R-410A (GWP: 2,088)' }, gwp: 2088 },
+          { value: 'R32', label: { tr: 'R-32 (GWP: 675)', en: 'R-32 (GWP: 675)' }, gwp: 675 },
+          { value: 'R22', label: { tr: 'R-22 (GWP: 1.810) — aşamalı kaldırılıyor', en: 'R-22 (GWP: 1,810) — being phased out' }, gwp: 1810 },
+          { value: 'R134a', label: { tr: 'R-134a (GWP: 1.430)', en: 'R-134a (GWP: 1,430)' }, gwp: 1430 },
+          { value: 'R404A', label: { tr: 'R-404A (GWP: 3.922) — yüksek GWP', en: 'R-404A (GWP: 3,922) — high GWP' }, gwp: 3922 },
+          { value: 'R1234yf', label: { tr: 'R-1234yf (GWP: 4) — düşük GWP', en: 'R-1234yf (GWP: 4) — low GWP' }, gwp: 4 },
+          { value: 'SF6', label: { tr: 'SF₆ (GWP: 23.500) — çok yüksek GWP', en: 'SF₆ (GWP: 23,500) — very high GWP' }, gwp: 23500 },
+          { value: 'unknown', label: { tr: 'Bilinmiyor — sistem konservatif değer uygular', en: 'Unknown — system applies conservative value' }, gwp: null },
+        ],
       },
     ],
     validate: {
@@ -6771,6 +6829,46 @@ function foreignTaxIdQuestion(base) {
       },
     },
   };
+}
+
+// A type answered with "N different groups" at its count question (3A-2,
+// 3B-3, 3D-2) is asked the questions after it once per group: the loop item
+// "EQ-3B-01" becomes "EQ-3B-01", "EQ-3B-01#2", "EQ-3B-01#3". The first group
+// keeps the plain key, so answers saved before groups existed still match.
+export const LOOP_GROUP_SPLIT = {
+  '3A-1': { countStep: '3A-2', questions: ['3A-3', '3A-4'] },
+  '3B-1': { countStep: '3B-3', questions: ['3B-4', '3B-5', '3B-6', '3B-7'] },
+  '3D-0': { countStep: '3D-2', questions: ['3D-4'] },
+};
+
+// "EQ-3B-01#2" → "EQ-3B-01": the type a group key belongs to.
+export function baseLoopItem(key) {
+  return String(key ?? '').split('#')[0];
+}
+
+// The group number of a loop item key (1 for a plain key).
+export function loopItemGroup(key) {
+  const n = parseInt(String(key ?? '').split('#')[1], 10);
+  return Number.isFinite(n) && n > 1 ? n : 1;
+}
+
+// Expands a type list into its groups for the questions that are split.
+export function groupedLoopItems(questionId, items, answers) {
+  const split = Object.values(LOOP_GROUP_SPLIT).find(c => c.questions.includes(questionId));
+  if (!split) return items;
+  const counts = readAnswerValue(answers || {}, split.countStep);
+  const out = [];
+  for (const item of items) {
+    out.push(item);
+    const row = counts && typeof counts === 'object' ? counts[item] : null;
+    const units = parseInt(String(row?.unit_count ?? '').replace(/\D/g, ''), 10);
+    let groups = parseInt(String(row?.group_count ?? '').replace(/\D/g, ''), 10);
+    if (!Number.isFinite(groups) || groups < 2) continue;
+    if (Number.isFinite(units) && units > 0) groups = Math.min(groups, units);
+    groups = Math.min(groups, 20);
+    for (let g = 2; g <= groups; g += 1) out.push(`${item}#${g}`);
+  }
+  return out;
 }
 
 export function getQuestionById(id) {
