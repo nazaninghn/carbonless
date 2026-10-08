@@ -2516,262 +2516,6 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: AI Help Drawer
 // ─────────────────────────────────────────────────────────────────────────────
-function AIHelpDrawer({ open, onClose, currentQuestion, lang, helpSessionRef }) {
-  const tr = lang === 'tr';
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [sending, setSending] = useState(false);
-  const [helpError, setHelpError] = useState('');
-  const scrollRef = useRef(null);
-  const inputRef = useRef(null);
-  // Monotonically-incrementing counter for stable message keys — avoids the
-  // Date.now() collision risk when two messages land in the same millisecond.
-  const msgIdRef = useRef(0);
-  // Fix #77: synchronous mutex — prevents two rapid Enter/click events from both
-  // seeing helpSessionRef.current===null and each creating a duplicate session.
-  // React state (sending) only blocks after a re-render; this ref blocks
-  // immediately in the same event-loop tick.
-  const helpSessionCreatingRef = useRef(false);
-  // Tracks whether the drawer is currently open so async continuations in
-  // sendHelp don't dispatch state updates after the drawer has been closed.
-  const openRef = useRef(open);
-  useEffect(() => { openRef.current = open; }, [open]);
-  // Fix #89: isMountedRef guards against state updates after resetFlow() unmounts
-  // the drawer while a sendHelp fetch is still in flight.  openRef guards the
-  // "is the drawer visible" question; isMountedRef guards the "is the component
-  // still mounted" question — both checks are needed.
-  const isMountedRef = useRef(true);
-  useEffect(() => { isMountedRef.current = true; return () => { isMountedRef.current = false; }; }, []);
-
-  // Clear conversation when drawer closes so stale messages don't reappear on next open
-  useEffect(() => { if (!open) setMessages([]); }, [open]);
-
-  // Pre-fill when the drawer opens — skip if a send is already in flight.
-  // Fix #88: `currentQuestion` removed from deps so advancing to the next question
-  // while the drawer is open does NOT overwrite text the user has already started
-  // typing.  The pre-fill only fires on a fresh open (open: false → true).
-  // `sending` intentionally omitted — only re-trigger on open/language change.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (open && currentQuestion && !sending) {
-      const qText = currentQuestion.text?.[lang] || currentQuestion.text?.en || '';
-      const pre = tr
-        ? `Soru ${currentQuestion.number} hakkında: "${qText}" — `
-        : `I'm on question ${currentQuestion.number} about: "${qText}". `;
-      setInput(pre);
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [open, lang, tr]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages, sending]);
-
-  const sendHelp = useCallback(async () => {
-    const content = input.trim();
-    // Fix #99: reject oversized messages — the backend enforces MAX_MESSAGE_LENGTH=4000
-    // and would return a 400, but the drawer has no visible warning for that path.
-    if (!content || sending || input.length > CHAT_CHAR_LIMIT) return;
-
-    // Ensure we have a help session — guarded by helpSessionCreatingRef so that
-    // two rapid sends (before the first re-render disables the button) don't both
-    // see helpSessionRef.current===null and race to create duplicate sessions.
-    if (!helpSessionRef.current) {
-      if (helpSessionCreatingRef.current) return; // already creating — drop the duplicate
-      helpSessionCreatingRef.current = true;
-      try {
-        const res = await api.createChatSession(tr ? 'Envanter Yardımı' : 'Questionnaire Help');
-        if (res.ok) {
-          const sess = await res.json();
-          helpSessionRef.current = sess.id;
-        } else {
-          // Fix #103: guard state updates — component may have unmounted or drawer
-          // may have been closed while the session-creation request was in-flight.
-          if (!isMountedRef.current || !openRef.current) return;
-          setHelpError(tr ? 'Oturum başlatılamadı. Lütfen tekrar deneyin.' : 'Could not start session. Please try again.');
-          return;
-        }
-      } catch {
-        // Fix #103: same guard for the network-error path.
-        if (!isMountedRef.current || !openRef.current) return;
-        setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
-        return;
-      } finally {
-        helpSessionCreatingRef.current = false;
-      }
-    }
-
-    // Fix #103: guard before the post-session-creation state batch — component
-    // may have unmounted or drawer closed while createChatSession was awaited.
-    if (!isMountedRef.current || !openRef.current) return;
-    setInput('');
-    setSending(true);
-    setHelpError('');
-    setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'user', content }]);
-    try {
-      const res = await api.sendChatMessage(helpSessionRef.current, content, lang);
-      // Fix #89: guard with isMountedRef AND openRef so we never setState on an
-      // unmounted component (resetFlow path) or on a closed drawer (onClose path).
-      if (isMountedRef.current && openRef.current) {
-        if (res.ok) {
-          const aiMsg = await res.json();
-          setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
-        } else {
-          // 404/410 means the session was deleted (e.g. from the FreeChatTab session
-          // list). Null the ref so the next send creates a fresh session automatically.
-          if (res.status === 404 || res.status === 410) helpSessionRef.current = null;
-          setHelpError(tr ? 'Yanıt alınamadı. Lütfen tekrar deneyin.' : 'Could not get a response. Please try again.');
-        }
-      }
-    } catch {
-      if (isMountedRef.current && openRef.current) setHelpError(tr ? 'Bağlantı hatası.' : 'Connection error.');
-    } finally {
-      // Always reset — even if the drawer was closed mid-flight — so the send
-      // button is not permanently stuck in a spinner on the next open.
-      if (isMountedRef.current) setSending(false);
-      if (isMountedRef.current && openRef.current) inputRef.current?.focus();
-    }
-  }, [input, sending, tr, helpSessionRef]);
-
-  if (!open) return null;
-
-  return (
-    <>
-      {/* Overlay (mobile) */}
-      <div
-        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm md:hidden"
-        onClick={onClose}
-      />
-      {/* Drawer */}
-      <div className="absolute inset-y-0 right-0 z-50 flex w-[min(340px,100vw)] flex-col border-l border-[#175022]/8 bg-white shadow-[-8px_0_40px_rgba(7, 44, 14,0.08)] md:relative md:inset-auto md:z-auto md:w-[300px] md:shadow-none">
-        {/* Header */}
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#175022]/6 px-4 py-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#2ABD41]/20 to-[#8BEA99]/10">
-            <HelpCircle className="h-4 w-4 text-[#175022]" />
-          </div>
-          <span className="flex-1 text-sm font-bold text-[#175022]">
-            {tr ? 'AI Yardımı' : 'AI Help'}
-          </span>
-          <button
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-8">
-              <HelpCircle className="h-8 w-8 text-[#175022]/15" />
-              <p className="text-xs text-[#175022]/40 max-w-[200px]">
-                {tr ? 'Bu soru hakkında AI\'dan yardım isteyin.' : 'Ask AI for help with this specific question.'}
-              </p>
-            </div>
-          )}
-          {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[90%] rounded-[18px] px-3 py-2.5 text-[12.5px] leading-[1.6] ${
-                  msg.role === 'user'
-                    ? 'rounded-tr-sm bg-[#1A7B2A] text-white'
-                    : 'rounded-tl-sm border border-[#175022]/6 bg-[#F1FCF2] text-[#175022]'
-                }`}
-              >
-                {msg.role === 'user' ? msg.content : <Markdown text={msg.content} />}
-              </div>
-            </div>
-          ))}
-          {sending && (
-            <div className="flex gap-2">
-              <div className="rounded-[18px] rounded-tl-sm border border-[#175022]/6 bg-[#F1FCF2] px-3 py-2.5">
-                <TypingDots />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Input */}
-        <div className="shrink-0 border-t border-[#175022]/6 p-3">
-          {/* Fix #98+#99: aria-label for accessibility; char limit mirrors backend
-              MAX_MESSAGE_LENGTH so users see a warning instead of a cryptic 400. */}
-          {(() => {
-            const helpCharOver = input.length > CHAT_CHAR_LIMIT;
-            const helpCharWarn = input.length >= Math.floor(CHAT_CHAR_LIMIT * 0.8);
-            return (
-              <>
-                <div className={`flex gap-2 rounded-2xl border bg-[#F1FCF2] px-3 py-2 focus-within:ring-2 transition ${
-                  helpCharOver
-                    ? 'border-red-300 focus-within:border-red-400 focus-within:ring-red-100'
-                    : 'border-[#175022]/10 focus-within:border-[#8BEA99]/40 focus-within:ring-[#8BEA99]/15'
-                }`}>
-                  <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        // Fix #99: block Enter when over char limit (same guard as FreeChatTab)
-                        if (input.length > CHAT_CHAR_LIMIT) return;
-                        sendHelp();
-                      }
-                    }}
-                    onInput={e => {
-                      // Fix #70: auto-resize to match content (matches FreeChatTab textarea pattern)
-                      e.target.style.height = 'auto';
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
-                    }}
-                    rows={2}
-                    // Fix #98: aria-label provides accessible name for screen readers
-                    // (placeholder alone disappears once the user starts typing)
-                    aria-label={tr ? 'AI yardım sorusu' : 'AI help question'}
-                    className="flex-1 resize-none bg-transparent text-[12.5px] text-[#175022] outline-none placeholder:text-[#175022]/30"
-                    placeholder={tr ? 'Sorunuzu yazın…' : 'Ask your question…'}
-                    style={{ scrollbarWidth: 'none' }}
-                  />
-                  <button
-                    onClick={sendHelp}
-                    disabled={!input.trim() || sending || helpCharOver}
-                    className="flex h-7 w-7 shrink-0 self-end items-center justify-center rounded-full bg-[#175022] text-white transition hover:bg-[#175022] disabled:opacity-30"
-                  >
-                    {sending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                  </button>
-                </div>
-                {helpCharWarn && (
-                  <p className={`mt-1 text-right text-[10px] font-semibold tabular-nums ${helpCharOver ? 'text-red-500' : 'text-amber-500'}`}>
-                    {input.length}/{CHAT_CHAR_LIMIT}
-                  </p>
-                )}
-              </>
-            );
-          })()}
-          {/* Fix #92: add role="alert" so screen readers announce the error; add
-              dismiss button for consistency with the FreeChatTab error banner. */}
-          {helpError && (
-            <div
-              role="alert"
-              aria-live="assertive"
-              className="mt-1.5 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5"
-            >
-              <span className="flex-1 text-[11px] font-semibold text-red-500">{helpError}</span>
-              <button
-                onClick={() => setHelpError('')}
-                aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'}
-                className="shrink-0 text-red-400 transition hover:text-red-600"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: Workflow Wrapper (New Architecture)
@@ -2879,7 +2623,6 @@ export function QuestionnaireTab({
   const [blockSummaryState, setBlockSummaryState] = useState(null);
   // On mobile sidebar starts closed; desktop starts open
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [resetConfirm, setResetConfirm] = useState(false);
   const [completedReport, setCompletedReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
@@ -3053,7 +2796,6 @@ export function QuestionnaireTab({
     setAnswerValue(registered !== undefined ? registered : getInitialValue(getQuestionById(currentId)));
   }, [currentId, previousProfile]);
 
-  const helpSessionRef = useRef(null);
   const scrollRef = useRef(null);
   const isMounted = useRef(true);
   const typingTimerRef = useRef(null);
@@ -4329,7 +4071,6 @@ export function QuestionnaireTab({
     setBlockSummaryState(null);
     setIsTyping(false);
     setResetConfirm(false);
-    helpSessionRef.current = null; // clear help session so next help opens a fresh one
     setReportId(null);
     setMessages([]);
     setCompletedReport(null);
@@ -4731,7 +4472,15 @@ export function QuestionnaireTab({
                     {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
                   </p>
                   <button
-                    onClick={() => setHelpOpen(v => !v)}
+                    onClick={() => {
+                      // The site's AI assistant (chat history, calculations)
+                      // opens beside the survey with this question as context.
+                      const qText = stripDocLabels(currentQuestion?.text?.[lang] || currentQuestion?.text?.en || '');
+                      const prefill = currentQuestion
+                        ? (tr ? `Soru ${currentQuestion.number} hakkında: "${qText}" — ` : `About question ${currentQuestion.number}: "${qText}" — `)
+                        : '';
+                      window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true, prefill } }));
+                    }}
                     className="flex items-center gap-1.5 rounded-full border border-[#175022]/10 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#175022]/55 shadow-sm transition hover:border-[#8BEA99]/40 hover:bg-[#8BEA99]/5 hover:text-[#175022]"
                   >
                     <HelpCircle className="h-3 w-3" />
@@ -4743,15 +4492,6 @@ export function QuestionnaireTab({
           </div>
         )}
       </div>
-
-      {/* AI Help Drawer */}
-      <AIHelpDrawer
-        open={helpOpen}
-        onClose={() => setHelpOpen(false)}
-        currentQuestion={currentQuestion}
-        lang={lang}
-        helpSessionRef={helpSessionRef}
-      />
 
       {/* Reuse previous Company Profile? — shown once, on a genuinely fresh
           report, when this company already has one from an earlier report. */}
@@ -4801,7 +4541,7 @@ export function QuestionnaireTab({
 // ─────────────────────────────────────────────────────────────────────────────
 // Free Chat Tab
 // ─────────────────────────────────────────────────────────────────────────────
-function FreeChatTab({ language, summary, entries, targets, fetchData }) {
+function FreeChatTab({ language, summary, entries, targets, fetchData, compact = false, prefill = null }) {
   // Local language toggle — EN / TR, initialized from app-level language prop.
   // This component mounts once and stays mounted (chatMounted never flips
   // back to false), so without the effect below this initial value would be
@@ -4877,7 +4617,8 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   }, [downloadingAttachmentId, tr]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
+    // In the side panel the history stays behind its button (it would cover the chat).
+    if (!compact && typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
   }, []);
 
   // Ref mirror of tr — lets the session-load effect read the current language
@@ -4894,6 +4635,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
   // adding `input` to its dep array (which would cause it to be recreated on
   // every keystroke, cascading to startNew and handleKeyDown).
   const inputValueRef = useRef('');
+  // "AI Yardımı" on a survey question opens the assistant with that
+  // question as the start of the message (prefill = { text, key }).
+  useEffect(() => {
+    if (!prefill?.text) return;
+    setInput(prefill.text);
+    inputValueRef.current = prefill.text;
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [prefill?.key]); // eslint-disable-line react-hooks/exhaustive-deps
   const scrollTimerRef = useRef(null);
   // isMounted guard — prevents state updates after component unmounts from async callbacks
   const isMountedRef = useRef(true);
@@ -5200,14 +4949,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
       {/* Mobile backdrop for chat sidebar */}
       {sidebarOpen && (
         <div
-          className="absolute inset-0 z-20 bg-black/25 lg:hidden"
+          className={`absolute inset-0 z-20 bg-black/25 ${compact ? '' : 'lg:hidden'}`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
       {/* Sidebar */}
       <aside className={`flex shrink-0 flex-col border-r border-[#175022]/6 bg-[#F1FCF2] transition-all duration-300 ${
         sidebarOpen
-          ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
+          ? `absolute inset-y-0 left-0 z-30 w-[220px] ${compact ? '' : 'lg:relative lg:inset-auto lg:z-auto'}`
           : 'w-0 overflow-hidden'
       }`}>
         {/* New chat */}
@@ -5767,167 +5516,60 @@ function FreeChatTab({ language, summary, entries, targets, fetchData }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main export: CarbonAIPage (dual-tab)
 // ─────────────────────────────────────────────────────────────────────────────
-export default function CarbonAIPage({ language = 'en', isVisible = true, summary, entries, targets, fetchData }) {
+// The site's AI assistant: the full chat (history, file uploads, emission
+// calculations with save cards) in a side panel beside the Carbon Inventory.
+// It replaced both the full-screen "AI Sohbet" page and the inventory's
+// separate "AI Yardımı" drawer, so there is one assistant everywhere.
+export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData }) {
   const tr = language === 'tr';
-  const [isMinimized, setIsMinimized] = useState(false);
-
-  // When not visible and not minimized, hide completely
-  // (This case shouldn't happen since parent only renders when visible,
-  //  but kept as safety net)
-  if (!isVisible && !isMinimized) {
-    return <div className="hidden" />;
-  }
-
-  // When minimized, show a floating bubble (always visible regardless of isVisible)
-  if (isMinimized) {
-    return (
-      <>
-      <style>{CHAT_ANIM_STYLES}</style>
-      {/* Floating minimized bubble */}
-      <div className="fixed bottom-6 right-6 z-[100] animate-bounce-slow">
-        <button
-          onClick={() => {
-            setIsMinimized(false);
-            // Tell parent to switch back to AI tab
-            window.dispatchEvent(new CustomEvent('carboniq-open'));
-          }}
-          className="group relative flex items-center gap-3 rounded-2xl bg-white px-5 py-4 shadow-2xl shadow-[#2ABD41]/15 border border-[#2ABD41]/20 hover:shadow-[#2ABD41]/25 transition-all duration-300 hover:scale-105"
-        >
-          <Image src="/chatbot.png" alt="Carbonless AI" width={56} height={56} className="h-14 w-14 object-contain" />
-          <div className="text-left">
-            <p className="text-[15px] font-bold text-[#175022]">Carbonless AI</p>
-            <p className="text-[12px] text-[#2ABD41]">{tr ? 'Devam et →' : 'Continue →'}</p>
-          </div>
-          {/* Pulse ring */}
-          <div className="absolute -top-1 -right-1 h-4 w-4">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2ABD41]/40" />
-            <span className="relative inline-flex h-4 w-4 rounded-full bg-[#2ABD41]" />
-          </div>
-        </button>
-      </div>
-      </>
-    );
-  }
-
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
   return (
     <>
-    <style>{CHAT_ANIM_STYLES}</style>
-    {/* Full-screen AI overlay — light, premium, clean */}
-    <div className="fixed inset-0 z-[90] flex flex-col bg-gradient-to-br from-[#F1FCF2] via-white to-[#F1FCF2] animate-in fade-in duration-200">
-
-      {/* Mode switcher banner — tells user they can switch */}
-      <div className="flex shrink-0 items-center justify-between bg-[#F1FCF2] border-b border-[#2ABD41]/10 px-3 sm:px-4 py-1.5 sm:py-2">
-        <div className="flex items-center gap-2 sm:gap-3 flex-1 justify-center">
-          <div className="flex items-center gap-2 rounded-full bg-white border border-[#DEFAE1] p-0.5 shadow-sm">
-            <button
-              className="flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-bold text-white shadow-sm"
-            >
-              <Sparkles className="h-3 w-3" />
-              {tr ? 'AI Sohbet' : 'AI Chat'}
-            </button>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'questionnaire' } }))}
-              className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#175022]/50 hover:text-[#175022] hover:bg-[#F1FCF2] transition"
-            >
-              <ClipboardList className="h-3 w-3" />
-              {tr ? 'Envanter' : 'Inventory'}
-            </button>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
-              className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] font-semibold text-[#175022]/50 hover:text-[#175022] hover:bg-[#F1FCF2] transition"
-            >
-              <BarChart3 className="h-3 w-3" />
-              {tr ? 'Dashboard' : 'Dashboard'}
-            </button>
+      <style>{CHAT_ANIM_STYLES}</style>
+      {/* Kept mounted while closed so the conversation is not lost. */}
+      <div
+        className={`fixed inset-y-0 right-0 z-[80] flex w-full flex-col border-l border-[#DEFAE1] bg-white shadow-2xl transition-transform duration-300 sm:w-[460px] lg:w-[540px] ${
+          open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
+        }`}
+        aria-hidden={!open}
+        role="dialog"
+        aria-label={tr ? 'AI Asistan' : 'AI Assistant'}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-[#DEFAE1] bg-[#F1FCF2] px-4 py-2.5">
+          <div className="flex items-center gap-2">
+            <Image src="/chatbot.png" alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+            <div>
+              <p className="text-[13px] font-bold text-[#175022]">{tr ? 'Carbonless AI Asistan' : 'Carbonless AI Assistant'}</p>
+              <p className="text-[10px] text-[#2ABD41]">
+                {tr ? 'Sorularınızı yanıtlar, emisyon hesaplar' : 'Answers your questions, calculates emissions'}
+              </p>
+            </div>
           </div>
-        </div>
-        {/* Close / Exit button */}
-        <button
-          onClick={() => window.dispatchEvent(new CustomEvent('carboniq-close'))}
-          className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-full border border-[#175022]/10 bg-white text-[#175022]/40 hover:text-[#175022] hover:bg-red-50 hover:border-red-200 transition"
-          title={tr ? 'Çıkış' : 'Exit'}
-        >
-          <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-        </button>
-      </div>
-
-      {/* Premium header - compact on mobile */}
-      <div className="flex shrink-0 items-center justify-between px-3 sm:px-5 py-2 sm:py-3 border-b border-[#DEFAE1] bg-white/80 backdrop-blur-md">
-        {/* Left: branding */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative">
-            <Image src="/carbonless.png" alt="Carbonless" width={40} height={40} className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
-            <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#2ABD41] border-2 border-white" />
-          </div>
-          <div>
-            <h2 className="text-[14px] sm:text-[16px] font-bold text-[#175022] tracking-tight">
-              Carbonless AI
-            </h2>
-            <p className="hidden sm:block text-[11px] text-[#2ABD41] font-medium">
-              {tr ? 'Akıllı karbon hesaplama' : 'Smart carbon calculator'}
-            </p>
-          </div>
-        </div>
-
-        {/* Center: title */}
-        <div className="flex items-center gap-1.5 rounded-full bg-[#F1FCF2] border border-[#2ABD41]/15 px-3 sm:px-4 py-1.5 sm:py-2">
-          <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#2ABD41]" />
-          <span className="text-[10px] sm:text-[12px] font-semibold text-[#175022]">
-            {tr ? 'AI Sohbet' : 'AI Chat'}
-          </span>
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Status - hidden on mobile */}
-          <div className="hidden md:flex items-center gap-1.5 rounded-full bg-[#DEFAE1] px-3 py-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-[#2ABD41] animate-pulse" />
-            <span className="text-[10px] font-semibold text-[#1A7B2A]">
-              {tr ? 'Bağlı' : 'Connected'}
-            </span>
-          </div>
-          {/* Minimize button - compact on mobile */}
           <button
-            onClick={() => {
-              setIsMinimized(true);
-              window.dispatchEvent(new CustomEvent('carboniq-close'));
-            }}
-            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#F1FCF2] border border-[#DEFAE1] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#175022]/60 hover:bg-[#eee] hover:text-[#175022] transition"
-            title={tr ? 'Küçült' : 'Minimize'}
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#175022]/10 bg-white text-[#175022]/50 transition hover:text-[#175022]"
+            aria-label={tr ? 'Kapat' : 'Close'}
           >
-            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-            <span className="hidden sm:inline">{tr ? 'Küçült' : 'Minimize'}</span>
-          </button>
-          {/* Logout button */}
-          <button
-            onClick={() => {
-              const confirmed = window.confirm(tr ? 'Çıkış yapmak istediğinize emin misiniz?' : 'Are you sure you want to log out?');
-              if (confirmed) {
-                document.cookie = 'carbonless_auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                document.cookie = '_carbonless_refresh=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                document.cookie = 'carbonless_mode_chosen=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                localStorage.removeItem('_ca');
-                window.location.href = '/login';
-              }
-            }}
-            className="flex items-center gap-1 sm:gap-1.5 rounded-xl bg-[#F1FCF2] border border-[#DEFAE1] px-2 sm:px-3 py-1.5 sm:py-2 text-[10px] sm:text-[11px] font-semibold text-[#175022]/40 hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition"
-            title={tr ? 'Çıkış Yap' : 'Log Out'}
-          >
-            <svg className="h-3 w-3 sm:h-3.5 sm:w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-            </svg>
-            <span className="hidden sm:inline">{tr ? 'Çıkış' : 'Logout'}</span>
+            <X className="h-4 w-4" />
           </button>
         </div>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <FreeChatTab
+            language={language}
+            summary={summary}
+            entries={entries}
+            targets={targets}
+            fetchData={fetchData}
+            compact
+            prefill={prefill}
+          />
+        </div>
       </div>
-
-      {/* Content area */}
-      <div className="flex flex-1 min-h-0 flex-col">
-        <FreeChatTab language={language} summary={summary} entries={entries} targets={targets} fetchData={fetchData} />
-      </div>
-    </div>
     </>
   );
 }

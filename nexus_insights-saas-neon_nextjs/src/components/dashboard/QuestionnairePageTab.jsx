@@ -5,7 +5,7 @@ import InventoryLibrary from './InventoryLibrary';
 import ReviewPage from './ReviewPage';
 import SaveDraftModal from './SaveDraftModal';
 import { QuestionnaireTab } from './CarbonAIPage';
-import { ClipboardList, HelpCircle } from 'lucide-react';
+import { ClipboardList, HelpCircle, Sparkles } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // QuestionnairePageTab — standalone dashboard tab for the carbon questionnaire
@@ -84,6 +84,14 @@ export default function QuestionnairePageTab({ language }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* The AI assistant (chat history, calculations) opens beside the inventory. */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true } }))}
+            className="flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-3.5 py-1.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1A7B2A]"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {tr ? 'AI Asistan' : 'AI Assistant'}
+          </button>
           <div className="flex items-center gap-1.5 rounded-full bg-[#F1FCF2] border border-[#DEFAE1] px-3 py-1.5">
             <HelpCircle className="h-3.5 w-3.5 text-[#2ABD41]" />
             <span className="text-[11px] font-medium text-[#175022]/60">

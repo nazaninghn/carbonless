@@ -84,6 +84,7 @@ function JoinContent() {
       if (login?.ok) {
         markSessionActive();
         document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
+        try { localStorage.setItem('carbonless_startup_mode', 'inventory'); } catch {}
         router.push('/dashboard');
         return;
       }

@@ -15,7 +15,7 @@ import { api } from '@/lib/utils/api';
 const NAV_ITEMS = [
   { key: 'dashboard',      icon: LayoutDashboard, tr: 'Kontrol Paneli',    en: 'Dashboard',       trS: 'Panel',    enS: 'Home',      section: 'main' },
   { key: 'questionnaire',  icon: ClipboardList,   tr: 'Karbon Envanteri',  en: 'Carbon Inventory', trS: 'Envanter', enS: 'Inventory', section: 'main' },
-  { key: 'ai_carbon',      icon: Bot,             tr: 'AI Sohbet',         en: 'AI Chat',         trS: 'AI',       enS: 'AI',        section: 'main' },
+  { key: 'ai_carbon',      icon: Bot,             tr: 'AI Asistan',        en: 'AI Assistant',         trS: 'AI',       enS: 'AI',        section: 'main' },
   { key: 'emissions',      icon: Leaf,            tr: 'Emisyon Yönetimi',  en: 'Emissions',       trS: 'Emisyon',  enS: 'Emissions', section: 'data' },
   { key: 'reduction',      icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',         trS: 'Hedefler', enS: 'Targets',   section: 'data' },
   { key: 'reporting',      icon: FileText,        tr: 'Raporlama',         en: 'Reports',         trS: 'Rapor',    enS: 'Reports',   section: 'data' },

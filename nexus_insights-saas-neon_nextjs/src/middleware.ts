@@ -13,18 +13,8 @@ export function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // /dashboard/select and /dashboard/workspace are always allowed through
-    const isSelectPage    = pathname === '/dashboard/select';
-    const isWorkspacePage = pathname.startsWith('/dashboard/workspace');
-    if (isSelectPage || isWorkspacePage) {
-      return NextResponse.next();
-    }
-
-    // All other /dashboard/* routes: if no mode cookie → select page first
-    const modeChosen = request.cookies.has('carbonless_mode_chosen');
-    if (!modeChosen) {
-      return NextResponse.redirect(new URL('/dashboard/select', request.url));
-    }
+    // There is no mode-select step any more: a signed-in user goes straight
+    // to the dashboard (which opens on the Carbon Inventory after sign-in).
   }
 
   return NextResponse.next();
