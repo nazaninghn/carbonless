@@ -3159,11 +3159,15 @@ export function QuestionnaireTab({
     // unanswered item, carrying the answered ones, so the item is named and
     // submitAnswer takes the loop path.
     let itemLabel = null;
+    let resumeItem;
+    let resumeIndex = 0;
     if (firstQ.loopSource) {
       const built = buildLoopItems(currentId, answers, lang);
       if (built && built.items.length > 0) {
         const { agg, firstOpen } = loopResumeState(firstQ, answers);
         const index = firstOpen >= 0 ? firstOpen : 0;
+        resumeItem = built.items[index];
+        resumeIndex = index;
         const collected = {};
         built.items.forEach((it, i) => { if (i < index && agg[it] !== undefined) collected[it] = agg[it]; });
         setLoopState({ questionId: currentId, items: built.items, itemLabels: built.itemLabels, currentIndex: index, collected });
@@ -3200,8 +3204,11 @@ export function QuestionnaireTab({
     }
     setMessages([welcomeMsg]);
     questionMsgLenRef.current = 1;
+    // The item the loop resumes on — not item 0: a second facility used to
+    // open with the first one's name (then refused as a duplicate), a
+    // second meter with the first one's reading.
     const resumeLoopValue = itemLabel
-      ? loopItemValue(readAnswerValue(answers, currentId), buildLoopItems(currentId, answers, lang)?.items?.[0])
+      ? (loopItemValue(readAnswerValue(answers, currentId), resumeItem) ?? facilityPrefill(firstQ, resumeIndex))
       : undefined;
     setAnswerValue(itemLabel
       ? (resumeLoopValue !== undefined ? localizeStoredAmount(firstQ, normalizeAnswerValue(firstQ, resumeLoopValue), lang) : getInitialValue(firstQ))
@@ -3305,6 +3312,17 @@ export function QuestionnaireTab({
       })
       .catch(() => setFacilitySources(prev => ({ ...prev, loaded: true })));
   }, [reportId, currentId]);
+  // 2A-1 (facility count) starts from B4, which a reused company profile may
+  // carry from an older year; the previous inventory's own facility list is
+  // the better default once it has arrived (the hint below the field already
+  // named it). Only while the field still holds the B4 value.
+  useEffect(() => {
+    if (currentId !== '2A-1' || !facilitySources.loaded || '2A-1' in answersRef.current) return;
+    const n = facilitySources.previous.length;
+    if (!n) return;
+    const b4 = readAnswerValue(answersRef.current, 'B4');
+    setAnswerValue(v => (String(v ?? '').trim() === '' || String(v) === String(b4 ?? '') ? String(n) : v));
+  }, [currentId, facilitySources.loaded, facilitySources.previous]);
   const facilityPrefill = (q, index) => {
     // 3A-2b: the site was just given in 3A-2 — a site declared outside
     // operational control in 2B-OC1a starts on "no", any other on "yes".
@@ -3324,6 +3342,10 @@ export function QuestionnaireTab({
       return prev || undefined;
     }
     if (q?.id !== '2A-2') return undefined;
+    // Wait for last year's list: the registered facilities arrive first, in
+    // their own order, so a resumed "Tesis 2" used to get the registered
+    // list's second name — the one already given to Tesis 1.
+    if (!facilitySourcesRef.current.loaded) return undefined;
     const clean = (n) => { const name = String(n || '').trim(); return /^(tesis|facility)\s*\d+$/i.test(name) ? '' : name; };
     // The earlier inventory's list first (its order), then registered
     // facilities it did not have.

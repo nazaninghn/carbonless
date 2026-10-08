@@ -1266,7 +1266,39 @@ class SignOffAndEditNoticeTests(TestCase):
         self.assertEqual(notes.count(), 1)
         self.assertIn('Kapsam 1', notes.first().message)
         self.assertIn('signclerk@test.com', notes.first().message)
+        # saving the same answer again is not a change
+        Notification.objects.filter(user=self.owner).delete()
+        self.assertEqual(self._patch(self.clerk, '3A-0', 'yes').status_code, 200)
+        self.assertFalse(Notification.objects.filter(user=self.owner).exists())
+        self._patch(self.clerk, '3B-0', 'yes')
+        self.assertEqual(Notification.objects.filter(user=self.owner).count(), 1)
         # the owner's own edits are not reported to themselves
         self._patch(self.owner, '3A-0', 'yes')
         self.assertFalse(Notification.objects.filter(user=self.clerk).exists())
         self.assertEqual(Notification.objects.filter(user=self.owner).count(), 1)
+
+
+class PreviousProfileSourceTests(TestCase):
+    def test_nearest_earlier_year_not_last_edited(self):
+        from .views import _find_previous_profile_source
+        owner = User.objects.create_user('srcown', 'srcown@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Src Co', tax_number='88',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        mk = lambda year, status: CarbonReport.objects.create(
+            company=company, created_by=owner, reporting_year=year, title=str(year), status=status)
+        r2025 = mk(2025, CarbonReport.Status.COMPLETED)
+        r2024 = mk(2024, CarbonReport.Status.COMPLETED)
+        draft2025 = mk(2025, CarbonReport.Status.IN_PROGRESS)
+        for r in (r2025, r2024, draft2025):
+            ReportStep.objects.create(report=r, step_id='A1', answer={'legal_name': 'Src Co'})
+        r2024.title = 'edited'; r2024.save()  # touched last
+        new = mk(2026, CarbonReport.Status.IN_PROGRESS)
+        self.assertEqual(_find_previous_profile_source(new), r2025)
+        # an inventory for an earlier year looks back, not forward
+        old = mk(2023, CarbonReport.Status.IN_PROGRESS)
+        self.assertIn(_find_previous_profile_source(old), (r2025, r2024, draft2025))

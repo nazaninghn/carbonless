@@ -350,6 +350,12 @@ class StartReportView(APIView):
         }, status=201)
 
 
+def _saved_answer(report, step_id):
+    """The stored answer of a step (None when not answered), to tell a real
+    change from a re-confirmed answer."""
+    return ReportStep.objects.filter(report=report, step_id=step_id).values_list('answer', flat=True).first()
+
+
 SIGN_OFF_STEP = '7C-2'
 SIGNER_ROLES = ('owner', 'admin', 'manager')
 
@@ -434,10 +440,12 @@ class SubmitStepView(APIView):
                     'warnings': result.get('warnings', []),
                 }, status=409)
 
+            before = _saved_answer(report, step)
             _save_report_step(report, step, serializer.validated_data)
             evaluate_advisor_triggers(report, step, serializer.validated_data)
-            from .notifications import notify_completed_inventory_edited
-            notify_completed_inventory_edited(report, request.user, step)
+            if before != _saved_answer(report, step):
+                from .notifications import notify_completed_inventory_edited
+                notify_completed_inventory_edited(report, request.user, step)
 
             next_step = result['next_step']
             # Only move current_step forward. Re-submitting an earlier step
@@ -520,13 +528,15 @@ class SubmitStepView(APIView):
             # Which account confirmed the signature (shown in the ISO report).
             data = {**data, 'answer': {**data['answer'], 'confirmed_by': (
                 request.user.get_full_name() or request.user.email or request.user.username)}}
+        before = _saved_answer(report, step)
         _save_report_step(report, step, data if data else {})
         if step == SIGN_OFF_STEP:
             # A re-signed inventory carries the new signing date.
             ReportStep.objects.filter(report=report, step_id=step).update(completed_at=timezone.now())
         evaluate_advisor_triggers(report, step, data)
-        from .notifications import notify_completed_inventory_edited
-        notify_completed_inventory_edited(report, request.user, step)
+        if before != _saved_answer(report, step):
+            from .notifications import notify_completed_inventory_edited
+            notify_completed_inventory_edited(report, request.user, step)
 
         # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
         is_final_step = (
@@ -766,13 +776,24 @@ def _find_previous_profile_source(report):
     clearly had reusable company data. Matching on any PHASE1_STEP_IDS entry
     is a much lower bar and reflects what the feature is actually for.
     """
-    return (
+    candidates = list(
         CarbonReport.objects
         .filter(company=report.company, steps__step_id__in=PHASE1_STEP_IDS)
         .exclude(id=report.id)
+        .distinct()
         .order_by('-updated_at')
-        .first()
     )
+    if not candidates:
+        return None
+    # The year just before this one, not whichever inventory was touched last:
+    # editing the 2024 inventory used to make a new 2026 one offer 2024's
+    # profile (and "last year" reminders) although 2025's existed. A finished
+    # inventory wins over a draft of the same year.
+    year = report.reporting_year
+    earlier = [r for r in candidates if year and r.reporting_year and r.reporting_year < year]
+    pool = earlier or candidates
+    done = CarbonReport.Status.COMPLETED
+    return max(pool, key=lambda r: (r.reporting_year or 0, r.status == done, r.updated_at))
 
 
 def _other_inventories(report):
