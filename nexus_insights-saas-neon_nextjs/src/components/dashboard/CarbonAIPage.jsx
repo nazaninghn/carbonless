@@ -2789,6 +2789,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
     answers: workflowAnswers,
     currentStep: workflowStep,
     stepExact: workflowStepExact,
+    inventoryStatus,
     startedBy,
     setDirty,
     backToLibrary,
@@ -2820,6 +2821,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
         initialAnswers={workflowAnswers}
         initialStep={workflowStep}
         initialStepExact={workflowStepExact}
+        inventoryCompleted={inventoryStatus === 'completed'}
         startedBy={startedBy}
         onDirtyChange={setDirty}
         onExitToLibrary={backToLibrary}
@@ -2840,7 +2842,7 @@ function QuestionnaireTabInner({ language, isVisible = true }) {
 export function QuestionnaireTab({
   language, isVisible = true,
   hydrated = false, initialReportId = null, initialAnswers = null, initialStep = null, initialStepExact = false,
-  onDirtyChange = null, onExitToLibrary = null, startedBy = null,
+  onDirtyChange = null, onExitToLibrary = null, startedBy = null, inventoryCompleted = false,
 }) {
   const tr = language === 'tr';
   const lang = language;
@@ -3167,8 +3169,20 @@ export function QuestionnaireTab({
       }
     }
     const qRef = itemLabel ? `${firstQ.number} (${itemLabel})` : `${firstQ.number}`;
+    // Opened on purpose: on the sign-off check to fix a finished inventory,
+    // or on one question ("Ankette aç") — not "resuming where you left off".
+    const editIntro = !initialStepExact ? null
+      : inventoryCompleted && currentId === '7C-1'
+        ? (tr ? `Bu envanter tamamlandı. Bir bölümü düzeltmek için "Hayır — bir bölüme dönüp düzeltmek istiyorum"u seçin; bölüm bitince buraya dönersiniz — Soru ${qRef}:`
+              : `This inventory is complete. To fix a section choose "No — I want to go back and fix a section"; you come back here when the section is done — Question ${qRef}:`)
+        : inventoryCompleted
+          ? (tr ? `Tamamlanmış bir envanteri düzenliyorsunuz — Soru ${qRef}. İşiniz bitince "Düzenlemeyi bitir" ile imza adımına dönün:`
+                : `You are editing Question ${qRef} of a completed inventory. When you are done, use "Finish editing" to return to the sign-off step:`)
+          : (tr ? `Düzenlediğiniz soru — Soru ${qRef}:` : `You are editing Question ${qRef}:`);
     const intro = isFresh
       ? (tr ? `Karbon envanterinize başlayalım — Soru ${qRef}:` : `Let's start your carbon inventory — Question ${qRef}:`)
+      : editIntro
+        ? editIntro
       : startedBy
         // Opened by a team mate of the one who started it: nothing of theirs
         // to "resume" — say whose inventory it is and where it stands.
@@ -3743,8 +3757,19 @@ export function QuestionnaireTab({
         // question advanced underneath it, and the answer for that item was
         // never persisted. Staying put on failure matches what the final-item
         // path and the non-loop path already do, and lets the user retry.
+        // The items not reached yet keep their earlier saved answers: the
+        // save used to hold only the items answered so far, so leaving an
+        // edit half way deleted the rest (a finished inventory lost the
+        // other vehicles' answers). Items no longer in the list are dropped.
+        const savedAgg = readAnswerValue(answersRef.current, currentId);
+        const toSave = {};
+        items.forEach(it => {
+          const v = it in newCollected ? newCollected[it]
+            : (savedAgg && typeof savedAgg === 'object' && !Array.isArray(savedAgg) ? savedAgg[it] : undefined);
+          if (v !== undefined) toSave[it] = v;
+        });
         markSubmitting(true);
-        const loopSave = await saveStepToBackend(currentId, newCollected, reportId);
+        const loopSave = await saveStepToBackend(currentId, toSave, reportId);
         if (!loopSave.success) {
           dropRejectedBubble(loopBubbleId);
           markSubmitting(false);
@@ -4194,6 +4219,21 @@ export function QuestionnaireTab({
     setAnswerValue(normalizeAnswerValue(prevQ, readAnswerValue(answers, qId)) ?? getInitialValue(prevQ));
   }, [history, answers, markSubmitting]);
 
+  // ── finishEditing ──────────────────────────────────────────────────────────
+  // A finished inventory being corrected: back to the sign-off check (7C-1)
+  // instead of confirming every later, already answered question again.
+  const finishEditing = useCallback(() => {
+    if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
+    markSubmitting(false);
+    setIsTyping(false);
+    setBlockSummaryState(null);
+    setLoopState(null);
+    setEditingQuestionId(null);
+    setValidationError('');
+    setShowValidationError(false);
+    advanceToQuestion('7C-1');
+  }, [advanceToQuestion, markSubmitting]);
+
   // ── proceedFromSummary ─────────────────────────────────────────────────────
   const proceedFromSummary = useCallback(() => {
     if (!blockSummaryState) return;
@@ -4325,6 +4365,15 @@ export function QuestionnaireTab({
             )}
           </div>
           <div className="flex items-center gap-1">
+            {inventoryCompleted && !completed && (currentQuestion?.stage ?? 7) < 7 && (
+              <button
+                onClick={finishEditing}
+                className="flex h-7 items-center gap-1 rounded-full bg-[#175022] px-2.5 text-[11px] font-bold text-white hover:bg-[#1A7B2A] transition"
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {tr ? 'Düzenlemeyi bitir' : 'Finish editing'}
+              </button>
+            )}
             {(history.length > 0 || resumePrevId) && !completed && (
               <button
                 onClick={goBack}

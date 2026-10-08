@@ -4821,7 +4821,7 @@
     "maxValue": null,
     "options": null,
     "units": null,
-    "repeatable": false,
+    "repeatable": true,
     "loopSource": false,
     "fields": [
       {
@@ -5025,7 +5025,7 @@
     "maxValue": null,
     "options": null,
     "units": null,
-    "repeatable": false,
+    "repeatable": true,
     "loopSource": false,
     "fields": [
       {
@@ -5129,7 +5129,7 @@
     "maxValue": null,
     "options": null,
     "units": null,
-    "repeatable": false,
+    "repeatable": true,
     "loopSource": false,
     "fields": [
       {
@@ -5190,7 +5190,7 @@
         "numericOnly": false,
         "exactLength": null,
         "maxLength": null,
-        "format": null,
+        "format": "years",
         "conditionalOn": null,
         "conditionalOnValue": null,
         "options": null

@@ -5279,6 +5279,9 @@ export const CARBONIQ_QUESTIONS = [
     block: '5H',
     isoRef: 'ISO 14064-1 §5.4',
     type: 'compound',
+    // Several leased assets / products: one row each (an older single
+    // answer opens as the first row).
+    repeatable: true,
     required: true,
     reportField: 'scope3.cat8.assets',
     text: {
@@ -5286,8 +5289,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Leased asset type, area and building owner energy declaration?',
     },
     helper: {
-      tr: 'Alan (m²) × REEB bina tipi EF = tCO₂e (Seviye 2). Bina sahibinden enerji tüketim belgesi alınabilirse Seviye 1\'e geçilir.',
-      en: 'Area (m²) × REEB building type EF = tCO₂e (Level 2). If an energy certificate can be obtained from the building owner, upgrade to Level 1.',
+      tr: 'Alan (m²) × REEB bina tipi EF = tCO₂e (Seviye 2). Bina sahibinden enerji tüketim belgesi alınabilirse Seviye 1\'e geçilir. Birden fazla kiralık varlığınız varsa (örn. ofis ve depo) her birini "+ Başka Ekle" ile ayrı girin.',
+      en: 'Area (m²) × REEB building type EF = tCO₂e (Level 2). If an energy certificate can be obtained from the building owner, upgrade to Level 1. If you lease more than one asset (e.g. an office and a warehouse), add each with "+ Add Another".',
     },
     placeholder: { tr: 'Tür: Ofis binası | Alan: 350 m² | Beyan: Hayır', en: 'Type: Office building | Area: 350 m² | Declaration: No' },
     fields: [
@@ -5418,6 +5421,9 @@ export const CARBONIQ_QUESTIONS = [
     block: '5J',
     isoRef: 'ISO 14064-1 §5.4',
     type: 'compound',
+    // Several leased assets / products: one row each (an older single
+    // answer opens as the first row).
+    repeatable: true,
     required: true,
     conditionalShow: { questionId: 'K3C10-0', equals: 'yes' },
     reportField: 'scope3.cat10.intermediate_products',
@@ -5426,8 +5432,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Which product is processed by customers, and how much was sold?',
     },
     helper: {
-      tr: 'Ara ürününüzü, raporlama yılında satılan miktarı ve müşterinin uyguladığı işlemi girin.',
-      en: 'Enter your intermediate product, the quantity sold in the reporting year and the processing the customer applies.',
+      tr: 'Ara ürününüzü, raporlama yılında satılan miktarı ve müşterinin uyguladığı işlemi girin. Birden fazla ürün müşteride işleniyorsa her birini "+ Başka Ekle" ile ayrı girin.',
+      en: 'Enter your intermediate product, the quantity sold in the reporting year and the processing the customer applies. If more than one product is processed by customers, add each with "+ Add Another".',
     },
     fields: [
       { id: 'product', format: 'name', type: 'text', required: true, maxLength: 200, label: { tr: 'Ara ürün', en: 'Intermediate product' }, placeholder: { tr: 'Örn: Sülfürik asit', en: 'e.g. Sulphuric acid' } },
@@ -5475,6 +5481,9 @@ export const CARBONIQ_QUESTIONS = [
     block: '5K',
     isoRef: 'ISO 14064-1 §5.4',
     type: 'compound',
+    // Several leased assets / products: one row each (an older single
+    // answer opens as the first row).
+    repeatable: true,
     required: true,
     reportField: 'scope3.cat11.products',
     text: {
@@ -5482,8 +5491,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Product type, sales volume and average use lifetime?',
     },
     helper: {
-      tr: 'Kullanım ömrü bilinmiyorsa sektör standardı uygulanır. Ürününüz için LCA belgesi varsa, belgedeki değer kullanılır (daha doğru sonuç).',
-      en: 'If use lifetime is unknown, sector standard is applied. If your product has an LCA document, its value is used (more accurate).',
+      tr: 'Kullanım ömrü bilinmiyorsa sektör standardı uygulanır. Ürününüz için LCA belgesi varsa, belgedeki değer kullanılır (daha doğru sonuç). Birden fazla ürün tipiniz varsa her birini "+ Başka Ekle" ile ayrı girin.',
+      en: 'If use lifetime is unknown, sector standard is applied. If your product has an LCA document, its value is used (more accurate). If you sell more than one product type, add each with "+ Add Another".',
     },
     placeholder: { tr: 'Ürün: Elektrikli ısıtıcı | Satış: 1.200 adet | Ömür: 10 yıl', en: 'Product: Electric heater | Sales: 1,200 units | Lifetime: 10 years' },
     fields: [
@@ -5502,7 +5511,7 @@ export const CARBONIQ_QUESTIONS = [
       },
       { id: 'sales_volume', type: 'numeric', required: true, label: { tr: 'Satış hacmi', en: 'Sales volume' } },
       { id: 'sales_unit', type: 'select', required: true, label: { tr: 'Satış birimi', en: 'Sales unit' }, options: [{ value: 'units', label: { tr: 'adet', en: 'units' } }, { value: 'kg', label: { tr: 'kg', en: 'kg' } }, { value: 'tonnes', label: { tr: 'ton', en: 'tonnes' } }, { value: 'litres', label: { tr: 'litre', en: 'litres' } }] },
-      { id: 'use_lifetime_years', type: 'numeric', required: false, label: { tr: 'Kullanım ömrü (yıl)', en: 'Use lifetime (years)' } },
+      { id: 'use_lifetime_years', type: 'numeric', required: false, format: 'years', label: { tr: 'Kullanım ömrü (yıl)', en: 'Use lifetime (years)' } },
       { id: 'lca_available', type: 'boolean', required: false, label: { tr: 'LCA belgesi mevcut mu?', en: 'LCA certificate available?' } },
       // The LCA's own figure, asked once "Evet" is chosen (collected only).
       { id: 'lca_kgco2e_per_unit', type: 'numeric', required: true, conditionalOn: 'lca_available', label: { tr: 'LCA\'daki kullanım aşaması emisyonu (kg CO₂e / birim)', en: 'Use-phase emissions in the LCA (kg CO₂e / unit)' } },
@@ -6979,6 +6988,17 @@ function validateCompoundFields(fields, obj, lang) {
           message: lang === 'tr'
             ? `"${flabel}" 0 ile 100 arasında olmalıdır.`
             : `"${flabel}" must be between 0 and 100.`,
+        };
+      }
+    }
+    // A duration in years (K3C11-1's use lifetime), where "2026" is a
+    // calendar year typed by mistake.
+    if (field.format === 'years') {
+      const n = parseLocalizedNumber(fv);
+      if (!Number.isNaN(n) && (n <= 0 || n > 100)) {
+        return {
+          ok: false,
+          message: lang === 'tr' ? 'Yıl değil, yıl sayısı girin (1–100).' : 'Enter a number of years (1–100), not a calendar year.',
         };
       }
     }

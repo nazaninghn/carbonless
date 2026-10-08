@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Package, Loader2 } from 'lucide-react';
+import { Plus, Play, Eye, MoreVertical, Trash2, FileText, FileBadge, Package, Loader2, Pencil } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useInventory } from './InventoryWorkflow';
 import { getPermissions } from '@/lib/permissions';
@@ -75,6 +75,13 @@ export default function InventoryLibrary({ tr = false }) {
     if (success) {
       await loadInventories();
     }
+  };
+
+  // A finished inventory opens on the sign-off check (7C-1): its "Hayır —
+  // bir bölüme dönüp düzeltmek istiyorum" lists the stages to fix, and after
+  // the stage the survey comes back there to sign off again.
+  const handleEditCompleted = async (reportId) => {
+    await continueInventory(reportId, '7C-1');
   };
 
   const handleViewReport = (reportId, year) => {
@@ -393,6 +400,16 @@ export default function InventoryLibrary({ tr = false }) {
                           ? <Loader2 className="w-4 h-4 animate-spin" />
                           : <FileText className="w-4 h-4" />}
                       </button>
+                      {canEdit && (
+                      <button
+                        onClick={() => handleEditCompleted(report.report_id)}
+                        title={tr ? 'Bir bölümü düzelt' : 'Fix a section'}
+                        className="flex items-center gap-2 px-4 py-2 border border-[#175022]/30 text-[#175022] text-sm font-semibold rounded-full hover:bg-[#1A7B2A]/10 transition"
+                      >
+                        <Pencil className="w-4 h-4" />
+                        {tr ? 'Düzenle' : 'Edit'}
+                      </button>
+                      )}
                       <button
                         onClick={() => handleViewReport(report.report_id, report.reporting_year)}
                         className="flex items-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full hover:bg-[#175022] transition"

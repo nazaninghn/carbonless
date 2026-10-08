@@ -101,6 +101,10 @@ _MESSAGES = {
         'en': '{prefix}Must be between 0 and 100.',
         'tr': '{prefix}0 ile 100 arasında olmalıdır.',
     },
+    'years_range': {
+        'en': '{prefix}Enter a number of years (1–100), not a calendar year.',
+        'tr': '{prefix}Yıl değil, yıl sayısı girin (1–100).',
+    },
     'name_needs_letter': {
         'en': '{prefix}Enter a name; it cannot be only digits or symbols.',
         'tr': '{prefix}Bir ad yazın; yalnızca rakam veya işaretten oluşamaz.',
@@ -347,7 +351,8 @@ def _validate_compound_item(obj, fields, prefix='', enforce_required=True, lang=
 def _validate_field_format(value, f, prefix, lang):
     """`format` on a compound field (mirrors validateCompoundFields):
     'year' — a 4-digit year from 1990 to this year (a document's declaration
-    year); 'percent' — 0 to 100; 'name' — contains at least one letter (a
+    year); 'percent' — 0 to 100; 'years' — a duration of 1 to 100 years
+(not a calendar year typed by mistake); 'name' — contains at least one letter (a
     supplier/report name)."""
     fmt = f.get('format')
     if fmt == 'year':
@@ -367,6 +372,13 @@ def _validate_field_format(value, f, prefix, lang):
             return None  # the numeric check reports non-numbers
         if pct < 0 or pct > 100:
             return _msg(lang, 'percent_range', prefix=prefix)
+    elif fmt == 'years':
+        try:
+            n = float(str(value).replace(',', '.'))
+        except ValueError:
+            return None
+        if n <= 0 or n > 100:
+            return _msg(lang, 'years_range', prefix=prefix)
     elif fmt == 'name':
         if not any(ch.isalpha() for ch in str(value)):
             return _msg(lang, 'name_needs_letter', prefix=prefix)
