@@ -146,11 +146,11 @@ export default function DashboardHeader({
         {/* Center: Mode switcher pill */}
         <div className="flex items-center gap-0.5 rounded-full bg-[#F5F5F5] border border-[#DEFAE1] p-0.5 sm:p-1">
           <button
-            // The AI side of the product is the Carbon Inventory with its
-            // assistant beside it.
-            onClick={() => setActiveTab('questionnaire')}
+            // AI mode: the Carbon Inventory with the AI assistant beside it,
+            // full screen.
+            onClick={() => setActiveTab('ai_carbon')}
             className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
-              activeTab === 'questionnaire'
+              activeTab === 'ai_carbon'
                 ? 'bg-[#2ABD41] text-white shadow-sm'
                 : 'text-[#072C0E]/50 hover:text-[#072C0E] hover:bg-white/70'
             }`}
@@ -162,7 +162,7 @@ export default function DashboardHeader({
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
-              activeTab !== 'questionnaire'
+              activeTab !== 'ai_carbon'
                 ? 'bg-[#51D766] text-[#072C0E] shadow-sm'
                 : 'text-[#072C0E]/50 hover:text-[#072C0E] hover:bg-white/70'
             }`}

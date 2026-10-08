@@ -73,8 +73,6 @@ function VerifyContent() {
         // same way a login does (back to a pending team invite, if any).
         markSessionActive();
         document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
-        // Sign-in opens the Carbon Inventory (there is no mode-select page).
-        try { localStorage.setItem('carbonless_startup_mode', 'inventory'); } catch {}
         let inviteToken = null;
         try { inviteToken = sessionStorage.getItem('pendingInviteToken'); } catch {}
         setSignedIn(true);
@@ -83,7 +81,7 @@ function VerifyContent() {
         setTimeout(() => {
           window.location.href = inviteToken
             ? `/accept-invite?token=${encodeURIComponent(inviteToken)}`
-            : '/dashboard';
+            : '/dashboard/select';
         }, 1200);
       } else if (res.ok) {
         setStatus('success');

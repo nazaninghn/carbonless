@@ -5520,7 +5520,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 // calculations with save cards) in a side panel beside the Carbon Inventory.
 // It replaced both the full-screen "AI Sohbet" page and the inventory's
 // separate "AI Yardımı" drawer, so there is one assistant everywhere.
-export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData }) {
+export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false }) {
   const tr = language === 'tr';
   useEffect(() => {
     if (!open) return;
@@ -5533,9 +5533,13 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
       <style>{CHAT_ANIM_STYLES}</style>
       {/* Kept mounted while closed so the conversation is not lost. */}
       <div
-        className={`fixed inset-y-0 right-0 z-[80] flex w-full flex-col border-l border-[#DEFAE1] bg-white shadow-2xl transition-transform duration-300 sm:w-[460px] lg:w-[540px] ${
-          open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
-        }`}
+        className={docked
+          // AI mode: a column beside the inventory on wide screens, full
+          // screen over it on a phone.
+          ? `${open ? 'flex' : 'hidden'} fixed inset-0 z-[95] flex-col bg-white lg:static lg:z-auto lg:w-[480px] lg:shrink-0 lg:border-l lg:border-[#DEFAE1] xl:w-[540px]`
+          : `fixed inset-y-0 right-0 z-[80] flex w-full flex-col border-l border-[#DEFAE1] bg-white shadow-2xl transition-transform duration-300 sm:w-[460px] lg:w-[540px] ${
+            open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
+          }`}
         aria-hidden={!open}
         role="dialog"
         aria-label={tr ? 'AI Asistan' : 'AI Assistant'}

@@ -10,6 +10,7 @@ import { ToastProvider } from '@/components/ToastProvider';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
 import SettingsTab from '@/components/dashboard/SettingsTab';
+import Image from 'next/image';
 import { InventoryAssistant } from '@/components/dashboard/CarbonAIPage';
 import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
 import ReportingTab from '@/components/dashboard/ReportingTab';
@@ -56,11 +57,9 @@ export default function DashboardPage() {
   useEffect(() => {
     try {
       const mode = localStorage.getItem('carbonless_startup_mode');
-      // A fresh sign-in starts on the Carbon Inventory (the mode-select page
-      // is gone); the old "ai" mode meant the same.
-      if (mode === 'inventory' || mode === 'ai') {
-        setActiveTab('questionnaire');
-        localStorage.setItem('carbonless_active_tab', 'questionnaire');
+      if (mode === 'ai') {
+        setActiveTab('ai_carbon');
+        localStorage.setItem('carbonless_active_tab', 'ai_carbon');
       } else if (mode === 'dashboard') {
         // Explicit choice on the select page always wins over a stale saved tab
         // (e.g. the user was last on the AI tab in a previous session).
@@ -68,7 +67,7 @@ export default function DashboardPage() {
         localStorage.setItem('carbonless_active_tab', 'dashboard');
       } else {
         const savedTab = localStorage.getItem('carbonless_active_tab');
-        if (savedTab) setActiveTab(savedTab === 'ai_carbon' ? 'questionnaire' : savedTab);
+        if (savedTab) setActiveTab(savedTab);
       }
       if (mode) localStorage.removeItem('carbonless_startup_mode');
     } catch {}
@@ -139,19 +138,17 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // The AI assistant lives beside the Carbon Inventory. Every "AI" entry
-  // point (sidebar, mobile bar, dashboard cards, ⌘K) still sets 'ai_carbon':
-  // it opens the inventory with the assistant panel open. The header's AI
-  // button goes to the inventory itself.
+  // AI mode ('ai_carbon'): a full-screen view, without the dashboard's
+  // sidebar, of the Carbon Inventory with the AI assistant docked beside it
+  // (open on entry). Inside the dashboard, the Karbon Envanteri tab has the
+  // same assistant as a drawer.
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState(null);
   useEffect(() => {
-    if (activeTab !== 'ai_carbon') return;
-    setActiveTab('questionnaire');
-    setAssistantOpen(true);
-  }, [activeTab]);
-  useEffect(() => {
-    if (activeTab !== 'questionnaire' && activeTab !== 'ai_carbon') setAssistantOpen(false);
+    // Beside the inventory on a wide screen; on a phone it would cover it,
+    // so there it opens from the top bar's button.
+    if (activeTab === 'ai_carbon') setAssistantOpen(typeof window !== 'undefined' && window.innerWidth >= 1024);
+    else if (activeTab !== 'questionnaire') setAssistantOpen(false);
   }, [activeTab]);
 
   // Events from the inventory and its pages: open the assistant (with an
@@ -160,7 +157,7 @@ export default function DashboardPage() {
     function handleAssistant(e) {
       const text = e.detail?.prefill;
       if (text) setAssistantPrefill({ text, key: Date.now() });
-      setActiveTab(prev => (prev === 'questionnaire' ? prev : 'questionnaire'));
+      setActiveTab(prev => (prev === 'questionnaire' || prev === 'ai_carbon' ? prev : 'questionnaire'));
       setAssistantOpen(e.detail?.open !== false);
     }
     function handleNavigate(e) {
@@ -375,19 +372,73 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* ===== AI ASSISTANT  -  side panel beside the Carbon Inventory ===== */}
-      <ErrorBoundary language={language}>
-        <InventoryAssistant
-          open={assistantOpen}
-          onClose={() => setAssistantOpen(false)}
-          prefill={assistantPrefill}
-          language={language}
-          summary={effectiveSummary}
-          entries={entries}
-          targets={targets}
-          fetchData={fetchData}
-        />
-      </ErrorBoundary>
+      {/* ===== AI MODE  -  inventory + docked assistant, full screen ===== */}
+      {activeTab === 'ai_carbon' && (
+        <div className="fixed inset-0 z-[85] flex flex-col bg-[#F1FCF2]">
+          <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[#DEFAE1] bg-white px-3 sm:px-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-8 w-8 object-contain" />
+              <span className="hidden text-[14px] font-bold text-[#175022] sm:inline">Carbonless AI</span>
+            </div>
+            <div className="flex items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-[#F5F5F5] p-0.5 sm:p-1">
+              <span className="rounded-full bg-[#2ABD41] px-3 py-1 text-[11px] font-semibold text-white sm:px-4 sm:py-1.5 sm:text-[12px]">
+                {language === 'tr' ? 'AI Hesaplayıcı' : 'AI Analyzer'}
+              </span>
+              <button
+                onClick={() => setActiveTab('dashboard')}
+                className="rounded-full px-3 py-1 text-[11px] font-semibold text-[#072C0E]/50 transition hover:bg-white/70 hover:text-[#072C0E] sm:px-4 sm:py-1.5 sm:text-[12px]"
+              >
+                {language === 'tr' ? 'Kontrol Paneli' : 'Dashboard'}
+              </button>
+            </div>
+            <button
+              onClick={() => setAssistantOpen(v => !v)}
+              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition sm:text-[12px] ${
+                assistantOpen ? 'bg-[#DEFAE1] text-[#175022]' : 'bg-[#2ABD41] text-white hover:bg-[#1A7B2A]'
+              }`}
+            >
+              <Image src="/chatbot.png" alt="" width={20} height={20} className="h-5 w-5 object-contain" />
+              <span className="hidden sm:inline">{language === 'tr' ? 'AI Asistan' : 'AI Assistant'}</span>
+            </button>
+          </div>
+          <div className="flex min-h-0 flex-1">
+            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4 lg:p-5">
+              <ErrorBoundary language={language}>
+                <QuestionnairePageTab language={language} />
+              </ErrorBoundary>
+            </div>
+            <ErrorBoundary language={language}>
+              <InventoryAssistant
+                docked
+                open={assistantOpen}
+                onClose={() => setAssistantOpen(false)}
+                prefill={assistantPrefill}
+                language={language}
+                summary={effectiveSummary}
+                entries={entries}
+                targets={targets}
+                fetchData={fetchData}
+              />
+            </ErrorBoundary>
+          </div>
+        </div>
+      )}
+
+      {/* ===== AI ASSISTANT  -  drawer on the dashboard's Karbon Envanteri tab ===== */}
+      {activeTab !== 'ai_carbon' && (
+        <ErrorBoundary language={language}>
+          <InventoryAssistant
+            open={assistantOpen}
+            onClose={() => setAssistantOpen(false)}
+            prefill={assistantPrefill}
+            language={language}
+            summary={effectiveSummary}
+            entries={entries}
+            targets={targets}
+            fetchData={fetchData}
+          />
+        </ErrorBoundary>
+      )}
 
       {/* Command Palette ⌘K */}
       <CommandPalette
