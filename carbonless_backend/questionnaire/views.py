@@ -350,6 +350,16 @@ class StartReportView(APIView):
         }, status=201)
 
 
+SIGN_OFF_STEP = '7C-2'
+SIGNER_ROLES = ('owner', 'admin', 'manager')
+
+
+def _can_sign(user, report):
+    from companies.models import CompanyMembership
+    return CompanyMembership.objects.filter(
+        company=report.company, user=user, is_active=True, role__in=SIGNER_ROLES).exists()
+
+
 @method_decorator(ratelimit(key='user', rate='60/m', method='PATCH', block=True), name='patch')
 class SubmitStepView(APIView):
     """PATCH /api/questionnaire/<report_id>/step/"""
@@ -426,6 +436,8 @@ class SubmitStepView(APIView):
 
             _save_report_step(report, step, serializer.validated_data)
             evaluate_advisor_triggers(report, step, serializer.validated_data)
+            from .notifications import notify_completed_inventory_edited
+            notify_completed_inventory_edited(report, request.user, step)
 
             next_step = result['next_step']
             # Only move current_step forward. Re-submitting an earlier step
@@ -469,6 +481,17 @@ class SubmitStepView(APIView):
         # enforced only client-side.
         from .carboniq_validation import validate_generic_step
         lang = request.data.get('language') or 'en'
+        # The ISO 14064-1 §7.5 signature belongs to someone who can sign for
+        # the company — a data-entry member could re-confirm the previous
+        # signatory's name with one click.
+        if step == SIGN_OFF_STEP and not _can_sign(request.user, report):
+            msg = ('İmza adımını şirket sahibi, yönetici veya müdür tamamlayabilir. '
+                   'Envanter hazır olduğunda onlardan imzalamalarını isteyin.'
+                   if lang == 'tr' else
+                   'Only the company owner, an admin or a manager can complete the sign-off. '
+                   'Ask one of them to sign once the inventory is ready.')
+            return Response({'success': False, 'step': step, 'next_step': step, 'error': msg,
+                             'code': 'signature_role', 'bot_messages': [f'❌ {msg}']}, status=403)
         is_valid, validation_error = validate_generic_step(step, data, lang=lang)
         if not is_valid:
             return Response({
@@ -493,8 +516,17 @@ class SubmitStepView(APIView):
                     'bot_messages': [f'❌ {msg}'],
                 }, status=400)
 
+        if step == SIGN_OFF_STEP and isinstance(data, dict) and isinstance(data.get('answer'), dict):
+            # Which account confirmed the signature (shown in the ISO report).
+            data = {**data, 'answer': {**data['answer'], 'confirmed_by': (
+                request.user.get_full_name() or request.user.email or request.user.username)}}
         _save_report_step(report, step, data if data else {})
+        if step == SIGN_OFF_STEP:
+            # A re-signed inventory carries the new signing date.
+            ReportStep.objects.filter(report=report, step_id=step).update(completed_at=timezone.now())
         evaluate_advisor_triggers(report, step, data)
+        from .notifications import notify_completed_inventory_edited
+        notify_completed_inventory_edited(report, request.user, step)
 
         # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
         is_final_step = (

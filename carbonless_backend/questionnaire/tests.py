@@ -1218,3 +1218,55 @@ class NewInventoryYearTests(TestCase):
         trip = {'travel_mode': 'BT-99', 'quantity': '300'}
         self.assertFalse(ok('K3C6-2', {'items': [trip]})[0])
         self.assertEqual(ok('K3C6-2', {'items': [{**trip, 'other_desc': 'Charter uçuş'}]}), (True, None))
+
+
+class SignOffAndEditNoticeTests(TestCase):
+    """The 7C-2 signature is for owner/admin/manager; edits by others to a
+    completed inventory are reported to the owners and admins."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.owner = User.objects.create_user('signown', 'signown@test.com', 'pass12345')
+        self.clerk = User.objects.create_user('signclerk', 'signclerk@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Sign Co', tax_number='77',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        CompanyMembership.objects.create(user=self.clerk, company=self.company, role='data_entry')
+        self.report = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2024,
+            title='Sign', status=CarbonReport.Status.COMPLETED)
+        self.client_for = lambda u: (lambda c: (c.force_authenticate(user=u), c)[1])(APIClient())
+        self.sign = {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'}
+
+    def _patch(self, user, step, answer):
+        return self.client_for(user).patch(f'/api/questionnaire/{self.report.id}/step/',
+                                           {'step': step, 'data': {'answer': answer}, 'language': 'tr'},
+                                           format='json')
+
+    def test_only_signers_can_sign(self):
+        res = self._patch(self.clerk, '7C-2', self.sign)
+        self.assertEqual(res.status_code, 403)
+        self.assertEqual(res.data['code'], 'signature_role')
+        self.assertFalse(ReportStep.objects.filter(report=self.report, step_id='7C-2').exists())
+        res = self._patch(self.owner, '7C-2', self.sign)
+        self.assertEqual(res.status_code, 200)
+        saved = ReportStep.objects.get(report=self.report, step_id='7C-2').answer['answer']
+        self.assertEqual(saved['confirmed_by'], 'signown@test.com')
+
+    def test_edit_by_other_member_notifies_owner_once(self):
+        from accounts.models import Notification
+        self.assertEqual(self._patch(self.clerk, '3A-0', 'yes').status_code, 200)
+        self.assertEqual(self._patch(self.clerk, '3B-0', 'no').status_code, 200)
+        notes = Notification.objects.filter(user=self.owner)
+        self.assertEqual(notes.count(), 1)
+        self.assertIn('Kapsam 1', notes.first().message)
+        self.assertIn('signclerk@test.com', notes.first().message)
+        # the owner's own edits are not reported to themselves
+        self._patch(self.owner, '3A-0', 'yes')
+        self.assertFalse(Notification.objects.filter(user=self.clerk).exists())
+        self.assertEqual(Notification.objects.filter(user=self.owner).count(), 1)

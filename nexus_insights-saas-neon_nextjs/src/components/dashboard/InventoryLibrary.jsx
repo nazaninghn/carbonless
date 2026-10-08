@@ -29,10 +29,18 @@ export default function InventoryLibrary({ tr = false }) {
   // Auditors are read-only: they view and download inventories, but cannot
   // start, continue or delete one (the backend refuses those with a 403).
   const [canEdit, setCanEdit] = useState(true);
+  // A teammate's inventory can be deleted only by an owner/admin (the backend
+  // refuses others with a 403, after they had already confirmed).
+  const [canManage, setCanManage] = useState(true);
   useEffect(() => {
     api.getProfile()
       .then(res => (res.ok ? res.json() : null))
-      .then(profile => { if (profile) setCanEdit(getPermissions(profile).canEdit); })
+      .then(profile => {
+        if (!profile) return;
+        const perms = getPermissions(profile);
+        setCanEdit(perms.canEdit);
+        setCanManage(perms.canManageTeam);
+      })
       .catch(() => {});
   }, []);
   const [pdfDownloadingId, setPdfDownloadingId] = useState(null);
@@ -304,6 +312,7 @@ export default function InventoryLibrary({ tr = false }) {
                         <Play className="w-4 h-4" />
                         {tr ? 'Devam Et' : 'Continue'}
                       </button>
+                      {(!report.created_by || canManage) && (
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
@@ -311,6 +320,7 @@ export default function InventoryLibrary({ tr = false }) {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                      )}
                     </>
                   )}
                 </div>
@@ -345,7 +355,7 @@ export default function InventoryLibrary({ tr = false }) {
                     {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                   {confirmDeleteId === report.report_id ? (
                     <>
                       <span className="max-w-xs text-xs font-bold text-red-500">
@@ -417,7 +427,7 @@ export default function InventoryLibrary({ tr = false }) {
                         <Eye className="w-4 h-4" />
                         {tr ? 'Görüntüle' : 'View'}
                       </button>
-                      {canEdit && (
+                      {canEdit && (!report.created_by || canManage) && (
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
