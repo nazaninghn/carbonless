@@ -895,6 +895,16 @@ class SupplierEFDocumentTests(TestCase):
         self.assertEqual(validate_generic_step('K3C15-1', {'answer': {'items': [{**inv, 'company_emissions_tco2e': '1200'}]}}, lang='tr'), (True, None))
         self.assertEqual(validate_generic_step('K3-TY-edit', {'answer': 'K3C13-0'}, lang='tr'), (True, None))
 
+    def test_count_questions_accept_groups(self):
+        from .carboniq_validation import validate_generic_step
+        row = {'unit_count': '3', 'site': 'İstanbul', 'size_band': 'Orta', 'group_count': '2'}
+        self.assertEqual(validate_generic_step('3B-3', {'answer': {'EQ-3B-01': row}}, lang='tr'), (True, None))
+        # later per-type questions are answered per group ("EQ-3B-01#2")
+        self.assertEqual(validate_generic_step('3B-5', {'answer': {'EQ-3B-01': 'diesel', 'EQ-3B-01#2': 'electric'}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('3D-4', {'answer': {
+            'EQ-3D-01': {'refill_kg': '2'}, 'EQ-3D-01#2': {'refill_kg': '1', 'gas_type': 'R32'}}}, lang='tr'), (True, None))
+        self.assertFalse(validate_generic_step('3D-4', {'answer': {'EQ-3D-01#2': {'refill_kg': '1', 'gas_type': 'XX'}}}, lang='tr')[0])
+
     def test_exclusion_source_question(self):
         from .carboniq_validation import validate_generic_step
         row = {'source': 'Kocaeli Ofis — kiralık', 'reason': 'not_controlled', 'share': 'lt1'}

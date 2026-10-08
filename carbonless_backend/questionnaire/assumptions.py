@@ -83,9 +83,9 @@ def derive_assumptions(answers, lang='tr'):
     km = [k for k, v in _loop_values(A.get('3B-6')).items() if v == 'annual_km']
     if km:
         add('3B-6', 'B',
-            f'{len(km)} araç için yakıt yerine yıllık km girildi; tüketim ortalama yakıt tüketim faktörüyle '
+            f'{len(km)} araç tipi/grubu için yakıt yerine yıllık km girildi; tüketim ortalama yakıt tüketim faktörüyle '
             f'tahmin edildi (Seviye 2).',
-            f'Annual km instead of fuel was entered for {len(km)} vehicle(s); consumption is estimated with an '
+            f'Annual km instead of fuel was entered for {len(km)} vehicle type(s)/group(s); consumption is estimated with an '
             f'average fuel-consumption factor (Level 2).')
 
     if A.get('4A-2a') == 'no':

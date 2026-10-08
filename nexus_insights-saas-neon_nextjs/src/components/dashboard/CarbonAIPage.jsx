@@ -51,6 +51,9 @@ import {
   exclusionShareWarning,
   scope3RowWarning,
   unmapPhase1Answer,
+  groupedLoopItems,
+  baseLoopItem,
+  loopItemGroup,
 } from '@/lib/carboniq/questions';
 import { fixed } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -513,6 +516,16 @@ function MissingFieldsHint({ labels, tr }) {
 // Upper bound for a count-driven loop, so a mistyped "500" doesn't ask 500 times.
 const MAX_LOOP_ITEMS = 50;
 
+// "Binek araç", or "Binek araç — Grup 2" for a type split into groups.
+function loopItemLabel(sourceQ, item, items, lang) {
+  const base = baseLoopItem(item);
+  const opt = sourceQ?.options?.find(o => o.value === base);
+  const label = stripOptionCode(opt?.label?.[lang] || opt?.label?.en || base);
+  const group = loopItemGroup(item);
+  const split = group > 1 || (items || []).includes(`${base}#2`);
+  return split ? `${label} — ${lang === 'tr' ? 'Grup' : 'Group'} ${group}` : label;
+}
+
 function buildLoopItems(loopQuestionId, currentAnswers, lang) {
   const q = getQuestionById(loopQuestionId);
   if (!q?.loopSource) return null;
@@ -554,11 +567,9 @@ function buildLoopItems(loopQuestionId, currentAnswers, lang) {
     (sourceQ?.options || []).filter(o => o.exclusive || o.value === 'none').map(o => o.value)
   );
   items = items.filter(x => !exclusiveVals.has(x));
-  const itemLabels = items.map(item => {
-    const opt = sourceQ?.options?.find(o => o.value === item);
-    const raw = opt?.label?.[lang] || opt?.label?.en || item;
-    return stripOptionCode(raw);
-  });
+  // A type split into groups at its count question is asked per group.
+  items = groupedLoopItems(loopQuestionId, items, currentAnswers);
+  const itemLabels = items.map(item => loopItemLabel(sourceQ, item, items, lang));
   return { items, itemLabels };
 }
 
@@ -641,8 +652,9 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
   if (!q || value === undefined || value === null || value === '') return '—';
   if (isAggregate && q.loopSource && typeof value === 'object' && !Array.isArray(value)) {
     const sourceQ = getQuestionById(q.loopSource);
+    const keys = Object.keys(value);
     const entries = Object.entries(value).map(([itemKey, itemVal]) => {
-      const opt = sourceQ?.options?.find(o => o.value === itemKey);
+      const opt = sourceQ?.options?.find(o => o.value === baseLoopItem(itemKey));
       const isCountItem = !opt && /^\d+$/.test(itemKey)
         && (sourceQ?.subtype === 'numeric' || sourceQ?.type === 'numeric');
       // Per-facility loops (4A-1, 2A-3) are keyed "1", "2"…: show the
@@ -650,7 +662,7 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
       const siteName = isCountItem && answers
         ? String(readAnswerValue(answers, '2A-2')?.[itemKey]?.name || '').trim() : '';
       const itemLabel = opt
-        ? stripOptionCode(opt.label?.[lang] || opt.label?.en || itemKey)
+        ? loopItemLabel(sourceQ, itemKey, keys, lang)
         : isCountItem ? (siteName || `${lang === 'tr' ? 'Tesis' : 'Facility'} ${itemKey}`) : itemKey;
       const formatted = getDisplayValue(q, itemVal, lang); // recurse on the plain per-item value
       return `${itemLabel}: ${formatted}`;
@@ -1625,7 +1637,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   //   • object    — keyed by fuel/item type (e.g. { natural_gas: ['m³','kWh'] })
   const rawUnits = question?.units;
   let unitList = rawUnits
-    ? (Array.isArray(rawUnits) ? rawUnits : (currentLoopItem ? (rawUnits[currentLoopItem] || []) : []))
+    ? (Array.isArray(rawUnits) ? rawUnits : (currentLoopItem ? (rawUnits[baseLoopItem(currentLoopItem)] || []) : []))
     : [];
   // unitFrom: the unit follows the data type picked for this item in an
   // earlier question (3B-7 takes litre / km / ton-km from 3B-6).
@@ -1775,7 +1787,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   if (type === 'single_select') {
     // An option with onlyForItems is offered only for those loop items
     // (3B-6 "ton-km" only for goods vehicles, not for a passenger car).
-    const shown = (options || []).filter(o => !o.onlyForItems || !currentLoopItem || o.onlyForItems.includes(currentLoopItem));
+    const shown = (options || []).filter(o => !o.onlyForItems || !currentLoopItem || o.onlyForItems.includes(baseLoopItem(currentLoopItem)));
     return (
       <div role="radiogroup" className="flex flex-wrap gap-2">
         {shown.map(opt => (
@@ -1950,7 +1962,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     // A document-year example follows this inventory's year ("Örn: 2024"),
     // not a fixed 2023.
     const invYear = String(readAnswerValue(answers, 'A4') || '').trim();
-    const fields = resolveFieldOptions(question.fields || [], answers).map(f =>
+    // groupOnly fields (3D-4's gas) belong to the 2nd, 3rd … group of a type.
+    const fields = resolveFieldOptions(question.fields || [], answers)
+      .filter(f => !f.groupOnly || loopItemGroup(currentLoopItem) > 1)
+      .map(f =>
       (f.id === 'ef_year' && /^\d{4}$/.test(invYear)) ? { ...f, placeholder: { tr: `Örn: ${invYear}`, en: `e.g. ${invYear}` } } : f);
     const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     const requiredFields = fields.filter(f => f.required !== false);
@@ -4500,10 +4515,7 @@ export function QuestionnaireTab({
                     ? Object.entries(fuels).filter(([, f]) => f === 'electric' || f === 'hybrid').map(([k]) => k) : [];
                   if (!evs.length) return null;
                   const vq = getQuestionById('3B-1');
-                  const names = evs.map(k => {
-                    const o = (vq?.options || []).find(x => x.value === k);
-                    return o ? stripOptionCode(o.label?.[lang] || o.label?.en || k) : k;
-                  });
+                  const names = evs.map(k => loopItemLabel(vq, k, Object.keys(fuels), lang));
                   return (
                     <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
                       {tr
