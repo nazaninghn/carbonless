@@ -868,15 +868,23 @@ class SupplierEFDocumentTests(TestCase):
     def test_conditional_fields_and_cat10_form(self):
         from .carboniq_validation import validate_generic_step
         office = {'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': True, 'declaration_kwh': '12000'}
-        self.assertEqual(validate_generic_step('K3C8-1', {'answer': office}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office]}}, lang='tr'), (True, None))
         # "Evet" on the owner declaration now needs the kWh
-        self.assertFalse(validate_generic_step('K3C8-1', {'answer': {**office, 'declaration_kwh': ''}}, lang='tr')[0])
+        self.assertFalse(validate_generic_step('K3C8-1', {'answer': {'items': [{**office, 'declaration_kwh': ''}]}}, lang='tr')[0])
         # no declaration: the hidden kWh field is not required
-        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': False}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': False}]}}, lang='tr'), (True, None))
         # leased equipment has no floor area
-        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'asset_type': 'KV-04', 'owner_declaration': False}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-04', 'owner_declaration': False}]}}, lang='tr'), (True, None))
         prod = {'product': 'Sülfürik asit', 'quantity': '120', 'unit': 'tonnes'}
-        self.assertEqual(validate_generic_step('K3C10-1', {'answer': prod}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C10-1', {'answer': {'items': [prod, {**prod, 'product': 'Kostik'}]}}, lang='tr'), (True, None))
+        # several leased assets / sold products, one row each
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office, {'asset_type': 'KV-03', 'area_m2': '900', 'owner_declaration': False}]}}, lang='tr'), (True, None))
+        sold = {'product_type': 'P-01', 'sales_volume': '500', 'sales_unit': 'units', 'use_lifetime_years': '10'}
+        self.assertEqual(validate_generic_step('K3C11-1', {'answer': {'items': [sold]}}, lang='tr'), (True, None))
+        # a lifetime of "2026" is a calendar year typed by mistake
+        ok, msg = validate_generic_step('K3C11-1', {'answer': {'items': [{**sold, 'use_lifetime_years': '2026'}]}}, lang='tr')
+        self.assertFalse(ok)
+        self.assertIn('yıl sayısı', msg)
 
     def test_cat13_14_15_follow_up_fields(self):
         from .carboniq_validation import validate_generic_step
