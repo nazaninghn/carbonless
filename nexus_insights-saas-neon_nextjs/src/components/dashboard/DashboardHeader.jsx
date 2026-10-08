@@ -110,10 +110,13 @@ export default function DashboardHeader({
   };
 
   const openNotification = useCallback(async (n) => {
-    const tab = NOTIFICATION_TAB[n.notification_type];
+    // A notice may name its page in its link ("/dashboard?tab=questionnaire"
+    // for an edited inventory); the type decides for the others.
+    const params = new URLSearchParams((n.link || '').split('?')[1] || '');
+    const tab = NOTIFICATION_TAB[n.notification_type] || params.get('tab');
     if (tab) setActiveTab?.(tab);
     // An entry notification opens on the entry's own year.
-    const year = Number(new URLSearchParams((n.link || '').split('?')[1] || '').get('year'));
+    const year = Number(params.get('year'));
     if (year) setSelectedYear?.(year);
     setShowNotifications(false);
     if (!n.is_read) {
