@@ -7,7 +7,7 @@ import { StationaryCombustionPanel } from '@/components/workspace/panels/Station
 import { ElectricityPanel } from '@/components/workspace/panels/ElectricityPanel';
 import { UpstreamTransportPanel } from '@/components/workspace/panels/UpstreamTransportPanel';
 import { BusinessTravelPanel } from '@/components/workspace/panels/BusinessTravelPanel';
-import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
+import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
 import { api } from '@/lib/utils/api';
 import { calcScope1Kg, calcScope2Kg, calcK4Kg, calcK5Kg } from '@/lib/carboniq/emission-factors';
 
@@ -291,9 +291,9 @@ export default function WorkspacePage() {
         </div>
       </header>
 
-      {/* ── Content: CarbonAIPage with full Chat + Questionnaire ── */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <CarbonAIPage language={lang} isVisible />
+      {/* ── Content: the Carbon Inventory (its AI assistant is on /dashboard) ── */}
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden p-3">
+        <QuestionnairePageTab language={lang} />
       </div>
 
       {/* ── Data Panel Drawer ── */}

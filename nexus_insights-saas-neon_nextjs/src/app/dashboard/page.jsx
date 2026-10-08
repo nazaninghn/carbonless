@@ -10,7 +10,7 @@ import { ToastProvider } from '@/components/ToastProvider';
 import DashboardOverview from '@/components/dashboard/DashboardOverview';
 import ReviewTab from '@/components/dashboard/ReviewTab';
 import SettingsTab from '@/components/dashboard/SettingsTab';
-import CarbonAIPage from '@/components/dashboard/CarbonAIPage';
+import { InventoryAssistant } from '@/components/dashboard/CarbonAIPage';
 import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
@@ -56,9 +56,11 @@ export default function DashboardPage() {
   useEffect(() => {
     try {
       const mode = localStorage.getItem('carbonless_startup_mode');
-      if (mode === 'ai') {
-        setActiveTab('ai_carbon');
-        localStorage.setItem('carbonless_active_tab', 'ai_carbon');
+      // A fresh sign-in starts on the Carbon Inventory (the mode-select page
+      // is gone); the old "ai" mode meant the same.
+      if (mode === 'inventory' || mode === 'ai') {
+        setActiveTab('questionnaire');
+        localStorage.setItem('carbonless_active_tab', 'questionnaire');
       } else if (mode === 'dashboard') {
         // Explicit choice on the select page always wins over a stale saved tab
         // (e.g. the user was last on the AI tab in a previous session).
@@ -66,7 +68,7 @@ export default function DashboardPage() {
         localStorage.setItem('carbonless_active_tab', 'dashboard');
       } else {
         const savedTab = localStorage.getItem('carbonless_active_tab');
-        if (savedTab) setActiveTab(savedTab);
+        if (savedTab) setActiveTab(savedTab === 'ai_carbon' ? 'questionnaire' : savedTab);
       }
       if (mode) localStorage.removeItem('carbonless_startup_mode');
     } catch {}
@@ -137,48 +139,42 @@ export default function DashboardPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Fix #46: lazy-mount CarbonAIPage so navigating away never destroys its state.
-  // Once the user visits ai_carbon the first time, aiCarbonMounted stays true and
-  // visibility is controlled via CSS hidden  -  identical to the inner-tab fix (#44).
-  // AI overlay state  -  only shows when explicitly activated from header or select page
-  const [aiCarbonMounted, setAiCarbonMounted] = useState(false);
-  const [aiCarbonVisible, setAiCarbonVisible] = useState(false);
+  // The AI assistant lives beside the Carbon Inventory. Every "AI" entry
+  // point (sidebar, mobile bar, dashboard cards, ⌘K) still sets 'ai_carbon':
+  // it opens the inventory with the assistant panel open. The header's AI
+  // button goes to the inventory itself.
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantPrefill, setAssistantPrefill] = useState(null);
   useEffect(() => {
-    if (activeTab === 'ai_carbon') {
-      setAiCarbonMounted(true);
-      setAiCarbonVisible(true);
-    } else {
-      setAiCarbonVisible(false);
-    }
+    if (activeTab !== 'ai_carbon') return;
+    setActiveTab('questionnaire');
+    setAssistantOpen(true);
+  }, [activeTab]);
+  useEffect(() => {
+    if (activeTab !== 'questionnaire' && activeTab !== 'ai_carbon') setAssistantOpen(false);
   }, [activeTab]);
 
-  // Listen for close/open/navigate events from CarbonAIPage overlay buttons
+  // Events from the inventory and its pages: open the assistant (with an
+  // optional message start) or switch tab.
   useEffect(() => {
-    function handleClose() {
-      setAiCarbonVisible(false);
-      setActiveTab('dashboard');
-    }
-    function handleOpen() {
-      setAiCarbonVisible(true);
-      setActiveTab('ai_carbon');
+    function handleAssistant(e) {
+      const text = e.detail?.prefill;
+      if (text) setAssistantPrefill({ text, key: Date.now() });
+      setActiveTab(prev => (prev === 'questionnaire' ? prev : 'questionnaire'));
+      setAssistantOpen(e.detail?.open !== false);
     }
     function handleNavigate(e) {
       const tab = e.detail?.tab;
-      if (tab) {
-        setAiCarbonVisible(false);
-        setActiveTab(tab);
-      }
+      if (tab) setActiveTab(tab);
       // Open the reports on the inventory's own reporting year, not whatever
       // year the header happened to show.
       const year = Number(e.detail?.year);
       if (year) setSelectedYear(year);
     }
-    window.addEventListener('carboniq-close', handleClose);
-    window.addEventListener('carboniq-open', handleOpen);
+    window.addEventListener('carbonless:assistant', handleAssistant);
     window.addEventListener('carboniq-navigate', handleNavigate);
     return () => {
-      window.removeEventListener('carboniq-close', handleClose);
-      window.removeEventListener('carboniq-open', handleOpen);
+      window.removeEventListener('carbonless:assistant', handleAssistant);
       window.removeEventListener('carboniq-navigate', handleNavigate);
     };
   }, []);
@@ -249,7 +245,7 @@ export default function DashboardPage() {
         />
 
         <main className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden ${
-          activeTab === 'ai_carbon' ? 'p-2 pb-20 sm:p-2 sm:pb-20 lg:p-3 lg:pb-3' : 'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
+          'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
         }`}>
           {/* Slim top bar  -  only on very first load, no layout shift */}
           {loading && (
@@ -379,20 +375,19 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* ===== AI CARBON  -  renders as fullscreen overlay or minimized bubble ===== */}
-      {/* Rendered OUTSIDE main content flow so it never affects dashboard layout */}
-      {aiCarbonMounted && aiCarbonVisible && (
-        <ErrorBoundary language={language}>
-          <CarbonAIPage
-            language={language}
-            isVisible={true}
-            summary={effectiveSummary}
-            entries={entries}
-            targets={targets}
-            fetchData={fetchData}
-          />
-        </ErrorBoundary>
-      )}
+      {/* ===== AI ASSISTANT  -  side panel beside the Carbon Inventory ===== */}
+      <ErrorBoundary language={language}>
+        <InventoryAssistant
+          open={assistantOpen}
+          onClose={() => setAssistantOpen(false)}
+          prefill={assistantPrefill}
+          language={language}
+          summary={effectiveSummary}
+          entries={entries}
+          targets={targets}
+          fetchData={fetchData}
+        />
+      </ErrorBoundary>
 
       {/* Command Palette ⌘K */}
       <CommandPalette

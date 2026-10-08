@@ -217,6 +217,7 @@ export default function RegisterPage() {
 
       // Set mode cookie so middleware allows dashboard access
       document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
+      try { localStorage.setItem('carbonless_startup_mode', 'inventory'); } catch {}
       router.push('/dashboard');
 
     } catch (err) {

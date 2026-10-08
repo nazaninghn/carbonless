@@ -23,7 +23,7 @@ const NAV_ITEMS = [
   { id: 'nav_dashboard',     group: 'nav', icon: LayoutDashboard, tr: 'Kontrol Paneli',    en: 'Dashboard',        tab: 'dashboard'     },
   { id: 'nav_questionnaire', group: 'nav', icon: ClipboardList,   tr: 'Karbon Envanteri',  en: 'Carbon Inventory', tab: 'questionnaire' },
   { id: 'nav_emissions',     group: 'nav', icon: Leaf,            tr: 'Emisyon Yönetimi',  en: 'Emissions',        tab: 'emissions'     },
-  { id: 'nav_ai',            group: 'nav', icon: Bot,             tr: 'AI Sohbet',         en: 'AI Chat',          tab: 'ai_carbon'     },
+  { id: 'nav_ai',            group: 'nav', icon: Bot,             tr: 'AI Asistan',        en: 'AI Assistant',          tab: 'ai_carbon'     },
   { id: 'nav_reduction',     group: 'nav', icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',          tab: 'reduction'     },
   { id: 'nav_reporting',     group: 'nav', icon: FileText,        tr: 'Raporlama',         en: 'Reports',          tab: 'reporting'     },
   { id: 'nav_review',        group: 'nav', icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',           tab: 'review'        },
