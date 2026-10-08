@@ -49,14 +49,12 @@ function LoginContent() {
   const completeLogin = useCallback(() => {
     markSessionActive();
     document.cookie = 'carbonless_mode_chosen=1; path=/; SameSite=Lax';
-    // Sign-in opens the Carbon Inventory (there is no mode-select page).
-    try { localStorage.setItem('carbonless_startup_mode', 'inventory'); } catch {}
     // Came from an invite link while signed out: finish joining that team.
     let inviteToken = null;
     try { inviteToken = sessionStorage.getItem('pendingInviteToken'); } catch {}
     window.location.href = inviteToken
       ? `/accept-invite?token=${encodeURIComponent(inviteToken)}`
-      : '/dashboard';
+      : '/dashboard/select';
   }, []);
 
   const handleGoogleCredential = useCallback(async (response) => {
