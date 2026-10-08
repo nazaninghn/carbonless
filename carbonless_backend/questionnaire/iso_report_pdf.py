@@ -671,6 +671,12 @@ def _sign_off(report, A):
     return (f'{who} — {title}' if title else who), when
 
 
+def _signed_from_account(A):
+    """The account that confirmed the 7C-2 sign-off (stored on save)."""
+    raw = _raw_answer(A, '7C-2')
+    return str(raw.get('confirmed_by') or '').strip() if isinstance(raw, dict) else ''
+
+
 def t(key, lang):
     return T.get(key, {}).get(lang, T.get(key, {}).get('en', key))
 
@@ -1501,6 +1507,10 @@ def _section1(E, S, D, report, lang, TBL, FIG):
         *([] if not signer else [
             ('Approved and signed by' if lang == 'en' else 'Onaylayan ve imzalayan', signer),
             ('Date of signature' if lang == 'en' else 'İmza tarihi', signed_on or t('not_declared', lang)),
+        ]),
+        *([] if not (signer and _signed_from_account(D['answers'])) else [
+            ('Confirmed on the platform by' if lang == 'en' else 'Platformda onaylayan hesap',
+             _signed_from_account(D['answers'])),
         ]),
         ('Contact e-mail' if lang == 'en' else 'İletişim e-postası',
          getattr(getattr(report, 'created_by', None), 'email', '') or t('not_declared', lang)),

@@ -713,6 +713,8 @@ function getDisplayValue(q, value, lang = 'en', { isAggregate = false, answers =
   if (q.type === 'compound') {
     if (!value || typeof value !== 'object') return '—';
     return orderedFieldEntries(q, value)
+      // Keys the server adds (7C-2's confirmed_by) are not answers.
+      .filter(([k]) => !q.fields?.length || q.fields.some(f => f.id === k))
       .filter(([, v]) => v !== '' && v !== undefined && v !== null)
       .map(([k, v]) => {
         const field = shownFields?.find(f => f.id === k);
@@ -3264,6 +3266,16 @@ export function QuestionnaireTab({
   // — the questions promised these would be documented; listed so the user
   // sees them before deciding whether to add their own.
   const [recordedAssumptions, setRecordedAssumptions] = useState(null);
+  // The 7C-2 signature is for an owner, admin or manager (the backend
+  // refuses others); a data-entry member is told so before filling it in.
+  const [canSign, setCanSign] = useState(true);
+  useEffect(() => {
+    if (currentId !== '7C-2') return;
+    api.getProfile()
+      .then(res => (res.ok ? res.json() : null))
+      .then(profile => { if (profile && isMounted.current) setCanSign(getPermissions(profile).canApprove); })
+      .catch(() => {});
+  }, [currentId]);
   useEffect(() => {
     if (!reportId || currentId !== '6B-OV') return;
     api.getReportAssumptions(reportId, lang)
@@ -3382,6 +3394,13 @@ export function QuestionnaireTab({
         existing = loopItemValue(answersRef.current[currentId], resumeItems[index]) ?? facilityPrefill(currentQuestion, index);
       } else {
         existing = answersRef.current[currentId];
+        // Signing again: the earlier declaration is not carried over — the
+        // person signing now ticks it themselves.
+        if (currentId === '7C-2' && existing && typeof existing === 'object' && !Array.isArray(existing)) {
+          // eslint-disable-next-line no-unused-vars
+          const { declaration_accepted, confirmed_by, ...rest } = existing;
+          existing = rest;
+        }
         // prefillFrom: the question repeats an earlier one (2A-1 asks the
         // facility count B4 already did) — start from that answer, as its
         // helper text promises, instead of blank.
@@ -3518,8 +3537,10 @@ export function QuestionnaireTab({
         const fieldErrors = respData?.errors && typeof respData.errors === 'object' && !Array.isArray(respData.errors)
           ? [...new Set(Object.values(respData.errors).flat().filter(m => typeof m === 'string'))].join(' ')
           : '';
+        // A 403 with its own reason (the sign-off's "owner, admin or
+        // manager") says it; a bare one gets the generic role message.
         const msg = res.status === 403
-          ? noPermissionMessage(lang === 'tr')
+          ? (respData?.code ? (respData.error || noPermissionMessage(lang === 'tr')) : noPermissionMessage(lang === 'tr'))
           : (respData?.error || respData?.detail || fieldErrors || botMsg || (lang === 'tr' ? 'Kayıt hatası oluştu. Lütfen tekrar deneyin.' : 'Save failed. Please try again.'));
         if (isMounted.current) setSaveError(msg);
         return { success: false, data: {} };
@@ -4371,7 +4392,8 @@ export function QuestionnaireTab({
                 className="flex h-7 items-center gap-1 rounded-full bg-[#175022] px-2.5 text-[11px] font-bold text-white hover:bg-[#1A7B2A] transition"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
-                {tr ? 'Düzenlemeyi bitir' : 'Finish editing'}
+                <span className="hidden sm:inline">{tr ? 'Düzenlemeyi bitir' : 'Finish editing'}</span>
+                <span className="sm:hidden">{tr ? 'Bitir' : 'Finish'}</span>
               </button>
             )}
             {(history.length > 0 || resumePrevId) && !completed && (
@@ -4593,6 +4615,13 @@ export function QuestionnaireTab({
                     {tr
                       ? `Soru 28a'da işletme kontrolü dışında belirttiğiniz tesisler: ${stage2ExclusionRows(answers).map(r => r.source).join(', ')}. "Evet" derseniz ${stage2ExclusionRows(answers).length > 1 ? 'ilki forma dolu gelir; diğerlerini "+ Başka Ekle" ile ekleyin' : 'hariç tutma formuna dolu gelir'}.`
                       : `In Question 28a you marked these sites as outside operational control: ${stage2ExclusionRows(answers).map(r => r.source).join(', ')}. Answer "Yes" and the first comes pre-filled in the exclusion form${stage2ExclusionRows(answers).length > 1 ? '; add the others with "+ Add Another"' : ''}.`}
+                  </p>
+                )}
+                {currentId === '7C-2' && !canSign && (
+                  <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+                    {tr
+                      ? 'İmza adımını şirket sahibi, yönetici veya müdür tamamlayabilir. Envanter hazır; onlardan bu adımı imzalamalarını isteyin.'
+                      : 'Only the company owner, an admin or a manager can complete the sign-off. The inventory is ready; ask one of them to sign this step.'}
                   </p>
                 )}
                 {currentId === '6B-OV' && recordedAssumptions?.length > 0 && (
