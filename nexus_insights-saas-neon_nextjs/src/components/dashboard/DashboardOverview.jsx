@@ -926,8 +926,17 @@ export default function DashboardOverview({
                 return (
                   <div key={t.id}>
                     <div className="mb-1 flex items-center justify-between">
-                      <span className="text-[11px] font-semibold text-[#072C0E]/70">{t.target_year || ' - '} {tr ? 'hedefi' : 'target'}</span>
-                      <span className="text-[11px] font-bold text-[#1D9C31]">{pct}%</span>
+                      <span className="min-w-0 truncate text-[11px] font-semibold text-[#072C0E]/70">
+                        {t.title || `${t.target_year || ' - '} ${tr ? 'hedefi' : 'target'}`}
+                      </span>
+                      {/* Above the base there is no progress to show: say by how much. */}
+                      {baseTonne > 0 && totalTonne > baseTonne ? (
+                        <span className="shrink-0 text-[11px] font-bold text-red-500">
+                          {tr ? `Bazın %${Math.round((totalTonne / baseTonne - 1) * 100)} üzerinde` : `${Math.round((totalTonne / baseTonne - 1) * 100)}% above base`}
+                        </span>
+                      ) : (
+                        <span className="shrink-0 text-[11px] font-bold text-[#1D9C31]">{tr ? `%${pct}` : `${pct}%`}</span>
+                      )}
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/6">
                       <div

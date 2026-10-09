@@ -1116,7 +1116,9 @@ def company_history(request):
     return Response([{
         'id': r.id,
         'action': r.action,
-        'detail': localize_detail(r.detail, lang, names),
+        # Rows written with both languages (inventory answers, targets…) carry
+        # their own text; entry rows are localized from the stored one.
+        'detail': (r.metadata or {}).get(f'detail_{lang}') or localize_detail(r.detail, lang, names),
         'user': (r.user.get_full_name() or r.user.email or r.user.username) if r.user else None,
         'created_at': r.created_at,
         'status_before': (r.metadata or {}).get('status_before'),

@@ -1565,3 +1565,48 @@ class PreviousProfileSourceTests(TestCase):
         # an inventory for an earlier year looks back, not forward
         old = mk(2023, CarbonReport.Status.IN_PROGRESS)
         self.assertIn(_find_previous_profile_source(old), (r2025, r2024, draft2025))
+
+
+class InventoryHistoryTests(TestCase):
+    """Inventory answers, their approval and targets appear in the company's
+    change history (Settings → Geçmiş), in the reader's language."""
+
+    setUp = PendingChangeTests.setUp
+    _save = PendingChangeTests._save
+
+    def _history(self, lang='tr'):
+        return self.c_owner.get(f'/api/accounts/history/?lang={lang}').data
+
+    def test_answer_change_and_approval_are_listed(self):
+        from emissions.models import EmissionEntry
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self._save(self.c_clerk, {'1': '1200 kWh'})
+        new = EmissionEntry.objects.get(status='submitted')
+        self.c_owner.post(f'/api/emissions/entries/{new.id}/approve/', {'action': 'approve'}, format='json')
+        rows = self._history()
+        self.assertEqual([r['action'] for r in rows],
+                         ['entry_approved', 'questionnaire_changed', 'questionnaire_changed'])
+        approved, change, first = rows
+        self.assertIn('2025 envanteri · Soru', change['detail'])
+        self.assertIn('1.000 kWh → ', change['detail'])
+        self.assertIn('1.200 kWh', change['detail'])
+        self.assertEqual(change['status_after'], 'submitted')
+        self.assertEqual(first['status_after'], 'approved')
+        self.assertEqual(approved['status_before'], 'submitted')
+        self.assertIn('1.200 kWh', approved['detail'])
+        self.assertIn('2025 inventory · Question', self._history('en')[1]['detail'])
+
+    def test_saving_the_same_answer_adds_nothing(self):
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self.assertEqual(len(self._history()), 1)
+
+    def test_target_changes_are_listed(self):
+        res = self.c_owner.post('/api/emissions/targets/', {
+            'title': '2030 hedefi', 'base_year': 2024, 'target_year': 2030,
+            'base_emissions_kg': 303333.3, 'target_reduction_percent': 30}, format='json')
+        self.assertEqual(res.status_code, 201)
+        self.c_owner.delete(f"/api/emissions/targets/{res.data['id']}/")
+        rows = self._history()
+        self.assertEqual([r['action'] for r in rows], ['target_deleted', 'target_created'])
+        self.assertEqual(rows[1]['detail'], '2030 hedefi · baz 2024: 303,3 tCO₂e · 2030 yılına kadar %30,0 azaltım')

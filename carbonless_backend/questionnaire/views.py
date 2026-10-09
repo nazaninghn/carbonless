@@ -580,6 +580,12 @@ class SubmitStepView(APIView):
             report.current_step = 'DONE'
             report.save(update_fields=['status', 'current_step', 'updated_at', 'client_progress'])
             logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
+            from emissions.audit import log_company_activity
+            log_company_activity(
+                request.user, report.company_id, 'inventory_completed',
+                f'{report.title or report.reporting_year} · {report.reporting_year} envanteri tamamlandı',
+                f'{report.title or report.reporting_year} · {report.reporting_year} inventory completed',
+                target_type='CarbonReport', target_id=report.id, request=request)
 
             return Response({
                 'success': True,
