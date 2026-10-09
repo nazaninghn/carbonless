@@ -483,7 +483,8 @@ class AnnualQuestionnaireEntryTests(TestCase):
         self.assertEqual(data['monthly'][2]['total_kg'], 25)   # March
 
     def test_summary_splits_by_facility(self):
-        r = self._entry(2025, facility=self.facility.id, quantity=4)   # 10 kg at Fabrika 1
+        # (same source as the annual questionnaire entry: saved knowingly)
+        r = self._entry(2025, facility=self.facility.id, quantity=4, confirm_duplicate=True)   # 10 kg at Fabrika 1
         self.assertEqual(r.status_code, 201, r.content)
         data = self.client.get('/api/emissions/summary/?year=2025').data
         self.assertEqual(data['by_facility'], [{'facility_id': self.facility.id, 'facility_name': 'Fabrika 1',

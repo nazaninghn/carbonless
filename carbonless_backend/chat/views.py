@@ -812,7 +812,8 @@ def _create_emission_from_chat(user, entry_data):
     year = entry_data.get('year', datetime.now(timezone.utc).year)
     description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
 
-    return create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description)
+    return create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description,
+                                      facility=_chat_facility(user, entry_data))
 
 
 _LANGUAGE_NAMES = {'tr': 'Turkish', 'en': 'English'}
@@ -1645,6 +1646,39 @@ def download_attachment(request, message_id):
 # and doesn't collateral-block other users on the same NAT/office network.
 @ratelimit(key='user', rate='20/m', method='POST', block=True)
 def send_message(request, session_id):
+    response = _send_message(request, session_id)
+    _tag_facility(getattr(response, 'data', None), request.user, request.data.get('content'))
+    return response
+
+
+def _chat_facility(user, entry_data):
+    """The company facility a confirmed chat entry was tagged with, or None."""
+    from companies.models import Facility
+    from companies.utils import get_current_company
+    fid = (entry_data or {}).get('facility_id')
+    company = get_current_company(user)
+    if not fid or not company:
+        return None
+    return Facility.objects.filter(company=company, pk=fid).first()
+
+
+def _tag_facility(data, user, content):
+    """A message naming one of the company's facilities ("… Gebze Fabrika'da
+    …") puts its entries on that facility; the confirmation card shows it."""
+    if not isinstance(data, dict) or not data.get('pending_entries') or not content:
+        return
+    from companies.utils import get_current_company
+    from .local_answers import _facility_in
+    company = get_current_company(user)
+    facility = _facility_in(company, content) if company else None
+    if facility is None:
+        return
+    for pe in data['pending_entries']:
+        if isinstance(pe, dict) and not pe.get('facility_id'):
+            pe['facility_id'], pe['facility_name'] = facility.pk, facility.name
+
+
+def _send_message(request, session_id):
     try:
         session = _my_sessions(request.user).get(id=session_id)
     except ChatSession.DoesNotExist:
@@ -1991,6 +2025,11 @@ def confirm_entry(request):
                 'code': 'possible_duplicate', 'existing_id': existing.pk,
                 'existing_status': existing.status,
             }, status=409)
+        from emissions.duplicates import find_annual_overlap
+        overlap = find_annual_overlap(get_current_company(request.user), factor,
+                                      entry_data.get('year') or now.year, _chat_facility(request.user, entry_data))
+        if overlap:
+            return Response({'error': overlap['en'], 'code': 'annual_overlap', **overlap}, status=409)
 
     entry, err = _create_emission_from_chat(request.user, entry_data)
     if err:

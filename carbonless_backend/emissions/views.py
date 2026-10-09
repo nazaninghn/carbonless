@@ -104,12 +104,15 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         if not company:
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found. Please create or join a company first.'})
-        from .duplicates import find_duplicate, is_confirmed, PossibleDuplicate
+        from .duplicates import find_duplicate, is_confirmed, PossibleDuplicate, find_annual_overlap, AnnualOverlap
         if not is_confirmed(self.request.data):
             v = serializer.validated_data
             existing = find_duplicate(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('quantity'))
             if existing:
                 raise PossibleDuplicate(existing)
+            overlap = find_annual_overlap(company, v.get('emission_factor'), v.get('year'), v.get('facility'))
+            if overlap:
+                raise AnnualOverlap(overlap)
         # Same rule as chat/questionnaire saves (create_entry_from_activity):
         # owners, admins and managers are approvers, so their own entries don't
         # wait in the review queue; data-entry members' entries do.

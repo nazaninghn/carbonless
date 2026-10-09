@@ -5396,6 +5396,30 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                 </div>
                               );
                             })()}
+                            {/* A facility named in the message: the entry goes on it
+                                (shown so it can be taken off before saving). */}
+                            {(() => {
+                              const key = `${msg.id}-${idx}`;
+                              const o = periodOverrides[key] || {};
+                              const name = 'facility_id' in o ? o.facility_name : pe.facility_name;
+                              if (!name) return null;
+                              return (
+                                <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-[#1A7B2A]">
+                                  <span>{tr ? 'Tesis' : 'Facility'}: {name}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPeriodOverrides(prev => ({
+                                      ...prev,
+                                      [key]: { month: pe.month, year: pe.year, ...(prev[key] || {}), facility_id: null, facility_name: null },
+                                    }))}
+                                    className="rounded-full px-1.5 text-[#175022]/50 hover:bg-[#175022]/10 hover:text-[#175022]"
+                                    title={tr ? 'Tesisi kaldır' : 'Remove facility'}
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              );
+                            })()}
                           </div>
                         ))}
                       </div>
@@ -5414,15 +5438,18 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                               if (future) { setError(futurePeriodMessage(tr)); return; }
                               for (const [idx, pe] of msg.pending_entries.entries()) {
                                 const override = periodOverrides[`${msg.id}-${idx}`];
-                                const peToSave = { ...(override ? { ...pe, month: override.month, year: override.year } : pe), language };
+                                const peToSave = { ...pe, ...(override || {}), language };
                                 let res = await api.confirmEmissionEntry(peToSave);
                                 let data = await res.json().catch(() => ({}));
-                                if (res.status === 409 && data.code === 'possible_duplicate') {
-                                  // Same source, period and quantity is already saved: ask
-                                  // before doubling it; "Cancel" skips just this one.
-                                  const saveAnyway = window.confirm(tr
-                                    ? 'Bu dönem için aynı kaynak ve miktarla bir kayıt zaten var. Aynı faturayı iki kez girerseniz toplam iki kat görünür.\n\nYine de kaydedilsin mi?'
-                                    : 'An entry with the same source and quantity already exists for this period. Entering the same invoice twice doubles it in the totals.\n\nSave it anyway?');
+                                if (res.status === 409 && (data.code === 'possible_duplicate' || data.code === 'annual_overlap')) {
+                                  // Same source, period and quantity is already saved — or the
+                                  // year's inventory already holds this source as an annual
+                                  // amount: ask before counting it twice; "Cancel" skips just this one.
+                                  const saveAnyway = window.confirm(data.code === 'annual_overlap'
+                                    ? `${tr ? data.message_tr : data.message_en}\n\n${tr ? 'Yine de kaydedilsin mi?' : 'Save it anyway?'}`
+                                    : (tr
+                                      ? 'Bu dönem için aynı kaynak ve miktarla bir kayıt zaten var. Aynı faturayı iki kez girerseniz toplam iki kat görünür.\n\nYine de kaydedilsin mi?'
+                                      : 'An entry with the same source and quantity already exists for this period. Entering the same invoice twice doubles it in the totals.\n\nSave it anyway?'));
                                   if (!saveAnyway) continue;
                                   res = await api.confirmEmissionEntry({ ...peToSave, confirm_duplicate: true });
                                   data = await res.json().catch(() => ({}));

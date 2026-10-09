@@ -115,6 +115,40 @@ class MultiItemMessageTests(TestCase):
         self.assertEqual(kinds, [('electricity', 1), ('natural_gas', 1)])
         self.assertNotIn('anlayamadım', res.data['content'])
 
+    def test_named_facility_and_annual_inventory_overlap(self):
+        from companies.models import Facility
+        from emissions.models import EmissionEntry, EmissionFactor
+        company = self.user.profile.active_company
+        gebze = Facility.objects.create(company=company, name='Gebze Fabrika')
+        res = self._send("Mart 2024 Gebze Fabrika'da 5.000 kWh elektrik kullandık")
+        pe = res.data['pending_entries'][0]
+        self.assertEqual((pe['facility_id'], pe['facility_name']), (gebze.id, 'Gebze Fabrika'))
+        saved = self.client.post('/api/chat/confirm-entry/', {**pe, 'year': 2024, 'month': 3}, format='json')
+        self.assertEqual(saved.status_code, 201, saved.content)
+        self.assertEqual(EmissionEntry.objects.get(id=saved.data['id']).facility_id, gebze.id)
+        # the year's questionnaire already holds this facility's annual electricity
+        grid = EmissionEntry.objects.get(id=saved.data['id']).emission_factor
+        EmissionEntry.objects.create(user=self.user, company=company, emission_factor=grid, year=2024, month=1,
+                                     quantity=120000, facility=gebze, status='approved',
+                                     description='Questionnaire step 4A-1 · Gebze Fabrika')
+        again = self.client.post('/api/chat/confirm-entry/', {**pe, 'quantity': 6000, 'year': 2024, 'month': 4},
+                                 format='json')
+        self.assertEqual(again.status_code, 409)
+        self.assertEqual(again.data['code'], 'annual_overlap')
+        self.assertIn('Gebze Fabrika için', again.data['message_tr'])
+        self.assertIn('120.000 kWh', again.data['message_tr'])
+        forced = self.client.post('/api/chat/confirm-entry/', {**pe, 'quantity': 6000, 'year': 2024, 'month': 4,
+                                                               'confirm_duplicate': True}, format='json')
+        self.assertEqual(forced.status_code, 201)
+        # the form gets the same warning; another source does not
+        r = self.client.post('/api/emissions/entries/', {'emission_factor': grid.id, 'year': 2024, 'month': 5,
+                                                         'quantity': 700}, format='json')
+        self.assertEqual((r.status_code, r.data['code']), (409, 'annual_overlap'))
+        gas = EmissionFactor.objects.filter(category='stationary_combustion', is_active=True).first()
+        r = self.client.post('/api/emissions/entries/', {'emission_factor': gas.id, 'year': 2024, 'month': 5,
+                                                         'quantity': 70}, format='json')
+        self.assertEqual(r.status_code, 201, r.content)
+
     def test_unreadable_part_is_named_in_the_reply(self):
         res = self._send('3 ton çelik ve 500 kWh elektrik')
         self.assertEqual(len(res.data['pending_entries']), 1)
