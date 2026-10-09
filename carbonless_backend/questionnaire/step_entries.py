@@ -1093,6 +1093,25 @@ def _step_rows(step, specs, facility_of):
     return rows
 
 
+def refresh_entry_text(report):
+    """Give the entries of `report`'s answers their current label and
+    calc_detail where the answers still report the same factor, amount and
+    facility (text only; nothing is rebuilt, approvals stay)."""
+    from .models import ReportStep
+    company, year = report.company, report.reporting_year
+    if not company or not year:
+        return
+    answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+    A = {k: _value(v) for k, v in answers.items()}
+    groups = activities_for_report(answers, year, company)
+    facility_of = _facility_lookup(company)
+    for step in ENTRY_STEPS:
+        entries = list(_step_entries(company, year, step))
+        if entries:
+            rows = _step_rows(step, _entry_specs(step, groups.get(step, []), A, year, company), facility_of)
+            _backfill_detail(entries, rows)
+
+
 def _facility_lookup(company):
     """facility name (2A-2 answer) -> the company's Facility of that name, or None."""
     from companies.models import Facility

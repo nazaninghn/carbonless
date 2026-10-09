@@ -401,6 +401,15 @@ def emission_summary(request):
         'scope3_tonne': float(scope3) / 1000,
         'monthly': monthly,
         'annual_kg': annual_kg,
+        # Per facility, and what is recorded for the company as a whole.
+        'by_facility': [
+            {'facility_id': r['facility__id'], 'facility_name': r['facility__name'],
+             'total_kg': float(r['t'] or 0)}
+            for r in (entries.filter(facility__isnull=False).values('facility__id', 'facility__name')
+                      .annotate(t=Sum('calculated_co2e_kg')).order_by('-t'))
+        ],
+        'unassigned_kg': float(entries.filter(facility__isnull=True)
+                               .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0),
         'by_category': [
             {'category': c['emission_factor__category'], 'total_kg': float(c['total_kg'])}
             for c in categories

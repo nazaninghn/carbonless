@@ -57,6 +57,14 @@ class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
         company = get_current_company(self.request.user)
         return Facility.objects.filter(company=company) if company else Facility.objects.none()
 
+    def perform_update(self, serializer):
+        old_name = serializer.instance.name
+        facility = serializer.save()
+        if facility.name != old_name:
+            # The questionnaire names this facility too (2A-2): keep them in step.
+            from questionnaire.facility_sync import rename_in_answers
+            rename_in_answers(facility.company, old_name, facility.name)
+
 
 from .serializers import CompanyMembershipSerializer
 

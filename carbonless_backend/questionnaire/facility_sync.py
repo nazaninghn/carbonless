@@ -85,3 +85,34 @@ def sync_facilities(company, data):
             match.save(update_fields=fields)
             changed += 1
     return changed
+
+
+def rename_in_answers(company, old_name, new_name):
+    """A facility renamed in Settings: rename it in the 2A-2 answers too, and
+    refresh the text of the entries that name it. The questionnaire links each
+    facility's entries by its 2A-2 name, so a name left behind there would read
+    as another facility at the next save (a change waiting for approval that
+    nobody made). Amounts, links and approvals are not touched."""
+    from .models import CarbonReport, ReportStep
+    from .step_entries import refresh_entry_text
+    old_key = (old_name or '').strip().lower()
+    if not old_key or old_key == (new_name or '').strip().lower():
+        return 0
+    changed_reports = []
+    for step in ReportStep.objects.filter(report__company=company, step_id='2A-2'):
+        stored = step.answer
+        answer = stored.get('answer', stored) if isinstance(stored, dict) else None
+        if not isinstance(answer, dict):
+            continue
+        hit = False
+        for row in answer.values():
+            if isinstance(row, dict) and str(row.get('name') or '').strip().lower() == old_key:
+                row['name'] = new_name
+                hit = True
+        if hit:
+            step.save(update_fields=['answer'])
+            changed_reports.append(step.report_id)
+    for report in CarbonReport.objects.filter(id__in=changed_reports):
+        refresh_entry_text(report)
+    return len(changed_reports)
+

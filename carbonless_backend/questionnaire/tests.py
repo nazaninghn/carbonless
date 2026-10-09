@@ -425,6 +425,28 @@ class InventoryCalculationTests(StepEntriesTests):
         call_command('backfill_calc_detail', stdout=__import__('io').StringIO())
         self.assertEqual([e.id for e in self._entries()], ids)
 
+    def test_renaming_a_facility_in_settings_keeps_its_entries_linked(self):
+        from companies.models import Facility
+        from emissions.models import EmissionEntry
+        from questionnaire.models import ReportStep
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._factor('natural-gas-m3', 'm3', 2.0, scope='scope1', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        gebze = Facility.objects.get(company=self.company, name='Gebze Fabrika')
+        r = self.client.patch(f'/api/companies/facilities/{gebze.id}/', {'name': 'Gebze Tesisi'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        answer = ReportStep.objects.get(report=self.report, step_id='2A-2').answer
+        self.assertEqual(answer['answer']['1']['name'], 'Gebze Tesisi')
+        entry = EmissionEntry.objects.get(company=self.company, facility=gebze)
+        self.assertEqual(entry.description, 'Questionnaire step 4A-1 · Gebze Tesisi')
+        # another answer saved afterwards: the electricity stays as it was
+        ids = sorted(e.id for e in EmissionEntry.objects.filter(company=self.company, description__contains='4A-1'))
+        self._step('3A-5', {'natural_gas': '100 m³'})
+        self.assertEqual(sorted(e.id for e in EmissionEntry.objects.filter(
+            company=self.company, description__contains='4A-1')), ids)
+        self.assertEqual(EmissionEntry.objects.get(pk=entry.pk).facility_id, gebze.id)
+
     def test_chat_answers_for_the_facility_asked_about(self):
         from companies.models import Facility
         from chat.local_answers import local_data_answer

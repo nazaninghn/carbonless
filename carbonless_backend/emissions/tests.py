@@ -482,6 +482,14 @@ class AnnualQuestionnaireEntryTests(TestCase):
         self.assertEqual(data['monthly'][0]['total_kg'], 0)    # January
         self.assertEqual(data['monthly'][2]['total_kg'], 25)   # March
 
+    def test_summary_splits_by_facility(self):
+        r = self._entry(2025, facility=self.facility.id, quantity=4)   # 10 kg at Fabrika 1
+        self.assertEqual(r.status_code, 201, r.content)
+        data = self.client.get('/api/emissions/summary/?year=2025').data
+        self.assertEqual(data['by_facility'], [{'facility_id': self.facility.id, 'facility_name': 'Fabrika 1',
+                                                'total_kg': 10.0}])
+        self.assertEqual(data['unassigned_kg'], 275.0)
+
     def test_excel_month_column_says_annual(self):
         import io
         from openpyxl import load_workbook
