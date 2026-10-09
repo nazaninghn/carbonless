@@ -15,6 +15,7 @@ import {
   TrendingDown,
   AlertCircle,
   Shield,
+  Building2,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import {
@@ -515,6 +516,47 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           )}
         </ReportCard>
       </div>
+
+      {/* ─── By facility: each facility's emissions and what is recorded for
+           the company as a whole (same figures as the ISO report's 4.2.1). ─── */}
+      {summary?.by_facility?.length > 0 && (summary?.total_kg ?? 0) > 0 && (
+        <ReportCard delay={260}>
+          <div className="mb-4 flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41]">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold">{tr ? 'Tesislere Göre' : 'By Facility'}</h2>
+              <p className="text-[11px] text-[#072C0E]/40">{selectedYear}</p>
+            </div>
+          </div>
+          <div className="space-y-2.5">
+            {[
+              ...summary.by_facility.map(f => ({ key: f.facility_id, name: f.facility_name, kg: f.total_kg })),
+              ...(summary.unassigned_kg > 0
+                ? [{ key: 'company', name: tr ? 'Şirket geneli (tesise atanmamış)' : 'Company-wide (not per facility)', kg: summary.unassigned_kg, muted: true }]
+                : []),
+            ].map(row => {
+              const pct = (row.kg / summary.total_kg) * 100;
+              const pctText = pct > 0 && pct < 1 ? '<1' : fixed(pct, 0);
+              return (
+                <div key={row.key}>
+                  <div className="mb-1 flex items-baseline justify-between gap-3 text-xs">
+                    <span className={`min-w-0 truncate font-semibold ${row.muted ? 'text-[#072C0E]/50' : 'text-[#072C0E]'}`}>{row.name}</span>
+                    <span className="shrink-0 font-bold tabular-nums text-[#072C0E]/70">
+                      {fixed(row.kg / 1000, 2)} t · {tr ? `%${pctText}` : `${pctText}%`}
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/6">
+                    <div className={`h-full rounded-full ${row.muted ? 'bg-[#072C0E]/20' : 'bg-gradient-to-r from-[#1D9C31] to-[#51D766]'}`}
+                         style={{ width: `${Math.max(pct, row.kg > 0 ? 1 : 0)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ReportCard>
+      )}
 
       {/* ─── ROW 3: Export Center + Compliance ─── */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

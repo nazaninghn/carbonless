@@ -3524,7 +3524,17 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     # 4.2.1 Location-based evaluation
     E.append(Paragraph('4.2.1   ' + t('s4_loc', lang), S['h3']))
     facs = D['facilities']
-    if facs:
+    # Every facility row would read 0,00 t (under 5 kg each).
+    if facs and max(sum(c.values()) for c in facs.values()) < 5:
+        # Facility rows that all round to 0,00 t: a table of zeros and a
+        # "largest share: 0 %" ranking say nothing — state it instead.
+        E.append(Paragraph(
+            'The emissions attributed to each facility are below 0.01 t CO₂e; '
+            'practically all emissions are reported at organisation level.'
+            if lang == 'en' else
+            'Her bir tesise atanan emisyon 0,01 t CO₂e\'nin altındadır; emisyonların '
+            'tamamına yakını kuruluş düzeyinde raporlanmıştır.', S['body']))
+    elif facs:
         ordered = sorted(facs.items(), key=lambda kv: -sum(kv[1].values()))
         E.append(Paragraph(
             'Emissions at each reporting location are shown by category below. The '
