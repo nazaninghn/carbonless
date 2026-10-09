@@ -348,7 +348,7 @@ def _get_entry_status(user, company):
     return 'submitted'
 
 
-def create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description=''):
+def create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description='', facility=None):
     """
     Resolves the activity to a real factor and creates the EmissionEntry.
     This is the ONLY place that should call EmissionEntry.objects.create() for
@@ -373,6 +373,7 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
         quantity=qty,
         calculated_co2e_kg=co2e_kg,
         description=description or f'{activity_type} {quantity} {unit}',
+        facility=facility,
         factor_value_snapshot=factor.factor_kg_co2e,
         factor_source_snapshot=factor.source,
         status=_get_entry_status(user, company),

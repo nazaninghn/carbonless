@@ -496,7 +496,10 @@ export default function EmissionsTab({
       } else {
         // Don't expose raw server response — show a user-friendly message
         if (res.status === 409) {
-          setDupWarning(true);
+          // A likely duplicate, or a month of a source the year's inventory
+          // already holds as an annual amount (the server says which).
+          const d = await res.json().catch(() => ({}));
+          setDupWarning(d.code === 'annual_overlap' ? { overlap: tr ? d.message_tr : d.message_en } : true);
         } else if (res.status === 403) {
           setFormError(noPermissionMessage(tr));
           toast.error(noPermissionMessage(tr));
@@ -1328,12 +1331,14 @@ export default function EmissionsTab({
                   <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
                     <p className="flex items-center gap-2 font-bold">
                       <AlertCircle className="h-4 w-4 shrink-0" />
-                      {tr ? 'Bu kayıt zaten var gibi görünüyor' : 'This entry looks like it already exists'}
+                      {dupWarning.overlap
+                        ? (tr ? 'Bu kaynak yıllık envanterde zaten var' : 'This source is already in the annual inventory')
+                        : (tr ? 'Bu kayıt zaten var gibi görünüyor' : 'This entry looks like it already exists')}
                     </p>
                     <p className="mt-1">
-                      {tr
+                      {dupWarning.overlap || (tr
                         ? 'Bu ay için aynı kaynak ve aynı miktarla bir kayıt var. Aynı faturayı iki kez girerseniz toplam iki kat görünür.'
-                        : 'There is already an entry with the same source and quantity for this month. Entering the same invoice twice doubles it in the totals.'}
+                        : 'There is already an entry with the same source and quantity for this month. Entering the same invoice twice doubles it in the totals.')}
                     </p>
                     <button
                       type="button"
