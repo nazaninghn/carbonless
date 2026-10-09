@@ -1495,6 +1495,18 @@ def _strip_false_save_claims(text):
 
 
 # ── List sessions ─────────────────────────────────────────────────────────────
+
+def _my_sessions(user):
+    """The user's chats in the company they are working in (a chat answers
+    from that company's data, so another company's chats are not listed).
+    A chat with no company (none could be told) is shown in every company."""
+    from django.db.models import Q
+    from companies.utils import get_current_company
+    company = get_current_company(user)
+    qs = ChatSession.objects.filter(user=user)
+    return qs.filter(Q(company=company) | Q(company__isnull=True)) if company else qs.filter(company__isnull=True)
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_sessions(request):
@@ -1504,8 +1516,7 @@ def list_sessions(request):
     # Fix #78: cap at the 50 most-recent sessions — returning every session a
     # user ever created would cause unbounded memory use and a bloated sidebar.
     sessions = (
-        ChatSession.objects
-        .filter(user=request.user)
+        _my_sessions(request.user)
         .annotate(message_count=Count('messages'))
         .order_by('-updated_at')[:50]
     )
@@ -1519,7 +1530,8 @@ def create_session(request):
     # Fix #79: strip + truncate to model max_length (200) so an overlong client
     # payload doesn't hit the DB and raise an unhandled DataError → 500.
     title = (request.data.get('title') or 'New Chat').strip()[:200] or 'New Chat'
-    session = ChatSession.objects.create(user=request.user, title=title)
+    from companies.utils import get_current_company
+    session = ChatSession.objects.create(user=request.user, company=get_current_company(request.user), title=title)
     return Response(_session_to_dict(session), status=201)
 
 
@@ -1528,7 +1540,7 @@ def create_session(request):
 @permission_classes([IsAuthenticated])
 def session_detail(request, session_id):
     try:
-        session = ChatSession.objects.get(id=session_id, user=request.user)
+        session = _my_sessions(request.user).get(id=session_id)
     except ChatSession.DoesNotExist:
         return Response({'error': 'Not found'}, status=404)
 
@@ -1634,7 +1646,7 @@ def download_attachment(request, message_id):
 @ratelimit(key='user', rate='20/m', method='POST', block=True)
 def send_message(request, session_id):
     try:
-        session = ChatSession.objects.get(id=session_id, user=request.user)
+        session = _my_sessions(request.user).get(id=session_id)
     except ChatSession.DoesNotExist:
         return Response({'error': 'Session not found'}, status=404)
 

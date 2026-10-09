@@ -1713,3 +1713,16 @@ class InventoryHistoryTests(TestCase):
         row = self._history()[0]
         self.assertEqual(row['action'], 'advisor_approved')
         self.assertTrue(row['detail'].startswith('2025 envanteri · Soru '))
+
+    def test_renaming_an_inventory(self):
+        r = self.c_owner.patch(f'/api/questionnaire/{self.report.id}/title/', {'title': 'Pend Co 2025'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.report.refresh_from_db()
+        self.assertEqual((self.report.title, self.report.reporting_year), ('Pend Co 2025', 2025))
+        self.assertEqual(self._history()[0]['action'], 'inventory_renamed')
+        # a data-entry member may not rename
+        r = self.c_clerk.patch(f'/api/questionnaire/{self.report.id}/title/', {'title': 'X'}, format='json')
+        self.assertEqual(r.status_code, 403)
+        self.assertEqual(self.c_owner.patch(f'/api/questionnaire/{self.report.id}/title/', {'title': ' '},
+                                            format='json').status_code, 400)
+
