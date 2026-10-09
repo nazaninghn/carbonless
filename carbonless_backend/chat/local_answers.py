@@ -98,6 +98,54 @@ def _month_answer(company, year, month, lang):
             f'• Scope 3: {_fmt(by["scope3"], lang)} t') + note
 
 
+def _facility_in(company, text):
+    """The company facility the message names ("Gebze Fabrika tesisinin …"), or None."""
+    from companies.models import Facility
+    low = text.lower()
+    for facility in Facility.objects.filter(company=company):
+        name = (facility.name or '').strip().lower()
+        if name and name in low:
+            return facility
+    return None
+
+
+def _facility_answer(company, year, facility, lang):
+    """A facility's approved emissions of the year, and how much of the
+    company's total is not tied to any facility (so it is not read as the
+    facility's whole share)."""
+    from django.db.models import Sum
+    qs = _entries(company, year)
+    total = float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    mine = qs.filter(facility=facility)
+    part = float(mine.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    unassigned = float(qs.filter(facility__isnull=True).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    by = {s: float(mine.filter(emission_factor__scope=s).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+          for s in ('scope1', 'scope2', 'scope3')}
+    if lang == 'tr':
+        if not part:
+            text = f'{year} yılında {facility.name} tesisine atanmış onaylı emisyon kaydı yok.'
+        else:
+            text = (f'{facility.name} tesisinin {year} emisyonu **{_fmt(part, lang)} tCO₂e**.\n\n'
+                    f'• Kapsam 1: {_fmt(by["scope1"], lang)} t\n'
+                    f'• Kapsam 2: {_fmt(by["scope2"], lang)} t\n'
+                    f'• Kapsam 3: {_fmt(by["scope3"], lang)} t')
+        if unassigned:
+            text += (f'\n\nŞirketin {year} toplamı {_fmt(total, lang)} tCO₂e; bunun {_fmt(unassigned, lang)} tCO₂e\'si '
+                     'tesis bazında değil şirket geneli için girildiğinden hiçbir tesise atanmamıştır.')
+        return text
+    if not part:
+        text = f'There are no approved emission entries assigned to {facility.name} for {year}.'
+    else:
+        text = (f'{facility.name} emitted **{_fmt(part, lang)} tCO₂e** in {year}.\n\n'
+                f'• Scope 1: {_fmt(by["scope1"], lang)} t\n'
+                f'• Scope 2: {_fmt(by["scope2"], lang)} t\n'
+                f'• Scope 3: {_fmt(by["scope3"], lang)} t')
+    if unassigned:
+        text += (f'\n\nThe company total for {year} is {_fmt(total, lang)} tCO₂e; {_fmt(unassigned, lang)} tCO₂e of it '
+                 'was entered for the company as a whole, not per facility, so it is not assigned to any facility.')
+    return text
+
+
 def _scope_answer(company, year, scope_n, lang):
     from django.db.models import Sum
     qs = _entries(company, year)
@@ -227,6 +275,9 @@ def local_data_answer(user, content, lang):
     about_emissions = _EMISSION_WORDS.search(text) or _SCOPE_RE.search(text)
     if _COMPARE_WORDS.search(text) and (about_emissions or re.search(r'durum|nasıl|nasil|doing|how are we', text, re.I)):
         return _compare_answer(company, year, lang)
+    facility = _facility_in(company, text)
+    if facility and about_emissions:
+        return _facility_answer(company, year, facility, lang)
     if _TOTAL_WORDS.search(text) and about_emissions:
         month = _month_in(text, bool(m))
         if month:

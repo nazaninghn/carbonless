@@ -63,19 +63,22 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         cache = self.context.setdefault('_replaces', {})
         key = (obj.company_id, obj.year, group)
         if key not in cache:
-            old = [e for e in _step_entries(obj.company_id, obj.year, group).select_related('emission_factor')
-                   if e.status == 'approved']
-            if not old:
-                cache[key] = None
-            else:
-                same = len(old) == 1
-                cache[key] = {
-                    'co2e_kg': float(sum(e.calculated_co2e_kg for e in old)),
-                    'quantity': float(old[0].quantity) if same else None,
-                    'unit': old[0].emission_factor.unit if same else None,
-                    'count': len(old),
-                }
-        return cache[key]
+            cache[key] = [e for e in _step_entries(obj.company_id, obj.year, group).select_related('emission_factor')
+                          if e.status == 'approved']
+        approved = cache[key]
+        # The approved row of the same facility / site (an answer asked per
+        # facility has one row each); else everything the answer had.
+        old = [e for e in approved
+               if e.facility_id == obj.facility_id and e.description == obj.description] or approved
+        if not old:
+            return None
+        same = len(old) == 1
+        return {
+            'co2e_kg': float(sum(e.calculated_co2e_kg for e in old)),
+            'quantity': float(old[0].quantity) if same else None,
+            'unit': old[0].emission_factor.unit if same else None,
+            'count': len(old),
+        }
 
 
     def get_questionnaire_source(self, obj):

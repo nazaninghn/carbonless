@@ -685,6 +685,13 @@ def t(key, lang):
     return T.get(key, {}).get(lang, T.get(key, {}).get('en', key))
 
 
+def _lower(text, lang):
+    """Lower case for running text; Turkish İ/I become i/ı (str.lower gives 'i̇')."""
+    if lang == 'tr':
+        text = text.replace('İ', 'i').replace('I', 'ı')
+    return text.lower()
+
+
 def cat_label(code, lang):
     entry = CATEGORY_LABELS.get(code)
     if entry:
@@ -854,9 +861,12 @@ def _gather(report, lang):
     # category is this facility's biggest").
     facilities = {}
     facility_activity = {}
+    unassigned = {}   # category -> kg of entries not tied to a facility
     for e in entries:
         name = e.facility.name if e.facility else None
         if not name:
+            cat = e.emission_factor.category
+            unassigned[cat] = unassigned.get(cat, 0.0) + float(e.calculated_co2e_kg or 0)
             continue
         iso_cat = iso_category_for(e.emission_factor.scope, e.emission_factor.category)
         kg = float(e.calculated_co2e_kg or 0)
@@ -871,10 +881,15 @@ def _gather(report, lang):
     # methodology section already describes (clause 3.2) can actually be
     # shown rather than just asserted.
     year_totals = {}
+    year_categories = {}   # year -> categories with emissions, to flag a change of scope
     if company:
         for row in (EmissionEntry.objects.filter(company=company).filter(status='approved')
                     .values('year').annotate(total=Sum('calculated_co2e_kg'))):
             year_totals[row['year']] = year_totals.get(row['year'], 0.0) + float(row['total'] or 0)
+        for row in (EmissionEntry.objects.filter(company=company).filter(status='approved')
+                    .values('year', 'emission_factor__category').annotate(total=Sum('calculated_co2e_kg'))):
+            if float(row['total'] or 0) > 0:
+                year_categories.setdefault(row['year'], set()).add(row['emission_factor__category'])
         for cr in CustomEmissionRequest.objects.filter(
                 company=company, status='approved', calculated_co2e_kg__isnull=False):
             year_totals[cr.year] = year_totals.get(cr.year, 0.0) + float(cr.calculated_co2e_kg or 0)
@@ -894,7 +909,9 @@ def _gather(report, lang):
         'indirect_t': (total_kg - by_scope.get('scope1', 0.0)) / 1000.0,
         'facilities': facilities,
         'facility_activity': facility_activity,
+        'unassigned': {k: v for k, v in unassigned.items() if v > 0},
         'year_totals': year_totals,
+        'year_categories': year_categories,
         'answers': _answers(report),
         # Pending / rejected entries: outside every figure, noted for information.
         'not_counted': (_not_counted(EmissionEntry.objects.filter(company=company, year=year))
@@ -3567,6 +3584,23 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             E.append(Spacer(1, 3*mm))
             E.append(Paragraph(sentence, S['body']))
 
+        # What is not tied to a facility (questions asked for the company as a
+        # whole) is named, so the location shares are not read as the whole.
+        unassigned = D.get('unassigned') or {}
+        if unassigned and D['total_kg']:
+            un_kg = sum(unassigned.values())
+            un_pct = _localize_num(f'{un_kg / D["total_kg"] * 100:.0f}', tr)
+            cats = ', '.join(_lower(cat_label(k, lang), lang) for k, _v in sorted(unassigned.items(), key=lambda kv: -kv[1]))
+            E.append(Spacer(1, 2*mm))
+            E.append(Paragraph(
+                f'{_fmt(un_kg / 1000.0, tr)} t CO₂e ({un_pct} %) '
+                f'of the total comes from items collected for the organisation as a whole, not per '
+                f'facility, and is reported at organisation level: {cats}.'
+                if lang == 'en' else
+                f'Toplamın {_fmt(un_kg / 1000.0, tr)} t CO₂e\'si (%{un_pct}) '
+                f'tesis bazında değil kuruluş geneli için toplanan kalemlerden gelir ve kuruluş düzeyinde '
+                f'raporlanmıştır: {cats}.', S['body']))
+
         chart = _bar_row_chart([(n, sum(c.values())) for n, c in ordered],
                                D['total_kg'], S, lang)
         if chart is not None:
@@ -3613,12 +3647,12 @@ def _section4(E, S, D, report, lang, TBL, FIG):
                 E.append(_fig_caption(S, FIG, cap, lang))
     else:
         E.append(Paragraph(
-            'Activity data has not been attributed to individual facilities, so a '
-            'location-level breakdown is not presented. Assign facilities to emission '
-            'records to enable this section.'
+            'No activity data of this inventory was collected per facility, so a '
+            'location-level breakdown is not presented; all emissions are reported at '
+            'organisation level.'
             if lang == 'en' else
-            'Faaliyet verisi ayrı tesislere atanmadığından tesis bazında dağılım '
-            'sunulmamıştır. Bu bölümün oluşması için emisyon kayıtlarına tesis atayın.',
+            'Bu envanterde tesis bazında toplanan faaliyet verisi bulunmadığından tesis '
+            'bazında dağılım sunulmamıştır; tüm emisyonlar kuruluş düzeyinde raporlanmıştır.',
             S['no_data']))
     E.append(PageBreak())
 
@@ -3686,37 +3720,86 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         E.append(PageBreak())
         E.append(Paragraph('4.3   ' + t('s4_trend', lang), S['h2']))
         base_year = report.baseline_year or min(year_totals)
+        has_base = bool(year_totals.get(base_year))
         base_t = year_totals.get(base_year, 0.0) / 1000.0
-        E.append(Paragraph(
-            (f'Total greenhouse gas emissions for every year with recorded activity '
-             f'data are compared against the {base_year} base year below.')
-            if lang == 'en' else
-            (f'Kayıtlı faaliyet verisi bulunan her yıla ait toplam sera gazı emisyonları '
-             f'aşağıda {base_year} baz yılı ile karşılaştırılmıştır.'), S['body']))
-        data = [[Paragraph(f'<b>{"Year" if lang == "en" else "Yıl"}</b>', S['body_sm']),
-                 Paragraph(f'<b>{t("c_total", lang)}</b>', S['body_sm']),
-                 Paragraph('<b>' + ('Change vs base year' if lang == 'en'
-                                     else 'Baz yıla göre değişim') + '</b>', S['body_sm'])]]
-        for yr in sorted(year_totals):
+        if has_base:
+            intro = ((f'Total greenhouse gas emissions for every year with recorded activity '
+                      f'data are compared against the {base_year} base year and the year before below.')
+                     if lang == 'en' else
+                     (f'Kayıtlı faaliyet verisi bulunan her yıla ait toplam sera gazı emisyonları '
+                      f'aşağıda {base_year} baz yılı ve bir önceki yıl ile karşılaştırılmıştır.'))
+        else:
+            # A declared base year without data: say so rather than a column of dashes.
+            intro = ((f'No activity data is recorded for the {base_year} base year, so no change '
+                      f'against it can be given; each year is compared with the year before.')
+                     if lang == 'en' else
+                     (f'{base_year} baz yılı için kayıtlı faaliyet verisi bulunmadığından baz yıla göre '
+                      f'değişim verilememiştir; her yıl bir önceki yıl ile karşılaştırılmıştır.'))
+        E.append(Paragraph(intro, S['body']))
+
+        def change(now, before):
+            if not before:
+                return '—'
+            pct = (now - before) / before * 100
+            return f'{"+" if pct >= 0 else ""}{_localize_num(f"{pct:.1f}", tr)} %'
+
+        head = [Paragraph(f'<b>{"Year" if lang == "en" else "Yıl"}</b>', S['body_sm']),
+                Paragraph(f'<b>{t("c_total", lang)}</b>', S['body_sm']),
+                Paragraph('<b>' + ('Change vs previous year' if lang == 'en'
+                                    else 'Önceki yıla göre değişim') + '</b>', S['body_sm'])]
+        if has_base:
+            head.append(Paragraph('<b>' + ('Change vs base year' if lang == 'en'
+                                            else 'Baz yıla göre değişim') + '</b>', S['body_sm']))
+        data = [head]
+        years = sorted(year_totals)
+        for i, yr in enumerate(years):
             v_t = year_totals[yr] / 1000.0
-            if base_t:
-                change = (v_t - base_t) / base_t * 100
-                change_txt = f'{"+" if change >= 0 else ""}{_localize_num(f"{change:.1f}", tr)} %'
-            else:
-                change_txt = '—'
+            prev_t = year_totals[years[i - 1]] / 1000.0 if i else 0.0
             is_base = (yr == base_year)
             label = f'{yr}' + ((' (base year)' if lang == 'en' else ' (baz yıl)') if is_base else '')
-            data.append([
-                Paragraph(label, S['body_sm']),
-                Paragraph(f'{_fmt(v_t, tr)} t CO₂e', S['body_sm']),
-                Paragraph(change_txt if not is_base else '—', S['body_sm']),
-            ])
-        tbl = Table(data, colWidths=[50*mm, 60*mm, 60*mm], hAlign='LEFT', repeatRows=1)
+            row = [Paragraph(label, S['body_sm']),
+                   Paragraph(f'{_fmt(v_t, tr)} t CO₂e', S['body_sm']),
+                   Paragraph(change(v_t, prev_t), S['body_sm'])]
+            if has_base:
+                row.append(Paragraph('—' if is_base else change(v_t, base_t), S['body_sm']))
+            data.append(row)
+        widths = [40*mm, 45*mm, 45*mm, 45*mm] if has_base else [50*mm, 60*mm, 60*mm]
+        tbl = Table(data, colWidths=widths, hAlign='LEFT', repeatRows=1)
         st = _tbl_style(fn, fnb)
         st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
         tbl.setStyle(st)
         E.append(_caption(S, TBL, t('t_trend', lang), lang))
         E.append(tbl)
+
+        # The reporting year against the year before it: when the two cover
+        # different sources the change says more about the inventory's scope
+        # than about reductions, so the difference is named.
+        cats = D.get('year_categories') or {}
+        prev_years = [y for y in years if y < D['year']]
+        if prev_years and D['year'] in cats and prev_years[-1] in cats:
+            prev = prev_years[-1]
+            added = sorted(cats[D['year']] - cats[prev])
+            missing = sorted(cats[prev] - cats[D['year']])
+            if added or missing:
+                parts = []
+                if added:
+                    parts.append(('new in ' if lang == 'en' else f'{D["year"]} yılında yeni: ')
+                                 + (f'{D["year"]}: ' if lang == 'en' else '')
+                                 + ', '.join(_lower(cat_label(c, lang), lang) for c in added))
+                if missing:
+                    parts.append(('not in ' if lang == 'en' else f'{D["year"]} yılında olmayan: ')
+                                 + (f'{D["year"]}: ' if lang == 'en' else '')
+                                 + ', '.join(_lower(cat_label(c, lang), lang) for c in missing))
+                E.append(Spacer(1, 3*mm))
+                E.append(Paragraph(
+                    (f'The {D["year"]} and {prev} inventories cover different sources ({"; ".join(parts)}), '
+                     f'so the change between them reflects the scope of the inventory as well as emissions. '
+                     f'For a like-for-like comparison the earlier year needs to be recalculated with the same sources.')
+                    if lang == 'en' else
+                    (f'{D["year"]} ve {prev} envanterleri farklı kaynakları kapsamaktadır ({"; ".join(parts)}); '
+                     f'aradaki değişim emisyonlarla birlikte envanter kapsamındaki farkı da yansıtır. '
+                     f'Eşdeğer bir karşılaştırma için önceki yılın aynı kaynaklarla yeniden hesaplanması gerekir.'),
+                    S['body']))
 
 
 # ═══════════════════════════════════════════════════════════════════════════
