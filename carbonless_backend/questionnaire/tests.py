@@ -338,16 +338,13 @@ class InventoryCalculationTests(StepEntriesTests):
         self._factor('off-road-diesel-desnz', 'liters', 3.17939, scope='scope1')
         self._factor('lpg', 'liters', 1.5, scope='scope1', country='turkey')
         self._step('3B-5', {'EQ-3B-05': 'diesel', 'EQ-3B-01': 'diesel', 'EQ-3B-01#2': 'electric',
-                            'EQ-3B-10': 'diesel', 'EQ-3B-11': 'diesel', 'EQ-3B-02': 'lpg_cng',
-                            'EQ-3B-06': 'diesel'})
+                            'EQ-3B-10': 'diesel', 'EQ-3B-11': 'diesel', 'EQ-3B-02': 'lpg_cng'})
         self._step('3B-6', {'EQ-3B-05': 'fuel_litres', 'EQ-3B-01': 'annual_km', 'EQ-3B-01#2': 'annual_km',
-                            'EQ-3B-10': 'annual_km', 'EQ-3B-11': 'fuel_litres', 'EQ-3B-02': 'fuel_litres',
-                            'EQ-3B-06': 'tonne_km'})
+                            'EQ-3B-10': 'annual_km', 'EQ-3B-11': 'fuel_litres', 'EQ-3B-02': 'fuel_litres'})
         self._step('3B-7', {'EQ-3B-05': '1.000 litre', 'EQ-3B-01': '10.000 km', 'EQ-3B-01#2': '5000 km',
-                            'EQ-3B-10': '80000 km', 'EQ-3B-11': '200 litre', 'EQ-3B-02': '100 litre',
-                            'EQ-3B-06': '9000 ton-km'})
+                            'EQ-3B-10': '80000 km', 'EQ-3B-11': '200 litre', 'EQ-3B-02': '100 litre'})
         got = self._by_step()['3B-7']
-        # Trucks by km, tonne-km and electric cars by km are not calculated.
+        # Trucks by km and electric cars by km are not calculated.
         self.assertEqual(sorted(got), sorted([
             ('motorin-mobile', 1000.0, 2696.0), ('car-diesel', 10000.0, 1560.0),
             ('off-road-diesel-desnz', 200.0, 635.878), ('calculated-scope1-mobile_combustion', 150.0, 150.0)]))
@@ -390,13 +387,17 @@ class InventoryCalculationTests(StepEntriesTests):
     def test_travel_hotel_turkey_and_no_rfi_multiplier(self):
         self._factor('hotel-turkey', 'nights', 32.1, country='turkey')
         self._factor('flight-long-business', 'person-km', 0.429)
+        self._factor('flight-short-economy', 'person-km', 0.255)
         self._step('K3C6-2', {'items': [
             {'travel_mode': 'BT-10', 'quantity': '3', 'hotel_class': 'luxury'},
             {'travel_mode': 'BT-03', 'quantity': '1000', 'cabin_class': 'business', 'rfi_applied': True},
             {'travel_mode': 'BT-11', 'quantity': '1000', 'cabin_class': 'economy'},
+            {'travel_mode': 'BT-11', 'quantity': '500', 'cabin_class': 'business'},
             {'travel_mode': 'BT-02', 'quantity': '1000', 'cabin_class': 'first'}]})
+        # 3–6 h: short-haul on the distance, economy only (no short-haul business factor)
         self.assertEqual(sorted(self._by_step()['K3C6-2']),
-                         [('flight-long-business', 1000.0, 429.0), ('hotel-turkey', 3.0, 96.3)])
+                         [('flight-long-business', 1000.0, 429.0), ('flight-short-economy', 1000.0, 255.0),
+                          ('hotel-turkey', 3.0, 96.3)])
 
     def test_level_question_decides_which_answers_count(self):
         self._factor('wt-01-landfill', 'kg', 1.29)
@@ -438,6 +439,23 @@ class InventoryCalculationTests(StepEntriesTests):
         self._step('4A-EF', 'yes')
         r = self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2023'})
         self.assertIn('is not the reporting year (2025)', r.data['calc_feedback']['notes'][0])
+
+    def test_biomass_by_type_and_biogenic_co2_apart(self):
+        from .step_entries import biogenic_co2_kg
+        from .models import ReportStep
+        self._factor('wood-pellets', 'kg', 0.01553, scope='scope1')
+        self._step('3A-5', {'biomass': '2 ton', 'other_fossil': '100 litre'})
+        self.assertEqual(self._entries(), [])  # type not chosen yet
+        r = self._step('3A-5bio', 'wood_pellets')
+        self.assertEqual(self._by_step()['3A-5'], [('wood-pellets', 2000.0, 31.06)])  # CH4 + N2O only
+        answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
+        self.assertAlmostEqual(biogenic_co2_kg(answers), 3354.36)  # 2 000 kg × 1,67718, not in the totals
+        self.assertEqual(r.data['calc_feedback']['biogenic_kg'], 3354.36)
+        notes = self._step('3A-5', {'biomass': '2 ton', 'other_fossil': '100 litre'}).data['calc_feedback']['notes']
+        self.assertTrue(any(n.startswith('Other fossil fuel') for n in notes))
+        # biogas is entered in kWh
+        self._step('3A-5bio', 'biogas')
+        self.assertNotIn('3A-5', self._by_step())
 
     def test_unchanged_entries_keep_their_approval(self):
         from emissions.models import EmissionEntry

@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
-from .step_entries import sync_step_entries, uncalculated_notes, questionnaire_total_kg
+from .step_entries import sync_step_entries, uncalculated_notes, questionnaire_total_kg, biogenic_co2_kg
 import logging
 import re
 import time
@@ -613,6 +613,9 @@ class SubmitStepView(APIView):
         notes = [n['tr' if lang == 'tr' else 'en']
                  for n in uncalculated_notes(answers, report.reporting_year or 2024) if n['step_id'] == step]
         calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(after_kg, 2), 'notes': notes}
+        if step in ('3A-5', '3A-5bio'):
+            # Biomass CO2 is biogenic: shown, but not in the inventory total.
+            calc_feedback['biogenic_kg'] = round(biogenic_co2_kg(answers), 2)
         if entries:
             co2e_kg = sum(float(e.calculated_co2e_kg) for e in entries)
             saved_entry = {

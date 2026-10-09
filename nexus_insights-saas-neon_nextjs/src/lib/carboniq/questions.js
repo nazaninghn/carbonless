@@ -2006,7 +2006,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.2',
     type: 'fuel_loop',
     loopSource: '3A-4',
-    loopNext: '3A-6',
+    loopNext: '3A-5bio',
     required: true,
     reportField: 'scope1.stationary_combustion.consumption',
     text: {
@@ -2024,11 +2024,41 @@ export const CARBONIQ_QUESTIONS = [
       diesel: ['litre'],
       lpg: ['kg', 'litre'],
       coal: ['ton', 'kg'],
-      biomass: ['ton', 'kg'],
+      biomass: ['ton', 'kg', 'kWh'],
       other_fossil: ['litre', 'kg', 'ton'],
     },
     validate: {
       requiredMessage: { tr: 'Lütfen tüketim miktarını girin.', en: 'Please enter the consumption amount.' },
+    },
+    next: '3A-5bio',
+  },
+  {
+    // Biomass is calculated by its type; its CO₂ is biogenic and reported
+    // apart from the scope totals (only the CH₄ and N₂O count in Scope 1).
+    id: '3A-5bio',
+    number: '44a',
+    stage: 3,
+    block: '3A',
+    isoRef: 'ISO 14064-1 §5.2',
+    type: 'single_select',
+    required: true,
+    reportField: 'scope1.stationary_combustion.biomass_type',
+    conditionalShow: { questionId: '3A-5', hasKey: 'biomass' },
+    text: {
+      tr: 'Yaktığınız biyokütle hangisi?',
+      en: 'Which biomass do you burn?',
+    },
+    helper: {
+      tr: 'Odun peleti kg veya ton, biyogaz kWh olarak girilir. Biyokütle yanmasının CO₂\'i biyojeniktir: kapsam toplamlarına eklenmez, raporda ayrıca gösterilir; CH₄ ve N₂O Kapsam 1\'e dahil edilir.',
+      en: 'Wood pellets are entered in kg or tonnes, biogas in kWh. The CO₂ of burning biomass is biogenic: it is not added to the scope totals but shown separately; its CH₄ and N₂O count in Scope 1.',
+    },
+    options: [
+      { value: 'wood_pellets', label: { tr: 'Odun peleti', en: 'Wood pellets' } },
+      { value: 'biogas', label: { tr: 'Biyogaz', en: 'Biogas' } },
+      { value: 'other', label: { tr: 'Diğer biyokütle (henüz hesaplanmıyor)', en: 'Other biomass (not calculated yet)' } },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen biyokütle türünü seçin.', en: 'Please choose the biomass type.' },
     },
     next: '3A-6',
   },
@@ -2506,9 +2536,8 @@ export const CARBONIQ_QUESTIONS = [
     options: [
       { value: 'fuel_litres', label: { tr: 'Yıllık yakıt tüketimi (litre) — Seviye 1 — tercih edilen', en: 'Annual fuel consumption (litres) — Level 1 — preferred' }, dataQuality: 'high' },
       { value: 'annual_km', label: { tr: 'Yıllık km — Seviye 2 — yalnızca binek araçlarda hesaplanır', en: 'Annual km — Level 2 — calculated for passenger cars only' }, dataQuality: 'medium' },
-      { value: 'tonne_km', label: { tr: 'Yük araçları: Ton-km — Seviye 1 (henüz hesaplanmıyor)', en: 'Heavy goods vehicles: Tonne-km — Level 1 (not calculated yet)' }, dataQuality: 'high',
-        // Goods-carrying vehicle types only (and "Other").
-        onlyForItems: ['EQ-3B-05', 'EQ-3B-06', 'EQ-3B-07', 'EQ-3B-08', 'EQ-3B-09', 'EQ-3B-10', 'EQ-3B-17', 'EQ-3B-18', 'EQ-3B-22', 'EQ-3B-23', 'EQ-3B-99'] },
+      // Tonne-km is for freight services, not a direct Scope 1 calculation of
+      // the company's own vehicles: fuel litres (or a vehicle-type km) is.
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen aktivite verisi türünü seçin.', en: 'Please select the activity data type.' },
@@ -2542,8 +2571,8 @@ export const CARBONIQ_QUESTIONS = [
     },
     placeholder: { tr: 'Örn: 12.000', en: 'e.g. 12,000' },
     helper: {
-      tr: 'Bir önceki soruda seçtiğiniz veri türüne göre bu araç tipinin yıllık toplamını girin: yakıt tüketimi (litre), mesafe (km) veya yük taşımacılığı (ton-km).',
-      en: 'Enter the annual total for this vehicle type according to the data type you chose in the previous question: fuel consumption (litres), distance (km) or freight (tonne-km).',
+      tr: 'Bir önceki soruda seçtiğiniz veri türüne göre bu araç tipinin yıllık toplamını girin: yakıt tüketimi (litre) veya mesafe (km).',
+      en: 'Enter the annual total for this vehicle type according to the data type you chose in the previous question: fuel consumption (litres) or distance (km).',
     },
     units: ['litre', 'km', 'ton-km'],
     // Only the unit of the data type picked in 3B-6 for this vehicle.

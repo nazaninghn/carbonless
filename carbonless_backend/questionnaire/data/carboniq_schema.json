@@ -1548,7 +1548,8 @@
       ],
       "biomass": [
         "ton",
-        "kg"
+        "kg",
+        "kWh"
       ],
       "other_fossil": [
         "litre",
@@ -1558,6 +1559,31 @@
     },
     "repeatable": false,
     "loopSource": true,
+    "fields": null,
+    "sumRange": null,
+    "notAbove": null,
+    "stage": 3
+  },
+  "3A-5bio": {
+    "id": "3A-5bio",
+    "type": "single_select",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": [
+      "wood_pellets",
+      "biogas",
+      "other"
+    ],
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
     "fields": null,
     "sumRange": null,
     "notAbove": null,
@@ -1960,8 +1986,7 @@
     "maxValue": null,
     "options": [
       "fuel_litres",
-      "annual_km",
-      "tonne_km"
+      "annual_km"
     ],
     "units": null,
     "repeatable": false,
