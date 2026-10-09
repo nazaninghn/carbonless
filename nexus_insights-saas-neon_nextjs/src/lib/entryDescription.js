@@ -22,3 +22,18 @@ export function autoDescriptionLabel(desc, tr) {
 // so those descriptions must not be edited.
 export const isLinkedDescription = (desc) =>
   (desc || '').startsWith('Questionnaire step ') || (desc || '').startsWith('Workspace ');
+
+// "Anketten — Soru 68 · VA-01 · PCAF %10 × 1.200 tCO2e" for an entry the
+// questionnaire made: its question's number (not the step code 4A-1) and how
+// it was calculated, in the UI language (calc_detail holds both). Other
+// entries: the plain autoDescriptionLabel.
+export function entrySourceLabel(entry, tr) {
+  const d = entry?.description || '';
+  if (!d.startsWith('Questionnaire step ')) return autoDescriptionLabel(d, tr);
+  const rest = d.slice('Questionnaire step '.length).trim();
+  const step = rest.split(' ')[0];
+  const parts = [entry.question_number ? `${tr ? 'Soru' : 'Question'} ${entry.question_number}` : step];
+  const detail = entry.calc_detail?.[tr ? 'tr' : 'en'] || (rest.includes(' · ') ? rest.split(' · ').slice(1).join(' · ') : '');
+  if (detail) parts.push(detail);
+  return `${tr ? 'Anketten' : 'From the questionnaire'} — ${parts.join(' · ')}`;
+}

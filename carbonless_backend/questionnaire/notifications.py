@@ -5,6 +5,7 @@ the one who started it saves an answer, the company's owners and admins are
 told — once a day per inventory and editor, not once per question.
 """
 import logging
+import re
 
 from django.utils import timezone
 
@@ -30,8 +31,13 @@ def _section(step_id, lang):
     return 'Şirketi Tanıma' if lang == 'tr' else 'Company Profile'
 
 
+# Answers that only move around the survey ("fix a section" on the sign-off
+# screen, section pickers) change nothing in the inventory.
+_NAVIGATION_STEPS = {'7C-1', 'TY-edit', '4C-edit', 'K3-TY-edit', '7C-edit'}
+
+
 def notify_completed_inventory_edited(report, editor, step_id):
-    if report.status != 'completed' or report.created_by_id == editor.pk:
+    if report.status != 'completed' or report.created_by_id == editor.pk or step_id in _NAVIGATION_STEPS:
         return
     try:
         from accounts.models import Notification
@@ -48,16 +54,28 @@ def notify_completed_inventory_edited(report, editor, step_id):
             lang = lang if lang in ('tr', 'en') else 'tr'
             title = (f'Tamamlanmış envanter düzenlendi: {report.title}' if lang == 'tr'
                      else f'Completed inventory edited: {report.title}')
-            if Notification.objects.filter(user=m.user, title=title, created_at__gte=today,
-                                           message__startswith=name).exists():
-                continue
-            message = (f'{name}, {report.reporting_year} envanterinde "{_section(step_id, lang)}" '
-                       f'bölümünde bir cevabı değiştirdi. ISO raporu bu cevaplardan oluşur; '
+            section = _section(step_id, lang)
+            earlier = Notification.objects.filter(user=m.user, title=title, created_at__gte=today,
+                                                  message__startswith=name).first()
+            # Once a day per editor; a change in another section is added to
+            # that day's notice instead of being left out.
+            sections = [section]
+            if earlier:
+                if f'"{section}"' in earlier.message:
+                    continue
+                sections = re.findall(r'"([^"]+)"', earlier.message.split(' bölüm')[0] if lang == 'tr'
+                                      else earlier.message.split(' section')[0]) + [section]
+            quoted = ', '.join(f'"{x}"' for x in sections)
+            message = (f'{name}, {report.reporting_year} envanterinde {quoted} '
+                       f'bölüm{"lerinde" if len(sections) > 1 else "ünde"} cevap değiştirdi. ISO raporu bu cevaplardan oluşur; '
                        f'gözden geçirmek için envanteri açın.'
                        if lang == 'tr' else
-                       f'{name} changed an answer in the "{_section(step_id, lang)}" section of the '
+                       f'{name} changed answers in the {quoted} section{"s" if len(sections) > 1 else ""} of the '
                        f'{report.reporting_year} inventory. The ISO report is built from these answers; '
                        f'open the inventory to review it.')
+            if earlier:
+                Notification.objects.filter(pk=earlier.pk).update(message=message, is_read=False)
+                continue
             Notification.objects.create(user=m.user, company_id=report.company_id,
                                         notification_type='system', title=title,
                                         message=message, link=link)

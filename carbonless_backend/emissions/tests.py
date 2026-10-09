@@ -510,7 +510,7 @@ class ExcelExportLanguageTests(TestCase):
         self.assertEqual(row[header.index('Açıklama')], 'AI sohbetinden')
         EmissionEntry.objects.update(description='Questionnaire step 3A-5 · Merkez')
         header, row = self._rows('en')
-        self.assertEqual(row[header.index('Description')], 'From the questionnaire — 3A-5 · Merkez')
+        self.assertEqual(row[header.index('Description')], 'From the questionnaire — Question 44 · Merkez')
 
     def test_english_export(self):
         header, row = self._rows('en')

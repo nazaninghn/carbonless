@@ -101,13 +101,32 @@ def _true(v):
     return v is True or str(v).lower() in ('true', 'yes', '1')
 
 
-def _fmt(n, decimals=4):
-    """A number in an entry description, Turkish style (1.200,5): the
-    descriptions are read in the Turkish UI and ISO report, where "1,200"
-    would mean 1.2."""
+def _fmt(n, decimals=4, lang='tr'):
+    """A number in an entry's calculation text: Turkish style (1.200,5) or
+    English (1,200.5) — "1.200" in an English line would read as 1.2."""
     text = f'{n:,.{decimals}f}'.rstrip('0').rstrip('.') if decimals else f'{n:,.0f}'
-    return text.replace(',', ' ').replace('.', ',').replace(' ', '.')
+    if lang == 'tr':
+        text = text.replace(',', ' ').replace('.', ',').replace(' ', '.')
+    return text
 
+
+def _bi(build):
+    """A label in both languages: build(lang) -> text."""
+    return {'tr': build('tr'), 'en': build('en')}
+
+
+def _lab(label):
+    """Any label as {'tr', 'en'} (a code like TM-01 reads the same in both)."""
+    if isinstance(label, dict):
+        return {'tr': label.get('tr') or '', 'en': label.get('en') or label.get('tr') or ''}
+    return {'tr': label or '', 'en': label or ''}
+
+
+_FUEL_NAMES = {
+    'natural_gas': {'tr': 'Doğalgaz', 'en': 'Natural gas'}, 'fuel_oil': {'tr': 'Fuel oil', 'en': 'Fuel oil'},
+    'diesel': {'tr': 'Motorin', 'en': 'Diesel'}, 'lpg': {'tr': 'LPG', 'en': 'LPG'},
+    'coal': {'tr': 'Kömür', 'en': 'Coal'},
+}
 
 # 3A-5 fuel keys that have registered factors (same activity names the chat uses).
 _STATIONARY_FUELS = {'natural_gas', 'fuel_oil', 'diesel', 'lpg', 'coal'}
@@ -130,7 +149,7 @@ def _stationary_fuels(answer):
             continue
         unit = unit.lower()
         out.append({'activity': fuel, 'quantity': qty, 'unit': _UNIT_ALIASES.get(unit, unit),
-                    'label': fuel})
+                    'label': _FUEL_NAMES.get(fuel, fuel)})
     return out
 
 
@@ -347,6 +366,8 @@ def _process(A):
 
 _GJ_TO_KWH = 1e9 / 3.6e6  # exact: 1 GJ = 277.78 kWh
 _PURCHASED_ENERGY_SLUG = {'heat': 'district-heating', 'steam': 'steam', 'cooling': 'district-cooling'}
+_ENERGY_NAMES = {'heat': {'tr': 'Isı', 'en': 'Heat'}, 'steam': {'tr': 'Buhar', 'en': 'Steam'},
+                 'cooling': {'tr': 'Soğutma', 'en': 'Cooling'}}
 
 
 def _energy_kwh(raw):
@@ -374,7 +395,7 @@ def _purchased_energy(A):
         slug = _PURCHASED_ENERGY_SLUG.get(kind)
         kwh = _energy_kwh(raw) if slug else None
         if kwh:
-            out.append({'slug': slug, 'quantity': kwh, 'label': kind})
+            out.append({'slug': slug, 'quantity': kwh, 'label': _ENERGY_NAMES[kind]})
     return out
 
 
@@ -426,7 +447,7 @@ def _purchase_declarations(A, year):
         if kg:
             out.setdefault(cat, []).append({
                 'reported_kg': kg, 'report_as': ('scope3', 'purchased_goods'),
-                'label': f'{cat} · {supplier} ({_fmt(value)} {unit})'})
+                'label': _bi(lambda lg: f'{cat} · {supplier} ({_fmt(value, lang=lg)} {unit})')})
     return out
 
 
@@ -480,10 +501,13 @@ def _upstream_energy(A, groups):
     litres += sum(a.get('litres', 0) for a in groups.get('3B-7', []))
     out = []
     if kwh:
-        out.append({'slug': 'upstream-electricity', 'quantity': kwh, 'label': 'Elektrik üretim zinciri (WTT)'})
-        out.append({'slug': 'transmission-losses', 'quantity': kwh, 'label': 'İletim ve dağıtım kayıpları'})
+        out.append({'slug': 'upstream-electricity', 'quantity': kwh,
+                    'label': {'tr': 'Elektrik üretim zinciri (WTT)', 'en': 'Electricity supply chain (WTT)'}})
+        out.append({'slug': 'transmission-losses', 'quantity': kwh,
+                    'label': {'tr': 'İletim ve dağıtım kayıpları', 'en': 'Transmission and distribution losses'}})
     if litres:
-        out.append({'slug': 'fuel-extraction', 'quantity': litres, 'label': 'Yakıt üretim zinciri (WTT)'})
+        out.append({'slug': 'fuel-extraction', 'quantity': litres,
+                    'label': {'tr': 'Yakıt üretim zinciri (WTT)', 'en': 'Fuel supply chain (WTT)'}})
     return out
 
 
@@ -498,7 +522,7 @@ def _provider_report(A, step, year, scope_category):
         return []
     provider = str(ans.get('provider') or '').strip()
     return [{'reported_kg': t * 1000, 'report_as': scope_category,
-             'label': f'{provider} ({_fmt(t)} tCO2e)'}]
+             'label': _bi(lambda lg: f'{provider} ({_fmt(t, lang=lg)} tCO2e)')}]
 
 
 def _employees(A):
@@ -591,8 +615,8 @@ def _use_of_sold(A):
         per, volume = _number(row.get('lca_kgco2e_per_unit')), _number(row.get('sales_volume'))
         if _true(row.get('lca_available')) and per and volume:
             out.append({'reported_kg': per * volume, 'report_as': ('scope3', 'use_of_sold'),
-                        'label': f'{row.get("product_type") or ""} · {_fmt(volume)} {row.get("sales_unit") or ""}'
-                                 f' × LCA {_fmt(per)} kg'})
+                        'label': _bi(lambda lg: f'{row.get("product_type") or ""} · {_fmt(volume, lang=lg)} '
+                                                f'{row.get("sales_unit") or ""} × LCA {_fmt(per, lang=lg)} kg')})
     return out
 
 
@@ -643,14 +667,17 @@ def _franchises(A):
     if not t:
         return []
     count, reporting = _number(ans.get('franchise_count')), _number(ans.get('reporting_count'))
-    if count and reporting:
-        coverage = f'{int(reporting)}/{int(count)} işletme raporlu'
-    elif count:
-        coverage = f'{int(count)} işletme, raporlu işletme sayısı girilmedi'
-    else:
-        coverage = ''
+
+    def coverage(lg):
+        if count and reporting:
+            return (f'{int(reporting)}/{int(count)} işletme raporlu' if lg == 'tr'
+                    else f'{int(reporting)} of {int(count)} outlets reporting')
+        if count:
+            return (f'{int(count)} işletme, raporlu işletme sayısı girilmedi' if lg == 'tr'
+                    else f'{int(count)} outlets, number reporting not given')
+        return ''
     return [{'reported_kg': t * 1000, 'report_as': ('scope3', 'franchises'),
-             'label': f'{_fmt(t)} tCO2e' + (f' · {coverage}' if coverage else '')}]
+             'label': _bi(lambda lg: f'{_fmt(t, lang=lg)} tCO2e' + (f' · {coverage(lg)}' if coverage(lg) else ''))}]
 
 
 _PCAF_CLASSES = {'VA-01', 'VA-02', 'VA-03', 'VA-07'}  # equity / bonds / project finance / private equity
@@ -671,7 +698,9 @@ def _investments(A):
         if share > 1:
             continue
         out.append({'reported_kg': share * emissions * 1000, 'report_as': ('scope3', 'investments'),
-                    'label': f'{cls} · PCAF %{_fmt(share * 100, 2)} × {_fmt(emissions)} tCO2e'})
+                    'label': _bi(lambda lg: f'{cls} · PCAF ' + (f'%{_fmt(share * 100, 2, lg)}' if lg == 'tr'
+                                                                   else f'{_fmt(share * 100, 2, lg)}%')
+                                 + f' × {_fmt(emissions, lang=lg)} tCO2e')})
     return out
 
 
@@ -706,7 +735,8 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
 
     biomass = _biomass_amount(A)
     g = {
-        '3A-5': own('3A-5') + ([{'slug': _BIOMASS[biomass[0]][0], 'quantity': biomass[1], 'label': 'biomass'}]
+        '3A-5': own('3A-5') + ([{'slug': _BIOMASS[biomass[0]][0], 'quantity': biomass[1],
+                                 'label': {'tr': 'Biyokütle', 'en': 'Biomass'}}]
                                if biomass else []),
         '3B-7': _vehicles(A),
         '3C-2': _process(A),
@@ -782,7 +812,7 @@ def _supplier_ef(A, step, year):
         return None
     per_unit, mult = _EF_UNITS[unit]
     source = str(ans.get('ef_source') or '').strip()
-    return per_unit, value * mult, f'{source} ({_fmt(value)} {unit})'
+    return per_unit, value * mult, _bi(lambda lg: f'{source} ({_fmt(value, lang=lg)} {unit})')
 
 
 def _factor_by_slug(slug):
@@ -870,17 +900,22 @@ def _entry_specs(step, activities, A, year, company):
         # One activity in the document's unit: it is the one the document is
         # for. Several (two fuels in litres) would be a guess.
         target = matching[0] if len(matching) == 1 else None
+    from emissions.notifications import _unit
+
+    def joined(*parts):
+        return {lg: ' · '.join(filter(None, [p[lg] for p in parts])) for lg in ('tr', 'en')}
+
     specs = []
     for activity, (factor, qty, co2e) in resolved:
-        label = activity.get('label') or ''
+        label = _lab(activity.get('label'))
         if activity is target:
-            _unit, per, src = supplier
-            specs.append((_calculated_factor(factor.scope, factor.category), qty * Decimal(str(per)),
-                          ' · '.join(filter(None, [label, f'{_fmt(float(qty))} {factor.unit} × {src}']))))
+            _u, per, src = supplier
+            specs.append((_calculated_factor(factor.scope, factor.category), qty * Decimal(str(per)), joined(
+                label, _bi(lambda lg: f'{_fmt(float(qty), lang=lg)} {_unit(factor.unit.lower(), lg)} × {src[lg]}'))))
         elif 'report_as' in activity and 'reported_kg' not in activity:
-            specs.append((_calculated_factor(*activity['report_as']), co2e,
-                          ' · '.join(filter(None, [label, f'{_fmt(float(qty))} {factor.unit} × '
-                                                          f'{_fmt(float(factor.factor_kg_co2e))} ({factor.slug})']))))
+            specs.append((_calculated_factor(*activity['report_as']), co2e, joined(
+                label, _bi(lambda lg: f'{_fmt(float(qty), lang=lg)} {_unit(factor.unit.lower(), lg)} × '
+                                      f'{_fmt(float(factor.factor_kg_co2e), lang=lg)} ({factor.slug})'))))
         else:
             specs.append((factor, qty, label))
     return specs
@@ -897,19 +932,30 @@ def _step_entries(company, year, step_id):
 
 
 def questionnaire_total_kg(report):
-    """kg CO2e of all entries this inventory's answers created."""
-    from django.db.models import Sum
-    from emissions.models import EmissionEntry
-    if not report.company_id:
-        return 0.0
-    total = EmissionEntry.objects.filter(
-        company_id=report.company_id, year=report.reporting_year or 2024,
-        description__startswith=f'{DESCRIPTION_PREFIX} ').aggregate(t=Sum('calculated_co2e_kg'))['t']
-    return float(total or 0)
+    """kg CO2e of all entries this inventory's answers created (effective)."""
+    return questionnaire_totals(report)[0]
 
 
 def _q4(value):
     return Decimal(str(value)).quantize(Decimal('0.0001'))
+
+
+def question_label(step_id, lang='tr'):
+    """How an entry names its question: "Soru 68" (step codes like 4A-1 or
+    K3C3-INFO mean nothing to a user)."""
+    from .carboniq_validation import _load_schema
+    number = (_load_schema().get(step_id) or {}).get('number')
+    if number in (None, ''):
+        return step_id
+    return f'Soru {number}' if lang == 'tr' else f'Question {number}'
+
+
+def entry_group(description):
+    """The step a questionnaire entry belongs to ("Questionnaire step 4A-1 · …" -> 4A-1)."""
+    desc = description or ''
+    if not desc.startswith(DESCRIPTION_PREFIX + ' '):
+        return None
+    return desc[len(DESCRIPTION_PREFIX) + 1:].split(' ')[0]
 
 
 def sync_step_entries(user, company, report, step_id, data=None):
@@ -917,14 +963,18 @@ def sync_step_entries(user, company, report, step_id, data=None):
     Recalculate the entries of the whole inventory from its saved answers —
     an answer can change another step's entries (the fuel type of 3B-5 and
     the amount of 3B-7, a level question that switches K3C5-2 off, …).
-    The saved step's own entries are always replaced — re-answering a step
-    never leaves stale or duplicate rows, and they take the approval status
-    of who answered — while another step's entries are replaced only when
-    what they report changed, so their approvals stay. Returns the new entries.
+
+    A step's entries are replaced only when what they report changed. An
+    owner / admin / manager's change counts at once. A data-entry member's
+    change waits for approval *next to* the approved rows it would replace:
+    those stay in the totals until the new rows are approved (approving them
+    removes the old ones), so one edit no longer takes a whole source out of
+    the dashboard. Saving the saved step again with the same answer as an
+    approver confirms what is pending. Returns the new entries.
     """
     from emissions.models import EmissionEntry
     from emissions.factor_lookup import _get_entry_status
-    from emissions.notifications import notify_entry_submitted
+    from emissions.notifications import notify_questionnaire_change
     from .models import ReportStep
     if not company:
         return []
@@ -936,38 +986,110 @@ def sync_step_entries(user, company, report, step_id, data=None):
     # answers count at once, a data-entry member's wait for approval.
     status = _get_entry_status(user, company)
 
-    created = []
+    def sig(items):
+        return sorted(items)
+
+    created, changes = [], []
     for step in ENTRY_STEPS:
         specs = _entry_specs(step, groups.get(step, []), A, year, company)
         base = f'{DESCRIPTION_PREFIX} {step}'
         many = len(specs) > 1
         # A calculated entry always names the factor it was calculated with.
-        rows = [(factor, _q4(qty), f'{base} · {label}'
-                 if label and (many or factor.slug.startswith('calculated-')) else base)
-                for factor, qty, label in specs]
-        existing = _step_entries(company, year, step)
-        if step != step_id:
-            before = sorted((e.emission_factor_id, _q4(e.quantity), e.description) for e in existing)
-            if before == sorted((f.id, q, d) for f, q, d in rows):
+        rows = []
+        for factor, qty, label in specs:
+            shown = bool(label['tr']) and (many or factor.slug.startswith('calculated-'))
+            rows.append((factor, _q4(qty), f'{base} · {label["tr"]}' if shown else base,
+                         label if label['tr'] else None))
+        # What a step reports is its factors and amounts; the label text may
+        # change between versions (heat -> Isı) without the inventory changing.
+        new_sig = sig((f.id, q) for f, q, _d, _ in rows)
+        existing = list(_step_entries(company, year, step))
+        approved = [e for e in existing if e.status == 'approved']
+        waiting = [e for e in existing if e.status != 'approved']
+        current = waiting or approved
+        unchanged = sig((e.emission_factor_id, _q4(e.quantity)) for e in current) == new_sig
+        same_as_approved = sig((e.emission_factor_id, _q4(e.quantity)) for e in approved) == new_sig
+
+        if status == 'approved':
+            if unchanged and not waiting:
+                _backfill_detail(existing, rows)
                 continue
-        existing.delete()
-        for factor, qty, description in rows:
-            created.append(EmissionEntry.objects.create(
-                user=user,
-                company=company,
-                emission_factor=factor,
-                year=year,
-                month=1,  # annual questionnaire data
-                quantity=qty,
-                calculated_co2e_kg=qty * factor.factor_kg_co2e,
-                description=description,
-                factor_value_snapshot=factor.factor_kg_co2e,
-                factor_source_snapshot=factor.source,
-                status=status,
-            ))
-    for entry in created:
-        notify_entry_submitted(entry)  # no-op unless the entry awaits approval
+            if unchanged and step != step_id:
+                continue  # someone else's change still waits for review
+            to_delete, keep_approved = existing, False
+        else:
+            if same_as_approved and approved:
+                _backfill_detail(approved, rows)
+                to_delete, keep_approved = waiting, True   # back to the approved value
+                rows = []
+            elif unchanged:
+                _backfill_detail(existing, rows)
+                continue
+            elif not rows:
+                to_delete, keep_approved = existing, False
+            else:
+                to_delete, keep_approved = waiting, True
+        for e in to_delete:
+            e.delete()
+        new_entries = [EmissionEntry.objects.create(
+            user=user,
+            company=company,
+            emission_factor=factor,
+            year=year,
+            month=1,  # annual questionnaire data
+            quantity=qty,
+            calculated_co2e_kg=qty * factor.factor_kg_co2e,
+            description=description,
+            calc_detail=detail,
+            factor_value_snapshot=factor.factor_kg_co2e,
+            factor_source_snapshot=factor.source,
+            status=status,
+        ) for factor, qty, description, detail in rows]
+        created.extend(new_entries)
+        if status == 'submitted' and new_entries:
+            changes.append((step, new_entries, approved if keep_approved else []))
+    for step, new_entries, replaced in changes:
+        # One notice per changed answer, updated while it is still unread —
+        # each facility saved used to send its own copy.
+        notify_questionnaire_change(user, company, year, step, new_entries, replaced)
     return created
+
+
+def _backfill_detail(entries, rows):
+    """Unchanged entries get the current label text and calc_detail in
+    place (entries made before calc_detail, or before a label was renamed)
+    without being rebuilt — their approval stays."""
+    free = list(rows)
+    for e in entries:
+        match = next((r for r in free if r[0].id == e.emission_factor_id and r[1] == _q4(e.quantity)), None)
+        if not match:
+            continue
+        free.remove(match)
+        _f, _q, description, detail = match
+        if e.description != description or e.calc_detail != detail:
+            type(e).objects.filter(pk=e.pk).update(description=description, calc_detail=detail)
+
+
+def questionnaire_totals(report):
+    """(effective kg, approved kg) of this inventory's entries: effective
+    counts a step's waiting rows instead of its approved ones — what the
+    inventory says once everything is approved."""
+    from emissions.models import EmissionEntry
+    if not report.company_id:
+        return 0.0, 0.0
+    by_step = {}
+    for e in EmissionEntry.objects.filter(
+            company_id=report.company_id, year=report.reporting_year or 2024,
+            description__startswith=f'{DESCRIPTION_PREFIX} ').only('description', 'status', 'calculated_co2e_kg'):
+        bucket = by_step.setdefault(entry_group(e.description), {'approved': 0.0, 'waiting': 0.0, 'has_waiting': False})
+        if e.status == 'approved':
+            bucket['approved'] += float(e.calculated_co2e_kg)
+        else:
+            bucket['waiting'] += float(e.calculated_co2e_kg)
+            bucket['has_waiting'] = True
+    effective = sum(b['waiting'] if b['has_waiting'] else b['approved'] for b in by_step.values())
+    approved = sum(b['approved'] for b in by_step.values())
+    return effective, approved
 
 
 # ── Answers that are kept but not calculated ─────────────────────────────────
@@ -1094,7 +1216,7 @@ def uncalculated_notes(answers, year):
             if str(row.get('year') or '').strip() != str(year):
                 note('K3C1-4a', f'{who}: beyan yılı ({row.get("year")}) raporlama yılı ({year}) değil — kullanılmadı.',
                      f'{who}: declaration year ({row.get("year")}) is not the reporting year ({year}) — not used.')
-            elif not any(a['label'].startswith(f'{row.get("category")} · {str(row.get("supplier") or "").strip()} (')
+            elif not any(a['label']['tr'].startswith(f'{row.get("category")} · {str(row.get("supplier") or "").strip()} (')
                          for a in declared.get(str(row.get('category') or ''), [])):
                 note('K3C1-4a', f'{who}: beyanın birimi bu kategorinin miktarıyla eşleşmediği için kullanılmadı.',
                      f'{who}: not used — the declaration\'s unit does not match this category\'s quantity.')

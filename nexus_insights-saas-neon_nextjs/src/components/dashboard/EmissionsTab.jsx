@@ -10,7 +10,7 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
-import { autoDescriptionLabel, isLinkedDescription } from '@/lib/entryDescription';
+import { autoDescriptionLabel, entrySourceLabel, isLinkedDescription } from '@/lib/entryDescription';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
 import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import useCountUp from '@/lib/hooks/useCountUp';
@@ -140,8 +140,8 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
           <p className="mt-0.5 text-[10px] text-[#072C0E]/40">
             {months[entry.month - 1]} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {unitLabel(entry.unit, tr)}
           </p>
-          {entry.questionnaire_source && autoDescriptionLabel(entry.description, tr) && (
-            <p className="mt-0.5 text-[10px] leading-4 text-[#072C0E]/45">{autoDescriptionLabel(entry.description, tr)}</p>
+          {entry.questionnaire_source && entrySourceLabel(entry, tr) && (
+            <p className="mt-0.5 text-[10px] leading-4 text-[#072C0E]/45">{entrySourceLabel(entry, tr)}</p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -1012,7 +1012,7 @@ export default function EmissionsTab({
                   // the largest row, the number is not.
                   const sharePct = totalKg > 0 ? (countedKg(entry) / totalKg) * 100 : 0;
                   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
-                  const how = entry.questionnaire_source ? autoDescriptionLabel(entry.description, tr) : null;
+                  const how = entry.questionnaire_source ? entrySourceLabel(entry, tr) : null;
                   return (
                     <tr key={entry.id} className="group/row transition-colors hover:bg-[#DEFAE1]/40">
                       {/* Source */}
@@ -1381,8 +1381,8 @@ export default function EmissionsTab({
               )}
               {editing.questionnaire_source ? (
                 <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#DEFAE1]/50 px-4 py-3 text-xs leading-5 text-[#175022]">
-                  {autoDescriptionLabel(editing.description, tr) && (
-                    <p className="mb-1.5 font-semibold">{tr ? 'Hesaplama' : 'Calculation'}: {autoDescriptionLabel(editing.description, tr)}</p>
+                  {entrySourceLabel(editing, tr) && (
+                    <p className="mb-1.5 font-semibold">{tr ? 'Hesaplama' : 'Calculation'}: {entrySourceLabel(editing, tr)}</p>
                   )}
                   {tr
                     ? 'Bu kayıt Karbon Envanteri anketindeki cevabınızdan oluşturuldu. Burada değiştirirseniz anket o soruyu tekrar kaydettiğinde eski değer geri gelir; bu yüzden düzeltmeyi ankette, ilgili soruda yapın.'

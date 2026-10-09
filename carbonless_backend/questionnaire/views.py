@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
-from .step_entries import sync_step_entries, uncalculated_notes, questionnaire_total_kg, biogenic_co2_kg
+from .step_entries import sync_step_entries, uncalculated_notes, questionnaire_totals, biogenic_co2_kg
 import logging
 import re
 import time
@@ -603,16 +603,20 @@ class SubmitStepView(APIView):
             # real facilities (emissions form, Settings, reports).
             from .facility_sync import sync_facilities
             sync_facilities(report.company, data)
-        before_kg = questionnaire_total_kg(report)
+        before_kg = questionnaire_totals(report)[0]
         entries = sync_step_entries(request.user, report.company, report, step, data)
         # What this answer did to the inventory: the CO2e it added or took
         # away, and why an amount it gave is not calculated — so a missing
         # number is never taken for zero.
-        after_kg = questionnaire_total_kg(report)
+        after_kg, approved_kg = questionnaire_totals(report)
         answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
         notes = [n['tr' if lang == 'tr' else 'en']
                  for n in uncalculated_notes(answers, report.reporting_year or 2024) if n['step_id'] == step]
-        calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(after_kg, 2), 'notes': notes}
+        # A data-entry member's change waits for approval: say so, and give
+        # the approved total — the one the dashboard and the reports show.
+        pending = any(e.status == 'submitted' for e in entries)
+        calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
+                         'pending': pending, 'notes': notes}
         if step in ('3A-5', '3A-5bio'):
             # Biomass CO2 is biogenic: shown, but not in the inventory total.
             calc_feedback['biogenic_kg'] = round(biogenic_co2_kg(answers), 2)

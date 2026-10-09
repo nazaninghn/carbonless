@@ -11,4 +11,6 @@ python manage.py seed_factors
 # PFC/SF6 columns are empty and every source falls back to the CO2 column.
 python manage.py seed_gas_splits
 python manage.py create_admin
+# Text only: the calculation description of existing questionnaire entries.
+python manage.py backfill_calc_detail || echo "backfill_calc_detail skipped (non-critical)"
 python manage.py ensure_user_companies || echo "ensure_user_companies skipped (non-critical)"

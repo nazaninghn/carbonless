@@ -83,6 +83,8 @@ try {
       sumRange: q.sumRange || null,
       notAbove: Array.isArray(q.notAbove) ? q.notAbove : null,
       stage: q.stage ?? null,
+      // "Soru 68": how an entry names the question it comes from.
+      number: q.number ?? null,
     };
   }
 

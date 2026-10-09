@@ -14,15 +14,23 @@ _LABELS = {
 }
 
 
-def display_description(desc, lang):
+def display_description(desc, lang, calc_detail=None):
     desc = desc or ''
     tr = lang == 'tr'
     pick = (lambda pair: pair[0] if tr else pair[1])
     if desc.startswith('AI Chat:'):
         return pick(_LABELS['chat'])
     if desc.startswith('Questionnaire step '):
-        rest = desc[len('Questionnaire step '):].strip()
-        return f"{pick(_LABELS['questionnaire'])} — {rest}" if rest else pick(_LABELS['questionnaire'])
+        # "Anketten — Soru 68 · <how it was calculated>": the question's
+        # number, not its internal step code (4A-1, K3C3-INFO).
+        from questionnaire.step_entries import entry_group, question_label
+        parts = [question_label(entry_group(desc), lang)]
+        detail = (calc_detail or {}).get(lang) if isinstance(calc_detail, dict) else None
+        if not detail and ' · ' in desc:
+            detail = desc.split(' · ', 1)[1]  # an entry from before calc_detail
+        if detail:
+            parts.append(detail)
+        return f"{pick(_LABELS['questionnaire'])} — {' · '.join(parts)}"
     if desc.startswith('Workspace '):
         tag = desc[len('Workspace '):].split(' ')[0]
         return f"{pick(_LABELS['workspace'])} — {tag}" if tag else pick(_LABELS['workspace'])

@@ -349,7 +349,8 @@ class InventoryCalculationTests(StepEntriesTests):
             ('motorin-mobile', 1000.0, 2696.0), ('car-diesel', 10000.0, 1560.0),
             ('off-road-diesel-desnz', 200.0, 635.878), ('calculated-scope1-mobile_combustion', 150.0, 150.0)]))
         lpg = next(e for e in self._entries() if e.emission_factor.slug.startswith('calculated-'))
-        self.assertIn('EQ-3B-02 · 100 liters × 1,5 (lpg)', lpg.description)
+        self.assertIn('EQ-3B-02 · 100 litre × 1,5 (lpg)', lpg.description)
+        self.assertEqual(lpg.calc_detail['en'], 'EQ-3B-02 · 100 litres × 1.5 (lpg)')
         self._step('3B-0', 'no')
         self.assertNotIn('3B-7', self._by_step())
 
@@ -622,6 +623,95 @@ class CompanyInventoryAccessTests(TestCase):
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 0})
         self.assertEqual(EmissionEntry.objects.count(), 1)
+
+
+class PendingChangeTests(TestCase):
+    """A data-entry member's change waits next to the approved value it
+    would replace; approving it replaces that value."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from emissions.models import EmissionFactor
+        self.owner = User.objects.create_user('ow9', 'ow9@test.com', 'pass12345')
+        self.clerk = User.objects.create_user('de9', 'de9@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Pend Co', tax_number='9',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        CompanyMembership.objects.create(user=self.clerk, company=self.company, role='data_entry')
+        EmissionFactor.objects.update_or_create(
+            slug='turkey-grid', country='turkey', year=2024,
+            defaults=dict(name='grid', scope='scope2', category='electricity', unit='kwh',
+                          factor_kg_co2e=0.4, source='test', is_active=True, is_default=True))
+        self.report = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2025)
+        self.c_owner, self.c_clerk = APIClient(), APIClient()
+        self.c_owner.force_authenticate(user=self.owner)
+        self.c_clerk.force_authenticate(user=self.clerk)
+
+    def _save(self, client, answer):
+        r = client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                         {'step': '4A-1', 'data': {'answer': answer}, 'language': 'tr'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        return r.data['calc_feedback']
+
+    def _rows(self):
+        from emissions.models import EmissionEntry
+        return sorted((e.status, float(e.quantity)) for e in EmissionEntry.objects.filter(company=self.company))
+
+    def test_change_waits_next_to_the_approved_value(self):
+        from accounts.models import Notification
+        from emissions.models import EmissionEntry
+        self._save(self.c_owner, {'1': '1000 kWh', '2': '500 kWh'})
+        # each facility of the loop is saved on its own
+        self._save(self.c_clerk, {'1': '1200 kWh'})
+        fb = self._save(self.c_clerk, {'1': '1200 kWh', '2': '500 kWh'})
+        self.assertEqual(self._rows(), [('approved', 1500.0), ('submitted', 1700.0)])
+        self.assertTrue(fb['pending'])
+        self.assertEqual(fb['total_kg'], 600.0)  # still the approved value
+        notes = Notification.objects.filter(user=self.owner, notification_type='entry_submitted')
+        self.assertEqual(notes.count(), 1)  # one notice, kept up to date
+        self.assertIn('→', notes[0].message)
+        # the dashboard still counts the approved value
+        s = self.c_owner.get('/api/emissions/summary/?year=2025').data
+        self.assertAlmostEqual(float(s.get('total_kg', s.get('total_tonne', 0) * 1000)), 600.0, places=1)
+        # the review list shows what the change replaces
+        pending = self.c_owner.get('/api/emissions/pending/').data
+        self.assertEqual(pending[0]['replaces']['quantity'], 1500.0)
+        # approving replaces the old value
+        new = EmissionEntry.objects.get(status='submitted')
+        self.c_owner.post(f'/api/emissions/entries/{new.id}/approve/', {'action': 'approve'}, format='json')
+        self.assertEqual(self._rows(), [('approved', 1700.0)])
+
+    def test_rejected_change_keeps_the_approved_value(self):
+        from emissions.models import EmissionEntry
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self._save(self.c_clerk, {'1': '9000 kWh'})
+        new = EmissionEntry.objects.get(status='submitted')
+        self.c_owner.post(f'/api/emissions/entries/{new.id}/approve/', {'action': 'reject', 'reason': 'x'}, format='json')
+        self.assertEqual(self._rows(), [('approved', 1000.0), ('draft', 9000.0)])
+        # setting the answer back clears the rejected change
+        self._save(self.c_clerk, {'1': '1000 kWh'})
+        self.assertEqual(self._rows(), [('approved', 1000.0)])
+
+    def test_renamed_label_is_not_a_change(self):
+        from emissions.models import EmissionEntry
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        EmissionEntry.objects.update(description='Questionnaire step 4A-1 · old label')
+        self.c_clerk.patch(f'/api/questionnaire/{self.report.id}/step/',
+                           {'step': 'K3C8-0', 'data': {'answer': 'no'}}, format='json')
+        self.assertEqual(self._rows(), [('approved', 1000.0)])
+        self.assertEqual(EmissionEntry.objects.get().description, 'Questionnaire step 4A-1')
+
+    def test_others_saves_do_not_approve_a_waiting_change(self):
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self._save(self.c_clerk, {'1': '1200 kWh'})
+        self.c_owner.patch(f'/api/questionnaire/{self.report.id}/step/',
+                           {'step': 'K3C8-0', 'data': {'answer': 'no'}}, format='json')
+        self.assertEqual(self._rows(), [('approved', 1000.0), ('submitted', 1200.0)])
 
 
 class StepEntryApprovalTests(TestCase):
