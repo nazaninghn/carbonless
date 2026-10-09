@@ -189,22 +189,38 @@ def biogenic_co2_kg(answers):
 
 
 def _electricity(answer):
-    """4A-1: {site: "amount kWh|MWh"} (or one string) -> one grid electricity activity."""
-    items = list(answer.values()) if isinstance(answer, dict) else [answer]
-    total_kwh = 0.0
-    for raw in items:
+    """4A-1: {site: "amount kWh|MWh"} (or one string) -> one grid electricity
+    activity per site ('site' is the facility loop key), so each facility's
+    electricity is its own entry."""
+    sites = list(answer.items()) if isinstance(answer, dict) else [(None, answer)]
+    out = []
+    for site, raw in sites:
         amount, unit = _split_amount_unit(raw)
         qty = _number(amount)
         if not qty:
             continue
         unit = unit.lower()
         if unit in ('', 'kwh'):
-            total_kwh += qty
+            kwh = qty
         elif unit == 'mwh':
-            total_kwh += qty * 1000
-    if not total_kwh:
-        return []
-    return [{'activity': 'electricity', 'quantity': total_kwh, 'unit': 'kwh', 'label': ''}]
+            kwh = qty * 1000
+        else:
+            continue
+        out.append({'activity': 'electricity', 'quantity': kwh, 'unit': 'kwh', 'label': '', 'site': site})
+    return out
+
+
+def _named_sites(activities, facilities_answer):
+    """The facility name (2A-2) of each per-site activity, as its label and
+    the facility its entry is linked to."""
+    names = facilities_answer if isinstance(facilities_answer, dict) else {}
+    for a in activities:
+        item = names.get(str(a.get('site'))) if a.get('site') is not None else None
+        name = str(item.get('name') or '').strip() if isinstance(item, dict) else ''
+        if name:
+            a['label'] = {'tr': name, 'en': name}
+            a['facility_name'] = name
+    return activities
 
 
 def _transport(answer, slug_suffix):
@@ -740,7 +756,7 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
                                if biomass else []),
         '3B-7': _vehicles(A),
         '3C-2': _process(A),
-        '4A-1': own('4A-1'),
+        '4A-1': _named_sites(own('4A-1'), A.get('2A-2')),
         '4A-EV': _ev_charging(A),
         '4B-2': _purchased_energy(A),
     }
@@ -887,19 +903,21 @@ def _resolve(activity, company=None):
 
 
 def _entry_specs(step, activities, A, year, company):
-    """[(factor, quantity, label)] of one step: the catalog factor, or the
+    """[(factor, quantity, label, facility name)] of one step: the catalog factor, or the
     "calculated" factor of the same scope / category when the CO2e comes
     from elsewhere (supplier factor, declaration, reporting category)."""
     resolved = [(a, r) for a, r in ((a, _resolve(a, company)) for a in activities) if r]
     supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT else None
-    target = None
+    targets = []
     if supplier:
         matching = [a for a, (f, _q, _c) in resolved
                     if 'report_as' not in a
                     and _FACTOR_UNIT_ALIASES.get(f.unit.lower(), f.unit.lower()) == supplier[0]]
         # One activity in the document's unit: it is the one the document is
-        # for. Several (two fuels in litres) would be a guess.
-        target = matching[0] if len(matching) == 1 else None
+        # for. Several (two fuels in litres) would be a guess — except the
+        # same activity split by site (4A-1 electricity of each facility).
+        if len(matching) == 1 or (matching and all(a.get('site') is not None for a in matching)):
+            targets = matching
     from emissions.notifications import _unit
 
     def joined(*parts):
@@ -908,16 +926,18 @@ def _entry_specs(step, activities, A, year, company):
     specs = []
     for activity, (factor, qty, co2e) in resolved:
         label = _lab(activity.get('label'))
-        if activity is target:
+        site = activity.get('facility_name')
+        if any(activity is t for t in targets):
             _u, per, src = supplier
             specs.append((_calculated_factor(factor.scope, factor.category), qty * Decimal(str(per)), joined(
-                label, _bi(lambda lg: f'{_fmt(float(qty), lang=lg)} {_unit(factor.unit.lower(), lg)} × {src[lg]}'))))
+                label, _bi(lambda lg: f'{_fmt(float(qty), lang=lg)} {_unit(factor.unit.lower(), lg)} × {src[lg]}')),
+                site))
         elif 'report_as' in activity and 'reported_kg' not in activity:
             specs.append((_calculated_factor(*activity['report_as']), co2e, joined(
                 label, _bi(lambda lg: f'{_fmt(float(qty), lang=lg)} {_unit(factor.unit.lower(), lg)} × '
-                                      f'{_fmt(float(factor.factor_kg_co2e), lang=lg)} ({factor.slug})'))))
+                                      f'{_fmt(float(factor.factor_kg_co2e), lang=lg)} ({factor.slug})')), site))
         else:
-            specs.append((factor, qty, label))
+            specs.append((factor, qty, label, site))
     return specs
 
 
@@ -990,26 +1010,21 @@ def sync_step_entries(user, company, report, step_id, data=None):
     def sig(items):
         return sorted(items)
 
+    facility_of = _facility_lookup(company)
+
     created, changes = [], []
     for step in ENTRY_STEPS:
         specs = _entry_specs(step, groups.get(step, []), A, year, company)
-        base = f'{DESCRIPTION_PREFIX} {step}'
-        many = len(specs) > 1
-        # A calculated entry always names the factor it was calculated with.
-        rows = []
-        for factor, qty, label in specs:
-            shown = bool(label['tr']) and (many or factor.slug.startswith('calculated-'))
-            rows.append((factor, _q4(qty), f'{base} · {label["tr"]}' if shown else base,
-                         label if label['tr'] else None))
-        # What a step reports is its factors and amounts; the label text may
-        # change between versions (heat -> Isı) without the inventory changing.
-        new_sig = sig((f.id, q) for f, q, _d, _ in rows)
+        rows = _step_rows(step, specs, facility_of)
+        # What a step reports is its factors, amounts and facilities; the label
+        # text may change between versions (heat -> Isı) without the inventory changing.
+        new_sig = sig(_row_key(r) for r in rows)
         existing = list(_step_entries(company, year, step))
         approved = [e for e in existing if e.status == 'approved']
         waiting = [e for e in existing if e.status != 'approved']
         current = waiting or approved
-        unchanged = sig((e.emission_factor_id, _q4(e.quantity)) for e in current) == new_sig
-        same_as_approved = sig((e.emission_factor_id, _q4(e.quantity)) for e in approved) == new_sig
+        unchanged = sig(_entry_key(e) for e in current) == new_sig
+        same_as_approved = sig(_entry_key(e) for e in approved) == new_sig
 
         if status == 'approved':
             if unchanged and not waiting:
@@ -1045,8 +1060,9 @@ def sync_step_entries(user, company, report, step_id, data=None):
             calc_detail=detail,
             factor_value_snapshot=factor.factor_kg_co2e,
             factor_source_snapshot=factor.source,
+            facility=facility,
             status=status,
-        ) for factor, qty, description, detail in rows]
+        ) for factor, qty, description, detail, facility in rows]
         created.extend(new_entries)
         # Change history: what the answer reported before and what it reports now.
         if new_entries:
@@ -1064,17 +1080,46 @@ def sync_step_entries(user, company, report, step_id, data=None):
     return created
 
 
+def _step_rows(step, specs, facility_of):
+    """[(factor, quantity, description, calc_detail, facility)] a step's entries
+    are made of. A calculated entry always names the factor it was calculated with."""
+    base = f'{DESCRIPTION_PREFIX} {step}'
+    many = len(specs) > 1
+    rows = []
+    for factor, qty, label, site in specs:
+        shown = bool(label['tr']) and (many or factor.slug.startswith('calculated-'))
+        rows.append((factor, _q4(qty), f'{base} · {label["tr"]}' if shown else base,
+                     label if label['tr'] else None, facility_of(site)))
+    return rows
+
+
+def _facility_lookup(company):
+    """facility name (2A-2 answer) -> the company's Facility of that name, or None."""
+    from companies.models import Facility
+    by_name = {f.name.strip().lower(): f for f in Facility.objects.filter(company=company)}
+    return lambda name: by_name.get(str(name).strip().lower()) if name else None
+
+
+def _row_key(row):
+    factor, qty, _desc, _detail, facility = row
+    return (factor.id, qty, facility.pk if facility else 0)
+
+
+def _entry_key(entry):
+    return (entry.emission_factor_id, _q4(entry.quantity), entry.facility_id or 0)
+
+
 def _backfill_detail(entries, rows):
     """Unchanged entries get the current label text and calc_detail in
     place (entries made before calc_detail, or before a label was renamed)
     without being rebuilt — their approval stays."""
     free = list(rows)
     for e in entries:
-        match = next((r for r in free if r[0].id == e.emission_factor_id and r[1] == _q4(e.quantity)), None)
+        match = next((r for r in free if _row_key(r) == _entry_key(e)), None)
         if not match:
             continue
         free.remove(match)
-        _f, _q, description, detail = match
+        _f, _q, description, detail, _facility = match
         if e.description != description or e.calc_detail != detail:
             type(e).objects.filter(pk=e.pk).update(description=description, calc_detail=detail)
 

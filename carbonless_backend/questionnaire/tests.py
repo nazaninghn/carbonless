@@ -383,6 +383,61 @@ class InventoryCalculationTests(StepEntriesTests):
         self._step('4A-EF-a', {'ef_value': '300', 'ef_unit': 'kgCO2e_MWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
         self.assertEqual(self._by_step()['4A-1'], [('calculated-scope2-x', 300.0, 300.0)])  # same scope & category
 
+    def test_electricity_of_each_facility_is_its_own_entry(self):
+        from companies.models import Facility
+        gebze = Facility.objects.create(company=self.company, name='Gebze Fabrika')
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'},
+                            '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh', '3': '0 kWh'})
+        rows = sorted((e.facility.name, e.description, float(e.quantity)) for e in self._entries())
+        # same total as one 1.500 kWh entry, each on its facility
+        self.assertEqual(rows, [('Depo', 'Questionnaire step 4A-1 · Depo', 500.0),
+                                ('Gebze Fabrika', 'Questionnaire step 4A-1 · Gebze Fabrika', 1000.0)])
+        self.assertEqual(Facility.objects.get(name='Gebze Fabrika').pk, gebze.pk)
+        # a supplier factor applies to the electricity of every facility
+        self._step('4A-EF', 'yes')
+        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
+        self.assertEqual(sorted(self._by_step()['4A-1']),
+                         [('calculated-scope2-x', 150.0, 150.0), ('calculated-scope2-x', 300.0, 300.0)])
+
+    def test_backfill_splits_an_old_combined_entry_keeping_its_approval(self):
+        from django.core.management import call_command
+        from companies.models import Facility
+        from emissions.models import EmissionEntry
+        gebze = Facility.objects.create(company=self.company, name='Gebze Fabrika')
+        factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        # as an earlier version saved it: one entry for both facilities
+        EmissionEntry.objects.filter(company=self.company).delete()
+        old = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
+                                           month=1, quantity=1500, description='Questionnaire step 4A-1',
+                                           status='approved', approved_by=self.user)
+        call_command('backfill_calc_detail', stdout=__import__('io').StringIO())
+        rows = sorted((e.facility.name, float(e.quantity), e.status, e.approved_by_id) for e in self._entries())
+        self.assertEqual(rows, [('Depo', 500.0, 'approved', self.user.id),
+                                ('Gebze Fabrika', 1000.0, 'approved', self.user.id)])
+        self.assertEqual(Facility.objects.get(name='Gebze Fabrika').pk, gebze.pk)
+        self.assertFalse(EmissionEntry.objects.filter(pk=old.pk).exists())
+        # a second run changes nothing
+        ids = [e.id for e in self._entries()]
+        call_command('backfill_calc_detail', stdout=__import__('io').StringIO())
+        self.assertEqual([e.id for e in self._entries()], ids)
+
+    def test_chat_answers_for_the_facility_asked_about(self):
+        from companies.models import Facility
+        from chat.local_answers import local_data_answer
+        Facility.objects.create(company=self.company, name='Gebze Fabrika')
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._factor('natural-gas-m3', 'm3', 2.0, scope='scope1', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        self._step('3A-5', {'natural_gas': '100 m³'})   # asked for the company, not per facility
+        text = local_data_answer(self.user, '2025 yılında Gebze Fabrika tesisinin emisyonu ne kadar?', 'tr')
+        self.assertIn('Gebze Fabrika tesisinin 2025 emisyonu **0,40 tCO₂e**', text)
+        self.assertIn('tesis bazında değil şirket geneli için girildiğinden', text)
+
     def test_purchased_goods_usd_material_and_declarations(self):
         self._factor('legal-accounting', 'usd', 0.13)
         self._factor('plastic', 'kg', 3.1, country='turkey')
@@ -681,7 +736,9 @@ class PendingChangeTests(TestCase):
         # each facility of the loop is saved on its own
         self._save(self.c_clerk, {'1': '1200 kWh'})
         fb = self._save(self.c_clerk, {'1': '1200 kWh', '2': '500 kWh'})
-        self.assertEqual(self._rows(), [('approved', 1500.0), ('submitted', 1700.0)])
+        # one entry per facility of the loop; the answer's rows wait together
+        self.assertEqual(self._rows(), [('approved', 500.0), ('approved', 1000.0),
+                                        ('submitted', 500.0), ('submitted', 1200.0)])
         self.assertTrue(fb['pending'])
         self.assertEqual(fb['total_kg'], 600.0)  # still the approved value
         notes = Notification.objects.filter(user=self.owner, notification_type='entry_submitted')
@@ -692,11 +749,11 @@ class PendingChangeTests(TestCase):
         self.assertAlmostEqual(float(s.get('total_kg', s.get('total_tonne', 0) * 1000)), 600.0, places=1)
         # the review list shows what the change replaces
         pending = self.c_owner.get('/api/emissions/pending/').data
-        self.assertEqual(pending[0]['replaces']['quantity'], 1500.0)
+        self.assertEqual(pending[0]['replaces']['co2e_kg'], 600.0)   # the answer's 1.500 kWh
         # approving replaces the old value
-        new = EmissionEntry.objects.get(status='submitted')
+        new = EmissionEntry.objects.filter(status='submitted').first()
         self.c_owner.post(f'/api/emissions/entries/{new.id}/approve/', {'action': 'approve'}, format='json')
-        self.assertEqual(self._rows(), [('approved', 1700.0)])
+        self.assertEqual(self._rows(), [('approved', 500.0), ('approved', 1200.0)])
 
     def test_rejected_change_keeps_the_approved_value(self):
         from emissions.models import EmissionEntry

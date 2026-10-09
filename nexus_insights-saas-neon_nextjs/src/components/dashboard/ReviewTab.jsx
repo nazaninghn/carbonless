@@ -328,7 +328,14 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                         <span className="text-[10px] text-[#072C0E]/45">
                           {entryPeriodLabel(entry, tr ? MONTHS_TR : MONTHS_EN, tr)} {entry.year}
                         </span>
-                        {entry.replaces && (
+                        {entry.replaces && entry.replaces.quantity != null
+                          && Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit ? (
+                          // Another facility of the same answer, not changed itself:
+                          // it is approved with the changed rows.
+                          <span className="w-full text-[11px] text-[#072C0E]/50">
+                            {tr ? 'Bu satır değişmedi — aynı cevabın diğer satırlarıyla birlikte onaylanır.' : 'This row did not change — it is approved together with the rest of the answer.'}
+                          </span>
+                        ) : entry.replaces && (
                           // An inventory answer changed: what it replaces, which
                           // stays in the totals until this is approved.
                           <span className="w-full text-[11px] font-semibold text-[#175022]">
