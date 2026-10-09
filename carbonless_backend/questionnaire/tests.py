@@ -1,7 +1,19 @@
 import json
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase as _DjangoTestCase
+
+
+class TestCase(_DjangoTestCase):
+    """Every test starts with an empty cache. The step endpoint's per-user
+    rate limit (60/min) lives in the cache and is keyed on user ids, which
+    the test database hands out again in each test — a fast run counted all
+    tests' saves as one user's and answered 429."""
+
+    def _pre_setup(self):
+        super()._pre_setup()
+        from django.core.cache import cache
+        cache.clear()
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from companies.models import Company, CompanyMembership
