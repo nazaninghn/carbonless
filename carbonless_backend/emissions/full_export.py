@@ -9,6 +9,8 @@ content as an Excel workbook (one sheet per part) that a person can open.
 from django.http import HttpResponse
 from django.utils import timezone
 
+from .inventory import ANNUAL_PREFIX
+
 
 def _inventories(company):
     from questionnaire.models import CarbonReport
@@ -171,7 +173,8 @@ def backup_workbook_response(data, tr):
         kg = _number(e.get('calculated_co2e_kg'))
         return [
             e.get('year'),
-            _MONTHS[tr][month - 1] if isinstance(month, int) and 1 <= month <= 12 else month,
+            (('Yıllık' if tr else 'Annual') if (e.get('description') or '').startswith(ANNUAL_PREFIX)
+             else _MONTHS[tr][month - 1] if isinstance(month, int) and 1 <= month <= 12 else month),
             (e.get('emission_factor_name_tr') or e.get('emission_factor_name')) if tr else e.get('emission_factor_name'),
             (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
             _CAT[lang].get(e.get('category'), e.get('category') or ''),

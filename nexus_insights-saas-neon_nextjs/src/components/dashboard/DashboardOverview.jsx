@@ -107,7 +107,7 @@ function DonutChart({ s1, s2, s3, total, tr }) {
 }
 
 // ─── Monthly Bar Chart ─────────────────────────────────────────────────────
-function MonthlyChart({ monthly, selectedYear, tr }) {
+function MonthlyChart({ monthly, annualKg, selectedYear, tr }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
   // Grow-in: bars start flat and rise to their real height in a left-to-right
   // cascade shortly after mount, instead of appearing at full height instantly.
@@ -121,13 +121,26 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
   const months = tr ? MONTHS_TR_SHORT : MONTHS_EN_SHORT; // module-level  -  no recreation
   const curMonth = new Date().getFullYear() === selectedYear ? new Date().getMonth() : -1;
 
+  // The questionnaire's annual amounts belong to no month: one line under the bars.
+  const annualNote = annualKg > 0 && (
+    <p className="mt-2 text-[11px] font-semibold text-[#072C0E]/55">
+      {tr
+        ? `Yıllık envanter (anket): ${fixed(annualKg / 1000, 1)} tCO2e — yıllık tutar olduğu için aylara dağıtılmadı.`
+        : `Annual inventory (questionnaire): ${fixed(annualKg / 1000, 1)} tCO2e — an annual amount, so not split by month.`}
+    </p>
+  );
+
   if (!monthly || !monthly.some(m => m.total_kg > 0)) {
     return (
-      <EmptyState label={tr ? 'Henüz aylık veri yok' : 'No monthly data yet'} />
+      <>
+        <EmptyState label={tr ? 'Henüz aylık veri yok' : 'No monthly data yet'} />
+        {annualNote}
+      </>
     );
   }
 
   return (
+    <>
     <div className="flex h-44 items-end gap-[3px] sm:gap-1.5">
       {monthly.map((m, i) => {
         const pct = (m.total_kg / maxKg) * 100;
@@ -177,6 +190,8 @@ function MonthlyChart({ monthly, selectedYear, tr }) {
         );
       })}
     </div>
+    {annualNote}
+    </>
   );
 }
 
@@ -508,8 +523,8 @@ export default function DashboardOverview({
           </h2>
           <p className="mx-auto mt-2 max-w-md text-[14px] leading-relaxed text-[#072C0E]/50">
             {tr
-              ? `Kayıtlarınız başka yıllarda: ${otherYears.join(', ')}. O yıla geçebilir veya ${selectedYear} için veri ekleyebilirsiniz.`
-              : `Your entries are in other years: ${otherYears.join(', ')}. Switch to one of them or add data for ${selectedYear}.`}
+              ? `Kayıtlarınız başka yıllarda: ${otherYears.join(', ')}. ${canEdit ? `O yıla geçebilir veya ${selectedYear} için veri ekleyebilirsiniz.` : 'O yıla geçebilirsiniz.'}`
+              : `Your entries are in other years: ${otherYears.join(', ')}. ${canEdit ? `Switch to one of them or add data for ${selectedYear}.` : 'Switch to one of them.'}`}
           </p>
           <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
             {onYearChange && (
@@ -520,12 +535,14 @@ export default function DashboardOverview({
                 {tr ? `${otherYears[0]} yılına geç` : `Switch to ${otherYears[0]}`}
               </button>
             )}
-            <button
-              onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-              className="rounded-full border border-[#DEFAE1] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#072C0E] transition hover:border-[#072C0E]/25"
-            >
-              {tr ? `${selectedYear} için veri ekle` : `Add data for ${selectedYear}`}
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
+                className="rounded-full border border-[#DEFAE1] bg-white px-5 py-2.5 text-[13px] font-semibold text-[#072C0E] transition hover:border-[#072C0E]/25"
+              >
+                {tr ? `${selectedYear} için veri ekle` : `Add data for ${selectedYear}`}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -651,9 +668,17 @@ export default function DashboardOverview({
             <span className="dash-pulse-dot absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-[#2ABD41]" />
           </span>
           <p className="text-[11px] font-semibold leading-5 text-[#072C0E]/65">
-            {tr
-              ? `Toplam ${fixed(totalTonne, 1)} tCO2e kaydedildi  -  en yüksek ay ${MONTHS_TR_FULL[peakMonth]}. Veri girilen ${activeMonths} ayın ortalaması: ${fixed(avgTonne, 2)} tCO2e/ay.`
-              : `Total ${fixed(totalTonne, 1)} tCO2e recorded  -  peak month ${MONTHS_EN_FULL[peakMonth]}. Average of the ${activeMonths} month${activeMonths === 1 ? '' : 's'} with data: ${fixed(avgTonne, 2)} tCO2e/month.`}
+            {(() => {
+              const annualT = (summary?.annual_kg ?? 0) / 1000;
+              const parts = [tr ? `Toplam ${fixed(totalTonne, 1)} tCO2e kaydedildi.` : `Total ${fixed(totalTonne, 1)} tCO2e recorded.`];
+              if (annualT > 0) parts.push(tr
+                ? `${fixed(annualT, 1)} t anketteki yıllık envanterden (aylara dağıtılmaz).`
+                : `${fixed(annualT, 1)} t is the questionnaire's annual inventory (not split by month).`);
+              if (activeMonths > 0) parts.push(tr
+                ? `Aylık kayıtlarda en yüksek ay ${MONTHS_TR_FULL[peakMonth]}; veri girilen ${activeMonths} ayın ortalaması ${fixed(avgTonne, 2)} tCO2e/ay.`
+                : `Among monthly entries the peak month is ${MONTHS_EN_FULL[peakMonth]}; average of the ${activeMonths} month${activeMonths === 1 ? '' : 's'} with data: ${fixed(avgTonne, 2)} tCO2e/month.`);
+              return parts.join(' ');
+            })()}
           </p>
         </div>
       )}
@@ -717,7 +742,7 @@ export default function DashboardOverview({
           iconBg="bg-[#2ABD41] text-white"
           delay={240}
         >
-          <MonthlyChart monthly={monthly} selectedYear={selectedYear} tr={tr} />
+          <MonthlyChart monthly={monthly} annualKg={summary?.annual_kg ?? 0} selectedYear={selectedYear} tr={tr} />
         </ChartCard>
 
         {/* Scope Donut */}
@@ -878,12 +903,15 @@ export default function DashboardOverview({
           {targets.length === 0 ? (
             <div className="flex h-24 flex-col items-center justify-center gap-2">
               <p className="text-[11px] font-semibold text-[#072C0E]/35">{tr ? 'Henüz hedef yok' : 'No targets yet'}</p>
-              <button
-                onClick={() => setActiveTab('reduction')}
-                className="rounded-full border border-[#2ABD41]/30 px-3 py-1 text-[11px] font-bold text-[#1D9C31] transition hover:bg-[#2ABD41]/8"
-              >
-                {tr ? '+ Hedef ekle' : '+ Add target'}
-              </button>
+              {/* Targets are set by owner / admin / manager (same rule as the targets tab). */}
+              {canApprove && (
+                <button
+                  onClick={() => setActiveTab('reduction')}
+                  className="rounded-full border border-[#2ABD41]/30 px-3 py-1 text-[11px] font-bold text-[#1D9C31] transition hover:bg-[#2ABD41]/8"
+                >
+                  {tr ? '+ Hedef ekle' : '+ Add target'}
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-3">

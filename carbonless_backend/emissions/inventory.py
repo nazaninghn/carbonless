@@ -9,6 +9,26 @@ them separately so the client can still see them, marked as informational.
 """
 from django.db.models import Sum
 
+# Entries the questionnaire makes hold a whole year's amount (a year's
+# electricity, a year's purchases); they are stored with month=1 only because
+# the field needs a value. Monthly breakdowns leave them out and show them as
+# one annual figure, so January doesn't look like the month all of it happened.
+ANNUAL_PREFIX = 'Questionnaire step '
+
+
+def is_annual(entry):
+    return (entry.description or '').startswith(ANNUAL_PREFIX)
+
+
+def monthly_split(queryset):
+    """([kg for months 1..12] of the monthly entries, kg of the annual ones)."""
+    monthly_qs = (queryset.exclude(description__startswith=ANNUAL_PREFIX)
+                  .values('month').annotate(t=Sum('calculated_co2e_kg')).order_by('month'))
+    by_month = {row['month']: float(row['t'] or 0) for row in monthly_qs}
+    annual = float(queryset.filter(description__startswith=ANNUAL_PREFIX)
+                   .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+    return [by_month.get(m, 0.0) for m in range(1, 13)], annual
+
 
 def not_counted(queryset):
     """Pending and rejected entries of `queryset`, for an informational note:

@@ -68,23 +68,34 @@ def _month_in(text, year_given):
 
 def _month_answer(company, year, month, lang):
     from django.db.models import Sum
-    qs = _entries(company, year).filter(month=month)
+    from emissions.inventory import ANNUAL_PREFIX
+    # The questionnaire's annual amounts are stored as January; they belong
+    # to no month, so they are named in a note instead.
+    year_qs = _entries(company, year)
+    qs = year_qs.filter(month=month).exclude(description__startswith=ANNUAL_PREFIX)
+    annual = float(year_qs.filter(description__startswith=ANNUAL_PREFIX)
+                   .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    note = ''
+    if annual:
+        note = (f'\n\nAnketten gelen yıllık envanter ({_fmt(annual, lang)} tCO₂e) aylara dağıtılmadığı için buna dahil değil.'
+                if lang == 'tr' else
+                f'\n\nThe annual inventory from the questionnaire ({_fmt(annual, lang)} tCO₂e) is not split by month, so it is not included.')
     total = float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     name = _MONTH_NAMES['tr' if lang == 'tr' else 'en'][month - 1].capitalize()
     if total == 0:
-        return (f'{name} {year} için kayıtlı (onaylı) emisyon verisi yok.' if lang == 'tr'
-                else f'There is no approved emission data for {name} {year}.')
+        return (f'{name} {year} için kayıtlı (onaylı) aylık emisyon verisi yok.' if lang == 'tr'
+                else f'There is no approved monthly emission data for {name} {year}.') + note
     by = {s: float(qs.filter(emission_factor__scope=s).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
           for s in ('scope1', 'scope2', 'scope3')}
     if lang == 'tr':
         return (f'{name} {year} emisyonunuz **{_fmt(total, lang)} tCO₂e**.\n\n'
                 f'• Kapsam 1: {_fmt(by["scope1"], lang)} t\n'
                 f'• Kapsam 2: {_fmt(by["scope2"], lang)} t\n'
-                f'• Kapsam 3: {_fmt(by["scope3"], lang)} t')
+                f'• Kapsam 3: {_fmt(by["scope3"], lang)} t') + note
     return (f'Your emissions for {name} {year} are **{_fmt(total, lang)} tCO₂e**.\n\n'
             f'• Scope 1: {_fmt(by["scope1"], lang)} t\n'
             f'• Scope 2: {_fmt(by["scope2"], lang)} t\n'
-            f'• Scope 3: {_fmt(by["scope3"], lang)} t')
+            f'• Scope 3: {_fmt(by["scope3"], lang)} t') + note
 
 
 def _scope_answer(company, year, scope_n, lang):

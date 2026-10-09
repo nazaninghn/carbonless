@@ -12,6 +12,7 @@ from .serializers import (
     ReductionTargetSerializer, CustomEmissionRequestSerializer
 )
 from .calculator import calculate_emissions, get_available_countries
+from .inventory import is_annual
 try:
     from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
 except ImportError:
@@ -253,15 +254,11 @@ def emission_summary(request):
     scope2 = float(entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     scope3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
 
-    # Fix #33: Replace 12 sequential per-month aggregate queries with a single
-    # GROUP BY — one SQL query instead of twelve.
-    monthly_qs = (
-        entries.values('month')
-        .annotate(t=Sum('calculated_co2e_kg'))
-        .order_by('month')
-    )
-    monthly_map = {row['month']: float(row['t'] or 0) for row in monthly_qs}
-    monthly = [{'month': m, 'total_kg': monthly_map.get(m, 0.0)} for m in range(1, 13)]
+    # Questionnaire entries hold annual amounts: they are not put in a month
+    # (see inventory.monthly_split) but returned as `annual_kg`.
+    from .inventory import monthly_split
+    monthly_kg, annual_kg = monthly_split(entries)
+    monthly = [{'month': m, 'total_kg': kg} for m, kg in enumerate(monthly_kg, start=1)]
 
     categories = entries.values('emission_factor__category').annotate(
         total_kg=Sum('calculated_co2e_kg')
@@ -283,10 +280,17 @@ def emission_summary(request):
     # mismatched fields, this fallback exposes CarbonReport's own fields
     # directly so ReportingTab can render real data instead of '-' placeholders.
     if not questionnaire_profile and company:
-        completed_report = CarbonReport.objects.filter(
-            company=company, status=CarbonReport.Status.COMPLETED
-        ).order_by('-updated_at').first()
+        # The inventory of the year asked for; another year's only when that
+        # year has none (the newest one).
+        completed = CarbonReport.objects.filter(company=company, status=CarbonReport.Status.COMPLETED)
+        completed_report = (completed.filter(reporting_year=year).order_by('-updated_at').first()
+                            or completed.order_by('-updated_at').first())
         if completed_report:
+            from questionnaire.models import ReportStep
+            steps = dict(ReportStep.objects.filter(report=completed_report, step_id__in=('B1', 'B3'))
+                         .values_list('step_id', 'answer'))
+            b1 = steps.get('B1') if isinstance(steps.get('B1'), dict) else {}
+            b3 = steps.get('B3') if isinstance(steps.get('B3'), dict) else {}
             questionnaire_profile = {
                 'is_complete': True,
                 'report_id': completed_report.id,
@@ -295,6 +299,10 @@ def emission_summary(request):
                 'ef_database': completed_report.ef_database,
                 'boundary_approach': completed_report.boundary_approach,
                 'scope3_approach': completed_report.scope3_approach,
+                # Sector and size for the benchmark: the inventory's answers,
+                # else what the company gave at sign-up.
+                'nace_code': str(b1.get('nace_code') or company.nace_code or '').replace('NACE_', ''),
+                'employee_band': (b3.get('employee_band') or company.number_of_employees or ''),
             }
 
     # Custom emission requests (approved)
@@ -360,6 +368,7 @@ def emission_summary(request):
         'scope2_tonne': float(scope2) / 1000,
         'scope3_tonne': float(scope3) / 1000,
         'monthly': monthly,
+        'annual_kg': annual_kg,
         'by_category': [
             {'category': c['emission_factor__category'], 'total_kg': float(c['total_kg'])}
             for c in categories
@@ -590,7 +599,8 @@ def _export_rows(entries, lang):
             (ef.name_tr or ef.name) if tr else ef.name,
             (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
             _CAT[lang].get(ef.category, ef.category),
-            months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month,
+            (('Yıllık' if tr else 'Annual') if is_annual(e)
+             else months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month),
             float(e.quantity), _unit(ef.unit, lang),
             float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
             # A calculated entry's factor is its own calculation, not a catalog reference.

@@ -317,7 +317,7 @@ export default function DashboardPage() {
           {/* ===== REVIEW TAB ===== */}
           {activeTab === 'review' && (
             <ErrorBoundary language={language}>
-              <ReviewTab language={language} fetchData={fetchData} canApprove={perms.canApprove} />
+              <ReviewTab language={language} fetchData={fetchData} canApprove={perms.canApprove} canEdit={perms.canEdit} />
             </ErrorBoundary>
           )}
 

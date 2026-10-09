@@ -462,6 +462,56 @@ class YearsAndFacilityTests(TestCase):
         self.assertIsNone(entry.facility)
 
 
+class AnnualQuestionnaireEntryTests(TestCase):
+    """Questionnaire entries are annual amounts stored with month=1: they are
+    kept out of the monthly breakdown (and its January) and shown as annual."""
+
+    _entry = YearsAndFacilityTests._entry
+
+    def setUp(self):
+        YearsAndFacilityTests.setUp(self)
+        self._entry(2025)  # a monthly entry: March, 25 kg
+        EmissionEntry.objects.create(
+            user=self.user, company=self.company, emission_factor=self.factor, year=2025, month=1,
+            quantity=100, status='approved', description='Questionnaire step 3A-5 · Merkez')
+
+    def test_summary_keeps_annual_out_of_months(self):
+        data = self.client.get('/api/emissions/summary/?year=2025').data
+        self.assertEqual(data['total_kg'], 275)
+        self.assertEqual(data['annual_kg'], 250)
+        self.assertEqual(data['monthly'][0]['total_kg'], 0)    # January
+        self.assertEqual(data['monthly'][2]['total_kg'], 25)   # March
+
+    def test_excel_month_column_says_annual(self):
+        import io
+        from openpyxl import load_workbook
+        res = self.client.get('/api/emissions/export-excel/?year=2025&lang=tr')
+        rows = list(load_workbook(io.BytesIO(res.content)).active.iter_rows(values_only=True))
+        self.assertEqual(sorted(r[3] for r in rows[1:]), ['Mart', 'Yıllık'])
+
+    def test_chat_month_answer_leaves_annual_out(self):
+        from chat.local_answers import _month_answer
+        text = _month_answer(self.company, 2025, 1, 'tr')
+        self.assertIn('aylık emisyon verisi yok', text)
+        self.assertIn('yıllık envanter (0,25 tCO₂e)', text)
+
+    def test_profile_follows_selected_year_with_sector(self):
+        from questionnaire.models import CarbonReport, ReportStep
+        self.company.nace_code = 'C20'
+        self.company.save()
+        older = CarbonReport.objects.create(company=self.company, created_by=self.user, title='Envanter 2025',
+                                            reporting_year=2025, status='completed')
+        CarbonReport.objects.create(company=self.company, created_by=self.user, title='Envanter 2024',
+                                    reporting_year=2024, status='completed')
+        ReportStep.objects.create(report=older, step_id='B3', answer={'employee_band': '51-250'})
+        profile = self.client.get('/api/emissions/summary/?year=2025').data['questionnaire_profile']
+        self.assertEqual((profile['title'], profile['nace_code'], profile['employee_band']),
+                         ('Envanter 2025', 'C20', '51-250'))
+        # A year without an inventory: the newest one, saying which it is.
+        profile = self.client.get('/api/emissions/summary/?year=2026').data['questionnaire_profile']
+        self.assertEqual(profile['title'], 'Envanter 2024')
+
+
 class ExcelExportLanguageTests(TestCase):
     """The Excel export follows the UI language and shows each entry's status."""
 

@@ -502,7 +502,8 @@ def generate_report(user, year, lang='tr', page_offset=0):
         elif cr.scope == 'scope2': s2 += v
         else: s3 += v
 
-    monthly = [float(entries.filter(month=m).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) for m in range(1, 13)]
+    from .inventory import monthly_split
+    monthly, annual_kg = monthly_split(entries)
 
     cats = entries.values('emission_factor__scope', 'emission_factor__category').annotate(
         total=Sum('calculated_co2e_kg')
@@ -961,8 +962,15 @@ def generate_report(user, year, lang='tr', page_offset=0):
             E.append(Paragraph(
                 f"\u25cf {_peak}: <b>{months[max_m]}</b> ({_localize_num(f'{monthly[max_m]/1000:,.3f}', tr)} tCO\u2082e)",
                 S['body']))
-    else:
+    elif not annual_kg:
         E.append(Paragraph('Ayl\u0131k veri bulunmamaktad\u0131r.' if tr else 'No monthly data available.', S['body']))
+    if annual_kg:
+        _annual = _localize_num(f'{annual_kg/1000:,.3f}', tr)
+        _label = 'Yıllık envanter (anket)' if tr else 'Annual inventory (questionnaire)'
+        _note = ('yıllık tutarlar olduğu için aylara dağıtılmadı.' if tr
+                 else 'annual amounts, so not split by month.')
+        E.append(Paragraph(f"\u25cf {_label}: <b>{_annual} tCO\u2082e</b> \u2014 {_note}",
+            S['body']))
     E.append(Spacer(1, 6*mm))
 
     # ════════════════════════════════════════════════
