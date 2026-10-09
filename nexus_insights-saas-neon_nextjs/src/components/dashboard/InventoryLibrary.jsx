@@ -32,6 +32,11 @@ export default function InventoryLibrary({ tr = false }) {
   // A teammate's inventory can be deleted only by an owner/admin (the backend
   // refuses others with a 403, after they had already confirmed).
   const [canManage, setCanManage] = useState(true);
+  // Renaming an inventory: owner / admin / manager (the backend's rule).
+  const [canRename, setCanRename] = useState(true);
+  const [renamingId, setRenamingId] = useState(null);
+  const [renameValue, setRenameValue] = useState('');
+  const [renameError, setRenameError] = useState('');
   useEffect(() => {
     api.getProfile()
       .then(res => (res.ok ? res.json() : null))
@@ -40,6 +45,7 @@ export default function InventoryLibrary({ tr = false }) {
         const perms = getPermissions(profile);
         setCanEdit(perms.canEdit);
         setCanManage(perms.canManageTeam);
+        setCanRename(perms.canApprove);
       })
       .catch(() => {});
   }, []);
@@ -134,6 +140,82 @@ export default function InventoryLibrary({ tr = false }) {
     return tr
       ? `Silinsin mi? Bu anketten oluşan ${year} emisyon kayıtları da silinir (sohbet ve formla girilenler kalır).`
       : `Delete? The ${year} emission records created by this questionnaire are deleted too (chat and form entries stay).`;
+  };
+
+  const saveRename = async (reportId) => {
+    const title = renameValue.trim();
+    if (!title) return;
+    setRenameError('');
+    try {
+      const res = await api.renameReport(reportId, title);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setRenameError(data.error || (tr ? 'Ad değiştirilemedi.' : 'Could not rename.'));
+        return;
+      }
+      setReports(prev => prev.map(r => (r.report_id === reportId ? { ...r, title: data.title } : r)));
+      setRenamingId(null);
+    } catch {
+      setRenameError(tr ? 'Bağlantı hatası' : 'Connection error');
+    }
+  };
+
+  // The inventory's name, renamable in place, with what does not add up:
+  // a year in the name that is not its reporting year, and another inventory
+  // of the same reporting year (the two share their emission records).
+  const titleBlock = (report) => {
+    const titleYear = (String(report.title || '').match(/\b(19|20)\d{2}\b/) || [])[0];
+    const yearMismatch = titleYear && report.reporting_year && Number(titleYear) !== Number(report.reporting_year);
+    const sameYear = report.reporting_year
+      && reports.some(r => r.report_id !== report.report_id && String(r.reporting_year) === String(report.reporting_year));
+    return (
+      <>
+        {renamingId === report.report_id ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              value={renameValue}
+              onChange={e => setRenameValue(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveRename(report.report_id); if (e.key === 'Escape') setRenamingId(null); }}
+              maxLength={200}
+              autoFocus
+              aria-label={tr ? 'Envanter adı' : 'Inventory name'}
+              className="min-w-0 flex-1 rounded-lg border border-[#175022]/20 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#8BEA99]"
+            />
+            <button onClick={() => saveRename(report.report_id)} className="rounded-full bg-[#175022] px-3 py-1.5 text-xs font-bold text-white">
+              {tr ? 'Kaydet' : 'Save'}
+            </button>
+            <button onClick={() => setRenamingId(null)} className="rounded-full border border-[#175022]/15 px-3 py-1.5 text-xs font-bold text-[#175022]/60">
+              {tr ? 'Vazgeç' : 'Cancel'}
+            </button>
+            {renameError && <span className="w-full text-xs text-red-600">{renameError}</span>}
+          </div>
+        ) : (
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+            {canRename && (
+              <button
+                onClick={() => { setRenamingId(report.report_id); setRenameValue(report.title || ''); setRenameError(''); }}
+                className="shrink-0 text-[11px] font-semibold text-[#175022]/50 hover:text-[#175022] hover:underline"
+              >
+                {tr ? 'Yeniden adlandır' : 'Rename'}
+              </button>
+            )}
+          </div>
+        )}
+        {yearMismatch && (
+          <p className="mt-1 text-[11px] font-semibold text-amber-700">
+            {tr ? `Adındaki yıl (${titleYear}) raporlama yılıyla (${report.reporting_year}) uyuşmuyor.`
+                : `The year in the name (${titleYear}) differs from the reporting year (${report.reporting_year}).`}
+          </p>
+        )}
+        {sameYear && (
+          <p className="mt-1 text-[11px] font-semibold text-amber-700">
+            {tr ? `${report.reporting_year} için başka bir envanter daha var — ikisi aynı emisyon kayıtlarını paylaşır.`
+                : `Another inventory also covers ${report.reporting_year} — the two share the same emission records.`}
+          </p>
+        )}
+      </>
+    );
   };
 
   // `kind` selects which document: the three-report pack, the full ISO 14064-1
@@ -270,7 +352,7 @@ export default function InventoryLibrary({ tr = false }) {
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+                  {titleBlock(report)}
                   {report.created_by && (
                     <p className="text-xs text-[#175022]/50 mt-0.5 truncate">
                       {tr ? 'Oluşturan' : 'Created by'}: {report.created_by}
@@ -347,7 +429,7 @@ export default function InventoryLibrary({ tr = false }) {
                 className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[#175022] truncate">{report.title}</p>
+                  {titleBlock(report)}
                   {report.created_by && (
                     <p className="text-xs text-[#175022]/50 mt-0.5 truncate">
                       {tr ? 'Oluşturan' : 'Created by'}: {report.created_by}

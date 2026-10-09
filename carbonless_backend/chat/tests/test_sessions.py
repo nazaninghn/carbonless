@@ -46,6 +46,39 @@ class ChatSessionTests(TestCase):
         self.assertEqual(res.status_code, 404)
 
 
+class CompanyChatTests(TestCase):
+    """A member of several companies sees each company's chats only while
+    working in it."""
+
+    def setUp(self):
+        from companies.models import Company, CompanyMembership
+        from accounts.models import UserProfile
+        def company(name, tax):
+            return Company.objects.create(
+                legal_entity_name=name, tax_number=tax, country_of_headquarters='TR',
+                countries_of_operation='TR', main_activity_description='x', number_of_employees='1-10',
+                annual_turnover_range='x', number_of_facilities=1)
+        self.a, self.b = company('A A.Ş.', '1'), company('B A.Ş.', '2')
+        self.user = User.objects.create_user('multi', 'multi@test.com', 'testpass123')
+        CompanyMembership.objects.create(company=self.a, user=self.user, role='owner')
+        CompanyMembership.objects.create(company=self.b, user=self.user, role='data_entry')
+        self.profile = UserProfile.objects.create(user=self.user, active_company=self.a)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_chats_follow_the_company(self):
+        res = self.client.post('/api/chat/sessions/new/', {'title': 'A chat'}, format='json')
+        a_chat = res.data['id']
+        self.assertEqual(ChatSession.objects.get(id=a_chat).company, self.a)
+        self.client.post('/api/companies/switch/', {'company_id': self.b.id}, format='json')
+        self.profile.refresh_from_db()
+        self.assertEqual(self.profile.active_company, self.b)
+        self.assertEqual(self.client.get('/api/chat/sessions/').data, [])
+        self.assertEqual(self.client.get(f'/api/chat/sessions/{a_chat}/').status_code, 404)
+        self.client.post('/api/companies/switch/', {'company_id': self.a.id}, format='json')
+        self.assertEqual([s['id'] for s in self.client.get('/api/chat/sessions/').data], [a_chat])
+
+
 class MultiItemMessageTests(TestCase):
     """The chat turns every item of a message into a pending entry and says what it couldn't read."""
 

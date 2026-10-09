@@ -1158,6 +1158,39 @@ class RestartReportView(APIView):
         return Response({'success': True, 'report_id': report.id})
 
 
+class RenameReportView(APIView):
+    """PATCH /api/questionnaire/<report_id>/title/ {"title": "..."}
+
+    Renames an inventory, finished or not — only its name: the reporting year
+    and the answers stay. Owner / admin / manager of the inventory's company."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+
+    def patch(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Report not found'}, status=404)
+        role = (report.company.memberships.filter(user=request.user, is_active=True)
+                .values_list('role', flat=True).first()) if report.company_id else None
+        if role not in ('owner', 'admin', 'manager'):
+            return Response({'error': 'Only an owner, admin or manager can rename an inventory.',
+                             'code': 'not_allowed'}, status=403)
+        title = (request.data.get('title') or '').strip()[:200]
+        if not title:
+            return Response({'error': 'A name is required.', 'code': 'title_required'}, status=400)
+        old = report.title
+        report.title = title
+        report.save(update_fields=['title', 'updated_at'])
+        if old != title:
+            from emissions.audit import log_company_activity
+            log_company_activity(
+                request.user, report.company_id, 'inventory_renamed',
+                f'{old or "—"} → {title} ({report.reporting_year} envanteri)',
+                f'{old or "—"} → {title} ({report.reporting_year} inventory)',
+                target_type='CarbonReport', target_id=report.id, request=request)
+        return Response({'success': True, 'report_id': report.id, 'title': report.title})
+
+
 class SaveDraftView(APIView):
     """PATCH /api/questionnaire/<report_id>/draft/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]

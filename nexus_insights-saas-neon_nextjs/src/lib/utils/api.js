@@ -306,6 +306,10 @@ export const api = {
     method: 'PATCH',
     body: JSON.stringify(data),
   }),
+  renameReport: (reportId, title) => request(`/questionnaire/${reportId}/title/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ title }),
+  }),
   getReportStatus: (reportId) => request(`/questionnaire/${reportId}/`),
   getCompanyHistory: (lang) => request(`/accounts/history/${lang ? `?lang=${lang}` : ''}`),
   getReportAssumptions: (reportId, lang) => request(`/questionnaire/${reportId}/assumptions/?lang=${lang === 'en' ? 'en' : 'tr'}`),

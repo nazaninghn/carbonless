@@ -4,6 +4,10 @@ from django.contrib.auth.models import User
 
 class ChatSession(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chat_sessions')
+    # The company the conversation belongs to: a member of several companies
+    # sees each company's chats only while working in it.
+    company = models.ForeignKey('companies.Company', on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='chat_sessions')
     title = models.CharField(max_length=200, default='New Chat')
     state = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
