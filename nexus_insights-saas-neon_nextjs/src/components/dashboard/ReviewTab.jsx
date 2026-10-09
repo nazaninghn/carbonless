@@ -7,6 +7,7 @@ import { noPermissionMessage } from '@/lib/permissions';
 import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
 import { formatAdvisorAnswer } from '@/lib/advisorAnswer';
 import { MONTHS_TR, MONTHS_EN, unitLabel } from '@/lib/constants/emissions';
+import { entrySourceLabel } from '@/lib/entryDescription';
 const num = (v, tr, digits = 2) =>
   Number(v || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: digits });
 
@@ -322,6 +323,23 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                         <span className="text-[10px] text-[#072C0E]/45">
                           {(tr ? MONTHS_TR : MONTHS_EN)[(entry.month || 1) - 1]} {entry.year}
                         </span>
+                        {entry.replaces && (
+                          // An inventory answer changed: what it replaces, which
+                          // stays in the totals until this is approved.
+                          <span className="w-full text-[11px] font-semibold text-[#175022]">
+                            {tr ? 'Değişiklik' : 'Change'}:{' '}
+                            {entry.replaces.quantity != null
+                              ? `${num(entry.replaces.quantity, tr)} ${unitLabel(entry.replaces.unit, tr)}`
+                              : `${num(entry.replaces.co2e_kg, tr, 1)} kg CO₂e`}
+                            {' → '}
+                            {entry.replaces.quantity != null ? `${num(entry.quantity, tr)} ${unitLabel(entry.unit, tr)}` : `${num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e`}
+                            {' '}({(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg) >= 0 ? '+' : '−'}{num(Math.abs(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg), tr, 1)} kg CO₂e)
+                            <span className="font-normal text-[#072C0E]/45"> · {tr ? 'onaylanana kadar önceki değer toplamlarda kalır' : 'the previous value stays in the totals until approved'}</span>
+                          </span>
+                        )}
+                        {(entry.description || '').startsWith('Questionnaire step') && (
+                          <span className="w-full truncate text-[10px] text-[#072C0E]/45" title={entrySourceLabel(entry, tr)}>{entrySourceLabel(entry, tr)}</span>
+                        )}
                         {(entry.entered_by || (entry.description || '').startsWith('Questionnaire step')) && (
                           <span className="text-[10px] text-[#072C0E]/45">
                             {(entry.description || '').startsWith('Questionnaire step')

@@ -789,9 +789,12 @@ def _gather(report, lang):
         # A calculated entry (supplier factor, declaration, PCAF share) has
         # no catalog reference: its description says how it was calculated.
         if f.slug.startswith('calculated-'):
-            how = (e.description or '').split(' · ', 1)
-            if len(how) == 2:
-                row.setdefault('details', []).append(how[1])
+            how = (e.calc_detail or {}).get(lang) if isinstance(e.calc_detail, dict) else None
+            if not how:
+                parts = (e.description or '').split(' · ', 1)
+                how = parts[1] if len(parts) == 2 else None
+            if how:
+                row.setdefault('details', []).append(how)
                 row['reference'] = ('Hesaplama: ' if lang == 'tr' else 'Calculated: ') + '; '.join(row['details'])
         # Shares rather than the per-gas factors themselves: the stored CO₂e is
         # authoritative (it may have been calculated against an older factor

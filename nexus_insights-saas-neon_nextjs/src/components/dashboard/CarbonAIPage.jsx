@@ -3344,9 +3344,15 @@ export function QuestionnaireTab({
         const delta = Number(fb.delta_kg) || 0;
         if (Math.abs(delta) >= 0.05) {
           const sign = delta > 0 ? '+' : '−';
-          parts.push(trL
-            ? `✓ Envantere yansıdı: **${sign}${tonnes(delta)}** (bu envanterin toplamı ${tonnes(Number(fb.total_kg) || 0)}).`
-            : `✓ Added to the inventory: **${sign}${tonnes(delta)}** (inventory total ${tonnes(Number(fb.total_kg) || 0)}).`);
+          // A data-entry member's change waits for approval: it is not in the
+          // totals yet, and the total shown is the approved one.
+          parts.push(fb.pending
+            ? (trL
+              ? `⏳ Onaya gönderildi: **${sign}${tonnes(delta)}** — onaylanınca envantere eklenir (onaylı toplam ${tonnes(Number(fb.total_kg) || 0)}).`
+              : `⏳ Sent for approval: **${sign}${tonnes(delta)}** — added to the inventory once approved (approved total ${tonnes(Number(fb.total_kg) || 0)}).`)
+            : (trL
+              ? `✓ Envantere yansıdı: **${sign}${tonnes(delta)}** (bu envanterin toplamı ${tonnes(Number(fb.total_kg) || 0)}).`
+              : `✓ Added to the inventory: **${sign}${tonnes(delta)}** (inventory total ${tonnes(Number(fb.total_kg) || 0)}).`));
         }
         if (Number(fb.biogenic_kg) > 0) {
           parts.push(trL

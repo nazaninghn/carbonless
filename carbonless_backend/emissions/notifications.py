@@ -32,6 +32,7 @@ _UNITS = {
     'units': {'tr': 'adet', 'en': 'units'}, 'packages': {'tr': 'paket', 'en': 'packages'},
     'days': {'tr': 'gün', 'en': 'days'}, 'employees': {'tr': 'çalışan', 'en': 'employees'},
     'franchises': {'tr': 'franchise', 'en': 'franchises'},
+    'kgco2e': 'kg CO₂e',
 }
 
 
@@ -97,6 +98,64 @@ def notify_entry_submitted(entry):
                         f'Review it on the Pending Review page.', company_id=entry.company_id)
     except Exception:  # a notification must never break saving the entry
         logger.exception('Could not notify approvers about entry %s', entry.pk)
+
+
+def notify_questionnaire_change(author, company, year, step, entries, replaced):
+    """A data-entry member changed an inventory answer: tell the approvers
+    what it is now and what it replaces. One notice per answer — while it is
+    unread, a later save of the same answer updates it instead of adding
+    another (saving each facility used to send a copy each)."""
+    try:
+        from accounts.models import Notification
+        from companies.models import CompanyMembership
+        from questionnaire.step_entries import question_label
+        name = (author.get_full_name() or author.email or author.username) if author else '—'
+        link = f'/dashboard?tab=review&inventory={year}-{step}'
+        approvers = (CompanyMembership.objects
+                     .filter(company=company, is_active=True, role__in=APPROVER_ROLES)
+                     .exclude(user_id=getattr(author, 'pk', None))
+                     .select_related('user', 'user__profile'))
+        for membership in approvers:
+            wants, lang = _prefs(membership.user)
+            if not wants:
+                continue
+            now = _summary(entries, lang)
+            before = _summary(replaced, lang) if replaced else ''
+            where = question_label(step, lang)
+            if lang == 'tr':
+                title = 'Onay bekleyen değişiklik' if before else 'Onay bekleyen kayıt'
+                message = (f'{name} {year} envanterinde bir cevabı değiştirdi ({where}): '
+                           + (f'{before} → {now}' if before else now)
+                           + '. Onaylanana kadar önceki değer toplamlarda kalır. '
+                             'Onay Bekleyenler sayfasından inceleyebilirsiniz.')
+            else:
+                title = 'Change awaiting approval' if before else 'Entry awaiting approval'
+                message = (f'{name} changed an answer of the {year} inventory ({where}): '
+                           + (f'{before} → {now}' if before else now)
+                           + '. Until it is approved the previous value stays in the totals. '
+                             'Review it on the Pending Review page.')
+            open_notice = Notification.objects.filter(
+                user=membership.user, notification_type='entry_submitted', link=link, is_read=False).first()
+            if open_notice:
+                from django.utils import timezone
+                Notification.objects.filter(pk=open_notice.pk).update(
+                    title=title, message=message, created_at=timezone.now())
+            else:
+                _notify(membership.user, 'entry_submitted', title, message, link=link, company_id=company.pk)
+    except Exception:  # a notification must never break saving the answer
+        logger.exception('Could not notify approvers about a questionnaire change (%s)', step)
+
+
+def _summary(entries, lang):
+    """One entry described; several summed in t CO2e."""
+    entries = list(entries)
+    if len(entries) == 1:
+        return _describe(entries[0], lang).rsplit(' · ', 1)[0]
+    kg = sum(float(e.calculated_co2e_kg) for e in entries)
+    text = f'{kg / 1000:,.2f} t CO₂e'
+    if lang == 'tr':
+        text = text.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
+    return (f'{len(entries)} kayıt, {text}' if lang == 'tr' else f'{len(entries)} entries, {text}')
 
 
 def notify_entry_reviewed(entry, approved, reviewer):

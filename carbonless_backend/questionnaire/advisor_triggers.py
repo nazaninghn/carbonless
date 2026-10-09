@@ -160,10 +160,10 @@ def _match_rfi(qid, answer, report):
         seen.add(key)
         if is_true:
             results.append({'reason_code': 'rfi_applied', 'category': 'Metodoloji', 'risk': 'low',
-                             'description': f'{qid}: RFI (radiative forcing) applied to a flight entry.'})
+                             'description': f'{qid}: RFI ticked on a flight entry (cabin-class factors already include RFI; not applied again).'})
         else:
             results.append({'reason_code': 'rfi_not_applied', 'category': 'Metodoloji', 'risk': 'medium',
-                             'description': f'{qid}: RFI not applied to a flight entry — likely underestimate.'})
+                             'description': f'{qid}: RFI not ticked on a flight entry (cabin-class factors already include RFI).'})
     return results or None
 
 
@@ -180,7 +180,7 @@ def _match_ar6_gwp(qid, answer, report):
     # 3D-EF is a per-equipment loop; finished answer is {equipmentId: 'AR6'|'AR5'|'AR4', ...}.
     if 'AR6' in _flatten_scalar_values(_answer_value(answer)):
         return {'reason_code': 'ar6_gwp_confirmed', 'category': 'Metodoloji', 'risk': 'low',
-                'description': f'{qid}: IPCC AR6 (2021) GWP reference confirmed.'}
+                'description': f'{qid}: IPCC AR6 (2021) GWP reference chosen (refrigerants not calculated until AR6 values are unified).'}
     return None
 
 

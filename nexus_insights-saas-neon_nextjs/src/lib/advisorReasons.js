@@ -34,20 +34,20 @@ const REASONS = {
     en: 'A Scope 3 category was marked as not applicable.',
   },
   rfi_applied: {
-    tr: 'Uçuş kaydına RFI (radyatif zorlama) çarpanı uygulandı.',
-    en: 'The RFI (radiative forcing) multiplier was applied to a flight.',
+    tr: 'Uçuş kaydında RFI işaretlendi; kabin sınıfı faktörleri RFI\'yı zaten içerdiği için ×1,9 ayrıca uygulanmadı.',
+    en: 'RFI was ticked on a flight; the cabin-class factors already include RFI, so ×1.9 was not applied again.',
   },
   rfi_not_applied: {
-    tr: 'Uçuş kaydına RFI uygulanmadı — emisyon olduğundan düşük görünebilir.',
-    en: 'RFI was not applied to a flight — emissions may be understated.',
+    tr: 'Uçuş kaydında RFI işaretlenmedi; kabin sınıfı faktörleri RFI\'yı zaten içerir, hesap değişmez.',
+    en: 'RFI was not ticked on a flight; the cabin-class factors already include RFI, the result is the same.',
   },
   biomass_neutral: {
-    tr: 'Biyokütle seçildi — yanmanın karbon nötr olduğu varsayıldı.',
-    en: 'Biomass was selected — combustion is assumed carbon-neutral.',
+    tr: 'Biyokütle seçildi — CO₂\'i biyojenik olarak ayrıca raporlanır; CH₄ ve N₂O Kapsam 1\'e dahildir.',
+    en: 'Biomass was selected — its CO₂ is reported separately as biogenic; CH₄ and N₂O count in Scope 1.',
   },
   ar6_gwp_confirmed: {
-    tr: 'IPCC AR6 (2021) KIP (GWP) değerlerinin kullanıldığı onaylandı.',
-    en: 'Use of IPCC AR6 (2021) GWP values was confirmed.',
+    tr: 'IPCC AR6 (2021) KIP (GWP) referansı seçildi; soğutucu gaz kaçakları AR6 değerleri birleştirilene kadar hesaplanmıyor.',
+    en: 'The IPCC AR6 (2021) GWP reference was chosen; refrigerant leaks are not calculated until the AR6 values are unified.',
   },
   ef_database_change: {
     tr: 'Standart bir veri tabanı yerine özel bir emisyon faktörü veri tabanı seçildi.',

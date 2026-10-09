@@ -208,6 +208,11 @@ class EmissionEntry(models.Model):
     calculated_co2e_kg = models.DecimalField(max_digits=16, decimal_places=4, editable=False)
 
     description = models.TextField(blank=True)
+    # For an entry the questionnaire calculated: how, in both languages
+    # ({"tr": "VA-01 · PCAF %10 × 1.200 tCO2e", "en": "VA-01 · PCAF 10% × 1,200 tCO2e"}).
+    # The description keeps the Turkish text, as the key the questionnaire
+    # finds its entries by.
+    calc_detail = models.JSONField(null=True, blank=True)
     facility = models.ForeignKey(
         'companies.Facility', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='emission_entries', help_text='Structured facility reference'

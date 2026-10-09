@@ -37,6 +37,46 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     # For entries the questionnaire created: which inventory and question they
     # come from, so the UI can send the user there to correct them.
     questionnaire_source = serializers.SerializerMethodField()
+    # How a questionnaire entry was calculated, {"tr", "en"}; the question's
+    # number ("68" -> "Soru 68"); and, for a change waiting for review, the
+    # approved value it would replace.
+    calc_detail = serializers.JSONField(read_only=True)
+    question_number = serializers.SerializerMethodField()
+    replaces = serializers.SerializerMethodField()
+
+    def get_question_number(self, obj):
+        from questionnaire.step_entries import entry_group
+        from questionnaire.carboniq_validation import _load_schema
+        group = entry_group(obj.description)
+        if not group:
+            return None
+        number = (_load_schema().get(group) or {}).get('number')
+        return str(number) if number not in (None, '') else None
+
+    def get_replaces(self, obj):
+        if obj.status != 'submitted':
+            return None
+        from questionnaire.step_entries import entry_group, _step_entries
+        group = entry_group(obj.description)
+        if not group:
+            return None
+        cache = self.context.setdefault('_replaces', {})
+        key = (obj.company_id, obj.year, group)
+        if key not in cache:
+            old = [e for e in _step_entries(obj.company_id, obj.year, group).select_related('emission_factor')
+                   if e.status == 'approved']
+            if not old:
+                cache[key] = None
+            else:
+                same = len(old) == 1
+                cache[key] = {
+                    'co2e_kg': float(sum(e.calculated_co2e_kg for e in old)),
+                    'quantity': float(old[0].quantity) if same else None,
+                    'unit': old[0].emission_factor.unit if same else None,
+                    'count': len(old),
+                }
+        return cache[key]
+
 
     def get_questionnaire_source(self, obj):
         desc = obj.description or ''
@@ -97,6 +137,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
+            'calc_detail', 'question_number', 'replaces',
         ]
         read_only_fields = [
             'calculated_co2e_kg', 'facility_name',

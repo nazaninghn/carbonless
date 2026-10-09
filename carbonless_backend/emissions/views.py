@@ -593,8 +593,10 @@ def _export_rows(entries, lang):
             months[e.month - 1] if e.month and 1 <= e.month <= 12 else e.month,
             float(e.quantity), _unit(ef.unit, lang),
             float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
-            ef.reference or '',
-            e.facility.name if e.facility_id else '', display_description(e.description, lang),
+            # A calculated entry's factor is its own calculation, not a catalog reference.
+            (('Hesaplama: ' if tr else 'Calculated: ') + (e.calc_detail or {}).get(lang, '')
+             if ef.slug.startswith('calculated-') and e.calc_detail else ef.reference or ''),
+            e.facility.name if e.facility_id else '', display_description(e.description, lang, e.calc_detail),
             status_labels.get(e.status, e.status),
             e.rejected_reason if e.status == 'draft' else '',
         ])
@@ -804,7 +806,22 @@ def approve_entry_view(request, pk):
         return Response({'error': 'Entry not found'}, status=404)
 
     action = request.data.get('action')  # 'approve' or 'reject'
+    # An inventory answer's rows are reviewed together: the waiting rows of
+    # that answer are approved (or rejected) as one, and approving them
+    # replaces the approved rows they were waiting next to.
+    from questionnaire.step_entries import entry_group, _step_entries
+    group = entry_group(entry.description) if entry.status == 'submitted' else None
+    siblings = list(_step_entries(company, entry.year, group)) if group else [entry]
     if action == 'approve':
+        if group:
+            waiting = [e for e in siblings if e.status == 'submitted']
+            for old in siblings:
+                if old.status == 'approved':
+                    old.delete()
+            for other in waiting:
+                if other.pk != entry.pk:
+                    other.status, other.approved_by, other.approved_at = 'approved', request.user, timezone.now()
+                    other.save()
         entry.status = 'approved'
         entry.approved_by = request.user
         # Fix #50: django.utils.timezone.now() returns a timezone-aware datetime.
@@ -817,6 +834,10 @@ def approve_entry_view(request, pk):
         _log_entry(request, 'entry_approved', entry, _entry_summary(entry))
         return Response({'status': 'approved'})
     elif action == 'reject':
+        for other in siblings:
+            if other.pk != entry.pk and other.status == 'submitted':
+                other.status, other.rejected_reason = 'draft', request.data.get('reason', '')
+                other.save()
         entry.status = 'draft'
         entry.rejected_reason = request.data.get('reason', '')
         entry.save()
