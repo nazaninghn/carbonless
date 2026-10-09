@@ -506,6 +506,13 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           ) : (
             <p className="flex h-40 items-center justify-center text-xs font-semibold text-[#072C0E]/35">{tr ? 'Trend verisi yok' : 'No trend data'}</p>
           )}
+          {summary?.annual_kg > 0 && (
+            <p className="mt-2 text-[11px] font-semibold text-[#072C0E]/55">
+              {tr
+                ? `Yıllık envanter (anket): ${fixed(summary.annual_kg / 1000, 1)} tCO2e — yıllık tutar olduğu için aylara dağıtılmadı.`
+                : `Annual inventory (questionnaire): ${fixed(summary.annual_kg / 1000, 1)} tCO2e — an annual amount, so not split by month.`}
+            </p>
+          )}
         </ReportCard>
       </div>
 

@@ -7,7 +7,7 @@ import { noPermissionMessage } from '@/lib/permissions';
 import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
 import { formatAdvisorAnswer } from '@/lib/advisorAnswer';
 import { MONTHS_TR, MONTHS_EN, unitLabel } from '@/lib/constants/emissions';
-import { entrySourceLabel } from '@/lib/entryDescription';
+import { entrySourceLabel, entryPeriodLabel } from '@/lib/entryDescription';
 const num = (v, tr, digits = 2) =>
   Number(v || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: digits });
 
@@ -26,7 +26,7 @@ const RISK_LABELS_TR = {
   critical: 'Kritik', warning: 'Uyarı', positive: 'Olumlu',
 };
 
-export default function ReviewTab({ language, fetchData, canApprove = true }) {
+export default function ReviewTab({ language, fetchData, canApprove = true, canEdit = true }) {
   const [pending, setPending] = useState([]);
   const [advisorPending, setAdvisorPending] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -261,13 +261,18 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                           {tr ? 'Envanter' : 'Inventory'}: {item.report_title}
                           {item.reporting_year ? ` (${tr ? 'raporlama yılı' : 'reporting year'} ${item.reporting_year})` : ''}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => openInQuestionnaire(item)}
-                          className="text-[10px] font-bold text-[#2ABD41] hover:underline"
-                        >
-                          {tr ? 'Ankette aç →' : 'Open in questionnaire →'}
-                        </button>
+                        {/* The question and its answer are shown above; opening the
+                            survey is for changing the answer, which a read-only
+                            role (auditor) can't do. */}
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => openInQuestionnaire(item)}
+                            className="text-[10px] font-bold text-[#2ABD41] hover:underline"
+                          >
+                            {tr ? 'Ankette aç →' : 'Open in questionnaire →'}
+                          </button>
+                        )}
                       </div>
                     </div>
                     {canApprove && <div className="flex shrink-0 items-center gap-1.5">
@@ -321,7 +326,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true }) {
                         <span className="text-[11px] font-semibold text-[#072C0E]/50">{num(entry.quantity, tr)} {unitLabel(entry.unit, tr)}</span>
                         <span className="text-[11px] font-bold text-[#2ABD41]">{num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e</span>
                         <span className="text-[10px] text-[#072C0E]/45">
-                          {(tr ? MONTHS_TR : MONTHS_EN)[(entry.month || 1) - 1]} {entry.year}
+                          {entryPeriodLabel(entry, tr ? MONTHS_TR : MONTHS_EN, tr)} {entry.year}
                         </span>
                         {entry.replaces && (
                           // An inventory answer changed: what it replaces, which

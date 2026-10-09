@@ -10,7 +10,7 @@ import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
-import { autoDescriptionLabel, entrySourceLabel, isLinkedDescription } from '@/lib/entryDescription';
+import { autoDescriptionLabel, entrySourceLabel, isLinkedDescription, isAnnualEntry, entryPeriodLabel } from '@/lib/entryDescription';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
 import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import useCountUp from '@/lib/hooks/useCountUp';
@@ -108,6 +108,9 @@ const GRID_BY_COUNTRY = {
 };
 const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
 
+// Month-filter value for the questionnaire's annual entries (after the 12 months).
+const ANNUAL = 13;
+
 // Only approved entries are part of the totals — the same rule the backend
 // summary and every report apply (emissions/inventory.py). Pending and
 // rejected entries stay listed and are summed separately, for information.
@@ -138,7 +141,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-bold text-[#072C0E]">{name}</p>
           <p className="mt-0.5 text-[10px] text-[#072C0E]/40">
-            {months[entry.month - 1]} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {unitLabel(entry.unit, tr)}
+            {entryPeriodLabel(entry, months, tr)} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {unitLabel(entry.unit, tr)}
           </p>
           {entry.questionnaire_source && entrySourceLabel(entry, tr) && (
             <p className="mt-0.5 text-[10px] leading-4 text-[#072C0E]/45">{entrySourceLabel(entry, tr)}</p>
@@ -227,7 +230,7 @@ export default function EmissionsTab({
   // ── Local state ──────────────────────────────────────────────────────────
   const [search, setSearch]           = useState('');
   const [filterScope, setFilterScope] = useState('');
-  const [filterMonth,    setFilterMonth]    = useState(0);   // 0 = all months
+  const [filterMonth,    setFilterMonth]    = useState(0);   // 0 = all months, ANNUAL = questionnaire's annual entries
   const [filterFacility, setFilterFacility] = useState('');
   const [sortBy,         setSortBy]         = useState('month');
 
@@ -342,7 +345,7 @@ export default function EmissionsTab({
       const name = (tr && e.emission_factor_name_tr ? e.emission_factor_name_tr : e.emission_factor_name) || '';
       return (!search         || name.toLowerCase().includes(search.toLowerCase()))
           && (!filterScope    || e.scope === filterScope)
-          && (!filterMonth    || parseInt(e.month) === filterMonth)
+          && (!filterMonth    || (filterMonth === ANNUAL ? isAnnualEntry(e) : !isAnnualEntry(e) && parseInt(e.month) === filterMonth))
           && (!filterFacility || String(e.facility ?? '') === filterFacility);
     });
     return [...base].sort((a, b) => {
@@ -372,8 +375,8 @@ export default function EmissionsTab({
   const monthCountMap = useMemo(() => {
     const map = {};
     for (const e of entries) {
-      const m = parseInt(e.month);
-      if (m >= 1 && m <= 12) map[m] = (map[m] || 0) + 1;
+      const m = isAnnualEntry(e) ? ANNUAL : parseInt(e.month);
+      if (m >= 1 && m <= ANNUAL) map[m] = (map[m] || 0) + 1;
     }
     return map;
   }, [entries]);
@@ -828,7 +831,7 @@ export default function EmissionsTab({
           >
             {tr ? 'Tüm Aylar' : 'All Months'}
           </button>
-          {months.map((m, i) => {
+          {[...months, tr ? 'Yıllık' : 'Annual'].map((m, i) => {
             const mo = i + 1;
             const count = monthCountMap[mo] || 0;
             if (count === 0) return null;
@@ -1045,7 +1048,7 @@ export default function EmissionsTab({
                         </span>
                       </td>
                       {/* Month */}
-                      <td className="px-4 py-3 text-xs text-[#072C0E]/50">{months[entry.month - 1]}</td>
+                      <td className="px-4 py-3 text-xs text-[#072C0E]/50">{entryPeriodLabel(entry, months, tr)}</td>
                       {/* Quantity */}
                       <td className="px-4 py-3 text-right text-xs font-semibold text-[#072C0E]/70">
                         {fmt(entry.quantity)} <span className="text-[#072C0E]/30">{unitLabel(entry.unit, tr)}</span>
@@ -1469,7 +1472,7 @@ export default function EmissionsTab({
         const e = entries.find(x => x.id === deleteConfirm);
         const src = e?.questionnaire_source;
         const name = e ? ((tr && e.emission_factor_name_tr) ? e.emission_factor_name_tr : e.emission_factor_name) : '';
-        const what = e ? `${name} · ${months[e.month - 1] || ''} ${e.year} · ${fmt(e.quantity)} ${unitLabel(e.unit, tr)}` : '';
+        const what = e ? `${name} · ${entryPeriodLabel(e, months, tr)} ${e.year} · ${fmt(e.quantity)} ${unitLabel(e.unit, tr)}` : '';
         return (
           <ConfirmDialog
             open={deleteConfirm !== null}

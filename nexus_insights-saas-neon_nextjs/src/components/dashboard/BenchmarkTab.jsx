@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart2, Users, TrendingDown, Info, Lock } from 'lucide-react';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
@@ -170,30 +170,43 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
     ? Math.round(((benchmark.avg - totalTonne) / benchmark.avg) * 100)
     : 0;
 
-  // Opportunity list (always 3; there is no paid tier to unlock, so none is locked)
-  const opportunities = useMemo(() => [
+  // Opportunity list (always 3; there is no paid tier to unlock, so none is locked).
+  // Each sample saving is a share of the emissions it would act on (electricity
+  // for efficiency and a green tariff, vehicle fuel for the fleet), not of the
+  // whole total — so it can never be larger than that source. No such
+  // emissions: a dash.
+  const categoryTonne = (cat) =>
+    ((summary?.by_category || []).find(c => c.category === cat)?.total_kg || 0) / 1000;
+  const sampleSaving = (baseTonne, share) => {
+    if (!(baseTonne > 0)) return '—';
+    const t = baseTonne * share;
+    return t < 1 ? '−<1 ' : `−${Math.round(t)} `;
+  };
+  const electricityTonne = categoryTonne('electricity');
+  const fleetTonne = categoryTonne('mobile_combustion');
+  const opportunities = [
     {
       rank: 1,
       title: tr ? 'Elektrik verimliliği' : 'Electricity efficiency',
       desc:  tr ? 'LED aydınlatma + akıllı sensörler' : 'LED lighting + smart sensors',
-      saving: hasData ? `−${Math.round(totalTonne * 0.08)} ` : '—',
+      saving: sampleSaving(electricityTonne, 0.08),
       locked: false,
     },
     {
       rank: 2,
       title: tr ? 'Araç filosu elektrifikasyonu' : 'Fleet electrification',
       desc:  tr ? 'Dizel araçları EV ile değiştirin' : 'Replace diesel vehicles with EVs',
-      saving: hasData ? `−${Math.round(totalTonne * 0.15)} ` : '—',
+      saving: sampleSaving(fleetTonne, 0.15),
       locked: false,
     },
     {
       rank: 3,
       title: tr ? 'Yenilenebilir enerji sözleşmesi' : 'Renewable energy contract',
       desc:  tr ? 'PPA veya yeşil tarife geçişi' : 'PPA or green tariff switch',
-      saving: hasData ? `−${Math.round(totalTonne * 0.22)} ` : '—',
+      saving: sampleSaving(electricityTonne, 0.22),
       locked: false,
     },
-  ], [totalTonne, hasData, tr]);
+  ];
 
   return (
     <div className="space-y-3 sm:space-y-4">

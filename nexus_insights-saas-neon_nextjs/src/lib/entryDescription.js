@@ -37,3 +37,13 @@ export function entrySourceLabel(entry, tr) {
   if (detail) parts.push(detail);
   return `${tr ? 'Anketten' : 'From the questionnaire'} — ${parts.join(' · ')}`;
 }
+
+// Questionnaire entries hold a whole year's amount; they are stored with
+// month 1 only because the field needs a value, so they are shown as
+// "Yıllık" / "Annual" rather than January.
+export const isAnnualEntry = (entry) => (entry?.description || '').startsWith('Questionnaire step ');
+
+export function entryPeriodLabel(entry, months, tr) {
+  if (isAnnualEntry(entry)) return tr ? 'Yıllık' : 'Annual';
+  return months[(parseInt(entry?.month) || 1) - 1] || '';
+}
