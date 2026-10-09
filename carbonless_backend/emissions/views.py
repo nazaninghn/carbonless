@@ -64,6 +64,16 @@ def _log_entry(request, action, entry, detail, **extra):
     )
 
 
+def _log_answer_review(request, action, entry, step, entries, **extra):
+    """History row for an inventory answer's rows approved or rejected together."""
+    from .audit import answer_text, log_company_activity
+    log_company_activity(
+        request.user, entry.company_id, action,
+        answer_text(entry.year, step, entries, 'tr'), answer_text(entry.year, step, entries, 'en'),
+        target_type='EmissionEntry', target_id=entry.id, request=request,
+        status_before='submitted', status_after='approved' if action == 'entry_approved' else 'draft', **extra)
+
+
 def _entry_summary(entry):
     return (f'{entry.emission_factor.name} · {entry.year}/{entry.month:02d} · '
             f'{format(entry.quantity.normalize(), "f") if hasattr(entry.quantity, "normalize") else entry.quantity} '
@@ -199,6 +209,28 @@ class ReductionTargetViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found.'})
         serializer.save(user=self.request.user, company=company)
+        self._log('target_created', serializer.instance)
+
+    def perform_update(self, serializer):
+        serializer.save()
+        self._log('target_updated', serializer.instance)
+
+    def perform_destroy(self, instance):
+        self._log('target_deleted', instance)
+        instance.delete()
+
+    def _log(self, action, target):
+        from .audit import log_company_activity
+        base_t = float(target.base_emissions_kg) / 1000
+        pct = float(target.target_reduction_percent)
+
+        def tr_num(v):
+            return f'{v:,.1f}'.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
+        log_company_activity(
+            self.request.user, target.company_id, action,
+            f'{target.title} · baz {target.base_year}: {tr_num(base_t)} tCO₂e · {target.target_year} yılına kadar %{tr_num(pct)} azaltım',
+            f'{target.title} · base {target.base_year}: {base_t:,.1f} tCO₂e · {pct:,.1f}% reduction by {target.target_year}',
+            target_type='ReductionTarget', target_id=target.pk, request=self.request)
 
 
 class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
@@ -841,7 +873,10 @@ def approve_entry_view(request, pk):
         entry.save()
         from .notifications import notify_entry_reviewed
         notify_entry_reviewed(entry, approved=True, reviewer=request.user)
-        _log_entry(request, 'entry_approved', entry, _entry_summary(entry))
+        if group:
+            _log_answer_review(request, 'entry_approved', entry, group, waiting)
+        else:
+            _log_entry(request, 'entry_approved', entry, _entry_summary(entry))
         return Response({'status': 'approved'})
     elif action == 'reject':
         for other in siblings:
@@ -853,7 +888,12 @@ def approve_entry_view(request, pk):
         entry.save()
         from .notifications import notify_entry_reviewed
         notify_entry_reviewed(entry, approved=False, reviewer=request.user)
-        _log_entry(request, 'entry_rejected', entry, _entry_summary(entry), reason=entry.rejected_reason)
+        if group:
+            _log_answer_review(request, 'entry_rejected', entry, group,
+                               [e for e in siblings if e.status == 'draft' or e.pk == entry.pk],
+                               reason=entry.rejected_reason)
+        else:
+            _log_entry(request, 'entry_rejected', entry, _entry_summary(entry), reason=entry.rejected_reason)
         return Response({'status': 'rejected'})
     return Response({'error': 'action must be approve or reject'}, status=400)
 

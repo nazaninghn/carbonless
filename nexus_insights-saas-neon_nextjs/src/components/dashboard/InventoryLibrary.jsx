@@ -188,6 +188,8 @@ export default function InventoryLibrary({ tr = false }) {
   const nameYear = (surveyName.match(/\b(19|20)\d{2}\b/) || [])[0];
   const nameYearMismatch = nameYear && surveyYear && nameYear !== surveyYear;
   const completed = reports.filter(r => r.status === 'completed');
+  // An inventory already started or finished for the year picked in the new-inventory dialog.
+  const sameYearReport = reports.find(r => String(r.reporting_year) === String(surveyYear)) || null;
 
   if (loadingReports) {
     return (
@@ -503,7 +505,15 @@ export default function InventoryLibrary({ tr = false }) {
                 <option key={o.value} value={o.value}>{o.label?.[tr ? 'tr' : 'en'] || o.value}</option>
               ))}
             </select>
-            {nameYearMismatch ? (
+            {sameYearReport ? (
+              // The year already has an inventory: a second one shares its
+              // emission entries and replaces its values — open that one instead.
+              <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                {tr
+                  ? `${surveyYear} yılı için zaten bir envanteriniz var: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'tamamlandı' : 'devam ediyor'}). Aynı yıl için ikinci bir envanter, o envanterle aynı emisyon kayıtlarını kullanır ve değerlerinin yerine geçer. Değişiklik için mevcut envanteri açın.`
+                  : `There is already an inventory for ${surveyYear}: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'completed' : 'in progress'}). A second inventory for the same year uses the same emission entries and replaces their values. To change something, open the existing one.`}
+              </p>
+            ) : nameYearMismatch ? (
               <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 {tr
                   ? `Adda ${nameYear} yazıyor ama raporlama yılı ${surveyYear} seçili. Doğru yılı seçtiğinizden emin olun.`
@@ -525,13 +535,36 @@ export default function InventoryLibrary({ tr = false }) {
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
-              <button
-                onClick={handleStartNew}
-                disabled={loading}
-                className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white hover:bg-[#175022] transition disabled:opacity-50"
-              >
-                {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
-              </button>
+              {sameYearReport ? (
+                <>
+                  <button
+                    onClick={handleStartNew}
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] hover:bg-[#175022]/5 transition disabled:opacity-50"
+                  >
+                    {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Yine de yeni başlat' : 'Start a new one anyway')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowNamingDialog(false);
+                      setSurveyName('');
+                      if (sameYearReport.status === 'completed') handleEditCompleted(sameYearReport.report_id);
+                      else handleContinue(sameYearReport.report_id);
+                    }}
+                    className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white hover:bg-[#175022] transition"
+                  >
+                    {tr ? 'Mevcut envanteri aç' : 'Open the existing one'}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={handleStartNew}
+                  disabled={loading}
+                  className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white hover:bg-[#175022] transition disabled:opacity-50"
+                >
+                  {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
+                </button>
+              )}
             </div>
           </div>
         </div>

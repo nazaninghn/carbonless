@@ -975,6 +975,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
     from emissions.models import EmissionEntry
     from emissions.factor_lookup import _get_entry_status
     from emissions.notifications import notify_questionnaire_change
+    from emissions.audit import log_answer_change
     from .models import ReportStep
     if not company:
         return []
@@ -1029,6 +1030,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
                 to_delete, keep_approved = existing, False
             else:
                 to_delete, keep_approved = waiting, True
+        before = list(approved or waiting)
         for e in to_delete:
             e.delete()
         new_entries = [EmissionEntry.objects.create(
@@ -1046,6 +1048,13 @@ def sync_step_entries(user, company, report, step_id, data=None):
             status=status,
         ) for factor, qty, description, detail in rows]
         created.extend(new_entries)
+        # Change history: what the answer reported before and what it reports now.
+        if new_entries:
+            log_answer_change(user, company, year, step, before, new_entries, status)
+        elif keep_approved and waiting:   # a waiting change taken back: the approved value again
+            log_answer_change(user, company, year, step, waiting, approved, 'approved')
+        elif to_delete:
+            log_answer_change(user, company, year, step, before, [], status)
         if status == 'submitted' and new_entries:
             changes.append((step, new_entries, approved if keep_approved else []))
     for step, new_entries, replaced in changes:

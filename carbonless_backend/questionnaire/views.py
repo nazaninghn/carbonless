@@ -580,6 +580,12 @@ class SubmitStepView(APIView):
             report.current_step = 'DONE'
             report.save(update_fields=['status', 'current_step', 'updated_at', 'client_progress'])
             logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
+            from emissions.audit import log_company_activity
+            log_company_activity(
+                request.user, report.company_id, 'inventory_completed',
+                f'{report.title or report.reporting_year} · {report.reporting_year} envanteri tamamlandı',
+                f'{report.title or report.reporting_year} · {report.reporting_year} inventory completed',
+                target_type='CarbonReport', target_id=report.id, request=request)
 
             return Response({
                 'success': True,
@@ -1367,11 +1373,23 @@ def approve_advisor_approval_view(request, pk):
         return Response({'error': 'Entry not found'}, status=404)
 
     action = request.data.get('action')
+
+    def log(history_action, **extra):
+        from emissions.audit import log_company_activity
+        from .step_entries import question_label
+        report = approval.report
+        log_company_activity(
+            request.user, company.pk, history_action,
+            f'{report.reporting_year} envanteri · {question_label(approval.question_id, "tr")} · danışman onayı',
+            f'{report.reporting_year} inventory · {question_label(approval.question_id, "en")} · advisor approval',
+            target_type='AdvisorApproval', target_id=approval.pk, request=request, **extra)
+
     if action == 'approve':
         approval.status = AdvisorApproval.Status.APPROVED
         approval.reviewed_by = request.user
         approval.reviewed_at = timezone.now()
         approval.save()
+        log('advisor_approved')
         return Response({'status': 'approved'})
     elif action == 'reject':
         approval.status = AdvisorApproval.Status.REJECTED
@@ -1379,5 +1397,6 @@ def approve_advisor_approval_view(request, pk):
         approval.reviewed_at = timezone.now()
         approval.rejection_reason = request.data.get('reason', '')
         approval.save()
+        log('advisor_rejected', reason=approval.rejection_reason)
         return Response({'status': 'rejected'})
     return Response({'error': 'action must be approve or reject'}, status=400)

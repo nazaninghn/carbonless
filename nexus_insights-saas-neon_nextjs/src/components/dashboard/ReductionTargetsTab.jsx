@@ -7,6 +7,7 @@ import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lu
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { parseLocalizedNumber } from '@/lib/utils/numbers';
+import { catLabel } from '@/lib/constants/emissions';
 
 // A number put into an input, in the UI language ("0,58" in Turkish), without
 // thousands separators so it reads back unchanged.
@@ -175,7 +176,7 @@ function TimelineBar({ baseYear, targetYear, currentYear, language }) {
 }
 
 // ─── Target Card ──────────────────────────────────────────────────────────────
-function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDelete }) {
+function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEdit, onDelete }) {
   const tr = language === 'tr';
 
   const baseKg     = parseFloat(tgt.base_emissions_kg) || 0;
@@ -186,6 +187,9 @@ function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDele
   const achievedPct = neededKg > 0
     ? Math.min((achievedKg / neededKg) * 100, 100)
     : 0;
+
+  // Above the base: no progress to show — say by how much instead of "%0".
+  const abovePct = baseKg > 0 && currentKg > baseKg ? ((currentKg - baseKg) / baseKg) * 100 : 0;
 
   const yearsLeft = Math.max(tgt.target_year - currentYear(), 0);
   const remainingKg = Math.max(currentKg - targetKg, 0);
@@ -241,8 +245,28 @@ function TargetCard({ tgt, currentKg, currentLabelYear, language, onEdit, onDele
           <p className="mt-0.5 text-[10px] font-semibold text-[#072C0E]/40">
             {tr ? `${pctLabel(reducePct, tr)} hedefine doğru` : `toward ${pctLabel(reducePct, tr)} target`}
           </p>
+          {abovePct > 0 && (
+            <p className="mt-1 text-[11px] font-bold text-red-500">
+              {tr ? `Bazın ${pctLabel(Math.round(abovePct), tr)} üzerinde` : `${pctLabel(Math.round(abovePct), tr)} above the base`}
+            </p>
+          )}
         </div>
       </div>
+
+      {/* The two years cover different sources: the comparison says more
+          about the inventory's scope than about reductions. */}
+      {coverage && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-5 text-amber-800">
+          {tr
+            ? `Baz yıl (${tgt.base_year}) ile ${currentLabelYear} envanteri farklı kaynakları kapsıyor`
+            : `The base year (${tgt.base_year}) and the ${currentLabelYear} inventory cover different sources`}
+          {coverage.added.length > 0 && ` — ${tr ? 'yeni' : 'new'}: ${coverage.added.map(c => catLabel(c, tr)).join(', ')}`}
+          {coverage.missing.length > 0 && `${coverage.added.length > 0 ? ';' : ' —'} ${tr ? 'eksik' : 'missing'}: ${coverage.missing.map(c => catLabel(c, tr)).join(', ')}`}
+          {tr
+            ? '. Karşılaştırmanın anlamlı olması için baz yılın aynı kaynaklarla yeniden hesaplanması gerekir.'
+            : '. For a meaningful comparison the base year needs to be recalculated with the same sources.'}
+        </p>
+      )}
 
       {/* Key metrics row */}
       <div className="grid grid-cols-3 gap-2">
@@ -327,6 +351,32 @@ export default function ReductionTargetsTab({
     return () => { cancelled = true; };
   }, []);
   const latestInventoryYear = inventoryYears[0] || null;
+
+  // Sources (categories with emissions) of each target's base year, to flag
+  // a base year that covers different sources than the year shown as "now".
+  const [baseCategories, setBaseCategories] = useState({});
+  const baseYearsKey = [...new Set(targets.map(t => Number(t.base_year)))].filter(y => y && y !== nowYear).sort().join(',');
+  useEffect(() => {
+    if (!baseYearsKey) return;
+    let cancelled = false;
+    Promise.all(baseYearsKey.split(',').map(y => api.getSummary(y)
+      .then(res => (res.ok ? res.json() : null))
+      .then(d => [y, (d?.by_category || []).filter(c => c.total_kg > 0).map(c => c.category)])
+      .catch(() => [y, null])))
+      .then(pairs => { if (!cancelled) setBaseCategories(Object.fromEntries(pairs)); });
+    return () => { cancelled = true; };
+  }, [baseYearsKey]);
+  const nowCategories = useMemo(
+    () => (summary?.by_category || []).filter(c => c.total_kg > 0).map(c => c.category),
+    [summary?.by_category],
+  );
+  const coverageFor = (tgt) => {
+    const base = baseCategories[String(tgt.base_year)];
+    if (!base || Number(tgt.base_year) === nowYear || nowCategories.length === 0 || base.length === 0) return null;
+    const added = nowCategories.filter(c => !base.includes(c));
+    const missing = base.filter(c => !nowCategories.includes(c));
+    return added.length || missing.length ? { added, missing } : null;
+  };
   const nowHasInventory = inventoryYears.includes(nowYear);
 
   // ── Add target form state ────────────────────────────────────────────────
@@ -673,6 +723,7 @@ export default function ReductionTargetsTab({
               tgt={tgt}
               currentKg={currentKg}
               currentLabelYear={nowYear}
+              coverage={coverageFor(tgt)}
               language={language}
               onEdit={canEdit ? openEdit : undefined}
               onDelete={canEdit ? handleDelete : undefined}
