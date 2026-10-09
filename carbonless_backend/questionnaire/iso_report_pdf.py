@@ -89,6 +89,8 @@ def _factor_name(f, lang):
 
 
 def _unit_label(f, lang):
+    if f.unit == 'kgco2e':  # calculated entries (supplier factor, declaration, PCAF)
+        return 'kg CO₂e'
     if lang == 'tr' and f.unit in _UNIT_TR:
         return _UNIT_TR[f.unit]
     return f.get_unit_display() if hasattr(f, 'get_unit_display') else f.unit

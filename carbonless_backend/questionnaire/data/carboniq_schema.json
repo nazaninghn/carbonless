@@ -3097,6 +3097,57 @@
     "notAbove": null,
     "stage": 4
   },
+  "4A-EV": {
+    "id": "4A-EV",
+    "type": "compound",
+    "subtype": null,
+    "required": true,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": null,
+    "units": null,
+    "repeatable": false,
+    "loopSource": false,
+    "fields": [
+      {
+        "id": "ev_kwh",
+        "type": "text",
+        "subtype": "numeric",
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null
+      },
+      {
+        "id": "in_site_bill",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": [
+          "yes",
+          "no"
+        ]
+      }
+    ],
+    "sumRange": null,
+    "notAbove": null,
+    "stage": 4
+  },
   "4B-0": {
     "id": "4B-0",
     "type": "single_select",
@@ -3467,6 +3518,42 @@
       "m³",
       "litre"
     ],
+    "repeatable": false,
+    "loopSource": true,
+    "fields": null,
+    "sumRange": null,
+    "notAbove": null,
+    "stage": 5
+  },
+  "K3C1-3m": {
+    "id": "K3C1-3m",
+    "type": "single_select",
+    "subtype": null,
+    "required": false,
+    "numericOnly": false,
+    "exactLength": null,
+    "maxLength": null,
+    "minYear": null,
+    "maxYear": null,
+    "minValue": null,
+    "maxValue": null,
+    "options": [
+      "chemical",
+      "chemical_oil",
+      "mineral_oil",
+      "plastic",
+      "plastic_hdpe",
+      "metal_primary",
+      "metal_recycled",
+      "metal_aluminium",
+      "wood",
+      "carton",
+      "paper",
+      "glass",
+      "foam_tape",
+      "other"
+    ],
+    "units": null,
     "repeatable": false,
     "loopSource": true,
     "fields": null,
@@ -4394,6 +4481,7 @@
           "BT-07",
           "BT-08",
           "BT-09",
+          "BT-11",
           "BT-10",
           "BT-99"
         ]
@@ -4439,7 +4527,8 @@
         "conditionalOnValue": [
           "BT-01",
           "BT-02",
-          "BT-03"
+          "BT-03",
+          "BT-11"
         ],
         "options": [
           "economy",
@@ -4460,7 +4549,8 @@
         "conditionalOnValue": [
           "BT-01",
           "BT-02",
-          "BT-03"
+          "BT-03",
+          "BT-11"
         ],
         "options": null
       },
@@ -4886,6 +4976,22 @@
         "conditionalOn": "owner_declaration",
         "conditionalOnValue": null,
         "options": null
+      },
+      {
+        "id": "declaration_energy",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": "owner_declaration",
+        "conditionalOnValue": null,
+        "options": [
+          "electricity",
+          "natural_gas"
+        ]
       }
     ],
     "sumRange": null,
@@ -5071,6 +5177,23 @@
           "m3",
           "litres",
           "units"
+        ]
+      },
+      {
+        "id": "processing_type",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": [
+          "energy_intensive",
+          "light",
+          "chemical"
         ]
       },
       {
@@ -5437,6 +5560,22 @@
         "conditionalOn": "tenant_data_available",
         "conditionalOnValue": null,
         "options": null
+      },
+      {
+        "id": "tenant_energy",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": "tenant_data_available",
+        "conditionalOnValue": null,
+        "options": [
+          "electricity",
+          "natural_gas"
+        ]
       },
       {
         "id": "area_m2",

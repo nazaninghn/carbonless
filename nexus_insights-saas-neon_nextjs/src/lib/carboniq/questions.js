@@ -67,10 +67,18 @@ const BT_OPTIONS = [
   { value: 'BT-07', label: { tr: 'BT-07 — Kiralık araç', en: 'BT-07 — Rental car' } },
   { value: 'BT-08', label: { tr: 'BT-08 — Taksi / Araç paylaşımı', en: 'BT-08 — Taxi / Ride-share' } },
   { value: 'BT-09', label: { tr: 'BT-09 — Feribot / Gemi', en: 'BT-09 — Ferry / Ship' } },
+  // The gap between BT-02 (<3 h) and BT-03 (>6 h). No factor registered for it yet.
+  { value: 'BT-11', label: { tr: 'BT-11 — Uçak, orta mesafe uluslararası (3–6 saat)', en: 'BT-11 — Flight, medium-haul international (3–6 hours)' } },
   { value: 'BT-10', label: { tr: 'BT-10 — Otel konaklaması', en: 'BT-10 — Hotel stay' } },
   { value: 'BT-99', label: { tr: 'BT-99 — Diğer (listede yok)', en: 'BT-99 — Other (not in list)' } },
 ];
-const BT_FLIGHT_MODES = ['BT-01', 'BT-02', 'BT-03'];
+// Declared kWh of a leased asset: the factor depends on the energy.
+const ENERGY_CARRIER_OPTIONS = [
+  { value: 'electricity', label: { tr: 'Elektrik', en: 'Electricity' } },
+  { value: 'natural_gas', label: { tr: 'Doğalgaz', en: 'Natural gas' } },
+];
+
+const BT_FLIGHT_MODES = ['BT-01', 'BT-02', 'BT-03', 'BT-11'];
 const CABIN_CLASS_OPTIONS = [
   { value: 'economy', label: { tr: 'Ekonomi (1x)', en: 'Economy (1x)' } },
   { value: 'business', label: { tr: 'Business (2.9x)', en: 'Business (2.9x)' } },
@@ -2750,7 +2758,7 @@ export const CARBONIQ_QUESTIONS = [
         type: 'text',
         subtype: 'numeric',
         required: true,
-        label: { tr: 'Üretim miktarı', en: 'Production quantity' },
+        label: { tr: 'Üretim miktarı (ton)', en: 'Production quantity (tonnes)' },
         placeholder: { tr: 'Örn: 50.000', en: 'e.g. 50,000' },
       },
       {
@@ -3336,7 +3344,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     nextByValue: {
       yes: '4A-1',
-      no: '4B-0',
+      no: '4A-EV',
     },
   },
   {
@@ -3735,13 +3743,14 @@ export const CARBONIQ_QUESTIONS = [
     },
     nextByValue: {
       yes: '4A-EF-a',
-      no: '4B-0',
+      no: '4A-EV',
     },
-    next: '4B-0',
+    next: '4A-EV',
   },
   {
     // "Evet" on 4A-EF used to lead nowhere — the document was never asked
-    // for. Collected only, like 3A-EF-a; no factor is applied from it here.
+    // for. A factor valid for the reporting year and in the activity's unit
+    // replaces the generic one (questionnaire/step_entries.py).
     id: '4A-EF-a',
     number: '76a',
     stage: 4,
@@ -3800,6 +3809,44 @@ export const CARBONIQ_QUESTIONS = [
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen tüm beyan alanlarını doldurun.', en: 'Please fill in all declaration fields.' },
+    },
+    next: '4A-EV',
+  },
+  {
+    // 3B-5 promises the charging of electric vehicles is asked in Stage 4.
+    // Charging already on a site bill (4A-1) is not counted twice.
+    id: '4A-EV',
+    number: '76b',
+    stage: 4,
+    block: '4A',
+    isoRef: 'ISO 14064-1 §5.3',
+    type: 'compound',
+    required: true,
+    reportField: 'scope2.ev_charging',
+    conditionalShow: { questionId: '3B-5', equals: 'electric' },
+    text: {
+      tr: 'Elektrikli araçlarınızın yıllık şarj elektriği ne kadar?',
+      en: 'How much electricity did your electric vehicles use for charging in the year?',
+    },
+    helper: {
+      tr: 'Şarj faturası, şarj istasyonu kaydı veya araç uygulamasındaki toplam kWh. Araçlar tesiste şarj ediliyorsa bu elektrik zaten tesis faturasında (4A-1) vardır — iki kez sayılmaz.',
+      en: 'Total kWh from charging invoices, charger records or the vehicle app. Charging at your sites is already on the site bill (4A-1) — it is not counted twice.',
+    },
+    fields: [
+      { id: 'ev_kwh', type: 'text', subtype: 'numeric', required: true, label: { tr: 'Yıllık şarj elektriği (kWh)', en: 'Annual charging electricity (kWh)' }, placeholder: { tr: 'Örn: 4.500', en: 'e.g. 4,500' } },
+      {
+        id: 'in_site_bill',
+        type: 'select',
+        required: true,
+        label: { tr: 'Bu elektrik 4A-1\'deki tesis elektriğine dahil mi?', en: 'Is this electricity part of the site electricity in 4A-1?' },
+        options: [
+          { value: 'yes', label: { tr: 'Evet — tesiste şarj ediliyor (ayrıca sayılmaz)', en: 'Yes — charged at our sites (not counted again)' } },
+          { value: 'no', label: { tr: 'Hayır — dışarıda / ayrı faturalı şarj', en: 'No — charged elsewhere / billed separately' } },
+        ],
+      },
+    ],
+    validate: {
+      requiredMessage: { tr: 'Lütfen şarj elektriğini ve faturaya dahil olup olmadığını girin.', en: 'Please enter the charging electricity and whether it is on the site bill.' },
     },
     next: '4B-0',
   },
@@ -3945,7 +3992,8 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     // "Evet" on 4B-EF used to lead nowhere — the document was never asked
-    // for. Collected only, like 3A-EF-a; no factor is applied from it here.
+    // for. A factor valid for the reporting year and in the activity's unit
+    // replaces the generic one (questionnaire/step_entries.py).
     id: '4B-EF-a',
     number: '79a',
     stage: 4,
@@ -4240,7 +4288,7 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     // "Evet — miktar biliyorum" used to lead nowhere. Collected per category
-    // (same loop as K3C1-2); nothing is calculated from it here.
+    // (same loop as K3C1-2); calculated per material (K3C1-3m) where a factor exists.
     id: 'K3C1-3a',
     number: '84a',
     stage: 5,
@@ -4248,7 +4296,7 @@ export const CARBONIQ_QUESTIONS = [
     isoRef: 'ISO 14064-1 §5.4',
     type: 'equipment_loop',
     loopSource: 'K3C1-1',
-    loopNext: 'K3C1-4',
+    loopNext: 'K3C1-3m',
     // Optional per category: a user who knows the quantity for one category
     // only had to invent numbers for the others to get past this question.
     required: false,
@@ -4267,6 +4315,47 @@ export const CARBONIQ_QUESTIONS = [
     validate: {
       requiredMessage: { tr: 'Lütfen miktarı girin.', en: 'Please enter the quantity.' },
     },
+    next: 'K3C1-3m',
+  },
+  {
+    // Raw materials and packaging by kg are calculated with the factor of
+    // their material — "SC-01 500 ton" alone does not say which factor applies.
+    id: 'K3C1-3m',
+    number: '84b',
+    stage: 5,
+    block: '5A',
+    isoRef: 'ISO 14064-1 §5.4',
+    type: 'single_select',
+    loopSource: 'K3C1-1',
+    loopItemsOnly: ['SC-01', 'SC-02'],
+    loopNext: 'K3C1-4',
+    required: false,
+    conditionalShow: { questionId: 'K3C1-3', equals: 'yes' },
+    reportField: 'scope3.cat1.material',
+    text: {
+      tr: '[Kategori] — Ağırlıkça en büyük pay hangi malzemenin?',
+      en: '[Category] — Which material makes up most of it by weight?',
+    },
+    helper: {
+      tr: 'Miktar kg veya ton girildiyse bu malzemenin emisyon faktörüyle hesaplanır. Malzeme listede yoksa "Diğer" seçin — bu kategori o zaman hesaplanmaz.',
+      en: 'A quantity in kg or tonnes is calculated with this material\'s emission factor. If the material is not listed, pick "Other" — the category is then not calculated.',
+    },
+    options: [
+      { value: 'chemical', label: { tr: 'Kimyasal', en: 'Chemical' } },
+      { value: 'chemical_oil', label: { tr: 'Kimyasal yağ', en: 'Chemical oil' } },
+      { value: 'mineral_oil', label: { tr: 'Mineral yağ', en: 'Mineral oil' } },
+      { value: 'plastic', label: { tr: 'Plastik', en: 'Plastic' } },
+      { value: 'plastic_hdpe', label: { tr: 'Plastik — HDPE', en: 'Plastic — HDPE' } },
+      { value: 'metal_primary', label: { tr: 'Metal (birincil)', en: 'Metal (primary)' } },
+      { value: 'metal_recycled', label: { tr: 'Metal (geri dönüştürülmüş)', en: 'Metal (recycled)' } },
+      { value: 'metal_aluminium', label: { tr: 'Alüminyum', en: 'Aluminium' } },
+      { value: 'wood', label: { tr: 'Ahşap', en: 'Wood' } },
+      { value: 'carton', label: { tr: 'Karton', en: 'Cardboard' } },
+      { value: 'paper', label: { tr: 'Kağıt', en: 'Paper' } },
+      { value: 'glass', label: { tr: 'Cam', en: 'Glass' } },
+      { value: 'foam_tape', label: { tr: 'Köpük bant', en: 'Foam tape' } },
+      { value: 'other', label: { tr: 'Diğer (listede yok)', en: 'Other (not listed)' } },
+    ],
     next: 'K3C1-4',
   },
   {
@@ -4991,7 +5080,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'travel_mode', type: 'select', required: true, label: { tr: 'Seyahat modu', en: 'Travel mode' }, options: BT_OPTIONS },
       // The label names the unit for the chosen mode (labelByValue).
       { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Kişi-km / km / gece', en: 'Person-km / km / nights' },
-        labelByValue: { field: 'travel_mode', labels: { 'BT-01': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-02': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-03': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-04': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-05': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-06': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-07': { tr: 'Km', en: 'Km' }, 'BT-08': { tr: 'Km', en: 'Km' }, 'BT-09': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-10': { tr: 'Gece sayısı', en: 'Number of nights' } } } },
+        labelByValue: { field: 'travel_mode', labels: { 'BT-01': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-02': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-03': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-04': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-05': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-06': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-07': { tr: 'Km', en: 'Km' }, 'BT-08': { tr: 'Km', en: 'Km' }, 'BT-09': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-11': { tr: 'Kişi-km', en: 'Person-km' }, 'BT-10': { tr: 'Gece sayısı', en: 'Number of nights' } } } },
       { id: 'other_desc', type: 'text', required: true, maxLength: 120, conditionalOn: 'travel_mode', conditionalOnValue: ['BT-99'], label: { tr: 'Seyahat türü açıklaması', en: 'Travel type description' }, placeholder: { tr: 'Örn: Charter uçuş', en: 'e.g. charter flight' } },
       {
         id: 'cabin_class', type: 'select', required: false,
@@ -5312,6 +5401,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'owner_declaration', type: 'boolean', required: true, label: { tr: 'Bina sahibi enerji beyanı var mı?', en: 'Building owner energy declaration available?' } },
       // Required once the owner declaration is answered "Evet" (hidden otherwise).
       { id: 'declaration_kwh', type: 'numeric', required: true, conditionalOn: 'owner_declaration', label: { tr: 'Beyan edilen tüketim (kWh)', en: 'Declared consumption (kWh)' } },
+      { id: 'declaration_energy', type: 'select', required: true, conditionalOn: 'owner_declaration', label: { tr: 'Bu kWh hangi enerji?', en: 'Which energy are these kWh?' }, options: ENERGY_CARRIER_OPTIONS },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C9-0',
@@ -5439,6 +5529,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'product', format: 'name', type: 'text', required: true, maxLength: 200, label: { tr: 'Ara ürün', en: 'Intermediate product' }, placeholder: { tr: 'Örn: Sülfürik asit', en: 'e.g. Sulphuric acid' } },
       { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Satılan miktar', en: 'Quantity sold' } },
       { id: 'unit', type: 'select', required: true, label: { tr: 'Birim', en: 'Unit' }, options: [{ value: 'tonnes', label: { tr: 'ton', en: 'tonnes' } }, { value: 'kg', label: { tr: 'kg', en: 'kg' } }, { value: 'm3', label: { tr: 'm³', en: 'm³' } }, { value: 'litres', label: { tr: 'litre', en: 'litres' } }, { value: 'units', label: { tr: 'adet', en: 'units' } }] },
+      { id: 'processing_type', type: 'select', required: true, label: { tr: 'İşlem türü', en: 'Processing type' }, options: [{ value: 'energy_intensive', label: { tr: 'Enerji yoğun (ergitme, fırınlama…)', en: 'Energy-intensive (melting, firing…)' } }, { value: 'light', label: { tr: 'Hafif (montaj, kesme, paketleme…)', en: 'Light (assembly, cutting, packing…)' } }, { value: 'chemical', label: { tr: 'Kimyasal işlem', en: 'Chemical processing' } }] },
       { id: 'customer_process', type: 'text', required: false, maxLength: 300, label: { tr: 'Müşterideki işlem (opsiyonel)', en: 'Processing at the customer (optional)' }, placeholder: { tr: 'Örn: boya üretiminde hammadde', en: 'e.g. raw material in paint production' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
@@ -5624,6 +5715,7 @@ export const CARBONIQ_QUESTIONS = [
       { id: 'asset_description', type: 'text', required: true, label: { tr: 'Varlık açıklaması', en: 'Asset description' }, maxLength: 150 },
       { id: 'tenant_data_available', type: 'boolean', required: true, label: { tr: 'Kiracıdan enerji verisi alınabiliyor mu?', en: 'Can energy data be obtained from tenant?' } },
       { id: 'tenant_kwh', type: 'numeric', required: true, conditionalOn: 'tenant_data_available', label: { tr: 'Kiracının yıllık enerji tüketimi (kWh)', en: 'Tenant annual energy consumption (kWh)' } },
+      { id: 'tenant_energy', type: 'select', required: true, conditionalOn: 'tenant_data_available', label: { tr: 'Bu kWh hangi enerji?', en: 'Which energy are these kWh?' }, options: ENERGY_CARRIER_OPTIONS },
       { id: 'area_m2', type: 'numeric', required: true, conditionalOn: 'tenant_data_available', conditionalOnValue: [false, 'false'], label: { tr: 'Kiraya verilen alan (m²)', en: 'Leased area (m²)' } },
     ],
     systemMessages: {

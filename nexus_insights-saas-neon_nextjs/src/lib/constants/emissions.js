@@ -66,6 +66,8 @@ const UNIT_LABELS = {
   nights: { tr: 'gece', en: 'nights' }, units: { tr: 'adet', en: 'units' },
   packages: { tr: 'paket', en: 'packages' }, days: { tr: 'gün', en: 'days' },
   employees: { tr: 'çalışan', en: 'employees' },
+  // Entries calculated from a supplier factor, declaration or PCAF share.
+  kgco2e: 'kg CO₂e',
 };
 export const unitLabel = (u, tr) => {
   const l = UNIT_LABELS[u];

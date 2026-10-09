@@ -204,6 +204,9 @@ EMISSION_FACTORS = [
     {'slug': 'car-rental-electric', 'name': 'Rental car — Electric (Turkey grid)', 'name_tr': 'Kiralık araç — Elektrik (Türkiye şebekesi)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'km', 'factor_kg_co2e': 0.0630, 'source': 'defra_2024', 'reference': 'CarbonIQ EF Katalogu EF-K3C-003 — TR grid EF x avg consumption'},
     {'slug': 'ferry-travel', 'name': 'Ferry / Ship (passenger)', 'name_tr': 'Feribot / Gemi (yolcu)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'person-km', 'factor_kg_co2e': 0.0190, 'source': 'defra_2024', 'reference': 'DEFRA 2024 — coastal/ferry passenger average'},
     {'slug': 'hotel-standard', 'name': 'Hotel — Standard', 'name_tr': 'Otel — Standart', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'nights', 'factor_kg_co2e': 0.0820, 'source': 'defra_2024', 'reference': 'CarbonIQ EF Katalogu EF-K3S-010 — Cornell Hotel Sustainability Benchmarking'},
+    # Hotel stay in Turkey, per room-night — DESNZ/DEFRA 2024 "Hotel stay" sheet, the
+    # value the Turkey ISO 14064-1 verified inventory uses (3.5 SEYAHAT). K3C6-2 BT-10.
+    {'slug': 'hotel-turkey', 'name': 'Hotel stay — Turkey (room per night)', 'name_tr': 'Otel konaklaması — Türkiye (oda/gece)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'turkey', 'unit': 'nights', 'factor_kg_co2e': 32.1, 'source': 'defra_2024', 'reference': 'DESNZ/DEFRA 2024 GHG conversion factors — Hotel stay, Turkey, room per night'},
     {'slug': 'hotel-luxury-5star', 'name': 'Hotel — Luxury (5-star, Western Europe)', 'name_tr': 'Otel — Lüks (5 yıldız, Batı Avrupa)', 'scope': 'scope3', 'category': 'business_travel', 'country': 'global', 'unit': 'nights', 'factor_kg_co2e': 0.1640, 'source': 'defra_2024', 'reference': 'CarbonIQ EF Katalogu EF-K3S-011 — Cornell Hotel Sustainability Benchmarking'},
 
     # ============================================

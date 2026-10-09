@@ -281,6 +281,7 @@ export const translations = {
         usd: 'USD',
         days: 'Gün',
         nights: 'Gece',
+        kgco2e: 'kg CO₂e',
       }
     }
   },
@@ -566,6 +567,7 @@ export const translations = {
         usd: 'USD',
         days: 'Days',
         nights: 'Nights',
+        kgco2e: 'kg CO₂e',
       }
     }
   }

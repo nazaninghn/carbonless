@@ -320,6 +320,116 @@ class StepEntriesTests(TestCase):
                          [('Questionnaire step 4A-1', 1000.0)])
 
 
+class InventoryCalculationTests(StepEntriesTests):
+    """Every answer with an approved factor reaches the dashboard; anything
+    without one is left out, never guessed."""
+
+    def _by_step(self):
+        out = {}
+        for e in self._entries():
+            step = e.description[len('Questionnaire step '):].split(' ')[0]
+            out.setdefault(step, []).append(
+                (e.emission_factor.slug, round(float(e.quantity), 3), round(float(e.calculated_co2e_kg), 3)))
+        return out
+
+    def test_vehicles_by_fuel_and_class(self):
+        self._factor('motorin-mobile', 'liters', 2.696, scope='scope1', country='turkey')
+        self._factor('car-diesel', 'km', 0.156, scope='scope1', country='turkey')
+        self._factor('off-road-diesel-desnz', 'liters', 3.17939, scope='scope1')
+        self._factor('lpg', 'liters', 1.5, scope='scope1', country='turkey')
+        self._step('3B-5', {'EQ-3B-05': 'diesel', 'EQ-3B-01': 'diesel', 'EQ-3B-01#2': 'electric',
+                            'EQ-3B-10': 'diesel', 'EQ-3B-11': 'diesel', 'EQ-3B-02': 'lpg_cng',
+                            'EQ-3B-06': 'diesel'})
+        self._step('3B-6', {'EQ-3B-05': 'fuel_litres', 'EQ-3B-01': 'annual_km', 'EQ-3B-01#2': 'annual_km',
+                            'EQ-3B-10': 'annual_km', 'EQ-3B-11': 'fuel_litres', 'EQ-3B-02': 'fuel_litres',
+                            'EQ-3B-06': 'tonne_km'})
+        self._step('3B-7', {'EQ-3B-05': '1.000 litre', 'EQ-3B-01': '10.000 km', 'EQ-3B-01#2': '5000 km',
+                            'EQ-3B-10': '80000 km', 'EQ-3B-11': '200 litre', 'EQ-3B-02': '100 litre',
+                            'EQ-3B-06': '9000 ton-km'})
+        got = self._by_step()['3B-7']
+        # Trucks by km, tonne-km and electric cars by km are not calculated.
+        self.assertEqual(sorted(got), sorted([
+            ('motorin-mobile', 1000.0, 2696.0), ('car-diesel', 10000.0, 1560.0),
+            ('off-road-diesel-desnz', 200.0, 635.878), ('calculated-scope1-mobile_combustion', 150.0, 150.0)]))
+        lpg = next(e for e in self._entries() if e.emission_factor.slug.startswith('calculated-'))
+        self.assertIn('EQ-3B-02 · 100 liters × 1.5 (lpg)', lpg.description)
+        self._step('3B-0', 'no')
+        self.assertNotIn('3B-7', self._by_step())
+
+    def test_ev_charging_counted_once(self):
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('3B-5', {'EQ-3B-01': 'electric'})
+        self._step('4A-EV', {'ev_kwh': '2000', 'in_site_bill': 'yes'})
+        self.assertEqual(self._entries(), [])
+        self._step('4A-EV', {'ev_kwh': '2000', 'in_site_bill': 'no'})
+        self.assertEqual(self._by_step(), {'4A-EV': [('turkey-grid', 2000.0, 800.0)]})
+
+    def test_supplier_factor_of_the_reporting_year_replaces_the_generic_one(self):
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('4A-1', {'1': '1000 kWh'})
+        self._step('4A-EF', 'yes')
+        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2024'})
+        self.assertEqual(self._by_step()['4A-1'], [('turkey-grid', 1000.0, 400.0)])  # other year
+        self._step('4A-EF-a', {'ef_value': '300', 'ef_unit': 'kgCO2e_MWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
+        self.assertEqual(self._by_step()['4A-1'], [('calculated-scope2-x', 300.0, 300.0)])  # same scope & category
+
+    def test_purchased_goods_usd_material_and_declarations(self):
+        self._factor('legal-accounting', 'usd', 0.13)
+        self._factor('plastic', 'kg', 3.1, country='turkey')
+        self._step('K3C1-2', {'SC-07': '1000 USD', 'SC-09': '5000 TL', 'SC-01': '9 USD'})
+        self._step('K3C1-3a', {'SC-01': '2 ton', 'SC-02': '50 kg'})
+        self.assertEqual(self._by_step(), {'K3C1-2': [('legal-accounting', 1000.0, 130.0)]})
+        self._step('K3C1-3m', {'SC-01': 'plastic', 'SC-02': 'other'})
+        self.assertEqual(self._by_step()['K3C1-3a'], [('plastic', 2000.0, 6200.0)])
+        self._step('K3C1-4a', {'items': [{'category': 'SC-01', 'supplier': 'Kimya', 'value': '4',
+                                          'unit': 'tCO2e_total', 'year': '2025'}]})
+        got = self._by_step()
+        self.assertEqual(got['K3C1-4a'], [('calculated-scope3-purchased_goods', 4000.0, 4000.0)])
+        self.assertNotIn('K3C1-3a', got)  # the declaration replaces SC-01's quantity
+
+    def test_travel_hotel_turkey_and_no_rfi_multiplier(self):
+        self._factor('hotel-turkey', 'nights', 32.1, country='turkey')
+        self._factor('flight-long-business', 'person-km', 0.429)
+        self._step('K3C6-2', {'items': [
+            {'travel_mode': 'BT-10', 'quantity': '3', 'hotel_class': 'luxury'},
+            {'travel_mode': 'BT-03', 'quantity': '1000', 'cabin_class': 'business', 'rfi_applied': True},
+            {'travel_mode': 'BT-11', 'quantity': '1000', 'cabin_class': 'economy'},
+            {'travel_mode': 'BT-02', 'quantity': '1000', 'cabin_class': 'first'}]})
+        self.assertEqual(sorted(self._by_step()['K3C6-2']),
+                         [('flight-long-business', 1000.0, 429.0), ('hotel-turkey', 3.0, 96.3)])
+
+    def test_level_question_decides_which_answers_count(self):
+        self._factor('wt-01-landfill', 'kg', 1.29)
+        self._factor('landfill', 'kg', 0.54, country='turkey')
+        self._step('K3C5-2', {'items': [{'waste_type': 'WT-01', 'quantity_kg': '100', 'disposal_method': 'landfill'}]})
+        self._step('K3C5-2b', '1000')
+        self._step('K3C5-1', 'S2_total')
+        self.assertEqual(self._by_step(), {'K3C5-2b': [('landfill', 1000.0, 540.0)]})
+
+    def test_franchises_reported_total_and_pcaf(self):
+        self._step('K3C14-0', 'yes')
+        self._step('K3C14-1', {'franchise_count': '12', 'reporting_count': '8', 'total_tco2e': '340.5'})
+        self._step('K3C15-1', {'items': [
+            {'asset_class': 'VA-01', 'investment_amount': '5000000', 'company_value': '40000000',
+             'company_debt': '10000000', 'ghg_report_available': True, 'company_emissions_tco2e': '1200'},
+            {'asset_class': 'VA-05', 'investment_amount': '1', 'company_value': '2',
+             'ghg_report_available': True, 'company_emissions_tco2e': '1'}]})
+        got = self._by_step()
+        self.assertEqual(got['K3C14-1'], [('calculated-scope3-franchises', 340500.0, 340500.0)])
+        self.assertEqual(got['K3C15-1'], [('calculated-scope3-investments', 120000.0, 120000.0)])
+        desc = [e.description for e in self._entries()]
+        self.assertIn('Questionnaire step K3C14-1 · 340.5 tCO2e · 8/12', desc)
+
+    def test_unchanged_entries_keep_their_approval(self):
+        from emissions.models import EmissionEntry
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('4A-1', {'1': '1000 kWh'})
+        EmissionEntry.objects.update(status='draft')  # e.g. waiting on someone
+        entry = self._entries()[0]
+        self._step('K3C8-0', 'no')
+        self.assertEqual([(e.id, e.status) for e in self._entries()], [(entry.id, 'draft')])
+
+
 
 class ReuseProfileYearTests(TestCase):
     """Reusing the company profile never copies the reporting year."""
@@ -867,15 +977,19 @@ class SupplierEFDocumentTests(TestCase):
 
     def test_conditional_fields_and_cat10_form(self):
         from .carboniq_validation import validate_generic_step
-        office = {'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': True, 'declaration_kwh': '12000'}
+        office = {'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': True, 'declaration_kwh': '12000',
+                  'declaration_energy': 'electricity'}
         self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office]}}, lang='tr'), (True, None))
         # "Evet" on the owner declaration now needs the kWh
         self.assertFalse(validate_generic_step('K3C8-1', {'answer': {'items': [{**office, 'declaration_kwh': ''}]}}, lang='tr')[0])
+        # …and which energy the kWh are (the factor depends on it)
+        self.assertFalse(validate_generic_step('K3C8-1', {'answer': {'items': [{**office, 'declaration_energy': ''}]}}, lang='tr')[0])
         # no declaration: the hidden kWh field is not required
         self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': False}]}}, lang='tr'), (True, None))
         # leased equipment has no floor area
         self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-04', 'owner_declaration': False}]}}, lang='tr'), (True, None))
-        prod = {'product': 'Sülfürik asit', 'quantity': '120', 'unit': 'tonnes'}
+        prod = {'product': 'Sülfürik asit', 'quantity': '120', 'unit': 'tonnes', 'processing_type': 'chemical'}
+        self.assertFalse(validate_generic_step('K3C10-1', {'answer': {'items': [{**prod, 'processing_type': ''}]}}, lang='tr')[0])
         self.assertEqual(validate_generic_step('K3C10-1', {'answer': {'items': [prod, {**prod, 'product': 'Kostik'}]}}, lang='tr'), (True, None))
         # several leased assets / sold products, one row each
         self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office, {'asset_type': 'KV-03', 'area_m2': '900', 'owner_declaration': False}]}}, lang='tr'), (True, None))
@@ -888,7 +1002,8 @@ class SupplierEFDocumentTests(TestCase):
 
     def test_cat13_14_15_follow_up_fields(self):
         from .carboniq_validation import validate_generic_step
-        asset = {'asset_description': 'Depo Ankara - 2. kat', 'tenant_data_available': True, 'tenant_kwh': '8000'}
+        asset = {'asset_description': 'Depo Ankara - 2. kat', 'tenant_data_available': True, 'tenant_kwh': '8000',
+                 'tenant_energy': 'electricity'}
         self.assertEqual(validate_generic_step('K3C13-1', {'answer': {'items': [asset]}}, lang='tr'), (True, None))
         # tenant data "Evet" needs the kWh, "Hayır" needs the area
         self.assertFalse(validate_generic_step('K3C13-1', {'answer': {'items': [{**asset, 'tenant_kwh': ''}]}}, lang='tr')[0])
