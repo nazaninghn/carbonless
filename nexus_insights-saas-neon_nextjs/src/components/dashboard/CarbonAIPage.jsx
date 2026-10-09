@@ -240,8 +240,13 @@ const YEAR_SPECIFIC_STEPS = new Set(['B3', 'B4', 'B6']);
 // answer) before the value/membership check runs.
 function conditionalShowMatches(conditionalShow, answersMap) {
   if (!conditionalShow) return true;
-  const { questionId, field, includesValue, inValues, equals, greaterThan, unitIn } = conditionalShow;
+  const { questionId, field, includesValue, inValues, equals, greaterThan, unitIn, hasKey } = conditionalShow;
   const raw = readAnswerValue(answersMap, questionId);
+  // hasKey: a per-item answer has a non-empty value for this item (3A-5bio
+  // only when a biomass amount was given).
+  if (hasKey) {
+    return !!(raw && typeof raw === 'object' && !Array.isArray(raw) && String(raw[hasKey] ?? '').trim());
+  }
   // unitIn: an "amount unit" answer (or any item of a per-site loop) was
   // given in one of these units — 4A-1a only for a TL invoice amount.
   if (unitIn) {
@@ -3342,6 +3347,11 @@ export function QuestionnaireTab({
           parts.push(trL
             ? `✓ Envantere yansıdı: **${sign}${tonnes(delta)}** (bu envanterin toplamı ${tonnes(Number(fb.total_kg) || 0)}).`
             : `✓ Added to the inventory: **${sign}${tonnes(delta)}** (inventory total ${tonnes(Number(fb.total_kg) || 0)}).`);
+        }
+        if (Number(fb.biogenic_kg) > 0) {
+          parts.push(trL
+            ? `🌱 Biyojenik CO₂: ${tonnes(Number(fb.biogenic_kg))} — kapsam toplamlarına eklenmez, raporda ayrıca gösterilir.`
+            : `🌱 Biogenic CO₂: ${tonnes(Number(fb.biogenic_kg))} — not added to the scope totals, reported separately.`);
         }
         for (const note of fb.notes || []) {
           if (shownCalcNotesRef.current.has(note)) continue;

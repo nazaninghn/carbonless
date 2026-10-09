@@ -2456,6 +2456,18 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         'yanmasından kaynaklanan biyojenik CO₂, mevcut olduğu durumlarda fosil '
         'envanterinden ayrı raporlanır ve yukarıdaki toplamlara dahil edilmez.',
         S['body']))
+    from .step_entries import biogenic_co2_kg
+    bio_t = biogenic_co2_kg(A) / 1000
+    if bio_t:
+        E.append(Paragraph(
+            f'Biogenic CO₂ from biomass combustion in this period: <b>{_fmt(bio_t, False)} t CO₂</b> '
+            '(DESNZ/DEFRA 2024 “outside of scopes” factors). The CH₄ and N₂O of that combustion are '
+            'included in Category I.'
+            if lang == 'en' else
+            f'Bu dönemde biyokütle yanmasından kaynaklanan biyojenik CO₂: <b>{_fmt(bio_t, True)} t CO₂</b> '
+            '(DESNZ/DEFRA 2024 “kapsam dışı” faktörleri). Bu yanmanın CH₄ ve N₂O emisyonları '
+            'Kategori I’e dahildir.',
+            S['body']))
     E.append(Spacer(1, 4*mm))
 
     # 3.5 Assumptions — 6C-1 (exception type code) / 6C-2 (compound: which

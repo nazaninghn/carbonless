@@ -134,6 +134,41 @@ def _stationary_fuels(answer):
     return out
 
 
+# 3A-5bio biomass type -> (bioenergy factor of the CH4 + N2O of burning it,
+# unit it is entered in). Its CO2 is biogenic: not in the scope totals.
+_BIOMASS = {'wood_pellets': ('wood-pellets', 'kg'), 'biogas': ('biogas', 'kwh')}
+# Biogenic CO2 per unit — DESNZ/DEFRA 2024 "Outside of scopes": wood pellets
+# 1 677,18 kg/t, biogas 0,19902 kg/kWh. Reported apart from the inventory.
+_BIOGENIC_CO2_KG = {'wood_pellets': 1.67718, 'biogas': 0.19902}
+
+
+def _biomass_amount(A):
+    """(type, quantity in the factor's unit) of 3A-5 biomass, or None."""
+    if not isinstance(A.get('3A-5'), dict) or A['3A-5'].get('biomass') in (None, ''):
+        return None
+    kind = A.get('3A-5bio')
+    if kind not in _BIOMASS:
+        return None
+    amount, unit = _split_amount_unit(A['3A-5']['biomass'])
+    qty, unit = _number(amount), unit.lower()
+    if not qty:
+        return None
+    if _BIOMASS[kind][1] == 'kg':
+        qty = {'kg': qty, 'ton': qty * 1000}.get(unit)
+    elif unit != 'kwh':
+        qty = None
+    return (kind, qty) if qty else None
+
+
+def biogenic_co2_kg(answers):
+    """Biogenic CO2 of the biomass burnt (3A-5), reported separately."""
+    A = {k: _value(v) for k, v in (answers or {}).items()}
+    if A.get('3A-0') not in (None, '', 'yes'):
+        return 0.0
+    got = _biomass_amount(A)
+    return got[1] * _BIOGENIC_CO2_KG[got[0]] if got else 0.0
+
+
 def _electricity(answer):
     """4A-1: {site: "amount kWh|MWh"} (or one string) -> one grid electricity activity."""
     items = list(answer.values()) if isinstance(answer, dict) else [answer]
@@ -481,6 +516,8 @@ _TRAVEL_SLUG = {
 }
 _FLIGHT_CABIN_SLUG = {
     'BT-02': {'economy': 'flight-short-economy'},
+    # 3–6 h: the short-haul factor on the distance flown, by cabin class.
+    'BT-11': {'economy': 'flight-short-economy'},
     'BT-03': {'economy': 'flight-long-economy', 'business': 'flight-long-business',
               'first': 'flight-long-first'},
 }
@@ -667,8 +704,10 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
     def own(step):
         return activities_for_step(step, {'answer': A.get(step)})
 
+    biomass = _biomass_amount(A)
     g = {
-        '3A-5': own('3A-5'),
+        '3A-5': own('3A-5') + ([{'slug': _BIOMASS[biomass[0]][0], 'quantity': biomass[1], 'label': 'biomass'}]
+                               if biomass else []),
         '3B-7': _vehicles(A),
         '3C-2': _process(A),
         '4A-1': own('4A-1'),
@@ -948,12 +987,19 @@ def uncalculated_notes(answers, year):
         return not gate or A.get(gate) in (None, '', 'yes')
 
     if open_('3A-5') and isinstance(A.get('3A-5'), dict):
-        other = [f for f, raw in A['3A-5'].items()
-                 if f not in _STATIONARY_FUELS and _number(_split_amount_unit(raw)[0])]
-        if other:
-            names = ', '.join({'biomass': 'Biyokütle', 'other_fossil': 'Diğer fosil yakıt'}.get(f, f) for f in other)
-            note('3A-5', f'{names}: emisyon faktörü seçilmediği için hesaplanmadı.',
-                 f'{names}: not calculated — no emission factor has been chosen.')
+        given = {f for f, raw in A['3A-5'].items() if _number(_split_amount_unit(raw)[0])}
+        if 'biomass' in given and not _biomass_amount(A):
+            kind = A.get('3A-5bio')
+            if kind in _BIOMASS:
+                unit = 'kg / ton' if _BIOMASS[kind][1] == 'kg' else 'kWh'
+                note('3A-5bio', f'Biyokütle: bu biyokütle türü {unit} olarak girilmeli — hesaplanmadı.',
+                     f'Biomass: this biomass type is entered in {unit} — not calculated.')
+            else:
+                note('3A-5bio', 'Biyokütle: türü (odun peleti, biyogaz) seçilmediği veya listede olmadığı için hesaplanmadı.',
+                     'Biomass: not calculated — its type (wood pellets, biogas) is not chosen or not listed.')
+        if 'other_fossil' in given:
+            note('3A-5', 'Diğer fosil yakıt: yakıt türü ve fosil payı belirtilmediği için hesaplanmadı.',
+                 'Other fossil fuel: not calculated — the fuel and its fossil share are not given.')
 
     if open_('3B-7') and isinstance(A.get('3B-7'), dict):
         fuels = A.get('3B-5') if isinstance(A.get('3B-5'), dict) else {}
@@ -963,8 +1009,8 @@ def uncalculated_notes(answers, year):
                 continue
             base, fuel, mode = str(key).split('#')[0], fuels.get(key), modes.get(key)
             if mode == 'tonne_km':
-                note('3B-7', f'{key}: ton-km için Kapsam 1 emisyon faktörü yok — yakıt litresi girerseniz hesaplanır.',
-                     f'{key}: no Scope 1 factor for tonne-km — enter fuel litres to have it calculated.')
+                note('3B-7', f'{key}: ton-km taşımacılık hizmetine göredir, kendi aracınızın Kapsam 1 hesabında kullanılmaz — yakıt litresi girin.',
+                     f'{key}: tonne-km is for freight services, not your own vehicle\'s Scope 1 — enter fuel litres.')
             elif mode == 'annual_km' and fuel == 'electric':
                 note('3B-7', f'{key}: elektrikli araçlar km ile değil, şarj elektriğiyle (soru 76b) hesaplanır.',
                      f'{key}: electric vehicles are calculated from charging electricity (question 76b), not km.')
@@ -1083,14 +1129,11 @@ def uncalculated_notes(answers, year):
             if not _number(row.get('quantity')):
                 continue
             mode = row.get('travel_mode')
-            if mode == 'BT-11':
-                note('K3C6-2', 'BT-11 (3–6 saat uçuş): emisyon faktörü henüz seçilmedi.',
-                     'BT-11 (3–6 h flight): no emission factor chosen yet.')
-            elif mode == 'BT-99':
+            if mode == 'BT-99':
                 note('K3C6-2', 'BT-99 (diğer seyahat): emisyon faktörü yok.', 'BT-99 (other travel): no emission factor.')
-            elif mode == 'BT-02' and (row.get('cabin_class') or 'economy') != 'economy':
-                note('K3C6-2', 'BT-02 business/first: kısa mesafe için bu kabin sınıfının faktörü yok.',
-                     'BT-02 business/first: no short-haul factor for this cabin class.')
+            elif mode in ('BT-02', 'BT-11') and (row.get('cabin_class') or 'economy') != 'economy':
+                note('K3C6-2', f'{mode} business/first: kısa mesafe için bu kabin sınıfının faktörü yok.',
+                     f'{mode} business/first: no short-haul factor for this cabin class.')
             elif mode == 'BT-07' and row.get('rental_fuel') not in _RENTAL_SLUG:
                 note('K3C6-2', 'BT-07 kiralık araç: yakıt türü seçilmediği için hesaplanmadı.',
                      'BT-07 rental car: not calculated — no fuel type chosen.')
