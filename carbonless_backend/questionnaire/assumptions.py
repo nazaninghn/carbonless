@@ -116,6 +116,31 @@ def derive_assumptions(answers, lang='tr'):
             'Çalışan ulaşımı için anket yapılmadı; ulaşım modu dağılımı ve mesafeler tahmine dayanıyor.',
             'No commuting survey was carried out; the transport-mode split and distances are estimated.')
 
+    if (A.get('K3C6-1') not in ('S1', 'S3')
+            and any(r.get('travel_mode') == 'BT-10' for r in _items(A.get('K3C6-2')))):
+        add('K3C6-2', 'B',
+            'Otel konaklamaları Türkiye faktörüyle hesaplandı (32,1 kg CO₂e / oda-gece, DESNZ/DEFRA 2024).',
+            'Hotel stays are calculated with the Turkey factor (32.1 kg CO₂e per room-night, DESNZ/DEFRA 2024).')
+
+    declared = sorted({str(r.get('category')) for r in _items(A.get('K3C1-4a'))
+                       if r.get('category') and year is not None
+                       and str(r.get('year') or '').strip() == str(year)})
+    if declared and A.get('K3C1-4') != 'no':
+        add('K3C1-4a', 'B',
+            f'Tedarikçi beyanı olan kategorilerde ({", ".join(declared)}) beyan değeri kullanıldı; '
+            f'bu kategorilerin harcama / miktar bazlı genel hesabı yapılmadı.',
+            f'For categories with a supplier declaration ({", ".join(declared)}) the declared value is used; '
+            f'their spend / quantity based generic calculation is not made.')
+
+    fr = A.get('K3C14-1') if isinstance(A.get('K3C14-1'), dict) else {}
+    if A.get('K3C14-0') == 'yes' and fr.get('total_tco2e') not in (None, ''):
+        count, reporting = fr.get('franchise_count'), fr.get('reporting_count')
+        cov_tr = f'{reporting or "?"}/{count} işletmenin' if count else 'raporu olan işletmelerin'
+        cov_en = f'{reporting or "?"} of {count} outlets' if count else 'the outlets with a report'
+        add('K3C14-1', 'C',
+            f'Franchise emisyonu yalnızca {cov_tr} raporladığı toplamdır; raporu olmayan işletmeler tahmin edilmedi.',
+            f'Franchise emissions are only the total reported by {cov_en}; outlets without a report are not estimated.')
+
     if A.get('6A-1') == 'yes':
         names = [str(r.get('source')) for r in _items(A.get('6A-1a')) if r.get('source')]
         if names:

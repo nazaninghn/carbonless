@@ -567,6 +567,9 @@ function buildLoopItems(loopQuestionId, currentAnswers, lang) {
     (sourceQ?.options || []).filter(o => o.exclusive || o.value === 'none').map(o => o.value)
   );
   items = items.filter(x => !exclusiveVals.has(x));
+  // A per-item question that applies to some items only (K3C1-3m: the
+  // material of raw materials and packaging).
+  if (q.loopItemsOnly) items = items.filter(x => q.loopItemsOnly.includes(baseLoopItem(x)));
   // A type split into groups at its count question is asked per group.
   items = groupedLoopItems(loopQuestionId, items, currentAnswers);
   const itemLabels = items.map(item => loopItemLabel(sourceQ, item, items, lang));
