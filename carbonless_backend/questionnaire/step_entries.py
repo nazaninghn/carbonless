@@ -1051,7 +1051,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
         # Change history: what the answer reported before and what it reports now.
         if new_entries:
             log_answer_change(user, company, year, step, before, new_entries, status)
-        elif keep_approved:   # a waiting change taken back: the approved value again
+        elif keep_approved and waiting:   # a waiting change taken back: the approved value again
             log_answer_change(user, company, year, step, waiting, approved, 'approved')
         elif to_delete:
             log_answer_change(user, company, year, step, before, [], status)

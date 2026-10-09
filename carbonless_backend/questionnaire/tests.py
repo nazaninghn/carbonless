@@ -1599,7 +1599,19 @@ class InventoryHistoryTests(TestCase):
     def test_saving_the_same_answer_adds_nothing(self):
         self._save(self.c_owner, {'1': '1000 kWh'})
         self._save(self.c_owner, {'1': '1000 kWh'})
+        # a data-entry member saving the approved value again: nothing changed either
+        self._save(self.c_clerk, {'1': '1000 kWh'})
         self.assertEqual(len(self._history()), 1)
+
+    def test_taking_back_a_waiting_change_is_listed_once(self):
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self._save(self.c_clerk, {'1': '1200 kWh'})
+        self._save(self.c_clerk, {'1': '1000 kWh'})   # back to the approved value
+        self._save(self.c_clerk, {'1': '1000 kWh'})
+        rows = self._history()
+        self.assertEqual(len(rows), 3)
+        self.assertIn('1.200 kWh → ', rows[0]['detail'])
+        self.assertEqual(rows[0]['status_after'], 'approved')
 
     def test_target_changes_are_listed(self):
         res = self.c_owner.post('/api/emissions/targets/', {
@@ -1610,3 +1622,15 @@ class InventoryHistoryTests(TestCase):
         rows = self._history()
         self.assertEqual([r['action'] for r in rows], ['target_deleted', 'target_created'])
         self.assertEqual(rows[1]['detail'], '2030 hedefi · baz 2024: 303,3 tCO₂e · 2030 yılına kadar %30,0 azaltım')
+
+    def test_advisor_approval_is_listed(self):
+        from .models import AdvisorApproval
+        approval = AdvisorApproval.objects.create(
+            report=self.report, question_id='K3C9-0', field_id='x', reason_code='scope3_not_applicable',
+            trigger_category='Kapsam', risk_level='medium_high')
+        res = self.c_owner.post(f'/api/questionnaire/advisor-approvals/{approval.id}/approve/',
+                                {'action': 'approve'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        row = self._history()[0]
+        self.assertEqual(row['action'], 'advisor_approved')
+        self.assertTrue(row['detail'].startswith('2025 envanteri · Soru '))
