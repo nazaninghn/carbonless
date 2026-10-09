@@ -101,8 +101,12 @@ def _true(v):
     return v is True or str(v).lower() in ('true', 'yes', '1')
 
 
-def _fmt(n):
-    return f'{n:,.4f}'.rstrip('0').rstrip('.')
+def _fmt(n, decimals=4):
+    """A number in an entry description, Turkish style (1.200,5): the
+    descriptions are read in the Turkish UI and ISO report, where "1,200"
+    would mean 1.2."""
+    text = f'{n:,.{decimals}f}'.rstrip('0').rstrip('.') if decimals else f'{n:,.0f}'
+    return text.replace(',', ' ').replace('.', ',').replace(' ', '.')
 
 
 # 3A-5 fuel keys that have registered factors (same activity names the chat uses).
@@ -441,10 +445,10 @@ def _upstream_energy(A, groups):
     litres += sum(a.get('litres', 0) for a in groups.get('3B-7', []))
     out = []
     if kwh:
-        out.append({'slug': 'upstream-electricity', 'quantity': kwh, 'label': 'WTT electricity'})
-        out.append({'slug': 'transmission-losses', 'quantity': kwh, 'label': 'T&D losses'})
+        out.append({'slug': 'upstream-electricity', 'quantity': kwh, 'label': 'Elektrik üretim zinciri (WTT)'})
+        out.append({'slug': 'transmission-losses', 'quantity': kwh, 'label': 'İletim ve dağıtım kayıpları'})
     if litres:
-        out.append({'slug': 'fuel-extraction', 'quantity': litres, 'label': 'WTT fuels'})
+        out.append({'slug': 'fuel-extraction', 'quantity': litres, 'label': 'Yakıt üretim zinciri (WTT)'})
     return out
 
 
@@ -602,9 +606,12 @@ def _franchises(A):
     if not t:
         return []
     count, reporting = _number(ans.get('franchise_count')), _number(ans.get('reporting_count'))
-    coverage = ''
-    if count:
-        coverage = f'{int(reporting) if reporting else "?"}/{int(count)}'
+    if count and reporting:
+        coverage = f'{int(reporting)}/{int(count)} işletme raporlu'
+    elif count:
+        coverage = f'{int(count)} işletme, raporlu işletme sayısı girilmedi'
+    else:
+        coverage = ''
     return [{'reported_kg': t * 1000, 'report_as': ('scope3', 'franchises'),
              'label': f'{_fmt(t)} tCO2e' + (f' · {coverage}' if coverage else '')}]
 
@@ -627,7 +634,7 @@ def _investments(A):
         if share > 1:
             continue
         out.append({'reported_kg': share * emissions * 1000, 'report_as': ('scope3', 'investments'),
-                    'label': f'{cls} · PCAF {share:.2%} × {_fmt(emissions)} tCO2e'})
+                    'label': f'{cls} · PCAF %{_fmt(share * 100, 2)} × {_fmt(emissions)} tCO2e'})
     return out
 
 
@@ -850,6 +857,18 @@ def _step_entries(company, year, step_id):
         Q(description=base) | Q(description__startswith=base + ' · '))
 
 
+def questionnaire_total_kg(report):
+    """kg CO2e of all entries this inventory's answers created."""
+    from django.db.models import Sum
+    from emissions.models import EmissionEntry
+    if not report.company_id:
+        return 0.0
+    total = EmissionEntry.objects.filter(
+        company_id=report.company_id, year=report.reporting_year or 2024,
+        description__startswith=f'{DESCRIPTION_PREFIX} ').aggregate(t=Sum('calculated_co2e_kg'))['t']
+    return float(total or 0)
+
+
 def _q4(value):
     return Decimal(str(value)).quantize(Decimal('0.0001'))
 
@@ -910,3 +929,254 @@ def sync_step_entries(user, company, report, step_id, data=None):
     for entry in created:
         notify_entry_submitted(entry)  # no-op unless the entry awaits approval
     return created
+
+
+# ── Answers that are kept but not calculated ─────────────────────────────────
+
+def uncalculated_notes(answers, year):
+    """[{step_id, tr, en}] for every answered amount that does not reach the
+    dashboard and why — shown right after the answer and listed with the
+    inventory's assumptions, so nobody takes a missing number for zero."""
+    A = {k: _value(v) for k, v in (answers or {}).items()}
+    out = []
+
+    def note(step, tr, en):
+        out.append({'step_id': step, 'tr': tr, 'en': en})
+
+    def open_(step):
+        gate = _GATES.get(step)
+        return not gate or A.get(gate) in (None, '', 'yes')
+
+    if open_('3A-5') and isinstance(A.get('3A-5'), dict):
+        other = [f for f, raw in A['3A-5'].items()
+                 if f not in _STATIONARY_FUELS and _number(_split_amount_unit(raw)[0])]
+        if other:
+            names = ', '.join({'biomass': 'Biyokütle', 'other_fossil': 'Diğer fosil yakıt'}.get(f, f) for f in other)
+            note('3A-5', f'{names}: emisyon faktörü seçilmediği için hesaplanmadı.',
+                 f'{names}: not calculated — no emission factor has been chosen.')
+
+    if open_('3B-7') and isinstance(A.get('3B-7'), dict):
+        fuels = A.get('3B-5') if isinstance(A.get('3B-5'), dict) else {}
+        modes = A.get('3B-6') if isinstance(A.get('3B-6'), dict) else {}
+        for key, raw in A['3B-7'].items():
+            if not _number(_split_amount_unit(raw)[0]):
+                continue
+            base, fuel, mode = str(key).split('#')[0], fuels.get(key), modes.get(key)
+            if mode == 'tonne_km':
+                note('3B-7', f'{key}: ton-km için Kapsam 1 emisyon faktörü yok — yakıt litresi girerseniz hesaplanır.',
+                     f'{key}: no Scope 1 factor for tonne-km — enter fuel litres to have it calculated.')
+            elif mode == 'annual_km' and fuel == 'electric':
+                note('3B-7', f'{key}: elektrikli araçlar km ile değil, şarj elektriğiyle (soru 76b) hesaplanır.',
+                     f'{key}: electric vehicles are calculated from charging electricity (question 76b), not km.')
+            elif mode == 'annual_km' and base != 'EQ-3B-01':
+                note('3B-7', f'{key}: km yalnızca binek araçlarda hesaplanıyor — bu araç tipi için yakıt litresi girin.',
+                     f'{key}: km is only calculated for passenger cars — enter fuel litres for this vehicle type.')
+            elif mode == 'fuel_litres' and fuel in ('hybrid', 'electric'):
+                note('3B-7', f'{key}: hibrit/elektrikli araç için litre faktörü seçilmedi.',
+                     f'{key}: no litre factor has been chosen for hybrid/electric vehicles.')
+            elif mode == 'fuel_litres' and base not in _ROAD_VEHICLES | _OFFROAD_MACHINES:
+                note('3B-7', f'{key}: bu araç tipi (gemi, hava aracı, lokomotif, diğer) için emisyon faktörü yok.',
+                     f'{key}: no emission factor for this vehicle type (ship, aircraft, locomotive, other).')
+
+    if open_('3C-2') and isinstance(A.get('3C-2'), dict):
+        missing = [k for k in A['3C-2'] if str(k).split('#')[0] not in _PROCESS_SLUG]
+        if missing:
+            note('3C-2', f'{", ".join(missing)}: bu proses için emisyon faktörü yok.',
+                 f'{", ".join(missing)}: no emission factor for this process.')
+
+    if isinstance(A.get('3D-4'), dict) and A['3D-4'] and A.get('3D-0') not in (None, ['none'], 'none'):
+        note('3D-4', 'Soğutucu gaz kaçakları: GWP değerleri AR6 olarak birleştirilene kadar hesaplanmıyor.',
+             'Refrigerant leaks: not calculated until the GWP values are unified to AR6.')
+
+    if open_('4B-2') and isinstance(A.get('4B-2'), dict):
+        for kind, raw in A['4B-2'].items():
+            if _number(_split_amount_unit(raw)[0]) and not (kind in _PURCHASED_ENERGY_SLUG and _energy_kwh(raw)):
+                label = {'steam': 'Buhar (ton)', 'compressed_air': 'Basınçlı hava'}.get(kind, kind)
+                note('4B-2', f'{label}: bu birim / enerji türü için emisyon faktörü yok — GJ veya MWh girin.',
+                     f'{label}: no emission factor for this unit / energy type — enter GJ or MWh.')
+
+    for gate, doc, what_tr, what_en in (
+            ('3A-EF', '3A-EF-a', 'Sabit yanma', 'Stationary combustion'),
+            ('3B-EF', '3B-EF-a', 'Araçlar', 'Vehicles'),
+            ('3C-EF', '3C-EF-a', 'Prosesler', 'Processes'),
+            ('4A-EF', '4A-EF-a', 'Elektrik', 'Electricity'),
+            ('4B-EF', '4B-EF-a', 'Isı / buhar / soğutma', 'Heat / steam / cooling')):
+        ans = A.get(doc)
+        if A.get(gate) == 'yes' and isinstance(ans, dict) and ans.get('ef_value') not in (None, ''):
+            if str(ans.get('ef_year') or '').strip() != str(year):
+                note(doc, f'{what_tr} — tedarikçi faktör belgesinin yılı ({ans.get("ef_year")}) raporlama yılı ({year}) değil; genel faktör kullanıldı.',
+                     f'{what_en} — the supplier factor document\'s year ({ans.get("ef_year")}) is not the reporting year ({year}); the generic factor is used.')
+            elif ans.get('ef_unit') not in _EF_UNITS:
+                note(doc, f'{what_tr} — tedarikçi faktör belgesinin birimi tanınmadı; genel faktör kullanıldı.',
+                     f'{what_en} — the supplier factor document\'s unit is not recognised; the generic factor is used.')
+
+    declared = _purchase_declarations(A, year) if open_('K3C1-4a') else {}
+    if open_('K3C1-2') and isinstance(A.get('K3C1-2'), dict):
+        for cat, raw in A['K3C1-2'].items():
+            amount, unit = _split_amount_unit(raw or '')
+            if not _number(amount) or cat in declared:
+                continue
+            if unit.upper() != 'USD':
+                note('K3C1-2', f'{cat}: yalnızca USD tutarlar hesaplanıyor ({unit or "birim yok"} için belgelenmiş kur yok).',
+                     f'{cat}: only USD amounts are calculated (no documented rate for {unit or "no unit"}).')
+            elif cat not in _SPEND_SLUG:
+                note('K3C1-2', f'{cat}: bu kategori için harcama bazlı emisyon faktörü yok.',
+                     f'{cat}: no spend-based emission factor for this category.')
+    if open_('K3C1-3a') and A.get('K3C1-3') != 'no' and isinstance(A.get('K3C1-3a'), dict):
+        materials = A.get('K3C1-3m') if isinstance(A.get('K3C1-3m'), dict) else {}
+        for cat, raw in A['K3C1-3a'].items():
+            amount, unit = _split_amount_unit(raw or '')
+            if not _number(amount) or cat in declared:
+                continue
+            if cat in ('SC-01', 'SC-02', 'SC-03') and _kg(raw) is None:
+                note('K3C1-3a', f'{cat}: miktar kg veya ton olarak girilmediği için hesaplanmadı.',
+                     f'{cat}: not calculated — the quantity is not in kg or tonnes.')
+            elif cat in ('SC-01', 'SC-02') and materials.get(cat) not in MATERIAL_SLUG:
+                note('K3C1-3a', f'{cat}: malzeme seçilmedi veya listede yok — hesaplanmadı.',
+                     f'{cat}: no listed material chosen — not calculated.')
+            elif cat == 'SC-11' and unit.lower() not in ('m³', 'm3'):
+                note('K3C1-3a', f'{cat}: su miktarı m³ olarak girilmediği için hesaplanmadı.',
+                     f'{cat}: not calculated — the water quantity is not in m³.')
+            elif cat not in ('SC-01', 'SC-02', 'SC-03', 'SC-11'):
+                note('K3C1-3a', f'{cat}: bu kategori için miktar bazlı emisyon faktörü yok.',
+                     f'{cat}: no quantity-based emission factor for this category.')
+    if open_('K3C1-4a') and A.get('K3C1-4') != 'no':
+        for row in _rows(A.get('K3C1-4a')):
+            if not _number(row.get('value')):
+                continue
+            who = str(row.get('supplier') or row.get('category') or '').strip()
+            if str(row.get('year') or '').strip() != str(year):
+                note('K3C1-4a', f'{who}: beyan yılı ({row.get("year")}) raporlama yılı ({year}) değil — kullanılmadı.',
+                     f'{who}: declaration year ({row.get("year")}) is not the reporting year ({year}) — not used.')
+            elif not any(a['label'].startswith(f'{row.get("category")} · {str(row.get("supplier") or "").strip()} (')
+                         for a in declared.get(str(row.get('category') or ''), [])):
+                note('K3C1-4a', f'{who}: beyanın birimi bu kategorinin miktarıyla eşleşmediği için kullanılmadı.',
+                     f'{who}: not used — the declaration\'s unit does not match this category\'s quantity.')
+
+    if A.get('K3C2-0') == 'yes' and _rows(A.get('K3C2-1')):
+        note('K3C2-1', 'Sermaye malları: harcama bazlı emisyon faktörü olmadığı için hesaplanmadı.',
+             'Capital goods: not calculated — no spend-based emission factor.')
+    if A.get('K3C3-INFO') == 'custom':
+        note('K3C3-custom', 'Özel WTT / iletim kaybı faktörü: birimi doğrulanamadığı için uygulanmadı.',
+             'Custom WTT / T&D factor: not applied — its unit cannot be verified.')
+
+    for level_q, s1, rows_q, s3, label_tr, label_en in (
+            ('K3C4-1', 'K3C4-2c', 'K3C4-2', 'K3C4-2b', 'Nakliye', 'Transport'),
+            ('K3C6-1', 'K3C6-2c', 'K3C6-2', 'K3C6-2b', 'İş seyahati', 'Business travel')):
+        if not open_(rows_q):
+            continue
+        level = A.get(level_q)
+        if level == 'S3' and _number(A.get(s3)):
+            note(s3, f'{label_tr} harcaması: harcama bazlı emisyon faktörü olmadığı için hesaplanmadı.',
+                 f'{label_en} spend: not calculated — no spend-based emission factor.')
+        if level == 'S1' and isinstance(A.get(s1), dict) and _number(A[s1].get('total_tco2e')) \
+                and str(A[s1].get('year') or '').strip() != str(year):
+            note(s1, f'{label_tr} — firma raporunun yılı raporlama yılı ({year}) değil; kullanılmadı.',
+                 f'{label_en} — the provider report is not for the reporting year ({year}); not used.')
+    if open_('K3C4-2') and A.get('K3C4-1') not in ('S1', 'S3'):
+        if any(r.get('transport_mode') == 'TM-99' for r in _rows(A.get('K3C4-2'))):
+            note('K3C4-2', 'TM-99 (diğer taşıma modu): emisyon faktörü yok.', 'TM-99 (other mode): no emission factor.')
+    if open_('K3C9-1') and any(r.get('transport_mode') == 'TM-99' for r in _rows(A.get('K3C9-1'))):
+        note('K3C9-1', 'TM-99 (diğer taşıma modu): emisyon faktörü yok.', 'TM-99 (other mode): no emission factor.')
+    if open_('K3C6-2') and A.get('K3C6-1') not in ('S1', 'S3'):
+        for row in _rows(A.get('K3C6-2')):
+            if not _number(row.get('quantity')):
+                continue
+            mode = row.get('travel_mode')
+            if mode == 'BT-11':
+                note('K3C6-2', 'BT-11 (3–6 saat uçuş): emisyon faktörü henüz seçilmedi.',
+                     'BT-11 (3–6 h flight): no emission factor chosen yet.')
+            elif mode == 'BT-99':
+                note('K3C6-2', 'BT-99 (diğer seyahat): emisyon faktörü yok.', 'BT-99 (other travel): no emission factor.')
+            elif mode == 'BT-02' and (row.get('cabin_class') or 'economy') != 'economy':
+                note('K3C6-2', 'BT-02 business/first: kısa mesafe için bu kabin sınıfının faktörü yok.',
+                     'BT-02 business/first: no short-haul factor for this cabin class.')
+            elif mode == 'BT-07' and row.get('rental_fuel') not in _RENTAL_SLUG:
+                note('K3C6-2', 'BT-07 kiralık araç: yakıt türü seçilmediği için hesaplanmadı.',
+                     'BT-07 rental car: not calculated — no fuel type chosen.')
+
+    if open_('K3C5-2'):
+        level = A.get('K3C5-1')
+        counted_rows = level in (None, 'S2_type') or (
+            level == 'S1' and not _provider_report(A, 'K3C5-2c', year, ('scope3', 'waste')))
+        if counted_rows:
+            for row in _rows(A.get('K3C5-2')):
+                wt, method = str(row.get('waste_type') or ''), row.get('disposal_method')
+                if not _number(row.get('quantity_kg')):
+                    continue
+                slug = f'{wt.lower()}-{_DISPOSAL_SLUG.get(method, "")}'
+                if not re.fullmatch(r'WT-\d\d', wt) or _factor_by_slug(slug) is None:
+                    note('K3C5-2', f'{wt} / {method}: bu atık türü ve bertaraf yöntemi için emisyon faktörü yok.',
+                         f'{wt} / {method}: no emission factor for this waste type and disposal method.')
+        if level == 'S1' and isinstance(A.get('K3C5-2c'), dict) and _number(A['K3C5-2c'].get('total_tco2e')) \
+                and str(A['K3C5-2c'].get('year') or '').strip() != str(year):
+            note('K3C5-2c', f'Bertaraf firması beyanının yılı raporlama yılı ({year}) değil — kullanılmadı.',
+                 f'The disposal company\'s declaration is not for the reporting year ({year}) — not used.')
+        if level == 'S3' and not _employees(A):
+            note('K3C7-1', 'Çalışan başına atık tahmini: çalışan sayısı (soru K3C7-1) girilmediği için hesaplanmadı.',
+                 'Waste per employee: not calculated — the headcount (question K3C7-1) is missing.')
+
+    if A.get('K3C7-0') in ('survey', 'estimate'):
+        note('K3C7-0', 'Çalışan ulaşımı: gerçek iş günü sayısı ve ev ofisi faktörü belirlenene kadar hesaplanmıyor.',
+             'Employee commuting: not calculated until the real working days and the homeworking factor are set.')
+
+    if open_('K3C8-1'):
+        for row in _rows(A.get('K3C8-1')):
+            kv = str(row.get('asset_type') or '')
+            has_kwh = _true(row.get('owner_declaration')) and _number(row.get('declaration_kwh'))
+            if has_kwh and row.get('declaration_energy') not in ('electricity', 'natural_gas'):
+                note('K3C8-1', f'{kv}: beyan edilen kWh\'nin enerji türü seçilmediği için hesaplanmadı.',
+                     f'{kv}: not calculated — the energy type of the declared kWh is missing.')
+            elif not has_kwh and kv not in ('KV-01', 'KV-03'):
+                note('K3C8-1', f'{kv}: bu varlık türü yalnızca beyan edilen enerji (kWh) ile hesaplanır.',
+                     f'{kv}: this asset type is only calculated from declared energy (kWh).')
+    if open_('K3C10-1'):
+        for row in _rows(A.get('K3C10-1')):
+            if not _number(row.get('quantity')):
+                continue
+            name = str(row.get('product') or '').strip()
+            if row.get('processing_type') not in _PROCESSING_SLUG:
+                note('K3C10-1', f'{name}: işlem türü seçilmediği için hesaplanmadı.',
+                     f'{name}: not calculated — no processing type chosen.')
+            elif row.get('unit') not in ('tonnes', 'kg'):
+                note('K3C10-1', f'{name}: yalnızca ton veya kg miktarlar hesaplanıyor.',
+                     f'{name}: only tonnes or kg are calculated.')
+    if open_('K3C11-1'):
+        for row in _rows(A.get('K3C11-1')):
+            if _number(row.get('sales_volume')) and not (_true(row.get('lca_available'))
+                                                         and _number(row.get('lca_kgco2e_per_unit'))):
+                note('K3C11-1', f'{row.get("product_type") or ""}: LCA değeri olmadan kullanım aşaması hesaplanmıyor.',
+                     f'{row.get("product_type") or ""}: the use phase is not calculated without an LCA value.')
+    if open_('K3C12-1'):
+        for row in _rows(A.get('K3C12-1')):
+            material, method = str(row.get('primary_material') or ''), _DISPOSAL_SLUG.get(row.get('disposal_method'))
+            if not (_number(row.get('units_sold')) and _number(row.get('weight_kg')) and method):
+                continue
+            name = str(row.get('product_name') or '').strip()
+            if re.fullmatch(r'WT-\d\d', material) and _factor_by_slug(f'{material.lower()}-{method}') is None:
+                note('K3C12-1', f'{name}: {material} / {row.get("disposal_method")} için emisyon faktörü yok.',
+                     f'{name}: no emission factor for {material} / {row.get("disposal_method")}.')
+            elif not material and method not in ('landfill', 'recycling', 'incineration'):
+                note('K3C12-1', f'{name}: bu bertaraf yöntemi için genel ürün faktörü yok.',
+                     f'{name}: no generic product factor for this disposal method.')
+    if open_('K3C13-1'):
+        for row in _rows(A.get('K3C13-1')):
+            if _true(row.get('tenant_data_available')) and _number(row.get('tenant_kwh')) \
+                    and row.get('tenant_energy') not in ('electricity', 'natural_gas'):
+                note('K3C13-1', f'{str(row.get("asset_description") or "").strip()}: kWh\'nin enerji türü seçilmediği için hesaplanmadı.',
+                     f'{str(row.get("asset_description") or "").strip()}: not calculated — the energy type of the kWh is missing.')
+    if A.get('K3C14-0') == 'no' and isinstance(A.get('K3C14-2'), dict) and _number(A['K3C14-2'].get('franchise_count')):
+        note('K3C14-2', 'Franchise işletmeleri: raporlanmış emisyon olmadan tahmin yapılmıyor.',
+             'Franchises: no estimate is made without reported emissions.')
+    if open_('K3C15-1'):
+        for row in _rows(A.get('K3C15-1')):
+            cls = str(row.get('asset_class') or '')
+            if not _number(row.get('investment_amount')):
+                continue
+            if cls not in _PCAF_CLASSES:
+                note('K3C15-1', f'{cls}: bu varlık sınıfı için PCAF hesabı henüz yok.',
+                     f'{cls}: no PCAF calculation for this asset class yet.')
+            elif not (_true(row.get('ghg_report_available')) and _number(row.get('company_emissions_tco2e'))):
+                note('K3C15-1', f'{cls}: şirketin raporlanmış emisyonu olmadan hesaplanmıyor.',
+                     f'{cls}: not calculated without the company\'s reported emissions.')
+    return out

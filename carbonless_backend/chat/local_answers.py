@@ -30,6 +30,9 @@ _MONTH_NAMES = {
 }
 
 
+_TOP_N = 3
+
+
 def _fmt(n, lang, digits=2):
     s = f'{n:,.{digits}f}'
     if lang == 'tr':
@@ -138,6 +141,9 @@ def _total_answer(company, year, lang):
 
 
 def _top_source_answer(company, year, lang):
+    """The year's total and its largest sources (three, or the number asked
+    for: "en büyük 5 kaynak") — "toplam ve en büyük 3 kaynak" used to get
+    only the single largest one."""
     from django.db.models import Sum
     rows = (_entries(company, year)
             .values('emission_factor__name', 'emission_factor__name_tr')
@@ -147,14 +153,20 @@ def _top_source_answer(company, year, lang):
         return (f'{year} yılı için kayıtlı emisyon verisi yok.' if lang == 'tr'
                 else f'There is no emission data recorded for {year}.')
     total = sum(float(r['t']) for r in rows)
-    top = rows[0]
-    name = (top['emission_factor__name_tr'] or top['emission_factor__name']) if lang == 'tr' else top['emission_factor__name']
-    share = float(top['t']) / total * 100 if total else 0
+    lines = []
+    for i, r in enumerate(rows[:_TOP_N], 1):
+        name = (r['emission_factor__name_tr'] or r['emission_factor__name']) if lang == 'tr' else r['emission_factor__name']
+        share = float(r['t']) / total * 100 if total else 0
+        lines.append(f'{i}. **{name}**: {_fmt(float(r["t"]) / 1000, lang)} tCO₂e '
+                     + (f'(%{_fmt(share, lang, 1)})' if lang == 'tr' else f'({_fmt(share, lang, 1)}%)'))
     if lang == 'tr':
-        return (f'{year} yılında en büyük emisyon kaynağınız **{name}**: '
-                f'{_fmt(float(top["t"]) / 1000, lang)} tCO₂e (toplamın %{_fmt(share, lang, 1)}).')
-    return (f'Your largest emission source in {year} is **{name}**: '
-            f'{_fmt(float(top["t"]) / 1000, lang)} tCO₂e ({_fmt(share, lang, 1)}% of the total).')
+        head = (f'{year} yılı toplam emisyonunuz **{_fmt(total / 1000, lang)} tCO₂e**. '
+                f'En büyük {len(lines)} kaynağınız:' if len(lines) > 1 else
+                f'{year} yılı toplam emisyonunuz **{_fmt(total / 1000, lang)} tCO₂e**. En büyük kaynağınız:')
+    else:
+        head = (f'Your total emissions for {year} are **{_fmt(total / 1000, lang)} tCO₂e**. '
+                + (f'Your {len(lines)} largest sources:' if len(lines) > 1 else 'Your largest source:'))
+    return head + '\n\n' + '\n'.join(lines)
 
 
 def _pending_answer(user, company, lang):

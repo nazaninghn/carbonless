@@ -308,6 +308,8 @@ export default function DashboardPage() {
                 setActiveTab={setActiveTab}
                 fetchData={fetchData}
                 canEdit={perms.canEdit}
+                yearsWithData={effectiveSummary?.years_with_data ?? []}
+                onYearChange={setSelectedYear}
               />
             </ErrorBoundary>
           )}

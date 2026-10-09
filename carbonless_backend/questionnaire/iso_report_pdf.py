@@ -569,6 +569,7 @@ CATEGORY_LABELS = {
     'stationary_combustion': {'en': 'Stationary combustion', 'tr': 'Sabit yanma'},
     'mobile_combustion': {'en': 'Mobile combustion', 'tr': 'Mobil yanma'},
     'fugitive_emissions': {'en': 'Fugitive emissions', 'tr': 'Kaçak emisyonlar'},
+    'process_emissions': {'en': 'Process emissions', 'tr': 'Proses emisyonları'},
     'electricity': {'en': 'Imported energy — electricity', 'tr': 'İthal enerji — elektrik'},
     'steam_heat': {'en': 'Imported energy — steam and heat', 'tr': 'İthal enerji — buhar ve ısı'},
     'purchased_goods': {'en': 'Purchased goods and services', 'tr': 'Satın alınan mal ve hizmetler'},
@@ -580,6 +581,7 @@ CATEGORY_LABELS = {
     'business_travel': {'en': 'Business travel', 'tr': 'İş seyahatleri'},
     'employee_commuting': {'en': 'Employee commuting', 'tr': 'Çalışanların işe gidiş-gelişi'},
     'upstream_leased': {'en': 'Upstream leased assets', 'tr': 'Kiralanan varlıklar (yukarı akış)'},
+    'downstream_leased': {'en': 'Downstream leased assets', 'tr': 'Kiraya verilen varlıklar (aşağı akış)'},
     'downstream_transport': {'en': 'Downstream transportation', 'tr': 'Aşağı akış taşımacılık'},
     'processing_sold': {'en': 'Processing of sold products', 'tr': 'Satılan ürünlerin işlenmesi'},
     'use_of_sold': {'en': 'Use of sold products', 'tr': 'Satılan ürünlerin kullanımı'},
@@ -784,6 +786,13 @@ def _gather(report, lang):
         row['quantity'] += float(e.quantity or 0)
         row['kg'] += kg
         row['count'] += 1
+        # A calculated entry (supplier factor, declaration, PCAF share) has
+        # no catalog reference: its description says how it was calculated.
+        if f.slug.startswith('calculated-'):
+            how = (e.description or '').split(' · ', 1)
+            if len(how) == 2:
+                row.setdefault('details', []).append(how[1])
+                row['reference'] = ('Hesaplama: ' if lang == 'tr' else 'Calculated: ') + '; '.join(row['details'])
         # Shares rather than the per-gas factors themselves: the stored CO₂e is
         # authoritative (it may have been calculated against an older factor
         # value), so apportioning it keeps the gas columns adding up to exactly
@@ -2513,7 +2522,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     # questions told the user these would be documented here.
     from .assumptions import derive_assumptions
     # (the exclusions are already listed in 3.4)
-    recorded = [x for x in derive_assumptions(A, lang) if x['step_id'] != '6A-1a']
+    recorded = [x for x in derive_assumptions(A, lang, report.reporting_year) if x['step_id'] != '6A-1a']
     if recorded:
         E.append(Paragraph(
             'Assumptions recorded while the inventory was compiled:' if lang == 'en'
@@ -2927,7 +2936,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
                 Paragraph(str(r['unit'] or '—'), S['small']),
                 Paragraph(_localize_num(f'{r["factor"]:,.4f}', tr), S['num']),
                 Paragraph(_fmt(r['kg'] / 1000.0, tr), S['num']),
-                Paragraph(_ellipsize(r['reference'], 90), S['small']),
+                Paragraph(escape(r['reference']) if r.get('details') else _ellipsize(r['reference'], 90), S['small']),
             ])
         tbl = Table(data, colWidths=[44*mm, 18*mm, 18*mm, 18*mm, 18*mm, 54*mm],
                     hAlign='LEFT', repeatRows=1)

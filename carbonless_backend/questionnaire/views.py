@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_ratelimit.decorators import ratelimit
 from django.utils.decorators import method_decorator
 from companies.permissions import NotAuditorForWrites
-from .step_entries import sync_step_entries
+from .step_entries import sync_step_entries, uncalculated_notes, questionnaire_total_kg
 import logging
 import re
 import time
@@ -603,7 +603,16 @@ class SubmitStepView(APIView):
             # real facilities (emissions form, Settings, reports).
             from .facility_sync import sync_facilities
             sync_facilities(report.company, data)
+        before_kg = questionnaire_total_kg(report)
         entries = sync_step_entries(request.user, report.company, report, step, data)
+        # What this answer did to the inventory: the CO2e it added or took
+        # away, and why an amount it gave is not calculated — so a missing
+        # number is never taken for zero.
+        after_kg = questionnaire_total_kg(report)
+        answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+        notes = [n['tr' if lang == 'tr' else 'en']
+                 for n in uncalculated_notes(answers, report.reporting_year or 2024) if n['step_id'] == step]
+        calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(after_kg, 2), 'notes': notes}
         if entries:
             co2e_kg = sum(float(e.calculated_co2e_kg) for e in entries)
             saved_entry = {
@@ -621,6 +630,7 @@ class SubmitStepView(APIView):
             'warnings': [],
             'bot_messages': [],
             'saved_entry': saved_entry,
+            'calc_feedback': calc_feedback,
         })
 
 

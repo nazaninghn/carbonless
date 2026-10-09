@@ -2500,13 +2500,13 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Vehicle type] — Activity data: fuel consumption or distance?',
     },
     helper: {
-      tr: 'Yakıt faturası varsa onu kullanın — daha doğru sonuç verir (Seviye 1). Yalnızca km bilginiz varsa onu da kabul ederiz (Seviye 2 — sistem ortalama tüketim faktörü uygular).',
-      en: 'If you have fuel invoices, use them — gives more accurate results (Level 1). If you only have km data, that is also accepted (Level 2 — system applies average consumption factor).',
+      tr: 'Yakıt faturası varsa onu kullanın — daha doğru sonuç verir (Seviye 1) ve her araç tipi için hesaplanır. Km yalnızca binek araçlarda hesaplanır (Seviye 2); diğer araç tipleri için yakıt litresi girin.',
+      en: 'If you have fuel invoices, use them — more accurate (Level 1) and calculated for every vehicle type. Km is only calculated for passenger cars (Level 2); for other vehicle types enter fuel litres.',
     },
     options: [
       { value: 'fuel_litres', label: { tr: 'Yıllık yakıt tüketimi (litre) — Seviye 1 — tercih edilen', en: 'Annual fuel consumption (litres) — Level 1 — preferred' }, dataQuality: 'high' },
-      { value: 'annual_km', label: { tr: 'Yıllık km — Seviye 2 — sistem ortalama tüketim uygular', en: 'Annual km — Level 2 — system applies average consumption' }, dataQuality: 'medium' },
-      { value: 'tonne_km', label: { tr: 'Yük araçları: Ton-km — Seviye 1', en: 'Heavy goods vehicles: Tonne-km — Level 1' }, dataQuality: 'high',
+      { value: 'annual_km', label: { tr: 'Yıllık km — Seviye 2 — yalnızca binek araçlarda hesaplanır', en: 'Annual km — Level 2 — calculated for passenger cars only' }, dataQuality: 'medium' },
+      { value: 'tonne_km', label: { tr: 'Yük araçları: Ton-km — Seviye 1 (henüz hesaplanmıyor)', en: 'Heavy goods vehicles: Tonne-km — Level 1 (not calculated yet)' }, dataQuality: 'high',
         // Goods-carrying vehicle types only (and "Other").
         onlyForItems: ['EQ-3B-05', 'EQ-3B-06', 'EQ-3B-07', 'EQ-3B-08', 'EQ-3B-09', 'EQ-3B-10', 'EQ-3B-17', 'EQ-3B-18', 'EQ-3B-22', 'EQ-3B-23', 'EQ-3B-99'] },
     ],
@@ -2749,8 +2749,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Process name] — What is the production quantity and measurement method?',
     },
     helper: {
-      tr: 'Birim proses tipine göre otomatik belirlendi. Ölçüm yöntemi IPCC Tier seviyesini ve dolayısıyla veri kalitesini belirler.',
-      en: 'Unit is automatically determined based on process type. Measurement method determines the IPCC Tier level and thus data quality.',
+      tr: 'Çimento klinkeri, kireç, cam, çelik, alüminyum, amonyak ve nitrik asit için ton ürün girin — bu prosesler hesaplanır. Diğer prosesler için kendi biriminizle girin; onlar için henüz emisyon faktörü yok. Ölçüm yöntemi IPCC Tier seviyesini ve veri kalitesini belirler.',
+      en: 'For cement clinker, lime, glass, steel, aluminium, ammonia and nitric acid enter tonnes of product — these processes are calculated. For other processes use your own unit; there is no emission factor for them yet. The measurement method sets the IPCC Tier and data quality.',
     },
     fields: [
       {
@@ -2758,7 +2758,7 @@ export const CARBONIQ_QUESTIONS = [
         type: 'text',
         subtype: 'numeric',
         required: true,
-        label: { tr: 'Üretim miktarı (ton)', en: 'Production quantity (tonnes)' },
+        label: { tr: 'Üretim miktarı', en: 'Production quantity' },
         placeholder: { tr: 'Örn: 50.000', en: 'e.g. 50,000' },
       },
       {
@@ -5776,7 +5776,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     fields: [
       { id: 'franchise_count', type: 'numeric', required: true, label: { tr: 'Franchise işletme sayısı', en: 'Number of franchise outlets' } },
-      { id: 'reporting_count', type: 'numeric', required: false, label: { tr: 'Raporu olan işletme sayısı', en: 'Outlets with a GHG report' } },
+      { id: 'reporting_count', type: 'numeric', required: true, label: { tr: 'Raporu olan işletme sayısı', en: 'Outlets with a GHG report' } },
       { id: 'total_tco2e', type: 'numeric', required: true, label: { tr: 'Raporlanan toplam emisyon (tCO₂e)', en: 'Total reported emissions (tCO₂e)' } },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },

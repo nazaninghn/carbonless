@@ -46,7 +46,7 @@ FUEL_LABELS = {
 }
 
 
-def derive_assumptions(answers, lang='tr'):
+def derive_assumptions(answers, lang='tr', reporting_year=None):
     """answers: {step_id: stored answer}. Returns the list in survey order."""
     tr = lang != 'en'
     A = {k: _value(v) for k, v in (answers or {}).items()}
@@ -135,11 +135,21 @@ def derive_assumptions(answers, lang='tr'):
     fr = A.get('K3C14-1') if isinstance(A.get('K3C14-1'), dict) else {}
     if A.get('K3C14-0') == 'yes' and fr.get('total_tco2e') not in (None, ''):
         count, reporting = fr.get('franchise_count'), fr.get('reporting_count')
-        cov_tr = f'{reporting or "?"}/{count} işletmenin' if count else 'raporu olan işletmelerin'
-        cov_en = f'{reporting or "?"} of {count} outlets' if count else 'the outlets with a report'
+        if count and reporting not in (None, ''):
+            cov_tr, cov_en = f'{reporting}/{count} işletmenin', f'{reporting} of {count} outlets'
+        else:
+            cov_tr, cov_en = 'raporu olan işletmelerin', 'the outlets with a report'
         add('K3C14-1', 'C',
-            f'Franchise emisyonu yalnızca {cov_tr} raporladığı toplamdır; raporu olmayan işletmeler tahmin edilmedi.',
-            f'Franchise emissions are only the total reported by {cov_en}; outlets without a report are not estimated.')
+            f'Franchise emisyonu yalnızca {cov_tr} raporladığı toplamdır; raporu olmayan işletmeler tahmin edilmedi.'
+            + ('' if reporting not in (None, '') else ' Raporu olan işletme sayısı girilmedi.'),
+            f'Franchise emissions are only the total reported by {cov_en}; outlets without a report are not estimated.'
+            + ('' if reporting not in (None, '') else ' The number of reporting outlets was not given.'))
+
+    # Amounts given but not calculated (no factor, other year, …): a data gap
+    # the report has to disclose rather than show as zero.
+    from .step_entries import uncalculated_notes
+    for n in uncalculated_notes(answers, reporting_year or year):
+        add(n['step_id'], 'A', f'Hesaplanmayan cevap — {n["tr"]}', f'Not calculated — {n["en"]}')
 
     if A.get('6A-1') == 'yes':
         names = [str(r.get('source')) for r in _items(A.get('6A-1a')) if r.get('source')]
@@ -152,4 +162,4 @@ def derive_assumptions(answers, lang='tr'):
 
 def report_assumptions(report, lang='tr'):
     answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
-    return derive_assumptions(answers, lang)
+    return derive_assumptions(answers, lang, report.reporting_year)

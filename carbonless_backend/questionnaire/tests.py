@@ -352,7 +352,7 @@ class InventoryCalculationTests(StepEntriesTests):
             ('motorin-mobile', 1000.0, 2696.0), ('car-diesel', 10000.0, 1560.0),
             ('off-road-diesel-desnz', 200.0, 635.878), ('calculated-scope1-mobile_combustion', 150.0, 150.0)]))
         lpg = next(e for e in self._entries() if e.emission_factor.slug.startswith('calculated-'))
-        self.assertIn('EQ-3B-02 · 100 liters × 1.5 (lpg)', lpg.description)
+        self.assertIn('EQ-3B-02 · 100 liters × 1,5 (lpg)', lpg.description)
         self._step('3B-0', 'no')
         self.assertNotIn('3B-7', self._by_step())
 
@@ -418,7 +418,26 @@ class InventoryCalculationTests(StepEntriesTests):
         self.assertEqual(got['K3C14-1'], [('calculated-scope3-franchises', 340500.0, 340500.0)])
         self.assertEqual(got['K3C15-1'], [('calculated-scope3-investments', 120000.0, 120000.0)])
         desc = [e.description for e in self._entries()]
-        self.assertIn('Questionnaire step K3C14-1 · 340.5 tCO2e · 8/12', desc)
+        self.assertIn('Questionnaire step K3C14-1 · 340,5 tCO2e · 8/12 işletme raporlu', desc)
+
+    def test_save_says_what_it_added_and_what_is_not_calculated(self):
+        self._factor('motorin-mobile', 'liters', 2.5, scope='scope1', country='turkey')
+        self._step('3B-5', {'EQ-3B-01': 'diesel', 'EQ-3B-05': 'diesel'})
+        self._step('3B-6', {'EQ-3B-01': 'fuel_litres', 'EQ-3B-05': 'annual_km'})
+        r = self._step('3B-7', {'EQ-3B-01': '1000 litre', 'EQ-3B-05': '8000 km'})
+        fb = r.data['calc_feedback']
+        self.assertEqual((fb['delta_kg'], fb['total_kg']), (2500.0, 2500.0))
+        self.assertEqual(len(fb['notes']), 1)
+        self.assertIn('EQ-3B-05: km is only calculated for passenger cars', fb['notes'][0])
+        # and the inventory's assumptions list it as a data gap
+        from .assumptions import report_assumptions
+        gaps = [a for a in report_assumptions(self.report, 'tr') if a['text'].startswith('Hesaplanmayan cevap')]
+        self.assertEqual([(a['step_id'], a['type']) for a in gaps], [('3B-7', 'A')])
+
+    def test_supplier_document_of_another_year_is_reported(self):
+        self._step('4A-EF', 'yes')
+        r = self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2023'})
+        self.assertIn('is not the reporting year (2025)', r.data['calc_feedback']['notes'][0])
 
     def test_unchanged_entries_keep_their_approval(self):
         from emissions.models import EmissionEntry
@@ -672,6 +691,13 @@ class RejectedQuestionnaireEntryTests(TestCase):
         r = self.c_clerk.patch(f'/api/emissions/entries/{self.entry.id}/', {'quantity': '800'}, format='json')
         self.assertEqual(r.status_code, 400)
         self.assertEqual(r.data['code'], 'edit_in_questionnaire')
+
+    def test_entry_cannot_be_deleted_here_either(self):
+        r = self.c_owner.delete(f'/api/emissions/entries/{self.entry.id}/')
+        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.data['code'], 'edit_in_questionnaire')
+        from emissions.models import EmissionEntry
+        self.assertTrue(EmissionEntry.objects.filter(id=self.entry.id).exists())
 
     def test_rejection_notification_opens_the_entry_year(self):
         from accounts.models import Notification
@@ -1010,7 +1036,9 @@ class SupplierEFDocumentTests(TestCase):
         no_data = {'asset_description': 'Ofis', 'tenant_data_available': False}
         self.assertFalse(validate_generic_step('K3C13-1', {'answer': {'items': [no_data]}}, lang='tr')[0])
         self.assertEqual(validate_generic_step('K3C13-1', {'answer': {'items': [{**no_data, 'area_m2': '300'}]}}, lang='tr'), (True, None))
-        self.assertEqual(validate_generic_step('K3C14-1', {'answer': {'franchise_count': '12', 'total_tco2e': '340'}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C14-1', {'answer': {'franchise_count': '12', 'reporting_count': '8', 'total_tco2e': '340'}}, lang='tr'), (True, None))
+        # how many outlets reported is needed to show the coverage
+        self.assertFalse(validate_generic_step('K3C14-1', {'answer': {'franchise_count': '12', 'total_tco2e': '340'}}, lang='tr')[0])
         self.assertFalse(validate_generic_step('K3C14-2', {'answer': {'franchise_count': '12'}}, lang='tr')[0])
         inv = {'asset_class': 'VA-01', 'investment_amount': '5000000', 'company_value': '50000000', 'ghg_report_available': True}
         # GHG report "Evet" now needs the company's emissions
