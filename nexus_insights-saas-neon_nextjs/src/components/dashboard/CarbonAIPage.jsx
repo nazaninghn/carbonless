@@ -2826,6 +2826,8 @@ export function QuestionnaireTab({
   const startingRef = useRef(false);
   // Stable message-key counter — avoids Date.now() collisions
   const msgIdRef = useRef(0);
+  // "Not calculated" notes already shown after a save (each is said once).
+  const shownCalcNotesRef = useRef(new Set());
   // Tracks messages.length at the moment the CURRENT question bubble was shown.
   // Stored in history entries so goBack() can slice precisely back to that point,
   // correctly removing all loop-item bubbles regardless of how many there were.
@@ -3320,6 +3322,36 @@ export function QuestionnaireTab({
       saveSuccessTimerRef.current = setTimeout(() => {
         if (isMounted.current) setSaveSuccess(false);
       }, 2000);
+
+      // What the answer did to the inventory: the CO₂e it added, and why an
+      // amount it gave is not calculated — a missing number used to look
+      // like a counted one. Each note is said once.
+      const fb = respData?.calc_feedback;
+      if (fb) {
+        const trL = lang === 'tr';
+        const tonnes = (kg) => {
+          const t = Math.abs(kg) / 1000;
+          return t >= 0.01
+            ? `${t.toLocaleString(trL ? 'tr-TR' : 'en-US', { maximumFractionDigits: 2 })} t CO₂e`
+            : `${Math.abs(kg).toLocaleString(trL ? 'tr-TR' : 'en-US', { maximumFractionDigits: 1 })} kg CO₂e`;
+        };
+        const parts = [];
+        const delta = Number(fb.delta_kg) || 0;
+        if (Math.abs(delta) >= 0.05) {
+          const sign = delta > 0 ? '+' : '−';
+          parts.push(trL
+            ? `✓ Envantere yansıdı: **${sign}${tonnes(delta)}** (bu envanterin toplamı ${tonnes(Number(fb.total_kg) || 0)}).`
+            : `✓ Added to the inventory: **${sign}${tonnes(delta)}** (inventory total ${tonnes(Number(fb.total_kg) || 0)}).`);
+        }
+        for (const note of fb.notes || []) {
+          if (shownCalcNotesRef.current.has(note)) continue;
+          shownCalcNotesRef.current.add(note);
+          parts.push(`ℹ️ ${trL ? 'Hesaplanmadı' : 'Not calculated'}: ${note}`);
+        }
+        if (parts.length) {
+          setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content: parts.join('\n\n') }]);
+        }
+      }
 
       return { success: true, data: respData };
     } catch (e) {

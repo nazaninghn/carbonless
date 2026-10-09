@@ -5657,7 +5657,7 @@
         "id": "reporting_count",
         "type": "numeric",
         "subtype": null,
-        "required": false,
+        "required": true,
         "numericOnly": false,
         "exactLength": null,
         "maxLength": null,

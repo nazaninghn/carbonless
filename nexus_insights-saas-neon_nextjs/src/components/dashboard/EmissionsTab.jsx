@@ -140,6 +140,9 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
           <p className="mt-0.5 text-[10px] text-[#072C0E]/40">
             {months[entry.month - 1]} · {tr ? 'Miktar' : 'Qty'}: {fmt(entry.quantity)} {unitLabel(entry.unit, tr)}
           </p>
+          {entry.questionnaire_source && autoDescriptionLabel(entry.description, tr) && (
+            <p className="mt-0.5 text-[10px] leading-4 text-[#072C0E]/45">{autoDescriptionLabel(entry.description, tr)}</p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <ProofButton entry={entry} tr={tr} toast={toast}
@@ -212,6 +215,8 @@ export default function EmissionsTab({
   canEdit = true,
   canApprove = false,
   currentUsername,
+  yearsWithData = [],
+  onYearChange,
 }) {
   const tr    = language === 'tr';
   const toast = useToast();
@@ -347,6 +352,8 @@ export default function EmissionsTab({
       return parseInt(a.month) - parseInt(b.month); // default: month asc
     });
   }, [entries, search, filterScope, filterMonth, filterFacility, sortBy, tr]);
+
+  const otherYears = (yearsWithData || []).filter(y => y !== Number(selectedYear));
 
   const maxKg = useMemo(
     () => Math.max(...filtered.map(countedKg), 1),
@@ -517,7 +524,11 @@ export default function EmissionsTab({
         fetchData();
         toast.success(tr ? 'Kayıt silindi' : 'Entry deleted');
       } else {
-        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Kayıt silinemedi' : 'Failed to delete entry'));
+        const body = await res.json().catch(() => ({}));
+        toast.error(res.status === 403 ? noPermissionMessage(tr)
+          : body?.code === 'edit_in_questionnaire'
+            ? (tr ? 'Bu kayıt ankette düzeltilir — ilgili cevabı değiştirin.' : 'This entry is corrected in the questionnaire — change that answer.')
+            : (tr ? 'Kayıt silinemedi' : 'Failed to delete entry'));
       }
     } catch {
       toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
@@ -934,11 +945,25 @@ export default function EmissionsTab({
             <Leaf className="h-7 w-7" />
           </div>
           <div>
-            <p className="text-base font-bold text-[#072C0E]">{tr ? 'Henüz veri yok' : 'No emission data yet'}</p>
+            <p className="text-base font-bold text-[#072C0E]">
+              {otherYears.length > 0
+                ? (tr ? `${selectedYear} için henüz veri yok` : `No data for ${selectedYear} yet`)
+                : (tr ? 'Henüz veri yok' : 'No emission data yet')}
+            </p>
             <p className="mt-1 text-sm text-[#072C0E]/50">
-              {tr ? 'Fatura, sayaç okuma veya ESG raporunuzdan veri ekleyin.' : 'Add data from invoices, meter readings or your ESG report.'}
+              {otherYears.length > 0
+                ? (tr ? `Kayıtlarınız başka yıllarda: ${otherYears.join(', ')}.` : `Your entries are in other years: ${otherYears.join(', ')}.`)
+                : (tr ? 'Fatura, sayaç okuma veya ESG raporunuzdan veri ekleyin.' : 'Add data from invoices, meter readings or your ESG report.')}
             </p>
           </div>
+          {otherYears.length > 0 && onYearChange && (
+            <button
+              onClick={() => onYearChange(otherYears[0])}
+              className="mt-1 rounded-full border border-[#2ABD41] bg-[#F1FCF2] px-5 py-2.5 text-xs font-semibold text-[#175022] transition hover:bg-[#DEFAE1]"
+            >
+              {tr ? `${otherYears[0]} yılına geç` : `Switch to ${otherYears[0]}`}
+            </button>
+          )}
           {canEdit && <button
             onClick={() => setShowAddForm(true)}
             className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition hover:bg-[#175022]"
@@ -983,7 +1008,11 @@ export default function EmissionsTab({
                   const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
                   const kg = parseFloat(entry.calculated_co2e_kg) || 0;
                   const barPct = maxKg > 0 ? (countedKg(entry) / maxKg) * 100 : 0;
+                  // The share of the (filtered) total — the bar is scaled to
+                  // the largest row, the number is not.
+                  const sharePct = totalKg > 0 ? (countedKg(entry) / totalKg) * 100 : 0;
                   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
+                  const how = entry.questionnaire_source ? autoDescriptionLabel(entry.description, tr) : null;
                   return (
                     <tr key={entry.id} className="group/row transition-colors hover:bg-[#DEFAE1]/40">
                       {/* Source */}
@@ -992,6 +1021,9 @@ export default function EmissionsTab({
                           <span className="truncate text-[13px] font-semibold text-[#072C0E]">{name}</span>
                           <ProofButton entry={entry} tr={tr} toast={toast} className="shrink-0 transition" />
                         </div>
+                        {how && (
+                          <p className="mt-0.5 truncate text-[10px] text-[#072C0E]/45" title={how}>{how}</p>
+                        )}
                         <div className="mt-0.5 flex items-center gap-1.5">
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
                             {tr ? st.tr : st.en}
@@ -1037,7 +1069,9 @@ export default function EmissionsTab({
                           </div>
                           <span className="w-8 text-right text-[9px] font-bold text-[#072C0E]/30"
                             title={entry.status !== 'approved' ? (tr ? 'Onaylanmadığı için toplamda yok' : 'Not in the totals until approved') : undefined}>
-                            {entry.status === 'approved' ? (tr ? `%${fixed(barPct, 0)}` : `${fixed(barPct, 0)}%`) : '—'}
+                            {entry.status !== 'approved' ? '—'
+                              : sharePct > 0 && sharePct < 0.1 ? (tr ? '<%0,1' : '<0.1%')
+                              : (tr ? `%${fixed(sharePct, sharePct < 1 ? 1 : 0)}` : `${fixed(sharePct, sharePct < 1 ? 1 : 0)}%`)}
                           </span>
                         </div>
                       </td>
@@ -1347,6 +1381,9 @@ export default function EmissionsTab({
               )}
               {editing.questionnaire_source ? (
                 <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#DEFAE1]/50 px-4 py-3 text-xs leading-5 text-[#175022]">
+                  {autoDescriptionLabel(editing.description, tr) && (
+                    <p className="mb-1.5 font-semibold">{tr ? 'Hesaplama' : 'Calculation'}: {autoDescriptionLabel(editing.description, tr)}</p>
+                  )}
                   {tr
                     ? 'Bu kayıt Karbon Envanteri anketindeki cevabınızdan oluşturuldu. Burada değiştirirseniz anket o soruyu tekrar kaydettiğinde eski değer geri gelir; bu yüzden düzeltmeyi ankette, ilgili soruda yapın.'
                     : 'This entry was created from your Carbon Inventory answer. A change made here would be overwritten the next time that question is saved, so correct it in the questionnaire, on that question.'}
@@ -1426,23 +1463,32 @@ export default function EmissionsTab({
       )}
 
       {/* ═══════════════════ DELETE CONFIRM DIALOG ═══════════════════════ */}
-      <ConfirmDialog
-        open={deleteConfirm !== null}
-        type="danger"
-        title={tr ? 'Kaydı Sil' : 'Delete Entry'}
-        message={(() => {
-          // Name the entry, so it's clear which of several similar rows goes.
-          const e = entries.find(x => x.id === deleteConfirm);
-          if (!e) return tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?';
-          const name = (tr && e.emission_factor_name_tr) ? e.emission_factor_name_tr : e.emission_factor_name;
-          const what = `${name} · ${months[e.month - 1] || ''} ${e.year} · ${fmt(e.quantity)} ${unitLabel(e.unit, tr)}`;
-          return tr ? `"${what}" kaydını silmek istediğinize emin misiniz?` : `Delete the entry "${what}"?`;
-        })()}
-        confirmText={tr ? 'Sil' : 'Delete'}
-        cancelText={tr ? 'İptal' : 'Cancel'}
-        onConfirm={confirmDelete}
-        onCancel={() => setDeleteConfirm(null)}
-      />
+      {(() => {
+        // An entry of an inventory comes back from its answer at the next
+        // save, so it is removed by changing that answer, not deleted here.
+        const e = entries.find(x => x.id === deleteConfirm);
+        const src = e?.questionnaire_source;
+        const name = e ? ((tr && e.emission_factor_name_tr) ? e.emission_factor_name_tr : e.emission_factor_name) : '';
+        const what = e ? `${name} · ${months[e.month - 1] || ''} ${e.year} · ${fmt(e.quantity)} ${unitLabel(e.unit, tr)}` : '';
+        return (
+          <ConfirmDialog
+            open={deleteConfirm !== null}
+            type={src ? 'info' : 'danger'}
+            title={src ? (tr ? 'Ankette düzeltin' : 'Fix it in the questionnaire') : (tr ? 'Kaydı Sil' : 'Delete Entry')}
+            message={src
+              ? (tr
+                ? `"${what}" Karbon Envanteri anketindeki cevabınızdan geliyor. Burada silinse bile anket bir sonraki kayıtta onu geri getirir; kaldırmak için ankette ilgili cevabı değiştirin.`
+                : `"${what}" comes from your Carbon Inventory answer. Deleted here, it would come back at the next save; change that answer in the questionnaire to remove it.`)
+              : (!e
+                ? (tr ? 'Bu kaydı silmek istediğinize emin misiniz?' : 'Delete this entry?')
+                : (tr ? `"${what}" kaydını silmek istediğinize emin misiniz?` : `Delete the entry "${what}"?`))}
+            confirmText={src ? (tr ? 'Ankette düzelt' : 'Fix in questionnaire') : (tr ? 'Sil' : 'Delete')}
+            cancelText={tr ? 'İptal' : 'Cancel'}
+            onConfirm={src ? () => { setDeleteConfirm(null); fixInQuestionnaire(src); } : confirmDelete}
+            onCancel={() => setDeleteConfirm(null)}
+          />
+        );
+      })()}
 
       <ConfirmDialog
         open={withdrawing !== null}

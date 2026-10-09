@@ -160,6 +160,20 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
                    f'{old} → {new}' if old != new else new,
                    status_before=was_status, status_after=instance.status)
 
+    def destroy(self, request, *args, **kwargs):
+        # Same as an edit: an entry of an existing inventory is rebuilt from
+        # its answer at the next save, so deleting it here would not last.
+        instance = self.get_object()
+        self._check_can_change(instance)
+        if (instance.description or '').startswith('Questionnaire step '):
+            from questionnaire.models import CarbonReport
+            if CarbonReport.objects.filter(company_id=instance.company_id, reporting_year=instance.year).exists():
+                return Response({
+                    'error': 'This entry comes from the questionnaire; change the answer there.',
+                    'code': 'edit_in_questionnaire',
+                }, status=400)
+        return super().destroy(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
         self._check_can_change(instance)
         _log_entry(self.request, 'entry_deleted', instance, _entry_summary(instance),

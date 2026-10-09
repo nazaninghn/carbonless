@@ -136,6 +136,9 @@ class LocalDataAnswerTests(TestCase):
     def test_largest_source(self):
         res = self._send('2020 yılında en çok emisyon hangi kaynaktan geliyor?')
         self.assertIn('**Doğal Gaz**', res.data['content'])
+        # with the year's total and the next sources, not only the first one
+        self.assertIn('toplam emisyonunuz **2,50 tCO₂e**', res.data['content'])
+        self.assertIn('2. **', res.data['content'])
 
     def test_other_questions_get_a_turkish_unavailable_message(self):
         res = self._send('Emisyonlarımızı nasıl azaltabiliriz?')
