@@ -80,11 +80,11 @@ function computeTargetStatus(tgt, currentKg) {
     0
   ), 100);
 
-  // currentKg <= 0 means no emissions have been logged for this company at
-  // all yet — mathematically that reads as "100% reduced", but it's really
-  // "no data", not genuine success. Don't claim succeeded/failed off an
-  // empty dataset; fall back to the time-based on_track/off_track read.
-  if (currentKg > 0 && achievedPct >= 100) return 'succeeded';
+  // No approved emissions for the selected year (the running year before
+  // any bill is in): mathematically "100% reduced", really no data. Neither
+  // on track nor behind — it is not counted either way.
+  if (!(currentKg > 0)) return 'no_data';
+  if (achievedPct >= 100) return 'succeeded';
   if (currentYear() > tgt.target_year) return currentKg > 0 ? 'failed' : 'off_track';
   return achievedPct >= timeElapsedPct ? 'on_track' : 'off_track';
 }
@@ -108,7 +108,8 @@ function ArcGauge({ achieved, status }) {
   const trackCol = '#072C0E';
   const progCol =
     status === 'succeeded' ? '#175022' :
-    status === 'on_track'  ? '#2ABD41' : '#F87171';
+    status === 'on_track'  ? '#2ABD41' :
+    status === 'no_data'   ? '#072C0E33' : '#F87171';
 
   return (
     <svg viewBox="0 0 100 54" className="w-full max-w-[160px] mx-auto overflow-visible">
@@ -200,8 +201,11 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
     succeeded: { bg: 'bg-[#175022]/15', text: 'text-[#175022]', label: tr ? 'Başarılı' : 'Succeeded' },
     off_track: { bg: 'bg-red-50',       text: 'text-red-500',   label: tr ? 'Geride'   : 'Off Track' },
     failed:    { bg: 'bg-red-100',      text: 'text-red-700',   label: tr ? 'Başarısız' : 'Failed' },
+    no_data:   { bg: 'bg-[#072C0E]/6',  text: 'text-[#072C0E]/55', label: tr ? 'Veri yok' : 'No data' },
   };
-  const st = STATUS[computeTargetStatus(tgt, currentKg)];
+  const status = computeTargetStatus(tgt, currentKg);
+  const st = STATUS[status];
+  const noData = status === 'no_data';
 
   return (
     <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#072C0E]/10 bg-white/82 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_32px_rgba(7,44,14,0.09)] hover:border-[#2ABD41]/25">
@@ -236,15 +240,26 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
 
       {/* Arc gauge + center text */}
       <div className="relative flex flex-col items-center">
-        <ArcGauge achieved={achievedPct} status={tgt.status} />
+        <ArcGauge achieved={noData ? 0 : achievedPct} status={status} />
         {/* Overlay text centered under the arc opening */}
         <div className="-mt-2 text-center">
-          <p className="text-2xl font-bold leading-none tracking-tight text-[#072C0E]">
-            {tr && <span className="text-sm font-bold">%</span>}{Math.round(achievedPct)}{!tr && <span className="text-sm font-bold">%</span>}
-          </p>
-          <p className="mt-0.5 text-[10px] font-semibold text-[#072C0E]/40">
-            {tr ? `${pctLabel(reducePct, tr)} hedefine doğru` : `toward ${pctLabel(reducePct, tr)} target`}
-          </p>
+          {noData ? (
+            <>
+              <p className="text-2xl font-bold leading-none text-[#072C0E]/30">—</p>
+              <p className="mt-1 text-[10px] font-semibold text-[#072C0E]/40">
+                {tr ? `${currentLabelYear || ''} için onaylı kayıt yok` : `No approved entries for ${currentLabelYear || 'this year'}`}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold leading-none tracking-tight text-[#072C0E]">
+                {tr && <span className="text-sm font-bold">%</span>}{Math.round(achievedPct)}{!tr && <span className="text-sm font-bold">%</span>}
+              </p>
+              <p className="mt-0.5 text-[10px] font-semibold text-[#072C0E]/40">
+                {tr ? `${pctLabel(reducePct, tr)} hedefine doğru` : `toward ${pctLabel(reducePct, tr)} target`}
+              </p>
+            </>
+          )}
           {abovePct > 0 && (
             <p className="mt-1 text-[11px] font-bold text-red-500">
               {tr ? `Bazın ${pctLabel(Math.round(abovePct), tr)} üzerinde` : `${pctLabel(Math.round(abovePct), tr)} above the base`}

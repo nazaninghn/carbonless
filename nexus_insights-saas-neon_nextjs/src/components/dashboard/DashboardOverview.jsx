@@ -966,8 +966,12 @@ export default function DashboardOverview({
                       <span className="min-w-0 truncate text-[11px] font-semibold text-[#072C0E]/70">
                         {t.title || `${t.target_year || ' - '} ${tr ? 'hedefi' : 'target'}`}
                       </span>
-                      {/* Above the base there is no progress to show: say by how much. */}
-                      {baseTonne > 0 && totalTonne > baseTonne ? (
+                      {/* No approved entries for the year: "0 t" is not "100% reduced". */}
+                      {!(totalTonne > 0) ? (
+                        <span className="shrink-0 text-[11px] font-bold text-[#072C0E]/45">
+                          {tr ? 'Veri yok' : 'No data'}
+                        </span>
+                      ) : baseTonne > 0 && totalTonne > baseTonne ? (
                         <span className="shrink-0 text-[11px] font-bold text-red-500">
                           {tr ? `Bazın %${Math.round((totalTonne / baseTonne - 1) * 100)} üzerinde` : `${Math.round((totalTonne / baseTonne - 1) * 100)}% above base`}
                         </span>
@@ -978,12 +982,12 @@ export default function DashboardOverview({
                     <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/6">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-[#1D9C31] to-[#51D766] transition-all duration-700 ease-out"
-                        style={{ width: `${mounted ? pct : 0}%` }}
+                        style={{ width: `${mounted && totalTonne > 0 ? pct : 0}%` }}
                       />
                     </div>
                     <div className="mt-0.5 flex justify-between text-[10px] text-[#072C0E]/35">
                       <span>{tr ? 'Hedef' : 'Target'}: {tonneLabel(targetTonne, tr)} tCO2e</span>
-                      <span>{tr ? 'Mevcut' : 'Current'}: {tonneLabel(totalTonne, tr)} tCO2e</span>
+                      <span>{tr ? 'Mevcut' : 'Current'}: {totalTonne > 0 ? `${tonneLabel(totalTonne, tr)} tCO2e` : (tr ? `${selectedYear} için kayıt yok` : `nothing for ${selectedYear}`)}</span>
                     </div>
                   </div>
                 );

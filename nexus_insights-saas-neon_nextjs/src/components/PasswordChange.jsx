@@ -32,8 +32,25 @@ export default function PasswordChange({ language }) {
     try {
       const res = await api.changePassword({ old_password: oldPw, new_password: newPw });
       if (res.ok) {
-        setMsg(tr ? 'Şifre başarıyla değiştirildi' : 'Password changed successfully');
+        // The server signs every session out (a stolen session must stop
+        // with the old password) — this one included, which used to drop
+        // the user to "session expired" up to 30 minutes later, mid-work.
+        // Sign this device straight back in with the new password.
+        let stillIn = false;
+        try {
+          const profile = await api.getProfile().then(r => (r.ok ? r.json() : null));
+          const who = profile?.username || profile?.email;
+          if (who) stillIn = (await api.login(who, newPw)).ok;
+        } catch { /* falls through to the sign-in below */ }
         setOldPw(''); setNewPw(''); setConfirm('');
+        if (stillIn) {
+          setMsg(tr
+            ? 'Şifre değiştirildi. Diğer cihazlardaki oturumlar kapatıldı; bu cihazda oturumunuz açık.'
+            : 'Password changed. Sessions on other devices were signed out; you stay signed in here.');
+        } else {
+          setMsg(tr ? 'Şifre değiştirildi. Lütfen yeni şifrenizle tekrar giriş yapın.' : 'Password changed. Please sign in again with your new password.');
+          setTimeout(() => { window.location.href = '/login'; }, 2500);
+        }
       } else {
         const data = await res.json().catch(() => ({}));
         setError(authErrorMessage(data, tr, tr ? 'Hata oluştu' : 'An error occurred'));
