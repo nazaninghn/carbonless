@@ -93,6 +93,81 @@ def _previous_stage2(source):
     return activities, subsidiaries
 
 
+# Answers describing what the company has — boundary choices, equipment,
+# vehicles, refrigerant units, fuel types, measurement methods — which rarely
+# change from one year to the next. A new inventory starts from last year's
+# answer to each, still asked and confirmed question by question.
+CARRY_STEPS = (
+    '2A-5', '2B-OC1', '2B-OC1a', '2B-OC2', '2B-FC1', '2B-FC2', '2C-1', '2C-3',
+    'SCOPE-GROUPING',
+    '3A-0', '3A-1', '3A-1a', '3A-2', '3A-2b', '3A-3', '3A-4', '3A-5bio', '3A-6', '3A-6a',
+    '3B-0', '3B-1', '3B-2', '3B-3', '3B-4', '3B-5', '3B-6',
+    '3C-0', '3C-1', '3D-0', '3D-2', '3D-EF',
+    '4A-0', '4A-2', '4A-2s', '4A-2a', '4A-2c', '4A-3', '4B-0', '4B-1',
+)
+# Per-item answers holding both kinds: the structural fields are carried,
+# the year's amount is only shown as last year's figure.
+CARRY_FIELDS = {'3C-2': ('method',), '3D-4': ('capacity_kg', 'gas_type')}
+AMOUNT_FIELDS = {'3C-2': 'quantity', '3D-4': 'refill_kg'}
+# The year's amounts: never filled in, only shown next to the field.
+AMOUNT_STEPS = ('3A-5', '3B-7', '4A-1', '4A-1a', '4A-2b', '4B-2')
+# Keyed by facility position ("1", "2" …): re-keyed by facility name, since
+# the facility order may differ in the new inventory.
+FACILITY_KEYED_STEPS = ('4A-1',)
+
+
+def _previous_carry(report, source):
+    """(structure, amounts) from an EARLIER year's inventory — empty for a
+    source of the same or a later year, whose answers are not "last year's"."""
+    if not (source and report.reporting_year and source.reporting_year
+            and source.reporting_year < report.reporting_year):
+        return {}, {}
+    ids = set(CARRY_STEPS) | set(CARRY_FIELDS) | set(AMOUNT_STEPS) | {'2A-2'}
+    raw = {}
+    for step in source.steps.filter(step_id__in=ids, is_skipped=False):
+        value = step.answer
+        if isinstance(value, dict) and set(value) == {'answer'}:
+            value = value['answer']
+        raw[step.step_id] = value
+    names = {}
+    if isinstance(raw.get('2A-2'), dict):
+        names = {str(k): str((v or {}).get('name') or '').strip()
+                 for k, v in raw['2A-2'].items() if isinstance(v, dict)}
+
+    def _empty(v):
+        return v is None or v == '' or v == [] or v == {}
+
+    structure, amounts = {}, {}
+    for step_id in CARRY_STEPS:
+        if not _empty(raw.get(step_id)):
+            structure[step_id] = raw[step_id]
+    for step_id, fields in CARRY_FIELDS.items():
+        value = raw.get(step_id)
+        if not isinstance(value, dict):
+            continue
+        kept = {k: {f: v[f] for f in fields if not _empty(v.get(f))}
+                for k, v in value.items() if isinstance(v, dict)}
+        kept = {k: v for k, v in kept.items() if v}
+        if kept:
+            structure[step_id] = kept
+        amount = AMOUNT_FIELDS[step_id]
+        figures = {k: v[amount] for k, v in value.items()
+                   if isinstance(v, dict) and not _empty(v.get(amount))}
+        if figures:
+            amounts[step_id] = figures
+    for step_id in AMOUNT_STEPS:
+        value = raw.get(step_id)
+        if _empty(value):
+            continue
+        if step_id in FACILITY_KEYED_STEPS and isinstance(value, dict):
+            value = {names[str(k)]: v for k, v in value.items()
+                     if names.get(str(k)) and not _empty(v)}
+            if not value:
+                continue
+        amounts[step_id] = value
+    return structure, amounts
+
+
 def _progress(completed_count, status, client_progress=None):
     """Coarse progress for report *lists*.
 
@@ -712,13 +787,16 @@ class ReportStatusView(APIView):
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Not found'}, status=404)
 
-        if report.created_by_id != request.user.id:
+        # A completed inventory holds approved emission figures and a signed
+        # report: deleting it (and its entries) is for an owner/admin, not
+        # for whichever member started it.
+        if report.created_by_id != request.user.id or report.status == CarbonReport.Status.COMPLETED:
             from companies.models import CompanyMembership
             if not CompanyMembership.objects.filter(
                 company=report.company, user=request.user, is_active=True,
                 role__in=('owner', 'admin'),
             ).exists():
-                return Response({'error': 'Only the creator or a company owner/admin can delete this inventory.',
+                return Response({'error': 'Only a company owner/admin can delete a completed inventory; a draft also its creator.',
                                  'code': 'forbidden'}, status=403)
 
         # The emission entries the questionnaire created for this inventory go
@@ -885,6 +963,8 @@ class PreviousCompanyProfileView(APIView):
                 'previous_subsidiaries': [],
                 'previous_selections': {},
                 'previous_year': None,
+                'previous_structure': {},
+                'previous_amounts': {},
             })
 
         # The earlier report's answers win; anything it never answered falls
@@ -897,6 +977,7 @@ class PreviousCompanyProfileView(APIView):
         })
 
         activities, subsidiaries = _previous_stage2(source)
+        structure, amounts = _previous_carry(report, source)
         return Response({
             'available': True,
             'source_report_id': source.id,
@@ -920,6 +1001,11 @@ class PreviousCompanyProfileView(APIView):
             # question, never pre-selected (each year is answered on its own).
             'previous_selections': _previous_selections(source),
             'previous_year': source.reporting_year,
+            # Last year's equipment, sites, fuel types, methods … to start
+            # each of those questions from (see CARRY_STEPS), and last year's
+            # amounts, shown next to this year's empty field.
+            'previous_structure': structure,
+            'previous_amounts': amounts,
         })
 
 

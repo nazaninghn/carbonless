@@ -458,6 +458,15 @@ function localizeStoredAmount(q, v, lang) {
   return `${n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 6 })}${m[2] || ''}`;
 }
 
+// Last year's amount as shown in a hint: "12000 litre" → "12.000 litre".
+function formatPreviousAmount(v, lang) {
+  const m = /^(\d+(?:\.\d+)?)(\s*\S.*)?$/.exec(String(v ?? '').trim());
+  if (!m) return String(v ?? '');
+  const n = Number(m[1]);
+  if (!Number.isFinite(n)) return String(v);
+  return `${n.toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US', { maximumFractionDigits: 6 })}${m[2] || ''}`;
+}
+
 // Source lists whose earlier-inventory answer is shown as a reminder (3A-1 …).
 const PREVIOUS_SELECTION_STEPS = ['3A-1', '3B-1', '3C-1', '3D-0'];
 
@@ -3005,7 +3014,7 @@ export function QuestionnaireTab({
   // inventory's order, so "Tesis 1" stays the same site year to year.
   // Kept as state: on a resumed 2A-2 the lists arrive after the question
   // is already on screen, and must still fill it (see the effect below).
-  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], activities: {}, subsidiaries: [], selections: {}, previousYear: null, loaded: false });
+  const [facilitySources, setFacilitySources] = useState({ registered: [], previous: [], activities: {}, subsidiaries: [], selections: {}, structure: {}, amounts: {}, previousYear: null, loaded: false });
   const registeredFacilitiesRef = useRef([]);
   // Read through a ref so callbacks created before the lists arrived (the
   // loop's next-item step) still see them.
@@ -3046,7 +3055,9 @@ export function QuestionnaireTab({
   const previousFacilitiesFetchedRef = useRef(false);
   useEffect(() => {
     if (!reportId || previousFacilitiesFetchedRef.current) return;
-    if (!['2A-1', '2A-2', '2A-3', '2A-4', ...PREVIOUS_SELECTION_STEPS].includes(currentId)) return;
+    // From Stage 2 on: last year's facilities, equipment and amounts are
+    // offered from 2A-1 onwards (see carriedValue / amountHint).
+    if (!((getQuestionById(currentId)?.stage ?? 0) >= 2)) return;
     previousFacilitiesFetchedRef.current = true;
     api.getPreviousCompanyProfile(reportId)
       .then(res => (res.ok ? res.json() : {}))
@@ -3058,6 +3069,8 @@ export function QuestionnaireTab({
           activities: data?.previous_facility_activities && typeof data.previous_facility_activities === 'object' ? data.previous_facility_activities : {},
           subsidiaries: Array.isArray(data?.previous_subsidiaries) ? data.previous_subsidiaries : [],
           selections: data?.previous_selections && typeof data.previous_selections === 'object' ? data.previous_selections : {},
+          structure: data?.previous_structure && typeof data.previous_structure === 'object' ? data.previous_structure : {},
+          amounts: data?.previous_amounts && typeof data.previous_amounts === 'object' ? data.previous_amounts : {},
           previousYear: data?.previous_year || null,
           loaded: true,
         }));
@@ -3075,6 +3088,48 @@ export function QuestionnaireTab({
     const b4 = readAnswerValue(answersRef.current, 'B4');
     setAnswerValue(v => (String(v ?? '').trim() === '' || String(v) === String(b4 ?? '') ? String(n) : v));
   }, [currentId, facilitySources.loaded, facilitySources.previous]);
+  // The loop item a per-item question is asking about at `index`.
+  const loopItemAt = (q, index) => {
+    if (loopState && loopState.questionId === q?.id) return loopState.items[index];
+    return buildLoopItems(q.id, answersRef.current, 'en')?.items?.[index];
+  };
+  // Last year's answer to a question describing what the company has
+  // (equipment, sites, fuel types, methods …): this year's question starts
+  // from it and is still confirmed by the user. Only from an earlier year's
+  // inventory (the server sends nothing otherwise).
+  const carriedValue = (q, index) => {
+    const prev = q ? facilitySourcesRef.current.structure?.[q.id] : undefined;
+    if (prev === undefined || prev === null) return undefined;
+    if (!q.loopSource) return prev;
+    const item = loopItemAt(q, index);
+    return item === undefined ? undefined : loopItemValue(prev, item);
+  };
+  // Last year's amount for the same item, shown next to this year's field —
+  // never filled in. 4A-1 is keyed by facility name (the order may differ).
+  const amountHint = (q, index) => {
+    const prev = q ? facilitySourcesRef.current.amounts?.[q.id] : undefined;
+    if (prev === undefined || prev === null) return undefined;
+    if (!q.loopSource) return typeof prev === 'object' ? undefined : prev;
+    const item = loopItemAt(q, index);
+    if (item === undefined) return undefined;
+    if (q.id === '4A-1') {
+      const name = String(readAnswerValue(answersRef.current, '2A-2')?.[item]?.name || '').trim();
+      return name ? prev[name] : undefined;
+    }
+    return loopItemValue(prev, item);
+  };
+  const carriedNow = (q, index) => {
+    if (!q) return undefined;
+    if (q.loopSource) {
+      const item = loopItemAt(q, index);
+      if (item === undefined) return undefined;
+      if (loopState && loopState.questionId === q.id && loopState.collected?.[item] !== undefined) return undefined;
+      if (loopItemValue(readAnswerValue(answersRef.current, q.id), item) !== undefined) return undefined;
+    } else if (q.id in answersRef.current) return undefined;
+    // 3A-2b follows this year's 2B-OC1a answer first (facilityPrefill).
+    if (q.id === '3A-2b') return undefined;
+    return carriedValue(q, index);
+  };
   const facilityPrefill = (q, index) => {
     // 3A-2b: the site was just given in 3A-2 — a site declared outside
     // operational control in 2B-OC1a starts on "no", any other on "yes".
@@ -3082,7 +3137,7 @@ export function QuestionnaireTab({
       const eq = readAnswerValue(answersRef.current, '3A-1');
       const item = Array.isArray(eq) ? eq[index] : undefined;
       const site = String(loopItemValue(readAnswerValue(answersRef.current, '3A-2'), item)?.site || '').trim();
-      if (!site) return undefined;
+      if (!site) return carriedValue(q, index);
       return noControlSites(answersRef.current).includes(site.toLocaleLowerCase('tr-TR')) ? 'no' : 'yes';
     }
     // 2A-3 (what the facility does): last year's answer for the facility
@@ -3093,7 +3148,7 @@ export function QuestionnaireTab({
       const prev = name ? facilitySourcesRef.current.activities?.[name] : undefined;
       return prev || undefined;
     }
-    if (q?.id !== '2A-2') return undefined;
+    if (q?.id !== '2A-2') return carriedValue(q, index);
     // Wait for last year's list: the registered facilities arrive first, in
     // their own order, so a resumed "Tesis 2" used to get the registered
     // list's second name — the one already given to Tesis 1.
@@ -3124,7 +3179,17 @@ export function QuestionnaireTab({
       });
       return;
     }
-    if (currentId !== '2A-2' && currentId !== '2A-3') return;
+    if (currentId !== '2A-2' && currentId !== '2A-3') {
+      // Last year's answers arrived after this question was shown: start it
+      // from them unless something was already entered.
+      const index = loopState && loopState.questionId === currentId ? loopState.currentIndex : 0;
+      if (!currentQuestion || carriedNow(currentQuestion, index) === undefined) return;
+      const initial = JSON.stringify(getInitialValue(currentQuestion));
+      setAnswerValue(v => (v === undefined || v === null || JSON.stringify(v) === initial
+        ? localizeStoredAmount(currentQuestion, normalizeAnswerValue(currentQuestion, carriedValue(currentQuestion, index)), lang)
+        : v));
+      return;
+    }
     const index = loopState && loopState.questionId === currentId ? loopState.currentIndex : 0;
     const pre = facilityPrefill(currentQuestion, index);
     if (!pre) return;
@@ -3178,6 +3243,11 @@ export function QuestionnaireTab({
         // prefillFrom: the question repeats an earlier one (2A-1 asks the
         // facility count B4 already did) — start from that answer, as its
         // helper text promises, instead of blank.
+        // 2A-1: the previous inventory's own facility list beats B4 once it
+        // has arrived (the effect above covers it arriving later).
+        if (existing === undefined && currentId === '2A-1' && facilitySourcesRef.current.previous?.length) {
+          existing = String(facilitySourcesRef.current.previous.length);
+        }
         if (existing === undefined && currentQuestion.prefillFrom) {
           const src = readAnswerValue(answersRef.current, currentQuestion.prefillFrom);
           if (src !== undefined && src !== null && typeof src !== 'object' && String(src).trim() !== '') existing = String(src);
@@ -3197,6 +3267,8 @@ export function QuestionnaireTab({
         if (existing === undefined && currentId === 'A4' && reportYearRef.current) {
           existing = String(reportYearRef.current);
         }
+        // Boundary choices, equipment lists …: last year's answer.
+        if (existing === undefined) existing = carriedValue(currentQuestion, 0);
       }
       setAnswerValue(existing !== undefined ? localizeStoredAmount(currentQuestion, normalizeAnswerValue(currentQuestion, existing), lang) : getInitialValue(currentQuestion));
       // Marks answerValue as belonging to THIS question. React usually runs
@@ -4165,7 +4237,9 @@ export function QuestionnaireTab({
         lang={lang}
         open={sidebarOpen}
         onToggle={() => setSidebarOpen(false)}
-        completed={completed}
+        // A completed inventory reopened to fix a section is still complete:
+        // it read "118 / 120 — 98%" next to "this inventory is completed".
+        completed={completed || inventoryCompleted}
       />
 
       {/* Main area */}
@@ -4483,7 +4557,27 @@ export function QuestionnaireTab({
                 )}
                 {/* 3A-1/3B-1/3C-1/3D-0: what the earlier inventory listed, as a
                     reminder only — nothing is pre-selected for a new year. */}
-                {PREVIOUS_SELECTION_STEPS.includes(currentId) && currentQuestion && (facilitySources.selections[currentId] || []).length > 0 && (() => {
+                {/* Started from last year's answer (equipment, sites, methods …). */}
+                {currentQuestion && (() => {
+                  const idx = loopState && loopState.questionId === currentId ? loopState.currentIndex : 0;
+                  const carried = carriedNow(currentQuestion, idx);
+                  const hint = amountHint(currentQuestion, idx);
+                  const yr = facilitySources.previousYear;
+                  const hasHint = hint !== undefined && hint !== null && hint !== '' && typeof hint !== 'object';
+                  if (carried === undefined && !hasHint) return null;
+                  return (
+                    <p className="text-xs text-[#175022]/60">
+                      {carried !== undefined && (tr
+                        ? `${yr} envanterinizdeki cevabınızla dolduruldu. Bu yıl farklıysa değiştirin.`
+                        : `Filled in from your ${yr} inventory. Change it if it is different this year.`)}
+                      {carried !== undefined && hasHint && ' '}
+                      {hasHint && (tr
+                        ? `${carried !== undefined ? 'Miktar ' : ''}${yr} envanterinizde: ${formatPreviousAmount(hint, lang)}. Bu yılın değerini girin.`
+                        : `${carried !== undefined ? 'Amount in' : 'In'} your ${yr} inventory: ${formatPreviousAmount(hint, lang)}. Enter this year's value.`)}
+                    </p>
+                  );
+                })()}
+                {PREVIOUS_SELECTION_STEPS.includes(currentId) && currentQuestion && carriedNow(currentQuestion, 0) === undefined && !(currentId in answers) && (facilitySources.selections[currentId] || []).length > 0 && (() => {
                   const labels = facilitySources.selections[currentId].map(v => {
                     const opt = (currentQuestion.options || []).find(o => o.value === v);
                     return opt ? stripOptionCode(opt.label?.[lang] || opt.label?.en || v) : v;

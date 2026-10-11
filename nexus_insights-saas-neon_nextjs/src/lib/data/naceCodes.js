@@ -133,3 +133,20 @@ export function naceLabel(code, lang) {
     || ALL_NACE_CODES.find((n) => c.startsWith(n.code));
   return hit ? `${c} — ${hit[l]}` : c;
 }
+
+// Search for the signup picker. The list holds NACE divisions (C13), so a
+// full class code someone knows from their records — "13.20", "1320",
+// "C13.20" — finds its division by the first two digits. Turkish-aware
+// lowercasing: "imalat" finds "İmalat".
+export function searchNace(query, limit = 12) {
+  const raw = String(query || '').trim();
+  if (!raw) return [];
+  const digits = /^[a-uA-U]?\s*(\d{2})[\d.\s]*$/.exec(raw);
+  if (digits) {
+    const division = digits[1];
+    return ALL_NACE_CODES.filter((n) => n.code.slice(1) === division).slice(0, limit);
+  }
+  const q = raw.toLocaleLowerCase('tr-TR');
+  const low = (s) => String(s || '').toLocaleLowerCase('tr-TR');
+  return ALL_NACE_CODES.filter((n) => low(n.code).includes(q) || low(n.tr).includes(q) || n.en.toLowerCase().includes(raw.toLowerCase())).slice(0, limit);
+}
