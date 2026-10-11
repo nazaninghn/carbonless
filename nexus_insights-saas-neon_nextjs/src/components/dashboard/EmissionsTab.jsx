@@ -16,7 +16,7 @@ import Scope3EntryForm from '@/components/dashboard/Scope3EntryForm';
 import useCountUp from '@/lib/hooks/useCountUp';
 import { DASHBOARD_ANIM_STYLES } from '@/lib/constants/dashboardAnimations';
 import {
-  SCOPE_META, STATUS_META, CATEGORY_LABELS,
+  SCOPE_META, STATUS_META, CATEGORY_LABELS, SCOPE3_CATEGORY_NUMBER,
   MONTHS_TR, MONTHS_EN,
   ALLOWED_UPLOAD_MIME as ALLOWED_MIME,
   MAX_UPLOAD_BYTES as MAX_FILE_BYTES,
@@ -338,7 +338,7 @@ export default function EmissionsTab({
           return ccCats.has(f.category) ? f.country === selectedCountry : f.country === 'global';
         })
         .map(f => f.category)
-    )];
+    )].sort((a, b) => (SCOPE3_CATEGORY_NUMBER[a] ?? 99) - (SCOPE3_CATEGORY_NUMBER[b] ?? 99));
   }, [factors, selScope, selectedCountry]);
 
   const selFactorObj = useMemo(
@@ -522,7 +522,7 @@ export default function EmissionsTab({
           const d = await res.json().catch(() => ({}));
           // "Yine de kaydet" keeps going to the next month if that was asked.
           saveNextRef.current = goNext;
-          setDupWarning(d.code === 'annual_overlap' ? { overlap: tr ? d.message_tr : d.message_en } : true);
+          setDupWarning(d.code === 'annual_overlap' || d.code === 'yearly_repeat' ? { overlap: tr ? d.message_tr : d.message_en, kind: d.code } : true);
         } else if (res.status === 403) {
           setFormError(noPermissionMessage(tr));
           toast.error(noPermissionMessage(tr));
@@ -1230,7 +1230,11 @@ export default function EmissionsTab({
                       <label className={LABEL}>{tr ? 'Kategori' : 'Category'}</label>
                       <select value={selCategory} onChange={e => { setSelCategory(e.target.value); setSelFactor(''); }} className={FIELD} required>
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
-                        {categories.map(c => <option key={c} value={c}>{catLabel(c)}</option>)}
+                        {categories.map(c => (
+                          <option key={c} value={c}>
+                            {selScope === 'scope3' && SCOPE3_CATEGORY_NUMBER[c] ? `${tr ? 'Kat.' : 'Cat.'} ${SCOPE3_CATEGORY_NUMBER[c]} — ` : ''}{catLabel(c)}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   )}
@@ -1253,6 +1257,13 @@ export default function EmissionsTab({
                     <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
                       <p className="text-xs font-bold text-[#175022]">{tr ? 'Faktör:' : 'Factor:'} {factorLabel(selFactorObj.factor_kg_co2e, selFactorObj.unit, tr)}</p>
                       <p className="mt-0.5 text-[10px] text-[#175022]/70">⚠️ {tr ? `Miktarı ${unitLabel(selFactorObj.unit, tr)} cinsinden girin` : `Enter quantity in ${unitLabel(selFactorObj.unit, tr)}`}</p>
+                      {selFactorObj.is_yearly && (
+                        <p className="mt-1.5 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800">
+                          {tr
+                            ? 'Bu kaynak yıllık (ya da tek seferlik) bir miktardır: yılın toplamını bir kez, herhangi bir aya girin. Her ay girerseniz birden fazla kez sayılır.'
+                            : 'This source is a yearly (or one-off) amount: enter the year\'s total once, under any month. Entered every month, it is counted more than once.'}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1268,7 +1279,7 @@ export default function EmissionsTab({
                       </select>
                     </div>
                     <div>
-                      <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'}{selFactorObj ? ` (${selFactorObj.unit})` : ''}</label>
+                      <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'}{selFactorObj ? ` (${unitLabel(selFactorObj.unit, tr)})` : ''}</label>
                       <input type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
                     </div>
                   </div>
@@ -1354,7 +1365,9 @@ export default function EmissionsTab({
                   <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
                     <p className="flex items-center gap-2 font-bold">
                       <AlertCircle className="h-4 w-4 shrink-0" />
-                      {dupWarning.overlap
+                      {dupWarning.kind === 'yearly_repeat'
+                        ? (tr ? 'Bu yıllık kaynak bu yıl zaten girilmiş' : 'This yearly source is already entered for this year')
+                        : dupWarning.overlap
                         ? (tr ? 'Bu kaynak yıllık envanterde zaten var' : 'This source is already in the annual inventory')
                         : (tr ? 'Bu kayıt zaten var gibi görünüyor' : 'This entry looks like it already exists')}
                     </p>

@@ -5535,11 +5535,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                 const peToSave = { ...pe, ...(override || {}), language };
                                 let res = await api.confirmEmissionEntry(peToSave);
                                 let data = await res.json().catch(() => ({}));
-                                if (res.status === 409 && (data.code === 'possible_duplicate' || data.code === 'annual_overlap')) {
+                                if (res.status === 409 && ['possible_duplicate', 'annual_overlap', 'yearly_repeat'].includes(data.code)) {
                                   // Same source, period and quantity is already saved — or the
                                   // year's inventory already holds this source as an annual
                                   // amount: ask before counting it twice; "Cancel" skips just this one.
-                                  const saveAnyway = window.confirm(data.code === 'annual_overlap'
+                                  const saveAnyway = window.confirm(data.code !== 'possible_duplicate'
                                     ? `${tr ? data.message_tr : data.message_en}\n\n${tr ? 'Yine de kaydedilsin mi?' : 'Save it anyway?'}`
                                     : (tr
                                       ? 'Bu dönem için aynı kaynak ve miktarla bir kayıt zaten var. Aynı faturayı iki kez girerseniz toplam iki kat görünür.\n\nYine de kaydedilsin mi?'

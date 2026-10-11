@@ -87,3 +87,61 @@ def find_annual_overlap(company, factor, year, facility=None):
                 + (f' for {where_fac}' if where_fac else '')
                 + f' ({what}). This entry is added on top of it — the same consumption may be counted twice.')
     return {'tr': texts['message_tr'], 'en': texts['message_en'], **texts}
+
+
+# Sources whose amount covers a whole year or is counted once: capital goods
+# (the year they are bought), franchises, investments, a sold product's
+# lifetime use, and factors stated "per year". Entered like a monthly bill
+# every month, they would be counted twelve times.
+YEARLY_CATEGORIES = {'capital_goods', 'franchises', 'investments', 'use_of_sold'}
+_YEARLY_WORDS = ('per year', 'lifetime', 'yıllık', 'ömür boyu')
+
+
+def is_yearly_factor(factor):
+    if factor is None:
+        return False
+    if factor.category in YEARLY_CATEGORIES:
+        return True
+    name = f"{factor.name or ''} {getattr(factor, 'name_tr', '') or ''}".lower()
+    return any(w in name for w in _YEARLY_WORDS)
+
+
+class YearlyRepeat(APIException):
+    """A yearly source entered again for another month of the same year."""
+    status_code = status.HTTP_409_CONFLICT
+    default_code = 'yearly_repeat'
+
+    def __init__(self, repeat):
+        super().__init__(detail={'error': repeat['en'], 'code': 'yearly_repeat', **repeat})
+
+
+_MONTHS_TR = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz',
+              'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+_MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+              'August', 'September', 'October', 'November', 'December']
+
+
+def find_yearly_repeat(company, factor, year, month, facility=None):
+    """{'tr', 'en', 'message_tr', 'message_en'} when *factor* is a yearly
+    source that already has an entry in another month of *year*, else None."""
+    from .models import EmissionEntry
+    if not company or not is_yearly_factor(factor) or not year:
+        return None
+    qs = (EmissionEntry.objects
+          .filter(company=company, year=year, emission_factor=factor)
+          .exclude(status__in=('draft', 'rejected')))
+    if month:
+        qs = qs.exclude(month=month)
+    if facility is not None:
+        qs = qs.filter(facility=facility)
+    other = qs.order_by('month').first()
+    if not other:
+        return None
+    m = other.month if 1 <= (other.month or 0) <= 12 else 1
+    tr = (f'{year} yılında bu kaynak için {_MONTHS_TR[m - 1]} ayında zaten bir kayıt var. '
+          'Bu yıllık (ya da tek seferlik) bir kaynak: yılın toplamı bir kez girilir — '
+          'her ay girilirse birden fazla kez sayılır.')
+    en = (f'This source already has an entry for {_MONTHS_EN[m - 1]} {year}. '
+          'It is a yearly (or one-off) source: the year\'s amount is entered once — '
+          'entered every month, it is counted more than once.')
+    return {'tr': tr, 'en': en, 'message_tr': tr, 'message_en': en}

@@ -206,19 +206,30 @@ def backup_workbook_response(data, tr):
              pick(_INVENTORY_STATUS.get(inv['status'], (inv['status'], inv['status']))),
              inv['created_by'] or '', _date(inv['created_at'], tr)] for inv in data['inventories']])
 
+    # In words, in survey order: "Soru 43 — Hangi yakıt türlerini
+    # kullanıyor?" / "Sıcak su kazanı: Doğalgaz", not "3A-4" /
+    # "EQ-3A-01: natural_gas". Screens that only move through the survey
+    # ("which section to fix?") are left out.
+    from questionnaire.answer_text import answer_text, is_navigation, question_title, sort_key
+    lang = 'tr' if tr else 'en'
     answers = []
     for inv in data['inventories']:
-        for qid, ans in inv['answers'].items():
-            if isinstance(ans, dict) and set(ans) == {'answer'}:
-                ans = ans['answer']
-            answers.append([inv['title'], inv['reporting_year'] or '', qid, _text(ans, tr)])
+        for qid in sorted(inv['answers'], key=sort_key):
+            if is_navigation(qid):
+                continue
+            text = answer_text(qid, inv['answers'][qid], inv['answers'], lang)
+            if not str(text).strip():
+                continue  # an optional question left blank
+            answers.append([inv['title'], inv['reporting_year'] or '', question_title(qid, lang), text])
     ws = _sheet(wb, 'Anket Cevapları' if tr else 'Questionnaire Answers',
-                ['Envanter', 'Yıl', 'Soru kodu', 'Cevap'] if tr else ['Inventory', 'Year', 'Question id', 'Answer'],
+                ['Envanter', 'Yıl', 'Soru', 'Cevap'] if tr else ['Inventory', 'Year', 'Question', 'Answer'],
                 answers)
     from openpyxl.styles import Alignment
-    for cell in ws['D'][1:]:
-        cell.alignment = Alignment(wrap_text=True, vertical='top')
-    ws.column_dimensions['D'].width = 80
+    for col in ('C', 'D'):
+        for cell in ws[col][1:]:
+            cell.alignment = Alignment(wrap_text=True, vertical='top')
+    ws.column_dimensions['C'].width = 55
+    ws.column_dimensions['D'].width = 70
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename="carbonless_yedek.xlsx"' if tr \

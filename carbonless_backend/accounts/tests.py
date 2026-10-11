@@ -328,7 +328,8 @@ class FullBackupTests(TestCase):
         wb = load_workbook(BytesIO(b''.join(r.streaming_content) if r.streaming else r.content))
         self.assertEqual(wb.sheetnames, ['Şirket', 'Tesisler', 'Emisyon Kayıtları', 'Hedefler',
                                          'Envanterler', 'Anket Cevapları'])
-        self.assertEqual(wb['Anket Cevapları']['C2'].value, '4A-1')
+        # The question in words, not its step id.
+        self.assertEqual(wb['Anket Cevapları']['C2'].value, 'Soru 68 — Yıllık elektrik tüketimi nedir?')
         # Readable for people: the answer as text, labels and statuses in Turkish.
         self.assertEqual(wb['Anket Cevapları']['D2'].value, 'Merkez: 1000 kWh')
         self.assertEqual(wb['Şirket']['A2'].value, 'Şirket adı')

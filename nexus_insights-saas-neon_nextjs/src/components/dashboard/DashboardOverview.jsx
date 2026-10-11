@@ -331,7 +331,18 @@ function ChartCard({ title, subtitle, icon: Icon, iconBg, children, className = 
 // ─── KPI Card ──────────────────────────────────────────────────────────────
 // `value` is a raw number — the card animates it counting up itself, so callers
 // no longer pre-format with .toFixed() (see call sites below).
-function KPICard({ title, value, decimals = 2, unit, subtitle, accent, icon: Icon, topColor, delay = 0 }) {
+// Turkish dative after a year, by its last spoken word: 2024'e, 2026'ya,
+// 2022'ye, 2029'a, 2030'a, 2000'e.
+function trDative(year) {
+  const n = Number(year);
+  const ones = ["'e", "'e", "'ye", "'e", "'e", "'e", "'ya", "'ye", "'e", "'a"];
+  const tens = ["'e", "'a", "'ye", "'a", "'a", "'ye", "'a", "'e", "'e", "'a"];
+  if (n % 10) return ones[n % 10];
+  if (n % 100) return tens[(n % 100) / 10];
+  return "'e";
+}
+
+function KPICard({ title, value, decimals = 2, unit, subtitle, change, accent, icon: Icon, topColor, delay = 0 }) {
   const animated = useCountUp(value, 900);
   return (
     <div
@@ -359,6 +370,11 @@ function KPICard({ title, value, decimals = 2, unit, subtitle, accent, icon: Ico
             <span className="mb-0.5 text-[9px] font-bold text-[#072C0E]/35 sm:text-[10px]">{unit}</span>
           </div>
           {subtitle && <p className="mt-1 text-[9px] font-semibold text-[#072C0E]/40 sm:text-[10px]">{subtitle}</p>}
+          {change && (
+            <p className={`mt-1 text-[9px] font-bold sm:text-[10px] ${change.down ? 'text-[#1D9C31]' : 'text-red-600'}`} title={change.title}>
+              {change.text}
+            </p>
+          )}
         </div>
         {Icon && (
           <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6 sm:h-8 sm:w-8 ${
@@ -418,6 +434,27 @@ export default function DashboardOverview({
   // Years other than the selected one that have entries (newest first).
   const otherYears = (summary?.years_with_data ?? []).filter(y => y !== Number(selectedYear));
   const totalTonne = summary?.total_tonne  ?? 0;
+  // "2024'e göre ↓ %12,4": the year before, whole — or, for the running
+  // year, the same months of last year (the server leaves it out when that
+  // would not be a fair comparison).
+  const yoy = (() => {
+    const c = summary?.previous_year_change;
+    if (!c || typeof c.change_pct !== 'number') return null;
+    const pct = Math.abs(c.change_pct).toLocaleString(tr ? 'tr-TR' : 'en-US', { maximumFractionDigits: 1 });
+    const arrow = c.change_pct <= 0 ? '↓' : '↑';
+    const monthsTr = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const span = c.months < 12
+      ? (tr ? `${monthsTr[0]}–${monthsTr[c.months - 1]} ${c.previous_year}` : `${monthsEn[0]}–${monthsEn[c.months - 1]} ${c.previous_year}`)
+      : String(c.previous_year);
+    return {
+      down: c.change_pct <= 0,
+      text: tr ? `${arrow} %${pct} · ${span}${trDative(c.previous_year)} göre` : `${arrow} ${pct}% vs ${span}`,
+      title: tr
+        ? `${span}: ${fixed(c.previous_kg / 1000, 2)} tCO2e → ${fixed(c.current_kg / 1000, 2)} tCO2e`
+        : `${span}: ${fixed(c.previous_kg / 1000, 2)} tCO2e → ${fixed(c.current_kg / 1000, 2)} tCO2e`,
+    };
+  })();
   const s1         = summary?.scope1_tonne ?? 0;
   const s2         = summary?.scope2_tonne ?? 0;
   const s3         = summary?.scope3_tonne ?? 0;
@@ -725,7 +762,7 @@ export default function DashboardOverview({
 
       {/* ── KPI CARDS ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
-        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne} unit="tCO2e" accent icon={Leaf} delay={0} />
+        <KPICard title={tr ? 'Toplam' : 'Total'} value={totalTonne} unit="tCO2e" accent icon={Leaf} delay={0} change={yoy} />
         <KPICard title={tr ? 'Kapsam 1' : 'Scope 1'} value={s1} unit="tCO2e" subtitle={tr ? 'Doğrudan' : 'Direct'} topColor="#1D9C31" delay={60} />
         <KPICard title={tr ? 'Kapsam 2' : 'Scope 2'} value={s2} unit="tCO2e" subtitle={tr ? 'Enerji' : 'Energy'} topColor="#2ABD41" delay={120} />
         <KPICard title={tr ? 'Kapsam 3' : 'Scope 3'} value={s3} unit="tCO2e" subtitle={tr ? 'Dolaylı' : 'Indirect'} topColor="#51D766" delay={180} />

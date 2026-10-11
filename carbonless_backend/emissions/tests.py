@@ -1101,3 +1101,43 @@ class ApprovalEmailTests(ApprovalNotificationAndDuplicateTests):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ['ali@test.com'])
         self.assertIn('Invoice missing', mail.outbox[0].body)
+
+
+class YearlySourceAndYearChangeTests(ApprovalNotificationAndDuplicateTests):
+    """A yearly source entered for a second month is flagged; the summary
+    compares a year with the one before."""
+
+    def test_yearly_source_second_month_warns(self):
+        f = EmissionFactor.objects.create(
+            slug='test-franchise', name='Franchise operations (per franchise/year)',
+            name_tr='Franchise operasyonları (yıllık)', scope='scope3', category='franchises',
+            country='global', unit='franchises', factor_kg_co2e=15000, year=2024, source='generic',
+            is_active=True)
+        self._as('aylin')
+        mk = lambda month, **x: self.client.post('/api/emissions/entries/', {
+            'emission_factor': f.id, 'year': 2025, 'month': month, 'quantity': 2, **x}, format='json')
+        self.assertEqual(mk(1).status_code, 201)
+        r = mk(2)
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.data['code'], 'yearly_repeat')
+        self.assertIn('Ocak', r.data['message_tr'])
+        self.assertEqual(mk(2, confirm_duplicate=True).status_code, 201)
+        # an ordinary monthly source is not flagged
+        self._entry(month=1, year=2025)
+        self.assertEqual(self._entry(month=2, year=2025, quantity=11).status_code, 201)
+
+    def test_summary_compares_with_the_year_before(self):
+        from datetime import date
+        from .inventory import previous_year_change
+        self._as('aylin')
+        self._entry(year=2024, month=3, quantity=100)
+        self._entry(year=2025, month=3, quantity=80)
+        c = previous_year_change(self.company, 2025, 80 * 2.5, today=date(2026, 10, 11))
+        self.assertEqual((c['previous_year'], c['change_pct'], c['months']), (2024, -20.0, 12))
+        # running year: the same months only
+        self._entry(year=2025, month=11, quantity=40)
+        self._entry(year=2026, month=3, quantity=50)
+        c = previous_year_change(self.company, 2026, 125, today=date(2026, 10, 11))
+        self.assertEqual((c['months'], c['previous_kg']), (10, 200.0))
+        self.assertIsNone(previous_year_change(self.company, 2024, 250, today=date(2026, 10, 11)))
+        self.assertIn('previous_year_change', self.client.get('/api/emissions/summary/?year=2025').data)
