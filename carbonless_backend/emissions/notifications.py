@@ -68,6 +68,60 @@ def _notify(user, notification_type, title, message, link='/dashboard', company_
     )
 
 
+def _frontend():
+    import os
+    return (os.environ.get('FRONTEND_URL') or 'http://localhost:3000').strip().rstrip('/')
+
+
+def _send_email(user, subject, body):
+    """An e-mail next to the in-app notice — never raises (a notification
+    must not break saving or reviewing an entry)."""
+    if not getattr(user, 'email', ''):
+        return False
+    try:
+        from django.conf import settings
+        from django.core.mail import send_mail
+        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=True)
+        return True
+    except Exception:
+        logger.exception('Could not e-mail %s', user.pk)
+        return False
+
+
+def _email_approver(user, company_id, lang, latest):
+    """Tell an approver by e-mail that entries are waiting — at most once a
+    day, counting everything waiting in the company at that moment. The
+    in-app bell is only seen by someone who logs in."""
+    from datetime import timedelta
+    from django.utils import timezone
+    from accounts.models import UserProfile
+    from emissions.models import EmissionEntry
+    profile = getattr(user, 'profile', None)
+    now = timezone.now()
+    if profile is None or (profile.approval_email_sent_at
+                           and now - profile.approval_email_sent_at < timedelta(hours=24)):
+        return
+    waiting = EmissionEntry.objects.filter(company_id=company_id, status='submitted').count()
+    if not waiting:
+        return
+    from companies.models import Company
+    company = Company.objects.filter(pk=company_id).values_list('legal_entity_name', flat=True).first() or ''
+    hello = user.first_name or user.email
+    link = f'{_frontend()}/dashboard?tab=review'
+    if lang == 'tr':
+        subject = f'Carbonless: onayınızı bekleyen {waiting} kayıt'
+        body = (f'Merhaba {hello},\n\n{company} için onayınızı bekleyen {waiting} kayıt var.\n'
+                f'Son gelen: {latest}\n\nOnaylanana kadar bu kayıtlar toplamlara girmez. İncelemek için:\n{link}\n\n'
+                'Bu e-postayı en fazla günde bir kez gönderiyoruz. Ayarlar → Bildirimler bölümünden kapatabilirsiniz.\n\n— Carbonless')
+    else:
+        subject = f'Carbonless: {waiting} entries waiting for your approval'
+        body = (f'Hello {hello},\n\n{waiting} entries of {company} are waiting for your approval.\n'
+                f'Latest: {latest}\n\nUntil approved they are not in the totals. Review them here:\n{link}\n\n'
+                'We send this e-mail at most once a day. You can turn it off in Settings → Notifications.\n\n— Carbonless')
+    if _send_email(user, subject, body):
+        UserProfile.objects.filter(pk=profile.pk).update(approval_email_sent_at=now)
+
+
 def notify_entry_submitted(entry):
     """Tell the company's approvers that `entry` is waiting for their review."""
     if entry.status != 'submitted' or not entry.company_id:
@@ -96,6 +150,7 @@ def notify_entry_submitted(entry):
                 _notify(membership.user, 'entry_submitted', 'Entry awaiting approval',
                         f'{author} added a new entry: {_describe(entry, lang)}. '
                         f'Review it on the Pending Review page.', company_id=entry.company_id)
+            _email_approver(membership.user, entry.company_id, lang, f'{author} — {_describe(entry, lang)}')
     except Exception:  # a notification must never break saving the entry
         logger.exception('Could not notify approvers about entry %s', entry.pk)
 
@@ -142,6 +197,8 @@ def notify_questionnaire_change(author, company, year, step, entries, replaced):
                     title=title, message=message, created_at=timezone.now())
             else:
                 _notify(membership.user, 'entry_submitted', title, message, link=link, company_id=company.pk)
+            _email_approver(membership.user, company.pk, lang,
+                            f'{name} — {year} ' + ('envanteri, ' if lang == 'tr' else 'inventory, ') + where)
     except Exception:  # a notification must never break saving the answer
         logger.exception('Could not notify approvers about a questionnaire change (%s)', step)
 
@@ -182,10 +239,18 @@ def notify_entry_reviewed(entry, approved, reviewer):
                    if from_questionnaire else ' Kaydı düzenleyip tekrar gönderebilirsiniz.')
             _notify(entry.user, 'entry_rejected', 'Kaydınız reddedildi',
                     f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
+            _send_email(entry.user, 'Carbonless: kaydınız reddedildi',
+                        f'Merhaba {entry.user.first_name or entry.user.email},\n\n{what} reddedildi.'
+                        + (f'\nNeden: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}\n\n'
+                        'Ayarlar → Bildirimler bölümünden bu e-postaları kapatabilirsiniz.\n\n— Carbonless')
         else:
             fix = (' It comes from the questionnaire: use "Fix in questionnaire" on the Emissions page to correct that question.'
                    if from_questionnaire else ' You can edit the entry to send it again.')
             _notify(entry.user, 'entry_rejected', 'Your entry was rejected',
                     f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
+            _send_email(entry.user, 'Carbonless: your entry was rejected',
+                        f'Hello {entry.user.first_name or entry.user.email},\n\n{what} was rejected.'
+                        + (f'\nReason: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}\n\n'
+                        'You can turn these e-mails off in Settings → Notifications.\n\n— Carbonless')
     except Exception:
         logger.exception('Could not notify the author of entry %s', entry.pk)

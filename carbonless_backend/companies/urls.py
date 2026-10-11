@@ -4,7 +4,7 @@ from .views import (
     FacilityListCreateView, FacilityDetailView,
     CompanyMembershipListView, CompanyMembershipUpdateView,
     invite_member, accept_invite, my_companies, switch_company,
-    pending_invites, cancel_invite, invite_info,
+    pending_invites, cancel_invite, invite_info, transfer_ownership,
 )
 
 urlpatterns = [
@@ -21,4 +21,5 @@ urlpatterns = [
     path('accept-invite/', accept_invite, name='accept_invite'),
     path('my-companies/', my_companies, name='my_companies'),
     path('switch/', switch_company, name='switch_company'),
+    path('transfer-ownership/', transfer_ownership, name='transfer_ownership'),
 ]

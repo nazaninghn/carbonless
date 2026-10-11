@@ -199,6 +199,10 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if ('year' in attrs or 'month' in attrs) and is_future_period(year, month):
             raise serializers.ValidationError(
                 {'month': [future_period_message('en')], 'code': FUTURE_PERIOD_CODE})
+        from emissions.periods import INVALID_YEAR_CODE, invalid_year_message, is_invalid_year
+        if 'year' in attrs and is_invalid_year(year):
+            raise serializers.ValidationError(
+                {'year': [invalid_year_message('en')], 'code': INVALID_YEAR_CODE})
         return attrs
 
 
@@ -258,4 +262,8 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
         if is_future_period(attrs.get('year'), attrs.get('month')):
             raise serializers.ValidationError(
                 {'month': [future_period_message('en')], 'code': FUTURE_PERIOD_CODE})
+        from emissions.periods import INVALID_YEAR_CODE, invalid_year_message, is_invalid_year
+        if is_invalid_year(attrs.get('year')):
+            raise serializers.ValidationError(
+                {'year': [invalid_year_message('en')], 'code': INVALID_YEAR_CODE})
         return attrs

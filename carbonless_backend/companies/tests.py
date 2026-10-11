@@ -326,3 +326,38 @@ class CompanyContactValidationTests(TestCase):
         self.assertFalse(s.is_valid())
         self.assertEqual(set(s.errors), {'telephone', 'website'})
         self.assertTrue(StepA7bSerializer(data={'telephone': '0212 555 01 23', 'website': 'kaya.com'}).is_valid())
+
+
+class OwnershipTransferTests(TestCase):
+    def setUp(self):
+        from rest_framework.test import APIClient
+        from django.contrib.auth.models import User
+        from companies.models import Company, CompanyMembership
+        self.company = Company.objects.create(
+            legal_entity_name='Devir A.Ş.', tax_number='99', country_of_headquarters='TR',
+            countries_of_operation='TR', nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
+        self.owner = User.objects.create_user('own', 'own@t.com', 'pass12345')
+        self.admin = User.objects.create_user('adm', 'adm@t.com', 'pass12345')
+        self.clerk = User.objects.create_user('clk', 'clk@t.com', 'pass12345')
+        self.m_owner = CompanyMembership.objects.create(company=self.company, user=self.owner, role='owner')
+        self.m_admin = CompanyMembership.objects.create(company=self.company, user=self.admin, role='admin')
+        self.m_clerk = CompanyMembership.objects.create(company=self.company, user=self.clerk, role='data_entry')
+        self.c = APIClient()
+
+    def _transfer(self, user, membership, password='pass12345'):
+        self.c.force_authenticate(user=user)
+        return self.c.post('/api/companies/transfer-ownership/',
+                           {'membership_id': membership.pk, 'password': password}, format='json')
+
+    def test_owner_hands_over_to_an_admin(self):
+        self.assertEqual(self._transfer(self.owner, self.m_admin).status_code, 200)
+        self.m_owner.refresh_from_db(); self.m_admin.refresh_from_db()
+        self.assertEqual((self.m_owner.role, self.m_admin.role), ('admin', 'owner'))
+
+    def test_guards(self):
+        self.assertEqual(self._transfer(self.owner, self.m_admin, 'wrong').data['code'], 'wrong_password')
+        self.assertEqual(self._transfer(self.owner, self.m_clerk).data['code'], 'not_admin')
+        self.assertEqual(self._transfer(self.admin, self.m_admin).status_code, 403)
+        self.m_owner.refresh_from_db()
+        self.assertEqual(self.m_owner.role, 'owner')

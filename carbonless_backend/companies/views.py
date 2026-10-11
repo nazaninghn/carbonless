@@ -385,3 +385,54 @@ def switch_company(request):
     request.user.profile.active_company = membership.company
     request.user.profile.save(update_fields=['active_company'])
     return Response({'status': 'ok', 'company': membership.company.legal_entity_name})
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def transfer_ownership(request):
+    """POST /api/companies/transfer-ownership/ {membership_id, password}
+
+    The owner hands the company to one of its admins and stays on as an
+    admin. Before this the only way to change the owner was to delete the
+    owner's account."""
+    from django.db import transaction
+    from .utils import get_current_company
+    company = get_current_company(request.user)
+    me = CompanyMembership.objects.filter(
+        company=company, user=request.user, is_active=True, role='owner').first() if company else None
+    if not me:
+        return Response({'error': 'Only the company owner can transfer ownership.', 'code': 'not_owner'}, status=403)
+    if not request.user.check_password(request.data.get('password') or ''):
+        return Response({'error': 'Password confirmation required', 'code': 'wrong_password'}, status=400)
+    target = CompanyMembership.objects.filter(
+        pk=request.data.get('membership_id'), company=company, is_active=True).select_related('user').first()
+    if not target or target.pk == me.pk:
+        return Response({'error': 'Member not found.', 'code': 'not_found'}, status=404)
+    if target.role != 'admin':
+        return Response({'error': 'Make this member an admin first.', 'code': 'not_admin'}, status=400)
+    with transaction.atomic():
+        target.role = 'owner'
+        target.save(update_fields=['role'])
+        me.role = 'admin'
+        me.save(update_fields=['role'])
+    name = target.user.get_full_name() or target.user.email or target.user.username
+    from emissions.audit import log_company_activity
+    log_company_activity(
+        request.user, company.pk, 'ownership_transferred',
+        f'Şirket sahipliği {name} kişisine devredildi',
+        f'Company ownership transferred to {name}',
+        target_type='CompanyMembership', target_id=target.pk, request=request)
+    try:
+        from accounts.models import Notification
+        lang = getattr(getattr(target.user, 'profile', None), 'language_preference', 'tr')
+        by = request.user.get_full_name() or request.user.email or request.user.username
+        Notification.objects.create(
+            user=target.user, company_id=company.pk, notification_type='system',
+            title='Şirket sahibi oldunuz' if lang == 'tr' else 'You are now the company owner',
+            message=(f'{by}, {company.legal_entity_name} şirketinin sahipliğini size devretti.'
+                     if lang == 'tr' else
+                     f'{by} transferred ownership of {company.legal_entity_name} to you.'),
+            link='/dashboard?tab=settings')
+    except Exception:
+        pass
+    return Response({'status': 'ok', 'new_owner_membership_id': target.pk})

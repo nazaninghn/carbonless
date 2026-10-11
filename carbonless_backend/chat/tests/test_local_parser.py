@@ -392,3 +392,41 @@ class MultiItemParseTest(SimpleTestCase):
     def test_grouped_numbers(self):
         self.assertEqual(self._parse('1.250,5 kWh elektrik')[0][0][1], 1250.5)
         self.assertEqual(self._parse('1.250.000 kWh elektrik')[0][0][1], 1250000.0)
+
+
+class MessageYearTest(SimpleTestCase):
+    """A four-digit amount is not a year, and the year a message names
+    applies to every month in it."""
+
+    def _periods(self, text):
+        from chat.local_parser import try_local_emission_parse_all
+        entries, _ = try_local_emission_parse_all(text)
+        return [(e['quantity'], e['month'], e['year']) for e in entries]
+
+    def test_amount_after_month_is_not_a_year(self):
+        self.assertEqual(self._periods('Gebze elektrik 2025 ocak 1000 kwh'), [(1000.0, 1, 2025)])
+        self.assertEqual(
+            self._periods('Gebze Fabrika 2025 elektrik: Ocak 1000 kWh, Şubat 1200 kWh, Mart 1100 kWh'),
+            [(1000.0, 1, 2025), (1200.0, 2, 2025), (1100.0, 3, 2025)])
+
+    def test_year_before_month_and_last_year(self):
+        from datetime import date
+        self.assertEqual(self._periods('2025 Mart ayında 500 litre dizel'), [(500.0, 3, 2025)])
+        self.assertEqual(self._periods('Geçen yıl Mart ayında 500 litre dizel'),
+                         [(500.0, 3, date.today().year - 1)])
+
+    def test_amount_that_looks_like_a_year(self):
+        self.assertEqual(self._periods('ekim 2025 elektrik 2024 kwh'), [(2024.0, 10, 2025)])
+
+    def test_each_month_of_a_span(self):
+        self.assertEqual(self._periods('2025 Ocak-Mart arası her ay 800 m3 doğalgaz'),
+                         [(800.0, 1, 2025), (800.0, 2, 2025), (800.0, 3, 2025)])
+        self.assertEqual(len(self._periods("2025 Ocak’tan Mart’a kadar her ay 100 litre benzin")), 3)
+        # two months, not a span
+        self.assertEqual(len(self._periods('2025 Ocak ve Mart her ay 100 kWh elektrik')), 1)
+
+    def test_one_amount_for_a_span_is_asked(self):
+        from chat.local_parser import ambiguous_month_range
+        self.assertEqual(self._periods('2025 Ocak-Mart 2.400 m3 doğalgaz'), [])
+        self.assertEqual(ambiguous_month_range('2025 Ocak-Mart 2.400 m3 doğalgaz'), (1, 3))
+        self.assertIsNone(ambiguous_month_range('2025 Ocak-Mart her ay 800 m3 doğalgaz'))

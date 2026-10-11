@@ -9,7 +9,7 @@ from companies.permissions import NotAuditorForWrites
 from rest_framework.response import Response
 from django_ratelimit.decorators import ratelimit
 from .models import ChatSession, ChatMessage
-from .local_parser import try_local_emission_parse, try_local_emission_parse_all, try_guided_draft_parse
+from .local_parser import try_local_emission_parse, try_local_emission_parse_all, try_guided_draft_parse, ambiguous_month_range
 from .nlu_extractor import extract_emission_intent
 from .calculation_registry import (
     normalize_nlu, get_schema, prepare_guided_draft,
@@ -394,6 +394,11 @@ def _map_registry_entry_to_factor_entry(registry_entry):
     # Use extracted month/year from NLU if available, otherwise None (frontend will ask)
     extracted_month = registry_entry.get('month')
     extracted_year = registry_entry.get('year')
+    # A year the model read out of an amount ("Ocak 1000 kWh" → 1000) is
+    # no year: leave it to the period picker instead.
+    from emissions.periods import is_future_period, is_invalid_year
+    if extracted_year and (is_invalid_year(extracted_year) or is_future_period(extracted_year, 1)):
+        extracted_year = None
 
     return {
         'fuel_type': activity_type,
@@ -1787,6 +1792,37 @@ def _send_message(request, session_id):
     if guided_response:
         return guided_response
 
+    # ─── 0.9) ONE AMOUNT FOR A SPAN OF MONTHS: ask, don't guess ───────────
+    # "Ocak-Mart 2.400 m3 doğalgaz" — the total for the three months, or each
+    # month's figure? Splitting or repeating it is the user's decision.
+    span = None if attachment else ambiguous_month_range(content)
+    if span:
+        lang = getattr(session, 'ui_language', None)
+        tr_months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz',
+                     'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+        en_months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+                     'August', 'September', 'October', 'November', 'December']
+        first, last = span
+        if lang == 'en':
+            text = (f"You gave one amount for {en_months[first - 1]}–{en_months[last - 1]}. "
+                    "Is it each month's amount or the total for the period? Please write it again:\n"
+                    f"• if it is per month: \"{en_months[first - 1]}–{en_months[last - 1]} 2025 each month 800 m3 natural gas\"\n"
+                    f"• if it is a total: each month's own figure, e.g. \"{en_months[first - 1]} 2025 800 m3, "
+                    f"{en_months[first]} 2025 750 m3 …\"")
+        else:
+            text = (f"{tr_months[first - 1]}–{tr_months[last - 1]} için tek bir miktar yazdınız. "
+                    "Bu her ayın miktarı mı, yoksa dönemin toplamı mı? Lütfen tekrar yazın:\n"
+                    f"• her ay aynıysa: \"2025 {tr_months[first - 1]}–{tr_months[last - 1]} her ay 800 m3 doğalgaz\"\n"
+                    f"• toplamsa: her ayın kendi miktarı, örn. \"2025 {tr_months[first - 1]} 800 m3, "
+                    f"{tr_months[first]} 750 m3 …\"")
+        ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=text)
+        session.save(update_fields=['updated_at'])
+        return Response({
+            'id': ai_msg.id, 'role': 'assistant', 'content': text,
+            'created_at': ai_msg.created_at, 'session_title': session.title,
+            'pending_entries': [], 'source': 'local_calculator',
+        })
+
     # ─── 1) LOCAL CALCULATOR: handle simple data entries without Groq ─────
     if not attachment:
         local_entries, not_understood = try_local_emission_parse_all(content)
@@ -2006,6 +2042,12 @@ def confirm_entry(request):
         return Response({
             'error': future_period_message(entry_data.get('language')),
             'code': FUTURE_PERIOD_CODE,
+        }, status=400)
+    from emissions.periods import INVALID_YEAR_CODE, invalid_year_message, is_invalid_year
+    if is_invalid_year(entry_data.get('year')):
+        return Response({
+            'error': invalid_year_message(entry_data.get('language')),
+            'code': INVALID_YEAR_CODE,
         }, status=400)
 
     from emissions.duplicates import find_duplicate, is_confirmed

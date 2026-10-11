@@ -284,6 +284,7 @@ export const api = {
   cancelInvite: (id) => request(`/companies/invites/${id}/`, { method: 'DELETE' }),
   acceptInvite: (token) => request('/companies/accept-invite/', { method: 'POST', body: JSON.stringify({ token }) }),
   getMyCompanies: () => request('/companies/my-companies/'),
+  transferOwnership: (membershipId, password) => request('/companies/transfer-ownership/', { method: 'POST', body: JSON.stringify({ membership_id: membershipId, password }) }),
   switchCompany: (companyId) => request('/companies/switch/', { method: 'POST', body: JSON.stringify({ company_id: companyId }) }),
 
   changePassword: (data) => request('/accounts/change-password/', { method: 'POST', body: JSON.stringify(data) }),

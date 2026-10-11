@@ -70,6 +70,41 @@ export default function TeamManagement({ language }) {
 
   useEffect(() => { fetchMembers(); fetchInvites(); }, [fetchMembers, fetchInvites]);
 
+  // Ownership transfer: the owner hands the company to an admin and stays
+  // on as an admin (the owner's row shows no role selector).
+  const [myUserId, setMyUserId] = useState(null);
+  useEffect(() => {
+    api.getProfile().then(r => (r.ok ? r.json() : null)).then(p => { if (p) setMyUserId(p.id); }).catch(() => {});
+  }, []);
+  const amOwner = members.some(m => m.user === myUserId && m.role === 'owner');
+  const [transferTo, setTransferTo] = useState(null);
+  const [transferPassword, setTransferPassword] = useState('');
+  const [transferError, setTransferError] = useState('');
+  const [transferring, setTransferring] = useState(false);
+  const closeTransfer = () => { setTransferTo(null); setTransferPassword(''); setTransferError(''); };
+  const handleTransfer = useCallback(async () => {
+    if (!transferTo) return;
+    setTransferring(true); setTransferError('');
+    try {
+      const res = await api.transferOwnership(transferTo.id, transferPassword);
+      if (res.ok) {
+        const name = transferTo.full_name || transferTo.user_email;
+        setTransferTo(null); setTransferPassword('');
+        toast.success(tr ? `Şirket sahipliği ${name} kişisine devredildi. Siz artık yöneticisiniz.` : `Ownership transferred to ${name}. You are now an admin.`);
+        fetchMembers();
+      } else {
+        const d = await res.json().catch(() => ({}));
+        setTransferError(d.code === 'wrong_password'
+          ? (tr ? 'Şifre yanlış.' : 'Wrong password.')
+          : d.code === 'not_admin'
+            ? (tr ? 'Önce bu kişiyi Yönetici yapın.' : 'Make this member an admin first.')
+            : (tr ? 'Sahiplik devredilemedi.' : 'Could not transfer ownership.'));
+      }
+    } catch {
+      setTransferError(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally { setTransferring(false); }
+  }, [transferTo, transferPassword, tr, toast, fetchMembers]);
+
   const [confirmCancel, setConfirmCancel] = useState(null);
   const handleCancelInvite = useCallback(async (inv) => {
     try {
@@ -276,6 +311,16 @@ export default function TeamManagement({ language }) {
                     </select>
                   )}
 
+                  {amOwner && m.role === 'admin' && m.is_active && (
+                    <button
+                      onClick={() => setTransferTo(m)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium border border-amber-200 text-amber-700 hover:bg-amber-50 transition-colors"
+                    >
+                      <Crown className="w-3 h-3" />
+                      {tr ? 'Sahipliği devret' : 'Make owner'}
+                    </button>
+                  )}
+
                   {/* Active/Inactive toggle */}
                   {m.role !== 'owner' && (
                     <button
@@ -405,6 +450,42 @@ export default function TeamManagement({ language }) {
         onConfirm={() => { const m = confirmDeactivate; setConfirmDeactivate(null); if (m) handleToggleActive(m); }}
         onCancel={() => setConfirmDeactivate(null)}
       />
+
+      {transferTo && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+            <h3 className="flex items-center gap-2 text-base font-bold text-[#072C0E]">
+              <Crown className="h-4 w-4 text-amber-500" />
+              {tr ? 'Şirket sahipliği devredilsin mi?' : 'Transfer company ownership?'}
+            </h3>
+            <p className="mt-2 text-sm text-[#072C0E]/70">
+              {tr
+                ? `${transferTo.full_name || transferTo.user_email} şirketin sahibi olur. Siz yönetici olarak kalırsınız; sahipliği yalnızca yeni sahip geri devredebilir.`
+                : `${transferTo.full_name || transferTo.user_email} becomes the company owner. You stay on as an admin; only the new owner can transfer ownership back.`}
+            </p>
+            <label className="mt-4 block text-xs font-bold text-[#072C0E]/75">{tr ? 'Onaylamak için şifreniz' : 'Your password to confirm'}</label>
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={transferPassword}
+              onChange={e => setTransferPassword(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && transferPassword) handleTransfer(); }}
+              className="mt-1 w-full rounded-xl border border-[#072C0E]/15 px-3 py-2 text-sm"
+            />
+            {transferError && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{transferError}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={closeTransfer} className="rounded-full border border-[#072C0E]/10 px-4 py-2 text-xs font-bold">{tr ? 'İptal' : 'Cancel'}</button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferring || !transferPassword}
+                className="rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 disabled:opacity-50"
+              >
+                {transferring ? '…' : (tr ? 'Sahipliği devret' : 'Transfer ownership')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

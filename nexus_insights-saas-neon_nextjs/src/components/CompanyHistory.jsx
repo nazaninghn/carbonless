@@ -15,6 +15,7 @@ const ACTIONS = {
   questionnaire_changed: { tr: 'Anket cevabı değişti', en: 'Inventory answer changed', cls: 'bg-amber-50 text-amber-700' },
   inventory_completed:   { tr: 'Envanter tamamlandı',  en: 'Inventory completed',      cls: 'bg-[#2ABD41]/10 text-[#175022]' },
   inventory_renamed:     { tr: 'Envanter adı değişti', en: 'Inventory renamed',        cls: 'bg-amber-50 text-amber-700' },
+  ownership_transferred: { tr: 'Sahiplik devredildi', en: 'Ownership transferred', cls: 'bg-amber-50 text-amber-700' },
   advisor_approved: { tr: 'Danışman onayı verildi', en: 'Advisor approval given',    cls: 'bg-[#2ABD41]/10 text-[#175022]' },
   advisor_rejected: { tr: 'Danışman onayı reddedildi', en: 'Advisor approval rejected', cls: 'bg-red-50 text-red-600' },
   target_created: { tr: 'Hedef eklendi',      en: 'Target added',   cls: 'bg-[#2ABD41]/10 text-[#175022]' },

@@ -266,48 +266,108 @@ def _previous_month(now):
     return (12, now.year - 1) if now.month == 1 else (now.month - 1, now.year)
 
 
-def _extract_date_from_text(text: str) -> tuple[int, int] | None:
+# A year is 1990…this year, and not an amount: "Ocak 1000 kWh" has no year
+# 1000 in it. The unit check is UNIT_PATTERN's list plus a few words that
+# follow an amount ("2025 adet", "2020 ton").
+_AMOUNT_AFTER = r'\s*(?:' + UNIT_PATTERN.replace('(?P<unit>', '(?:') + r'|ton|adet|kişi|kisi|tl|₺)\b'
+_YEAR_RE = re.compile(r'(?<![\d.,])((?:19|20)\d\d)(?![\d.,])(?!' + _AMOUNT_AFTER + r')', re.IGNORECASE)
+_LAST_YEAR_RE = re.compile(r'\b(?:last|previous|past)\s+year\b|\b(?:geçen|gecen|önceki|onceki)\s+(?:yıl|yil|sene)')
+_THIS_YEAR_RE = re.compile(r'\b(?:this|current)\s+year\b|\bbu\s+(?:yıl|yil|sene)')
+
+
+def _valid_year(year, now):
+    return 1990 <= year <= now.year
+
+
+def _extract_year(text: str) -> int | None:
+    """The year a message names: a four-digit year anywhere in it ("2025
+    Mart", "Mart 2025", "2025 yılında"), or "geçen yıl" / "bu yıl"."""
+    t = text.lower()
+    now = datetime.now(timezone.utc)
+    for m in _YEAR_RE.finditer(t):
+        year = int(m.group(1))
+        if _valid_year(year, now):
+            return year
+    if _LAST_YEAR_RE.search(t):
+        return now.year - 1
+    if _THIS_YEAR_RE.search(t):
+        return now.year
+    return None
+
+
+def _month_matches(t: str):
+    """(start, end, month) for each month named in lower-cased *t*."""
+    found = []
+    for m in re.finditer(rf'\b({_MONTH_NAME_PATTERN})\b(?P<year>\s*\d{{4}})?', t):
+        # "may" alone is too easily the modal verb ("we may add more data").
+        if m.group(1) == 'may' and not (m.group('year') and _YEAR_RE.match(m.group('year').strip())):
+            continue
+        found.append((m.start(), m.end(1), _MONTH_NAMES[m.group(1)]))
+    for m in re.finditer(
+        rf"(?<![a-zçğıöşü])({_TR_MONTH_PATTERN})(?![a-zçğıöşü])"
+        rf"(?P<apos>['’][a-zçğıöşü]*)?(?P<ay>\s+ay[a-zçğıöşü]*)?",
+        t,
+    ):
+        name = m.group(1)
+        if name in _TR_AMBIGUOUS_MONTHS and not (m.group('apos') or m.group('ay')):
+            # 'ekim'/'aralık' are ordinary words too: a month only next to a year.
+            around = t[max(0, m.start() - 6):m.end() + 6]
+            if not _YEAR_RE.search(around):
+                continue
+        found.append((m.start(), m.end(1), _TR_MONTH_NAMES[name]))
+    return sorted(found)
+
+
+# "Ocak-Mart", "Ocak – Mart", "Ocak'tan Mart'a", "Ocak ile Mart arası",
+# "January to March": a span of months. ("Ocak ve Mart" is two months.)
+_RANGE_JOIN_RE = re.compile(r"\s*(?:[-–—]|to|through|until)\s*|['’]?(?:dan|den|tan|ten)\s+", re.IGNORECASE)
+_RANGE_ILE_RE = re.compile(r"\s+ile\s+", re.IGNORECASE)
+# "her ay 800 m3", "aylık 800 m3", "800 m3 per month": the amount is per month.
+_EACH_MONTH_RE = re.compile(
+    r'\bher\s+ay\b|\baylık\b|\baylik\b|\bayda\b|\b(?:each|every|per)\s+month\b|\bmonthly\b', re.IGNORECASE)
+
+
+def month_range(text: str):
+    """(first month, last month, per_month) for a message naming a span of
+    months ("Ocak-Mart", "Ocak'tan Mart'a"), else None. per_month: the
+    amount is said to be for each month ("her ay")."""
+    t = text.lower()
+    months = _month_matches(t)
+    for (s1, e1, m1), (s2, e2, m2) in zip(months, months[1:]):
+        between = t[e1:s2]
+        joined = _RANGE_JOIN_RE.fullmatch(between) or (
+            _RANGE_ILE_RE.fullmatch(between) and re.match(r"['’]?[a-zçğıöşü]*\s+aras", t[e2:]))
+        if joined and m2 > m1:
+            return m1, m2, bool(_EACH_MONTH_RE.search(t))
+    return None
+
+
+def _extract_date_from_text(text: str, default_year: int | None = None) -> tuple[int, int] | None:
     """Find a month(+year) mention in *text*: 'in June 2025', 'Mart 2025',
-    'Ocak ayında', 'for 03/2024', '2025-06', 'last month' / 'geçen ay'.
-    Returns None if no date phrase is found — callers should fall back to the
-    current month rather than guess."""
+    '2025 Mart', 'Ocak ayında', 'for 03/2024', '2025-06', 'last month' /
+    'geçen ay', 'geçen yıl Mart'. The year may stand anywhere in the text;
+    *default_year* (the year the whole message names) is used when *text*
+    has none of its own. Returns None if no month is found — callers fall
+    back to the current month rather than guess."""
     t = text.lower()
     now = datetime.now(timezone.utc)
 
     m = re.search(r'\b(\d{4})[-/](\d{1,2})\b', t)
     if m:
         year, month = int(m.group(1)), int(m.group(2))
-        if 1 <= month <= 12:
+        if 1 <= month <= 12 and _valid_year(year, now):
             return month, year
 
     m = re.search(r'\b(\d{1,2})[-/](\d{4})\b', t)
     if m:
         month, year = int(m.group(1)), int(m.group(2))
-        if 1 <= month <= 12:
+        if 1 <= month <= 12 and _valid_year(year, now):
             return month, year
 
-    m = re.search(rf'\b({_MONTH_NAME_PATTERN})\b(?:\s*(\d{{4}}))?', t)
-    if m:
-        name, year_str = m.group(1), m.group(2)
-        # "may" alone is too easily the modal verb ("we may add more data")
-        # rather than the month — only trust it when a year makes the intent
-        # unambiguous, e.g. "may 2025".
-        if name == 'may' and not year_str:
-            return None
-        month = _MONTH_NAMES[name]
-        year = int(year_str) if year_str else now.year
-        return month, year
-
-    m = re.search(
-        rf"(?<![a-zçğıöşü])({_TR_MONTH_PATTERN})(?![a-zçğıöşü])"
-        rf"(?P<apos>['’][a-zçğıöşü]*)?(?P<ay>\s+ay[a-zçğıöşü]*)?(?:\s*(?P<year>\d{{4}}))?",
-        t,
-    )
-    if m:
-        name = m.group(1)
-        if name not in _TR_AMBIGUOUS_MONTHS or m.group('apos') or m.group('ay') or m.group('year'):
-            year = int(m.group('year')) if m.group('year') else now.year
-            return _TR_MONTH_NAMES[name], year
+    months = _month_matches(t)
+    if months:
+        year = _extract_year(t) or default_year or now.year
+        return months[0][2], year
 
     if _LAST_MONTH_RE.search(t):
         return _previous_month(now)
@@ -333,14 +393,16 @@ _ITEM_SPLIT_RE = re.compile(
 )
 
 
-def _entry(activity_type, quantity, unit, date):
+def _entry(activity_type, quantity, unit, date, year=None):
+    """*year*: the year the message names, for an item whose month is not
+    given (the month is then asked for before saving)."""
     now = datetime.now(timezone.utc)
     return {
         'fuel_type': activity_type,
         'quantity': quantity,
         'unit': unit,
         'month': date[0] if date else now.month,
-        'year': date[1] if date else now.year,
+        'year': date[1] if date else (year or now.year),
         'description': f'AI Chat: {activity_type} {quantity} {unit}',
         'date_extracted': date is not None,
     }
@@ -385,6 +447,18 @@ def _loose_amounts(chunk: str) -> list[str]:
     return found
 
 
+def ambiguous_month_range(text: str):
+    """(first, last) when a data message gives one amount for a span of
+    months without saying it is per month — "Ocak-Mart 2.400 m3 doğalgaz".
+    Whether that is the total or each month's figure is the user's to say."""
+    if not text or looks_like_question(text) or len(_QUANTITY_RE.findall(text)) != 1:
+        return None
+    span = month_range(text)
+    if not span or span[2] or not detect_activity_type(text):
+        return None
+    return span[0], span[1]
+
+
 def try_local_emission_parse_all(text: str) -> tuple[list[dict], list[str]]:
     """Parse every "quantity + unit + activity" item in one message.
 
@@ -398,6 +472,23 @@ def try_local_emission_parse_all(text: str) -> tuple[list[dict], list[str]]:
     matches = list(_QUANTITY_RE.finditer(text))
     if not matches:
         return [], []
+    message_year = _extract_year(text)
+    span = month_range(text)
+    if span and len(matches) == 1:
+        first, last, per_month = span
+        if not per_month:
+            # "Ocak-Mart 2.400 m3": a total for the span or each month's
+            # amount? Not ours to decide — the caller asks (see
+            # ambiguous_month_range).
+            return [], []
+        entry = try_local_emission_parse(text)
+        if not entry:
+            return [], []
+        year = message_year or datetime.now(timezone.utc).year
+        return [
+            _entry(entry['fuel_type'], entry['quantity'], entry['unit'], (month, year))
+            for month in range(first, last + 1)
+        ], []
     chunks = _item_chunks(text)
     if len(matches) == 1:
         # One recognised quantity: the activity may be named anywhere in the
@@ -421,7 +512,10 @@ def try_local_emission_parse_all(text: str) -> tuple[list[dict], list[str]]:
             activity_type,
             parse_localized_number(m.group('quantity')),
             normalise_unit(m.group('unit')),
-            _extract_date_from_text(chunk) or message_date,
+            # "2025 elektrik: Ocak 1000 kWh, Şubat 1200 kWh": each item's
+            # own month, in the year the message names.
+            _extract_date_from_text(chunk, default_year=message_year) or message_date,
+            year=message_year,
         ))
     return entries, not_understood
 
@@ -450,13 +544,15 @@ def try_local_emission_parse(text: str) -> dict | None:
     quantity = parse_localized_number(match.group('quantity'))
     unit = normalise_unit(match.group('unit'))
     extracted_date = _extract_date_from_text(text)
+    # "Geçen yıl 5.000 kWh": the year is known even when the month isn't.
+    year_only = _extract_year(text)
 
     return {
         'fuel_type': activity_type,
         'quantity': quantity,
         'unit': unit,
         'month': extracted_date[0] if extracted_date else datetime.now(timezone.utc).month,
-        'year': extracted_date[1] if extracted_date else datetime.now(timezone.utc).year,
+        'year': extracted_date[1] if extracted_date else (year_only or datetime.now(timezone.utc).year),
         'description': f'AI Chat: {activity_type} {quantity} {unit}',
         'date_extracted': extracted_date is not None,
     }
