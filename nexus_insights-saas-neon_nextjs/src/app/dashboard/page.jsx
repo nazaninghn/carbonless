@@ -81,6 +81,23 @@ export default function DashboardPage() {
   }, [activeTab, startupResolved]);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
+  // A link from an e-mail or notice ("/dashboard?tab=review",
+  // "?tab=emissions&year=2025") opens that page, not whatever tab was open
+  // last. The query is then dropped so a reload keeps the user's own choice.
+  const DEEP_LINK_TABS = ['dashboard', 'questionnaire', 'emissions', 'review', 'reduction',
+    'reporting', 'settings', 'benchmark', 'how_it_works', 'ai_carbon'];
+  useEffect(() => {
+    if (!startupResolved || typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const year = Number(params.get('year'));
+    if (!tab && !year) return;
+    if (tab && DEEP_LINK_TABS.includes(tab)) setActiveTab(tab);
+    if (year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
+    window.history.replaceState(null, '', window.location.pathname);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startupResolved]);
+
   // Data from hook
   const {
     user, summary, entries, factors, targets, customRequests,

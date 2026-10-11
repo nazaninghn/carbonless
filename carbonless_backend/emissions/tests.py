@@ -1079,7 +1079,8 @@ class ApprovalEmailTests(ApprovalNotificationAndDuplicateTests):
         self._entry(month=4)
         to_owner = [m for m in mail.outbox if m.to == ['aylin@test.com']]
         self.assertEqual(len(to_owner), 1)
-        self.assertIn('onayınızı bekleyen 1 kayıt', to_owner[0].subject)
+        self.assertIn('onayınızı bekleyen kayıtlar var', to_owner[0].subject)
+        self.assertIn('en az 1 kayıt', to_owner[0].body)
         self.assertIn('Kaya Tekstil', to_owner[0].body)
 
     def test_email_respects_the_preference(self):

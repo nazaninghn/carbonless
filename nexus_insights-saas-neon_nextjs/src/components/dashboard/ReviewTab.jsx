@@ -1,13 +1,15 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
-import { ClipboardCheck, Check, X, ShieldAlert } from 'lucide-react';
+import { ClipboardCheck, Check, X, ShieldAlert, Paperclip } from 'lucide-react';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { downloadProofDocument } from '@/lib/proofDownload';
 import { useToast } from '@/components/ToastProvider';
 import { noPermissionMessage } from '@/lib/permissions';
 import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
 import { formatAdvisorAnswer } from '@/lib/advisorAnswer';
 import { MONTHS_TR, MONTHS_EN, unitLabel } from '@/lib/constants/emissions';
-import { entrySourceLabel, entryPeriodLabel } from '@/lib/entryDescription';
+import { entrySourceLabel, entryPeriodLabel, autoDescriptionLabel } from '@/lib/entryDescription';
 const num = (v, tr, digits = 2) =>
   Number(v || 0).toLocaleString(tr ? 'tr-TR' : 'en-GB', { maximumFractionDigits: digits });
 
@@ -100,6 +102,33 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
       setProcessing(null);
     }
   }, [tr, toast, fetchPending, fetchData]);
+
+  // "Tümünü onayla" for new entries (twelve months of bills): one confirm
+  // instead of one click each. Changes to an approved value and inventory
+  // answers stay one by one — those are reviewed against what they replace.
+  const bulkEntries = pending.filter(e => !e.replaces && !(e.description || '').startsWith('Questionnaire step'));
+  const bulkKg = bulkEntries.reduce((sum, e) => sum + Number(e.calculated_co2e_kg || 0), 0);
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const handleApproveAllEntries = useCallback(async () => {
+    setConfirmBulk(false);
+    setProcessing('entries-all');
+    let ok = 0, failed = 0;
+    try {
+      for (const e of bulkEntries) {
+        const res = await api.approveEntry(e.id, 'approve');
+        if (res.ok) ok += 1; else failed += 1;
+      }
+      if (ok) toast.success(tr ? `${ok} kayıt onaylandı ✓` : `${ok} entries approved ✓`);
+      if (failed) toast.error(tr ? `${failed} kayıt onaylanamadı` : `${failed} entries could not be approved`);
+      await fetchPending();
+      if (fetchData) fetchData();
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setProcessing(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, tr, toast, fetchPending, fetchData]);
 
   const handleReject = useCallback(async () => {
     if (!rejectTarget) return;
@@ -310,6 +339,21 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                   </h2>
                 </div>
               )}
+              {canApprove && bulkEntries.length > 1 && (
+                <div className="flex flex-wrap gap-2 px-1">
+                  <button
+                    type="button"
+                    disabled={processing !== null}
+                    onClick={() => setConfirmBulk(true)}
+                    className="inline-flex items-center gap-1 rounded-xl border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-[11px] font-bold text-[#175022] hover:bg-[#F1FCF2] disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    {processing === 'entries-all'
+                      ? (tr ? 'Onaylanıyor…' : 'Approving…')
+                      : (tr ? `Yeni kayıtların tümünü onayla (${bulkEntries.length})` : `Approve all new entries (${bulkEntries.length})`)}
+                  </button>
+                </div>
+              )}
               {pending.map(entry => (
                 <div key={`entry-${entry.id}`} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -328,6 +372,26 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                         <span className="text-[10px] text-[#072C0E]/45">
                           {entryPeriodLabel(entry, tr ? MONTHS_TR : MONTHS_EN, tr)} {entry.year}
                         </span>
+                        {entry.facility_name && (
+                          <span className="text-[10px] font-semibold text-[#072C0E]/60">
+                            {tr ? 'Tesis' : 'Facility'}: {entry.facility_name}
+                          </span>
+                        )}
+                        {entry.proof_document && (
+                          <button
+                            type="button"
+                            onClick={() => downloadProofDocument(entry.id, toast, tr)}
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold hover:underline ${entry.proof_available === false ? 'text-amber-600' : 'text-[#1D9C31]'}`}
+                          >
+                            <Paperclip className="h-3 w-3" />
+                            {entry.proof_available === false
+                              ? (tr ? 'Belge sunucuda yok' : 'File missing on the server')
+                              : (tr ? 'Belgeyi aç' : 'Open document')}
+                          </button>
+                        )}
+                        {entry.description && !autoDescriptionLabel(entry.description, tr) && (
+                          <span className="w-full text-[11px] italic text-[#072C0E]/60">“{entry.description}”</span>
+                        )}
                         {entry.replaces && entry.replaces.quantity != null
                           && Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit ? (
                           // Another facility of the same answer, not changed itself:
@@ -395,6 +459,19 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmBulk}
+        language={tr ? 'tr' : 'en'}
+        title={tr ? 'Yeni kayıtların tümü onaylansın mı?' : 'Approve all new entries?'}
+        message={tr
+          ? `${bulkEntries.length} kayıt (toplam ${num(bulkKg / 1000, tr, 3)} tCO₂e) onaylanır ve toplamlara eklenir. Mevcut bir değeri değiştiren kayıtlar ile anket cevapları bu işleme dahil değildir; onları tek tek inceleyin.`
+          : `${bulkEntries.length} entries (${num(bulkKg / 1000, tr, 3)} tCO₂e in total) are approved and added to the totals. Changes to an existing value and questionnaire answers are not included; review those one by one.`}
+        confirmText={tr ? 'Tümünü onayla' : 'Approve all'}
+        cancelText={tr ? 'İptal' : 'Cancel'}
+        onConfirm={handleApproveAllEntries}
+        onCancel={() => setConfirmBulk(false)}
+      />
 
       {/* Reject Dialog — shared by both lists */}
       {rejectTarget && (

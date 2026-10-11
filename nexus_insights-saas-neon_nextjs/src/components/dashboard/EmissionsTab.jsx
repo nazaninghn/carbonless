@@ -7,6 +7,7 @@ import {
   Pencil, Plus, Search, Trash2, X,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+import { downloadProofDocument } from '@/lib/proofDownload';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -45,42 +46,7 @@ function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
   );
 }
 
-// ─── Proof document download ────────────────────────────────────────────────
-// The paperclip icon used to be a presence indicator only — proof_document
-// on the entry serializer is a raw /media/ URL, which is DEBUG-only and
-// unauthenticated when Django does serve it (see carbonless_api/urls.py),
-// and never served at all in production. This calls the dedicated,
-// ownership-checked download endpoint instead.
-async function downloadProofDocument(entryId, toast, tr) {
-  try {
-    const res = await api.downloadProofDocument(entryId);
-    if (!res.ok) {
-      // 410: the record has a proof but the file is no longer on the server.
-      toast?.error(res.status === 410
-        ? (tr ? 'Kanıt dosyası sunucuda bulunamadı. Lütfen kaydı düzenleyip dosyayı yeniden yükleyin.'
-              : 'The proof file is no longer on the server. Please edit the entry and upload it again.')
-        : (tr ? 'Kanıt indirilemedi.' : 'Could not download the proof.'));
-      return false;
-    }
-    const blob = await res.blob();
-    const disposition = res.headers.get('Content-Disposition') || '';
-    const match = disposition.match(/filename="?([^"]+)"?/);
-    const filename = match?.[1] || 'proof';
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 30_000);
-    return true;
-  } catch {
-    toast?.error(tr ? 'Bağlantı hatası' : 'Connection error');
-    return false;
-  }
-}
-
+// ─── Proof document download (lib/proofDownload.js) ────────────────────────
 // Paperclip for an entry's proof: amber with a warning when the recorded file
 // is no longer on the server (proof_available false).
 function ProofButton({ entry, tr, toast, className }) {
