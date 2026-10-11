@@ -10,7 +10,12 @@ export function middleware(request: NextRequest) {
 
     // Not logged in → send to login
     if (!hasSession) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      // Keep where the user was going (an e-mail link to the approvals
+      // page), so signing in lands there instead of on the mode picker.
+      const login = new URL('/login', request.url);
+      const target = pathname + request.nextUrl.search;
+      if (target !== '/dashboard' && target !== '/dashboard/select') login.searchParams.set('next', target);
+      return NextResponse.redirect(login);
     }
 
     // /dashboard/select and /dashboard/workspace are always allowed through

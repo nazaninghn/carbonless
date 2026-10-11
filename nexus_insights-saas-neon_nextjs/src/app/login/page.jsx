@@ -52,10 +52,14 @@ function LoginContent() {
     // Came from an invite link while signed out: finish joining that team.
     let inviteToken = null;
     try { inviteToken = sessionStorage.getItem('pendingInviteToken'); } catch {}
+    // Came from a link into the app (an approval e-mail): go back to it.
+    // Only a path inside the dashboard — never another site.
+    const next = searchParams.get('next') || '';
+    const safeNext = /^\/dashboard(\/|\?|$)/.test(next) && !next.startsWith('//') ? next : null;
     window.location.href = inviteToken
       ? `/accept-invite?token=${encodeURIComponent(inviteToken)}`
-      : '/dashboard/select';
-  }, []);
+      : (safeNext || '/dashboard/select');
+  }, [searchParams]);
 
   const handleGoogleCredential = useCallback(async (response) => {
     setError('');

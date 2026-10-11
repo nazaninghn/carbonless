@@ -109,15 +109,19 @@ def _email_approver(user, company_id, lang, latest):
     hello = user.first_name or user.email
     link = f'{_frontend()}/dashboard?tab=review'
     if lang == 'tr':
-        subject = f'Carbonless: onayınızı bekleyen {waiting} kayıt'
-        body = (f'Merhaba {hello},\n\n{company} için onayınızı bekleyen {waiting} kayıt var.\n'
-                f'Son gelen: {latest}\n\nOnaylanana kadar bu kayıtlar toplamlara girmez. İncelemek için:\n{link}\n\n'
-                'Bu e-postayı en fazla günde bir kez gönderiyoruz. Ayarlar → Bildirimler bölümünden kapatabilirsiniz.\n\n— Carbonless')
+        # Sent when the first entry arrives: more may follow the same day
+        # without another e-mail, so the count is "at least".
+        subject = 'Carbonless: onayınızı bekleyen kayıtlar var'
+        body = (f'Merhaba {hello},\n\n{company} için şu an onayınızı bekleyen en az {waiting} kayıt var.\n'
+                f'Son gelen: {latest}\n\nOnaylanana kadar bu kayıtlar toplamlara girmez. Güncel liste için:\n{link}\n\n'
+                'Bu e-postayı en fazla günde bir kez gönderiyoruz; gün içinde gelen yeni kayıtlar listede görünür. '
+                'Ayarlar → Bildirimler bölümünden kapatabilirsiniz.\n\n— Carbonless')
     else:
-        subject = f'Carbonless: {waiting} entries waiting for your approval'
-        body = (f'Hello {hello},\n\n{waiting} entries of {company} are waiting for your approval.\n'
-                f'Latest: {latest}\n\nUntil approved they are not in the totals. Review them here:\n{link}\n\n'
-                'We send this e-mail at most once a day. You can turn it off in Settings → Notifications.\n\n— Carbonless')
+        subject = 'Carbonless: entries are waiting for your approval'
+        body = (f'Hello {hello},\n\nAt least {waiting} entries of {company} are waiting for your approval right now.\n'
+                f'Latest: {latest}\n\nUntil approved they are not in the totals. See the current list:\n{link}\n\n'
+                'We send this e-mail at most once a day; entries arriving later that day show in the list. '
+                'You can turn it off in Settings → Notifications.\n\n— Carbonless')
     if _send_email(user, subject, body):
         UserProfile.objects.filter(pk=profile.pk).update(approval_email_sent_at=now)
 
