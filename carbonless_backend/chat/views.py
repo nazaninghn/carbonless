@@ -1782,6 +1782,27 @@ def _send_message(request, session_id):
             'source': 'calculation_guide',
         })
 
+    # ─── 0.3) ASKED TO DELETE / CORRECT A SAVED ENTRY ──────────────────
+    # The chat can't change saved entries; say where it is done (with a
+    # link) rather than letting the AI answer as if it had done it. Then the
+    # few look-ups answered straight from the database (a source's month,
+    # what is waiting for approval).
+    if not attachment:
+        from .local_answers import direct_data_answer, entry_change_request
+        lang = 'tr' if (ui_language or getattr(session, 'ui_language', '') or 'tr') == 'tr' else 'en'
+        asked = entry_change_request(request.user, content, lang)
+        direct = None if asked else direct_data_answer(request.user, content, lang)
+        if asked or direct:
+            text, ui = (asked[0], {'link': asked[1]}) if asked else (direct, None)
+            msg = ChatMessage.objects.create(session=session, role='assistant', content=text, ui=ui or {})
+            session.save(update_fields=['updated_at'])
+            return Response({
+                'id': msg.id, 'role': 'assistant', 'content': text,
+                'created_at': msg.created_at, 'session_title': session.title,
+                'pending_entries': [], 'ui': ui,
+                'source': 'entry_change_help' if asked else 'local_data_answer',
+            })
+
     # ─── 0.5) GUIDED FLOW REPLY: continue incomplete calculation ──────
     # Check NLU-based guided flow first, then legacy guided flow
     nlu_guided_response = _handle_nlu_guided_reply(request, session, content)
@@ -2078,6 +2099,24 @@ def confirm_entry(request):
                                     _chat_facility(request.user, entry_data))
         if repeat:
             return Response({'error': repeat['en'], 'code': 'yearly_repeat', **repeat}, status=409)
+    # Same source and month, another amount: a correction ("4000 değil 3500")
+    # or a second meter. The client asks which, and changes the existing
+    # entry (its approval rules apply) or adds this one with
+    # confirm_same_period.
+    if str(entry_data.get('confirm_same_period', '')).strip().lower() not in ('1', 'true', 'yes', 'on'):
+        from companies.utils import get_current_company
+        from emissions.duplicates import find_same_period
+        from emissions.factor_lookup import resolve_factor_and_amount
+        company = get_current_company(request.user)
+        factor, qty, _co2e, _err = resolve_factor_and_amount(
+            entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''), company)
+        now = datetime.now(timezone.utc)
+        same = find_same_period(company, factor, entry_data.get('year') or now.year,
+                                entry_data.get('month') or now.month,
+                                _chat_facility(request.user, entry_data), request.user)
+        if same and qty is not None and float(qty) != same['existing_quantity']:
+            return Response({'error': same['message_en'], 'code': 'same_period',
+                             'new_quantity': float(qty), **same}, status=409)
 
     entry, err = _create_emission_from_chat(request.user, entry_data)
     if err:

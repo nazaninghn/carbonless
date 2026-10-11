@@ -7,6 +7,7 @@ Rejected entries don't count: re-entering those is the fix, not a duplicate.
 Two genuinely separate identical readings are possible, so this only warns:
 the client can resend with confirm_duplicate=true to save anyway.
 """
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
@@ -145,3 +146,44 @@ def find_yearly_repeat(company, factor, year, month, facility=None):
           'It is a yearly (or one-off) source: the year\'s amount is entered once — '
           'entered every month, it is counted more than once.')
     return {'tr': tr, 'en': en, 'message_tr': tr, 'message_en': en}
+
+
+def find_same_period(company, factor, year, month, facility=None, user=None):
+    """An entry already holding *factor* for the same month (a different
+    amount — an equal one is `find_duplicate`): a chat message correcting a
+    figure ("4000 değil 3500") would otherwise be saved next to it and both
+    counted. Returns {'existing_id', 'existing_quantity', 'existing_unit',
+    'existing_status', 'can_change', 'message_tr', 'message_en'} or None.
+    Yearly sources (`find_yearly_repeat`) and inventory rows are left out;
+    with a facility, only that facility's entry counts."""
+    from .inventory import ANNUAL_PREFIX
+    from .models import EmissionEntry
+    from .notifications import APPROVER_ROLES, _qty
+    if not company or factor is None or not year or not month or is_yearly_factor(factor):
+        return None
+    qs = (EmissionEntry.objects
+          .filter(company=company, emission_factor=factor, year=year, month=month,
+                  replaces_entry__isnull=True)
+          .exclude(status='draft').exclude(description__startswith=ANNUAL_PREFIX)
+          .select_related('emission_factor', 'facility'))
+    if facility is not None:
+        qs = qs.filter(Q(facility=facility) | Q(facility__isnull=True))
+    existing = qs.order_by('status', 'id').first()  # 'approved' sorts before 'submitted'
+    if existing is None:
+        return None
+    can_change = bool(user) and (
+        existing.user_id == user.pk
+        or company.memberships.filter(user=user, is_active=True, role__in=APPROVER_ROLES).exists())
+    m = existing.month if 1 <= (existing.month or 0) <= 12 else 1
+    state_tr = 'onaylı' if existing.status == 'approved' else 'onay bekleyen'
+    state_en = 'an approved' if existing.status == 'approved' else 'a pending'
+    tr = (f'{_MONTHS_TR[m - 1]} {year} için bu kaynakta zaten {state_tr} bir kayıt var: '
+          f'{_qty(existing, "tr")}.')
+    en = (f'{_MONTHS_EN[m - 1]} {year} already has {state_en} entry for this source: '
+          f'{_qty(existing, "en")}.')
+    return {
+        'existing_id': existing.pk, 'existing_quantity': float(existing.quantity),
+        'existing_unit': existing.emission_factor.unit, 'existing_status': existing.status,
+        'existing_facility': existing.facility.name if existing.facility_id else None,
+        'can_change': can_change, 'message_tr': tr, 'message_en': en,
+    }

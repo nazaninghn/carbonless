@@ -55,7 +55,7 @@ import {
   baseLoopItem,
   loopItemGroup,
 } from '@/lib/carboniq/questions';
-import { fixed } from '@/lib/formatNumber';
+import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -4726,6 +4726,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
   const [error, setError] = useState('');
   // Prevents double-click duplicates on save button
   const [savingMessageId, setSavingMessageId] = useState(null);
+  // The same source already has another amount for that month (a correction
+  // or a second meter): asked with three answers — change the existing
+  // entry, add this one separately, or skip it.
+  const [samePeriodAsk, setSamePeriodAsk] = useState(null);
+  const askSamePeriod = useCallback((info) => new Promise(resolve => setSamePeriodAsk({ ...info, resolve })), []);
+  const answerSamePeriod = useCallback((choice) => {
+    setSamePeriodAsk(prev => { prev?.resolve(choice); return null; });
+  }, []);
   // Period overrides for pending entries whose date wasn't extracted from the
   // chat message — keyed by `${msg.id}-${idx}`, value { month, year }. The
   // backend silently defaults to the current month when it doesn't know the
@@ -5089,6 +5097,30 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 
   return (
     <>
+      <ConfirmDialog
+        open={!!samePeriodAsk}
+        onConfirm={() => answerSamePeriod(samePeriodAsk?.can_change ? 'change' : 'add')}
+        onCancel={() => answerSamePeriod('skip')}
+        title={tr ? 'Bu ay için zaten kayıt var' : 'This month already has an entry'}
+        message={samePeriodAsk ? `${tr ? samePeriodAsk.message_tr : samePeriodAsk.message_en} ${samePeriodAsk.can_change
+          ? (tr ? `Bu bir düzeltmeyse mevcut kaydı ${num(samePeriodAsk.new_quantity)} olarak değiştirin${samePeriodAsk.existing_status === 'approved' ? ' (onaylı kayıt değişikliği onaya gider; o zamana kadar mevcut değer geçerli)' : ''}. Ayrı bir sayaç veya faturaysa ayrı kayıt olarak ekleyin.`
+                : `If this is a correction, change the existing entry to ${num(samePeriodAsk.new_quantity)}${samePeriodAsk.existing_status === 'approved' ? ' (a change to an approved entry goes for approval; until then the current value stands)' : ''}. If it is another meter or invoice, add it separately.`)
+          : (tr ? 'Bu kaydı yalnızca onu giren kişi veya bir yönetici değiştirebilir. Ayrı bir sayaç veya faturaysa ayrı kayıt olarak ekleyebilirsiniz.'
+                : 'Only the person who entered it or a manager can change it. If this is another meter or invoice, you can add it separately.')}` : ''}
+        confirmText={samePeriodAsk?.can_change ? (tr ? 'Mevcut kaydı değiştir' : 'Change existing entry') : (tr ? 'Ayrı kayıt olarak ekle' : 'Add separately')}
+        cancelText={tr ? 'Kaydetme' : "Don't save"}
+        language={language}
+      >
+        {samePeriodAsk?.can_change && (
+          <button
+            type="button"
+            onClick={() => answerSamePeriod('add')}
+            className="mt-4 w-full rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-sm font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
+          >
+            {tr ? 'Ayrı kayıt olarak ekle' : 'Add separately'}
+          </button>
+        )}
+      </ConfirmDialog>
     <style>{CHAT_ANIM_STYLES}</style>
     <div className="relative flex flex-1 min-h-0 overflow-hidden">
       {/* Mobile backdrop for chat sidebar */}
@@ -5277,6 +5309,17 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                         <span className="max-w-[220px] truncate">{msg.attachment_name || 'attachment'}</span>
                       </div>
                     )
+                  )}
+                  {/* A page the answer points to ("Emisyon Yönetimi'nde aç") */}
+                  {msg.role === 'assistant' && typeof msg.ui?.link?.href === 'string' && msg.ui.link.href.startsWith('/dashboard') && (
+                    <div className="ml-9 mt-2">
+                      <a
+                        href={msg.ui.link.href}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[#2ABD41]/30 bg-[#F1FCF2] px-3.5 py-1.5 text-[11px] font-bold text-[#175022] transition hover:bg-[#DEFAE1]"
+                      >
+                        {msg.ui.link.label} →
+                      </a>
+                    </div>
                   )}
                   {/* ── Quick reply buttons / Period dropdown ── */}
                   {msg.role === 'assistant' && msg.ui?.quick_replies?.length > 0 && !msg.entriesSaved && !msg.quickReplyUsed && (
@@ -5524,6 +5567,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                             try {
                               let lastStatus = 'approved';
                               let savedCount = 0;
+                              let changedExisting = false;
                               // Check every period first so nothing is half-saved.
                               const future = msg.pending_entries.some((pe, idx) => {
                                 const o = periodOverrides[`${msg.id}-${idx}`];
@@ -5548,6 +5592,24 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                   res = await api.confirmEmissionEntry({ ...peToSave, confirm_duplicate: true });
                                   data = await res.json().catch(() => ({}));
                                 }
+                                if (res.status === 409 && data.code === 'same_period') {
+                                  const choice = await askSamePeriod(data);
+                                  if (choice === 'skip') continue;
+                                  if (choice === 'change') {
+                                    const upd = await api.updateEntry(data.existing_id, { quantity: data.new_quantity });
+                                    const body = await upd.json().catch(() => ({}));
+                                    if (!upd.ok) {
+                                      setError(upd.status === 403 ? noPermissionMessage(tr) : (tr ? 'Kayıt değiştirilemedi.' : 'Could not change the entry.'));
+                                      return;
+                                    }
+                                    lastStatus = body.pending_change || body.status === 'submitted' ? 'submitted' : 'approved';
+                                    savedCount += 1;
+                                    changedExisting = true;
+                                    continue;
+                                  }
+                                  res = await api.confirmEmissionEntry({ ...peToSave, confirm_duplicate: true, confirm_same_period: true });
+                                  data = await res.json().catch(() => ({}));
+                                }
                                 if (!res.ok) {
                                   setError(res.status === 403 ? noPermissionMessage(tr) : (data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.')));
                                   return;
@@ -5557,7 +5619,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                               }
                               if (savedCount === 0) return;
                               setMessages(prev => prev.map(m =>
-                                m.id === msg.id ? { ...m, entriesSaved: true, entryStatus: lastStatus } : m
+                                m.id === msg.id ? { ...m, entriesSaved: true, entryStatus: lastStatus, changedExisting } : m
                               ));
                               await fetchData?.();
                               window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', { detail: { source: 'chat' } }));
@@ -5594,7 +5656,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                         {tr ? 'Dashboard\'a kaydedildi' : 'Saved to dashboard'}
                       </div>
                       <div className="mt-1 text-[10px] text-[#1A7B2A]">
-                        {msg.entryStatus === 'approved'
+                        {msg.changedExisting
+                          ? (msg.entryStatus === 'approved'
+                            ? (tr ? 'Mevcut kayıt güncellendi.' : 'The existing entry was updated.')
+                            : (tr ? 'Mevcut kayıt için değişiklik onaya gönderildi; onaylanana kadar mevcut değer geçerli.' : 'A change to the existing entry was sent for approval; until approved the current value stands.'))
+                          : msg.entryStatus === 'approved'
                           ? (tr ? 'Durum: Onaylandı' : 'Status: Approved')
                           : (tr ? 'Durum: Onay bekliyor. Onaylandığında toplamlara eklenir.' : 'Status: Awaiting approval. It will count in the totals once approved.')}
                       </div>
