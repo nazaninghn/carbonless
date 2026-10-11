@@ -84,7 +84,8 @@ def not_counted_note(info, tr=False):
         joined = ' ve '.join(parts) if tr else ' and '.join(parts)
         out.append(f'Bilgi: {joined} bu rapordaki toplamlara dahil değildir; yalnızca onaylanmış kayıtlar sayılır.'
                    if tr else
-                   f'For information: {joined} are not included in the totals of this report; only approved entries are counted.')
+                   f"For information: {joined} {'is' if (pend.get('count') or 0) + (rej.get('count') or 0) == 1 else 'are'} "
+                   'not included in the totals of this report; only approved entries are counted.')
     waiting = []
     ch, dl = (info.get('changes') or {}).get('count'), (info.get('delete_requests') or {}).get('count')
     if ch:

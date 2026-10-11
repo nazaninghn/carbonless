@@ -13,15 +13,15 @@ export function notCountedText(info, tr) {
   const parts = [
     pend.count > 0 && (tr
       ? `${pend.count} onay bekleyen kayıt (${fixed(pend.total_kg / 1000, 3)} t)`
-      : `${pend.count} awaiting approval (${fixed(pend.total_kg / 1000, 3)} t)`),
+      : `${pend.count} ${pend.count === 1 ? 'entry' : 'entries'} awaiting approval (${fixed(pend.total_kg / 1000, 3)} t)`),
     rej.count > 0 && (tr
       ? `${rej.count} reddedilen kayıt (${fixed(rej.total_kg / 1000, 3)} t)`
-      : `${rej.count} rejected (${fixed(rej.total_kg / 1000, 3)} t)`),
+      : `${rej.count} rejected ${rej.count === 1 ? 'entry' : 'entries'} (${fixed(rej.total_kg / 1000, 3)} t)`),
   ].filter(Boolean);
   if (parts.length) {
     out.push(parts.join(tr ? ' ve ' : ' and ') + (tr
       ? ' toplamlara ve raporlara dahil değildir. Yalnızca onaylanmış kayıtlar sayılır.'
-      : ' are not included in the totals or reports. Only approved entries are counted.'));
+      : ((pend.count || 0) + (rej.count || 0) === 1 ? ' is' : ' are') + ' not included in the totals or reports. Only approved entries are counted.'));
   }
   const waiting = [
     changes > 0 && (tr ? `${changes} değişiklik talebi` : `${changes} change request${changes === 1 ? '' : 's'}`),

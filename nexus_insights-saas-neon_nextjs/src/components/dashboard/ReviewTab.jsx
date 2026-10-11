@@ -372,8 +372,11 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                       </h3>
                       {entry.delete_requested && (
                         <p className="text-[11px] text-[#072C0E]/55">
-                          {tr ? 'Onaylarsanız kayıt silinir; reddederseniz kalır. Onaylanana kadar toplamlarda kalır.'
-                              : 'Approving deletes the entry; rejecting keeps it. Until approved it stays in the totals.'}
+                          {canApprove
+                            ? (tr ? 'Onaylarsanız kayıt silinir; reddederseniz kalır. Onaylanana kadar toplamlarda kalır.'
+                                  : 'Approving deletes the entry; rejecting keeps it. Until approved it stays in the totals.')
+                            : (tr ? 'Onaycı onaylarsa kayıt silinir; reddederse kalır. Onaylanana kadar toplamlarda kalır.'
+                                  : 'If an approver approves, the entry is deleted; if they reject, it stays. Until approved it stays in the totals.')}
                         </p>
                       )}
                       <div className="flex flex-wrap items-center gap-1.5">
