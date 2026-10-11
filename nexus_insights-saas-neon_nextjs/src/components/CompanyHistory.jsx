@@ -16,6 +16,7 @@ const ACTIONS = {
   inventory_completed:   { tr: 'Envanter tamamlandı',  en: 'Inventory completed',      cls: 'bg-[#2ABD41]/10 text-[#175022]' },
   inventory_renamed:     { tr: 'Envanter adı değişti', en: 'Inventory renamed',        cls: 'bg-amber-50 text-amber-700' },
   entry_delete_requested: { tr: 'Silme talebi', en: 'Deletion requested', cls: 'bg-amber-50 text-amber-700' },
+  entry_delete_withdrawn: { tr: 'Silme talebi geri alındı', en: 'Deletion request withdrawn', cls: 'bg-slate-50 text-slate-600' },
   entry_delete_refused:  { tr: 'Silme talebi reddedildi', en: 'Deletion refused', cls: 'bg-amber-50 text-amber-700' },
   ownership_transferred: { tr: 'Sahiplik devredildi', en: 'Ownership transferred', cls: 'bg-amber-50 text-amber-700' },
   advisor_approved: { tr: 'Danışman onayı verildi', en: 'Advisor approval given',    cls: 'bg-[#2ABD41]/10 text-[#175022]' },

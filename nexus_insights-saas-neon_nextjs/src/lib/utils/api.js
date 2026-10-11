@@ -254,6 +254,7 @@ export const api = {
   },
   removeProof: (id) => request(`/emissions/entries/${id}/proof/`, { method: 'DELETE' }),
   deleteEntry: (id) => request(`/emissions/entries/${id}/`, { method: 'DELETE' }),
+  cancelDeleteRequest: (id) => request(`/emissions/entries/${id}/cancel-delete/`, { method: 'POST' }),
   getSummary: (year = new Date().getFullYear()) => request(`/emissions/summary/?year=${year}`),
 
   getTargets: () => request('/emissions/targets/'),

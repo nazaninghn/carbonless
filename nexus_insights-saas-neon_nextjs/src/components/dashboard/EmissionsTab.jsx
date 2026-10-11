@@ -4,8 +4,9 @@ import { noPermissionMessage } from '@/lib/permissions';
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import {
   AlertCircle, AlertTriangle, FileText, Leaf, Paperclip,
-  Pencil, Plus, Search, Trash2, X,
+  Pencil, Plus, Search, Trash2, Undo2, X,
 } from 'lucide-react';
+import { notCountedText } from '@/lib/notCounted';
 import { api } from '@/lib/utils/api';
 import { downloadProofDocument } from '@/lib/proofDownload';
 import { useToast } from '@/components/ToastProvider';
@@ -102,13 +103,32 @@ const FULL_MONTHS = {
 // say so.
 const DELETE_REQUESTED_META = { bg: 'bg-amber-100', text: 'text-amber-800', tr: 'Silme talebi', en: 'Deletion requested' };
 const PENDING_CHANGE_META = { bg: 'bg-amber-100', text: 'text-amber-700', tr: 'Değişiklik onayda', en: 'Change pending' };
+// A form entry's deletion request can be taken back from its row; an
+// inventory answer's is withdrawn by answering the question again.
+function canWithdrawDelete(entry) {
+  return entry.delete_requested && !(entry.description || '').startsWith('Questionnaire step');
+}
+
+function WithdrawDeleteButton({ tr, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-7 items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 text-[10px] font-bold text-amber-800 transition hover:bg-amber-100"
+    >
+      <Undo2 className="h-3 w-3" />
+      {tr ? 'Talebi geri al' : 'Withdraw request'}
+    </button>
+  );
+}
+
 function entryStatusMeta(entry) {
   if (entry.delete_requested) return DELETE_REQUESTED_META;
   if (entry.status === 'submitted' && entry.replaces_entry) return PENDING_CHANGE_META;
   return STATUS_META[entry.status] ?? STATUS_META.submitted;
 }
 
-function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
+function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelDelete, canEdit = true }) {
   const tr = language === 'tr';
   const toast = useToast();
   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
@@ -133,6 +153,9 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit =
         <div className="flex shrink-0 items-center gap-1.5">
           <ProofButton entry={entry} tr={tr} toast={toast}
             className="flex h-7 w-7 items-center justify-center rounded-lg transition hover:bg-[#2ABD41]/10" />
+          {canEdit && canWithdrawDelete(entry) && (
+            <WithdrawDeleteButton tr={language === 'tr'} onClick={() => onCancelDelete(entry.id)} />
+          )}
           {canEdit && (<>
           <button
             onClick={() => onEdit(entry)}
@@ -388,8 +411,12 @@ export default function EmissionsTab({
 
   // Not in any total above; shown under the cards for information.
   const notCounted = useMemo(() => {
-    const out = { pending: { n: 0, kg: 0 }, rejected: { n: 0, kg: 0 } };
+    // A change or a deletion waiting on an approved entry is counted apart,
+    // without an amount: until approved the approved figure stands.
+    const out = { pending: { n: 0, kg: 0 }, rejected: { n: 0, kg: 0 }, changes: 0, deletes: 0 };
     for (const e of entries) {
+      if (e.delete_requested) { out.deletes++; continue; }
+      if (e.status === 'submitted' && e.replaces) { out.changes++; continue; }
       const bucket = e.status === 'submitted' ? out.pending : e.status === 'draft' ? out.rejected : null;
       if (bucket) { bucket.n++; bucket.kg += parseFloat(e.calculated_co2e_kg) || 0; }
     }
@@ -520,6 +547,20 @@ export default function EmissionsTab({
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
   }, []);
+
+  const handleCancelDelete = useCallback(async (id) => {
+    try {
+      const res = await api.cancelDeleteRequest(id);
+      if (res.ok) {
+        fetchData();
+        toast.success(tr ? 'Silme talebi geri alındı — kayıt onaylı haliyle duruyor' : 'Deletion request withdrawn — the entry stays approved');
+      } else {
+        toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Talep geri alınamadı' : 'Could not withdraw the request'));
+      }
+    } catch {
+      toast.error(tr ? 'Talep geri alınamadı' : 'Could not withdraw the request');
+    }
+  }, [fetchData, toast, tr]);
 
   const confirmDelete = useCallback(async () => {
     const id = deleteConfirm;
@@ -774,20 +815,15 @@ export default function EmissionsTab({
         ))}
       </div>
 
-      {(notCounted.pending.n > 0 || notCounted.rejected.n > 0) && (
+      {(notCounted.pending.n > 0 || notCounted.rejected.n > 0 || notCounted.changes > 0 || notCounted.deletes > 0) && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs leading-5 text-amber-800">
           <span className="font-bold">{tr ? 'Bilgi: ' : 'For information: '}</span>
-          {[
-            notCounted.pending.n > 0 && (tr
-              ? `${notCounted.pending.n} onay bekleyen kayıt (${fixed(notCounted.pending.kg / 1000, 3)} t)`
-              : `${notCounted.pending.n} awaiting approval (${fixed(notCounted.pending.kg / 1000, 3)} t)`),
-            notCounted.rejected.n > 0 && (tr
-              ? `${notCounted.rejected.n} reddedilen kayıt (${fixed(notCounted.rejected.kg / 1000, 3)} t)`
-              : `${notCounted.rejected.n} rejected (${fixed(notCounted.rejected.kg / 1000, 3)} t)`),
-          ].filter(Boolean).join(tr ? ' ve ' : ' and ')}
-          {tr
-            ? ' toplamlara ve raporlara dahil değildir. Yalnızca onaylanmış kayıtlar sayılır.'
-            : ' are not included in the totals or reports. Only approved entries are counted.'}
+          {notCountedText({
+            pending: { count: notCounted.pending.n, total_kg: notCounted.pending.kg },
+            rejected: { count: notCounted.rejected.n, total_kg: notCounted.rejected.kg },
+            changes: { count: notCounted.changes },
+            delete_requests: { count: notCounted.deletes },
+          }, tr)}
         </p>
       )}
 
@@ -1094,6 +1130,11 @@ export default function EmissionsTab({
                       </td>
                       {/* Actions */}
                       <td className="px-3 py-3">
+                        {canChange(entry) && canWithdrawDelete(entry) && (
+                          <div className="mb-1 flex justify-end">
+                            <WithdrawDeleteButton tr={tr} onClick={() => handleCancelDelete(entry.id)} />
+                          </div>
+                        )}
                         {canChange(entry) && <div className="flex justify-end gap-1 opacity-0 transition group-hover/row:opacity-100">
                           <button
                             onClick={() => openEdit(entry)}
@@ -1150,6 +1191,7 @@ export default function EmissionsTab({
               maxKg={maxKg}
               onEdit={openEdit}
               onDelete={handleDelete}
+              onCancelDelete={handleCancelDelete}
               canEdit={canChange(entry)}
             />
           ))}

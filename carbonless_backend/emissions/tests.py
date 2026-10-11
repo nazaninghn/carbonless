@@ -768,6 +768,84 @@ class EntryChangeRulesTests(TestCase):
         wid = self._entry()
         self.assertEqual(self.client.delete(f'/api/emissions/entries/{wid}/').status_code, 204)
 
+    def _approved_entry_with_change(self, qty=400):
+        self._as('veri')
+        eid = self._entry()
+        EmissionEntry.objects.filter(id=eid).update(status='approved')
+        res = self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': qty}, format='json')
+        self.assertTrue(res.json()['pending_change'])
+        return eid, res.json()['id']
+
+    def test_delete_request_drops_the_waiting_change(self):
+        eid, cid = self._approved_entry_with_change()
+        self.assertEqual(self.client.delete(f'/api/emissions/entries/{eid}/').status_code, 202)
+        self.assertFalse(EmissionEntry.objects.filter(id=cid).exists())
+        self._as('sahip')
+        self.assertEqual([p['id'] for p in self.client.get('/api/emissions/pending/').json()], [eid])
+        self.client.post(f'/api/emissions/entries/{eid}/approve/', {'action': 'approve'}, format='json')
+        self.assertFalse(EmissionEntry.objects.filter(company=self.company).exists())
+        # A change after a deletion request takes its place.
+        self._as('veri')
+        eid = self._entry()
+        EmissionEntry.objects.filter(id=eid).update(status='approved')
+        self.client.delete(f'/api/emissions/entries/{eid}/')
+        self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': 500}, format='json')
+        self.assertFalse(EmissionEntry.objects.get(id=eid).delete_requested)
+
+    def test_deleting_the_approved_entry_drops_its_waiting_change(self):
+        eid, cid = self._approved_entry_with_change()
+        self._as('sahip')
+        self.assertEqual(self.client.delete(f'/api/emissions/entries/{eid}/').status_code, 204)
+        self.assertFalse(EmissionEntry.objects.filter(id=cid).exists())
+
+    def test_moving_an_approved_entry_to_another_facility_waits_for_approval(self):
+        from companies.models import Facility
+        a = Facility.objects.create(company=self.company, name='Fabrika A', country='TR')
+        b = Facility.objects.create(company=self.company, name='Depo B', country='TR')
+        self._as('veri')
+        eid = self._entry()
+        EmissionEntry.objects.filter(id=eid).update(status='approved', facility=a)
+        res = self.client.patch(f'/api/emissions/entries/{eid}/', {'facility': b.id}, format='json')
+        self.assertTrue(res.json()['pending_change'])
+        self.assertEqual(EmissionEntry.objects.get(id=eid).facility_id, a.id)
+        self._as('sahip')
+        row = self.client.get('/api/emissions/pending/').json()[0]
+        self.assertEqual((row['replaces']['facility_name'], row['facility_name']), ('Fabrika A', 'Depo B'))
+
+    def test_deletion_request_withdrawn_or_refused_with_reason(self):
+        from accounts.models import Notification
+        self._as('veri')
+        eid = self._entry()
+        EmissionEntry.objects.filter(id=eid).update(status='approved')
+        self.client.delete(f'/api/emissions/entries/{eid}/')
+        self.assertEqual(self.client.post(f'/api/emissions/entries/{eid}/cancel-delete/').json()['status'], 'kept')
+        self.assertFalse(EmissionEntry.objects.get(id=eid).delete_requested)
+        self.client.delete(f'/api/emissions/entries/{eid}/')
+        self._as('sahip')
+        self.client.post(f'/api/emissions/entries/{eid}/approve/', {'action': 'reject', 'reason': 'Kayıt doğru'},
+                         format='json')
+        n = Notification.objects.filter(user=self.users['veri']).latest('id')
+        self.assertIn('Kayıt doğru', n.message)
+        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'approved')
+
+    def test_rejected_change_says_the_approved_figure_stays(self):
+        from accounts.models import Notification
+        eid, cid = self._approved_entry_with_change()
+        self._as('sahip')
+        self.client.post(f'/api/emissions/entries/{cid}/approve/', {'action': 'reject', 'reason': 'Fatura'},
+                         format='json')
+        n = Notification.objects.filter(user=self.users['veri']).latest('id')
+        self.assertIn('300', n.message)
+
+    def test_waiting_changes_are_counted_apart(self):
+        from .inventory import not_counted, not_counted_note
+        eid, cid = self._approved_entry_with_change()
+        self._entry(qty=50)
+        info = not_counted(EmissionEntry.objects.filter(company=self.company, year=2026))
+        self.assertEqual(info['pending'], {'count': 1, 'total_kg': 100.0})
+        self.assertEqual(info['changes'], {'count': 1})
+        self.assertIn('1 değişiklik talebi', not_counted_note(info, tr=True))
+
     def test_owner_change_stays_approved_and_is_in_history(self):
         self._as('sahip')
         eid = self._entry()
