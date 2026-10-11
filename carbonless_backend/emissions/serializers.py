@@ -64,6 +64,14 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     def get_replaces(self, obj):
         if obj.status != 'submitted':
             return None
+        if obj.replaces_entry_id:
+            # A form entry's change: the approved entry it would replace.
+            old = obj.replaces_entry
+            return {
+                'co2e_kg': float(old.calculated_co2e_kg), 'quantity': float(old.quantity),
+                'unit': old.emission_factor.unit, 'count': 1, 'proof_carried': False,
+                'month': old.month, 'year': old.year,
+            }
         from questionnaire.step_entries import entry_group, _step_entries
         group = entry_group(obj.description)
         if not group:
@@ -153,10 +161,10 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
-            'calc_detail', 'question_number', 'replaces',
+            'calc_detail', 'question_number', 'replaces', 'replaces_entry', 'delete_requested',
         ]
         read_only_fields = [
-            'calculated_co2e_kg', 'facility_name',
+            'calculated_co2e_kg', 'facility_name', 'replaces_entry', 'delete_requested',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at',
             'factor_value_snapshot', 'factor_source_snapshot',

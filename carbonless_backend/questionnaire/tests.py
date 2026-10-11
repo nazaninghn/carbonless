@@ -846,6 +846,25 @@ class PendingChangeTests(TestCase):
         self.c_owner.post(f'/api/emissions/entries/{new.id}/approve/', {'action': 'approve'}, format='json')
         self.assertEqual(self._rows(), [('approved', 500.0), ('approved', 1200.0)])
 
+    def test_removing_an_approved_answer_is_a_deletion_request(self):
+        from emissions.models import EmissionEntry
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        r = self.c_clerk.patch(f'/api/questionnaire/{self.report.id}/step/',
+                               {'step': '4A-0', 'data': {'answer': 'no'}, 'language': 'tr'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        # still there and counted, with a request to delete it
+        e = EmissionEntry.objects.get(company=self.company)
+        self.assertEqual((e.status, e.delete_requested), ('approved', True))
+        pending = self.c_owner.get('/api/emissions/pending/').data
+        self.assertEqual([p['delete_requested'] for p in pending], [True])
+        # an approver's save of another question leaves the request alone
+        self.c_owner.patch(f'/api/questionnaire/{self.report.id}/step/',
+                           {'step': 'A5', 'data': {'answer': 'x'}, 'language': 'tr'}, format='json')
+        self.assertTrue(EmissionEntry.objects.filter(company=self.company, delete_requested=True).exists())
+        # accepted: deleted
+        self.c_owner.post(f'/api/emissions/entries/{e.id}/approve/', {'action': 'approve'}, format='json')
+        self.assertEqual(self._rows(), [])
+
     def test_rejected_change_keeps_the_approved_value(self):
         from emissions.models import EmissionEntry
         self._save(self.c_owner, {'1': '1000 kWh'})

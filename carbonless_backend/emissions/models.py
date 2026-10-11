@@ -252,6 +252,15 @@ class EmissionEntry(models.Model):
     approved_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='approved_entries')
     approved_at = models.DateTimeField(null=True, blank=True)
     rejected_reason = models.TextField(blank=True, help_text='Reason for rejection')
+    # A data-entry member's change to an approved entry waits as a separate
+    # entry next to it: the approved value stays in the totals until the
+    # change is approved (which then removes it). Same rule as an inventory
+    # answer.
+    replaces_entry = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
+                                       related_name='pending_changes')
+    # A data-entry member asked to delete this approved entry: it stays (and
+    # counts) until an approver accepts the deletion.
+    delete_requested = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

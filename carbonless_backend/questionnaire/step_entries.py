@@ -1014,7 +1014,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
 
     facility_of = _facility_lookup(company)
 
-    created, changes = [], []
+    created, changes, deletions = [], [], []
     for step in ENTRY_STEPS:
         specs = _entry_specs(step, groups.get(step, []), A, year, company)
         rows = _step_rows(step, specs, facility_of)
@@ -1028,24 +1028,40 @@ def sync_step_entries(user, company, report, step_id, data=None):
         unchanged = sig(_entry_key(e) for e in current) == new_sig
         same_as_approved = sig(_entry_key(e) for e in approved) == new_sig
 
+        asked_deleted = [e for e in approved if e.delete_requested]
         if status == 'approved':
             if unchanged and not waiting:
                 _backfill_detail(existing, rows)
                 continue
             if unchanged and step != step_id:
                 continue  # someone else's change still waits for review
+            if not rows and step != step_id and asked_deleted:
+                continue  # a deletion request waiting for review, not this save's
             to_delete, keep_approved = existing, False
         else:
             if same_as_approved and approved:
                 _backfill_detail(approved, rows)
+                _clear_delete_request(asked_deleted)       # the answer is back
                 to_delete, keep_approved = waiting, True   # back to the approved value
                 rows = []
             elif unchanged:
                 _backfill_detail(existing, rows)
                 continue
+            elif not rows and approved:
+                # A data-entry member removed an approved answer: its rows stay
+                # (and count) with a deletion request until it is reviewed.
+                for e in waiting:
+                    e.delete()
+                newly = [e for e in approved if not e.delete_requested]
+                if newly:
+                    EmissionEntry.objects.filter(pk__in=[e.pk for e in newly]).update(delete_requested=True)
+                    log_answer_change(user, company, year, step, approved, [], 'submitted')
+                    deletions.append(approved[0])
+                continue
             elif not rows:
                 to_delete, keep_approved = existing, False
             else:
+                _clear_delete_request(asked_deleted)       # a new value, not a deletion
                 to_delete, keep_approved = waiting, True
         before = list(approved or waiting)
         # An approver's save keeps the rows that report the same thing (same
@@ -1061,6 +1077,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
                     continue
                 pool.remove(match)
                 kept.append(match)
+                _clear_delete_request([match])
                 if match.status != 'approved':   # confirming a waiting change
                     match.status, match.approved_by, match.approved_at = 'approved', user, timezone.now()
                     match.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
@@ -1111,7 +1128,20 @@ def sync_step_entries(user, company, report, step_id, data=None):
         # One notice per changed answer, updated while it is still unread —
         # each facility saved used to send its own copy.
         notify_questionnaire_change(user, company, year, step, new_entries, replaced)
+    if deletions:
+        from emissions.notifications import notify_delete_requested
+        for entry in deletions:
+            notify_delete_requested(user, entry)
     return created
+
+
+def _clear_delete_request(entries):
+    from emissions.models import EmissionEntry
+    ids = [e.pk for e in entries if getattr(e, 'delete_requested', False)]
+    if ids:
+        EmissionEntry.objects.filter(pk__in=ids).update(delete_requested=False)
+        for e in entries:
+            e.delete_requested = False
 
 
 def _step_rows(step, specs, facility_of):

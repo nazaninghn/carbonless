@@ -101,7 +101,9 @@ def _email_approver(user, company_id, lang, latest):
     if profile is None or (profile.approval_email_sent_at
                            and now - profile.approval_email_sent_at < timedelta(hours=24)):
         return
-    waiting = EmissionEntry.objects.filter(company_id=company_id, status='submitted').count()
+    from django.db.models import Q
+    waiting = EmissionEntry.objects.filter(
+        Q(status='submitted') | Q(status='approved', delete_requested=True), company_id=company_id).count()
     if not waiting:
         return
     from companies.models import Company
@@ -157,6 +159,35 @@ def notify_entry_submitted(entry):
             _email_approver(membership.user, entry.company_id, lang, f'{author} — {_describe(entry, lang)}')
     except Exception:  # a notification must never break saving the entry
         logger.exception('Could not notify approvers about entry %s', entry.pk)
+
+
+def notify_delete_requested(author, entry):
+    """A data-entry member asked to delete an approved entry: tell the
+    approvers, like a new entry waiting for them."""
+    try:
+        from companies.models import CompanyMembership
+        name = (author.get_full_name() or author.email or author.username) if author else '—'
+        approvers = (CompanyMembership.objects
+                     .filter(company_id=entry.company_id, is_active=True, role__in=APPROVER_ROLES)
+                     .exclude(user_id=getattr(author, 'pk', None))
+                     .select_related('user', 'user__profile'))
+        for membership in approvers:
+            wants, lang = _prefs(membership.user)
+            if not wants:
+                continue
+            what = _describe(entry, lang)
+            if lang == 'tr':
+                _notify(membership.user, 'entry_submitted', 'Silme talebi',
+                        f'{name} onaylı bir kaydın silinmesini istiyor: {what}. Onaylanana kadar kayıt toplamlarda kalır.',
+                        link='/dashboard?tab=review', company_id=entry.company_id)
+            else:
+                _notify(membership.user, 'entry_submitted', 'Deletion request',
+                        f'{name} asks to delete an approved entry: {what}. Until approved it stays in the totals.',
+                        link='/dashboard?tab=review', company_id=entry.company_id)
+            _email_approver(membership.user, entry.company_id, lang,
+                            f'{name} — ' + ('silme talebi: ' if lang == 'tr' else 'deletion request: ') + what)
+    except Exception:
+        logger.exception('Could not notify approvers about a deletion request (%s)', entry.pk)
 
 
 def notify_questionnaire_change(author, company, year, step, entries, replaced):
