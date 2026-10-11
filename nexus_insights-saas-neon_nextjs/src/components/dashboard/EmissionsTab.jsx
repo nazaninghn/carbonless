@@ -125,6 +125,12 @@ const CUSTOM_UNITS = [
   { v: 'adet', tr: 'adet', en: 'units' },
 ];
 
+// Full month names for "Kaydet ve Şubat →" (the pills use the short ones).
+const FULL_MONTHS = {
+  tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+};
+
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
   const tr = language === 'tr';
   const toast = useToast();
@@ -278,6 +284,7 @@ export default function EmissionsTab({
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const months = tr ? MONTHS_TR : MONTHS_EN;
+  const fullMonths = FULL_MONTHS[tr ? 'tr' : 'en'];
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
 
   // Filtered factors (same logic as page.jsx, incl. questionnaire preferred source)
@@ -416,6 +423,9 @@ export default function EmissionsTab({
   // Set by "Save anyway" after the server flagged a likely duplicate.
   const [dupWarning, setDupWarning] = useState(false);
   const confirmDupRef = useRef(false);
+  // "Kaydet ve sonraki ay": keep the source and facility, move to the next
+  // month — twelve bills no longer mean twelve times picking the source.
+  const saveNextRef = useRef(false);
 
   const resetAddForm = useCallback(() => {
     setSelScope(''); setSelCategory(''); setSelFactor('');
@@ -430,6 +440,8 @@ export default function EmissionsTab({
     setFormError('');
     const confirmDuplicate = confirmDupRef.current;
     confirmDupRef.current = false;
+    const goNext = saveNextRef.current;
+    saveNextRef.current = false;
     setDupWarning(false);
 
     // Client-side file validation
@@ -483,6 +495,15 @@ export default function EmissionsTab({
       }
       if (res.ok) {
         const saved = await res.json().catch(() => ({}));
+        const nextMonth = parseInt(month) + 1;
+        if (goNext && nextMonth <= 12 && !isFutureMonth(selectedYear, nextMonth)) {
+          setQuantity(''); setDesc(''); setFile(null); setFormError(''); setDupWarning(false);
+          setMonth(nextMonth); fetchData();
+          toast.success(tr
+            ? `${fullMonths[parseInt(month) - 1]} kaydedildi${saved.status === 'submitted' ? ' ve onaya gönderildi' : ''} — şimdi ${fullMonths[nextMonth - 1]}`
+            : `${fullMonths[parseInt(month) - 1]} saved${saved.status === 'submitted' ? ' and sent for approval' : ''} — now ${fullMonths[nextMonth - 1]}`);
+          return;
+        }
         setShowAddForm(false); resetAddForm(); fetchData();
         if (saved.status === 'submitted') {
           // Only approved entries count, so the totals won't move yet —
@@ -499,6 +520,8 @@ export default function EmissionsTab({
           // A likely duplicate, or a month of a source the year's inventory
           // already holds as an annual amount (the server says which).
           const d = await res.json().catch(() => ({}));
+          // "Yine de kaydet" keeps going to the next month if that was asked.
+          saveNextRef.current = goNext;
           setDupWarning(d.code === 'annual_overlap' ? { overlap: tr ? d.message_tr : d.message_en } : true);
         } else if (res.status === 403) {
           setFormError(noPermissionMessage(tr));
@@ -515,7 +538,7 @@ export default function EmissionsTab({
       toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
     }
     finally { setSubmitting(false); }
-  }, [file, tr, selFactor, selectedYear, month, quantity, desc, facility, submitting, toast, resetAddForm, fetchData, setShowAddForm]);
+  }, [file, tr, selFactor, selectedYear, month, fullMonths, quantity, desc, facility, submitting, toast, resetAddForm, fetchData, setShowAddForm]);
 
   const handleDelete = useCallback((id) => {
     setDeleteConfirm(id);
@@ -1357,9 +1380,22 @@ export default function EmissionsTab({
               <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
                 {tr ? 'İptal' : 'Cancel'}
               </button>
-              <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
-                {submitting ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save Entry')}
-              </button>
+              <div className="flex items-center gap-2">
+                {parseInt(month) < 12 && !isFutureMonth(selectedYear, parseInt(month) + 1) && (
+                  <button
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => { saveNextRef.current = true; document.getElementById('add-entry-form')?.requestSubmit(); }}
+                    title={tr ? 'Kaynak ve tesis aynı kalır; form bir sonraki aya geçer.' : 'Source and facility stay; the form moves to the next month.'}
+                    className="rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60"
+                  >
+                    {tr ? `Kaydet ve ${fullMonths[parseInt(month)]} →` : `Save & ${fullMonths[parseInt(month)]} →`}
+                  </button>
+                )}
+                <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
+                  {submitting ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save Entry')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

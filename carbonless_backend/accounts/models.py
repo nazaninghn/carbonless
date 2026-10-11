@@ -18,6 +18,9 @@ class UserProfile(models.Model):
     language_preference = models.CharField(max_length=5, default='tr', choices=[('tr', 'Türkçe'), ('en', 'English')])
     notify_approvals = models.BooleanField(default=True)
     notify_system = models.BooleanField(default=True)
+    # When the last "entries are waiting for your approval" e-mail went out:
+    # at most one a day, so a batch of entries is one e-mail, not twenty.
+    approval_email_sent_at = models.DateTimeField(null=True, blank=True)
     # Which company this user is currently viewing/working in, for users with
     # more than one active CompanyMembership (e.g. invited into a second
     # company while still owning their own). Falls back to the earliest

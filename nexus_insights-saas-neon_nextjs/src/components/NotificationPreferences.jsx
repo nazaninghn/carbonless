@@ -45,8 +45,8 @@ export default function NotificationPreferences({ language, user }) {
           <span className="block text-sm text-[#072C0E]">{tr ? 'Kayıt onay bildirimleri' : 'Entry approval notifications'}</span>
           <span className="block text-xs text-[#072C0E]/50">
             {tr
-              ? 'Onayınızı bekleyen yeni kayıtlar ile kayıtlarınızın onaylanması veya reddedilmesi. Kapalıyken bu bildirimler gelmez.'
-              : 'New entries waiting for your approval, and your own entries being approved or rejected. When off, these notifications are not sent.'}
+              ? 'Onayınızı bekleyen yeni kayıtlar ile kayıtlarınızın onaylanması veya reddedilmesi — uygulamada ve e-posta ile (onay bekleyenler için günde en fazla bir e-posta, reddedilen kaydınız için hemen). Kapalıyken bu bildirimler gelmez.'
+              : 'New entries waiting for your approval, and your own entries being approved or rejected — in the app and by e-mail (at most one e-mail a day about waiting entries; a rejected entry right away). When off, these notifications are not sent.'}
           </span>
         </span>
       </label>

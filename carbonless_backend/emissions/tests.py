@@ -1044,3 +1044,60 @@ class CustomRequestUnitTests(ApprovalNotificationAndDuplicateTests):
         self.assertIn('unit', res.data)
         self.assertEqual(self.client.post('/api/emissions/custom-requests/', {**data, 'unit': 'litre'},
                                           format='json').status_code, 201)
+
+
+class EntryYearBoundTests(TestCase):
+    def test_year_before_1990_is_refused(self):
+        from rest_framework.test import APIClient
+        from companies.models import Company, CompanyMembership
+        from emissions.models import EmissionFactor
+        user = User.objects.create_user('yr', 'yr@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Yr Co', tax_number='12', country_of_headquarters='TR',
+            countries_of_operation='TR', nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+        f = EmissionFactor.objects.create(slug='yr-grid', country='turkey', year=2024, name='grid',
+                                          scope='scope2', category='electricity', unit='kwh',
+                                          factor_kg_co2e=0.4, source='test')
+        c = APIClient(); c.force_authenticate(user=user)
+        r = c.post('/api/emissions/entries/', {'emission_factor': f.id, 'quantity': 10, 'year': 1000, 'month': 1}, format='json')
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('invalid_year', str(r.data))
+        r = c.post('/api/emissions/entries/', {'emission_factor': f.id, 'quantity': 10, 'year': 2024, 'month': 1}, format='json')
+        self.assertEqual(r.status_code, 201)
+
+
+class ApprovalEmailTests(ApprovalNotificationAndDuplicateTests):
+    """Approvers are e-mailed about waiting entries at most once a day; an
+    author is e-mailed when an entry is rejected."""
+
+    def test_one_email_a_day_for_waiting_entries(self):
+        from django.core import mail
+        self._as('ali')
+        self._entry()
+        self._entry(month=4)
+        to_owner = [m for m in mail.outbox if m.to == ['aylin@test.com']]
+        self.assertEqual(len(to_owner), 1)
+        self.assertIn('onayınızı bekleyen 1 kayıt', to_owner[0].subject)
+        self.assertIn('Kaya Tekstil', to_owner[0].body)
+
+    def test_email_respects_the_preference(self):
+        from django.core import mail
+        from accounts.models import UserProfile
+        UserProfile.objects.filter(user=self.users['aylin']).update(notify_approvals=False)
+        self._as('ali')
+        self._entry()
+        self.assertEqual([m for m in mail.outbox if m.to == ['aylin@test.com']], [])
+
+    def test_rejection_is_emailed_with_the_reason(self):
+        from django.core import mail
+        self._as('ali')
+        entry_id = self._entry().data['id']
+        mail.outbox.clear()
+        self._as('aylin')
+        self.client.post(f'/api/emissions/entries/{entry_id}/approve/',
+                         {'action': 'reject', 'reason': 'Invoice missing'}, format='json')
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ['ali@test.com'])
+        self.assertIn('Invoice missing', mail.outbox[0].body)
