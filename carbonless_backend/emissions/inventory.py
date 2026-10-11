@@ -32,15 +32,35 @@ def monthly_split(queryset):
 
 def not_counted(queryset):
     """Pending and rejected entries of `queryset`, for an informational note:
-    {'pending': {'count', 'total_kg'}, 'rejected': {'count', 'total_kg'}}."""
-    out = {}
-    for key, status in (('pending', 'submitted'), ('rejected', 'draft')):
-        qs = queryset.filter(status=status)
-        out[key] = {
-            'count': qs.count(),
-            'total_kg': float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0),
-        }
-    return out
+    {'pending': {'count', 'total_kg'}, 'rejected': {'count', 'total_kg'},
+     'changes': {'count'}, 'delete_requests': {'count'}}.
+
+    'pending' holds new entries only. A waiting change to an approved entry
+    (a form entry's edit, or an inventory answer's new rows next to its
+    approved ones) and a deletion request are counted apart, without an
+    amount: until approved the approved figure stands, so adding the change's
+    whole amount would read as an increase it is not."""
+    from questionnaire.step_entries import entry_group
+    approved_groups = set()
+    for desc, year in queryset.filter(status='approved', description__startswith=ANNUAL_PREFIX).values_list('description', 'year'):
+        approved_groups.add((year, entry_group(desc)))
+    new_n, new_kg, changes = 0, 0.0, 0
+    for e in queryset.filter(status='submitted').only('description', 'year', 'replaces_entry', 'calculated_co2e_kg'):
+        if e.replaces_entry_id or (is_annual(e) and (e.year, entry_group(e.description)) in approved_groups):
+            changes += 1
+        else:
+            new_n += 1
+            new_kg += float(e.calculated_co2e_kg or 0)
+    rejected = queryset.filter(status='draft')
+    return {
+        'pending': {'count': new_n, 'total_kg': new_kg},
+        'rejected': {
+            'count': rejected.count(),
+            'total_kg': float(rejected.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0),
+        },
+        'changes': {'count': changes},
+        'delete_requests': {'count': queryset.filter(status='approved', delete_requested=True).count()},
+    }
 
 
 def _t(kg, tr):
@@ -59,12 +79,23 @@ def not_counted_note(info, tr=False):
     if rej.get('count'):
         parts.append(f"{rej['count']} reddedilen kayıt ({_t(rej['total_kg'], tr)} tCO₂e)" if tr
                      else f"{rej['count']} rejected entr{'y' if rej['count'] == 1 else 'ies'} ({_t(rej['total_kg'], tr)} tCO₂e)")
-    if not parts:
-        return ''
-    joined = ' ve '.join(parts) if tr else ' and '.join(parts)
-    return (f'Bilgi: {joined} bu rapordaki toplamlara dahil değildir; yalnızca onaylanmış kayıtlar sayılır.'
-            if tr else
-            f'For information: {joined} are not included in the totals of this report; only approved entries are counted.')
+    out = []
+    if parts:
+        joined = ' ve '.join(parts) if tr else ' and '.join(parts)
+        out.append(f'Bilgi: {joined} bu rapordaki toplamlara dahil değildir; yalnızca onaylanmış kayıtlar sayılır.'
+                   if tr else
+                   f'For information: {joined} are not included in the totals of this report; only approved entries are counted.')
+    waiting = []
+    ch, dl = (info.get('changes') or {}).get('count'), (info.get('delete_requests') or {}).get('count')
+    if ch:
+        waiting.append(f'{ch} değişiklik talebi' if tr else f"{ch} change request{'s' if ch != 1 else ''}")
+    if dl:
+        waiting.append(f'{dl} silme talebi' if tr else f"{dl} deletion request{'s' if dl != 1 else ''}")
+    if waiting:
+        joined = ' ve '.join(waiting) if tr else ' and '.join(waiting)
+        out.append(f'{joined} onay bekliyor; onaylanana kadar onaylı değerler geçerlidir.' if tr
+                   else f'{joined} await approval; until then the approved figures stand.')
+    return ' '.join(out)
 
 
 def previous_year_change(company, year, current_kg, today=None):

@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.db.models import Sum
@@ -49,7 +49,16 @@ class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
 APPROVER_ROLES = ('owner', 'admin', 'manager')
 # Fields whose change alters an entry's emissions; changing them on an
 # approved entry sends it back for approval when a data-entry member does it.
-_AMOUNT_FIELDS = ('quantity', 'emission_factor', 'year', 'month')
+_AMOUNT_FIELDS = ('quantity', 'emission_factor', 'year', 'month', 'facility')
+
+
+def _drop_waiting_changes(entries):
+    """Changes still waiting on `entries` (submitted or rejected copies made
+    by a data-entry member's edit): dropped when the entry itself goes or is
+    asked to go, so a change never outlives what it was changing."""
+    ids = [e.pk for e in entries if e.pk]
+    if ids:
+        EmissionEntry.objects.filter(replaces_entry_id__in=ids).exclude(status='approved').delete()
 
 
 def _log_entry(request, action, entry, detail, **extra):
@@ -168,8 +177,12 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         vd = serializer.validated_data
         if not any(f in vd and vd[f] != getattr(instance, f) for f in _AMOUNT_FIELDS):
             return None
-        # One waiting change per approved entry: a second edit replaces the first.
-        EmissionEntry.objects.filter(replaces_entry=instance).exclude(status='approved').delete()
+        # One waiting change per approved entry: a second edit replaces the
+        # first, and a change after a deletion request takes its place.
+        _drop_waiting_changes([instance])
+        if instance.delete_requested:
+            type(instance).objects.filter(pk=instance.pk).update(delete_requested=False)
+            instance.delete_requested = False
         new = EmissionEntry(
             user=request.user, company=instance.company, status='submitted',
             replaces_entry=instance,
@@ -232,6 +245,8 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         # stays (and counts) until an approver accepts the deletion.
         from .factor_lookup import _get_entry_status
         if instance.status == 'approved' and _get_entry_status(request.user, instance.company) == 'submitted':
+            # The latest wish wins: a change waiting on this entry is dropped.
+            _drop_waiting_changes([instance])
             if not instance.delete_requested:
                 type(instance).objects.filter(pk=instance.pk).update(delete_requested=True)
                 instance.delete_requested = True
@@ -246,7 +261,26 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         self._check_can_change(instance)
         _log_entry(self.request, 'entry_deleted', instance, _entry_summary(instance),
                    status_before=instance.status)
+        _drop_waiting_changes([instance])
         instance.delete()
+
+    @action(detail=True, methods=['post'], url_path='cancel-delete')
+    def cancel_delete(self, request, pk=None):
+        """The author (or an approver) withdraws a deletion request: the entry
+        stays approved as it was. An inventory answer's request is withdrawn
+        by answering the question again in Karbon Envanteri."""
+        instance = self.get_object()
+        self._check_can_change(instance)
+        if (instance.description or '').startswith('Questionnaire step '):
+            return Response({
+                'error': 'This entry comes from the questionnaire; answer the question again there.',
+                'code': 'edit_in_questionnaire',
+            }, status=400)
+        if instance.delete_requested:
+            type(instance).objects.filter(pk=instance.pk).update(delete_requested=False)
+            _log_entry(request, 'entry_delete_withdrawn', instance, _entry_summary(instance),
+                       status_before='approved', status_after='approved')
+        return Response({'status': 'kept'})
 
 
 class ReductionTargetViewSet(viewsets.ModelViewSet):
@@ -1010,6 +1044,7 @@ def _review_delete_request(request, company, entry, action):
         for e in rows:
             _log_entry(request, 'entry_deleted', e, _entry_summary(e), status_before='approved')
         author = entry.user
+        _drop_waiting_changes(rows)
         for e in rows:
             e.delete()
         if author is not None and author.pk != request.user.pk:
@@ -1023,8 +1058,10 @@ def _review_delete_request(request, company, entry, action):
         return Response({'status': 'deleted'})
     if action == 'reject':
         EmissionEntry.objects.filter(pk__in=[e.pk for e in rows]).update(delete_requested=False)
-        _log_entry(request, 'entry_delete_refused', entry, _entry_summary(entry),
-                   reason=request.data.get('reason', ''))
+        reason = (request.data.get('reason') or '').strip()
+        _log_entry(request, 'entry_delete_refused', entry, _entry_summary(entry), reason=reason)
+        from .notifications import notify_delete_refused
+        notify_delete_refused(entry, reason, request.user)
         return Response({'status': 'kept'})
     return Response({'error': 'action must be approve or reject'}, status=400)
 

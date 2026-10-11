@@ -26,6 +26,7 @@ import {
   MONTHS_EN as MONTHS_EN_SHORT,
 } from '@/lib/constants/emissions';
 import { fixed } from '@/lib/formatNumber';
+import { notCountedText, hasNotCounted } from '@/lib/notCounted';
 
 // ─── Full month names (only needed here for the detailed monthly breakdown) ──
 const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -721,26 +722,12 @@ export default function DashboardOverview({
       )}
 
       {/* Pending / rejected entries: outside every figure here, for information */}
-      {(summary?.not_counted?.pending?.count > 0 || summary?.not_counted?.rejected?.count > 0) && (() => {
-        const nc = summary.not_counted;
-        const parts = [
-          nc.pending?.count > 0 && (tr
-            ? `${nc.pending.count} onay bekleyen kayıt (${fixed(nc.pending.total_kg / 1000, 3)} t)`
-            : `${nc.pending.count} awaiting approval (${fixed(nc.pending.total_kg / 1000, 3)} t)`),
-          nc.rejected?.count > 0 && (tr
-            ? `${nc.rejected.count} reddedilen kayıt (${fixed(nc.rejected.total_kg / 1000, 3)} t)`
-            : `${nc.rejected.count} rejected (${fixed(nc.rejected.total_kg / 1000, 3)} t)`),
-        ].filter(Boolean).join(tr ? ' ve ' : ' and ');
-        return (
-          <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-[11px] leading-5 text-amber-800">
-            <span className="font-bold">{tr ? 'Bilgi: ' : 'For information: '}</span>
-            {parts}
-            {tr
-              ? ' bu toplamlara ve raporlara dahil değildir. Yalnızca onaylanmış kayıtlar sayılır.'
-              : ' are not included in these totals or in reports. Only approved entries are counted.'}
-          </p>
-        );
-      })()}
+      {hasNotCounted(summary?.not_counted) && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-[11px] leading-5 text-amber-800">
+          <span className="font-bold">{tr ? 'Bilgi: ' : 'For information: '}</span>
+          {notCountedText(summary.not_counted, tr)}
+        </p>
+      )}
 
       {/* ── QUESTIONNAIRE BANNER ─────────────────────────────────────── */}
       {questionnaireProfile && !questionnaireProfile.is_complete && (

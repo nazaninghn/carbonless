@@ -190,6 +190,30 @@ def notify_delete_requested(author, entry):
         logger.exception('Could not notify approvers about a deletion request (%s)', entry.pk)
 
 
+def notify_delete_refused(entry, reason, reviewer):
+    """Tell the author that their deletion request was refused, with the
+    reviewer's reason: the entry stays approved and in the totals."""
+    author = entry.user
+    if author is None or author.pk == reviewer.pk:
+        return
+    try:
+        wants, lang = _prefs(author)
+        if not wants:
+            return
+        what = _describe(entry, lang)
+        link = f'/dashboard?tab=emissions&year={entry.year}'
+        if lang == 'tr':
+            _notify(author, 'entry_rejected', 'Silme talebiniz reddedildi',
+                    f'{what} silinmedi.' + (f' Neden: {reason}.' if reason else '')
+                    + ' Kayıt onaylı haliyle duruyor.', link, company_id=entry.company_id)
+        else:
+            _notify(author, 'entry_rejected', 'Your deletion request was refused',
+                    f'{what} was not deleted.' + (f' Reason: {reason}.' if reason else '')
+                    + ' The entry stays approved.', link, company_id=entry.company_id)
+    except Exception:
+        logger.exception('Could not notify the author of entry %s', entry.pk)
+
+
 def notify_questionnaire_change(author, company, year, step, entries, replaced):
     """A data-entry member changed an inventory answer: tell the approvers
     what it is now and what it replaces. One notice per answer — while it is
@@ -259,6 +283,8 @@ def notify_entry_reviewed(entry, approved, reviewer):
         if not wants:
             return
         what = _describe(entry, lang)
+        # A change to an approved entry: rejected, the approved figure stays.
+        old = entry.replaces_entry if entry.replaces_entry_id else None
         if approved:
             if lang == 'tr':
                 _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}', company_id=entry.company_id)
@@ -272,7 +298,10 @@ def notify_entry_reviewed(entry, approved, reviewer):
         if lang == 'tr':
             fix = (' Kayıt anketten geldi: Emisyon Yönetimi\'nde "Ankette düzelt" ile ilgili soruyu açıp düzeltin.'
                    if from_questionnaire else ' Kaydı düzenleyip tekrar gönderebilirsiniz.')
-            _notify(entry.user, 'entry_rejected', 'Kaydınız reddedildi',
+            if old is not None:
+                fix = f' Onaylı kayıt ({_describe(old, lang)}) geçerli kalıyor.' + fix
+            _notify(entry.user, 'entry_rejected',
+                    'Değişiklik talebiniz reddedildi' if old is not None else 'Kaydınız reddedildi',
                     f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
             _send_email(entry.user, 'Carbonless: kaydınız reddedildi',
                         f'Merhaba {entry.user.first_name or entry.user.email},\n\n{what} reddedildi.'
@@ -281,7 +310,10 @@ def notify_entry_reviewed(entry, approved, reviewer):
         else:
             fix = (' It comes from the questionnaire: use "Fix in questionnaire" on the Emissions page to correct that question.'
                    if from_questionnaire else ' You can edit the entry to send it again.')
-            _notify(entry.user, 'entry_rejected', 'Your entry was rejected',
+            if old is not None:
+                fix = f' The approved entry ({_describe(old, lang)}) stays as it is.' + fix
+            _notify(entry.user, 'entry_rejected',
+                    'Your change was rejected' if old is not None else 'Your entry was rejected',
                     f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
             _send_email(entry.user, 'Carbonless: your entry was rejected',
                         f'Hello {entry.user.first_name or entry.user.email},\n\n{what} was rejected.'

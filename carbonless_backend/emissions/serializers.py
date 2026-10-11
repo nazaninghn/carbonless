@@ -71,6 +71,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
                 'co2e_kg': float(old.calculated_co2e_kg), 'quantity': float(old.quantity),
                 'unit': old.emission_factor.unit, 'count': 1, 'proof_carried': False,
                 'month': old.month, 'year': old.year,
+                'facility': old.facility_id, 'facility_name': old.facility.name if old.facility_id else None,
             }
         from questionnaire.step_entries import entry_group, _step_entries
         group = entry_group(obj.description)
