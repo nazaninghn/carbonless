@@ -73,11 +73,16 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if not old:
             return None
         same = len(old) == 1
+        proof = obj.proof_document.name if obj.proof_document else ''
         return {
             'co2e_kg': float(sum(e.calculated_co2e_kg for e in old)),
             'quantity': float(old[0].quantity) if same else None,
             'unit': old[0].emission_factor.unit if same else None,
             'count': len(old),
+            # The proof came with the approved row it replaces, attached to
+            # that (different) value.
+            'proof_carried': bool(proof) and any(
+                e.proof_document and e.proof_document.name == proof and e.quantity != obj.quantity for e in old),
         }
 
 

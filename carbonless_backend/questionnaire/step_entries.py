@@ -45,6 +45,8 @@ life of sold products).
 """
 import logging
 import re
+
+from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 
 from chat.local_parser import parse_localized_number
@@ -1046,6 +1048,31 @@ def sync_step_entries(user, company, report, step_id, data=None):
             else:
                 to_delete, keep_approved = waiting, True
         before = list(approved or waiting)
+        # An approver's save keeps the rows that report the same thing (same
+        # factor, amount and facility) as they are — with their proof
+        # document and approval — and rebuilds only the ones that changed.
+        kept = []
+        if status == 'approved':
+            pool, fresh = list(to_delete), []
+            for r in rows:
+                match = next((e for e in pool if _entry_key(e) == _row_key(r)), None)
+                if match is None:
+                    fresh.append(r)
+                    continue
+                pool.remove(match)
+                kept.append(match)
+                if match.status != 'approved':   # confirming a waiting change
+                    match.status, match.approved_by, match.approved_at = 'approved', user, timezone.now()
+                    match.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
+                _backfill_detail([match], [r])
+            to_delete, rows = pool, fresh
+        # A proof document stays with its facility's source: a row rebuilt for
+        # the same factor and facility gets the proof of the row it replaces
+        # (noted, since it was attached to the earlier value).
+        proof_of = {}
+        for e in list(to_delete) + (approved if keep_approved else []):
+            if e.proof_document:
+                proof_of.setdefault((e.emission_factor_id, e.facility_id), e)
         for e in to_delete:
             e.delete()
         new_entries = [EmissionEntry.objects.create(
@@ -1063,10 +1090,17 @@ def sync_step_entries(user, company, report, step_id, data=None):
             facility=facility,
             status=status,
         ) for factor, qty, description, detail, facility in rows]
+        carried = []
+        for e in new_entries:
+            src = proof_of.get((e.emission_factor_id, e.facility_id))
+            if src is not None:
+                type(e).objects.filter(pk=e.pk).update(proof_document=src.proof_document.name)
+                e.proof_document = src.proof_document.name
+                carried.append((src.proof_document.name.rsplit('/', 1)[-1], _q4(src.quantity) != _q4(e.quantity)))
         created.extend(new_entries)
         # Change history: what the answer reported before and what it reports now.
-        if new_entries:
-            log_answer_change(user, company, year, step, before, new_entries, status)
+        if new_entries or (to_delete and kept):
+            log_answer_change(user, company, year, step, before, kept + new_entries, status, carried)
         elif keep_approved and waiting:   # a waiting change taken back: the approved value again
             log_answer_change(user, company, year, step, waiting, approved, 'approved')
         elif to_delete:

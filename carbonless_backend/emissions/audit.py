@@ -38,8 +38,10 @@ def answer_text(year, step, entries, lang):
     return f'{where} · {_summary(entries, lang)}' if entries else where
 
 
-def log_answer_change(user, company, year, step, before, after, status_after):
-    """An inventory answer changed what it reports: before → after."""
+def log_answer_change(user, company, year, step, before, after, status_after, carried=()):
+    """An inventory answer changed what it reports: before → after.
+    `carried`: [(file name, value changed)] proof documents moved to the
+    rebuilt rows."""
     from .notifications import _summary
     texts = {}
     for lang in ('tr', 'en'):
@@ -53,6 +55,13 @@ def log_answer_change(user, company, year, step, before, after, status_after):
         else:
             body = f'{old} → ' + ('kaldırıldı' if lang == 'tr' else 'removed')
         texts[lang] = f'{head} · {body}'
+        for name, changed in carried:
+            if lang == 'tr':
+                texts[lang] += (f' · Kanıt önceki değerden taşındı: {name}'
+                                + (' — yeni değere ait olmayabilir' if changed else ''))
+            else:
+                texts[lang] += (f' · Proof carried over from the previous value: {name}'
+                                + (' — it may not belong to the new value' if changed else ''))
     log_company_activity(user, company.pk, 'questionnaire_changed', texts['tr'], texts['en'],
                          target_type='CarbonReport', target_id=f'{year}-{step}',
                          status_after=status_after)
