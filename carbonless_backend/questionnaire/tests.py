@@ -753,6 +753,18 @@ class CompanyInventoryAccessTests(TestCase):
         self.assertTrue(CarbonReport.objects.filter(id=self.report.id).exists())
         self.assertEqual(self._client(self.admin).delete(f'/api/questionnaire/{self.report.id}/').status_code, 200)
 
+    def test_creator_deletes_own_draft_but_not_completed(self):
+        draft = CarbonReport.objects.create(
+            company=self.company, created_by=self.entry, reporting_year=2026, title='Draft')
+        done = CarbonReport.objects.create(
+            company=self.company, created_by=self.entry, reporting_year=2023, title='Done',
+            status=CarbonReport.Status.COMPLETED)
+        c = self._client(self.entry)
+        self.assertEqual(c.delete(f'/api/questionnaire/{done.id}/').status_code, 403)
+        self.assertTrue(CarbonReport.objects.filter(id=done.id).exists())
+        self.assertEqual(c.delete(f'/api/questionnaire/{draft.id}/').status_code, 200)
+        self.assertEqual(self._client(self.owner).delete(f'/api/questionnaire/{done.id}/').status_code, 200)
+
     def test_delete_removes_its_questionnaire_entries_only(self):
         from emissions.models import EmissionEntry
         self._entry('Questionnaire step 4A-1')
@@ -1701,6 +1713,65 @@ class PreviousProfileSourceTests(TestCase):
         # an inventory for an earlier year looks back, not forward
         old = mk(2023, CarbonReport.Status.IN_PROGRESS)
         self.assertIn(_find_previous_profile_source(old), (r2025, r2024, draft2025))
+
+
+class PreviousYearCarryTests(TestCase):
+    """A new year's inventory starts from last year's equipment, sites and
+    methods; last year's amounts are only shown, never filled in."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.owner = User.objects.create_user('carry', 'carry@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Carry Co', tax_number='77',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=2,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        self.last = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2025,
+            title='2025', status=CarbonReport.Status.COMPLETED)
+        for step_id, answer in {
+            'A1': {'legal_name': 'Carry Co'},
+            '2A-2': {'1': {'name': 'Fabrika', 'country': 'TR'}, '2': {'name': 'Ofis', 'country': 'TR'}},
+            '3B-1': ['EQ-3B-01'],
+            '3B-5': {'EQ-3B-01': 'diesel'},
+            '3B-7': {'EQ-3B-01': '12000 litre'},
+            '3D-4': {'EQ-3D-01': {'refill_kg': '4', 'capacity_kg': '20'}},
+            '4A-1': {'1': '900 kWh', '2': '100 kWh'},
+            '3A-EF-a': {'ef_value': '5'},
+        }.items():
+            ReportStep.objects.create(report=self.last, step_id=step_id, answer={'answer': answer})
+        self.c = APIClient()
+        self.c.force_authenticate(user=self.owner)
+
+    def _previous(self, year):
+        new = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=year, title=str(year))
+        return self.c.get(f'/api/questionnaire/{new.id}/previous-profile/').data
+
+    def test_structure_carried_amounts_only_shown(self):
+        data = self._previous(2026)
+        structure, amounts = data['previous_structure'], data['previous_amounts']
+        self.assertEqual(structure['3B-1'], ['EQ-3B-01'])
+        self.assertEqual(structure['3B-5'], {'EQ-3B-01': 'diesel'})
+        # capacity is the unit's, the refill is the year's
+        self.assertEqual(structure['3D-4'], {'EQ-3D-01': {'capacity_kg': '20'}})
+        self.assertEqual(amounts['3D-4'], {'EQ-3D-01': '4'})
+        self.assertNotIn('3B-7', structure)
+        self.assertEqual(amounts['3B-7'], {'EQ-3B-01': '12000 litre'})
+        # electricity by facility name, since the order may change
+        self.assertEqual(amounts['4A-1'], {'Fabrika': '900 kWh', 'Ofis': '100 kWh'})
+        # a supplier's emission factor is not carried
+        self.assertNotIn('3A-EF-a', structure)
+        self.assertNotIn('3A-EF-a', amounts)
+
+    def test_nothing_from_a_later_year(self):
+        data = self._previous(2024)
+        self.assertEqual(data['previous_structure'], {})
+        self.assertEqual(data['previous_amounts'], {})
 
 
 class InventoryHistoryTests(TestCase):

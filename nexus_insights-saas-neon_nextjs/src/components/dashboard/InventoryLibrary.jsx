@@ -111,8 +111,8 @@ export default function InventoryLibrary({ tr = false }) {
       const res = await api.deleteReport(reportId);
       if (!res.ok && res.status !== 204) {
         setDeleteError(res.status === 403
-          ? (tr ? 'Bu envanteri yalnızca oluşturan kişi veya şirket sahibi/yöneticisi silebilir.'
-                : 'Only the person who created this inventory or a company owner/admin can delete it.')
+          ? (tr ? 'Bu envanteri silme yetkiniz yok. Tamamlanmış bir envanteri yalnızca şirket sahibi veya yöneticisi silebilir; taslağı ise oluşturan kişi de silebilir.'
+                : 'You cannot delete this inventory. A completed inventory can only be deleted by a company owner or admin; a draft also by the person who created it.')
           : (tr ? 'Envanter silinemedi. Lütfen tekrar deneyin.' : 'Could not delete the inventory. Please try again.'));
         return;
       }
@@ -511,7 +511,9 @@ export default function InventoryLibrary({ tr = false }) {
                         <Eye className="w-4 h-4" />
                         {tr ? 'Görüntüle' : 'View'}
                       </button>
-                      {canEdit && (!report.created_by || canManage) && (
+                      {/* A completed inventory carries approved figures and a signed
+                          report: only an owner/admin deletes it, not its creator. */}
+                      {canEdit && canManage && (
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
