@@ -29,8 +29,8 @@ const SECTIONS = [
     key: 'ai_carbon', icon: Bot,
     title: { tr: 'AI Sohbet', en: 'AI Chat' },
     desc: {
-      tr: 'Verilerinizi kendi cümlelerinizle anlatın — CarbonIQ anketi sizin yerinize doldurur ve sorularınızı yanıtlar.',
-      en: 'Describe your data in plain language — CarbonIQ fills out the questionnaire for you and answers your questions.',
+      tr: 'Faturalarınızı kendi cümlelerinizle yazın ("Ocak 2025 Gebze 12.000 kWh elektrik") — aylık kayıt olarak Emisyon Yönetimi\'ne eklenir; sorularınızı da yanıtlar. ISO raporu için Karbon Envanteri anketini ayrıca tamamlayın.',
+      en: 'Write your bills in your own words ("January 2025 Gebze 12,000 kWh electricity") — they are added to Emissions as monthly entries; it also answers your questions. For the ISO report, also complete the Carbon Inventory questionnaire.',
     },
   },
   {
@@ -140,8 +140,8 @@ const FAQS = [
   {
     q: { tr: 'Hangi bölümden başlamalıyım?', en: 'Which section should I start with?' },
     a: {
-      tr: '"Karbon Envanteri" veya "AI Sohbet" ile başlayın. İkisi de aynı anketi doldurur — Envanter formlarla, AI Sohbet ise doğal dille çalışır.',
-      en: 'Start with "Carbon Inventory" or "AI Chat" — both fill out the same questionnaire, just with forms vs. plain-language conversation.',
+      tr: '"Karbon Envanteri" ile başlayın: yıllık envanteriniz ve ISO 14064-1 raporunuz bu anketten çıkar. Aylık faturaları "Emisyon Yönetimi" formuyla ya da "AI Sohbet"e yazarak ekleyebilirsiniz; bunlar aylık kayıt olur, anketi doldurmaz.',
+      en: 'Start with "Carbon Inventory": your annual inventory and ISO 14064-1 report come from this questionnaire. Monthly bills can be added with the "Emissions" form or by writing them to "AI Chat"; they become monthly entries and do not fill the questionnaire.',
     },
   },
   {
@@ -154,8 +154,8 @@ const FAQS = [
   {
     q: { tr: 'Cevaplarımı sonra değiştirebilir miyim?', en: 'Can I change my answers later?' },
     a: {
-      tr: 'Evet. "Onay Bekleyenler" veya doğrudan Envanter üzerinden herhangi bir cevabı düzenleyebilirsiniz.',
-      en: 'Yes — you can edit any answer directly from the Inventory or via the Review tab.',
+      tr: 'Evet. Cevapları Karbon Envanteri\'nden ("Düzenle") değiştirin; veri giriş üyelerinin değişiklikleri "Onay Bekleyenler"de onaylanınca geçerli olur.',
+      en: 'Yes — change answers in the Carbon Inventory ("Edit"); changes by data-entry members take effect once approved on the Review page.',
     },
   },
   {

@@ -149,7 +149,45 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
                 'error': 'This entry comes from the questionnaire; correct it there.',
                 'code': 'edit_in_questionnaire',
             }, status=400)
+        pending = self._pending_change(request, instance, partial=kwargs.get('partial', False))
+        if pending is not None:
+            return pending
         return super().update(request, *args, **kwargs)
+
+    def _pending_change(self, request, instance, partial):
+        """A data-entry member changing the amount of an approved entry: the
+        change waits as its own entry next to the approved one, which stays in
+        the totals until the change is approved (same rule as an inventory
+        answer). Returns the response, or None when this is an ordinary edit."""
+        from .factor_lookup import _get_entry_status
+        from .notifications import notify_entry_submitted
+        if instance.status != 'approved' or _get_entry_status(request.user, instance.company) != 'submitted':
+            return None
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        vd = serializer.validated_data
+        if not any(f in vd and vd[f] != getattr(instance, f) for f in _AMOUNT_FIELDS):
+            return None
+        # One waiting change per approved entry: a second edit replaces the first.
+        EmissionEntry.objects.filter(replaces_entry=instance).exclude(status='approved').delete()
+        new = EmissionEntry(
+            user=request.user, company=instance.company, status='submitted',
+            replaces_entry=instance,
+            emission_factor=vd.get('emission_factor', instance.emission_factor),
+            year=vd.get('year', instance.year), month=vd.get('month', instance.month),
+            quantity=vd.get('quantity', instance.quantity),
+            description=vd.get('description', instance.description),
+            facility=vd['facility'] if 'facility' in vd else instance.facility,
+        )
+        upload = vd.get('proof_document')
+        new.proof_document = upload if upload else instance.proof_document
+        new.save()
+        notify_entry_submitted(new)
+        _log_entry(request, 'entry_updated', new, f'{_entry_summary(instance)} → {_entry_summary(new)}',
+                   status_before='approved', status_after='submitted')
+        data = dict(self.get_serializer(new).data)
+        data['pending_change'] = True
+        return Response(data, status=200)
 
     def perform_update(self, serializer):
         from .factor_lookup import _get_entry_status
@@ -190,6 +228,18 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
                     'error': 'This entry comes from the questionnaire; change the answer there.',
                     'code': 'edit_in_questionnaire',
                 }, status=400)
+        # A data-entry member deleting an approved entry asks for it: the entry
+        # stays (and counts) until an approver accepts the deletion.
+        from .factor_lookup import _get_entry_status
+        if instance.status == 'approved' and _get_entry_status(request.user, instance.company) == 'submitted':
+            if not instance.delete_requested:
+                type(instance).objects.filter(pk=instance.pk).update(delete_requested=True)
+                instance.delete_requested = True
+                from .notifications import notify_delete_requested
+                notify_delete_requested(request.user, instance)
+                _log_entry(request, 'entry_delete_requested', instance, _entry_summary(instance),
+                           status_before='approved', status_after='approved')
+            return Response({'status': 'delete_requested'}, status=202)
         return super().destroy(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
@@ -877,6 +927,8 @@ def approve_entry_view(request, pk):
         return Response({'error': 'Entry not found'}, status=404)
 
     action = request.data.get('action')  # 'approve' or 'reject'
+    if entry.delete_requested and entry.status == 'approved':
+        return _review_delete_request(request, company, entry, action)
     # An inventory answer's rows are reviewed together: the waiting rows of
     # that answer are approved (or rejected) as one, and approving them
     # replaces the approved rows they were waiting next to.
@@ -903,6 +955,15 @@ def approve_entry_view(request, pk):
                 if other.pk != entry.pk:
                     other.status, other.approved_by, other.approved_at = 'approved', request.user, timezone.now()
                     other.save()
+        elif entry.replaces_entry_id:
+            # A change to an approved form entry: it takes the approved one's
+            # place (and its proof, when no new one was attached).
+            old = entry.replaces_entry
+            if old is not None:
+                if not entry.proof_document and old.proof_document:
+                    entry.proof_document = old.proof_document.name
+                old.delete()
+            entry.replaces_entry = None
         entry.status = 'approved'
         entry.approved_by = request.user
         # Fix #50: django.utils.timezone.now() returns a timezone-aware datetime.
@@ -934,6 +995,37 @@ def approve_entry_view(request, pk):
         else:
             _log_entry(request, 'entry_rejected', entry, _entry_summary(entry), reason=entry.rejected_reason)
         return Response({'status': 'rejected'})
+    return Response({'error': 'action must be approve or reject'}, status=400)
+
+
+def _review_delete_request(request, company, entry, action):
+    """An approver accepts (the entry is deleted) or refuses (it stays) a
+    data-entry member's request to delete an approved entry. An inventory
+    answer's rows go together, as when an answer's change is reviewed."""
+    from questionnaire.step_entries import entry_group, _step_entries
+    group = entry_group(entry.description)
+    rows = ([e for e in _step_entries(company, entry.year, group) if e.delete_requested]
+            if group else [entry])
+    if action == 'approve':
+        for e in rows:
+            _log_entry(request, 'entry_deleted', e, _entry_summary(e), status_before='approved')
+        author = entry.user
+        for e in rows:
+            e.delete()
+        if author is not None and author.pk != request.user.pk:
+            from .notifications import _notify, _prefs
+            wants, lang = _prefs(author)
+            if wants:
+                _notify(author, 'entry_approved',
+                        'Silme talebiniz onaylandı' if lang == 'tr' else 'Your deletion request was approved',
+                        'Kayıt silindi.' if lang == 'tr' else 'The entry was deleted.',
+                        f'/dashboard?tab=emissions&year={entry.year}', company_id=company.pk)
+        return Response({'status': 'deleted'})
+    if action == 'reject':
+        EmissionEntry.objects.filter(pk__in=[e.pk for e in rows]).update(delete_requested=False)
+        _log_entry(request, 'entry_delete_refused', entry, _entry_summary(entry),
+                   reason=request.data.get('reason', ''))
+        return Response({'status': 'kept'})
     return Response({'error': 'action must be approve or reject'}, status=400)
 
 
@@ -970,9 +1062,10 @@ def pending_entries_view(request):
     company = get_current_company(request.user)
     if not company:
         return Response([])
+    from django.db.models import Q
     entries = EmissionEntry.objects.filter(
-        company=company, status='submitted'
-    ).select_related('emission_factor', 'facility', 'user').order_by('-created_at')
+        Q(status='submitted') | Q(status='approved', delete_requested=True), company=company,
+    ).select_related('emission_factor', 'facility', 'user', 'replaces_entry').order_by('-created_at')
 
     from .serializers import EmissionEntrySerializer
     return Response(EmissionEntrySerializer(entries, many=True).data)

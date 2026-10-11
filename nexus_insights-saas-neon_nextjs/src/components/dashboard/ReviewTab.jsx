@@ -92,7 +92,9 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
       const res = type === 'advisor'
         ? await api.approveAdvisorApproval(id, 'approve')
         : await api.approveEntry(id, 'approve');
-      if (res.ok) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
+      const body = res.ok ? await res.clone().json().catch(() => ({})) : {};
+      if (res.ok && body.status === 'deleted') toast.success(tr ? 'Kayıt silindi ✓' : 'Entry deleted ✓');
+      else if (res.ok) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
       else toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Onay başarısız' : 'Approval failed'));
       await fetchPending();
       if (fetchData) fetchData();
@@ -106,7 +108,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   // "Tümünü onayla" for new entries (twelve months of bills): one confirm
   // instead of one click each. Changes to an approved value and inventory
   // answers stay one by one — those are reviewed against what they replace.
-  const bulkEntries = pending.filter(e => !e.replaces && !(e.description || '').startsWith('Questionnaire step'));
+  const bulkEntries = pending.filter(e => !e.replaces && !e.delete_requested && !(e.description || '').startsWith('Questionnaire step'));
   const bulkKg = bulkEntries.reduce((sum, e) => sum + Number(e.calculated_co2e_kg || 0), 0);
   const [confirmBulk, setConfirmBulk] = useState(false);
   const handleApproveAllEntries = useCallback(async () => {
@@ -141,7 +143,9 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
       const res = type === 'advisor'
         ? await api.approveAdvisorApproval(id, 'reject', reason)
         : await api.approveEntry(id, 'reject', reason);
-      if (res.ok) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
+      const body = res.ok ? await res.clone().json().catch(() => ({})) : {};
+      if (res.ok && body.status === 'kept') toast.info(tr ? 'Silme talebi reddedildi — kayıt kalıyor' : 'Deletion refused — the entry stays');
+      else if (res.ok) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
       else toast.error(res.status === 403 ? noPermissionMessage(tr) : (tr ? 'Red işlemi başarısız' : 'Rejection failed'));
       await fetchPending();
       if (fetchData) fetchData();
@@ -359,8 +363,19 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-1.5">
                       <h3 className="truncate text-sm font-bold text-[#072C0E]">
+                        {entry.delete_requested && (
+                          <span className="mr-1.5 rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-bold text-amber-800">
+                            {tr ? 'Silme talebi' : 'Deletion request'}
+                          </span>
+                        )}
                         {tr && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}
                       </h3>
+                      {entry.delete_requested && (
+                        <p className="text-[11px] text-[#072C0E]/55">
+                          {tr ? 'Onaylarsanız kayıt silinir; reddederseniz kalır. Onaylanana kadar toplamlarda kalır.'
+                              : 'Approving deletes the entry; rejecting keeps it. Until approved it stays in the totals.'}
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
                           entry.scope === 'scope1' ? 'bg-[#072C0E]/10 text-[#072C0E]' :
@@ -441,7 +456,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                         className="inline-flex items-center gap-1 rounded-full bg-[#2ABD41]/12 px-3 py-2 text-[11px] font-bold text-[#175022] transition hover:bg-[#2ABD41]/22 disabled:opacity-50"
                       >
                         <Check className="h-3 w-3" />
-                        {tr ? 'Onayla' : 'Approve'}
+                        {entry.delete_requested ? (tr ? 'Silmeyi onayla' : 'Approve deletion') : (tr ? 'Onayla' : 'Approve')}
                       </button>
                       <button
                         onClick={() => setRejectTarget({ id: entry.id, type: 'entry' })}

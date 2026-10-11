@@ -721,11 +721,52 @@ class EntryChangeRulesTests(TestCase):
         EmissionEntry.objects.filter(id=eid).update(status='approved')
         res = self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': 3}, format='json')
         self.assertEqual(res.status_code, 200, res.content)
-        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'submitted')
+        self.assertTrue(res.json()['pending_change'])
+        # The approved value stays (and counts); the change waits next to it.
+        old = EmissionEntry.objects.get(id=eid)
+        self.assertEqual((old.status, old.quantity), ('approved', 300))
+        change = EmissionEntry.objects.get(replaces_entry=old)
+        self.assertEqual((change.status, change.quantity), ('submitted', 3))
+        self.assertEqual(res.json()['replaces']['quantity'], 300.0)
+        # A second edit replaces the waiting change, not adds another.
+        self.client.patch(f'/api/emissions/entries/{eid}/', {'quantity': 4}, format='json')
+        self.assertEqual(EmissionEntry.objects.filter(replaces_entry=old).count(), 1)
+        # Approving the change puts it in the approved entry's place.
+        change = EmissionEntry.objects.get(replaces_entry=old)
+        self._as('sahip')
+        self.client.post(f'/api/emissions/entries/{change.id}/approve/', {'action': 'approve'}, format='json')
+        self.assertFalse(EmissionEntry.objects.filter(id=eid).exists())
+        change.refresh_from_db()
+        self.assertEqual((change.status, change.quantity, change.replaces_entry_id), ('approved', 4, None))
         # A description-only edit keeps the approval.
+        self._as('veri')
+        self.client.patch(f'/api/emissions/entries/{change.id}/', {'description': 'fatura no 12'}, format='json')
+        self.assertEqual(EmissionEntry.objects.get(id=change.id).status, 'approved')
+
+    def test_deleting_an_approved_entry_is_a_request(self):
+        self._as('veri')
+        eid = self._entry()
         EmissionEntry.objects.filter(id=eid).update(status='approved')
-        self.client.patch(f'/api/emissions/entries/{eid}/', {'description': 'fatura no 12'}, format='json')
-        self.assertEqual(EmissionEntry.objects.get(id=eid).status, 'approved')
+        self.assertEqual(self.client.delete(f'/api/emissions/entries/{eid}/').status_code, 202)
+        self.assertTrue(EmissionEntry.objects.get(id=eid).delete_requested)
+        self._as('sahip')
+        pending = self.client.get('/api/emissions/pending/').json()
+        self.assertEqual([(p['id'], p['delete_requested']) for p in pending], [(eid, True)])
+        # Refused: it stays.
+        self.client.post(f'/api/emissions/entries/{eid}/approve/', {'action': 'reject'}, format='json')
+        e = EmissionEntry.objects.get(id=eid)
+        self.assertEqual((e.status, e.delete_requested), ('approved', False))
+        # Asked again and accepted: deleted.
+        self._as('veri')
+        self.client.delete(f'/api/emissions/entries/{eid}/')
+        self._as('sahip')
+        self.assertEqual(self.client.post(f'/api/emissions/entries/{eid}/approve/', {'action': 'approve'},
+                                          format='json').json()['status'], 'deleted')
+        self.assertFalse(EmissionEntry.objects.filter(id=eid).exists())
+        # A waiting entry of their own is still deleted at once.
+        self._as('veri')
+        wid = self._entry()
+        self.assertEqual(self.client.delete(f'/api/emissions/entries/{wid}/').status_code, 204)
 
     def test_owner_change_stays_approved_and_is_in_history(self):
         self._as('sahip')

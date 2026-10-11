@@ -97,11 +97,22 @@ const FULL_MONTHS = {
   en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
 };
 
+// The status pill: an approved entry with a deletion request (still counted
+// until an approver accepts it) and a waiting change to an approved entry
+// say so.
+const DELETE_REQUESTED_META = { bg: 'bg-amber-100', text: 'text-amber-800', tr: 'Silme talebi', en: 'Deletion requested' };
+const PENDING_CHANGE_META = { bg: 'bg-amber-100', text: 'text-amber-700', tr: 'Değişiklik onayda', en: 'Change pending' };
+function entryStatusMeta(entry) {
+  if (entry.delete_requested) return DELETE_REQUESTED_META;
+  if (entry.status === 'submitted' && entry.replaces_entry) return PENDING_CHANGE_META;
+  return STATUS_META[entry.status] ?? STATUS_META.submitted;
+}
+
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, canEdit = true }) {
   const tr = language === 'tr';
   const toast = useToast();
   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
-  const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
+  const st = entryStatusMeta(entry);
   const kg = parseFloat(entry.calculated_co2e_kg) || 0;
   const barPct = maxKg > 0 ? (countedKg(entry) / maxKg) * 100 : 0;
   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
@@ -515,7 +526,13 @@ export default function EmissionsTab({
     setDeleteConfirm(null);
     try {
       const res = await api.deleteEntry(id);
-      if (res.ok || res.status === 204) {
+      if (res.status === 202) {
+        // A data-entry member's approved entry: deleting it is a request.
+        fetchData();
+        toast.info(tr
+          ? 'Silme talebi onaya gönderildi. Onaylanana kadar kayıt toplamlarda kalır.'
+          : 'Deletion request sent for approval. Until approved the entry stays in the totals.');
+      } else if (res.ok || res.status === 204) {
         fetchData();
         toast.success(tr ? 'Kayıt silindi' : 'Entry deleted');
       } else {
@@ -557,9 +574,14 @@ export default function EmissionsTab({
         const saved = await res.json().catch(() => ({}));
         const backToReview = editing.status === 'approved' && saved.status === 'submitted';
         setEditing(null); fetchData();
-        if (backToReview) {
+        if (saved.pending_change) {
+          // A data-entry member's change to an approved entry waits next to it.
+          toast.info(tr
+            ? 'Değişiklik onaya gönderildi. Onaylanana kadar mevcut değer toplamlarda kalır.'
+            : 'Change sent for approval. Until approved the current value stays in the totals.');
+        } else if (backToReview) {
           // Changing the amount of an approved entry is a new figure: it
-          // waits for approval again (data-entry members).
+          // waits for approval again.
           toast.info(tr ? 'Kayıt güncellendi ve yeniden onaya gönderildi.' : 'Entry updated and sent for approval again.');
         } else {
           toast.success(tr ? 'Kayıt güncellendi' : 'Entry updated');
@@ -1000,7 +1022,7 @@ export default function EmissionsTab({
               <tbody className="divide-y divide-[#072C0E]/5">
                 {filtered.map(entry => {
                   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
-                  const st = STATUS_META[entry.status] ?? STATUS_META.submitted;
+                  const st = entryStatusMeta(entry);
                   const kg = parseFloat(entry.calculated_co2e_kg) || 0;
                   const barPct = maxKg > 0 ? (countedKg(entry) / maxKg) * 100 : 0;
                   // The share of the (filtered) total — the bar is scaled to
