@@ -13,6 +13,11 @@
 //
 // Usage:
 //   node scripts/extract-carboniq-schema.mjs > ../carbonless_backend/questionnaire/data/carboniq_schema.json
+//   node scripts/extract-carboniq-schema.mjs --labels > ../carbonless_backend/questionnaire/data/carboniq_labels.json
+//
+// --labels writes the words instead: question text and option / field labels
+// in Turkish and English, so exports can show "Soru 43 — Hangi yakıt türlerini
+// kullanıyor?" and "Doğalgaz" instead of "3A-4" and "natural_gas".
 //
 // Regenerate whenever questions.js changes in a way that affects validation
 // (new question, changed type/options/units/bounds/loopSource).
@@ -88,9 +93,29 @@ try {
     };
   }
 
+  const words = (t) => (t && typeof t === 'object' ? { tr: t.tr ?? t.en ?? '', en: t.en ?? t.tr ?? '' } : null);
+  const optionWords = (opts) => (Array.isArray(opts)
+    ? Object.fromEntries(opts.filter(o => o && o.value !== undefined).map(o => [String(o.value), words(o.label)]))
+    : null);
+
+  function extractLabels(q) {
+    return {
+      number: q.number ?? null,
+      type: q.type,
+      text: words(q.text),
+      // The question whose answer this one is asked once per item of.
+      loopSource: typeof q.loopSource === 'string' ? q.loopSource : null,
+      options: optionWords(q.options),
+      fields: Array.isArray(q.fields)
+        ? Object.fromEntries(q.fields.map(f => [f.id, { label: words(f.label), options: optionWords(f.options) }]))
+        : null,
+    };
+  }
+
+  const labelsMode = process.argv.includes('--labels');
   const schema = {};
   for (const q of CARBONIQ_QUESTIONS) {
-    schema[q.id] = extractQuestion(q);
+    schema[q.id] = labelsMode ? extractLabels(q) : extractQuestion(q);
   }
 
   process.stdout.write(JSON.stringify(schema, null, 2) + '\n');

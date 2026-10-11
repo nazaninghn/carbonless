@@ -1854,3 +1854,20 @@ class InventoryHistoryTests(TestCase):
         self.assertEqual(self.c_owner.patch(f'/api/questionnaire/{self.report.id}/title/', {'title': ' '},
                                             format='json').status_code, 400)
 
+
+
+class AnswerTextTests(TestCase):
+    """Exports show answers in words, as the user saw them."""
+
+    def test_codes_become_words(self):
+        from .answer_text import answer_text, is_navigation, question_title
+        answers = {'2A-2': {'answer': {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}}}}
+        self.assertEqual(question_title('3A-4'), 'Soru 43 — Hangi yakıt türlerini kullanıyor?')
+        self.assertEqual(answer_text('3A-4', {'answer': {'EQ-3A-01': ['natural_gas']}}, answers),
+                         'Sıcak su kazanı: Doğalgaz')
+        self.assertEqual(answer_text('3B-4', {'answer': {'EQ-3B-01#2': 'euro_6d'}}, answers, 'en'),
+                         'Passenger car (group 2): Euro 6d')
+        self.assertEqual(answer_text('4A-1', {'answer': {'1': '1000 kWh'}}, answers), 'Gebze Fabrika: 1000 kWh')
+        self.assertEqual(answer_text('2B-OC1', {'answer': 'yes'}, answers)[:5], 'Evet ')
+        self.assertTrue(is_navigation('4C-edit'))
+        self.assertTrue(is_navigation('3-GİRİŞ'))

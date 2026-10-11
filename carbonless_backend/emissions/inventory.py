@@ -65,3 +65,44 @@ def not_counted_note(info, tr=False):
     return (f'Bilgi: {joined} bu rapordaki toplamlara dahil değildir; yalnızca onaylanmış kayıtlar sayılır.'
             if tr else
             f'For information: {joined} are not included in the totals of this report; only approved entries are counted.')
+
+
+def previous_year_change(company, year, current_kg, today=None):
+    """How *year* compares with the year before, for the dashboard:
+    {'previous_year', 'previous_kg', 'current_kg', 'change_pct', 'months'}.
+
+    A finished year is compared whole (questionnaire and custom-request
+    amounts included, as in its total). The running year is compared month
+    for month with the same months of last year — only when neither year holds
+    annual questionnaire amounts, which can't be cut to months. None when
+    there is nothing fair to compare."""
+    from datetime import date
+    from .models import CustomEmissionRequest, EmissionEntry
+    today = today or date.today()
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        return None
+    if not company or year > today.year:
+        return None
+    prev_qs = EmissionEntry.objects.filter(company=company, year=year - 1, status='approved')
+    if year < today.year:
+        prev_kg = float(prev_qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        prev_kg += float(CustomEmissionRequest.objects.filter(
+            company=company, year=year - 1, status='approved', calculated_co2e_kg__isnull=False,
+        ).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        cur_kg, months = float(current_kg or 0), 12
+    else:
+        cur_qs = EmissionEntry.objects.filter(company=company, year=year, status='approved')
+        if (cur_qs.filter(description__startswith=ANNUAL_PREFIX).exists()
+                or prev_qs.filter(description__startswith=ANNUAL_PREFIX).exists()):
+            return None
+        months = today.month
+        cur_kg = float(cur_qs.filter(month__lte=months).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        prev_kg = float(prev_qs.filter(month__lte=months).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+    if prev_kg <= 0 or cur_kg <= 0:
+        return None
+    return {
+        'previous_year': year - 1, 'previous_kg': prev_kg, 'current_kg': cur_kg,
+        'change_pct': round((cur_kg - prev_kg) / prev_kg * 100, 1), 'months': months,
+    }

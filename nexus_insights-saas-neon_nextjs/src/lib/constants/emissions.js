@@ -33,7 +33,7 @@ export const CATEGORY_LABELS = {
   waste:                       { tr: 'Atık',                   en: 'Waste'                   },
   business_travel:             { tr: 'İş Seyahati',            en: 'Business Travel'         },
   employee_commuting:          { tr: 'Çalışan Ulaşımı',        en: 'Employee Commuting'      },
-  upstream_leased:             { tr: 'Kiral. Var. (Yukarı)',    en: 'Upstream Leased'         },
+  upstream_leased:             { tr: 'Kiralanan Varlıklar (Yukarı Akış)', en: 'Upstream Leased Assets' },
   downstream_transport:        { tr: 'Aşağı Akış Taşıma',      en: 'Downstream Transport'    },
   processing_of_sold_products: { tr: 'Satılan Ürün İşleme',    en: 'Processing Sold Products'},
   use_of_sold_products:        { tr: 'Satılan Ürün Kullanımı', en: 'Use of Sold Products'    },
@@ -42,7 +42,7 @@ export const CATEGORY_LABELS = {
   processing_sold:             { tr: 'Satılan Ürün İşleme',    en: 'Processing Sold Products'},
   use_of_sold:                 { tr: 'Satılan Ürün Kullanımı', en: 'Use of Sold Products'    },
   end_of_life:                 { tr: 'Ömür Sonu',              en: 'End of Life'             },
-  downstream_leased:           { tr: 'Kiral. Var. (Aşağı)',    en: 'Downstream Leased'       },
+  downstream_leased:           { tr: 'Kiralanan Varlıklar (Aşağı Akış)', en: 'Downstream Leased Assets' },
   franchises:                  { tr: 'Franchise',              en: 'Franchises'              },
   investments:                 { tr: 'Yatırımlar',             en: 'Investments'             },
   water:                       { tr: 'Su',                     en: 'Water'                   },
@@ -54,11 +54,20 @@ export const CATEGORY_LABELS = {
   refrigerants:                { tr: 'Soğutucu Gaz',           en: 'Refrigerants'            },
 };
 
+// GHG Protocol Scope 3 category numbers (1–15), for ordering and "Kat. 6 —"
+// labels. Water has no category of its own and is listed after them.
+export const SCOPE3_CATEGORY_NUMBER = {
+  purchased_goods: 1, capital_goods: 2, fuel_energy: 3, upstream_transport: 4, waste: 5,
+  business_travel: 6, employee_commuting: 7, upstream_leased: 8, downstream_transport: 9,
+  processing_sold: 10, processing_of_sold_products: 10, use_of_sold: 11, use_of_sold_products: 11,
+  end_of_life: 12, downstream_leased: 13, franchises: 14, investments: 15,
+};
+
 export const catLabel = (key, tr) => CATEGORY_LABELS[key]?.[tr ? 'tr' : 'en'] ?? key;
 export const scopeLabel = (s) => SCOPE_META[s]?.label ?? s;
 // Display names for EmissionFactor.unit codes (stored lower-case: kwh, m3…).
 const UNIT_LABELS = {
-  kwh: 'kWh', mwh: 'MWh', gj: 'GJ', m3: 'm³', m2: 'm²', kg: 'kg', km: 'km', usd: 'USD',
+  kwh: 'kWh', kWh: 'kWh', mwh: 'MWh', gj: 'GJ', m3: 'm³', m2: 'm²', kg: 'kg', km: 'km', usd: 'USD',
   liters: { tr: 'litre', en: 'litres' }, tonne: { tr: 'ton', en: 'tonnes' },
   tonnes: { tr: 'ton', en: 'tonnes' }, franchises: { tr: 'franchise', en: 'franchises' },
   'tonne-km': { tr: 'ton-km', en: 'tonne-km' }, pkm: { tr: 'yolcu-km', en: 'passenger-km' },
@@ -66,6 +75,7 @@ const UNIT_LABELS = {
   nights: { tr: 'gece', en: 'nights' }, units: { tr: 'adet', en: 'units' },
   packages: { tr: 'paket', en: 'packages' }, days: { tr: 'gün', en: 'days' },
   employees: { tr: 'çalışan', en: 'employees' },
+  multiplier: { tr: 'çarpan', en: 'multiplier' },
   // Entries calculated from a supplier factor, declaration or PCAF share.
   kgco2e: 'kg CO₂e',
 };

@@ -3,6 +3,14 @@ from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissi
 
 
 class EmissionFactorSerializer(serializers.ModelSerializer):
+    # A yearly or one-off source (capital goods, franchises …): the entry
+    # form says to enter it once a year.
+    is_yearly = serializers.SerializerMethodField()
+
+    def get_is_yearly(self, obj):
+        from .duplicates import is_yearly_factor
+        return is_yearly_factor(obj)
+
     class Meta:
         model = EmissionFactor
         fields = '__all__'

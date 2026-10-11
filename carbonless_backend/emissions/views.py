@@ -113,6 +113,10 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             overlap = find_annual_overlap(company, v.get('emission_factor'), v.get('year'), v.get('facility'))
             if overlap:
                 raise AnnualOverlap(overlap)
+            from .duplicates import find_yearly_repeat, YearlyRepeat
+            repeat = find_yearly_repeat(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('facility'))
+            if repeat:
+                raise YearlyRepeat(repeat)
         # Same rule as chat/questionnaire saves (create_entry_from_activity):
         # owners, admins and managers are approvers, so their own entries don't
         # wait in the review queue; data-entry members' entries do.
@@ -291,7 +295,7 @@ def emission_summary(request):
 
     # Questionnaire entries hold annual amounts: they are not put in a month
     # (see inventory.monthly_split) but returned as `annual_kg`.
-    from .inventory import monthly_split
+    from .inventory import monthly_split, previous_year_change
     monthly_kg, annual_kg = monthly_split(entries)
     monthly = [{'month': m, 'total_kg': kg} for m, kg in enumerate(monthly_kg, start=1)]
 
@@ -392,6 +396,9 @@ def emission_summary(request):
         'year': int(year),
         'total_kg': float(total),
         'total_tonne': float(total) / 1000,
+        # The year before, for "2024'e göre −%X" on the dashboard (see
+        # inventory.previous_year_change).
+        'previous_year_change': previous_year_change(company, year, total),
         # Pending / rejected entries of the year: not in any total above,
         # shown to the client separately as information.
         'not_counted': (not_counted(EmissionEntry.objects.filter(company=company, year=year))

@@ -2072,6 +2072,12 @@ def confirm_entry(request):
                                       entry_data.get('year') or now.year, _chat_facility(request.user, entry_data))
         if overlap:
             return Response({'error': overlap['en'], 'code': 'annual_overlap', **overlap}, status=409)
+        from emissions.duplicates import find_yearly_repeat
+        repeat = find_yearly_repeat(get_current_company(request.user), factor,
+                                    entry_data.get('year') or now.year, entry_data.get('month') or now.month,
+                                    _chat_facility(request.user, entry_data))
+        if repeat:
+            return Response({'error': repeat['en'], 'code': 'yearly_repeat', **repeat}, status=409)
 
     entry, err = _create_emission_from_chat(request.user, entry_data)
     if err:

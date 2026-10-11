@@ -1,0 +1,6121 @@
+{
+  "A1": {
+    "number": 1,
+    "type": "text",
+    "text": {
+      "tr": "Şirketinizin tam ticari unvanı nedir?",
+      "en": "What is the full legal name of your company?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "A2": {
+    "number": 2,
+    "type": "text",
+    "text": {
+      "tr": "Vergi kimlik numaranız nedir?",
+      "en": "What is your tax identification number?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "A3": {
+    "number": 3,
+    "type": "country_city",
+    "text": {
+      "tr": "Şirketinizin kayıtlı olduğu ülke ve şehir nedir?",
+      "en": "In which country and city is your company registered?"
+    },
+    "loopSource": null,
+    "options": {
+      "TR": {
+        "tr": "Türkiye",
+        "en": "Turkey"
+      },
+      "GB": {
+        "tr": "İngiltere",
+        "en": "United Kingdom"
+      },
+      "DE": {
+        "tr": "Almanya",
+        "en": "Germany"
+      },
+      "US": {
+        "tr": "ABD",
+        "en": "United States"
+      },
+      "OTHER": {
+        "tr": "Diğer",
+        "en": "Other"
+      }
+    },
+    "fields": null
+  },
+  "A4": {
+    "number": 4,
+    "type": "year_select",
+    "text": {
+      "tr": "Hangi yıla ait rapor hazırlıyoruz?",
+      "en": "Which reporting year are we preparing this report for?"
+    },
+    "loopSource": null,
+    "options": {
+      "2020": {
+        "tr": "2020",
+        "en": "2020"
+      },
+      "2021": {
+        "tr": "2021",
+        "en": "2021"
+      },
+      "2022": {
+        "tr": "2022",
+        "en": "2022"
+      },
+      "2023": {
+        "tr": "2023",
+        "en": "2023"
+      },
+      "2024": {
+        "tr": "2024",
+        "en": "2024"
+      },
+      "2025": {
+        "tr": "2025",
+        "en": "2025"
+      },
+      "2026": {
+        "tr": "2026 (cari yıl — veri eksik olabilir)",
+        "en": "2026 (current year — data may be incomplete)"
+      }
+    },
+    "fields": null
+  },
+  "A5": {
+    "number": 5,
+    "type": "text",
+    "text": {
+      "tr": "Raporu hazırlayan kişi veya birimin adı nedir?",
+      "en": "Who is preparing this report? (name and/or department)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "A6": {
+    "number": 6,
+    "type": "multi_select",
+    "text": {
+      "tr": "Bu raporun kullanım amacı nedir?",
+      "en": "What is the intended use of this report?"
+    },
+    "loopSource": null,
+    "options": {
+      "internal_strategy": {
+        "tr": "İç yönetim ve strateji",
+        "en": "Internal management and strategy"
+      },
+      "legal_obligation": {
+        "tr": "Yasal zorunluluk (mevzuat uyumu)",
+        "en": "Legal obligation / regulatory compliance"
+      },
+      "voluntary_disclosure": {
+        "tr": "Gönüllü açıklama (CDP, GRI, TCFD vb.)",
+        "en": "Voluntary disclosure (CDP, GRI, TCFD etc.)"
+      },
+      "customer_request": {
+        "tr": "Müşteri / tedarik zinciri talebi",
+        "en": "Customer / supply chain request"
+      },
+      "skip": {
+        "tr": "Atlamak istiyorum",
+        "en": "I want to skip"
+      }
+    },
+    "fields": null
+  },
+  "A7": {
+    "number": 7,
+    "type": "single_select",
+    "text": {
+      "tr": "Daha önce karbon raporu hazırladınız mı?",
+      "en": "Have you prepared a carbon report before?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — daha önce hazırladık",
+        "en": "Yes — we prepared one before"
+      },
+      "no": {
+        "tr": "Hayır — ilk raporumuz",
+        "en": "No — this is our first report"
+      },
+      "skip": {
+        "tr": "Atlamak istiyorum",
+        "en": "I want to skip"
+      }
+    },
+    "fields": null
+  },
+  "A7a": {
+    "number": "7a",
+    "type": "year_select",
+    "text": {
+      "tr": "Baz yılınız hangi yıl?",
+      "en": "What is your baseline year?"
+    },
+    "loopSource": null,
+    "options": {
+      "2015": {
+        "tr": "2015",
+        "en": "2015"
+      },
+      "2016": {
+        "tr": "2016",
+        "en": "2016"
+      },
+      "2017": {
+        "tr": "2017",
+        "en": "2017"
+      },
+      "2018": {
+        "tr": "2018",
+        "en": "2018"
+      },
+      "2019": {
+        "tr": "2019",
+        "en": "2019"
+      },
+      "2020": {
+        "tr": "2020",
+        "en": "2020"
+      },
+      "2021": {
+        "tr": "2021",
+        "en": "2021"
+      },
+      "2022": {
+        "tr": "2022",
+        "en": "2022"
+      },
+      "2023": {
+        "tr": "2023",
+        "en": "2023"
+      },
+      "2024": {
+        "tr": "2024",
+        "en": "2024"
+      },
+      "2025": {
+        "tr": "2025",
+        "en": "2025"
+      }
+    },
+    "fields": null
+  },
+  "A7b": {
+    "number": 8,
+    "type": "compound",
+    "text": {
+      "tr": "Raporda yer alacak kuruluş bilgilerini tamamlayın.",
+      "en": "Complete the organisation details that appear in your report."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "registered_address": {
+        "label": {
+          "tr": "Kayıtlı adres",
+          "en": "Registered address"
+        },
+        "options": null
+      },
+      "tax_office": {
+        "label": {
+          "tr": "Vergi dairesi",
+          "en": "Tax office"
+        },
+        "options": null
+      },
+      "trade_registry_number": {
+        "label": {
+          "tr": "Ticaret sicil numarası",
+          "en": "Trade registry number"
+        },
+        "options": null
+      },
+      "telephone": {
+        "label": {
+          "tr": "Telefon",
+          "en": "Telephone"
+        },
+        "options": null
+      },
+      "website": {
+        "label": {
+          "tr": "İnternet sitesi",
+          "en": "Website"
+        },
+        "options": null
+      },
+      "inventory_declaration_scope": {
+        "label": {
+          "tr": "Envanter beyanına dahil edilecek kapsam",
+          "en": "Scope to be included in the inventory declaration"
+        },
+        "options": null
+      },
+      "environmental_regulations": {
+        "label": {
+          "tr": "Uyulması gereken çevre mevzuatı",
+          "en": "Environmental regulations to comply with"
+        },
+        "options": null
+      },
+      "certificates": {
+        "label": {
+          "tr": "Sahip olunan sertifikalar",
+          "en": "Certificates held"
+        },
+        "options": null
+      }
+    }
+  },
+  "B1": {
+    "number": 9,
+    "type": "single_select",
+    "text": {
+      "tr": "Şirketinizin ana sektörü nedir?",
+      "en": "What is the primary sector of your company?"
+    },
+    "loopSource": null,
+    "options": {
+      "NACE_A": {
+        "tr": "NACE A — Tarım, ormancılık, balıkçılık",
+        "en": "NACE A — Agriculture, forestry and fishing"
+      },
+      "NACE_B": {
+        "tr": "NACE B — Madencilik ve taş ocakçılığı",
+        "en": "NACE B — Mining and quarrying"
+      },
+      "NACE_C": {
+        "tr": "NACE C — İmalat / Üretim",
+        "en": "NACE C — Manufacturing"
+      },
+      "NACE_D": {
+        "tr": "NACE D — Elektrik, gaz, buhar üretimi ve dağıtımı",
+        "en": "NACE D — Electricity, gas, steam and air conditioning supply"
+      },
+      "NACE_E": {
+        "tr": "NACE E — Su temini, kanalizasyon, atık yönetimi",
+        "en": "NACE E — Water supply, sewerage, waste management"
+      },
+      "NACE_F": {
+        "tr": "NACE F — İnşaat",
+        "en": "NACE F — Construction"
+      },
+      "NACE_G": {
+        "tr": "NACE G — Toptan ve perakende ticaret",
+        "en": "NACE G — Wholesale and retail trade"
+      },
+      "NACE_H": {
+        "tr": "NACE H — Ulaştırma ve depolama",
+        "en": "NACE H — Transportation and storage"
+      },
+      "NACE_I": {
+        "tr": "NACE I — Konaklama ve yiyecek-içecek",
+        "en": "NACE I — Accommodation and food service"
+      },
+      "NACE_J": {
+        "tr": "NACE J — Bilgi ve iletişim / Yazılım / BT",
+        "en": "NACE J — Information and communication / Software / IT"
+      },
+      "NACE_K": {
+        "tr": "NACE K — Finans ve sigortacılık",
+        "en": "NACE K — Financial and insurance activities"
+      },
+      "NACE_L": {
+        "tr": "NACE L — Gayrimenkul faaliyetleri",
+        "en": "NACE L — Real estate activities"
+      },
+      "NACE_M": {
+        "tr": "NACE M — Mesleki, bilimsel ve teknik faaliyetler",
+        "en": "NACE M — Professional, scientific and technical activities"
+      },
+      "NACE_N": {
+        "tr": "NACE N — İdari ve destek hizmetleri",
+        "en": "NACE N — Administrative and support services"
+      },
+      "NACE_O": {
+        "tr": "NACE O — Kamu yönetimi ve savunma",
+        "en": "NACE O — Public administration and defence"
+      },
+      "NACE_P": {
+        "tr": "NACE P — Eğitim",
+        "en": "NACE P — Education"
+      },
+      "NACE_Q": {
+        "tr": "NACE Q — Sağlık ve sosyal hizmetler",
+        "en": "NACE Q — Human health and social work"
+      },
+      "NACE_R": {
+        "tr": "NACE R — Kültür, sanat, eğlence",
+        "en": "NACE R — Arts, entertainment and recreation"
+      },
+      "NACE_SU": {
+        "tr": "NACE S–U — Diğer hizmet faaliyetleri",
+        "en": "NACE S–U — Other service activities"
+      }
+    },
+    "fields": null
+  },
+  "B2": {
+    "number": 10,
+    "type": "text",
+    "text": {
+      "tr": "Şirketinizin faaliyetini kısaca tanımlayın.",
+      "en": "Briefly describe your company's main business activity."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "B3": {
+    "number": 11,
+    "type": "single_select",
+    "text": {
+      "tr": "Toplam çalışan sayınız nedir?",
+      "en": "What is your total number of employees?"
+    },
+    "loopSource": null,
+    "options": {
+      "1_50": {
+        "tr": "1–50 çalışan",
+        "en": "1–50 employees"
+      },
+      "51_250": {
+        "tr": "51–250 çalışan",
+        "en": "51–250 employees"
+      },
+      "251_1000": {
+        "tr": "251–1.000 çalışan",
+        "en": "251–1,000 employees"
+      },
+      "1001_5000": {
+        "tr": "1.001–5.000 çalışan",
+        "en": "1,001–5,000 employees"
+      },
+      "5000_plus": {
+        "tr": "5.000+ çalışan",
+        "en": "5,000+ employees"
+      }
+    },
+    "fields": null
+  },
+  "B4": {
+    "number": 12,
+    "type": "text",
+    "text": {
+      "tr": "Kaç farklı fiziksel lokasyonda faaliyet gösteriyorsunuz?",
+      "en": "How many physical locations does your company operate from?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "B5": {
+    "number": 13,
+    "type": "multi_select",
+    "text": {
+      "tr": "Bu lokasyonların türleri neler?",
+      "en": "What types of locations does your company operate?"
+    },
+    "loopSource": null,
+    "options": {
+      "office": {
+        "tr": "Ofis",
+        "en": "Office"
+      },
+      "factory": {
+        "tr": "Fabrika / Üretim tesisi",
+        "en": "Factory / Production facility"
+      },
+      "warehouse": {
+        "tr": "Depo / Lojistik merkezi",
+        "en": "Warehouse / Logistics center"
+      },
+      "field": {
+        "tr": "Saha / Açık alan operasyonu",
+        "en": "Field / Outdoor operations"
+      },
+      "datacenter": {
+        "tr": "Veri Merkezi",
+        "en": "Data Center"
+      },
+      "retail": {
+        "tr": "Perakende mağaza / Showroom",
+        "en": "Retail store / Showroom"
+      },
+      "other": {
+        "tr": "Diğer",
+        "en": "Other"
+      }
+    },
+    "fields": null
+  },
+  "B6": {
+    "number": 14,
+    "type": "single_select",
+    "text": {
+      "tr": "Yıllık ciro aralığınız nedir? (Opsiyonel)",
+      "en": "What is your approximate annual revenue range? (Optional)"
+    },
+    "loopSource": null,
+    "options": {
+      "under_1m": {
+        "tr": "1 Milyon TL'nin altı",
+        "en": "Under 1 Million TRY"
+      },
+      "1m_10m": {
+        "tr": "1–10 Milyon TL",
+        "en": "1–10 Million TRY"
+      },
+      "10m_100m": {
+        "tr": "10–100 Milyon TL",
+        "en": "10–100 Million TRY"
+      },
+      "100m_1b": {
+        "tr": "100 Milyon – 1 Milyar TL",
+        "en": "100 Million – 1 Billion TRY"
+      },
+      "over_1b": {
+        "tr": "1 Milyar TL ve üzeri",
+        "en": "1 Billion TRY and above"
+      },
+      "skip": {
+        "tr": "Atlamak istiyorum",
+        "en": "I want to skip"
+      }
+    },
+    "fields": null
+  },
+  "C1": {
+    "number": 15,
+    "type": "single_select",
+    "text": {
+      "tr": "Bağlı şirket veya iştirakınız var mı?",
+      "en": "Does your company have any subsidiaries or affiliates?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "C2": {
+    "number": 16,
+    "type": "single_select",
+    "text": {
+      "tr": "Yurt dışında operasyonunuz var mı?",
+      "en": "Does your company have any international operations?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "C3": {
+    "number": 17,
+    "type": "single_select",
+    "text": {
+      "tr": "Franchise veya ortak girişim (JV) var mı?",
+      "en": "Does your company have any franchise agreements or joint ventures?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "D1": {
+    "number": 18,
+    "type": "single_select",
+    "text": {
+      "tr": "Emisyon faktörü veritabanı tercihiniz nedir?",
+      "en": "Which emission factor database would you like to use?"
+    },
+    "loopSource": null,
+    "options": {
+      "DEFRA_TUIK": {
+        "tr": "DEFRA + TÜİK kombinasyonu (Türkiye için önerilen)",
+        "en": "DEFRA + TUIK combination (recommended for Turkey)"
+      },
+      "DEFRA": {
+        "tr": "DEFRA 2023 (UK — çok ülkede kabul görür)",
+        "en": "DEFRA 2023 (UK — widely accepted internationally)"
+      },
+      "IPCC_AR6": {
+        "tr": "IPCC AR6 2021 (Uluslararası — en güncel GWP değerleri)",
+        "en": "IPCC AR6 2021 (International — latest GWP values)"
+      },
+      "EPA": {
+        "tr": "EPA (ABD Çevre Koruma Ajansı)",
+        "en": "EPA (US Environmental Protection Agency)"
+      },
+      "custom": {
+        "tr": "Kullanıcı tanımlı faktör yükle",
+        "en": "Upload user-defined factor"
+      }
+    },
+    "fields": null
+  },
+  "D2": {
+    "number": 19,
+    "type": "info",
+    "text": {
+      "tr": "Kapsam 2 hesaplama metodolojisi hakkında bilgi",
+      "en": "Information about Scope 2 calculation methodology"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "D3": {
+    "number": 20,
+    "type": "single_select",
+    "text": {
+      "tr": "Organizasyon sınırı raporlama yaklaşımı nedir?",
+      "en": "Which organizational boundary approach will you use?"
+    },
+    "loopSource": null,
+    "options": {
+      "operational_control": {
+        "tr": "Operasyonel Kontrol (Önerilen)",
+        "en": "Operational Control (Recommended)"
+      },
+      "financial_control": {
+        "tr": "Finansal Kontrol",
+        "en": "Financial Control"
+      },
+      "equity_share": {
+        "tr": "Hisse Payı",
+        "en": "Equity Share"
+      }
+    },
+    "fields": null
+  },
+  "D4": {
+    "number": 21,
+    "type": "single_select",
+    "text": {
+      "tr": "Kapsam 3 kapsamını nasıl belirlemek istersiniz?",
+      "en": "How would you like to determine the scope of your Scope 3 reporting?"
+    },
+    "loopSource": null,
+    "options": {
+      "materiality": {
+        "tr": "Materyalite Bazlı (Önerilen)",
+        "en": "Materiality-Based (Recommended)"
+      },
+      "full": {
+        "tr": "Tam 15 Kategori",
+        "en": "Full 15 Categories"
+      }
+    },
+    "fields": null
+  },
+  "2A-0": {
+    "number": 22,
+    "type": "info",
+    "text": {
+      "tr": "Aşama 2: Organizasyon Sınırı",
+      "en": "Stage 2: Organizational Boundary"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "2A-1": {
+    "number": 23,
+    "type": "text",
+    "text": {
+      "tr": "Kaç fiziksel tesisiniz var? (B4'ten otomatik gelir)",
+      "en": "How many physical facilities do you have? (auto-filled from B4)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "2A-2": {
+    "number": 24,
+    "type": "compound",
+    "text": {
+      "tr": "[Tesis N] Tesisin adı ve bulunduğu ülke nedir?",
+      "en": "[Facility N] What is the name and country of this facility?"
+    },
+    "loopSource": "2A-1",
+    "options": null,
+    "fields": {
+      "name": {
+        "label": {
+          "tr": "Tesis adı",
+          "en": "Facility name"
+        },
+        "options": null
+      },
+      "country": {
+        "label": {
+          "tr": "Ülke",
+          "en": "Country"
+        },
+        "options": {
+          "TR": {
+            "tr": "Türkiye",
+            "en": "Turkey"
+          },
+          "DE": {
+            "tr": "Almanya",
+            "en": "Germany"
+          },
+          "US": {
+            "tr": "Amerika Birleşik Devletleri",
+            "en": "United States"
+          },
+          "GB": {
+            "tr": "Birleşik Krallık",
+            "en": "United Kingdom"
+          },
+          "FR": {
+            "tr": "Fransa",
+            "en": "France"
+          },
+          "IT": {
+            "tr": "İtalya",
+            "en": "Italy"
+          },
+          "ES": {
+            "tr": "İspanya",
+            "en": "Spain"
+          },
+          "NL": {
+            "tr": "Hollanda",
+            "en": "Netherlands"
+          },
+          "BE": {
+            "tr": "Belçika",
+            "en": "Belgium"
+          },
+          "AT": {
+            "tr": "Avusturya",
+            "en": "Austria"
+          },
+          "CH": {
+            "tr": "İsviçre",
+            "en": "Switzerland"
+          },
+          "SE": {
+            "tr": "İsveç",
+            "en": "Sweden"
+          },
+          "NO": {
+            "tr": "Norveç",
+            "en": "Norway"
+          },
+          "DK": {
+            "tr": "Danimarka",
+            "en": "Denmark"
+          },
+          "FI": {
+            "tr": "Finlandiya",
+            "en": "Finland"
+          },
+          "PL": {
+            "tr": "Polonya",
+            "en": "Poland"
+          },
+          "CZ": {
+            "tr": "Çekya",
+            "en": "Czech Republic"
+          },
+          "PT": {
+            "tr": "Portekiz",
+            "en": "Portugal"
+          },
+          "GR": {
+            "tr": "Yunanistan",
+            "en": "Greece"
+          },
+          "RO": {
+            "tr": "Romanya",
+            "en": "Romania"
+          },
+          "BG": {
+            "tr": "Bulgaristan",
+            "en": "Bulgaria"
+          },
+          "HU": {
+            "tr": "Macaristan",
+            "en": "Hungary"
+          },
+          "IE": {
+            "tr": "İrlanda",
+            "en": "Ireland"
+          },
+          "HR": {
+            "tr": "Hırvatistan",
+            "en": "Croatia"
+          },
+          "SK": {
+            "tr": "Slovakya",
+            "en": "Slovakia"
+          },
+          "SI": {
+            "tr": "Slovenya",
+            "en": "Slovenia"
+          },
+          "LT": {
+            "tr": "Litvanya",
+            "en": "Lithuania"
+          },
+          "LV": {
+            "tr": "Letonya",
+            "en": "Latvia"
+          },
+          "EE": {
+            "tr": "Estonya",
+            "en": "Estonia"
+          },
+          "RU": {
+            "tr": "Rusya",
+            "en": "Russia"
+          },
+          "UA": {
+            "tr": "Ukrayna",
+            "en": "Ukraine"
+          },
+          "GE": {
+            "tr": "Gürcistan",
+            "en": "Georgia"
+          },
+          "AZ": {
+            "tr": "Azerbaycan",
+            "en": "Azerbaijan"
+          },
+          "KZ": {
+            "tr": "Kazakistan",
+            "en": "Kazakhstan"
+          },
+          "UZ": {
+            "tr": "Özbekistan",
+            "en": "Uzbekistan"
+          },
+          "TM": {
+            "tr": "Türkmenistan",
+            "en": "Turkmenistan"
+          },
+          "CN": {
+            "tr": "Çin",
+            "en": "China"
+          },
+          "JP": {
+            "tr": "Japonya",
+            "en": "Japan"
+          },
+          "KR": {
+            "tr": "Güney Kore",
+            "en": "South Korea"
+          },
+          "IN": {
+            "tr": "Hindistan",
+            "en": "India"
+          },
+          "SA": {
+            "tr": "Suudi Arabistan",
+            "en": "Saudi Arabia"
+          },
+          "AE": {
+            "tr": "Birleşik Arap Emirlikleri",
+            "en": "United Arab Emirates"
+          },
+          "QA": {
+            "tr": "Katar",
+            "en": "Qatar"
+          },
+          "IL": {
+            "tr": "İsrail",
+            "en": "Israel"
+          },
+          "EG": {
+            "tr": "Mısır",
+            "en": "Egypt"
+          },
+          "MA": {
+            "tr": "Fas",
+            "en": "Morocco"
+          },
+          "TN": {
+            "tr": "Tunus",
+            "en": "Tunisia"
+          },
+          "NG": {
+            "tr": "Nijerya",
+            "en": "Nigeria"
+          },
+          "ZA": {
+            "tr": "Güney Afrika",
+            "en": "South Africa"
+          },
+          "KE": {
+            "tr": "Kenya",
+            "en": "Kenya"
+          },
+          "BR": {
+            "tr": "Brezilya",
+            "en": "Brazil"
+          },
+          "MX": {
+            "tr": "Meksika",
+            "en": "Mexico"
+          },
+          "AR": {
+            "tr": "Arjantin",
+            "en": "Argentina"
+          },
+          "CL": {
+            "tr": "Şili",
+            "en": "Chile"
+          },
+          "CO": {
+            "tr": "Kolombiya",
+            "en": "Colombia"
+          },
+          "CA": {
+            "tr": "Kanada",
+            "en": "Canada"
+          },
+          "AU": {
+            "tr": "Avustralya",
+            "en": "Australia"
+          },
+          "NZ": {
+            "tr": "Yeni Zelanda",
+            "en": "New Zealand"
+          },
+          "SG": {
+            "tr": "Singapur",
+            "en": "Singapore"
+          },
+          "MY": {
+            "tr": "Malezya",
+            "en": "Malaysia"
+          },
+          "TH": {
+            "tr": "Tayland",
+            "en": "Thailand"
+          },
+          "ID": {
+            "tr": "Endonezya",
+            "en": "Indonesia"
+          },
+          "VN": {
+            "tr": "Vietnam",
+            "en": "Vietnam"
+          },
+          "PH": {
+            "tr": "Filipinler",
+            "en": "Philippines"
+          },
+          "PK": {
+            "tr": "Pakistan",
+            "en": "Pakistan"
+          },
+          "BD": {
+            "tr": "Bangladeş",
+            "en": "Bangladesh"
+          },
+          "IR": {
+            "tr": "İran",
+            "en": "Iran"
+          },
+          "IQ": {
+            "tr": "Irak",
+            "en": "Iraq"
+          },
+          "JO": {
+            "tr": "Ürdün",
+            "en": "Jordan"
+          },
+          "LB": {
+            "tr": "Lübnan",
+            "en": "Lebanon"
+          },
+          "SY": {
+            "tr": "Suriye",
+            "en": "Syria"
+          }
+        }
+      }
+    }
+  },
+  "2A-3": {
+    "number": 25,
+    "type": "text",
+    "text": {
+      "tr": "[Tesis N] Bu tesis ne tür faaliyet yürütüyor?",
+      "en": "[Facility N] What type of activity does this facility carry out?"
+    },
+    "loopSource": "2A-1",
+    "options": null,
+    "fields": null
+  },
+  "2A-4": {
+    "number": 26,
+    "type": "compound",
+    "text": {
+      "tr": "Bağlı şirket veya iştiraklerin adı ve ülkesi nedir?",
+      "en": "What is the name and country of your subsidiary or affiliate?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "name": {
+        "label": {
+          "tr": "Bağlı şirket adı",
+          "en": "Subsidiary name"
+        },
+        "options": null
+      },
+      "country": {
+        "label": {
+          "tr": "Ülke",
+          "en": "Country"
+        },
+        "options": {
+          "TR": {
+            "tr": "Türkiye",
+            "en": "Turkey"
+          },
+          "DE": {
+            "tr": "Almanya",
+            "en": "Germany"
+          },
+          "US": {
+            "tr": "Amerika Birleşik Devletleri",
+            "en": "United States"
+          },
+          "GB": {
+            "tr": "Birleşik Krallık",
+            "en": "United Kingdom"
+          },
+          "FR": {
+            "tr": "Fransa",
+            "en": "France"
+          },
+          "IT": {
+            "tr": "İtalya",
+            "en": "Italy"
+          },
+          "ES": {
+            "tr": "İspanya",
+            "en": "Spain"
+          },
+          "NL": {
+            "tr": "Hollanda",
+            "en": "Netherlands"
+          },
+          "BE": {
+            "tr": "Belçika",
+            "en": "Belgium"
+          },
+          "AT": {
+            "tr": "Avusturya",
+            "en": "Austria"
+          },
+          "CH": {
+            "tr": "İsviçre",
+            "en": "Switzerland"
+          },
+          "SE": {
+            "tr": "İsveç",
+            "en": "Sweden"
+          },
+          "NO": {
+            "tr": "Norveç",
+            "en": "Norway"
+          },
+          "DK": {
+            "tr": "Danimarka",
+            "en": "Denmark"
+          },
+          "FI": {
+            "tr": "Finlandiya",
+            "en": "Finland"
+          },
+          "PL": {
+            "tr": "Polonya",
+            "en": "Poland"
+          },
+          "CZ": {
+            "tr": "Çekya",
+            "en": "Czech Republic"
+          },
+          "PT": {
+            "tr": "Portekiz",
+            "en": "Portugal"
+          },
+          "GR": {
+            "tr": "Yunanistan",
+            "en": "Greece"
+          },
+          "RO": {
+            "tr": "Romanya",
+            "en": "Romania"
+          },
+          "BG": {
+            "tr": "Bulgaristan",
+            "en": "Bulgaria"
+          },
+          "HU": {
+            "tr": "Macaristan",
+            "en": "Hungary"
+          },
+          "IE": {
+            "tr": "İrlanda",
+            "en": "Ireland"
+          },
+          "HR": {
+            "tr": "Hırvatistan",
+            "en": "Croatia"
+          },
+          "SK": {
+            "tr": "Slovakya",
+            "en": "Slovakia"
+          },
+          "SI": {
+            "tr": "Slovenya",
+            "en": "Slovenia"
+          },
+          "LT": {
+            "tr": "Litvanya",
+            "en": "Lithuania"
+          },
+          "LV": {
+            "tr": "Letonya",
+            "en": "Latvia"
+          },
+          "EE": {
+            "tr": "Estonya",
+            "en": "Estonia"
+          },
+          "RU": {
+            "tr": "Rusya",
+            "en": "Russia"
+          },
+          "UA": {
+            "tr": "Ukrayna",
+            "en": "Ukraine"
+          },
+          "GE": {
+            "tr": "Gürcistan",
+            "en": "Georgia"
+          },
+          "AZ": {
+            "tr": "Azerbaycan",
+            "en": "Azerbaijan"
+          },
+          "KZ": {
+            "tr": "Kazakistan",
+            "en": "Kazakhstan"
+          },
+          "UZ": {
+            "tr": "Özbekistan",
+            "en": "Uzbekistan"
+          },
+          "TM": {
+            "tr": "Türkmenistan",
+            "en": "Turkmenistan"
+          },
+          "CN": {
+            "tr": "Çin",
+            "en": "China"
+          },
+          "JP": {
+            "tr": "Japonya",
+            "en": "Japan"
+          },
+          "KR": {
+            "tr": "Güney Kore",
+            "en": "South Korea"
+          },
+          "IN": {
+            "tr": "Hindistan",
+            "en": "India"
+          },
+          "SA": {
+            "tr": "Suudi Arabistan",
+            "en": "Saudi Arabia"
+          },
+          "AE": {
+            "tr": "Birleşik Arap Emirlikleri",
+            "en": "United Arab Emirates"
+          },
+          "QA": {
+            "tr": "Katar",
+            "en": "Qatar"
+          },
+          "IL": {
+            "tr": "İsrail",
+            "en": "Israel"
+          },
+          "EG": {
+            "tr": "Mısır",
+            "en": "Egypt"
+          },
+          "MA": {
+            "tr": "Fas",
+            "en": "Morocco"
+          },
+          "TN": {
+            "tr": "Tunus",
+            "en": "Tunisia"
+          },
+          "NG": {
+            "tr": "Nijerya",
+            "en": "Nigeria"
+          },
+          "ZA": {
+            "tr": "Güney Afrika",
+            "en": "South Africa"
+          },
+          "KE": {
+            "tr": "Kenya",
+            "en": "Kenya"
+          },
+          "BR": {
+            "tr": "Brezilya",
+            "en": "Brazil"
+          },
+          "MX": {
+            "tr": "Meksika",
+            "en": "Mexico"
+          },
+          "AR": {
+            "tr": "Arjantin",
+            "en": "Argentina"
+          },
+          "CL": {
+            "tr": "Şili",
+            "en": "Chile"
+          },
+          "CO": {
+            "tr": "Kolombiya",
+            "en": "Colombia"
+          },
+          "CA": {
+            "tr": "Kanada",
+            "en": "Canada"
+          },
+          "AU": {
+            "tr": "Avustralya",
+            "en": "Australia"
+          },
+          "NZ": {
+            "tr": "Yeni Zelanda",
+            "en": "New Zealand"
+          },
+          "SG": {
+            "tr": "Singapur",
+            "en": "Singapore"
+          },
+          "MY": {
+            "tr": "Malezya",
+            "en": "Malaysia"
+          },
+          "TH": {
+            "tr": "Tayland",
+            "en": "Thailand"
+          },
+          "ID": {
+            "tr": "Endonezya",
+            "en": "Indonesia"
+          },
+          "VN": {
+            "tr": "Vietnam",
+            "en": "Vietnam"
+          },
+          "PH": {
+            "tr": "Filipinler",
+            "en": "Philippines"
+          },
+          "PK": {
+            "tr": "Pakistan",
+            "en": "Pakistan"
+          },
+          "BD": {
+            "tr": "Bangladeş",
+            "en": "Bangladesh"
+          },
+          "IR": {
+            "tr": "İran",
+            "en": "Iran"
+          },
+          "IQ": {
+            "tr": "Irak",
+            "en": "Iraq"
+          },
+          "JO": {
+            "tr": "Ürdün",
+            "en": "Jordan"
+          },
+          "LB": {
+            "tr": "Lübnan",
+            "en": "Lebanon"
+          },
+          "SY": {
+            "tr": "Suriye",
+            "en": "Syria"
+          }
+        }
+      }
+    }
+  },
+  "2A-5": {
+    "number": 27,
+    "type": "text",
+    "text": {
+      "tr": "Bu bağlı şirketteki hisse oranınız nedir? (%)",
+      "en": "What is your equity share in this subsidiary? (%)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "2B-OC1": {
+    "number": 28,
+    "type": "single_select",
+    "text": {
+      "tr": "Tesislerinizde operasyonel politikaları siz mi belirliyorsunuz?",
+      "en": "Do you set the operational policies at your facilities?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tüm tesislerde politikaları biz belirliyoruz",
+        "en": "Yes — we set the policies at all facilities"
+      },
+      "no": {
+        "tr": "Hayır — en az bir tesiste bu yetkimiz yok",
+        "en": "No — we lack this authority at one or more facilities"
+      }
+    },
+    "fields": null
+  },
+  "2B-OC1a": {
+    "number": "28a",
+    "type": "compound",
+    "text": {
+      "tr": "Hangi tesislerde operasyonel politikaları siz belirlemiyorsunuz?",
+      "en": "At which facilities do you not set the operating policies?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "facility": {
+        "label": {
+          "tr": "Tesis",
+          "en": "Facility"
+        },
+        "options": null
+      }
+    }
+  },
+  "2B-OC2": {
+    "number": 29,
+    "type": "single_select",
+    "text": {
+      "tr": "Tesislerinizde günlük operasyonları kim yönetiyor?",
+      "en": "Who manages the day-to-day operations at your facilities?"
+    },
+    "loopSource": null,
+    "options": {
+      "central_mgmt": {
+        "tr": "Merkezi yönetim (ana şirket)",
+        "en": "Central management (parent company)"
+      },
+      "local_mgmt": {
+        "tr": "Yerel yönetim (her tesisin kendisi)",
+        "en": "Local management (each facility)"
+      },
+      "shared": {
+        "tr": "Paylaşımlı yönetim",
+        "en": "Shared management"
+      }
+    },
+    "fields": null
+  },
+  "2B-FC1": {
+    "number": 30,
+    "type": "single_select",
+    "text": {
+      "tr": "Tesisleriniz konsolide finansal tablolarınızda yer alıyor mu?",
+      "en": "Are your facilities included in your consolidated financial statements?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tümü konsolide tablolarda yer alıyor",
+        "en": "Yes — all are in the consolidated statements"
+      },
+      "no": {
+        "tr": "Hayır — en az biri konsolide tablolarda yer almıyor",
+        "en": "No — one or more are not in the consolidated statements"
+      }
+    },
+    "fields": null
+  },
+  "2B-FC2": {
+    "number": 31,
+    "type": "single_select",
+    "text": {
+      "tr": "Tesislerinizde finansal ve operasyonel politikaları belirleme yetkisi sizde mi?",
+      "en": "Do you have the authority to set financial and operating policies at your facilities?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — her ikisi de bende",
+        "en": "Yes — I have both"
+      },
+      "no": {
+        "tr": "Hayır — tam yetkim yok",
+        "en": "No — I do not have full authority"
+      }
+    },
+    "fields": null
+  },
+  "2B-EQ1": {
+    "number": 32,
+    "type": "text",
+    "text": {
+      "tr": "[Her varlık] Bu varlıktaki hisse oranınız (2A-5'ten otomatik)",
+      "en": "[Each asset] Your equity share in this asset (auto-filled from 2A-5)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "2C-1": {
+    "number": 33,
+    "type": "single_select",
+    "text": {
+      "tr": "Bu tesisleri neden envanter sınırı dışında tutuyorsunuz?",
+      "en": "Why are you excluding this asset?"
+    },
+    "loopSource": null,
+    "options": {
+      "no_control": {
+        "tr": "Kontrol/sahiplik bulunmuyor",
+        "en": "No control / ownership"
+      },
+      "no_data": {
+        "tr": "Emisyon verisi mevcut değil",
+        "en": "Emission data not available"
+      },
+      "immaterial": {
+        "tr": "Materyal değil (düşük emisyon büyüklüğü)",
+        "en": "Not material (low emission magnitude)"
+      },
+      "operational_boundary": {
+        "tr": "Operasyonel sınır dışında",
+        "en": "Outside operational boundary"
+      },
+      "sold_divested": {
+        "tr": "Satıldı / elden çıkarıldı",
+        "en": "Sold / divested"
+      },
+      "other": {
+        "tr": "Diğer (açıklama ekle)",
+        "en": "Other (add explanation)"
+      }
+    },
+    "fields": null
+  },
+  "2C-2": {
+    "number": 34,
+    "type": "single_select",
+    "text": {
+      "tr": "Bu tesislerin tahmini emisyon büyüklüğü nedir?",
+      "en": "What is the estimated emission magnitude of this asset?"
+    },
+    "loopSource": null,
+    "options": {
+      "very_low": {
+        "tr": "Çok düşük (< 1 tCO2e / yıl)",
+        "en": "Very low (< 1 tCO2e / year)"
+      },
+      "low": {
+        "tr": "Düşük (1–10 tCO2e / yıl)",
+        "en": "Low (1–10 tCO2e / year)"
+      },
+      "medium": {
+        "tr": "Orta (10–100 tCO2e / yıl)",
+        "en": "Medium (10–100 tCO2e / year)"
+      },
+      "high": {
+        "tr": "Yüksek (> 100 tCO2e / yıl)",
+        "en": "High (> 100 tCO2e / year)"
+      }
+    },
+    "fields": null
+  },
+  "2C-3": {
+    "number": 35,
+    "type": "single_select",
+    "text": {
+      "tr": "Bu tesisleri ileride rapora dahil etmeyi düşünüyor musunuz?",
+      "en": "Do you plan to include this asset in future reports?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes_next_year": {
+        "tr": "Evet — gelecek rapor döneminde dahil edilecek",
+        "en": "Yes — will be included in the next reporting period"
+      },
+      "yes_future": {
+        "tr": "Evet — ileride dahil etmeyi planlıyorum (belirli yıl yok)",
+        "en": "Yes — planning to include in the future (no specific year)"
+      },
+      "no": {
+        "tr": "Hayır — dahil etme planım yok",
+        "en": "No — no plans to include"
+      }
+    },
+    "fields": null
+  },
+  "SCOPE-GROUPING": {
+    "number": 36,
+    "type": "single_select",
+    "text": {
+      "tr": "Kapsam 1 ve Kapsam 2 sorularını nasıl yanıtlamak istersiniz?",
+      "en": "How would you like to answer the Scope 1 and Scope 2 questions?"
+    },
+    "loopSource": null,
+    "options": {
+      "combined": {
+        "tr": "Birlikte (önerilen)",
+        "en": "Together (recommended)"
+      },
+      "separate": {
+        "tr": "Ayrı ayrı",
+        "en": "Separately"
+      }
+    },
+    "fields": null
+  },
+  "3-GİRİŞ": {
+    "number": 37,
+    "type": "info",
+    "text": {
+      "tr": "Kapsam 1 Giriş Ekranı — Doğrudan kontrol ettiğiniz emisyon kaynaklarını keşfedelim.",
+      "en": "Scope 1 Introduction — Let's identify your direct emission sources."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "3A-0": {
+    "number": 38,
+    "type": "single_select",
+    "text": {
+      "tr": "Sabit bir noktada yakıt yakan herhangi bir sisteminiz var mı?",
+      "en": "Do you have any stationary combustion equipment?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "3A-1": {
+    "number": 39,
+    "type": "multi_select",
+    "text": {
+      "tr": "Sabit yanma ekipmanlarınız hangileri?",
+      "en": "Which stationary combustion equipment do you have?"
+    },
+    "loopSource": null,
+    "options": {
+      "EQ-3A-01": {
+        "tr": "EQ-3A-01 — Sıcak su kazanı",
+        "en": "EQ-3A-01 — Hot water boiler"
+      },
+      "EQ-3A-02": {
+        "tr": "EQ-3A-02 — Buhar kazanı",
+        "en": "EQ-3A-02 — Steam boiler"
+      },
+      "EQ-3A-03": {
+        "tr": "EQ-3A-03 — Kızgın yağ kazanı",
+        "en": "EQ-3A-03 — Thermal oil boiler"
+      },
+      "EQ-3A-04": {
+        "tr": "EQ-3A-04 — Kombi / duvar tipi kazan",
+        "en": "EQ-3A-04 — Combi / wall-mounted boiler"
+      },
+      "EQ-3A-05": {
+        "tr": "EQ-3A-05 — Kojenerasyon (CHP) sistemi",
+        "en": "EQ-3A-05 — Cogeneration (CHP) system"
+      },
+      "EQ-3A-06": {
+        "tr": "EQ-3A-06 — Isı pompası (fosil destekli hibrit)",
+        "en": "EQ-3A-06 — Heat pump (fossil-hybrid)"
+      },
+      "EQ-3A-07": {
+        "tr": "EQ-3A-07 — Dizel jeneratör",
+        "en": "EQ-3A-07 — Diesel generator"
+      },
+      "EQ-3A-08": {
+        "tr": "EQ-3A-08 — Doğalgaz jeneratörü",
+        "en": "EQ-3A-08 — Natural gas generator"
+      },
+      "EQ-3A-09": {
+        "tr": "EQ-3A-09 — Seyyar jeneratör",
+        "en": "EQ-3A-09 — Portable generator"
+      },
+      "EQ-3A-10": {
+        "tr": "EQ-3A-10 — Endüstriyel fırın (genel)",
+        "en": "EQ-3A-10 — Industrial furnace (general)"
+      },
+      "EQ-3A-11": {
+        "tr": "EQ-3A-11 — Tünel / döner fırın",
+        "en": "EQ-3A-11 — Tunnel / rotary kiln"
+      },
+      "EQ-3A-12": {
+        "tr": "EQ-3A-12 — Kurutma fırını / spray dryer",
+        "en": "EQ-3A-12 — Drying oven / spray dryer"
+      },
+      "EQ-3A-13": {
+        "tr": "EQ-3A-13 — Ergitme / döküm fırını",
+        "en": "EQ-3A-13 — Melting / casting furnace"
+      },
+      "EQ-3A-14": {
+        "tr": "EQ-3A-14 — Isıl işlem fırını",
+        "en": "EQ-3A-14 — Heat treatment furnace"
+      },
+      "EQ-3A-15": {
+        "tr": "EQ-3A-15 — Flare (yakma bacası)",
+        "en": "EQ-3A-15 — Flare stack"
+      },
+      "EQ-3A-16": {
+        "tr": "EQ-3A-16 — Rejeneratif termal oksidatör (RTO)",
+        "en": "EQ-3A-16 — Regenerative thermal oxidizer (RTO)"
+      },
+      "EQ-3A-17": {
+        "tr": "EQ-3A-17 — Pişirme / sterilizasyon fırını",
+        "en": "EQ-3A-17 — Cooking / sterilization oven"
+      },
+      "EQ-3A-18": {
+        "tr": "EQ-3A-18 — Buhar kazanı (tekstil/boya)",
+        "en": "EQ-3A-18 — Steam boiler (textile/dyeing)"
+      },
+      "EQ-3A-19": {
+        "tr": "EQ-3A-19 — Endüstriyel çamaşırhane kazanı",
+        "en": "EQ-3A-19 — Industrial laundry boiler"
+      },
+      "EQ-3A-20": {
+        "tr": "EQ-3A-20 — Endüstriyel mutfak ocağı",
+        "en": "EQ-3A-20 — Industrial kitchen stove"
+      },
+      "EQ-3A-21": {
+        "tr": "EQ-3A-21 — Sıcak hava jeneratörü",
+        "en": "EQ-3A-21 — Hot air generator"
+      },
+      "EQ-3A-22": {
+        "tr": "EQ-3A-22 — Radyan ısıtıcı (yakıtlı)",
+        "en": "EQ-3A-22 — Radiant heater (fuel-fired)"
+      },
+      "EQ-3A-23": {
+        "tr": "EQ-3A-23 — Atık yakma fırını",
+        "en": "EQ-3A-23 — Waste incineration furnace"
+      },
+      "EQ-3A-24": {
+        "tr": "EQ-3A-24 — Biyokütle / pellet kazanı",
+        "en": "EQ-3A-24 — Biomass / pellet boiler"
+      },
+      "EQ-3A-25": {
+        "tr": "EQ-3A-25 — Yakıtlı forklift ısıtıcısı",
+        "en": "EQ-3A-25 — Fuel-fired forklift heater"
+      },
+      "EQ-3A-99": {
+        "tr": "EQ-3A-99 — Diğer (listede yok)",
+        "en": "EQ-3A-99 — Other (not in list)"
+      }
+    },
+    "fields": null
+  },
+  "3A-1a": {
+    "number": 40,
+    "type": "text",
+    "text": {
+      "tr": "[EQ-3A-99] Ekipman adı ve yakıt türü nedir?",
+      "en": "[EQ-3A-99] What is the equipment name and fuel type?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "3A-2": {
+    "number": 41,
+    "type": "compound",
+    "text": {
+      "tr": "[Ekipman adı] — Kaç adet ve hangi tesiste?",
+      "en": "[Equipment name] — How many units and at which site?"
+    },
+    "loopSource": "3A-1",
+    "options": null,
+    "fields": {
+      "unit_count": {
+        "label": {
+          "tr": "Adet",
+          "en": "Number of units"
+        },
+        "options": null
+      },
+      "site": {
+        "label": {
+          "tr": "Tesis",
+          "en": "Site"
+        },
+        "options": null
+      },
+      "group_count": {
+        "label": {
+          "tr": "Farklı grup sayısı — opsiyonel (yakıt veya kapasite farklıysa)",
+          "en": "Number of different groups — optional (if fuel or capacity differs)"
+        },
+        "options": null
+      }
+    }
+  },
+  "3A-2b": {
+    "number": "41b",
+    "type": "single_select",
+    "text": {
+      "tr": "[Ekipman adı] — Bu ekipmanın bulunduğu tesis üzerinde işletme kontrolünüz var mı?",
+      "en": "[Equipment name] — Do you have operational control over the facility where this equipment is located?"
+    },
+    "loopSource": "3A-1",
+    "options": {
+      "yes": {
+        "tr": "Evet — işletme kontrolümüz var → Kapsam 1",
+        "en": "Yes — we have operational control → Scope 1"
+      },
+      "no": {
+        "tr": "Hayır — başka taraf işletiyor → Kapsam 3 (Kategori 8)",
+        "en": "No — another party operates it → Scope 3 (Category 8)"
+      }
+    },
+    "fields": null
+  },
+  "3A-3": {
+    "number": 42,
+    "type": "equipment_loop",
+    "text": {
+      "tr": "[Ekipman adı] — Teknik kapasite nedir?",
+      "en": "[Equipment name] — What is the technical capacity?"
+    },
+    "loopSource": "3A-1",
+    "options": null,
+    "fields": null
+  },
+  "3A-4": {
+    "number": 43,
+    "type": "multi_select",
+    "text": {
+      "tr": "[Ekipman adı] — Hangi yakıt türlerini kullanıyor?",
+      "en": "[Equipment name] — What fuel types does this equipment use?"
+    },
+    "loopSource": "3A-1",
+    "options": {
+      "natural_gas": {
+        "tr": "Doğalgaz",
+        "en": "Natural gas"
+      },
+      "fuel_oil": {
+        "tr": "Fuel oil (No.2, No.6)",
+        "en": "Fuel oil (No.2, No.6)"
+      },
+      "diesel": {
+        "tr": "Motorin / Dizel",
+        "en": "Diesel"
+      },
+      "lpg": {
+        "tr": "LPG",
+        "en": "LPG"
+      },
+      "coal": {
+        "tr": "Kömür",
+        "en": "Coal"
+      },
+      "biomass": {
+        "tr": "Biyokütle / Odun pellet",
+        "en": "Biomass / Wood pellet"
+      },
+      "other_fossil": {
+        "tr": "Diğer fosil yakıt",
+        "en": "Other fossil fuel"
+      }
+    },
+    "fields": null
+  },
+  "3A-5": {
+    "number": 44,
+    "type": "fuel_loop",
+    "text": {
+      "tr": "[Ekipman] — [Yakıt türü] — Raporlama yılındaki toplam tüketim miktarı nedir?",
+      "en": "[Equipment] — [Fuel type] — What was the total consumption in the reporting year?"
+    },
+    "loopSource": "3A-4",
+    "options": null,
+    "fields": null
+  },
+  "3A-5bio": {
+    "number": "44a",
+    "type": "single_select",
+    "text": {
+      "tr": "Yaktığınız biyokütle hangisi?",
+      "en": "Which biomass do you burn?"
+    },
+    "loopSource": null,
+    "options": {
+      "wood_pellets": {
+        "tr": "Odun peleti",
+        "en": "Wood pellets"
+      },
+      "biogas": {
+        "tr": "Biyogaz",
+        "en": "Biogas"
+      },
+      "other": {
+        "tr": "Diğer biyokütle (henüz hesaplanmıyor)",
+        "en": "Other biomass (not calculated yet)"
+      }
+    },
+    "fields": null
+  },
+  "3A-6": {
+    "number": 45,
+    "type": "single_select",
+    "text": {
+      "tr": "[Yakıt türü] — Tüketim verisi nasıl elde edildi?",
+      "en": "[Fuel type] — How was this consumption data obtained?"
+    },
+    "loopSource": "3A-4",
+    "options": {
+      "invoice_meter": {
+        "tr": "Fatura veya sayaç ölçümü — en doğru yöntem",
+        "en": "Invoice or meter reading — most accurate"
+      },
+      "engineering_estimate": {
+        "tr": "Mühendislik hesabı veya tahmin",
+        "en": "Engineering calculation or estimate"
+      },
+      "sector_average": {
+        "tr": "Sektör ortalaması kullanıldı",
+        "en": "Sector average used"
+      }
+    },
+    "fields": null
+  },
+  "3A-6a": {
+    "number": 46,
+    "type": "text",
+    "text": {
+      "tr": "[Tahmin / Sektör ortalaması ise] Tahmin yöntemi ve kaynağı nedir?",
+      "en": "[If estimated] What estimation method and source was used?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "3A-EF": {
+    "number": 47,
+    "type": "single_select",
+    "text": {
+      "tr": "Yakıtlarınız için tedarikçinin emisyon faktörü belgesi var mı?",
+      "en": "Do you have a supplier emission factor document for your fuels?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tedarikçi belgesi / ısıl değer beyanı var",
+        "en": "Yes — supplier document / calorific value declaration available"
+      },
+      "no": {
+        "tr": "Hayır — belge yok",
+        "en": "No — no document available"
+      }
+    },
+    "fields": null
+  },
+  "3A-EF-a": {
+    "number": "47a",
+    "type": "compound",
+    "text": {
+      "tr": "Tedarikçi emisyon faktörü belgesini girin",
+      "en": "Enter supplier emission factor document details"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "ef_value": {
+        "label": {
+          "tr": "Emisyon faktörü değeri",
+          "en": "Emission factor value"
+        },
+        "options": null
+      },
+      "ef_unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "kgCO2e_kWh": {
+            "tr": "kg CO₂e / kWh",
+            "en": "kg CO₂e / kWh"
+          },
+          "kgCO2e_litre": {
+            "tr": "kg CO₂e / litre",
+            "en": "kg CO₂e / litre"
+          },
+          "kgCO2e_kg": {
+            "tr": "kg CO₂e / kg",
+            "en": "kg CO₂e / kg"
+          },
+          "kgCO2e_m3": {
+            "tr": "kg CO₂e / m³",
+            "en": "kg CO₂e / m³"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "ef_source": {
+        "label": {
+          "tr": "Belge kaynağı (tedarikçi / rapor adı)",
+          "en": "Document source (supplier / report name)"
+        },
+        "options": null
+      },
+      "ef_year": {
+        "label": {
+          "tr": "Beyan yılı",
+          "en": "Declaration year"
+        },
+        "options": null
+      }
+    }
+  },
+  "3B-0": {
+    "number": 48,
+    "type": "single_select",
+    "text": {
+      "tr": "Şirketinizin sahip olduğu veya kontrol ettiği araç, iş makinesi ya da taşıt var mı?",
+      "en": "Does your company own or control any vehicles, machinery or vessels?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "3B-1": {
+    "number": 49,
+    "type": "multi_select",
+    "text": {
+      "tr": "Araç tipleriniz hangileri?",
+      "en": "What types of vehicles does your company have?"
+    },
+    "loopSource": null,
+    "options": {
+      "EQ-3B-01": {
+        "tr": "EQ-3B-01 — Binek araç",
+        "en": "EQ-3B-01 — Passenger car"
+      },
+      "EQ-3B-02": {
+        "tr": "EQ-3B-02 — Minibüs / van (≤9 kişi)",
+        "en": "EQ-3B-02 — Minibus / van (≤9 persons)"
+      },
+      "EQ-3B-03": {
+        "tr": "EQ-3B-03 — Otobüs / servis aracı",
+        "en": "EQ-3B-03 — Bus / shuttle vehicle"
+      },
+      "EQ-3B-04": {
+        "tr": "EQ-3B-04 — Motosiklet",
+        "en": "EQ-3B-04 — Motorcycle"
+      },
+      "EQ-3B-05": {
+        "tr": "EQ-3B-05 — Hafif ticari araç / kamyonet (≤3.5t)",
+        "en": "EQ-3B-05 — Light commercial vehicle / pickup (≤3.5t)"
+      },
+      "EQ-3B-06": {
+        "tr": "EQ-3B-06 — Orta ticari araç (3.5–7.5t)",
+        "en": "EQ-3B-06 — Medium commercial vehicle (3.5–7.5t)"
+      },
+      "EQ-3B-07": {
+        "tr": "EQ-3B-07 — Ağır ticari araç küçük (7.5–17t)",
+        "en": "EQ-3B-07 — Heavy commercial vehicle small (7.5–17t)"
+      },
+      "EQ-3B-08": {
+        "tr": "EQ-3B-08 — Ağır ticari araç orta (17–25t)",
+        "en": "EQ-3B-08 — Heavy commercial vehicle medium (17–25t)"
+      },
+      "EQ-3B-09": {
+        "tr": "EQ-3B-09 — Ağır ticari araç büyük (25–33t)",
+        "en": "EQ-3B-09 — Heavy commercial vehicle large (25–33t)"
+      },
+      "EQ-3B-10": {
+        "tr": "EQ-3B-10 — TIR / artic tır (33t+)",
+        "en": "EQ-3B-10 — Articulated truck (33t+)"
+      },
+      "EQ-3B-11": {
+        "tr": "EQ-3B-11 — Forklift (içten yanmalı)",
+        "en": "EQ-3B-11 — Forklift (internal combustion)"
+      },
+      "EQ-3B-12": {
+        "tr": "EQ-3B-12 — Kepçe / ekskavatör",
+        "en": "EQ-3B-12 — Excavator / backhoe"
+      },
+      "EQ-3B-13": {
+        "tr": "EQ-3B-13 — Buldozer / greyder",
+        "en": "EQ-3B-13 — Bulldozer / grader"
+      },
+      "EQ-3B-14": {
+        "tr": "EQ-3B-14 — Vinç (mobil)",
+        "en": "EQ-3B-14 — Mobile crane"
+      },
+      "EQ-3B-15": {
+        "tr": "EQ-3B-15 — Tarım traktörü / biçerdöver",
+        "en": "EQ-3B-15 — Agricultural tractor / harvester"
+      },
+      "EQ-3B-16": {
+        "tr": "EQ-3B-16 — Beton pompası / mikseri",
+        "en": "EQ-3B-16 — Concrete pump / mixer"
+      },
+      "EQ-3B-17": {
+        "tr": "EQ-3B-17 — Kıyı / iç hat gemisi",
+        "en": "EQ-3B-17 — Coastal / inland waterway vessel"
+      },
+      "EQ-3B-18": {
+        "tr": "EQ-3B-18 — Feribot / Ro-Ro",
+        "en": "EQ-3B-18 — Ferry / Ro-Ro"
+      },
+      "EQ-3B-19": {
+        "tr": "EQ-3B-19 — Küçük tekne / hizmet botu",
+        "en": "EQ-3B-19 — Small boat / service vessel"
+      },
+      "EQ-3B-20": {
+        "tr": "EQ-3B-20 — Kurumsal uçak (jet)",
+        "en": "EQ-3B-20 — Corporate aircraft (jet)"
+      },
+      "EQ-3B-21": {
+        "tr": "EQ-3B-21 — Helikopter",
+        "en": "EQ-3B-21 — Helicopter"
+      },
+      "EQ-3B-22": {
+        "tr": "EQ-3B-22 — Dizel lokomotif",
+        "en": "EQ-3B-22 — Diesel locomotive"
+      },
+      "EQ-3B-23": {
+        "tr": "EQ-3B-23 — Fabrika içi ray aracı",
+        "en": "EQ-3B-23 — Factory rail vehicle"
+      },
+      "EQ-3B-99": {
+        "tr": "EQ-3B-99 — Diğer (listede yok)",
+        "en": "EQ-3B-99 — Other (not in list)"
+      }
+    },
+    "fields": null
+  },
+  "3B-2": {
+    "number": 50,
+    "type": "single_select",
+    "text": {
+      "tr": "[Araç tipi] — Mülkiyet durumu nedir?",
+      "en": "[Vehicle type] — What is the ownership status?"
+    },
+    "loopSource": "3B-1",
+    "options": {
+      "owned": {
+        "tr": "Şirkete ait — ruhsat şirkette → Kapsam 1",
+        "en": "Company-owned — registered to company → Scope 1"
+      },
+      "financial_lease": {
+        "tr": "Finansal kiralama / Uzun dönem leasing — bilançoda varlık kayıtlı → Kapsam 1",
+        "en": "Financial lease / Long-term leasing — asset on balance sheet → Scope 1"
+      },
+      "operational_lease": {
+        "tr": "Operasyonel kiralama — günlük / haftalık / aylık kiralık → Kapsam 3 (Kategori 13)",
+        "en": "Operational lease — daily / weekly / monthly rental → Scope 3 (Category 13)"
+      },
+      "employee_owned": {
+        "tr": "Çalışana ait — şirket yakıt veya km ödemesi yapıyor → Kapsam 3 (Kategori 6)",
+        "en": "Employee-owned — company pays fuel or mileage → Scope 3 (Category 6)"
+      }
+    },
+    "fields": null
+  },
+  "3B-3": {
+    "number": 51,
+    "type": "compound",
+    "text": {
+      "tr": "[Araç tipi] — Adet, tesis ve büyüklük/tonaj bandı nedir?",
+      "en": "[Vehicle type] — How many units, at which site, and what size/tonnage band?"
+    },
+    "loopSource": "3B-1",
+    "options": null,
+    "fields": {
+      "unit_count": {
+        "label": {
+          "tr": "Adet",
+          "en": "Number of units"
+        },
+        "options": null
+      },
+      "site": {
+        "label": {
+          "tr": "Tesis",
+          "en": "Site"
+        },
+        "options": null
+      },
+      "size_band": {
+        "label": {
+          "tr": "Büyüklük / tonaj bandı",
+          "en": "Size / tonnage band"
+        },
+        "options": null
+      },
+      "group_count": {
+        "label": {
+          "tr": "Farklı grup sayısı — opsiyonel (yakıt, model yılı veya kullanım farklıysa)",
+          "en": "Number of different groups — optional (if fuel, model year or use differs)"
+        },
+        "options": null
+      }
+    }
+  },
+  "3B-4": {
+    "number": 52,
+    "type": "single_select",
+    "text": {
+      "tr": "[Araç tipi] — Model yılı veya Euro emisyon normu nedir?",
+      "en": "[Vehicle type] — What is the model year or Euro emission standard?"
+    },
+    "loopSource": "3B-1",
+    "options": {
+      "euro_3": {
+        "tr": "Euro 3",
+        "en": "Euro 3"
+      },
+      "euro_4": {
+        "tr": "Euro 4",
+        "en": "Euro 4"
+      },
+      "euro_5": {
+        "tr": "Euro 5",
+        "en": "Euro 5"
+      },
+      "euro_6d": {
+        "tr": "Euro 6d",
+        "en": "Euro 6d"
+      },
+      "unknown": {
+        "tr": "Bilinmiyor — en güncel uygulanacak",
+        "en": "Unknown — latest will be applied"
+      }
+    },
+    "fields": null
+  },
+  "3B-5": {
+    "number": 53,
+    "type": "single_select",
+    "text": {
+      "tr": "[Araç tipi] — Yakıt tipi nedir?",
+      "en": "[Vehicle type] — What fuel type does this vehicle use?"
+    },
+    "loopSource": "3B-1",
+    "options": {
+      "diesel": {
+        "tr": "Motorin / Dizel",
+        "en": "Diesel"
+      },
+      "petrol": {
+        "tr": "Benzin",
+        "en": "Petrol"
+      },
+      "lpg_cng": {
+        "tr": "LPG / Doğalgaz (CNG/LNG)",
+        "en": "LPG / Natural gas (CNG/LNG)"
+      },
+      "electric": {
+        "tr": "Elektrik → Kapsam 2'ye aktarılır",
+        "en": "Electric → Transferred to Scope 2"
+      },
+      "hybrid": {
+        "tr": "Hibrit (fosil + elektrik) → ikisi ayrı hesaplanır",
+        "en": "Hybrid (fossil + electric) → calculated separately"
+      }
+    },
+    "fields": null
+  },
+  "3B-6": {
+    "number": 54,
+    "type": "single_select",
+    "text": {
+      "tr": "[Araç tipi] — Aktivite verisi: yakıt tüketimi mi, mesafe mi?",
+      "en": "[Vehicle type] — Activity data: fuel consumption or distance?"
+    },
+    "loopSource": "3B-1",
+    "options": {
+      "fuel_litres": {
+        "tr": "Yıllık yakıt tüketimi (litre) — Seviye 1 — tercih edilen",
+        "en": "Annual fuel consumption (litres) — Level 1 — preferred"
+      },
+      "annual_km": {
+        "tr": "Yıllık km — Seviye 2 — yalnızca binek araçlarda hesaplanır",
+        "en": "Annual km — Level 2 — calculated for passenger cars only"
+      }
+    },
+    "fields": null
+  },
+  "3B-7": {
+    "number": "54a",
+    "type": "equipment_loop",
+    "text": {
+      "tr": "[Araç tipi] — Raporlama yılındaki toplam miktar nedir?",
+      "en": "[Vehicle type] — What is the total amount for the reporting year?"
+    },
+    "loopSource": "3B-1",
+    "options": null,
+    "fields": null
+  },
+  "3B-EF": {
+    "number": 55,
+    "type": "single_select",
+    "text": {
+      "tr": "Araçlarınız için tedarikçi veya üretici emisyon faktörü belgesi var mı?",
+      "en": "Do you have a supplier or manufacturer emission factor document for your vehicles?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — üretici LCA veya yakıt tedarikçi belgesi var",
+        "en": "Yes — manufacturer LCA or fuel supplier document available"
+      },
+      "no": {
+        "tr": "Hayır — belge yok",
+        "en": "No — no document available"
+      }
+    },
+    "fields": null
+  },
+  "3B-EF-a": {
+    "number": "55a",
+    "type": "compound",
+    "text": {
+      "tr": "Araç emisyon faktörü belgesini girin",
+      "en": "Enter vehicle emission factor document details"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "ef_value": {
+        "label": {
+          "tr": "Emisyon faktörü değeri",
+          "en": "Emission factor value"
+        },
+        "options": null
+      },
+      "ef_unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "kgCO2e_litre": {
+            "tr": "kg CO₂e / litre",
+            "en": "kg CO₂e / litre"
+          },
+          "kgCO2e_km": {
+            "tr": "kg CO₂e / km",
+            "en": "kg CO₂e / km"
+          },
+          "kgCO2e_kWh": {
+            "tr": "kg CO₂e / kWh",
+            "en": "kg CO₂e / kWh"
+          },
+          "kgCO2e_kg": {
+            "tr": "kg CO₂e / kg",
+            "en": "kg CO₂e / kg"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "ef_source": {
+        "label": {
+          "tr": "Belge kaynağı (üretici / tedarikçi / rapor adı)",
+          "en": "Document source (manufacturer / supplier / report name)"
+        },
+        "options": null
+      },
+      "ef_year": {
+        "label": {
+          "tr": "Beyan yılı",
+          "en": "Declaration year"
+        },
+        "options": null
+      }
+    }
+  },
+  "3C-0": {
+    "number": 56,
+    "type": "single_select",
+    "text": {
+      "tr": "Yanma dışı herhangi bir üretim, kimyasal veya biyolojik süreciniz var mı?",
+      "en": "Do you have any non-combustion industrial process emissions?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "3C-1": {
+    "number": 57,
+    "type": "multi_select",
+    "text": {
+      "tr": "Proses ekipmanlarınız hangileri?",
+      "en": "Which process equipment do you operate?"
+    },
+    "loopSource": null,
+    "options": {
+      "EQ-3C-01": {
+        "tr": "EQ-3C-01 — Çimento / klinker fırını (NACE C23)",
+        "en": "EQ-3C-01 — Cement / clinker kiln (NACE C23)"
+      },
+      "EQ-3C-02": {
+        "tr": "EQ-3C-02 — Kireç fırını (NACE C23)",
+        "en": "EQ-3C-02 — Lime kiln (NACE C23)"
+      },
+      "EQ-3C-03": {
+        "tr": "EQ-3C-03 — Cam eritme fırını (NACE C23)",
+        "en": "EQ-3C-03 — Glass melting furnace (NACE C23)"
+      },
+      "EQ-3C-04": {
+        "tr": "EQ-3C-04 — Seramik / tuğla pişirme (NACE C23)",
+        "en": "EQ-3C-04 — Ceramic / brick firing (NACE C23)"
+      },
+      "EQ-3C-05": {
+        "tr": "EQ-3C-05 — Yüksek fırın / demir-çelik (NACE C24)",
+        "en": "EQ-3C-05 — Blast furnace / iron-steel (NACE C24)"
+      },
+      "EQ-3C-06": {
+        "tr": "EQ-3C-06 — Elektrik ark ocağı EAF (NACE C24)",
+        "en": "EQ-3C-06 — Electric arc furnace EAF (NACE C24)"
+      },
+      "EQ-3C-07": {
+        "tr": "EQ-3C-07 — Alüminyum eritme (NACE C24)",
+        "en": "EQ-3C-07 — Aluminium smelting (NACE C24)"
+      },
+      "EQ-3C-08": {
+        "tr": "EQ-3C-08 — Amonyak / üre üretimi (NACE C20)",
+        "en": "EQ-3C-08 — Ammonia / urea production (NACE C20)"
+      },
+      "EQ-3C-09": {
+        "tr": "EQ-3C-09 — Nitrik asit üretimi (NACE C20)",
+        "en": "EQ-3C-09 — Nitric acid production (NACE C20)"
+      },
+      "EQ-3C-10": {
+        "tr": "EQ-3C-10 — Petrokimya / rafine prosesi (NACE C19)",
+        "en": "EQ-3C-10 — Petrochemical / refinery process (NACE C19)"
+      },
+      "EQ-3C-11": {
+        "tr": "EQ-3C-11 — Endüstriyel atık su arıtma (NACE E)",
+        "en": "EQ-3C-11 — Industrial wastewater treatment (NACE E)"
+      },
+      "EQ-3C-12": {
+        "tr": "EQ-3C-12 — Biyogaz / biyometan sistemi",
+        "en": "EQ-3C-12 — Biogas / biomethane system"
+      },
+      "EQ-3C-13": {
+        "tr": "EQ-3C-13 — Kompost / organik atık işleme",
+        "en": "EQ-3C-13 — Composting / organic waste processing"
+      },
+      "EQ-3C-99": {
+        "tr": "EQ-3C-99 — Diğer proses (listede yok)",
+        "en": "EQ-3C-99 — Other process (not in list)"
+      }
+    },
+    "fields": null
+  },
+  "3C-2": {
+    "number": 58,
+    "type": "compound",
+    "text": {
+      "tr": "[Proses adı] — Üretim miktarı ve ölçüm yöntemi nedir?",
+      "en": "[Process name] — What is the production quantity and measurement method?"
+    },
+    "loopSource": "3C-1",
+    "options": null,
+    "fields": {
+      "quantity": {
+        "label": {
+          "tr": "Üretim miktarı",
+          "en": "Production quantity"
+        },
+        "options": null
+      },
+      "method": {
+        "label": {
+          "tr": "Ölçüm yöntemi",
+          "en": "Measurement method"
+        },
+        "options": {
+          "cems_tier3": {
+            "tr": "Sürekli ölçüm sistemi (CEMS) — Tier 3 (en doğru)",
+            "en": "Continuous emission monitoring (CEMS) — Tier 3 (most accurate)"
+          },
+          "periodic_tier2": {
+            "tr": "Periyodik ölçüm — Tier 2",
+            "en": "Periodic measurement — Tier 2"
+          },
+          "calculation_tier1": {
+            "tr": "Hesaplama / tahmin — Tier 1",
+            "en": "Calculation / estimate — Tier 1"
+          }
+        }
+      }
+    }
+  },
+  "3C-EF": {
+    "number": 59,
+    "type": "single_select",
+    "text": {
+      "tr": "Prosesleriniz için tesis spesifik emisyon faktörü var mı?",
+      "en": "Do you have a facility-specific emission factor for your processes?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tesis ölçümü veya mühendislik hesabı",
+        "en": "Yes — facility measurement or engineering calculation"
+      },
+      "no": {
+        "tr": "Hayır — yok",
+        "en": "No — not available"
+      }
+    },
+    "fields": null
+  },
+  "3C-EF-a": {
+    "number": "59a",
+    "type": "compound",
+    "text": {
+      "tr": "Tesis spesifik emisyon faktörünü girin",
+      "en": "Enter facility-specific emission factor details"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "ef_value": {
+        "label": {
+          "tr": "Emisyon faktörü değeri",
+          "en": "Emission factor value"
+        },
+        "options": null
+      },
+      "ef_unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "kgCO2e_tonne_product": {
+            "tr": "kg CO₂e / ton ürün",
+            "en": "kg CO₂e / tonne product"
+          },
+          "tCO2e_tonne_product": {
+            "tr": "t CO₂e / ton ürün",
+            "en": "t CO₂e / tonne product"
+          },
+          "kgCO2e_kg": {
+            "tr": "kg CO₂e / kg",
+            "en": "kg CO₂e / kg"
+          },
+          "kgCO2e_m3": {
+            "tr": "kg CO₂e / m³",
+            "en": "kg CO₂e / m³"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "ef_source": {
+        "label": {
+          "tr": "Kaynak (ölçüm raporu / mühendislik hesabı açıklaması)",
+          "en": "Source (measurement report / engineering calculation description)"
+        },
+        "options": null
+      },
+      "ef_year": {
+        "label": {
+          "tr": "Ölçüm / hesap yılı",
+          "en": "Measurement / calculation year"
+        },
+        "options": null
+      }
+    }
+  },
+  "3D-0": {
+    "number": 60,
+    "type": "multi_select",
+    "text": {
+      "tr": "Kaçak emisyon kaynaklarınız hangileri?",
+      "en": "Which fugitive emission sources do you have?"
+    },
+    "loopSource": null,
+    "options": {
+      "EQ-3D-01": {
+        "tr": "EQ-3D-01 — Split klima (R-410A / R-32)",
+        "en": "EQ-3D-01 — Split air conditioner (R-410A / R-32)"
+      },
+      "EQ-3D-02": {
+        "tr": "EQ-3D-02 — VRF/VRV merkezi klima sistemi",
+        "en": "EQ-3D-02 — VRF/VRV central air conditioning system"
+      },
+      "EQ-3D-03": {
+        "tr": "EQ-3D-03 — Chiller (su soğutma grubu)",
+        "en": "EQ-3D-03 — Chiller (water cooling unit)"
+      },
+      "EQ-3D-04": {
+        "tr": "EQ-3D-04 — Soğuk oda / endüstriyel soğutucu",
+        "en": "EQ-3D-04 — Cold room / industrial refrigerator"
+      },
+      "EQ-3D-05": {
+        "tr": "EQ-3D-05 — Isı pompası (soğutucu gaz döngülü)",
+        "en": "EQ-3D-05 — Heat pump (refrigerant cycle)"
+      },
+      "EQ-3D-06": {
+        "tr": "EQ-3D-06 — Ticari buzdolabı / soğutma rafı",
+        "en": "EQ-3D-06 — Commercial refrigerator / cooling shelf"
+      },
+      "EQ-3D-07": {
+        "tr": "EQ-3D-07 — Araç kliması (filo)",
+        "en": "EQ-3D-07 — Vehicle air conditioning (fleet)"
+      },
+      "EQ-3D-08": {
+        "tr": "EQ-3D-08 — Doğalgaz boru hattı (tesis içi)",
+        "en": "EQ-3D-08 — Natural gas pipeline (within facility)"
+      },
+      "EQ-3D-09": {
+        "tr": "EQ-3D-09 — Kompresör istasyonu / vana grubu",
+        "en": "EQ-3D-09 — Compressor station / valve group"
+      },
+      "EQ-3D-10": {
+        "tr": "EQ-3D-10 — LPG / LNG depolama tankı",
+        "en": "EQ-3D-10 — LPG / LNG storage tank"
+      },
+      "EQ-3D-11": {
+        "tr": "EQ-3D-11 — SF₆ gazlı şalt tesisi (GIS)",
+        "en": "EQ-3D-11 — SF₆ gas-insulated switchgear (GIS)"
+      },
+      "EQ-3D-12": {
+        "tr": "EQ-3D-12 — SF₆ gazlı yüksek gerilim trafosu",
+        "en": "EQ-3D-12 — SF₆ gas high-voltage transformer"
+      },
+      "EQ-3D-13": {
+        "tr": "EQ-3D-13 — HFC/PFC kullanan proses ekipmanı",
+        "en": "EQ-3D-13 — Process equipment using HFC/PFC"
+      },
+      "EQ-3D-14": {
+        "tr": "EQ-3D-14 — NF₃ kullanan temizleme ekipmanı",
+        "en": "EQ-3D-14 — Cleaning equipment using NF₃"
+      },
+      "EQ-3D-99": {
+        "tr": "EQ-3D-99 — Diğer (listede yok)",
+        "en": "EQ-3D-99 — Other (not in list)"
+      },
+      "none": {
+        "tr": "Hiçbiri — kaçak emisyon kaynağım yok",
+        "en": "None — I have no fugitive emission sources"
+      }
+    },
+    "fields": null
+  },
+  "3D-2": {
+    "number": 61,
+    "type": "compound",
+    "text": {
+      "tr": "[Ekipman adı] — Adet, tesis ve soğutucu/gaz türü nedir?",
+      "en": "[Equipment] — Number of units, site, and refrigerant/gas type?"
+    },
+    "loopSource": "3D-0",
+    "options": null,
+    "fields": {
+      "unit_count": {
+        "label": {
+          "tr": "Adet",
+          "en": "Number of units"
+        },
+        "options": null
+      },
+      "site": {
+        "label": {
+          "tr": "Tesis",
+          "en": "Site"
+        },
+        "options": null
+      },
+      "gas_type": {
+        "label": {
+          "tr": "Soğutucu / gaz türü",
+          "en": "Refrigerant / gas type"
+        },
+        "options": {
+          "R410A": {
+            "tr": "R-410A (GWP: 2.088)",
+            "en": "R-410A (GWP: 2,088)"
+          },
+          "R32": {
+            "tr": "R-32 (GWP: 675)",
+            "en": "R-32 (GWP: 675)"
+          },
+          "R22": {
+            "tr": "R-22 (GWP: 1.810) — aşamalı kaldırılıyor",
+            "en": "R-22 (GWP: 1,810) — being phased out"
+          },
+          "R134a": {
+            "tr": "R-134a (GWP: 1.430)",
+            "en": "R-134a (GWP: 1,430)"
+          },
+          "R404A": {
+            "tr": "R-404A (GWP: 3.922) — yüksek GWP",
+            "en": "R-404A (GWP: 3,922) — high GWP"
+          },
+          "R1234yf": {
+            "tr": "R-1234yf (GWP: 4) — düşük GWP",
+            "en": "R-1234yf (GWP: 4) — low GWP"
+          },
+          "SF6": {
+            "tr": "SF₆ (GWP: 23.500) — çok yüksek GWP",
+            "en": "SF₆ (GWP: 23,500) — very high GWP"
+          },
+          "unknown": {
+            "tr": "Bilinmiyor — sistem konservatif değer uygular",
+            "en": "Unknown — system applies conservative value"
+          }
+        }
+      },
+      "group_count": {
+        "label": {
+          "tr": "Farklı grup sayısı — opsiyonel (gaz türü veya dolum farklıysa)",
+          "en": "Number of different groups — optional (if gas type or refill differs)"
+        },
+        "options": null
+      }
+    }
+  },
+  "3D-4": {
+    "number": 62,
+    "type": "compound",
+    "text": {
+      "tr": "[Ekipman] — Yıllık dolum miktarı ve sistem kapasitesi nedir?",
+      "en": "[Equipment] — What is the annual refill quantity and system capacity?"
+    },
+    "loopSource": "3D-0",
+    "options": null,
+    "fields": {
+      "refill_kg": {
+        "label": {
+          "tr": "Yıllık dolum miktarı (kg)",
+          "en": "Annual refill quantity (kg)"
+        },
+        "options": null
+      },
+      "capacity_kg": {
+        "label": {
+          "tr": "Sistem kapasitesi (kg) — opsiyonel",
+          "en": "System capacity (kg) — optional"
+        },
+        "options": null
+      },
+      "gas_type": {
+        "label": {
+          "tr": "Bu grubun soğutucu / gaz türü (Soru 61'dekinden farklıysa)",
+          "en": "This group’s refrigerant / gas type (if different from Question 61)"
+        },
+        "options": {
+          "R410A": {
+            "tr": "R-410A (GWP: 2.088)",
+            "en": "R-410A (GWP: 2,088)"
+          },
+          "R32": {
+            "tr": "R-32 (GWP: 675)",
+            "en": "R-32 (GWP: 675)"
+          },
+          "R22": {
+            "tr": "R-22 (GWP: 1.810) — aşamalı kaldırılıyor",
+            "en": "R-22 (GWP: 1,810) — being phased out"
+          },
+          "R134a": {
+            "tr": "R-134a (GWP: 1.430)",
+            "en": "R-134a (GWP: 1,430)"
+          },
+          "R404A": {
+            "tr": "R-404A (GWP: 3.922) — yüksek GWP",
+            "en": "R-404A (GWP: 3,922) — high GWP"
+          },
+          "R1234yf": {
+            "tr": "R-1234yf (GWP: 4) — düşük GWP",
+            "en": "R-1234yf (GWP: 4) — low GWP"
+          },
+          "SF6": {
+            "tr": "SF₆ (GWP: 23.500) — çok yüksek GWP",
+            "en": "SF₆ (GWP: 23,500) — very high GWP"
+          },
+          "unknown": {
+            "tr": "Bilinmiyor — sistem konservatif değer uygular",
+            "en": "Unknown — system applies conservative value"
+          }
+        }
+      }
+    }
+  },
+  "3D-4-zero-decision": {
+    "number": "62a",
+    "type": "single_select",
+    "text": {
+      "tr": "Bazı ekipmanlarda yıllık dolum 0 olarak girildi. Bu kaynaklar için kaçak emisyonu nasıl hesaplansın?",
+      "en": "Annual refill was entered as 0 for some equipment. How should leakage emissions be calculated for those sources?"
+    },
+    "loopSource": null,
+    "options": {
+      "ipcc_default": {
+        "tr": "IPCC varsayılan kaçak oranını uygula (önerilen)",
+        "en": "Apply IPCC default leak rate (recommended)"
+      },
+      "zero_declared": {
+        "tr": "Sıfır kaçak olduğunu beyan ediyorum (belgeli/doğrulanmış)",
+        "en": "I declare zero leakage (documented/verified)"
+      }
+    },
+    "fields": null
+  },
+  "3D-EF": {
+    "number": 63,
+    "type": "single_select",
+    "text": {
+      "tr": "GWP referansı: IPCC AR6 (2021) onaylıyor musunuz?",
+      "en": "GWP reference: Do you approve IPCC AR6 (2021)?"
+    },
+    "loopSource": "3D-0",
+    "options": {
+      "AR6": {
+        "tr": "Onayla — IPCC AR6 (2021) kullanılsın (önerilen)",
+        "en": "Approve — Use IPCC AR6 (2021) (recommended)"
+      },
+      "AR5": {
+        "tr": "IPCC AR5 (2014) kullanılsın",
+        "en": "Use IPCC AR5 (2014)"
+      },
+      "AR4": {
+        "tr": "IPCC AR4 (2007) kullanılsın",
+        "en": "Use IPCC AR4 (2007)"
+      }
+    },
+    "fields": null
+  },
+  "TY-1": {
+    "number": 64,
+    "type": "single_select",
+    "text": {
+      "tr": "Kapsam 1 özeti: Tespit edilen kaynaklar ve miktarlar doğru mu?",
+      "en": "Scope 1 summary: Are the identified sources and quantities correct?"
+    },
+    "loopSource": null,
+    "options": {
+      "confirmed": {
+        "tr": "Onayla — Kapsam 1 tamamlandı",
+        "en": "Approve — Scope 1 complete"
+      },
+      "edit": {
+        "tr": "Düzenle — Bir kaynağı değiştirmek istiyorum",
+        "en": "Edit — I want to change a source"
+      },
+      "add_source": {
+        "tr": "Kaynak ekle — Gözden kaçan bir kaynak var",
+        "en": "Add source — I missed a source"
+      }
+    },
+    "fields": null
+  },
+  "TY-edit": {
+    "number": "63b",
+    "type": "section_picker",
+    "text": {
+      "tr": "Hangi Kapsam 1 bölümünü düzenlemek istiyorsunuz?",
+      "en": "Which Scope 1 section would you like to edit?"
+    },
+    "loopSource": null,
+    "options": {
+      "3A-0": {
+        "tr": "3A — Sabit Yanma",
+        "en": "3A — Stationary Combustion"
+      },
+      "3B-0": {
+        "tr": "3B — Mobil Yanma",
+        "en": "3B — Mobile Combustion"
+      },
+      "3C-0": {
+        "tr": "3C — Proses Emisyonları",
+        "en": "3C — Process Emissions"
+      },
+      "3D-0": {
+        "tr": "3D — Kaçak Emisyonlar",
+        "en": "3D — Fugitive Emissions"
+      }
+    },
+    "fields": null
+  },
+  "TY-2": {
+    "number": 65,
+    "type": "text",
+    "text": {
+      "tr": "Gözden kaçan kaynağı tanımlayın.",
+      "en": "Describe the missed emission source."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "4-GİRİŞ": {
+    "number": 66,
+    "type": "info",
+    "text": {
+      "tr": "Kapsam 2 Giriş Ekranı — Dışarıdan satın aldığınız enerjinin emisyonlarını hesaplayalım.",
+      "en": "Scope 2 Introduction — Let's calculate the emissions from your purchased energy."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "4A-0": {
+    "number": 67,
+    "type": "single_select",
+    "text": {
+      "tr": "Şebekeden elektrik satın alıyor musunuz?",
+      "en": "Do you purchase electricity from the grid?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "4A-1": {
+    "number": 68,
+    "type": "text",
+    "text": {
+      "tr": "[Tesis adı] — Yıllık elektrik tüketimi nedir?",
+      "en": "[Site name] — What is the annual electricity consumption?"
+    },
+    "loopSource": "2A-1",
+    "options": null,
+    "fields": null
+  },
+  "4A-1a": {
+    "number": 69,
+    "type": "text",
+    "text": {
+      "tr": "[Fatura tutarı girilmişse] Birim elektrik fiyatı nedir? (İsteğe bağlı)",
+      "en": "[If invoice amount entered] What is the unit electricity price? (Optional)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "4A-2": {
+    "number": 70,
+    "type": "single_select",
+    "text": {
+      "tr": "Tesislerinizden biri veya birkaçı paylaşımlı ya da kiralık bir binada mı?",
+      "en": "Are any of your sites in a shared or rented building?"
+    },
+    "loopSource": null,
+    "options": {
+      "no": {
+        "tr": "Hayır — tesisin tamamı bizim / bağımsız bina",
+        "en": "No — we own the entire site / independent building"
+      },
+      "yes": {
+        "tr": "Evet — paylaşımlı bina (kiracı, ortak kullanım vb.)",
+        "en": "Yes — shared building (tenant, common use, etc.)"
+      }
+    },
+    "fields": null
+  },
+  "4A-2s": {
+    "number": "70a",
+    "type": "compound",
+    "text": {
+      "tr": "Hangi tesis(ler) paylaşımlı ya da kiralık bir binada?",
+      "en": "Which facilities are in a shared or leased building?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "facility": {
+        "label": {
+          "tr": "Tesis",
+          "en": "Facility"
+        },
+        "options": null
+      }
+    }
+  },
+  "4A-2a": {
+    "number": 71,
+    "type": "single_select",
+    "text": {
+      "tr": "[Paylaşımlı bina] Bina yönetiminden tüketim payı belgesi alabilir misiniz?",
+      "en": "[Shared building] Can you obtain a consumption allocation document from building management?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — bina yönetimi belge sağlayabilir",
+        "en": "Yes — building management can provide a document"
+      },
+      "no": {
+        "tr": "Hayır — belge alınamıyor",
+        "en": "No — document not available"
+      }
+    },
+    "fields": null
+  },
+  "4A-2b": {
+    "number": 72,
+    "type": "text",
+    "text": {
+      "tr": "Bina yönetiminin beyan ettiği yıllık tüketim payınız (kWh) nedir?",
+      "en": "What annual consumption share (kWh) has building management declared for you?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "4A-2c": {
+    "number": 73,
+    "type": "compound",
+    "text": {
+      "tr": "[Belge yok] Şirketin net kira alanı ve binanın toplam alanı nedir?",
+      "en": "[No document] What is the company's net floor area and the building's total area?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "company_m2": {
+        "label": {
+          "tr": "Şirket kira alanı (m²)",
+          "en": "Company lease area (m²)"
+        },
+        "options": null
+      },
+      "building_m2": {
+        "label": {
+          "tr": "Bina toplam alanı (m²)",
+          "en": "Building total area (m²)"
+        },
+        "options": null
+      }
+    }
+  },
+  "4A-3": {
+    "number": 74,
+    "type": "single_select",
+    "text": {
+      "tr": "[Tesis adı] — Sahadaki yenilenebilir enerji üretiminiz var mı?",
+      "en": "[Site name] — Do you have on-site renewable energy generation?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "4A-3a": {
+    "number": 75,
+    "type": "compound",
+    "text": {
+      "tr": "[Sahada üretim] Yıllık üretim miktarı ve şebekeye satış var mı?",
+      "en": "[On-site generation] Annual production and any grid sales?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "facility": {
+        "label": {
+          "tr": "Üretimin yapıldığı tesis",
+          "en": "Facility where it is generated"
+        },
+        "options": null
+      },
+      "production_kwh": {
+        "label": {
+          "tr": "Yıllık üretim (kWh)",
+          "en": "Annual production (kWh)"
+        },
+        "options": null
+      },
+      "grid_sales": {
+        "label": {
+          "tr": "Şebekeye satış var mı?",
+          "en": "Any grid sales?"
+        },
+        "options": null
+      },
+      "grid_sales_kwh": {
+        "label": {
+          "tr": "Şebeke satış miktarı (kWh)",
+          "en": "Grid sales amount (kWh)"
+        },
+        "options": null
+      }
+    }
+  },
+  "4A-EF": {
+    "number": 76,
+    "type": "single_select",
+    "text": {
+      "tr": "Elektrik tedarikçinizin resmi emisyon beyanı var mı?",
+      "en": "[Site name] — Does your electricity supplier have an official emission declaration?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tedarikçi resmi emisyon beyanı var",
+        "en": "Yes — supplier has an official emission declaration"
+      },
+      "no": {
+        "tr": "Hayır — beyan yok",
+        "en": "No — no declaration available"
+      }
+    },
+    "fields": null
+  },
+  "4A-EF-a": {
+    "number": "76a",
+    "type": "compound",
+    "text": {
+      "tr": "Tedarikçi emisyon beyanının bilgilerini girin",
+      "en": "Enter the supplier emission declaration details"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "ef_value": {
+        "label": {
+          "tr": "Emisyon faktörü değeri",
+          "en": "Emission factor value"
+        },
+        "options": null
+      },
+      "ef_unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "kgCO2e_kWh": {
+            "tr": "kg CO₂e / kWh",
+            "en": "kg CO₂e / kWh"
+          },
+          "kgCO2e_MWh": {
+            "tr": "kg CO₂e / MWh",
+            "en": "kg CO₂e / MWh"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "ef_source": {
+        "label": {
+          "tr": "Belge kaynağı (tedarikçi / rapor adı)",
+          "en": "Document source (supplier / report name)"
+        },
+        "options": null
+      },
+      "ef_year": {
+        "label": {
+          "tr": "Beyan yılı",
+          "en": "Declaration year"
+        },
+        "options": null
+      }
+    }
+  },
+  "4A-EV": {
+    "number": "76b",
+    "type": "compound",
+    "text": {
+      "tr": "Elektrikli araçlarınızın yıllık şarj elektriği ne kadar?",
+      "en": "How much electricity did your electric vehicles use for charging in the year?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "ev_kwh": {
+        "label": {
+          "tr": "Yıllık şarj elektriği (kWh)",
+          "en": "Annual charging electricity (kWh)"
+        },
+        "options": null
+      },
+      "in_site_bill": {
+        "label": {
+          "tr": "Bu elektrik 4A-1'deki tesis elektriğine dahil mi?",
+          "en": "Is this electricity part of the site electricity in 4A-1?"
+        },
+        "options": {
+          "yes": {
+            "tr": "Evet — tesiste şarj ediliyor (ayrıca sayılmaz)",
+            "en": "Yes — charged at our sites (not counted again)"
+          },
+          "no": {
+            "tr": "Hayır — dışarıda / ayrı faturalı şarj",
+            "en": "No — charged elsewhere / billed separately"
+          }
+        }
+      }
+    }
+  },
+  "4B-0": {
+    "number": 77,
+    "type": "single_select",
+    "text": {
+      "tr": "Dışarıdan ısı, buhar, soğutma veya sıkıştırılmış hava satın alıyor musunuz?",
+      "en": "Do you purchase heat, steam, cooling or compressed air from external sources?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "4B-1": {
+    "number": 78,
+    "type": "multi_select",
+    "text": {
+      "tr": "Satın aldığınız enerji türleri hangileri?",
+      "en": "Which types of energy do you purchase?"
+    },
+    "loopSource": null,
+    "options": {
+      "heat": {
+        "tr": "Isı / Merkezi ısıtma (district heating)",
+        "en": "Heat / District heating"
+      },
+      "steam": {
+        "tr": "Buhar",
+        "en": "Steam"
+      },
+      "cooling": {
+        "tr": "Soğutma / Merkezi soğutma (district cooling)",
+        "en": "Cooling / District cooling"
+      },
+      "compressed_air": {
+        "tr": "Sıkıştırılmış hava",
+        "en": "Compressed air"
+      }
+    },
+    "fields": null
+  },
+  "4B-2": {
+    "number": "78a",
+    "type": "fuel_loop",
+    "text": {
+      "tr": "[Enerji türü] — Yıllık tüketim miktarı nedir?",
+      "en": "[Energy type] — What is the annual consumption quantity?"
+    },
+    "loopSource": "4B-1",
+    "options": null,
+    "fields": null
+  },
+  "4B-EF": {
+    "number": 79,
+    "type": "single_select",
+    "text": {
+      "tr": "Satın aldığınız ısı, buhar veya soğutma için tedarikçinin emisyon beyanı var mı?",
+      "en": "[Energy type] — Does your supplier have an emission declaration?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tedarikçi emisyon beyanı var",
+        "en": "Yes — supplier has an emission declaration"
+      },
+      "no": {
+        "tr": "Hayır — beyan yok",
+        "en": "No — no declaration available"
+      }
+    },
+    "fields": null
+  },
+  "4B-EF-a": {
+    "number": "79a",
+    "type": "compound",
+    "text": {
+      "tr": "Tedarikçi emisyon beyanının bilgilerini girin",
+      "en": "Enter the supplier emission declaration details"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "ef_value": {
+        "label": {
+          "tr": "Emisyon faktörü değeri",
+          "en": "Emission factor value"
+        },
+        "options": null
+      },
+      "ef_unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "kgCO2e_GJ": {
+            "tr": "kg CO₂e / GJ",
+            "en": "kg CO₂e / GJ"
+          },
+          "kgCO2e_MWh": {
+            "tr": "kg CO₂e / MWh",
+            "en": "kg CO₂e / MWh"
+          },
+          "kgCO2e_kWh": {
+            "tr": "kg CO₂e / kWh",
+            "en": "kg CO₂e / kWh"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "ef_source": {
+        "label": {
+          "tr": "Belge kaynağı (tedarikçi / rapor adı)",
+          "en": "Document source (supplier / report name)"
+        },
+        "options": null
+      },
+      "ef_year": {
+        "label": {
+          "tr": "Beyan yılı",
+          "en": "Declaration year"
+        },
+        "options": null
+      }
+    }
+  },
+  "4C-1": {
+    "number": 80,
+    "type": "single_select",
+    "text": {
+      "tr": "Kapsam 2 özeti: Tespit edilen enerji kaynakları ve miktarlar doğru mu?",
+      "en": "Scope 2 summary: Are the identified energy sources and quantities correct?"
+    },
+    "loopSource": null,
+    "options": {
+      "confirmed": {
+        "tr": "Onayla — Kapsam 2 tamamlandı",
+        "en": "Confirm — Scope 2 complete"
+      },
+      "edit": {
+        "tr": "Düzenle — Bir tesisin verisini değiştirmek istiyorum",
+        "en": "Edit — I want to change a site's data"
+      },
+      "add_source": {
+        "tr": "Kaynak ekle — Gözden kaçan bir enerji kaynağı var",
+        "en": "Add source — I missed an energy source"
+      },
+      "skip_to_report": {
+        "tr": "Raporu şimdi oluştur — eksik olacak ama Kapsam 3 isteğe bağlı olduğu için sorun değil",
+        "en": "Generate my report now — it won't be complete, but that's fine since Scope 3 is optional"
+      }
+    },
+    "fields": null
+  },
+  "4C-edit": {
+    "number": "80a",
+    "type": "section_picker",
+    "text": {
+      "tr": "Hangi Kapsam 2 bölümünü düzenlemek istiyorsunuz?",
+      "en": "Which Scope 2 section would you like to edit?"
+    },
+    "loopSource": null,
+    "options": {
+      "4A-0": {
+        "tr": "4A — Satın Alınan Elektrik",
+        "en": "4A — Purchased Electricity"
+      },
+      "4B-0": {
+        "tr": "4B — Satın Alınan Isı / Buhar / Soğutma",
+        "en": "4B — Purchased Heat / Steam / Cooling"
+      }
+    },
+    "fields": null
+  },
+  "K3C1-0": {
+    "number": 81,
+    "type": "single_select",
+    "text": {
+      "tr": "Şirketiniz dışarıdan mal veya hizmet satın alıyor mu?",
+      "en": "Does your company purchase goods or services from external suppliers?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C1-1": {
+    "number": 82,
+    "type": "multi_select",
+    "text": {
+      "tr": "Satın aldığınız mal/hizmet kategorileri hangileri?",
+      "en": "Which categories of goods and services do you purchase?"
+    },
+    "loopSource": null,
+    "options": {
+      "SC-01": {
+        "tr": "SC-01 — Hammadde ve ara mallar (NACE C öncelikli)",
+        "en": "SC-01 — Raw materials and intermediate goods (NACE C priority)"
+      },
+      "SC-02": {
+        "tr": "SC-02 — Ambalaj malzemeleri",
+        "en": "SC-02 — Packaging materials"
+      },
+      "SC-03": {
+        "tr": "SC-03 — BT ekipmanı ve elektronik",
+        "en": "SC-03 — IT equipment and electronics"
+      },
+      "SC-04": {
+        "tr": "SC-04 — Ofis malzemeleri ve kırtasiye",
+        "en": "SC-04 — Office supplies and stationery"
+      },
+      "SC-05": {
+        "tr": "SC-05 — Makine ve endüstriyel ekipman",
+        "en": "SC-05 — Machinery and industrial equipment"
+      },
+      "SC-06": {
+        "tr": "SC-06 — İnşaat ve tesis hizmetleri",
+        "en": "SC-06 — Construction and facility services"
+      },
+      "SC-07": {
+        "tr": "SC-07 — Profesyonel hizmetler (danışmanlık, hukuk, muhasebe)",
+        "en": "SC-07 — Professional services (consulting, legal, accounting)"
+      },
+      "SC-08": {
+        "tr": "SC-08 — Lojistik ve taşımacılık hizmetleri (⚠ Kat.4 çakışma kontrolü)",
+        "en": "SC-08 — Logistics and transport services (⚠ Cat.4 overlap check)"
+      },
+      "SC-09": {
+        "tr": "SC-09 — Gıda ve içecek (kurumsal yemekhane vb.)",
+        "en": "SC-09 — Food and beverages (corporate canteen, etc.)"
+      },
+      "SC-10": {
+        "tr": "SC-10 — Enerji ilişkili ürünler (⚠ K1 çakışma kontrolü)",
+        "en": "SC-10 — Energy-related products (⚠ K1 overlap check)"
+      },
+      "SC-11": {
+        "tr": "SC-11 — Su ve atık su hizmetleri",
+        "en": "SC-11 — Water and wastewater services"
+      },
+      "SC-12": {
+        "tr": "SC-12 — Diğer mal ve hizmetler",
+        "en": "SC-12 — Other goods and services"
+      }
+    },
+    "fields": null
+  },
+  "K3C1-2": {
+    "number": 83,
+    "type": "text",
+    "text": {
+      "tr": "[Kategori adı] — Yıllık harcama tutarı nedir?",
+      "en": "[Category] — What is the annual spend?"
+    },
+    "loopSource": "K3C1-1",
+    "options": null,
+    "fields": null
+  },
+  "K3C1-3": {
+    "number": 84,
+    "type": "single_select",
+    "text": {
+      "tr": "[Kategori] — Miktar bazlı veri var mı? (Seviye 2'ye yükselt)",
+      "en": "[Category] — Do you have quantity-based data? (Upgrade to Level 2)"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — miktar biliyorum (Seviye 2)",
+        "en": "Yes — I have quantity data (Level 2)"
+      },
+      "no": {
+        "tr": "Hayır — harcama yeterli (Seviye 3)",
+        "en": "No — spend data is sufficient (Level 3)"
+      }
+    },
+    "fields": null
+  },
+  "K3C1-3a": {
+    "number": "84a",
+    "type": "equipment_loop",
+    "text": {
+      "tr": "[Kategori] — Raporlama yılında satın alınan miktar nedir?",
+      "en": "[Category] — What quantity was purchased in the reporting year?"
+    },
+    "loopSource": "K3C1-1",
+    "options": null,
+    "fields": null
+  },
+  "K3C1-3m": {
+    "number": "84b",
+    "type": "single_select",
+    "text": {
+      "tr": "[Kategori] — Ağırlıkça en büyük pay hangi malzemenin?",
+      "en": "[Category] — Which material makes up most of it by weight?"
+    },
+    "loopSource": "K3C1-1",
+    "options": {
+      "chemical": {
+        "tr": "Kimyasal",
+        "en": "Chemical"
+      },
+      "chemical_oil": {
+        "tr": "Kimyasal yağ",
+        "en": "Chemical oil"
+      },
+      "mineral_oil": {
+        "tr": "Mineral yağ",
+        "en": "Mineral oil"
+      },
+      "plastic": {
+        "tr": "Plastik",
+        "en": "Plastic"
+      },
+      "plastic_hdpe": {
+        "tr": "Plastik — HDPE",
+        "en": "Plastic — HDPE"
+      },
+      "metal_primary": {
+        "tr": "Metal (birincil)",
+        "en": "Metal (primary)"
+      },
+      "metal_recycled": {
+        "tr": "Metal (geri dönüştürülmüş)",
+        "en": "Metal (recycled)"
+      },
+      "metal_aluminium": {
+        "tr": "Alüminyum",
+        "en": "Aluminium"
+      },
+      "wood": {
+        "tr": "Ahşap",
+        "en": "Wood"
+      },
+      "carton": {
+        "tr": "Karton",
+        "en": "Cardboard"
+      },
+      "paper": {
+        "tr": "Kağıt",
+        "en": "Paper"
+      },
+      "glass": {
+        "tr": "Cam",
+        "en": "Glass"
+      },
+      "foam_tape": {
+        "tr": "Köpük bant",
+        "en": "Foam tape"
+      },
+      "other": {
+        "tr": "Diğer (listede yok)",
+        "en": "Other (not listed)"
+      }
+    },
+    "fields": null
+  },
+  "K3C1-4": {
+    "number": 85,
+    "type": "single_select",
+    "text": {
+      "tr": "[Kategori] — Tedarikçi emisyon beyanı olan tedarikçiniz var mı?",
+      "en": "[Category] — Do any suppliers have emission declarations?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — tedarikçi beyanı var (Seviye 1)",
+        "en": "Yes — supplier declaration available (Level 1)"
+      },
+      "no": {
+        "tr": "Hayır — Seviye 3/2 ile devam",
+        "en": "No — continue with Level 3/2"
+      }
+    },
+    "fields": null
+  },
+  "K3C1-4a": {
+    "number": "85a",
+    "type": "compound",
+    "text": {
+      "tr": "Tedarikçi emisyon beyanlarının bilgilerini girin",
+      "en": "Enter the supplier emission declaration details"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "category": {
+        "label": {
+          "tr": "Kategori",
+          "en": "Category"
+        },
+        "options": null
+      },
+      "supplier": {
+        "label": {
+          "tr": "Tedarikçi / belge adı",
+          "en": "Supplier / document name"
+        },
+        "options": null
+      },
+      "value": {
+        "label": {
+          "tr": "Beyan edilen değer",
+          "en": "Declared value"
+        },
+        "options": null
+      },
+      "unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "tCO2e_total": {
+            "tr": "t CO₂e (toplam)",
+            "en": "t CO₂e (total)"
+          },
+          "kgCO2e_kg": {
+            "tr": "kg CO₂e / kg",
+            "en": "kg CO₂e / kg"
+          },
+          "kgCO2e_unit": {
+            "tr": "kg CO₂e / adet",
+            "en": "kg CO₂e / unit"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "year": {
+        "label": {
+          "tr": "Beyan yılı",
+          "en": "Declaration year"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C2-0": {
+    "number": 86,
+    "type": "single_select",
+    "text": {
+      "tr": "Bu raporlama yılında herhangi bir sermaye varlığı satın aldınız mı?",
+      "en": "Did you purchase any capital goods during this reporting year?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C2-1": {
+    "number": 87,
+    "type": "compound",
+    "text": {
+      "tr": "Satın aldığınız sermaye malı kategorileri, yıl ve harcama tutarı?",
+      "en": "Capital goods category, purchase year and spend amount?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "category": {
+        "label": {
+          "tr": "Sermaye malı kategorisi",
+          "en": "Capital goods category"
+        },
+        "options": {
+          "CG-01": {
+            "tr": "CG-01 — Bina ve inşaat",
+            "en": "CG-01 — Buildings and construction"
+          },
+          "CG-02": {
+            "tr": "CG-02 — Makine ve üretim ekipmanı",
+            "en": "CG-02 — Machinery and production equipment"
+          },
+          "CG-03": {
+            "tr": "CG-03 — Araç (üretim emisyonu — kullanım K1'de)",
+            "en": "CG-03 — Vehicle (production emission — use in K1)"
+          },
+          "CG-04": {
+            "tr": "CG-04 — BT altyapısı ve veri merkezi",
+            "en": "CG-04 — IT infrastructure and data centre"
+          },
+          "CG-05": {
+            "tr": "CG-05 — Enerji üretim sistemleri (güneş, rüzgar vb.)",
+            "en": "CG-05 — Energy generation systems (solar, wind, etc.)"
+          },
+          "CG-06": {
+            "tr": "CG-06 — Endüstriyel altyapı",
+            "en": "CG-06 — Industrial infrastructure"
+          },
+          "CG-07": {
+            "tr": "CG-07 — Tıbbi ve laboratuvar ekipmanı",
+            "en": "CG-07 — Medical and laboratory equipment"
+          },
+          "CG-08": {
+            "tr": "CG-08 — Diğer sermaye malları",
+            "en": "CG-08 — Other capital goods"
+          }
+        }
+      },
+      "purchase_year": {
+        "label": {
+          "tr": "Satın alma yılı",
+          "en": "Purchase year"
+        },
+        "options": null
+      },
+      "spend_amount": {
+        "label": {
+          "tr": "Harcama tutarı",
+          "en": "Spend amount"
+        },
+        "options": null
+      },
+      "currency": {
+        "label": {
+          "tr": "Para birimi",
+          "en": "Currency"
+        },
+        "options": {
+          "TL": null,
+          "USD": null,
+          "EUR": null
+        }
+      }
+    }
+  },
+  "K3C3-INFO": {
+    "number": 88,
+    "type": "single_select",
+    "text": {
+      "tr": "Kategori 3 (yakıt ve enerji ile ilgili faaliyetler) bu yöntemle hesaplansın mı?",
+      "en": "Should Category 3 (fuel- and energy-related activities) be calculated this way?"
+    },
+    "loopSource": null,
+    "options": {
+      "confirmed": {
+        "tr": "Evet — bu yöntemle devam et",
+        "en": "Yes — continue with this method"
+      },
+      "custom": {
+        "tr": "Hayır, farklı bir WTT/T&D faktörü kullanmak istiyorum",
+        "en": "No, I want to use a different WTT/T&D factor"
+      }
+    },
+    "fields": null
+  },
+  "K3C3-custom": {
+    "number": "88a",
+    "type": "compound",
+    "text": {
+      "tr": "Kullanmak istediğiniz WTT / T&D faktörünü girin",
+      "en": "Enter the WTT / T&D factor you want to use"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "factor_type": {
+        "label": {
+          "tr": "Faktör türü",
+          "en": "Factor type"
+        },
+        "options": {
+          "wtt": {
+            "tr": "WTT (yakıt üretimi ve taşınması)",
+            "en": "WTT (well-to-tank)"
+          },
+          "td_loss": {
+            "tr": "T&D kayıp oranı (iletim ve dağıtım)",
+            "en": "T&D loss rate"
+          }
+        }
+      },
+      "value": {
+        "label": {
+          "tr": "Değer",
+          "en": "Value"
+        },
+        "options": null
+      },
+      "unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": null
+      },
+      "source": {
+        "label": {
+          "tr": "Kaynak",
+          "en": "Source"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C4-0": {
+    "number": 89,
+    "type": "single_select",
+    "text": {
+      "tr": "Mal veya hammaddeleriniz dışarıdan taşınarak size ulaşıyor mu?",
+      "en": "Are goods or raw materials transported to you from external suppliers?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C4-1": {
+    "number": 90,
+    "type": "single_select",
+    "text": {
+      "tr": "Yukarı akış taşımacılık (tedarikçiden size gelen sevkiyat) verisi hakkında ne kadar bilginiz var?",
+      "en": "What level of upstream transport data do you have?"
+    },
+    "loopSource": null,
+    "options": {
+      "S1": {
+        "tr": "Lojistik firma GLEC/ISO 14083 emisyon raporu var — Seviye 1",
+        "en": "Logistics company has GLEC/ISO 14083 emission report — Level 1"
+      },
+      "S2": {
+        "tr": "Sevkiyat detayı var (ton, km, mod) — Seviye 2",
+        "en": "Shipment details available (tonnes, km, mode) — Level 2"
+      },
+      "S3": {
+        "tr": "Sadece lojistik fatura tutarım var — Seviye 3",
+        "en": "Only logistics invoice amount available — Level 3"
+      }
+    },
+    "fields": null
+  },
+  "K3C4-2c": {
+    "number": "90a",
+    "type": "compound",
+    "text": {
+      "tr": "Lojistik firmasının GLEC / ISO 14083 emisyon raporunun bilgilerini girin",
+      "en": "Enter the details of the logistics company's GLEC / ISO 14083 emission report"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "provider": {
+        "label": {
+          "tr": "Lojistik firması",
+          "en": "Logistics company"
+        },
+        "options": null
+      },
+      "total_tco2e": {
+        "label": {
+          "tr": "Rapordaki toplam emisyon (t CO₂e)",
+          "en": "Total emissions in the report (t CO₂e)"
+        },
+        "options": null
+      },
+      "year": {
+        "label": {
+          "tr": "Rapor yılı",
+          "en": "Report year"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C4-2": {
+    "number": "90b",
+    "type": "compound",
+    "text": {
+      "tr": "Taşıma modu, yük ve mesafe bilgisi?",
+      "en": "Transport mode, load and distance details?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "transport_mode": {
+        "label": {
+          "tr": "Taşıma modu",
+          "en": "Transport mode"
+        },
+        "options": {
+          "TM-01": {
+            "tr": "TM-01 — Karayolu, HTC 40t tam dolu",
+            "en": "TM-01 — Road, HGV 40t full load"
+          },
+          "TM-02": {
+            "tr": "TM-02 — Karayolu, HTC 40t %50 dolu",
+            "en": "TM-02 — Road, HGV 40t 50% load"
+          },
+          "TM-03": {
+            "tr": "TM-03 — Karayolu, hafif ticari (≤3.5t)",
+            "en": "TM-03 — Road, light commercial (≤3.5t)"
+          },
+          "TM-04": {
+            "tr": "TM-04 — Denizyolu, büyük konteyner (>10.000 TEU)",
+            "en": "TM-04 — Sea, large container (>10,000 TEU)"
+          },
+          "TM-05": {
+            "tr": "TM-05 — Denizyolu, orta konteyner (3.000–8.000 TEU)",
+            "en": "TM-05 — Sea, medium container (3,000–8,000 TEU)"
+          },
+          "TM-06": {
+            "tr": "TM-06 — Denizyolu, dökme yük",
+            "en": "TM-06 — Sea, bulk cargo"
+          },
+          "TM-07": {
+            "tr": "TM-07 — Havayolu, kargo (uzun mesafe)",
+            "en": "TM-07 — Air, cargo (long haul)"
+          },
+          "TM-08": {
+            "tr": "TM-08 — Demiryolu (elektrikli)",
+            "en": "TM-08 — Rail (electric)"
+          },
+          "TM-99": {
+            "tr": "TM-99 — Diğer (listede yok)",
+            "en": "TM-99 — Other (not in list)"
+          }
+        }
+      },
+      "load_tonne": {
+        "label": {
+          "tr": "Yük (ton)",
+          "en": "Load (tonnes)"
+        },
+        "options": null
+      },
+      "distance_km": {
+        "label": {
+          "tr": "Mesafe (km)",
+          "en": "Distance (km)"
+        },
+        "options": null
+      },
+      "load_factor_pct": {
+        "label": {
+          "tr": "Doluluk oranı (%) — opsiyonel",
+          "en": "Load factor (%) — optional"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C4-2b": {
+    "number": "90c",
+    "type": "text",
+    "text": {
+      "tr": "Yıllık toplam lojistik/nakliye fatura tutarı nedir?",
+      "en": "What is the total annual logistics/freight invoice amount?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "K3C5-0": {
+    "number": 91,
+    "type": "single_select",
+    "text": {
+      "tr": "Faaliyetlerinizden kaynaklanan atık var mı?",
+      "en": "Do your operations generate waste?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C5-1": {
+    "number": 92,
+    "type": "single_select",
+    "text": {
+      "tr": "Atık verisi hakkında bilgi düzeyiniz ve atık türleriniz?",
+      "en": "What is your data level and waste types?"
+    },
+    "loopSource": null,
+    "options": {
+      "S1": {
+        "tr": "Bertaraf firması emisyon beyanı var — Seviye 1",
+        "en": "Disposal company emission declaration available — Level 1"
+      },
+      "S2_type": {
+        "tr": "Atık türü ve miktarı biliyorum — Seviye 2",
+        "en": "I know waste type and quantity — Level 2"
+      },
+      "S2_total": {
+        "tr": "Genel toplam miktar biliyorum — Seviye 2 (karma EF)",
+        "en": "I know total quantity only — Level 2 (blended EF)"
+      },
+      "S3": {
+        "tr": "Hiç bilgim yok — Seviye 3 (çalışan başına tahmin)",
+        "en": "No data — Level 3 (per-employee estimate)"
+      }
+    },
+    "fields": null
+  },
+  "K3C5-2c": {
+    "number": "92a",
+    "type": "compound",
+    "text": {
+      "tr": "Bertaraf firmasının emisyon beyanının bilgilerini girin",
+      "en": "Enter the details of the disposal company emission declaration"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "provider": {
+        "label": {
+          "tr": "Bertaraf firması",
+          "en": "Disposal company"
+        },
+        "options": null
+      },
+      "total_tco2e": {
+        "label": {
+          "tr": "Rapordaki toplam emisyon (t CO₂e)",
+          "en": "Total emissions in the report (t CO₂e)"
+        },
+        "options": null
+      },
+      "year": {
+        "label": {
+          "tr": "Rapor yılı",
+          "en": "Report year"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C5-2": {
+    "number": "92b",
+    "type": "compound",
+    "text": {
+      "tr": "Atık türü, miktarı ve bertaraf yöntemi?",
+      "en": "Waste type, quantity and disposal method?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "waste_type": {
+        "label": {
+          "tr": "Atık türü",
+          "en": "Waste type"
+        },
+        "options": {
+          "WT-01": {
+            "tr": "WT-01 — Kağıt / Karton",
+            "en": "WT-01 — Paper / Cardboard"
+          },
+          "WT-02": {
+            "tr": "WT-02 — Plastik",
+            "en": "WT-02 — Plastic"
+          },
+          "WT-03": {
+            "tr": "WT-03 — Metal — Çelik",
+            "en": "WT-03 — Metal — Steel"
+          },
+          "WT-04": {
+            "tr": "WT-04 — Metal — Alüminyum",
+            "en": "WT-04 — Metal — Aluminium"
+          },
+          "WT-05": {
+            "tr": "WT-05 — Cam",
+            "en": "WT-05 — Glass"
+          },
+          "WT-06": {
+            "tr": "WT-06 — Organik / Gıda",
+            "en": "WT-06 — Organic / Food"
+          },
+          "WT-07": {
+            "tr": "WT-07 — Elektronik (WEEE)",
+            "en": "WT-07 — Electronic (WEEE)"
+          },
+          "WT-08": {
+            "tr": "WT-08 — Tehlikeli atık",
+            "en": "WT-08 — Hazardous waste"
+          },
+          "WT-09": {
+            "tr": "WT-09 — Tekstil",
+            "en": "WT-09 — Textile"
+          },
+          "WT-10": {
+            "tr": "WT-10 — Karma belediye atığı",
+            "en": "WT-10 — Mixed municipal waste"
+          },
+          "WT-11": {
+            "tr": "WT-11 — İnşaat / Yıkım",
+            "en": "WT-11 — Construction / Demolition"
+          },
+          "WT-12": {
+            "tr": "WT-12 — Tıbbi atık",
+            "en": "WT-12 — Medical waste"
+          },
+          "WT-99": {
+            "tr": "WT-99 — Diğer (listede yok)",
+            "en": "WT-99 — Other (not in list)"
+          }
+        }
+      },
+      "other_desc": {
+        "label": {
+          "tr": "Atık türü açıklaması",
+          "en": "Waste type description"
+        },
+        "options": null
+      },
+      "quantity_kg": {
+        "label": {
+          "tr": "Miktar (kg)",
+          "en": "Quantity (kg)"
+        },
+        "options": null
+      },
+      "disposal_method": {
+        "label": {
+          "tr": "Bertaraf yöntemi",
+          "en": "Disposal method"
+        },
+        "options": {
+          "landfill": {
+            "tr": "Depolama (düzenli/düzensiz)",
+            "en": "Landfill"
+          },
+          "recycling": {
+            "tr": "Geri dönüşüm",
+            "en": "Recycling"
+          },
+          "incineration": {
+            "tr": "Yakma",
+            "en": "Incineration"
+          },
+          "composting": {
+            "tr": "Kompost",
+            "en": "Composting"
+          },
+          "anaerobic_digestion": {
+            "tr": "Anaerobik çürütme",
+            "en": "Anaerobic digestion"
+          },
+          "licensed_contractor": {
+            "tr": "Lisanslı bertaraf firması",
+            "en": "Licensed disposal contractor"
+          }
+        }
+      }
+    }
+  },
+  "K3C5-2b": {
+    "number": "92c",
+    "type": "text",
+    "text": {
+      "tr": "Yıllık toplam atık miktarı nedir (kg)?",
+      "en": "What is the total annual waste quantity (kg)?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "K3C6-0": {
+    "number": 93,
+    "type": "single_select",
+    "text": {
+      "tr": "Çalışanlarınız iş amaçlı seyahat ediyor mu?",
+      "en": "Do your employees travel for business purposes?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C6-1": {
+    "number": 94,
+    "type": "single_select",
+    "text": {
+      "tr": "Seyahat verisi düzeyi ve kullanılan modlar?",
+      "en": "Travel data level and modes used?"
+    },
+    "loopSource": null,
+    "options": {
+      "S1": {
+        "tr": "Seyahat acentesi / platform emisyon raporu (SAP Concur, TravelPerk vb.) — Seviye 1",
+        "en": "Travel agency / platform emission report (SAP Concur, TravelPerk, etc.) — Level 1"
+      },
+      "S2": {
+        "tr": "Mod ve mesafe bazlı veri var — Seviye 2",
+        "en": "Mode and distance-based data available — Level 2"
+      },
+      "S3": {
+        "tr": "Sadece harcama verisi var — Seviye 3",
+        "en": "Only spend data available — Level 3"
+      }
+    },
+    "fields": null
+  },
+  "K3C6-2c": {
+    "number": "94a",
+    "type": "compound",
+    "text": {
+      "tr": "Seyahat acentesi / platform emisyon raporunun bilgilerini girin",
+      "en": "Enter the details of the travel agency / platform emission report"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "provider": {
+        "label": {
+          "tr": "Acente / platform",
+          "en": "Agency / platform"
+        },
+        "options": null
+      },
+      "total_tco2e": {
+        "label": {
+          "tr": "Rapordaki toplam emisyon (t CO₂e)",
+          "en": "Total emissions in the report (t CO₂e)"
+        },
+        "options": null
+      },
+      "year": {
+        "label": {
+          "tr": "Rapor yılı",
+          "en": "Report year"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C6-2": {
+    "number": "94b",
+    "type": "compound",
+    "text": {
+      "tr": "Seyahat modu, mesafe/gece sayısı, kabin sınıfı ve RFI?",
+      "en": "Travel mode, distance/nights, cabin class and RFI?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "travel_mode": {
+        "label": {
+          "tr": "Seyahat modu",
+          "en": "Travel mode"
+        },
+        "options": {
+          "BT-01": {
+            "tr": "BT-01 — Uçak, yurt içi",
+            "en": "BT-01 — Flight, domestic"
+          },
+          "BT-02": {
+            "tr": "BT-02 — Uçak, kısa mesafe uluslararası (<3 saat)",
+            "en": "BT-02 — Flight, short-haul international (<3h)"
+          },
+          "BT-03": {
+            "tr": "BT-03 — Uçak, uzun mesafe uluslararası (>6 saat)",
+            "en": "BT-03 — Flight, long-haul international (>6h)"
+          },
+          "BT-04": {
+            "tr": "BT-04 — Tren, elektrikli intercity",
+            "en": "BT-04 — Train, electric intercity"
+          },
+          "BT-05": {
+            "tr": "BT-05 — Tren, dizelli bölgesel",
+            "en": "BT-05 — Train, diesel regional"
+          },
+          "BT-06": {
+            "tr": "BT-06 — Otobüs, şehirlerarası",
+            "en": "BT-06 — Bus, intercity"
+          },
+          "BT-07": {
+            "tr": "BT-07 — Kiralık araç",
+            "en": "BT-07 — Rental car"
+          },
+          "BT-08": {
+            "tr": "BT-08 — Taksi / Araç paylaşımı",
+            "en": "BT-08 — Taxi / Ride-share"
+          },
+          "BT-09": {
+            "tr": "BT-09 — Feribot / Gemi",
+            "en": "BT-09 — Ferry / Ship"
+          },
+          "BT-11": {
+            "tr": "BT-11 — Uçak, orta mesafe uluslararası (3–6 saat)",
+            "en": "BT-11 — Flight, medium-haul international (3–6 hours)"
+          },
+          "BT-10": {
+            "tr": "BT-10 — Otel konaklaması",
+            "en": "BT-10 — Hotel stay"
+          },
+          "BT-99": {
+            "tr": "BT-99 — Diğer (listede yok)",
+            "en": "BT-99 — Other (not in list)"
+          }
+        }
+      },
+      "quantity": {
+        "label": {
+          "tr": "Kişi-km / km / gece",
+          "en": "Person-km / km / nights"
+        },
+        "options": null
+      },
+      "other_desc": {
+        "label": {
+          "tr": "Seyahat türü açıklaması",
+          "en": "Travel type description"
+        },
+        "options": null
+      },
+      "cabin_class": {
+        "label": {
+          "tr": "Kabin sınıfı",
+          "en": "Cabin class"
+        },
+        "options": {
+          "economy": {
+            "tr": "Ekonomi (1x)",
+            "en": "Economy (1x)"
+          },
+          "business": {
+            "tr": "Business (2.9x)",
+            "en": "Business (2.9x)"
+          },
+          "first": {
+            "tr": "Birinci Sınıf (4.0x)",
+            "en": "First Class (4.0x)"
+          }
+        }
+      },
+      "rfi_applied": {
+        "label": {
+          "tr": "RFI (radyatif zorlama, 1.9x) uygulansın mı?",
+          "en": "Apply RFI (radiative forcing, 1.9x)?"
+        },
+        "options": null
+      },
+      "rental_fuel": {
+        "label": {
+          "tr": "Yakıt türü",
+          "en": "Fuel type"
+        },
+        "options": {
+          "diesel": {
+            "tr": "Motorin",
+            "en": "Diesel"
+          },
+          "petrol": {
+            "tr": "Benzin",
+            "en": "Petrol"
+          },
+          "electric": {
+            "tr": "Elektrik",
+            "en": "Electric"
+          }
+        }
+      },
+      "hotel_class": {
+        "label": {
+          "tr": "Otel kategorisi",
+          "en": "Hotel category"
+        },
+        "options": {
+          "standard": {
+            "tr": "Standart",
+            "en": "Standard"
+          },
+          "luxury": {
+            "tr": "Lüks (5 yıldız)",
+            "en": "Luxury (5-star)"
+          }
+        }
+      }
+    }
+  },
+  "K3C6-2b": {
+    "number": "94c",
+    "type": "text",
+    "text": {
+      "tr": "Yıllık toplam iş seyahati harcaması nedir?",
+      "en": "What is the total annual business travel spend?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "K3C7-0": {
+    "number": 95,
+    "type": "single_select",
+    "text": {
+      "tr": "Çalışanlar işe nasıl geliyor? İşe gidiş-geliş anketi yapıldı mı?",
+      "en": "How do employees commute? Has a commute survey been conducted?"
+    },
+    "loopSource": null,
+    "options": {
+      "survey": {
+        "tr": "Evet — anket veya çalışan verisi var",
+        "en": "Yes — survey or employee data available"
+      },
+      "estimate": {
+        "tr": "Hayır — tahmin kullanacağız",
+        "en": "No — we will use an estimate"
+      }
+    },
+    "fields": null
+  },
+  "K3C7-1": {
+    "number": "95a",
+    "type": "compound",
+    "text": {
+      "tr": "Tam zamanlı ofis, hibrit ve uzaktan çalışan sayısı?",
+      "en": "Full-time office, hybrid and remote employee counts?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "fulltime_count": {
+        "label": {
+          "tr": "Tam zamanlı ofis çalışanı",
+          "en": "Full-time office employees"
+        },
+        "options": null
+      },
+      "hybrid_count": {
+        "label": {
+          "tr": "Hibrit çalışan",
+          "en": "Hybrid employees"
+        },
+        "options": null
+      },
+      "remote_count": {
+        "label": {
+          "tr": "Uzaktan çalışan",
+          "en": "Remote employees"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C7-2": {
+    "number": "95b",
+    "type": "text",
+    "text": {
+      "tr": "Hibrit çalışanlar haftada kaç gün ofise geliyor?",
+      "en": "How many days per week do hybrid employees come to the office?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "K3C7-3": {
+    "number": "95c",
+    "type": "compound",
+    "text": {
+      "tr": "Çalışanlar işe nasıl geliyor? (ulaşım modu dağılımı)",
+      "en": "Commute modal split?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "car_pct": {
+        "label": {
+          "tr": "Özel araç (%)",
+          "en": "Private car (%)"
+        },
+        "options": null
+      },
+      "transit_pct": {
+        "label": {
+          "tr": "Toplu taşıma (%)",
+          "en": "Public transport (%)"
+        },
+        "options": null
+      },
+      "shuttle_pct": {
+        "label": {
+          "tr": "Servis aracı (%)",
+          "en": "Shuttle bus (%)"
+        },
+        "options": null
+      },
+      "walk_pct": {
+        "label": {
+          "tr": "Yürüme / bisiklet (%)",
+          "en": "Walk / cycle (%)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C7-6": {
+    "number": "95d",
+    "type": "single_select",
+    "text": {
+      "tr": "Servis aracının mülkiyeti nedir?",
+      "en": "What is the shuttle bus ownership?"
+    },
+    "loopSource": null,
+    "options": {
+      "company_owned": {
+        "tr": "Şirkete ait araç → Kapsam 1",
+        "en": "Company-owned vehicle → Scope 1"
+      },
+      "contracted": {
+        "tr": "Sözleşmeli nakliye firması → Kategori 4",
+        "en": "Contracted transport company → Category 4"
+      },
+      "third_party": {
+        "tr": "Üçüncü taraf / bilinmiyor → bu kategoride kalır",
+        "en": "Third-party / unknown → stays in this category"
+      }
+    },
+    "fields": null
+  },
+  "K3C7-4": {
+    "number": "95e",
+    "type": "text",
+    "text": {
+      "tr": "Ortalama tek yön ev–iş mesafesi (km)?",
+      "en": "Average one-way commute distance (km)?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "K3C7-5": {
+    "number": "95f",
+    "type": "text",
+    "text": {
+      "tr": "Özel aracıyla gelen kaç çalışan elektrikli araç kullanıyor?",
+      "en": "How many employees who commute by private car use an electric vehicle?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "K3C8-0": {
+    "number": 96,
+    "type": "single_select",
+    "text": {
+      "tr": "Kiralık bina veya uzun dönem kiralık ekipmanınız var mı?",
+      "en": "Do you lease any buildings or long-term equipment?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C8-1": {
+    "number": 97,
+    "type": "compound",
+    "text": {
+      "tr": "Kiralık varlık türü, alanı ve bina sahibi enerji beyanı?",
+      "en": "Leased asset type, area and building owner energy declaration?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "asset_type": {
+        "label": {
+          "tr": "Kiralık varlık türü",
+          "en": "Leased asset type"
+        },
+        "options": {
+          "KV-01": {
+            "tr": "KV-01 — Kiralık ofis binası",
+            "en": "KV-01 — Leased office building"
+          },
+          "KV-02": {
+            "tr": "KV-02 — Kiralık üretim/fabrika",
+            "en": "KV-02 — Leased production/factory"
+          },
+          "KV-03": {
+            "tr": "KV-03 — Kiralık depo/lojistik",
+            "en": "KV-03 — Leased warehouse/logistics"
+          },
+          "KV-04": {
+            "tr": "KV-04 — Kiralık ekipman (uzun dönem)",
+            "en": "KV-04 — Leased equipment (long-term)"
+          },
+          "KV-05": {
+            "tr": "KV-05 — Kiralık veri merkezi/co-location",
+            "en": "KV-05 — Leased data centre/co-location"
+          }
+        }
+      },
+      "area_m2": {
+        "label": {
+          "tr": "Alan (m²)",
+          "en": "Area (m²)"
+        },
+        "options": null
+      },
+      "owner_declaration": {
+        "label": {
+          "tr": "Bina sahibi enerji beyanı var mı?",
+          "en": "Building owner energy declaration available?"
+        },
+        "options": null
+      },
+      "declaration_kwh": {
+        "label": {
+          "tr": "Beyan edilen tüketim (kWh)",
+          "en": "Declared consumption (kWh)"
+        },
+        "options": null
+      },
+      "declaration_energy": {
+        "label": {
+          "tr": "Bu kWh hangi enerji?",
+          "en": "Which energy are these kWh?"
+        },
+        "options": {
+          "electricity": {
+            "tr": "Elektrik",
+            "en": "Electricity"
+          },
+          "natural_gas": {
+            "tr": "Doğalgaz",
+            "en": "Natural gas"
+          }
+        }
+      }
+    }
+  },
+  "K3C9-0": {
+    "number": 98,
+    "type": "single_select",
+    "text": {
+      "tr": "Müşterilere veya dağıtım kanallarına mal gönderiliyor mu?",
+      "en": "Are goods shipped to customers or distribution channels?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C9-1": {
+    "number": "98a",
+    "type": "compound",
+    "text": {
+      "tr": "Taşıma modu, yük ve mesafe bilgisi?",
+      "en": "Transport mode, load and distance details?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "transport_mode": {
+        "label": {
+          "tr": "Taşıma modu",
+          "en": "Transport mode"
+        },
+        "options": {
+          "TM-01": {
+            "tr": "TM-01 — Karayolu, HTC 40t tam dolu",
+            "en": "TM-01 — Road, HGV 40t full load"
+          },
+          "TM-02": {
+            "tr": "TM-02 — Karayolu, HTC 40t %50 dolu",
+            "en": "TM-02 — Road, HGV 40t 50% load"
+          },
+          "TM-03": {
+            "tr": "TM-03 — Karayolu, hafif ticari (≤3.5t)",
+            "en": "TM-03 — Road, light commercial (≤3.5t)"
+          },
+          "TM-04": {
+            "tr": "TM-04 — Denizyolu, büyük konteyner (>10.000 TEU)",
+            "en": "TM-04 — Sea, large container (>10,000 TEU)"
+          },
+          "TM-05": {
+            "tr": "TM-05 — Denizyolu, orta konteyner (3.000–8.000 TEU)",
+            "en": "TM-05 — Sea, medium container (3,000–8,000 TEU)"
+          },
+          "TM-06": {
+            "tr": "TM-06 — Denizyolu, dökme yük",
+            "en": "TM-06 — Sea, bulk cargo"
+          },
+          "TM-07": {
+            "tr": "TM-07 — Havayolu, kargo (uzun mesafe)",
+            "en": "TM-07 — Air, cargo (long haul)"
+          },
+          "TM-08": {
+            "tr": "TM-08 — Demiryolu (elektrikli)",
+            "en": "TM-08 — Rail (electric)"
+          },
+          "TM-99": {
+            "tr": "TM-99 — Diğer (listede yok)",
+            "en": "TM-99 — Other (not in list)"
+          }
+        }
+      },
+      "load_tonne": {
+        "label": {
+          "tr": "Yük (ton)",
+          "en": "Load (tonnes)"
+        },
+        "options": null
+      },
+      "distance_km": {
+        "label": {
+          "tr": "Mesafe (km)",
+          "en": "Distance (km)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C10-0": {
+    "number": 99,
+    "type": "single_select",
+    "text": {
+      "tr": "Sattığınız ürünler müşteri tarafından daha fazla işleniyor mu?",
+      "en": "Are your sold products further processed by customers?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — müşteri proses yapıyor",
+        "en": "Yes — customer processes further"
+      },
+      "no": {
+        "tr": "Hayır — son ürün satıyoruz",
+        "en": "No — we sell final products"
+      }
+    },
+    "fields": null
+  },
+  "K3C10-1": {
+    "number": "99a",
+    "type": "compound",
+    "text": {
+      "tr": "Müşteride işlenen ürün ve satış miktarı nedir?",
+      "en": "Which product is processed by customers, and how much was sold?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "product": {
+        "label": {
+          "tr": "Ara ürün",
+          "en": "Intermediate product"
+        },
+        "options": null
+      },
+      "quantity": {
+        "label": {
+          "tr": "Satılan miktar",
+          "en": "Quantity sold"
+        },
+        "options": null
+      },
+      "unit": {
+        "label": {
+          "tr": "Birim",
+          "en": "Unit"
+        },
+        "options": {
+          "tonnes": {
+            "tr": "ton",
+            "en": "tonnes"
+          },
+          "kg": {
+            "tr": "kg",
+            "en": "kg"
+          },
+          "m3": {
+            "tr": "m³",
+            "en": "m³"
+          },
+          "litres": {
+            "tr": "litre",
+            "en": "litres"
+          },
+          "units": {
+            "tr": "adet",
+            "en": "units"
+          }
+        }
+      },
+      "processing_type": {
+        "label": {
+          "tr": "İşlem türü",
+          "en": "Processing type"
+        },
+        "options": {
+          "energy_intensive": {
+            "tr": "Enerji yoğun (ergitme, fırınlama…)",
+            "en": "Energy-intensive (melting, firing…)"
+          },
+          "light": {
+            "tr": "Hafif (montaj, kesme, paketleme…)",
+            "en": "Light (assembly, cutting, packing…)"
+          },
+          "chemical": {
+            "tr": "Kimyasal işlem",
+            "en": "Chemical processing"
+          }
+        }
+      },
+      "customer_process": {
+        "label": {
+          "tr": "Müşterideki işlem (opsiyonel)",
+          "en": "Processing at the customer (optional)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C11-0": {
+    "number": 100,
+    "type": "single_select",
+    "text": {
+      "tr": "Sattığınız ürünler kullanım aşamasında emisyon üretiyor mu?",
+      "en": "Do your sold products generate emissions during use?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C11-1": {
+    "number": 101,
+    "type": "compound",
+    "text": {
+      "tr": "Ürün tipi, satış hacmi ve ortalama kullanım ömrü?",
+      "en": "Product type, sales volume and average use lifetime?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "product_type": {
+        "label": {
+          "tr": "Ürün tipi",
+          "en": "Product type"
+        },
+        "options": {
+          "P-01": {
+            "tr": "P-01 — Yakıt ve enerji ürünleri (doğrudan — en yüksek emisyon)",
+            "en": "P-01 — Fuel and energy products (direct — highest emission)"
+          },
+          "P-02": {
+            "tr": "P-02 — Motorlu taşıtlar (kullanım yakıt emisyonu)",
+            "en": "P-02 — Motor vehicles (use-phase fuel emission)"
+          },
+          "P-03": {
+            "tr": "P-03 — Elektrikli cihazlar ve ev aletleri",
+            "en": "P-03 — Electrical appliances and household devices"
+          },
+          "P-04": {
+            "tr": "P-04 — Binalarda kullanılan ürünler (HVAC vb.)",
+            "en": "P-04 — Products used in buildings (HVAC, etc.)"
+          },
+          "P-05": {
+            "tr": "P-05 — Diğer kullanımda enerji tüketen ürünler",
+            "en": "P-05 — Other products consuming energy during use"
+          }
+        }
+      },
+      "sales_volume": {
+        "label": {
+          "tr": "Satış hacmi",
+          "en": "Sales volume"
+        },
+        "options": null
+      },
+      "sales_unit": {
+        "label": {
+          "tr": "Satış birimi",
+          "en": "Sales unit"
+        },
+        "options": {
+          "units": {
+            "tr": "adet",
+            "en": "units"
+          },
+          "kg": {
+            "tr": "kg",
+            "en": "kg"
+          },
+          "tonnes": {
+            "tr": "ton",
+            "en": "tonnes"
+          },
+          "litres": {
+            "tr": "litre",
+            "en": "litres"
+          }
+        }
+      },
+      "use_lifetime_years": {
+        "label": {
+          "tr": "Kullanım ömrü (yıl)",
+          "en": "Use lifetime (years)"
+        },
+        "options": null
+      },
+      "lca_available": {
+        "label": {
+          "tr": "LCA belgesi mevcut mu?",
+          "en": "LCA certificate available?"
+        },
+        "options": null
+      },
+      "lca_kgco2e_per_unit": {
+        "label": {
+          "tr": "LCA'daki kullanım aşaması emisyonu (kg CO₂e / birim)",
+          "en": "Use-phase emissions in the LCA (kg CO₂e / unit)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C12-0": {
+    "number": 102,
+    "type": "single_select",
+    "text": {
+      "tr": "Sattığınız ürünler fiziksel bir ürün mü?",
+      "en": "Are your sold products physical goods (not services)?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — fiziksel ürün satıyoruz",
+        "en": "Yes — we sell physical products"
+      },
+      "no": {
+        "tr": "Hayır — hizmet satıyoruz",
+        "en": "No — we sell services"
+      }
+    },
+    "fields": null
+  },
+  "K3C12-1": {
+    "number": "102a",
+    "type": "compound",
+    "text": {
+      "tr": "Ürün adı, birim ağırlığı, ana malzemesi ve bertaraf yöntemi?",
+      "en": "Product name, unit weight, primary material and disposal method?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "product_name": {
+        "label": {
+          "tr": "Ürün adı",
+          "en": "Product name"
+        },
+        "options": null
+      },
+      "units_sold": {
+        "label": {
+          "tr": "Raporlama yılında satılan adet",
+          "en": "Units sold in the reporting year"
+        },
+        "options": null
+      },
+      "weight_kg": {
+        "label": {
+          "tr": "Birim ürün ağırlığı (kg)",
+          "en": "Unit product weight (kg)"
+        },
+        "options": null
+      },
+      "primary_material": {
+        "label": {
+          "tr": "Ana malzeme",
+          "en": "Primary material"
+        },
+        "options": {
+          "WT-01": {
+            "tr": "WT-01 — Kağıt / Karton",
+            "en": "WT-01 — Paper / Cardboard"
+          },
+          "WT-02": {
+            "tr": "WT-02 — Plastik",
+            "en": "WT-02 — Plastic"
+          },
+          "WT-03": {
+            "tr": "WT-03 — Metal — Çelik",
+            "en": "WT-03 — Metal — Steel"
+          },
+          "WT-04": {
+            "tr": "WT-04 — Metal — Alüminyum",
+            "en": "WT-04 — Metal — Aluminium"
+          },
+          "WT-05": {
+            "tr": "WT-05 — Cam",
+            "en": "WT-05 — Glass"
+          },
+          "WT-06": {
+            "tr": "WT-06 — Organik / Gıda",
+            "en": "WT-06 — Organic / Food"
+          },
+          "WT-07": {
+            "tr": "WT-07 — Elektronik (WEEE)",
+            "en": "WT-07 — Electronic (WEEE)"
+          },
+          "WT-08": {
+            "tr": "WT-08 — Tehlikeli atık",
+            "en": "WT-08 — Hazardous waste"
+          },
+          "WT-09": {
+            "tr": "WT-09 — Tekstil",
+            "en": "WT-09 — Textile"
+          },
+          "WT-10": {
+            "tr": "WT-10 — Karma belediye atığı",
+            "en": "WT-10 — Mixed municipal waste"
+          },
+          "WT-11": {
+            "tr": "WT-11 — İnşaat / Yıkım",
+            "en": "WT-11 — Construction / Demolition"
+          },
+          "WT-12": {
+            "tr": "WT-12 — Tıbbi atık",
+            "en": "WT-12 — Medical waste"
+          },
+          "WT-99": {
+            "tr": "WT-99 — Diğer (listede yok)",
+            "en": "WT-99 — Other (not in list)"
+          }
+        }
+      },
+      "disposal_method": {
+        "label": {
+          "tr": "Beklenen bertaraf yöntemi",
+          "en": "Expected disposal method"
+        },
+        "options": {
+          "landfill": {
+            "tr": "Depolama (düzenli/düzensiz)",
+            "en": "Landfill"
+          },
+          "recycling": {
+            "tr": "Geri dönüşüm",
+            "en": "Recycling"
+          },
+          "incineration": {
+            "tr": "Yakma",
+            "en": "Incineration"
+          },
+          "composting": {
+            "tr": "Kompost",
+            "en": "Composting"
+          },
+          "anaerobic_digestion": {
+            "tr": "Anaerobik çürütme",
+            "en": "Anaerobic digestion"
+          },
+          "licensed_contractor": {
+            "tr": "Lisanslı bertaraf firması",
+            "en": "Licensed disposal contractor"
+          }
+        }
+      }
+    }
+  },
+  "K3C13-0": {
+    "number": 103,
+    "type": "single_select",
+    "text": {
+      "tr": "Herhangi bir varlığı başkasına kiraya veriyor musunuz?",
+      "en": "Do you lease any assets to others?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C13-1": {
+    "number": "103a",
+    "type": "compound",
+    "text": {
+      "tr": "Kiraya verilen varlığın açıklaması ve kiracı veri durumu?",
+      "en": "Leased asset description and tenant data availability?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "asset_description": {
+        "label": {
+          "tr": "Varlık açıklaması",
+          "en": "Asset description"
+        },
+        "options": null
+      },
+      "tenant_data_available": {
+        "label": {
+          "tr": "Kiracıdan enerji verisi alınabiliyor mu?",
+          "en": "Can energy data be obtained from tenant?"
+        },
+        "options": null
+      },
+      "tenant_kwh": {
+        "label": {
+          "tr": "Kiracının yıllık enerji tüketimi (kWh)",
+          "en": "Tenant annual energy consumption (kWh)"
+        },
+        "options": null
+      },
+      "tenant_energy": {
+        "label": {
+          "tr": "Bu kWh hangi enerji?",
+          "en": "Which energy are these kWh?"
+        },
+        "options": {
+          "electricity": {
+            "tr": "Elektrik",
+            "en": "Electricity"
+          },
+          "natural_gas": {
+            "tr": "Doğalgaz",
+            "en": "Natural gas"
+          }
+        }
+      },
+      "area_m2": {
+        "label": {
+          "tr": "Kiraya verilen alan (m²)",
+          "en": "Leased area (m²)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C14-0": {
+    "number": 104,
+    "type": "single_select",
+    "text": {
+      "tr": "Franchise ağınızın emisyon verisi var mı?",
+      "en": "Does your franchise network have emission data?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — franchise GHG raporları var (Seviye 1)",
+        "en": "Yes — franchise GHG reports available (Level 1)"
+      },
+      "no": {
+        "tr": "Hayır — tahmin kullanacağız",
+        "en": "No — we will use an estimate"
+      },
+      "na": {
+        "tr": "Uygulanamaz — franchise modelimiz yok",
+        "en": "Not applicable — we have no franchise model"
+      }
+    },
+    "fields": null
+  },
+  "K3C14-1": {
+    "number": "104a",
+    "type": "compound",
+    "text": {
+      "tr": "Franchise işletmelerinizin raporladığı toplam emisyon nedir?",
+      "en": "What total emissions do your franchisees report?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "franchise_count": {
+        "label": {
+          "tr": "Franchise işletme sayısı",
+          "en": "Number of franchise outlets"
+        },
+        "options": null
+      },
+      "reporting_count": {
+        "label": {
+          "tr": "Raporu olan işletme sayısı",
+          "en": "Outlets with a GHG report"
+        },
+        "options": null
+      },
+      "total_tco2e": {
+        "label": {
+          "tr": "Raporlanan toplam emisyon (tCO₂e)",
+          "en": "Total reported emissions (tCO₂e)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C14-2": {
+    "number": "104b",
+    "type": "compound",
+    "text": {
+      "tr": "Franchise işletmelerinizin sayısı ve toplam alanı nedir?",
+      "en": "How many franchise outlets do you have and what is their total area?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "franchise_count": {
+        "label": {
+          "tr": "Franchise işletme sayısı",
+          "en": "Number of franchise outlets"
+        },
+        "options": null
+      },
+      "total_area_m2": {
+        "label": {
+          "tr": "Toplam kapalı alan (m²)",
+          "en": "Total floor area (m²)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3C15-0": {
+    "number": 105,
+    "type": "single_select",
+    "text": {
+      "tr": "Finansal yatırımlarınız var mı?",
+      "en": "Do you have financial investments?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet",
+        "en": "Yes"
+      },
+      "no": {
+        "tr": "Hayır",
+        "en": "No"
+      }
+    },
+    "fields": null
+  },
+  "K3C15-1": {
+    "number": 106,
+    "type": "compound",
+    "text": {
+      "tr": "Varlık sınıfı, yatırım tutarı ve şirket değeri?",
+      "en": "Asset class, investment amount and company value?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "asset_class": {
+        "label": {
+          "tr": "Varlık sınıfı",
+          "en": "Asset class"
+        },
+        "options": {
+          "VA-01": {
+            "tr": "VA-01 — Halka açık hisse senetleri",
+            "en": "VA-01 — Listed equities"
+          },
+          "VA-02": {
+            "tr": "VA-02 — Halka açık tahviller",
+            "en": "VA-02 — Corporate bonds"
+          },
+          "VA-03": {
+            "tr": "VA-03 — Proje finansmanı",
+            "en": "VA-03 — Project finance"
+          },
+          "VA-04": {
+            "tr": "VA-04 — Ticari gayrimenkul kredisi",
+            "en": "VA-04 — Commercial real estate loan"
+          },
+          "VA-05": {
+            "tr": "VA-05 — İpotek / konut kredisi",
+            "en": "VA-05 — Mortgage / home loan"
+          },
+          "VA-06": {
+            "tr": "VA-06 — Motorlu taşıt kredisi",
+            "en": "VA-06 — Motor vehicle loan"
+          },
+          "VA-07": {
+            "tr": "VA-07 — Özel sermaye",
+            "en": "VA-07 — Private equity"
+          }
+        }
+      },
+      "investment_amount": {
+        "label": {
+          "tr": "Yatırım tutarı (TL)",
+          "en": "Investment amount (TRY)"
+        },
+        "options": null
+      },
+      "company_value": {
+        "label": {
+          "tr": "Şirket değeri (TL)",
+          "en": "Company value (TRY)"
+        },
+        "options": null
+      },
+      "company_debt": {
+        "label": {
+          "tr": "Şirket borcu (TL)",
+          "en": "Company debt (TRY)"
+        },
+        "options": null
+      },
+      "ghg_report_available": {
+        "label": {
+          "tr": "GHG raporu mevcut mu?",
+          "en": "GHG report available?"
+        },
+        "options": null
+      },
+      "company_emissions_tco2e": {
+        "label": {
+          "tr": "Şirket emisyonları (tCO₂e)",
+          "en": "Company emissions (tCO₂e)"
+        },
+        "options": null
+      }
+    }
+  },
+  "K3-TY": {
+    "number": 107,
+    "type": "single_select",
+    "text": {
+      "tr": "Kapsam 3 özeti: Tüm kategoriler ve miktarlar doğru mu?",
+      "en": "Scope 3 summary: Are all categories and quantities correct?"
+    },
+    "loopSource": null,
+    "options": {
+      "confirmed": {
+        "tr": "Onayla — Kapsam 3 tamamlandı, Aşama 6'ya geç",
+        "en": "Confirm — Scope 3 complete, proceed to Stage 6"
+      },
+      "edit": {
+        "tr": "Düzenle — Bir kategoriyi değiştirmek istiyorum",
+        "en": "Edit — I want to change a category"
+      },
+      "add_category": {
+        "tr": "Kategori ekle — Atladığım bir kategori var",
+        "en": "Add category — I skipped a category"
+      }
+    },
+    "fields": null
+  },
+  "K3-TY-edit": {
+    "number": "107a",
+    "type": "section_picker",
+    "text": {
+      "tr": "Hangi Kapsam 3 kategorisine gitmek istiyorsunuz?",
+      "en": "Which Scope 3 category do you want to go to?"
+    },
+    "loopSource": null,
+    "options": {
+      "K3C1-0": {
+        "tr": "Kategori 1 — Satın alınan mal ve hizmetler",
+        "en": "Category 1 — Purchased goods and services"
+      },
+      "K3C2-0": {
+        "tr": "Kategori 2 — Sermaye malları",
+        "en": "Category 2 — Capital goods"
+      },
+      "K3C3-INFO": {
+        "tr": "Kategori 3 — Yakıt ve enerjiyle ilgili faaliyetler",
+        "en": "Category 3 — Fuel- and energy-related activities"
+      },
+      "K3C4-0": {
+        "tr": "Kategori 4 — Yukarı akış nakliye ve dağıtım",
+        "en": "Category 4 — Upstream transportation and distribution"
+      },
+      "K3C5-0": {
+        "tr": "Kategori 5 — Faaliyetlerde oluşan atık",
+        "en": "Category 5 — Waste generated in operations"
+      },
+      "K3C6-0": {
+        "tr": "Kategori 6 — İş seyahatleri",
+        "en": "Category 6 — Business travel"
+      },
+      "K3C7-0": {
+        "tr": "Kategori 7 — Çalışan ulaşımı",
+        "en": "Category 7 — Employee commuting"
+      },
+      "K3C8-0": {
+        "tr": "Kategori 8 — Kiralanan varlıklar",
+        "en": "Category 8 — Upstream leased assets"
+      },
+      "K3C9-0": {
+        "tr": "Kategori 9 — Aşağı akış nakliye ve dağıtım",
+        "en": "Category 9 — Downstream transportation and distribution"
+      },
+      "K3C10-0": {
+        "tr": "Kategori 10 — Satılan ürünlerin işlenmesi",
+        "en": "Category 10 — Processing of sold products"
+      },
+      "K3C11-0": {
+        "tr": "Kategori 11 — Satılan ürünlerin kullanımı",
+        "en": "Category 11 — Use of sold products"
+      },
+      "K3C12-0": {
+        "tr": "Kategori 12 — Satılan ürünlerin ömür sonu",
+        "en": "Category 12 — End-of-life treatment of sold products"
+      },
+      "K3C13-0": {
+        "tr": "Kategori 13 — Kiraya verilen varlıklar",
+        "en": "Category 13 — Downstream leased assets"
+      },
+      "K3C14-0": {
+        "tr": "Kategori 14 — Franchise'lar",
+        "en": "Category 14 — Franchises"
+      },
+      "K3C15-0": {
+        "tr": "Kategori 15 — Yatırımlar",
+        "en": "Category 15 — Investments"
+      }
+    },
+    "fields": null
+  },
+  "6-GİRİŞ": {
+    "number": 108,
+    "type": "info",
+    "text": {
+      "tr": "Aşama 6 Giriş — Son adımlar: veri kalitesi, hariç tutmalar, istisnalar ve ISO uyum kontrolleri.",
+      "en": "Stage 6 Introduction — Final steps: data quality, exclusions, exceptions and ISO compliance checks."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6A-1": {
+    "number": 109,
+    "type": "single_select",
+    "text": {
+      "tr": "Envanterinize dahil etmediğiniz (raporlamadığınız) bir tesis, faaliyet veya emisyon kaynağı var mı?",
+      "en": "Is there a facility, activity or emission source you have not included (not reported) in your inventory?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — hariç tuttuğum bir kaynak var",
+        "en": "Yes — I excluded a source"
+      },
+      "none_flagged": {
+        "tr": "Hayır — hariç tutma yok",
+        "en": "No — no exclusions"
+      }
+    },
+    "fields": null
+  },
+  "6A-1a": {
+    "number": "109a",
+    "type": "compound",
+    "text": {
+      "tr": "Hangi tesis, faaliyet veya kaynak hariç tutuldu?",
+      "en": "Which facility, activity or source was excluded?"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "source": {
+        "label": {
+          "tr": "Hariç tutulan tesis / faaliyet / kaynak",
+          "en": "Excluded facility / activity / source"
+        },
+        "options": null
+      },
+      "reason": {
+        "label": {
+          "tr": "Temel gerekçe",
+          "en": "Main reason"
+        },
+        "options": {
+          "not_controlled": {
+            "tr": "Operasyonel kontrol dışında",
+            "en": "Outside operational control"
+          },
+          "no_data": {
+            "tr": "Veri erişilemez",
+            "en": "Data inaccessible"
+          },
+          "materiality": {
+            "tr": "Materyalite eşiği altında (<%5)",
+            "en": "Below materiality threshold (<5%)"
+          },
+          "legal": {
+            "tr": "Yasal veya idari engel",
+            "en": "Legal or regulatory barrier"
+          },
+          "technical": {
+            "tr": "Teknik sınırlama",
+            "en": "Technical limitation"
+          },
+          "other": {
+            "tr": "Diğer",
+            "en": "Other"
+          }
+        }
+      },
+      "share": {
+        "label": {
+          "tr": "Tahmini emisyon payı",
+          "en": "Estimated emission share"
+        },
+        "options": {
+          "lt1": {
+            "tr": "<%1 — ihmal edilebilir düzeyde",
+            "en": "<1% — negligible"
+          },
+          "1_5": {
+            "tr": "%1–5 — düşük etki",
+            "en": "1–5% — low impact"
+          },
+          "5_10": {
+            "tr": "%5–10 — orta etki",
+            "en": "5–10% — medium impact"
+          },
+          "10_20": {
+            "tr": "%10–20 — yüksek etki",
+            "en": "10–20% — high impact"
+          },
+          "gt20": {
+            "tr": ">%20 — kritik düzeyde",
+            "en": ">20% — critical level"
+          }
+        }
+      }
+    }
+  },
+  "6A-2": {
+    "number": 110,
+    "type": "single_select",
+    "text": {
+      "tr": "Hariç tutmanın temel gerekçesi nedir?",
+      "en": "What is the main reason for the exclusion?"
+    },
+    "loopSource": null,
+    "options": {
+      "not_controlled": {
+        "tr": "Operasyonel kontrol dışında",
+        "en": "Outside operational control"
+      },
+      "no_data": {
+        "tr": "Veri erişilemez",
+        "en": "Data inaccessible"
+      },
+      "materiality": {
+        "tr": "Materyalite eşiği altında (<%5)",
+        "en": "Below materiality threshold (<5%)"
+      },
+      "legal": {
+        "tr": "Yasal veya idari engel",
+        "en": "Legal or regulatory barrier"
+      },
+      "technical": {
+        "tr": "Teknik sınırlama",
+        "en": "Technical limitation"
+      },
+      "other": {
+        "tr": "Diğer",
+        "en": "Other"
+      }
+    },
+    "fields": null
+  },
+  "6A-3": {
+    "number": 111,
+    "type": "text",
+    "text": {
+      "tr": "Hariç tutma gerekçenizi açıklayın (işletme gerekçesi).",
+      "en": "Describe your exclusion justification (business justification)."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6A-4": {
+    "number": 112,
+    "type": "single_select",
+    "text": {
+      "tr": "Hariç tutulan kaynağın tahmini emisyon payı nedir?",
+      "en": "What is the estimated emission share of the excluded source?"
+    },
+    "loopSource": null,
+    "options": {
+      "lt1": {
+        "tr": "<%1 — ihmal edilebilir düzeyde",
+        "en": "<1% — negligible"
+      },
+      "1_5": {
+        "tr": "%1–5 — düşük etki",
+        "en": "1–5% — low impact"
+      },
+      "5_10": {
+        "tr": "%5–10 — orta etki",
+        "en": "5–10% — medium impact"
+      },
+      "10_20": {
+        "tr": "%10–20 — yüksek etki",
+        "en": "10–20% — high impact"
+      },
+      "gt20": {
+        "tr": ">%20 — kritik düzeyde",
+        "en": ">20% — critical level"
+      }
+    },
+    "fields": null
+  },
+  "6A-5": {
+    "number": 113,
+    "type": "text",
+    "text": {
+      "tr": "Bu kaynağı gelecekte envanterinize dahil etmeyi planlıyor musunuz? (İsteğe bağlı)",
+      "en": "Do you plan to include this source in future inventories? (Optional)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6A-6": {
+    "number": 114,
+    "type": "single_select",
+    "text": {
+      "tr": "Tüm hariç tutmaların kümülatif emisyon payı ISO 14064-1 §5.1 eşiğinin altında mı?",
+      "en": "Is the cumulative emission share of all exclusions below the ISO 14064-1 §5.1 threshold?"
+    },
+    "loopSource": null,
+    "options": {
+      "ok": {
+        "tr": "Evet — kümülatif pay <%5 (eşik altında)",
+        "en": "Yes — cumulative share <5% (below threshold)"
+      },
+      "go_back": {
+        "tr": "Hayır — eşik aşılıyor, gözden geçirmem gerekiyor",
+        "en": "No — threshold exceeded, I need to review"
+      }
+    },
+    "fields": null
+  },
+  "6B-OV": {
+    "number": 115,
+    "type": "single_select",
+    "text": {
+      "tr": "Envanterinizde yaptığınız varsayımları (kabulleri) rapora eklemek ister misiniz?",
+      "en": "Would you like to add the assumptions you made in your inventory to the report?"
+    },
+    "loopSource": null,
+    "options": {
+      "approve_all": {
+        "tr": "Hayır — eklenecek varsayım yok",
+        "en": "No — no assumptions to add"
+      },
+      "review_detail": {
+        "tr": "Evet — varsayımlarımı gireceğim",
+        "en": "Yes — I will enter my assumptions"
+      }
+    },
+    "fields": null
+  },
+  "6C-1": {
+    "number": 116,
+    "type": "single_select",
+    "text": {
+      "tr": "Envanter kapsamınızda standart metodolojiden sapma (istisna) uyguladığınız bir alan var mı?",
+      "en": "Are there any areas in your inventory scope where you applied a deviation (exception) from the standard methodology?"
+    },
+    "loopSource": null,
+    "options": {
+      "none": {
+        "tr": "Hayır — standart metodoloji kullanıldı",
+        "en": "No — standard methodology applied"
+      },
+      "ef_deviation": {
+        "tr": "Evet — farklı emisyon faktörü kullanıldı",
+        "en": "Yes — different emission factor used"
+      },
+      "boundary_deviation": {
+        "tr": "Evet — sınır kararında sapma var",
+        "en": "Yes — deviation in boundary decision"
+      },
+      "methodology_deviation": {
+        "tr": "Evet — metodolojik sapma var",
+        "en": "Yes — methodological deviation"
+      },
+      "multiple": {
+        "tr": "Evet — birden fazla istisna var",
+        "en": "Yes — multiple exceptions exist"
+      }
+    },
+    "fields": null
+  },
+  "6C-2": {
+    "number": 117,
+    "type": "compound",
+    "text": {
+      "tr": "İstisnanın ayrıntılarını ve materyalite değerlendirmesini girin.",
+      "en": "Enter the details of the exception and the materiality assessment."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "exception_description": {
+        "label": {
+          "tr": "İstisnanın açıklaması",
+          "en": "Exception description"
+        },
+        "options": null
+      },
+      "materiality_pct": {
+        "label": {
+          "tr": "Toplam emisyonlara tahmini etki (%)",
+          "en": "Estimated impact on total emissions (%)"
+        },
+        "options": null
+      },
+      "justification": {
+        "label": {
+          "tr": "Gerekçe / işletme gerekçesi",
+          "en": "Justification / business justification"
+        },
+        "options": null
+      }
+    }
+  },
+  "6C-3": {
+    "number": 118,
+    "type": "text",
+    "text": {
+      "tr": "Bu istisna için gelecek dönemde iyileştirme taahhüdünüz var mı? (İsteğe bağlı)",
+      "en": "Do you have an improvement commitment for this exception in the future period? (Optional)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6D-1": {
+    "number": 119,
+    "type": "single_select",
+    "text": {
+      "tr": "Tüm hariç tutmalar ve istisnalar dahil edildiğinde, toplam belirsizlik ve veri boşluğu envanterinizin %5'inin altında mı kalıyor?",
+      "en": "Including all exclusions and exceptions, does the total uncertainty and data gap remain below 5% of your inventory?"
+    },
+    "loopSource": null,
+    "options": {
+      "ok": {
+        "tr": "Evet — kümülatif belirsizlik <%5 (eşik altında)",
+        "en": "Yes — cumulative uncertainty <5% (below threshold)"
+      },
+      "go_back": {
+        "tr": "Hayır — gözden geçirmem ve düzeltmem gerekiyor",
+        "en": "No — I need to review and correct"
+      }
+    },
+    "fields": null
+  },
+  "6E-1": {
+    "number": 120,
+    "type": "text",
+    "text": {
+      "tr": "Veri kalitesi ve belirsizliği azaltmak için planlanan iyileştirmeleriniz var mı? (İsteğe bağlı)",
+      "en": "Are there any planned improvements to reduce data quality and uncertainty? (Optional)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6F-1": {
+    "number": 121,
+    "type": "multi_select",
+    "text": {
+      "tr": "Raporlama döneminde organizasyon yapınızda önemli değişiklikler oldu mu?",
+      "en": "Were there any significant changes in your organizational structure during the reporting period?"
+    },
+    "loopSource": null,
+    "options": {
+      "none": {
+        "tr": "Hayır — önemli değişiklik yok",
+        "en": "No — no significant changes"
+      },
+      "merger": {
+        "tr": "Birleşme veya satın alma",
+        "en": "Merger or acquisition"
+      },
+      "divestiture": {
+        "tr": "Satış veya elden çıkarma (divest)",
+        "en": "Sale or divestiture"
+      },
+      "facility_open": {
+        "tr": "Yeni tesis açıldı",
+        "en": "New facility opened"
+      },
+      "facility_close": {
+        "tr": "Tesis kapatıldı",
+        "en": "Facility closed"
+      },
+      "outsource_change": {
+        "tr": "Dış kaynak kullanımı değişti",
+        "en": "Outsourcing changed"
+      },
+      "control_method": {
+        "tr": "Kontrol metodolojisi değişti",
+        "en": "Control methodology changed"
+      }
+    },
+    "fields": null
+  },
+  "6F-2": {
+    "number": 122,
+    "type": "single_select",
+    "text": {
+      "tr": "Yapısal değişikliklerin toplam emisyonlar üzerindeki etkisi %5'i aşıyor mu?",
+      "en": "Does the impact of structural changes on total emissions exceed 5%?"
+    },
+    "loopSource": null,
+    "options": {
+      "yes": {
+        "tr": "Evet — etki >%5, baz yıl yeniden hesaplanmalı",
+        "en": "Yes — impact >5%, base year must be recalculated"
+      },
+      "no": {
+        "tr": "Hayır — etki <%5, yeniden hesaplama gerekmiyor",
+        "en": "No — impact <5%, no recalculation required"
+      }
+    },
+    "fields": null
+  },
+  "6F-3": {
+    "number": 123,
+    "type": "single_select",
+    "text": {
+      "tr": "Baz yıl yeniden hesaplama kararınız nedir?",
+      "en": "What is your base year recalculation decision?"
+    },
+    "loopSource": null,
+    "options": {
+      "recalculate_full": {
+        "tr": "Tam yeniden hesaplama — tüm yıllar revize edilecek (karar raporda belirtilir)",
+        "en": "Full recalculation — all years to be revised (decision stated in the report)"
+      },
+      "recalculate_partial": {
+        "tr": "Kısmi yeniden hesaplama — yalnızca etkilenen yıllar",
+        "en": "Partial recalculation — affected years only"
+      },
+      "defer": {
+        "tr": "Ertele — sonraki raporlama döneminde ele alınacak",
+        "en": "Defer — to be addressed in the next reporting period"
+      }
+    },
+    "fields": null
+  },
+  "7-GİRİŞ": {
+    "number": 124,
+    "type": "info",
+    "text": {
+      "tr": "Aşama 7 Giriş — Rapor Oluşturma ve İmzalama",
+      "en": "Stage 7 Introduction — Report Generation and Sign-Off"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "7C-1": {
+    "number": 125,
+    "type": "single_select",
+    "text": {
+      "tr": "İmzalamadan önce: girdiğiniz bilgilerin eksiksiz olduğundan emin misiniz?",
+      "en": "Before signing: are you sure the information you entered is complete?"
+    },
+    "loopSource": null,
+    "options": {
+      "all_complete": {
+        "tr": "Evet — tüm alanlar tamamlandı, imzalamaya geç",
+        "en": "Yes — all fields complete, proceed to signing"
+      },
+      "fix_missing": {
+        "tr": "Hayır — bir bölüme dönüp düzeltmek istiyorum",
+        "en": "No — I want to go back and fix a section"
+      }
+    },
+    "fields": null
+  },
+  "7C-edit": {
+    "number": "125a",
+    "type": "section_picker",
+    "text": {
+      "tr": "Hangi aşamayı düzeltmek istiyorsunuz?",
+      "en": "Which stage do you want to fix?"
+    },
+    "loopSource": null,
+    "options": {
+      "2A-0": {
+        "tr": "Aşama 2 — Organizasyon Sınırı",
+        "en": "Stage 2 — Organizational Boundary"
+      },
+      "3A-0": {
+        "tr": "Aşama 3 — Kapsam 1 (doğrudan emisyonlar)",
+        "en": "Stage 3 — Scope 1 (direct emissions)"
+      },
+      "4A-0": {
+        "tr": "Aşama 4 — Kapsam 2 (satın alınan enerji)",
+        "en": "Stage 4 — Scope 2 (purchased energy)"
+      },
+      "K3C1-0": {
+        "tr": "Aşama 5 — Kapsam 3",
+        "en": "Stage 5 — Scope 3"
+      },
+      "6A-1": {
+        "tr": "Aşama 6 — Hariç Tutmalar ve Kabuller",
+        "en": "Stage 6 — Exclusions and Assumptions"
+      }
+    },
+    "fields": null
+  },
+  "7C-2": {
+    "number": 126,
+    "type": "compound",
+    "text": {
+      "tr": "Rapor İmzalama — Yetkili imzanızı ve beyanınızı girin.",
+      "en": "Report Sign-Off — Enter your authorized signature and declaration."
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": {
+      "signatory_name": {
+        "label": {
+          "tr": "Yetkili adı soyadı",
+          "en": "Authorized name and surname"
+        },
+        "options": null
+      },
+      "signatory_title": {
+        "label": {
+          "tr": "Unvan / pozisyon",
+          "en": "Title / position"
+        },
+        "options": null
+      },
+      "declaration_accepted": {
+        "label": {
+          "tr": "Beyan onayı",
+          "en": "Declaration acceptance"
+        },
+        "options": {
+          "accepted": {
+            "tr": "Yukarıdaki bilgilerin doğru ve eksiksiz olduğunu beyan ederim",
+            "en": "I declare that the above information is accurate and complete"
+          }
+        }
+      }
+    }
+  },
+  "7A-INFO": {
+    "number": 127,
+    "type": "info",
+    "text": {
+      "tr": "Raporunuz Hazırlandı",
+      "en": "Your Report is Ready"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "7B-INFO": {
+    "number": 128,
+    "type": "single_select",
+    "text": {
+      "tr": "GHG Envanteri Tamamlandı",
+      "en": "GHG Inventory Complete"
+    },
+    "loopSource": null,
+    "options": {
+      "view_assumptions": {
+        "tr": "Kabulleri Gözden Geçir",
+        "en": "Review Assumptions"
+      },
+      "done": {
+        "tr": "Tamamlandı — kapat",
+        "en": "Done — close"
+      }
+    },
+    "fields": null
+  },
+  "6B-0": {
+    "number": 129,
+    "type": "info",
+    "text": {
+      "tr": "Kabuller Detay — Metodolojik Kabuller İncelemesi",
+      "en": "Assumptions Detail — Methodological Assumptions Review"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6B-1": {
+    "number": 130,
+    "type": "single_select",
+    "text": {
+      "tr": "Sistem kabullerini nasıl incelemek istersiniz?",
+      "en": "How would you like to review the system assumptions?"
+    },
+    "loopSource": null,
+    "options": {
+      "approve_all": {
+        "tr": "Tümünü Onayla — sistem kabullerini kabul ediyorum",
+        "en": "Approve All — I accept all system assumptions"
+      },
+      "review_each": {
+        "tr": "Her Birini İncele — tip bazında gözden geçireyim",
+        "en": "Review Each — let me review by type"
+      }
+    },
+    "fields": null
+  },
+  "6B-2": {
+    "number": "115a",
+    "type": "single_select",
+    "text": {
+      "tr": "Tip A — Etki Yönü: Kullanılan emisyon faktörleri gerçek emisyonlarınızı nasıl etkiliyor?",
+      "en": "Type A — Impact Direction: How do the emission factors used affect your actual emissions?"
+    },
+    "loopSource": null,
+    "options": {
+      "overestimate": {
+        "tr": "Fazla tahmin — gerçekten yüksek raporlanıyor olabilir",
+        "en": "Overestimate — may be reported higher than actual"
+      },
+      "underestimate": {
+        "tr": "Az tahmin — gerçekten düşük raporlanıyor olabilir",
+        "en": "Underestimate — may be reported lower than actual"
+      },
+      "uncertain": {
+        "tr": "Belirsiz — yön belirlenemiyor",
+        "en": "Uncertain — direction cannot be determined"
+      },
+      "neutral": {
+        "tr": "Nötr — önemli bir etki beklenmez",
+        "en": "Neutral — no significant impact expected"
+      }
+    },
+    "fields": null
+  },
+  "6B-3": {
+    "number": "115b",
+    "type": "text",
+    "text": {
+      "tr": "Tip B — Metodoloji Kabulü: Hesaplamada kullanılan metodolojik yaklaşımı onaylayın veya açıklayın. (İsteğe bağlı)",
+      "en": "Type B — Methodology Assumption: Confirm or describe the methodological approach used in the calculation. (Optional)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6B-4": {
+    "number": "115c",
+    "type": "text",
+    "text": {
+      "tr": "Tip C — Sınır Kararı: Envanter sınırında alınan kararları onaylayın veya açıklayın. (İsteğe bağlı)",
+      "en": "Type C — Boundary Decision: Confirm or describe the decisions made regarding inventory boundary. (Optional)"
+    },
+    "loopSource": null,
+    "options": null,
+    "fields": null
+  },
+  "6B-5": {
+    "number": "115d",
+    "type": "single_select",
+    "text": {
+      "tr": "Tüm kabuller gözden geçirildi. Metodolojik kabulleri onaylıyor musunuz?",
+      "en": "All assumptions have been reviewed. Do you confirm the methodological assumptions?"
+    },
+    "loopSource": null,
+    "options": {
+      "confirmed": {
+        "tr": "Evet — kabulleri onaylıyorum",
+        "en": "Yes — I confirm the assumptions"
+      },
+      "edit": {
+        "tr": "Hayır — düzenlemek istiyorum",
+        "en": "No — I want to edit"
+      }
+    },
+    "fields": null
+  }
+}
