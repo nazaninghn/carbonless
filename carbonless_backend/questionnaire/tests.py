@@ -447,6 +447,63 @@ class InventoryCalculationTests(StepEntriesTests):
             company=self.company, description__contains='4A-1')), ids)
         self.assertEqual(EmissionEntry.objects.get(pk=entry.pk).facility_id, gebze.id)
 
+    def test_proof_documents_survive_answer_changes(self):
+        from django.core.files.base import ContentFile
+        from emissions.models import EmissionEntry
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        rows = {e.facility.name: e for e in self._entries()}
+        rows['Depo'].proof_document.save('depo.pdf', ContentFile(b'%PDF'), save=True)
+        rows['Gebze Fabrika'].proof_document.save('gebze.pdf', ContentFile(b'%PDF'), save=True)
+        # Gebze changes; Depo does not: Depo's row (and proof) stays as it was
+        self._step('4A-1', {'1': '1200 kWh', '2': '500 kWh'})
+        after = {e.facility.name: e for e in self._entries()}
+        self.assertEqual(after['Depo'].pk, rows['Depo'].pk)
+        self.assertEqual(after['Depo'].proof_document.name, rows['Depo'].proof_document.name)
+        # Gebze's rebuilt row keeps the proof of the row it replaced, and the history says so
+        self.assertNotEqual(after['Gebze Fabrika'].pk, rows['Gebze Fabrika'].pk)
+        self.assertEqual(after['Gebze Fabrika'].proof_document.name, rows['Gebze Fabrika'].proof_document.name)
+        hist = self.client.get('/api/accounts/history/?lang=tr').data
+        self.assertIn('Kanıt önceki değerden taşındı: gebze', hist[0]['detail'])
+        self.assertIn('yeni değere ait olmayabilir', hist[0]['detail'])
+        # removing the proof of one row does not delete the file another row still uses
+        shared = EmissionEntry.objects.create(user=self.user, company=self.company,
+                                              emission_factor=after['Depo'].emission_factor, year=2024, month=1,
+                                              quantity=1, proof_document=after['Depo'].proof_document.name)
+        self.assertEqual(self.client.delete(f"/api/emissions/entries/{after['Depo'].pk}/proof/").status_code, 204)
+        self.assertTrue(shared.proof_document.storage.exists(shared.proof_document.name))
+
+    def test_split_keeps_proof_and_orphans_are_reattached(self):
+        from django.core.management import call_command
+        from django.core.files.base import ContentFile
+        from accounts.models import ActivityLog
+        from emissions.models import EmissionEntry
+        factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        EmissionEntry.objects.filter(company=self.company).delete()
+        old = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
+                                           month=1, quantity=1500, description='Questionnaire step 4A-1',
+                                           status='approved')
+        old.proof_document.save('fatura.pdf', ContentFile(b'%PDF'), save=True)
+        call_command('backfill_calc_detail', stdout=__import__('io').StringIO())
+        self.assertEqual({e.proof_document.name for e in self._entries()}, {old.proof_document.name})
+        self.assertEqual(len(self._entries()), 2)
+        # a proof left behind by the earlier split (its entry gone, nothing points at it) comes back
+        orphan = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
+                                              month=1, quantity=1, description='x')
+        orphan.proof_document.save('eski.pdf', ContentFile(b'%PDF'), save=True)
+        ActivityLog.objects.create(user=self.user, action='entry_updated', target_type='EmissionEntry',
+                                   target_id=str(orphan.pk), metadata={'company_id': self.company.pk},
+                                   detail=f'turkey-grid · 2025/01 · 1500 kwh · Kanıt eklendi: '
+                                          f'{orphan.proof_document.name.rsplit("/", 1)[-1]}')
+        name = orphan.proof_document.name
+        EmissionEntry.objects.filter(company=self.company).exclude(pk=orphan.pk).update(proof_document='')
+        EmissionEntry.objects.filter(pk=orphan.pk).delete()
+        call_command('backfill_calc_detail', stdout=__import__('io').StringIO())
+        self.assertEqual({e.proof_document.name for e in self._entries()}, {name})
+
     def test_chat_answers_for_the_facility_asked_about(self):
         from companies.models import Facility
         from chat.local_answers import local_data_answer

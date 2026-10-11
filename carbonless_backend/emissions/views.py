@@ -762,6 +762,18 @@ def export_all_view(request):
     return Response(data)
 
 
+
+def _drop_proof_file(entry):
+    """Delete an entry's proof file from storage — unless another entry still
+    points at it (a questionnaire row rebuilt for the same source shares the
+    file of the row it replaced)."""
+    if not entry.proof_document:
+        return
+    name = entry.proof_document.name
+    if not EmissionEntry.objects.filter(proof_document=name).exclude(pk=entry.pk).exists():
+        entry.proof_document.delete(save=False)
+
+
 @api_view(['GET', 'POST', 'DELETE'])
 @permission_classes([IsAuthenticated, NotAuditorForWrites])
 def download_proof_document(request, pk):
@@ -797,8 +809,7 @@ def download_proof_document(request, pk):
                                       'or manager, can change its proof document.'}, status=403)
         old_name = entry.proof_document.name.rsplit('/', 1)[-1] if entry.proof_document else ''
         if request.method == 'DELETE':
-            if entry.proof_document:
-                entry.proof_document.delete(save=False)
+            _drop_proof_file(entry)
             entry.proof_document = None
             entry.save(update_fields=['proof_document', 'updated_at'])
             _log_entry(request, 'entry_updated', entry, f'{_entry_summary(entry)} · Kanıt kaldırıldı: {old_name}')
@@ -812,8 +823,7 @@ def download_proof_document(request, pk):
         except Exception as exc:  # serializers.ValidationError
             detail = getattr(exc, 'detail', [str(exc)])
             return Response({'proof_document': detail}, status=400)
-        if entry.proof_document:
-            entry.proof_document.delete(save=False)
+        _drop_proof_file(entry)
         entry.proof_document = upload
         entry.save(update_fields=['proof_document', 'updated_at'])
         _log_entry(request, 'entry_updated', entry,
@@ -869,6 +879,16 @@ def approve_entry_view(request, pk):
     if action == 'approve':
         if group:
             waiting = [e for e in siblings if e.status == 'submitted']
+            # A proof attached to the approved row stays with its source.
+            for old in siblings:
+                if old.status == 'approved' and old.proof_document:
+                    for w in waiting:
+                        if (not w.proof_document and w.emission_factor_id == old.emission_factor_id
+                                and w.facility_id == old.facility_id):
+                            type(w).objects.filter(pk=w.pk).update(proof_document=old.proof_document.name)
+                            w.proof_document = old.proof_document.name
+                            if w.pk == entry.pk:
+                                entry.proof_document = old.proof_document.name
             for old in siblings:
                 if old.status == 'approved':
                     old.delete()

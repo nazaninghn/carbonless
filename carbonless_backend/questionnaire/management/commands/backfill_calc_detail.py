@@ -8,7 +8,10 @@ the inventory reports:
 - entries made before the electricity of each facility (4A-1) became its own
   entry: when the answers give the same factors and the same total amounts,
   only split by facility, the entry is replaced by one per facility with the
-  same status and approval.
+  same status, approval and proof document;
+- proof documents an earlier version of this split left behind: a proof file
+  in storage that no entry points at any more is attached again to the
+  questionnaire rows of its source (see `reattach_orphan_proofs`).
 
 Amounts, totals and approvals never change here.
 """
@@ -23,6 +26,48 @@ def _totals(pairs):
     for factor_id, qty in pairs:
         out[factor_id] += qty
     return dict(out)
+
+
+def reattach_orphan_proofs():
+    """Proof documents of questionnaire rows that were rebuilt (an answer
+    saved again, or the facility split) before proofs were carried over: the
+    file is still in storage but no entry points at it. The upload's history
+    row ("… · Kanıt eklendi: <file>") names its company, source and year; the
+    file is attached again to that year's questionnaire rows of the same
+    source that have no proof. Entries deleted by a user (logged as
+    entry_deleted) are left alone. Returns how many files were reattached."""
+    from django.core.files.storage import default_storage
+    from django.db.models import Q
+    from accounts.history_text import _SEGMENT
+    from accounts.models import ActivityLog
+    from emissions.inventory import ANNUAL_PREFIX
+    from emissions.models import EmissionEntry
+    marker = 'Kanıt eklendi: '
+    deleted = set(ActivityLog.objects.filter(action='entry_deleted', target_type='EmissionEntry')
+                  .values_list('target_id', flat=True))
+    done = 0
+    for log in (ActivityLog.objects.filter(action='entry_updated', target_type='EmissionEntry',
+                                           detail__contains=marker).order_by('created_at')):
+        if log.target_id in deleted or EmissionEntry.objects.filter(pk=log.target_id).exists():
+            continue
+        summary, _sep, basename = log.detail.partition(' · ' + marker)
+        name = f'proofs/{log.created_at:%Y/%m}/{basename.strip()}'
+        m = _SEGMENT.match(summary)
+        company_id = (log.metadata or {}).get('company_id')
+        if not m or not company_id or EmissionEntry.objects.filter(proof_document=name).exists():
+            continue
+        try:
+            if not default_storage.exists(name):
+                continue
+        except Exception:
+            continue
+        targets = (EmissionEntry.objects
+                   .filter(company_id=company_id, year=int(m['year']), emission_factor__name=m['name'],
+                           description__startswith=ANNUAL_PREFIX)
+                   .filter(Q(proof_document='') | Q(proof_document__isnull=True)))
+        if targets.update(proof_document=name):
+            done += 1
+    return done
 
 
 class Command(BaseCommand):
@@ -59,6 +104,7 @@ class Command(BaseCommand):
                         == _totals((e.emission_factor_id, _q4(e.quantity)) for e in entries)):
                     first = entries[0]
                     old_by_factor = {e.emission_factor_id: e for e in entries}
+                    proof = next((e.proof_document.name for e in entries if e.proof_document), None)
                     with transaction.atomic():
                         for e in entries:
                             e.delete()
@@ -70,9 +116,13 @@ class Command(BaseCommand):
                                 # the factor the old entry was snapshotted with
                                 factor_value_snapshot=old_by_factor[factor.id].factor_value_snapshot,
                                 factor_source_snapshot=old_by_factor[factor.id].factor_source_snapshot,
-                                status=first.status, approved_by=first.approved_by, approved_at=first.approved_at)
+                                status=first.status, approved_by=first.approved_by, approved_at=first.approved_at,
+                                # the combined entry's invoice covers every facility's share
+                                proof_document=proof)
                     split += 1
                 else:
                     _backfill_detail(entries, rows)
+        reattached = reattach_orphan_proofs()
         self.stdout.write(self.style.SUCCESS(
-            f'Checked {checked} questionnaire entries; split {split} answer(s) by facility.'))
+            f'Checked {checked} questionnaire entries; split {split} answer(s) by facility; '
+            f'reattached {reattached} proof document(s).'))

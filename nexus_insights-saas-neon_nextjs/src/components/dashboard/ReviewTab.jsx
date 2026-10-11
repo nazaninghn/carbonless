@@ -349,6 +349,13 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                             <span className="font-normal text-[#072C0E]/45"> · {tr ? 'onaylanana kadar önceki değer toplamlarda kalır' : 'the previous value stays in the totals until approved'}</span>
                           </span>
                         )}
+                        {entry.replaces?.proof_carried && (
+                          // The proof came from the approved row this one replaces.
+                          <span className="w-full text-[11px] font-semibold text-amber-700">
+                            {tr ? 'Kanıt belgesi önceki değerden taşındı — yeni değere ait olmayabilir.'
+                                : 'The proof document was carried over from the previous value — it may not belong to the new value.'}
+                          </span>
+                        )}
                         {(entry.description || '').startsWith('Questionnaire step') && (
                           <span className="w-full truncate text-[10px] text-[#072C0E]/45" title={entrySourceLabel(entry, tr)}>{entrySourceLabel(entry, tr)}</span>
                         )}
