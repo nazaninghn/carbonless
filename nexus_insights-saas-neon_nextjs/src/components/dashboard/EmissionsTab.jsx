@@ -105,8 +105,11 @@ const DELETE_REQUESTED_META = { bg: 'bg-amber-100', text: 'text-amber-800', tr: 
 const PENDING_CHANGE_META = { bg: 'bg-amber-100', text: 'text-amber-700', tr: 'Değişiklik onayda', en: 'Change pending' };
 // A form entry's deletion request can be taken back from its row; an
 // inventory answer's is withdrawn by answering the question again.
+// Only its author sees it: an approver refuses the request on Onay
+// Bekleyenler, which tells the author why.
 function canWithdrawDelete(entry) {
-  return entry.delete_requested && !(entry.description || '').startsWith('Questionnaire step');
+  return entry.delete_requested && entry.is_mine !== false
+    && !(entry.description || '').startsWith('Questionnaire step');
 }
 
 function WithdrawDeleteButton({ tr, onClick }) {

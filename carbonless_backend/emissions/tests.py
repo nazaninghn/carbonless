@@ -837,6 +837,33 @@ class EntryChangeRulesTests(TestCase):
         n = Notification.objects.filter(user=self.users['veri']).latest('id')
         self.assertIn('300', n.message)
 
+    def test_approvers_are_told_a_change_is_a_change(self):
+        from accounts.models import Notification
+        self._approved_entry_with_change(qty=250)
+        n = Notification.objects.filter(user=self.users['sahip']).latest('id')
+        self.assertEqual(n.title, 'Değişiklik talebi')
+        self.assertIn('300 m³ → 250 m³', n.message)
+        self.assertEqual(n.link, '/dashboard?tab=review')
+
+    def test_export_marks_changes_and_deletion_requests(self):
+        from .views import _export_rows
+        eid, cid = self._approved_entry_with_change(qty=250)
+        other = self._entry(qty=50)
+        EmissionEntry.objects.filter(id=other).update(status='approved', delete_requested=True)
+        _, rows = _export_rows(EmissionEntry.objects.filter(company=self.company).order_by('id'), 'tr')
+        self.assertEqual([r[12] for r in rows],
+                         ['Onaylı', 'Değişiklik onayda (onaylı: 300 m³)', 'Onaylı · silme talebi'])
+
+    def test_only_the_author_withdraws_a_deletion_request(self):
+        self._as('veri')
+        eid = self._entry()
+        EmissionEntry.objects.filter(id=eid).update(status='approved')
+        self.client.delete(f'/api/emissions/entries/{eid}/')
+        self._as('sahip')
+        res = self.client.post(f'/api/emissions/entries/{eid}/cancel-delete/')
+        self.assertEqual((res.status_code, res.json()['code']), (403, 'not_requester'))
+        self.assertTrue(EmissionEntry.objects.get(id=eid).delete_requested)
+
     def test_waiting_changes_are_counted_apart(self):
         from .inventory import not_counted, not_counted_note
         eid, cid = self._approved_entry_with_change()

@@ -54,10 +54,35 @@ def _describe(entry, lang):
     factor = entry.emission_factor
     name = (factor.name_tr or factor.name) if lang == 'tr' else factor.name
     month = _MONTHS[lang][entry.month - 1] if 1 <= (entry.month or 0) <= 12 else ''
+    return f'{name} · {_qty(entry, lang)} · {month} {entry.year}'.strip()
+
+
+def _qty(entry, lang):
     qty = f'{entry.quantity:,.2f}'.rstrip('0').rstrip('.')
     if lang == 'tr':
         qty = qty.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
-    return f'{name} · {qty} {_unit(factor.unit, lang)} · {month} {entry.year}'.strip()
+    return f'{qty} {_unit(entry.emission_factor.unit, lang)}'
+
+
+def _describe_change(old, new, lang):
+    """'Türkiye ulusal şebekesi · 4.000 kWh → 3.200 kWh · Nisan 2026', with
+    the period and the facility when those changed too."""
+    factor = new.emission_factor
+    name = (factor.name_tr or factor.name) if lang == 'tr' else factor.name
+    if old.emission_factor_id != new.emission_factor_id:
+        of = old.emission_factor
+        name = f"{(of.name_tr or of.name) if lang == 'tr' else of.name} → {name}"
+
+    def period(e):
+        m = _MONTHS[lang][e.month - 1] if 1 <= (e.month or 0) <= 12 else ''
+        return f'{m} {e.year}'.strip()
+    parts = [name]
+    parts.append(f'{_qty(old, lang)} → {_qty(new, lang)}' if old.quantity != new.quantity or
+                 old.emission_factor_id != new.emission_factor_id else _qty(new, lang))
+    parts.append(f'{period(old)} → {period(new)}' if (old.year, old.month) != (new.year, new.month) else period(new))
+    if old.facility_id != new.facility_id:
+        parts.append(f"{old.facility.name if old.facility_id else '—'} → {new.facility.name if new.facility_id else '—'}")
+    return ' · '.join(parts)
 
 
 def _notify(user, notification_type, title, message, link='/dashboard', company_id=None):
@@ -144,18 +169,38 @@ def notify_entry_submitted(entry):
             .exclude(user_id=entry.user_id)
             .select_related('user', 'user__profile')
         )
+        old = entry.replaces_entry if entry.replaces_entry_id else None
         for membership in approvers:
             wants, lang = _prefs(membership.user)
             if not wants:
                 continue
+            if old is not None:
+                # A change to an approved entry, not a new one: what it was
+                # and what it would become.
+                what = _describe_change(old, entry, lang)
+                if lang == 'tr':
+                    _notify(membership.user, 'entry_submitted', 'Değişiklik talebi',
+                            f'{author} onaylı bir kaydı değiştirmek istiyor: {what}. '
+                            'Onaylanana kadar onaylı değer toplamlarda kalır.',
+                            link='/dashboard?tab=review', company_id=entry.company_id)
+                else:
+                    _notify(membership.user, 'entry_submitted', 'Change request',
+                            f'{author} asks to change an approved entry: {what}. '
+                            'Until approved the approved value stays in the totals.',
+                            link='/dashboard?tab=review', company_id=entry.company_id)
+                _email_approver(membership.user, entry.company_id, lang,
+                                f'{author} — ' + ('değişiklik talebi: ' if lang == 'tr' else 'change request: ') + what)
+                continue
             if lang == 'tr':
                 _notify(membership.user, 'entry_submitted', 'Onay bekleyen kayıt',
                         f'{author} yeni bir kayıt ekledi: {_describe(entry, lang)}. '
-                        f'Onay Bekleyenler sayfasından inceleyebilirsiniz.', company_id=entry.company_id)
+                        f'Onay Bekleyenler sayfasından inceleyebilirsiniz.',
+                        link='/dashboard?tab=review', company_id=entry.company_id)
             else:
                 _notify(membership.user, 'entry_submitted', 'Entry awaiting approval',
                         f'{author} added a new entry: {_describe(entry, lang)}. '
-                        f'Review it on the Pending Review page.', company_id=entry.company_id)
+                        f'Review it on the Pending Review page.',
+                        link='/dashboard?tab=review', company_id=entry.company_id)
             _email_approver(membership.user, entry.company_id, lang, f'{author} — {_describe(entry, lang)}')
     except Exception:  # a notification must never break saving the entry
         logger.exception('Could not notify approvers about entry %s', entry.pk)

@@ -271,6 +271,13 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         by answering the question again in Karbon Envanteri."""
         instance = self.get_object()
         self._check_can_change(instance)
+        # Only its author takes a request back; an approver refuses it on the
+        # review page, which tells the author and keeps the reason.
+        if instance.user_id != request.user.pk:
+            return Response({
+                'error': 'Only the person who asked can withdraw it; refuse it on the review page instead.',
+                'code': 'not_requester',
+            }, status=403)
         if (instance.description or '').startswith('Questionnaire step '):
             return Response({
                 'error': 'This entry comes from the questionnaire; answer the question again there.',
@@ -726,6 +733,28 @@ def _export_rows(entries, lang):
         ['Source', 'Scope', 'Category', 'Month', 'Quantity', 'Unit', 'Factor (kg CO2e/unit)',
          'kg CO2e', 'tCO2e', 'Factor reference', 'Facility', 'Description', 'Status', 'Rejection reason']
     )
+    # A change or a deletion waiting on an approved entry is marked as such,
+    # so a reader summing the column doesn't count a change next to the
+    # approved figure it would replace.
+    from .inventory import ANNUAL_PREFIX
+    from .notifications import _qty
+    from questionnaire.step_entries import entry_group
+    entries = list(entries.select_related('replaces_entry__emission_factor'))
+    approved_groups = {(e.year, entry_group(e.description)) for e in entries
+                       if e.status == 'approved' and (e.description or '').startswith(ANNUAL_PREFIX)}
+
+    def status_label(e):
+        if e.status == 'approved' and e.delete_requested:
+            return 'Onaylı · silme talebi' if tr else 'Approved · deletion requested'
+        if e.status == 'submitted':
+            old = e.replaces_entry if e.replaces_entry_id else None
+            if old is not None:
+                return (f'Değişiklik onayda (onaylı: {_qty(old, lang)})' if tr
+                        else f'Change pending (approved: {_qty(old, lang)})')
+            if is_annual(e) and (e.year, entry_group(e.description)) in approved_groups:
+                return 'Değişiklik onayda' if tr else 'Change pending'
+        return status_labels.get(e.status, e.status)
+
     rows = []
     for e in entries:
         ef = e.emission_factor
@@ -742,7 +771,7 @@ def _export_rows(entries, lang):
             (('Hesaplama: ' if tr else 'Calculated: ') + (e.calc_detail or {}).get(lang, '')
              if ef.slug.startswith('calculated-') and e.calc_detail else ef.reference or ''),
             e.facility.name if e.facility_id else '', display_description(e.description, lang, e.calc_detail),
-            status_labels.get(e.status, e.status),
+            status_label(e),
             e.rejected_reason if e.status == 'draft' else '',
         ])
     return header, rows
