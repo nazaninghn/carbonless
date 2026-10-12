@@ -1935,16 +1935,26 @@
       },
       {
         "id": "size_band",
-        "type": "text",
+        "type": "select",
         "subtype": null,
         "required": true,
         "numericOnly": false,
         "exactLength": null,
-        "maxLength": 100,
+        "maxLength": null,
         "format": null,
         "conditionalOn": null,
         "conditionalOnValue": null,
-        "options": null
+        "options": [
+          "car_small",
+          "car_medium",
+          "car_large",
+          "van",
+          "hgv_7_5",
+          "hgv_17",
+          "hgv_heavy",
+          "motorcycle",
+          "unknown"
+        ]
       },
       {
         "id": "group_count",
