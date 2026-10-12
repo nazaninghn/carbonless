@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'questionnaire',
     'chat',
     'subscriptions',
+    'support',
 ]
 
 MIDDLEWARE = [
@@ -471,6 +472,15 @@ UNFOLD = {
                 'items': [
                     {'title': 'Sessions', 'icon': 'quiz', 'link': '/admin/questionnaire/questionnairesession/'},
                     {'title': 'Advisor Approvals', 'icon': 'fact_check', 'link': '/admin/questionnaire/advisorapproval/'},
+                ],
+            },
+            {
+                'title': 'Support',
+                'items': [
+                    {'title': 'Support Requests', 'icon': 'support_agent', 'link': '/admin/support/supportrequest/',
+                     'badge': 'support.admin.open_requests_badge'},
+                    {'title': 'Answer Feedback', 'icon': 'thumbs_up_down', 'link': '/admin/support/answerfeedback/',
+                     'badge': 'support.admin.unhelpful_badge'},
                 ],
             },
             {

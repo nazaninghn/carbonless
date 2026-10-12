@@ -54,7 +54,27 @@ CRITICAL RULES:
 14. You are in CONVERSATIONAL MODE only. Emission calculations are handled by a separate system. Just answer questions helpfully.
 15. STAY ON TOPIC. You only discuss carbon accounting, emissions, sustainability, ISO 14064-1, climate reporting, and this platform's own features. If asked something unrelated (relationships, general trivia, coding help, politics, etc.), politely decline in 1 sentence and redirect back to carbon accounting — do not answer the off-topic question itself, even briefly.
 16. After answering a conceptual/educational question (not a data-entry acknowledgment), end with a brief, friendly follow-up in the user's language — e.g. "Do you have any other questions?" — so the conversation feels like a helpful guide, not a one-shot lookup.
-17. NEVER ask the user which scope (1, 2, or 3) or which GHG Protocol category their activity belongs to, and never mention "scope" or "category" at all in a clarifying question — that classification is entirely your job, using the SCOPE KNOWLEDGE reference and ownership/control, purchased-energy, or value-chain reasoning. If details are missing, ask ONLY about the activity itself in plain terms — what it is, how much, what it was for — the same way a helpful colleague would, with zero GHG Protocol vocabulary in the question. Wrong: "Can you tell me more about the activity so I can figure out which scope and category it fits into?" Right: "What kind of activity was this — was it something your company bought, energy you used, or travel/transport?" The user should never have to know GHG Protocol classification to use this platform."""
+17. NEVER ask the user which scope (1, 2, or 3) or which GHG Protocol category their activity belongs to, and never mention "scope" or "category" at all in a clarifying question — that classification is entirely your job, using the SCOPE KNOWLEDGE reference and ownership/control, purchased-energy, or value-chain reasoning. If details are missing, ask ONLY about the activity itself in plain terms — what it is, how much, what it was for — the same way a helpful colleague would, with zero GHG Protocol vocabulary in the question. Wrong: "Can you tell me more about the activity so I can figure out which scope and category it fits into?" Right: "What kind of activity was this — was it something your company bought, energy you used, or travel/transport?" The user should never have to know GHG Protocol classification to use this platform.
+18. KNOW WHEN TO HAND OVER. Some questions need a person from the support team, not you: the user's account or login, billing/subscription, something in the app that is broken or shows an error, data that disappeared, integrations (API, ERP), legal/contract or accreditation questions, or anything about this company's specific situation that you cannot answer reliably from the information you have. In those cases do not guess: say in one short sentence that this needs the support team, and end your reply with the exact token [[DESTEK]] — the system then forwards the question to the team. Never use the token for ordinary carbon-accounting or how-to questions you can answer."""
+
+
+_SUPPORT_TOKEN = '[[DESTEK]]'
+
+
+def _refer_to_support(user, session, content, lang, topic, lead=''):
+    """Pass the question to the support team and tell the user so."""
+    from support.service import create_request, referral_text
+    req = create_request(user, content, source='ai', session=session, topic=topic, lang=lang)
+    text = (lead + '\n\n' if lead else '') + referral_text(req, lang)
+    ui = {'support_request_id': req.pk, 'referred': True}
+    msg = ChatMessage.objects.create(session=session, role='assistant', content=text, ui=ui)
+    session.save(update_fields=['updated_at'])
+    return Response({
+        'id': msg.id, 'role': 'assistant', 'content': text,
+        'created_at': msg.created_at, 'session_title': session.title,
+        'pending_entries': [], 'ui': ui, 'source': 'support_referral',
+        'support_request': {'id': req.pk, 'topic': req.topic},
+    })
 
 
 def _build_scope_knowledge_prompt():
@@ -1805,6 +1825,12 @@ def _send_message(request, session_id):
     if not attachment:
         from .local_answers import direct_data_answer, entry_change_request
         lang = 'tr' if (ui_language or getattr(session, 'ui_language', '') or 'tr') == 'tr' else 'en'
+        # Account, billing, something broken, lost data, integrations, legal:
+        # a person has to look, so the question goes to the support team.
+        from support.service import support_topic
+        topic = support_topic(content)
+        if topic:
+            return _refer_to_support(request.user, session, content, lang, topic)
         asked = entry_change_request(request.user, content, lang)
         direct = None if asked else direct_data_answer(request.user, content, lang)
         if asked or direct:
@@ -2026,6 +2052,12 @@ def _send_message(request, session_id):
     clean_text = _strip_internal_ai_artifacts(ai_text)
     # Backend enforcement of CRITICAL rule #13 — see _strip_false_save_claims docstring.
     clean_text = _strip_false_save_claims(clean_text)
+
+    # The AI said it can't answer this reliably: pass it on to the team.
+    if _SUPPORT_TOKEN in (ai_text or '') or _SUPPORT_TOKEN in clean_text:
+        clean_text = clean_text.replace(_SUPPORT_TOKEN, '').strip()
+        lang = 'en' if ui_language == 'en' else 'tr'
+        return _refer_to_support(request.user, session, content, lang, None, lead=clean_text)
 
     if not clean_text:
         clean_text = (

@@ -126,6 +126,21 @@
                 <span class="kpi-icon"><span class="material-symbols-outlined">fact_check</span></span>
                 <div><p class="kpi-label">{% translate "Pending advisor approvals" %}</p><p class="kpi-value" data-countup="{{ kpi_pending_advisor_approvals }}">0</p></div>
             </a>
+
+            <a class="kpi-card" href="/admin/support/supportrequest/?status__exact=open" style="--kpi-accent:#0891b2; --kpi-accent-bg:rgba(6,182,212,.14); animation-delay:360ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">support_agent</span></span>
+                <div><p class="kpi-label">{% translate "Open support requests" %}</p><p class="kpi-value" data-countup="{{ kpi_open_support_requests }}">0</p></div>
+            </a>
+
+            <a class="kpi-card" href="/admin/support/answerfeedback/?helpful__exact=0" style="--kpi-accent:#be123c; --kpi-accent-bg:rgba(244,63,94,.12); animation-delay:420ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">thumb_down</span></span>
+                <div><p class="kpi-label">{% translate "Unhelpful AI answers (30 days)" %}</p><p class="kpi-value" data-countup="{{ kpi_unhelpful_answers_30d }}">0</p></div>
+            </a>
+
+            <a class="kpi-card" href="/admin/support/supportrequest/?is_gap__exact=1" style="--kpi-accent:#4d7c0f; --kpi-accent-bg:rgba(132,204,22,.14); animation-delay:480ms">
+                <span class="kpi-icon"><span class="material-symbols-outlined">lightbulb</span></span>
+                <div><p class="kpi-label">{% translate "Product gaps to improve" %}</p><p class="kpi-value" data-countup="{{ kpi_product_gaps }}">0</p></div>
+            </a>
         </div>
 
         <div class="flex flex-col lg:flex-row lg:gap-8">

@@ -379,6 +379,8 @@ export const api = {
       credentials: 'include',
     });
   },
+  sendAnswerFeedback: (messageId, helpful, comment = '') => request('/support/feedback/', { method: 'POST', body: JSON.stringify({ message_id: messageId, helpful, comment }) }),
+  askSupport: (question, sessionId, language) => request('/support/requests/', { method: 'POST', body: JSON.stringify({ question, session_id: sessionId, language }) }),
   confirmEmissionEntry: (entryData) => request('/chat/confirm-entry/', { method: 'POST', body: JSON.stringify(entryData) }),
   downloadChatAttachment: (messageId) => request(`/chat/messages/${messageId}/attachment/`),
 };
