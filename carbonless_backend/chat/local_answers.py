@@ -228,15 +228,42 @@ def _top_source_answer(company, year, lang):
     return head + '\n\n' + '\n'.join(lines)
 
 
+def _pending_line(e, lang):
+    from emissions.notifications import _describe, _qty
+    if e.delete_requested:
+        kind = 'silme talebi' if lang == 'tr' else 'deletion request'
+        return f'- {_describe(e, lang)} — {kind}'
+    old = e.replaces_entry if e.replaces_entry_id else None
+    if old is not None:
+        kind = 'değişiklik' if lang == 'tr' else 'change'
+        return f'- {_describe(e, lang)} — {kind} ({_qty(old, lang)} → {_qty(e, lang)})'
+    kind = 'yeni' if lang == 'tr' else 'new'
+    return f'- {_describe(e, lang)} — {kind}'
+
+
+_LIST_MAX = 5
+
+
 def _pending_answer(user, company, lang):
+    """What is waiting: the count, and up to five of them by name — new
+    entries, changes to approved ones and deletion requests told apart."""
+    from django.db.models import Q
     from emissions.models import EmissionEntry
     from companies.models import CompanyMembership
     membership = CompanyMembership.objects.filter(user=user, company=company, is_active=True).first()
     approver = bool(membership and membership.role in ('owner', 'admin', 'manager'))
-    entries = EmissionEntry.objects.filter(company=company, status='submitted')
+    entries = (EmissionEntry.objects
+               .filter(Q(status='submitted') | Q(status='approved', delete_requested=True), company=company)
+               .select_related('emission_factor', 'replaces_entry__emission_factor')
+               .order_by('-created_at'))
     if not approver:
         entries = entries.filter(user=user)
     n = entries.count()
+    lines = [_pending_line(e, lang) for e in entries[:_LIST_MAX]]
+    more = n - len(lines)
+    if more > 0:
+        lines.append(f'- … ve {more} kayıt daha' if lang == 'tr' else f'- … and {more} more')
+    listing = ('\n\n' + '\n'.join(lines)) if lines else ''
     advisor = 0
     if approver:
         from questionnaire.models import AdvisorApproval
@@ -247,14 +274,144 @@ def _pending_answer(user, company, lang):
             if not n and not advisor:
                 return 'Onayınızı bekleyen kayıt yok.'
             return (f'Onayınızı bekleyen {n} emisyon kaydı ve {advisor} danışman onayı var. '
-                    'Onay Bekleyenler sayfasından inceleyebilirsiniz.')
-        return (f'Onay bekleyen {n} kaydınız var.' if n else 'Onay bekleyen kaydınız yok.')
+                    'Onay Bekleyenler sayfasından inceleyebilirsiniz.') + listing
+        return (f'Onay bekleyen {n} kaydınız var.' + listing) if n else 'Onay bekleyen kaydınız yok.'
     if approver:
         if not n and not advisor:
             return 'Nothing is waiting for your approval.'
         return (f'{n} emission entries and {advisor} advisor approvals are waiting for your approval. '
-                'Review them on the Pending Review page.')
-    return (f'You have {n} entries awaiting approval.' if n else 'You have no entries awaiting approval.')
+                'Review them on the Pending Review page.') + listing
+    return (f'You have {n} entries awaiting approval.' + listing) if n else 'You have no entries awaiting approval.'
+
+
+# A source named in a question ("Nisan elektrik tüketimim ne kadardı?").
+_SOURCES = [
+    (re.compile(r'elektri|electric', re.I), {'category': 'electricity'}, ('Elektrik', 'Electricity')),
+    (re.compile(r'doğal ?gaz|dogal ?gaz|natural gas', re.I), {'name_any': ('natural gas', 'doğal gaz', 'dogal gaz')}, ('Doğal gaz', 'Natural gas')),
+    (re.compile(r'dizel|motorin|diesel', re.I), {'name_any': ('diesel', 'dizel', 'motorin')}, ('Dizel', 'Diesel')),
+    (re.compile(r'benzin|gasoline|petrol', re.I), {'name_any': ('gasoline', 'petrol', 'benzin')}, ('Benzin', 'Petrol')),
+    (re.compile(r'\blpg\b', re.I), {'name_any': ('lpg',)}, ('LPG', 'LPG')),
+    (re.compile(r'\bsu\b|su tüketim|water', re.I), {'category': 'water'}, ('Su', 'Water')),
+]
+_QUESTION_WORDS = re.compile(r'ne kadar|kaç|kac|nedir|neydi|how much|how many|what (was|is)', re.I)
+_DELETE_WORDS = re.compile(r'\bsil(?:|in|iniz|er misin|ebilir|mek|eyim)\b|kaldır|kaldir|\bdelete\b|\bremove\b', re.I)
+_CHANGE_WORDS = re.compile(r'düzelt|duzelt|değiştir|degistir|güncelle|guncelle|\bcorrect\b|\bchange\b|\bupdate\b|\bedit\b', re.I)
+_RECORD_WORDS = re.compile(r'kayıt|kayit|kayd|\bentry\b|\bentries\b|\brecord', re.I)
+
+
+def _source_in(text):
+    for rx, flt, labels in _SOURCES:
+        if rx.search(text):
+            return flt, labels
+    return None
+
+
+def _source_filter(qs, flt):
+    from django.db.models import Q
+    if 'category' in flt:
+        return qs.filter(emission_factor__category=flt['category'])
+    q = Q()
+    for w in flt['name_any']:
+        q |= Q(emission_factor__name__icontains=w) | Q(emission_factor__name_tr__icontains=w)
+    return qs.filter(q)
+
+
+def entry_change_request(user, content, lang):
+    """(text, link) when the message asks the chat to delete or correct a
+    saved entry ("Mayıs elektrik kaydını sil", "Nisan kaydını düzelt"): the
+    chat can't do that, so it says where it is done instead of answering
+    as if it had. A correction that carries the new figure ("4000 değil
+    3500") is left to the entry card, which offers to change the existing
+    entry. None otherwise."""
+    from companies.utils import get_current_company
+    text = content or ''
+    deleting = bool(_DELETE_WORDS.search(text))
+    changing = bool(_CHANGE_WORDS.search(text)) and not re.search(r'\d{2,}', re.sub(r'\b20\d\d\b', '', text))
+    if not (deleting or changing):
+        return None
+    month = _month_in(text, False)
+    if not (_RECORD_WORDS.search(text) or month or _source_in(text)):
+        return None
+    if not get_current_company(user):
+        return None
+    lang = 'tr' if lang == 'tr' else 'en'
+    m = _YEAR_RE.search(text)
+    year = int(m.group(1)) if m else datetime.now(timezone.utc).year
+    link = {'href': f'/dashboard?tab=emissions&year={year}',
+            'label': f'Emisyon Yönetimi · {year}' if lang == 'tr' else f'Emissions · {year}'}
+    if lang == 'tr':
+        what = 'silmek' if deleting else 'düzeltmek'
+        text_out = (f'Sohbetten kayıt {"silemiyorum" if deleting else "değiştiremiyorum"}. Kaydı {what} için '
+                    f'Emisyon Yönetimi\'nde ilgili satırdaki {"çöp kutusu" if deleting else "kalem"} simgesini kullanın. '
+                    'Onaylı bir kaydı veri giriş rolüyle değiştirir veya silerseniz istek onaya gider; '
+                    'onaylanana kadar mevcut değer toplamlarda kalır.'
+                    + ('' if deleting else ' Yeni değeri buraya yazarsanız ("Nisan elektrik 3500 kWh") mevcut kaydı değiştirmeyi de önerebilirim.'))
+    else:
+        text_out = (f'I can\'t {"delete" if deleting else "change"} entries from the chat. To {"delete" if deleting else "correct"} it, '
+                    f'use the {"bin" if deleting else "pencil"} icon on its row in Emissions. '
+                    'If you have the data-entry role, a change or deletion of an approved entry goes for approval; '
+                    'until then the current value stays in the totals.'
+                    + ('' if deleting else ' If you write the new figure here ("April electricity 3500 kWh"), I can offer to change the existing entry.'))
+    return text_out, link
+
+
+def _source_month_answer(company, year, month, flt, labels, lang):
+    """A source's amount in a month ("Nisan elektrik ne kadardı?"): the
+    approved figure, and what is waiting on it."""
+    from django.db.models import Sum
+    from emissions.inventory import ANNUAL_PREFIX
+    from emissions.models import EmissionEntry
+    from emissions.notifications import _unit
+    qs = _source_filter(EmissionEntry.objects.filter(company=company, year=year, month=month)
+                        .exclude(description__startswith=ANNUAL_PREFIX), flt).select_related('emission_factor')
+    approved = qs.filter(status='approved')
+    label = labels[0] if lang == 'tr' else labels[1]
+    name = _MONTH_NAMES['tr' if lang == 'tr' else 'en'][month - 1].capitalize()
+    rows = list(approved.values('emission_factor__unit').annotate(q=Sum('quantity'), t=Sum('calculated_co2e_kg')))
+    waiting = qs.filter(status='submitted').count()
+    deleting = approved.filter(delete_requested=True).count()
+    if not rows:
+        out = (f'{name} {year} için onaylı {label.lower()} kaydı yok.' if lang == 'tr'
+               else f'There is no approved {label.lower()} entry for {name} {year}.')
+    else:
+        amounts = ', '.join(f"{_fmt(float(r['q']), lang, 0)} {_unit(r['emission_factor__unit'], lang)}" for r in rows)
+        t = sum(float(r['t'] or 0) for r in rows) / 1000
+        out = (f'{name} {year} {label.lower()}: **{amounts}** ({_fmt(t, lang)} tCO₂e, onaylı).' if lang == 'tr'
+               else f'{label} in {name} {year}: **{amounts}** ({_fmt(t, lang)} tCO₂e, approved).')
+    notes = []
+    if waiting:
+        notes.append(f'{waiting} kayıt/değişiklik onay bekliyor' if lang == 'tr' else f'{waiting} entry/change awaiting approval')
+    if deleting:
+        notes.append(f'{deleting} silme talebi var' if lang == 'tr' else f'{deleting} deletion request pending')
+    if notes:
+        out += (' ' + '; '.join(notes) + (' — onaylanana kadar onaylı değer geçerli.' if lang == 'tr'
+                                           else ' — until approved, the approved figure stands.'))
+    return out
+
+
+def direct_data_answer(user, content, lang):
+    """The look-ups answered from the database even when the AI is up — a
+    month's figure for a named source, and the list of what is waiting for
+    approval — where a guess would be worse than the stored data. None for
+    anything else (and for a message carrying an amount: that is data entry)."""
+    from companies.utils import get_current_company
+    text = content or ''
+    if re.search(r'\d{3,}', re.sub(r'\b(19|20)\d\d\b', '', text)):
+        return None
+    company = get_current_company(user)
+    if not company:
+        return None
+    lang = 'tr' if lang == 'tr' else 'en'
+    m = _YEAR_RE.search(text)
+    year = int(m.group(1)) if m else datetime.now(timezone.utc).year
+    if _PENDING_WORDS.search(text):
+        return _pending_answer(user, company, lang)
+    source = _source_in(text)
+    if source and _QUESTION_WORDS.search(text):
+        month = _month_in(text, bool(m))
+        if month:
+            return _source_month_answer(company, month[0] or year, month[1], source[0], source[1], lang)
+    return None
 
 
 def local_data_answer(user, content, lang):
@@ -270,6 +427,11 @@ def local_data_answer(user, content, lang):
     year = int(m.group(1)) if m else datetime.now(timezone.utc).year
     if _PENDING_WORDS.search(text):
         return _pending_answer(user, company, lang)
+    source = _source_in(text)
+    if source and _QUESTION_WORDS.search(text):
+        month = _month_in(text, bool(m))
+        if month:
+            return _source_month_answer(company, month[0] or year, month[1], source[0], source[1], lang)
     if _TOP_WORDS.search(text) and (_SOURCE_WORDS.search(text) or _EMISSION_WORDS.search(text)):
         return _top_source_answer(company, year, lang)
     about_emissions = _EMISSION_WORDS.search(text) or _SCOPE_RE.search(text)

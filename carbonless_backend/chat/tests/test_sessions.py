@@ -211,3 +211,49 @@ class LocalDataAnswerTests(TestCase):
         res = self._send('Emisyonlarımızı nasıl azaltabiliriz?')
         self.assertEqual(res.status_code, 503)
         self.assertIn('AI hizmetine şu an ulaşılamıyor', res.data['content'])
+
+
+class SavedEntryQuestionsTests(MultiItemMessageTests):
+    """A month that already holds the source asks before adding a second
+    figure; asking to delete or correct points to the page that does it;
+    a source's month and the pending list are answered from the data."""
+
+    def _saved(self, qty=4000):
+        pe = self._send('Nisan 2024 5.000 kWh elektrik kullandık').data['pending_entries'][0]
+        res = self.client.post('/api/chat/confirm-entry/', {**pe, 'quantity': qty, 'year': 2024, 'month': 4},
+                               format='json')
+        self.assertEqual(res.status_code, 201, res.content)
+        return pe, res.data['id']
+
+    def test_another_amount_for_the_same_month_asks_first(self):
+        pe, eid = self._saved()
+        res = self.client.post('/api/chat/confirm-entry/', {**pe, 'quantity': 3500, 'year': 2024, 'month': 4},
+                               format='json')
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual((res.data['code'], res.data['existing_id'], res.data['new_quantity'], res.data['can_change']),
+                         ('same_period', eid, 3500.0, True))
+        self.assertIn('4.000 kWh', res.data['message_tr'])
+        added = self.client.post('/api/chat/confirm-entry/', {**pe, 'quantity': 3500, 'year': 2024, 'month': 4,
+                                                              'confirm_same_period': True}, format='json')
+        self.assertEqual(added.status_code, 201)
+        other_month = self.client.post('/api/chat/confirm-entry/', {**pe, 'quantity': 3500, 'year': 2024, 'month': 5},
+                                       format='json')
+        self.assertEqual(other_month.status_code, 201)
+
+    def test_delete_or_correct_request_points_to_the_page(self):
+        res = self._send('Mayıs 2024 elektrik kaydını sil')
+        self.assertEqual(res.data['source'], 'entry_change_help')
+        self.assertIn('silemiyorum', res.data['content'])
+        self.assertEqual(res.data['ui']['link']['href'], '/dashboard?tab=emissions&year=2024')
+        self.assertEqual(self._send('Nisan kaydını düzeltmek istiyorum').data['source'], 'entry_change_help')
+        # a correction with the new figure is data entry
+        self.assertTrue(self._send('Nisan 2024 elektrik 4000 değil 3500 kWh').data['pending_entries'])
+
+    def test_source_month_and_pending_list(self):
+        self._saved()
+        a = self._send('Nisan 2024 elektrik tüketimim ne kadardı?').data['content']
+        self.assertIn('**4.000 kWh**', a)
+        from emissions.models import EmissionEntry
+        EmissionEntry.objects.filter(company=self.user.profile.active_company).update(status='submitted')
+        a = self._send('Onay bekleyen kayıtlar neler?').data['content']
+        self.assertIn('4.000 kWh · Nisan 2024 — yeni', a)
