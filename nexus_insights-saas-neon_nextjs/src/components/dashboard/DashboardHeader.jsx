@@ -11,6 +11,7 @@ import {
   Search,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+import { openChat } from '@/lib/openChat';
 
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - i);
 
@@ -130,6 +131,8 @@ export default function DashboardHeader({
     const params = new URLSearchParams((n.link || '').split('?')[1] || '');
     const tab = NOTIFICATION_TAB[n.notification_type] || params.get('tab');
     if (tab) setActiveTab?.(tab);
+    // The support team's answer opens the chat it was posted in.
+    if (params.get('chat')) openChat(params.get('chat'));
     // An entry notification opens on the entry's own year.
     const year = Number(params.get('year'));
     if (year) setSelectedYear?.(year);

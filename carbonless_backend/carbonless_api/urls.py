@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/questionnaire/', include('questionnaire.urls')),
     path('api/chat/', include('chat.urls')),
     path('api/subscriptions/', include('subscriptions.urls')),
+    path('api/support/', include('support.urls')),
     path('api/docs/', api_documentation, name='api_docs'),
 ]
 

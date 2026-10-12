@@ -22,6 +22,7 @@ import HowItWorksTab from '@/components/dashboard/HowItWorksTab';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
 import { computeLocalSummaryFromFields } from '@/lib/carboniq/emission-factors';
+import { openChat, OPEN_CHAT_EVENT } from '@/lib/openChat';
 
 function PreviewBanner({ tr }) {
   return (
@@ -93,6 +94,7 @@ export default function DashboardPage() {
     const year = Number(params.get('year'));
     if (!tab && !year) return;
     if (tab && DEEP_LINK_TABS.includes(tab)) setActiveTab(tab);
+    if (params.get('chat')) openChat(params.get('chat'));
     if (year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
     window.history.replaceState(null, '', window.location.pathname);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,6 +169,12 @@ export default function DashboardPage() {
     if (activeTab === 'ai_carbon') setAssistantOpen(typeof window !== 'undefined' && window.innerWidth >= 1024);
     else if (activeTab !== 'questionnaire') setAssistantOpen(false);
   }, [activeTab]);
+  // A link to one chat (the support team's answer) opens the assistant.
+  useEffect(() => {
+    const open = () => { setActiveTab('ai_carbon'); setTimeout(() => setAssistantOpen(true), 0); };
+    window.addEventListener(OPEN_CHAT_EVENT, open);
+    return () => window.removeEventListener(OPEN_CHAT_EVENT, open);
+  }, []);
 
   // Events from the inventory and its pages: open the assistant (with an
   // optional message start) or switch tab.
