@@ -3073,6 +3073,10 @@ export function QuestionnaireTab({
     if (firstQ.helper) {
       welcomeMsg.content += `\n\n_${firstQ.helper?.[lang] || firstQ.helper?.en}_`;
     }
+    // Said once at the top: help is one click away for any question.
+    welcomeMsg.content += tr
+      ? '\n\n💡 Bir soruda takılırsanız ya da ne yazacağınızdan emin değilseniz sağ alttaki **AI Yardımı**\'na sorun — soruyu açıklar ve cevabınızı birlikte bulursunuz.'
+      : '\n\n💡 If you get stuck on a question or are unsure what to enter, ask **Ask AI Help** at the bottom right — it explains the question and helps you find your answer.';
     setMessages([welcomeMsg]);
     questionMsgLenRef.current = 1;
     // The item the loop resumes on — not item 0: a second facility used to
@@ -4732,8 +4736,11 @@ export function QuestionnaireTab({
                   </div>
                 )}
                 <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-[#175022]/25">
-                    {tr ? 'Verileriniz güvenli şekilde kaydedilir.' : 'Your data is saved securely.'}
+                  <p className="text-[10px] text-[#175022]/45">
+                    {tr ? 'Verileriniz güvenli şekilde kaydedilir · ' : 'Your data is saved securely · '}
+                    <span className="font-semibold text-[#175022]/70">
+                      {tr ? 'Her sorunuzu AI\'a sorabilirsiniz →' : 'Ask the AI anything about this question →'}
+                    </span>
                   </p>
                   <button
                     onClick={() => {
@@ -4745,7 +4752,7 @@ export function QuestionnaireTab({
                         : '';
                       window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true, prefill } }));
                     }}
-                    className="flex items-center gap-1.5 rounded-full border border-[#175022]/10 bg-white px-3 py-1.5 text-[11px] font-semibold text-[#175022]/55 shadow-sm transition hover:border-[#8BEA99]/40 hover:bg-[#8BEA99]/5 hover:text-[#175022]"
+                    className="flex items-center gap-1.5 rounded-full border border-[#2ABD41]/40 bg-[#F1FCF2] px-3 py-1.5 text-[11px] font-bold text-[#175022] shadow-sm transition hover:border-[#2ABD41] hover:bg-[#DEFAE1]"
                   >
                     <HelpCircle className="h-3 w-3" />
                     {tr ? 'AI Yardımı' : 'Ask AI Help'}

@@ -2419,12 +2419,24 @@ export const CARBONIQ_QUESTIONS = [
         optionsFrom: 'facilities',
       },
       {
+        // A pick-list with the unit in each band (engine litres for cars,
+        // gross vehicle weight in tonnes for vans and lorries): typed text
+        // ("2", "orta") left the unit open. Not used in the calculation.
         id: 'size_band',
-        type: 'text',
+        type: 'select',
         required: true,
-        maxLength: 100,
-        label: { tr: 'Büyüklük / tonaj bandı', en: 'Size / tonnage band' },
-        placeholder: { tr: 'Örn: Orta (1.4–2.0L)', en: 'e.g. Medium (1.4–2.0L)' },
+        label: { tr: 'Büyüklük / tonaj bandı (motor hacmi L veya brüt ağırlık t)', en: 'Size / tonnage band (engine L or gross weight t)' },
+        options: [
+          { value: 'car_small', label: { tr: 'Binek — küçük (< 1,4 L motor)', en: 'Car — small (< 1.4 L engine)' } },
+          { value: 'car_medium', label: { tr: 'Binek — orta (1,4–2,0 L motor)', en: 'Car — medium (1.4–2.0 L engine)' } },
+          { value: 'car_large', label: { tr: 'Binek — büyük (> 2,0 L motor)', en: 'Car — large (> 2.0 L engine)' } },
+          { value: 'van', label: { tr: 'Hafif ticari / kamyonet (≤ 3,5 t)', en: 'Van / light commercial (≤ 3.5 t)' } },
+          { value: 'hgv_7_5', label: { tr: 'Kamyon 3,5–7,5 t', en: 'Lorry 3.5–7.5 t' } },
+          { value: 'hgv_17', label: { tr: 'Kamyon 7,5–17 t', en: 'Lorry 7.5–17 t' } },
+          { value: 'hgv_heavy', label: { tr: 'Kamyon / TIR > 17 t', en: 'Lorry / HGV > 17 t' } },
+          { value: 'motorcycle', label: { tr: 'Motosiklet', en: 'Motorcycle' } },
+          { value: 'unknown', label: { tr: 'Bilinmiyor', en: 'Unknown' } },
+        ],
       },
       {
         // Units of one type that differ (fuel, model year, gas …): the
@@ -2787,7 +2799,7 @@ export const CARBONIQ_QUESTIONS = [
         type: 'text',
         subtype: 'numeric',
         required: true,
-        label: { tr: 'Üretim miktarı', en: 'Production quantity' },
+        label: { tr: 'Üretim miktarı (ton)', en: 'Production quantity (tonnes)' },
         placeholder: { tr: 'Örn: 50.000', en: 'e.g. 50,000' },
       },
       {

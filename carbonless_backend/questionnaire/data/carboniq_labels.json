@@ -2132,10 +2132,47 @@
       },
       "size_band": {
         "label": {
-          "tr": "Büyüklük / tonaj bandı",
-          "en": "Size / tonnage band"
+          "tr": "Büyüklük / tonaj bandı (motor hacmi L veya brüt ağırlık t)",
+          "en": "Size / tonnage band (engine L or gross weight t)"
         },
-        "options": null
+        "options": {
+          "car_small": {
+            "tr": "Binek — küçük (< 1,4 L motor)",
+            "en": "Car — small (< 1.4 L engine)"
+          },
+          "car_medium": {
+            "tr": "Binek — orta (1,4–2,0 L motor)",
+            "en": "Car — medium (1.4–2.0 L engine)"
+          },
+          "car_large": {
+            "tr": "Binek — büyük (> 2,0 L motor)",
+            "en": "Car — large (> 2.0 L engine)"
+          },
+          "van": {
+            "tr": "Hafif ticari / kamyonet (≤ 3,5 t)",
+            "en": "Van / light commercial (≤ 3.5 t)"
+          },
+          "hgv_7_5": {
+            "tr": "Kamyon 3,5–7,5 t",
+            "en": "Lorry 3.5–7.5 t"
+          },
+          "hgv_17": {
+            "tr": "Kamyon 7,5–17 t",
+            "en": "Lorry 7.5–17 t"
+          },
+          "hgv_heavy": {
+            "tr": "Kamyon / TIR > 17 t",
+            "en": "Lorry / HGV > 17 t"
+          },
+          "motorcycle": {
+            "tr": "Motosiklet",
+            "en": "Motorcycle"
+          },
+          "unknown": {
+            "tr": "Bilinmiyor",
+            "en": "Unknown"
+          }
+        }
       },
       "group_count": {
         "label": {
@@ -2422,8 +2459,8 @@
     "fields": {
       "quantity": {
         "label": {
-          "tr": "Üretim miktarı",
-          "en": "Production quantity"
+          "tr": "Üretim miktarı (ton)",
+          "en": "Production quantity (tonnes)"
         },
         "options": null
       },

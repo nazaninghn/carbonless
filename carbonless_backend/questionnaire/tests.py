@@ -1343,8 +1343,10 @@ class SupplierEFDocumentTests(TestCase):
 
     def test_count_questions_accept_groups(self):
         from .carboniq_validation import validate_generic_step
-        row = {'unit_count': '3', 'site': 'İstanbul', 'size_band': 'Orta', 'group_count': '2'}
+        row = {'unit_count': '3', 'site': 'İstanbul', 'size_band': 'car_medium', 'group_count': '2'}
         self.assertEqual(validate_generic_step('3B-3', {'answer': {'EQ-3B-01': row}}, lang='tr'), (True, None))
+        # the size band is picked from the list (its unit is in the label), not typed
+        self.assertFalse(validate_generic_step('3B-3', {'answer': {'EQ-3B-01': {**row, 'size_band': 'Orta'}}}, lang='tr')[0])
         # later per-type questions are answered per group ("EQ-3B-01#2")
         self.assertEqual(validate_generic_step('3B-5', {'answer': {'EQ-3B-01': 'diesel', 'EQ-3B-01#2': 'electric'}}, lang='tr'), (True, None))
         self.assertEqual(validate_generic_step('3D-4', {'answer': {
