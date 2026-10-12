@@ -853,6 +853,13 @@ def _registration_prefill_answers(company):
     from .serializers import StepA2Serializer
     if tax and StepA2Serializer(data={'tax_id': tax}, context={'company': company}).is_valid():
         answers['A2'] = {'tax_id': tax}
+    # A3: the headquarters country given at sign-up (a country code), and the
+    # city of a registered facility in that country when there is one.
+    country = (company.country_of_headquarters or '').strip().upper()
+    if len(country) == 2 or country == 'OTHER':
+        site = (company.facilities.filter(country__iexact=country).exclude(city='').order_by('id').first()
+                if country != 'OTHER' else None)
+        answers['A3'] = {'country': country, 'city': site.city if site else ''}
     return answers
 
 

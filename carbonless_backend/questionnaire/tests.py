@@ -653,6 +653,14 @@ class ReuseProfileYearTests(TestCase):
         self.assertNotIn('A5', data['registration_answers'])
         self.assertEqual(data['registration_answers'].get('A1'), {'legal_name': 'Reuse Co'})
 
+    def test_sign_up_country_and_a_facility_city_fill_question_3(self):
+        from companies.models import Facility
+        data = self.client.get(f'/api/questionnaire/{self.new.id}/previous-profile/').data
+        self.assertEqual(data['registration_answers'].get('A3'), {'country': 'TR', 'city': ''})
+        Facility.objects.create(company=self.company, name='Merkez', country='TR', city='İstanbul')
+        data = self.client.get(f'/api/questionnaire/{self.new.id}/previous-profile/').data
+        self.assertEqual(data['registration_answers'].get('A3'), {'country': 'TR', 'city': 'İstanbul'})
+
     def test_year_is_the_chosen_one(self):
         r = self._reuse(reporting_year=2021)
         self.assertEqual(r.status_code, 200)

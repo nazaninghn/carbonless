@@ -130,8 +130,6 @@ function countryName(code, lang) {
   const c = COUNTRY_BY_CODE[code];
   return c ? (lang === 'tr' ? c.tr : c.en) : code;
 }
-// City <select> value that switches to typing the city name.
-const OTHER_CITY = '__other__';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: map answer for backend
@@ -606,6 +604,57 @@ function stripDocLabels(text) {
   do { prev = result; result = result.replace(leadingBracket, ''); } while (result !== prev);
   result = result.replace(/\s*\([^)]*(?:'ten\s+otomatik|auto-filled from)[^)]*\)\s*$/, '');
   return result.trim();
+}
+
+// Employee bands of sign-up ("11-50"), of a stored inventory ("1-50") and of
+// question B3 ("1_50"), as one band; and the head-count each band spans.
+const EMPLOYEE_BAND_FROM_SIGNUP = { '1-10': '1_50', '11-50': '1_50', '51-250': '51_250', '251-1000': '251_1000', '1000+': '1001_plus' };
+const EMPLOYEE_BAND_FROM_STORED = { '1-50': '1_50', '51-250': '51_250', '251-1000': '251_1000', '1001-5000': '1001_5000', '5000+': '5000_plus' };
+const EMPLOYEE_BAND_RANGE = { '1_50': [1, 50], '51_250': [51, 250], '251_1000': [251, 1000], '1001_5000': [1001, 5000], '5000_plus': [5001, Infinity] };
+const sameEmployeeBand = (a, b) => a === b || (a === '1001_plus' && ['1001_5000', '5000_plus'].includes(b));
+
+// The "is this right?" question for an answer that differs from what the user
+// said before, or null. Never a refusal: the employee count and the year may
+// well be different on purpose.
+function softCheckMessage(q, value, { answers, lang, registered, previous, reportYear }) {
+  const tr = lang === 'tr';
+  const bandLabel = (v) => {
+    const opt = getQuestionById('B3')?.options?.find(o => o.value === v);
+    return opt ? (opt.label?.[lang] || opt.label?.en) : v;
+  };
+  if (q.id === 'B3' && value) {
+    const stored = (previous?.source_answers || previous?.answers)?.B3?.employee_band;
+    const prev = EMPLOYEE_BAND_FROM_STORED[stored] || stored;
+    if (prev && prev !== value && previous?.reporting_year) {
+      return tr
+        ? `${previous.reporting_year} envanterinde "${bandLabel(prev)}" seçmiştiniz; bu yıl "${bandLabel(value)}" seçtiniz. Çalışan sayısı yıldan yıla değişebilir — bu yıl için doğru mu?`
+        : `In the ${previous.reporting_year} inventory you chose "${bandLabel(prev)}"; this year you chose "${bandLabel(value)}". Head-count can change from year to year — is it right for this year?`;
+    }
+    const reg = EMPLOYEE_BAND_FROM_SIGNUP[registered];
+    if (!prev && reg && !sameEmployeeBand(reg, value)) {
+      return tr
+        ? `Kayıt olurken çalışan sayısını "${registered}" olarak girmiştiniz; burada "${bandLabel(value)}" seçtiniz. Çalışan sayısı yıldan yıla değişebilir — bu yıl için doğru mu?`
+        : `At sign-up you gave "${registered}" employees; here you chose "${bandLabel(value)}". Head-count can change from year to year — is it right for this year?`;
+    }
+  }
+  if (q.id === 'K3C7-1' && value && typeof value === 'object') {
+    const n = (k) => Number(String(value[k] ?? '').replace(/\./g, '').replace(',', '.')) || 0;
+    const total = n('fulltime_count') + n('hybrid_count') + n('remote_count');
+    const band = readAnswerValue(answers, 'B3');
+    const range = EMPLOYEE_BAND_RANGE[band];
+    if (total > 0 && range && (total < range[0] || total > range[1])) {
+      const num = getQuestionById('B3')?.number;
+      return tr
+        ? `Toplam ${total} çalışan girdiniz; Soru ${num}'de "${bandLabel(band)}" seçmiştiniz. Bu sayı doğru mu? (Doğruysa devam edin; gerekirse Soru ${num}'i de düzeltebilirsiniz.)`
+        : `You entered ${total} employees in total; in question ${num} you chose "${bandLabel(band)}". Is this number right? (If so, carry on; you can also correct question ${num}.)`;
+    }
+  }
+  if (q.id === 'A4' && value && reportYear && String(value) !== String(reportYear)) {
+    return tr
+      ? `Bu envanteri ${reportYear} yılı için oluşturdunuz. Raporlama yılı ${value} olarak değiştirilsin mi?`
+      : `You created this inventory for ${reportYear}. Change its reporting year to ${value}?`;
+  }
+  return null;
 }
 
 function getInitialValue(q) {
@@ -1129,53 +1178,95 @@ function Chip({ label, selected, onClick, multi, disabled }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Questionnaire: CountryCityInput
 // ─────────────────────────────────────────────────────────────────────────────
+// The cities most companies are in come first (then the rest A–Z), so
+// İstanbul is not the 40th of 81 provinces.
+const TOP_CITIES = {
+  TR: ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Kocaeli', 'Antalya'],
+};
+// Case- and accent-insensitive, Turkish dotted/dotless i alike ("ist" → İstanbul).
+const cityKey = (s) => String(s || '').toLocaleLowerCase('tr').replace(/ı/g, 'i')
+  .normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+// The listed spelling of a typed city: "istanbul" → "İstanbul", and a
+// prefix only one city starts with ("izm" → "İzmir"); anything else as typed.
+function canonicalCity(country, city) {
+  const list = CITIES_BY_COUNTRY[country] || [];
+  const q = cityKey(city);
+  if (!q) return city;
+  const exact = list.find(c => cityKey(c) === q);
+  if (exact) return exact;
+  const starts = list.filter(c => cityKey(c).startsWith(q));
+  return starts.length === 1 ? starts[0] : String(city).trim();
+}
+
 function CountryCityInput({ value, onChange, lang }) {
   const val = value || { country: '', city: '' };
-  const cities = val.country ? (CITIES_BY_COUNTRY[val.country] || []) : [];
   const tr = lang === 'tr';
-  // A city that is not in the list (typed via "Diğer") keeps the text box open.
-  const [typing, setTyping] = useState(Boolean(val.city) && cities.length > 0 && !cities.includes(val.city));
-  const showTextBox = val.country && (cities.length === 0 || typing);
+  const all = val.country ? (CITIES_BY_COUNTRY[val.country] || []) : [];
+  const top = (TOP_CITIES[val.country] || []).filter(c => all.includes(c));
+  const ordered = [...top, ...all.filter(c => !top.includes(c))];
   const inputClass = 'rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20';
   const countryOptions = [...COUNTRY_CODES].sort((a, b) => {
     if (a === 'TR' || b === 'OTHER') return -1;
     if (b === 'TR' || a === 'OTHER') return 1;
     return countryName(a, lang).localeCompare(countryName(b, lang), tr ? 'tr' : 'en');
   });
+  // The city is typed; the list below it suggests matches (the main cities
+  // before anything is typed). A city not in the list is kept as typed.
+  const q = cityKey(val.city);
+  const exact = ordered.find(c => cityKey(c) === q);
+  const suggestions = !ordered.length || exact ? [] : q
+    ? [...ordered.filter(c => cityKey(c).startsWith(q)), ...ordered.filter(c => !cityKey(c).startsWith(q) && cityKey(c).includes(q))].slice(0, 8)
+    : (top.length ? top : ordered.slice(0, 6));
+  const pick = (c) => onChange({ ...val, city: c });
   return (
     <div className="flex flex-col gap-2 w-full">
       <select
         className={inputClass}
         value={val.country}
-        onChange={e => { setTyping(false); onChange({ country: e.target.value, city: '' }); }}
+        onChange={e => onChange({ country: e.target.value, city: '' })}
       >
         <option value="">{tr ? '— Ülke seçin —' : '— Select country —'}</option>
         {countryOptions.map(code => (
           <option key={code} value={code}>{countryName(code, lang)}</option>
         ))}
       </select>
-      {val.country && cities.length > 0 && (
-        <select
-          className={inputClass}
-          value={typing ? OTHER_CITY : val.city}
-          onChange={e => {
-            if (e.target.value === OTHER_CITY) { setTyping(true); onChange({ ...val, city: '' }); }
-            else { setTyping(false); onChange({ ...val, city: e.target.value }); }
-          }}
-        >
-          <option value="">{tr ? '— Şehir seçin —' : '— Select city —'}</option>
-          {cities.map(c => <option key={c} value={c}>{c}</option>)}
-          <option value={OTHER_CITY}>{tr ? 'Diğer (yazın)' : 'Other (type it)'}</option>
-        </select>
-      )}
-      {showTextBox && (
-        <input
-          className={inputClass}
-          placeholder={tr ? 'Şehir adı' : 'City name'}
-          value={val.city}
-          maxLength={100}
-          onChange={e => onChange({ ...val, city: e.target.value })}
-        />
+      {val.country && (
+        <>
+          <input
+            className={inputClass}
+            placeholder={tr ? 'Şehir — yazmaya başlayın (ör. İstanbul)' : 'City — start typing (e.g. Istanbul)'}
+            value={val.city}
+            maxLength={100}
+            aria-label={tr ? 'Şehir' : 'City'}
+            onChange={e => onChange({ ...val, city: e.target.value })}
+            onBlur={() => {
+              const c = canonicalCity(val.country, val.city);
+              if (c !== val.city) pick(c);
+            }}
+          />
+          {suggestions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5" role="listbox" aria-label={tr ? 'Şehir önerileri' : 'City suggestions'}>
+              {suggestions.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  role="option"
+                  aria-selected={false}
+                  onClick={() => pick(c)}
+                  className="rounded-full border border-[#175022]/15 bg-white px-3 py-1 text-[12px] font-semibold text-[#175022] transition hover:border-[#2ABD41] hover:bg-[#F1FCF2]"
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+          {q && !exact && ordered.length > 0 && suggestions.length === 0 && (
+            <p className="text-[11px] text-[#175022]/55">
+              {tr ? `Listede yok — "${val.city}" olarak kaydedilecek.` : `Not in the list — it will be saved as "${val.city}".`}
+            </p>
+          )}
+        </>
       )}
     </div>
   );
@@ -1749,7 +1840,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       <div className="flex flex-col gap-3 w-full max-w-xs">
         <CountryCityInput value={value} onChange={onChange} lang={lang} />
         <button
-          onClick={() => onSubmit(value)}
+          onClick={() => onSubmit({ ...value, city: canonicalCity(value?.country, value?.city) })}
           disabled={disabled || !value?.country || cityRequired}
           className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
         >
@@ -2482,8 +2573,17 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
       {/* Overall progress */}
       <div className="border-b border-[#175022]/6 px-3 py-3">
         <div className="mb-1.5 flex items-center justify-between">
-          <span className="text-[10px] font-semibold text-[#175022]/60">
-            {totalAnswered} / {applicableTotal}
+          {/* The total grows as answers open branches (3 facilities → each
+              asked in turn), so it is given as an estimate, not a fixed "/ N". */}
+          <span
+            className="text-[10px] font-semibold text-[#175022]/60"
+            title={completed ? undefined : (tr
+              ? `Şu ana kadarki cevaplara göre yaklaşık ${applicableTotal} soru; yeni cevaplarla değişebilir.`
+              : `About ${applicableTotal} questions given the answers so far; it can change with new answers.`)}
+          >
+            {completed
+              ? `${totalAnswered} / ${applicableTotal}`
+              : (tr ? `${totalAnswered} yanıt · ~${applicableTotal} soru` : `${totalAnswered} answered · ~${applicableTotal}`)}
           </span>
           <span className="text-[10px] font-bold text-[#2ABD41]">{lang === 'tr' ? `%${pct}` : `${pct}%`}</span>
         </div>
@@ -2654,6 +2754,13 @@ export function QuestionnaireTab({
   // This inventory's reporting year as chosen when it was created.
   const reportYearRef = useRef(null);
   const [showReuseDialog, setShowReuseDialog] = useState(false);
+  // An answer that differs from what the user said before (employees at sign-up
+  // or in last year's inventory, the year the inventory was created for): asked
+  // once — "is this right?" — never refused, as it may well have changed.
+  const [softAsk, setSoftAsk] = useState(null);
+  const askSoft = useCallback((message, kind) => new Promise(resolve => setSoftAsk({ message, kind, resolve })), []);
+  const answerSoft = useCallback((ok) => setSoftAsk(prev => { prev?.resolve(ok); return null; }), []);
+  const companyEmployeesRef = useRef('');
   const [reuseLoading, setReuseLoading] = useState(false);
   // Reporting year chosen in the reuse dialog — the year is this inventory's
   // own and is never copied from the earlier one.
@@ -2684,6 +2791,7 @@ export function QuestionnaireTab({
       .then(data => {
         if (cancelled || !data) return;
         setQuestionnaireCompanyCountry(data.country_of_headquarters);
+        companyEmployeesRef.current = data.number_of_employees || '';
         setCompanyCountryState(data.country_of_headquarters || '');
         // A resumed questionnaire may already show Question 2 with the
         // VKN/TCKN hint (posted before the country arrived): swap in the
@@ -2808,7 +2916,9 @@ export function QuestionnaireTab({
   // number typed at sign-up stay pre-filled.
   const handleDeclineReuseProfile = useCallback(() => {
     setShowReuseDialog(false);
-    setPreviousProfile(prev => (prev ? { ...prev, answers: prev.registration_answers || {} } : prev));
+    // The earlier inventory's own answers are kept aside (not pre-filled):
+    // B3 still compares this year's head-count with last year's.
+    setPreviousProfile(prev => (prev ? { ...prev, source_answers: prev.answers, answers: prev.registration_answers || {} } : prev));
     const registered = unmapPhase1Answer(currentId, previousProfile?.registration_answers?.[currentId]);
     setAnswerValue(registered !== undefined ? registered : getInitialValue(getQuestionById(currentId)));
   }, [currentId, previousProfile]);
@@ -3603,6 +3713,15 @@ export function QuestionnaireTab({
       setShowValidationError(false);
     }
 
+    const softMessage = softCheckMessage(q, value, {
+      answers, lang,
+      registered: companyEmployeesRef.current,
+      previous: previousProfile?.available ? previousProfile : null,
+      reportYear: reportYearRef.current,
+    });
+    if (softMessage && !(await askSoft(softMessage, q.id))) return;
+    if (q.id === 'A4' && value) reportYearRef.current = Number(value) || reportYearRef.current;
+
     // ── Loop handling ──────────────────────────────────────────────────────────
     // If we are currently iterating a loop, collect the item answer and either
     // ask the next item or advance past the loop question entirely.
@@ -4008,7 +4127,7 @@ export function QuestionnaireTab({
         }
       }
     }, TYPING_DELAY_MS);
-  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting, sameYearWarning]);
+  }, [currentId, answerValue, answers, isTyping, loopState, reportId, lang, tr, saveStepToBackend, initLoopOrAdvance, markSubmitting, sameYearWarning, askSoft, previousProfile]);
 
   // After leaving and coming back, this session's `history` is empty, so the
   // back button had nothing to go to. Fall back to the last answered question
@@ -4640,6 +4759,20 @@ export function QuestionnaireTab({
 
       {/* Reuse previous Company Profile? — shown once, on a genuinely fresh
           report, when this company already has one from an earlier report. */}
+      <ConfirmDialog
+        open={!!softAsk}
+        onConfirm={() => answerSoft(true)}
+        onCancel={() => answerSoft(false)}
+        title={softAsk?.kind === 'A4'
+          ? (tr ? 'Raporlama yılı değişsin mi?' : 'Change the reporting year?')
+          : (tr ? 'Bu yanıt doğru mu?' : 'Is this answer right?')}
+        message={softAsk?.message || ''}
+        confirmText={softAsk?.kind === 'A4'
+          ? (tr ? 'Evet, değiştir' : 'Yes, change it')
+          : (tr ? 'Evet, doğru' : 'Yes, it is right')}
+        cancelText={softAsk?.kind === 'A4' ? (tr ? 'Hayır' : 'No') : (tr ? 'Düzelt' : 'Correct it')}
+        language={lang}
+      />
       <ConfirmDialog
         open={showReuseDialog && !reuseLoading}
         onConfirm={handleConfirmReuseProfile}
