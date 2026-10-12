@@ -1,3 +1,10 @@
+import CompanyGuard from '@/components/CompanyGuard';
+
 export default function DashboardLayout({ children }) {
-  return children;
+  return (
+    <>
+      <CompanyGuard />
+      {children}
+    </>
+  );
 }

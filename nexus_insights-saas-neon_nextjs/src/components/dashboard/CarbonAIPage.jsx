@@ -5611,7 +5611,9 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                   data = await res.json().catch(() => ({}));
                                 }
                                 if (!res.ok) {
-                                  setError(res.status === 403 ? noPermissionMessage(tr) : (data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.')));
+                                  setError(res.status === 403 ? noPermissionMessage(tr)
+                                    : data.code === 'card_other_company' ? (tr ? data.message_tr : data.message_en)
+                                    : (data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.')));
                                   return;
                                 }
                                 if (data.entry_status) lastStatus = data.entry_status;

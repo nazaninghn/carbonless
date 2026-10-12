@@ -84,6 +84,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'carbonless_api.middleware.CompanyGuardMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -323,6 +324,8 @@ CSRF_TRUSTED_ORIGINS = list({o.strip() for o in CSRF_TRUSTED_ORIGINS if o.strip(
 CORS_ALLOW_CREDENTIALS = True
 # Lets the frontend read the real filename of a downloaded proof document.
 CORS_EXPOSE_HEADERS = ['Content-Disposition']
+from corsheaders.defaults import default_headers as _cors_default_headers
+CORS_ALLOW_HEADERS = (*_cors_default_headers, 'x-company-id')
 
 # ============================================
 # PRODUCTION SECURITY HEADERS

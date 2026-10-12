@@ -361,3 +361,54 @@ class OwnershipTransferTests(TestCase):
         self.assertEqual(self._transfer(self.admin, self.m_admin).status_code, 403)
         self.m_owner.refresh_from_db()
         self.assertEqual(self.m_owner.role, 'owner')
+
+
+class TwoCompaniesTests(TestCase):
+    """A user in two companies: a page names the company it was opened with,
+    and is refused once another tab switched; a chat card is not saved into
+    another company; other companies' unread notices are counted apart."""
+
+    def setUp(self):
+        from accounts.models import UserProfile
+        from companies.models import Company, CompanyMembership
+        from rest_framework_simplejwt.tokens import RefreshToken
+        mk = lambda name, tax: Company.objects.create(
+            legal_entity_name=name, tax_number=tax, country_of_headquarters='TR',
+            countries_of_operation='TR', main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1)
+        self.a, self.b = mk('Anadolu A.Ş.', '1111111111'), mk('Ege A.Ş.', '2222222222')
+        self.user = User.objects.create_user('iki', 'iki@test.com', 'testpass123')
+        UserProfile.objects.create(user=self.user, active_company=self.a)
+        CompanyMembership.objects.create(company=self.a, user=self.user, role='owner')
+        CompanyMembership.objects.create(company=self.b, user=self.user, role='owner')
+        self.client = APIClient()
+        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {RefreshToken.for_user(self.user).access_token}')
+
+    def test_a_page_of_the_old_company_is_refused_after_a_switch(self):
+        ok = self.client.get('/api/emissions/entries/', HTTP_X_COMPANY_ID=str(self.a.pk))
+        self.assertEqual(ok.status_code, 200)
+        self.client.post('/api/companies/switch/', {'company_id': self.b.pk}, format='json',
+                         HTTP_X_COMPANY_ID=str(self.a.pk))
+        stale = self.client.get('/api/emissions/entries/', HTTP_X_COMPANY_ID=str(self.a.pk))
+        self.assertEqual(stale.status_code, 409)
+        self.assertEqual(stale.json()['code'], 'company_changed')
+        self.assertEqual(stale.json()['active_company']['name'], 'Ege A.Ş.')
+        # without the header (API clients) nothing changes
+        self.assertEqual(self.client.get('/api/emissions/entries/').status_code, 200)
+
+    def test_a_chat_card_is_not_saved_into_another_company(self):
+        self.client.post('/api/companies/switch/', {'company_id': self.b.pk}, format='json')
+        res = self.client.post('/api/chat/confirm-entry/', {
+            'fuel_type': 'electricity', 'quantity': 1000, 'unit': 'kwh', 'year': 2024, 'month': 3,
+            'company_id': self.a.pk, 'company_name': 'Anadolu A.Ş.'}, format='json')
+        self.assertEqual(res.status_code, 409)
+        self.assertEqual(res.json()['code'], 'card_other_company')
+        self.assertIn('Anadolu A.Ş. için hazırlandı', res.json()['message_tr'])
+
+    def test_other_companies_unread_notices(self):
+        from accounts.models import Notification
+        Notification.objects.create(user=self.user, company=self.b, notification_type='entry_submitted',
+                                    title='x', message='y')
+        res = self.client.get('/api/accounts/notifications/unread-count/').json()
+        self.assertEqual(res['unread_count'], 0)
+        self.assertEqual(res['other_companies'], [{'id': self.b.pk, 'name': 'Ege A.Ş.', 'unread': 1}])

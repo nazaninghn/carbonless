@@ -52,7 +52,37 @@ const REQUEST_TIMEOUT_MS = 30_000;
 function fetchWithTimeout(url, opts = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-  return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+  const toApi = url.startsWith(API_BASE);
+  const headers = toApi ? { ...companyHeader(), ...(opts.headers || {}) } : opts.headers;
+  return fetch(url, { ...opts, headers, signal: controller.signal })
+    .then(res => (toApi ? guardCompany(res) : res))
+    .finally(() => clearTimeout(timer));
+}
+
+// The company this page was opened with. Every API call names it; when
+// another tab has switched the user to another company the server answers
+// 409 company_changed and the page reloads in the new company, instead of
+// showing (and saving into) the other company under this one's name.
+/** @type {string | null} */
+let _companyId = null;
+/** @param {number | string | null} id */
+export function setCompanyContext(id) {
+  _companyId = id ? String(id) : null;
+}
+/** @returns {Record<string, string>} */
+export function companyHeader() {
+  return _companyId ? { 'X-Company-Id': _companyId } : {};
+}
+export const COMPANY_CHANGED_KEY = 'carbonless_company_changed';
+/** @param {Response} res */
+async function guardCompany(res) {
+  if (res.status !== 409 || typeof window === 'undefined' || !_companyId) return res;
+  const body = await res.clone().json().catch(() => null);
+  if (body?.code !== 'company_changed' || !body.active_company) return res;
+  try { sessionStorage.setItem(COMPANY_CHANGED_KEY, body.active_company.name || ''); } catch {}
+  _companyId = null;
+  window.location.reload();
+  return new Promise(() => {}); // the page is reloading
 }
 
 /**
@@ -340,7 +370,7 @@ export const api = {
   sendChatMessageWithFile: (sessionId, formData) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('_ca') : null;
     /** @type {Record<string, string>} */
-    const headers = {};
+    const headers = { ...companyHeader() };
     if (token) headers['Authorization'] = `Bearer ${token}`;
     return fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'}/chat/sessions/${sessionId}/message/`, {
       method: 'POST',

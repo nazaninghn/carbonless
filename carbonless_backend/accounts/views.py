@@ -483,7 +483,23 @@ def mark_notifications_read(request):
 def unread_count(request):
     """Get unread notification count"""
     count = _my_notifications(request.user).filter(is_read=False).count()
-    return Response({'unread_count': count})
+    # Unread notices of the user's other companies: the list shows the
+    # company being worked in, so these are named apart (with a switch)
+    # instead of going unseen.
+    from django.db.models import Count
+    from companies.utils import get_current_company
+    current = get_current_company(request.user)
+    member_of = request.user.company_memberships.filter(is_active=True).values_list('company_id', flat=True)
+    others = (Notification.objects
+              .filter(user=request.user, is_read=False, company_id__in=list(member_of))
+              .exclude(company_id=getattr(current, 'pk', None))
+              .values('company_id', 'company__legal_entity_name')
+              .annotate(n=Count('id')).order_by('company__legal_entity_name'))
+    return Response({
+        'unread_count': count,
+        'other_companies': [{'id': o['company_id'], 'name': o['company__legal_entity_name'], 'unread': o['n']}
+                            for o in others],
+    })
 
 
 @api_view(['POST'])

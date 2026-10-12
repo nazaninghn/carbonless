@@ -39,6 +39,16 @@ export default function DashboardHeader({
   onLanguageChange,
 }) {
   const [notifications, setNotifications] = useState([]);
+  // Unread notices of the user's other companies: named with a switch, as
+  // the list below holds the company being worked in.
+  const [otherCompanies, setOtherCompanies] = useState([]);
+  const [switchingTo, setSwitchingTo] = useState(null);
+  const switchTo = useCallback(async (id) => {
+    setSwitchingTo(id);
+    const res = await api.switchCompany(id).catch(() => null);
+    if (res?.ok) { window.location.href = '/dashboard'; return; }
+    setSwitchingTo(null);
+  }, []);
   const [showNotifications, setShowNotifications] = useState(false);
   const notifFetchedAt = useRef(0);          // timestamp of last successful fetch
   const notifPanelRef = useRef(null);        // for click-outside detection
@@ -66,6 +76,10 @@ export default function DashboardHeader({
     const nextState = !showNotifications;
     setShowNotifications(nextState);
     if (!nextState) return;
+    api.getUnreadCount()
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => setOtherCompanies(Array.isArray(d?.other_companies) ? d.other_companies : []))
+      .catch(() => {});
     // Cache for 60 s — avoid a round-trip on every open
     const age = Date.now() - notifFetchedAt.current;
     if (age < 60_000 && notifications.length > 0) return;
@@ -85,7 +99,8 @@ export default function DashboardHeader({
   const markAllRead = useCallback(async () => {
     const prevCount = unreadCount;
     const prevNotifications = notifications;
-    setUnreadCount(0);
+    // Only this company's notices are marked; other companies' stay counted.
+    setUnreadCount(otherCompanies.reduce((n, c) => n + (c.unread || 0), 0));
     setNotifications((items) =>
       items.map((item) => ({ ...item, is_read: true }))
     );
@@ -96,7 +111,7 @@ export default function DashboardHeader({
       setUnreadCount(prevCount);
       setNotifications(prevNotifications);
     }
-  }, [unreadCount, notifications, setUnreadCount]);
+  }, [unreadCount, notifications, setUnreadCount, otherCompanies]);
 
   // Where each kind of notification takes you when clicked.
   const NOTIFICATION_TAB = {
@@ -228,6 +243,25 @@ export default function DashboardHeader({
                     </button>
                   )}
                 </div>
+                {otherCompanies.length > 0 && (
+                  <div className="border-b border-[#DEFAE1] bg-amber-50/60 px-3 py-2">
+                    {otherCompanies.map(c => (
+                      <div key={c.id} className="flex items-center justify-between gap-2 py-1 text-[11px] font-semibold text-amber-900">
+                        <span className="min-w-0 truncate">
+                          {tr ? `${c.name}: ${c.unread} okunmamış bildirim` : `${c.name}: ${c.unread} unread`}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={switchingTo === c.id}
+                          onClick={() => switchTo(c.id)}
+                          className="shrink-0 rounded-full border border-amber-300 bg-white px-2.5 py-0.5 text-[10px] font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                        >
+                          {tr ? 'Geç' : 'Switch'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="max-h-64 overflow-y-auto p-2">
                   {notifications.length === 0 ? (
                     <p className="py-6 text-center text-[12px] text-[#072C0E]/35">{tr ? 'Bildirim yok' : 'No notifications'}</p>

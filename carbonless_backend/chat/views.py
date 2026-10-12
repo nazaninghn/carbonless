@@ -1653,7 +1653,22 @@ def download_attachment(request, message_id):
 def send_message(request, session_id):
     response = _send_message(request, session_id)
     _tag_facility(getattr(response, 'data', None), request.user, request.data.get('content'))
+    _tag_company(getattr(response, 'data', None), request.user)
     return response
+
+
+def _tag_company(data, user):
+    """Each confirm card names the company it was made in: confirmed after
+    the user switched company (in another tab), it is refused rather than
+    saved into the other company."""
+    if not isinstance(data, dict) or not data.get('pending_entries'):
+        return
+    from companies.utils import get_current_company
+    company = get_current_company(user)
+    for pe in data['pending_entries']:
+        if isinstance(pe, dict) and company is not None:
+            pe.setdefault('company_id', company.pk)
+            pe.setdefault('company_name', company.legal_entity_name)
 
 
 def _chat_facility(user, entry_data):
@@ -2044,6 +2059,20 @@ def confirm_entry(request):
     entry_data = request.data
     if not entry_data or not entry_data.get('fuel_type') or not entry_data.get('quantity'):
         return Response({'error': 'Invalid entry data.'}, status=400)
+    if entry_data.get('company_id'):
+        from companies.utils import get_current_company
+        current = get_current_company(request.user)
+        if current is not None and str(current.pk) != str(entry_data.get('company_id')):
+            made_in = entry_data.get('company_name') or ''
+            return Response({
+                'error': f'This card was made for {made_in}; you are now working in {current.legal_entity_name}.',
+                'code': 'card_other_company',
+                'message_tr': (f'Bu kart {made_in} için hazırlandı; şu an {current.legal_entity_name} şirketindesiniz. '
+                               f'Kaydetmek için {made_in} şirketine geçin.'),
+                'message_en': (f'This card was made for {made_in}; you are now working in {current.legal_entity_name}. '
+                               f'Switch to {made_in} to save it.'),
+                'active_company': {'id': current.pk, 'name': current.legal_entity_name},
+            }, status=409)
 
     # Allow frontend to override month/year (user picks activity date in confirm card)
     if entry_data.get('month'):
