@@ -1852,8 +1852,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Equipment name] — How many units and at which site?',
     },
     helper: {
-      tr: 'Aynı türde birden fazla ekipmanınız varsa toplam adedi girin. Farklı tesislerdeyse çoğunun bulunduğu tesisi seçin. Bu tipteki ekipmanların yakıtı veya kapasitesi farklıysa kaç farklı grup olduğunu yazın — sonraki sorular her grup için ayrı sorulur.',
-      en: 'If you have several units of the same type, enter the total count. If they are at different sites, choose the site where most of them are. If units of this type differ in fuel or capacity, enter how many groups there are — the next questions are asked once per group.',
+      tr: 'Aynı türde birden fazla ekipmanınız varsa toplam adedi girin. Farklı tesislerdeyse en çok bulunduğu tesisi seçin — yakıt tüketimi sonraki sorularda yakıt türüne göre toplam olarak girilir, bu seçim hesaplamayı değiştirmez. Bu tipteki ekipmanların yakıtı veya kapasitesi farklıysa kaç farklı grup olduğunu yazın — sonraki sorular her grup için ayrı sorulur.',
+      en: 'If you have several units of the same type, enter the total count. If they are at different sites, choose the site where most of them are — fuel use is entered later as a total per fuel, so this choice does not change the calculation. If units of this type differ in fuel or capacity, enter how many groups there are — the next questions are asked once per group.',
     },
     fields: [
       {
@@ -2426,6 +2426,19 @@ export const CARBONIQ_QUESTIONS = [
         type: 'select',
         required: true,
         label: { tr: 'Büyüklük / tonaj bandı (motor hacmi L veya brüt ağırlık t)', en: 'Size / tonnage band (engine L or gross weight t)' },
+        // Only the bands of the vehicle type asked about (a car's engine
+        // sizes, a lorry's tonnage); types not listed show every band.
+        optionsByItem: {
+          'EQ-3B-01': ['car_small', 'car_medium', 'car_large', 'unknown'],
+          'EQ-3B-02': ['van', 'unknown'],
+          'EQ-3B-04': ['motorcycle', 'unknown'],
+          'EQ-3B-05': ['van', 'unknown'],
+          'EQ-3B-06': ['hgv_7_5', 'unknown'],
+          'EQ-3B-07': ['hgv_17', 'unknown'],
+          'EQ-3B-08': ['hgv_heavy', 'unknown'],
+          'EQ-3B-09': ['hgv_heavy', 'unknown'],
+          'EQ-3B-10': ['hgv_heavy', 'unknown'],
+        },
         options: [
           { value: 'car_small', label: { tr: 'Binek — küçük (< 1,4 L motor)', en: 'Car — small (< 1.4 L engine)' } },
           { value: 'car_medium', label: { tr: 'Binek — orta (1,4–2,0 L motor)', en: 'Car — medium (1.4–2.0 L engine)' } },

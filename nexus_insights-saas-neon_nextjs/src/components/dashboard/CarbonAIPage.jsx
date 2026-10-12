@@ -1371,7 +1371,9 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
                 maxLength={field.maxLength}
               />
             )}
-            {field.maxLength && (
+            {/* A typed field's length; a pick-list (the facility list that
+                replaced a typed site) has none to count. */}
+            {field.maxLength && field.type !== 'select' && field.type !== 'single_select' && (
               <span className="text-right text-[10px] text-[#175022]/35">{charLen}/{field.maxLength}</span>
             )}
           </div>
@@ -2075,6 +2077,12 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     // groupOnly fields (3D-4's gas) belong to the 2nd, 3rd … group of a type.
     const fields = resolveFieldOptions(question.fields || [], answers)
       .filter(f => !f.groupOnly || loopItemGroup(currentLoopItem) > 1)
+      // optionsByItem: only the choices that fit this loop item (a car's
+      // engine sizes, not lorry tonnages); types not listed keep them all.
+      .map(f => {
+        const keep = f.optionsByItem?.[baseLoopItem(currentLoopItem)];
+        return keep ? { ...f, options: (f.options || []).filter(o => keep.includes(o.value)) } : f;
+      })
       .map(f =>
       (f.id === 'ef_year' && /^\d{4}$/.test(invYear)) ? { ...f, placeholder: { tr: `Örn: ${invYear}`, en: `e.g. ${invYear}` } } : f);
     const compoundVal = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
