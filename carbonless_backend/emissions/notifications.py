@@ -134,7 +134,7 @@ def _email_approver(user, company_id, lang, latest):
     from companies.models import Company
     company = Company.objects.filter(pk=company_id).values_list('legal_entity_name', flat=True).first() or ''
     hello = user.first_name or user.email
-    link = f'{_frontend()}/dashboard?tab=review'
+    link = f'{_frontend()}/dashboard?tab=review&company={company_id}'
     if lang == 'tr':
         # Sent when the first entry arrives: more may follow the same day
         # without another e-mail, so the count is "at least".
@@ -350,7 +350,7 @@ def notify_entry_reviewed(entry, approved, reviewer):
                     f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
             _send_email(entry.user, 'Carbonless: kaydınız reddedildi',
                         f'Merhaba {entry.user.first_name or entry.user.email},\n\n{what} reddedildi.'
-                        + (f'\nNeden: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}\n\n'
+                        + (f'\nNeden: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}&company={entry.company_id}\n\n'
                         'Ayarlar → Bildirimler bölümünden bu e-postaları kapatabilirsiniz.\n\n— Carbonless')
         else:
             fix = (' It comes from the questionnaire: use "Fix in questionnaire" on the Emissions page to correct that question.'
@@ -362,7 +362,7 @@ def notify_entry_reviewed(entry, approved, reviewer):
                     f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
             _send_email(entry.user, 'Carbonless: your entry was rejected',
                         f'Hello {entry.user.first_name or entry.user.email},\n\n{what} was rejected.'
-                        + (f'\nReason: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}\n\n'
+                        + (f'\nReason: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}&company={entry.company_id}\n\n'
                         'You can turn these e-mails off in Settings → Notifications.\n\n— Carbonless')
     except Exception:
         logger.exception('Could not notify the author of entry %s', entry.pk)

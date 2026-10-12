@@ -87,7 +87,10 @@ export function useDashboardData(selectedYear) {
 
       if (thisGen !== fetchGen.current) return; // check again after async parsing
 
-      const newUnread = notifData?.unread_count || 0;
+      // Unread notices of the user's other companies count in the badge too;
+      // the panel names them with a switch (DashboardHeader).
+      const newUnread = (notifData?.unread_count || 0)
+        + (notifData?.other_companies || []).reduce((n, c) => n + (c.unread || 0), 0);
 
       // Single dispatch → single re-render
       dispatch({
