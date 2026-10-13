@@ -21,7 +21,8 @@ class SupportRequestAdmin(ModelAdmin):
     as a notification, an e-mail and a message in the chat it came from.
     Tick "Product gap" (and note what to improve) for anything the product
     or its help should cover itself."""
-    list_display = ['id', 'created_at', 'status', 'topic', 'source', 'user', 'company', 'short_question', 'is_gap']
+    ordering = ['-updated_at']
+    list_display = ['id', 'created_at', 'updated_at', 'status', 'topic', 'source', 'user', 'company', 'short_question', 'is_gap']
     list_filter = ['status', 'topic', 'source', 'is_gap', 'created_at']
     search_fields = ['question', 'answer', 'gap_note', 'user__email', 'company__legal_entity_name']
     readonly_fields = ['user', 'company', 'session', 'source', 'question', 'context', 'language',

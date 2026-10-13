@@ -857,7 +857,7 @@ function TypingDots() {
  * the question to the support team; both reach the admin as feedback.
  */
 function AnswerFeedback({ msg, question, sessionId, tr, onReferred }) {
-  const [vote, setVote] = useState(null);
+  const [vote, setVote] = useState(msg.feedback ?? null);
   const [comment, setComment] = useState('');
   const [state, setState] = useState('');
   if (typeof msg.id !== 'number') return null;
@@ -914,6 +914,141 @@ function AnswerFeedback({ msg, question, sessionId, tr, onReferred }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Sends a question to the support team from the chat. */
+function AskSupportButton({ question, sessionId, tr, onReferred, label, className = '' }) {
+  const [state, setState] = useState('');
+  const ask = async () => {
+    setState('asking');
+    const res = await api.askSupport(question, sessionId, tr ? 'tr' : 'en').catch(() => null);
+    if (!res?.ok) { setState('error'); return; }
+    setState('');
+    onReferred?.(await res.json());
+  };
+  return (
+    <span className="inline-flex items-center gap-2">
+      <button type="button" disabled={state === 'asking' || !question} onClick={ask}
+        className={`inline-flex items-center gap-1.5 rounded-full bg-[#175022] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#175022]/90 disabled:opacity-50 ${className}`}>
+        {state === 'asking' ? <Loader2 className="h-3 w-3 animate-spin" /> : <LifeBuoy className="h-3.5 w-3.5" />}
+        {label || (tr ? 'Destek ekibine sor' : 'Ask the support team')}
+      </button>
+      {state === 'error' && <span className="text-[11px] text-red-500">{tr ? 'Gönderilemedi, tekrar deneyin.' : 'Could not send, try again.'}</span>}
+    </span>
+  );
+}
+
+/** "Still a problem?" under the team's answer: the request opens again. */
+function SupportReply({ requestId, tr, onSent }) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState('');
+  const [state, setState] = useState('');
+  const send = async () => {
+    setState('sending');
+    const res = await api.replyToSupport(requestId, text.trim()).catch(() => null);
+    if (!res?.ok) { setState('error'); return; }
+    const data = await res.json();
+    setOpen(false); setText(''); setState('');
+    onSent?.(data);
+  };
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="ml-2 mt-2 inline-flex items-center gap-1 rounded-full border border-[#175022]/15 px-3 py-1.5 text-[11px] font-semibold text-[#175022]/70 hover:bg-[#175022]/5">
+        {tr ? 'Hâlâ sorun var / yanıtla' : 'Still a problem? Reply'}
+      </button>
+    );
+  }
+  return (
+    <div className="ml-9 mt-2 max-w-md rounded-2xl border border-[#175022]/10 bg-white p-3 shadow-sm">
+      <textarea value={text} onChange={e => setText(e.target.value)} rows={3} maxLength={4000} autoFocus
+        placeholder={tr ? 'Destek ekibine yazın…' : 'Write to the support team…'}
+        className="w-full resize-none rounded-xl border border-[#175022]/10 px-3 py-2 text-[12px] text-[#175022] outline-none focus:border-[#2ABD41]/50" />
+      <div className="mt-2 flex items-center gap-2">
+        <button type="button" disabled={text.trim().length < 2 || state === 'sending'} onClick={send}
+          className="inline-flex items-center gap-1.5 rounded-full bg-[#175022] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50">
+          {state === 'sending' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+          {tr ? 'Gönder' : 'Send'}
+        </button>
+        <button type="button" onClick={() => setOpen(false)} className="text-[11px] font-semibold text-[#175022]/50">
+          {tr ? 'Vazgeç' : 'Cancel'}
+        </button>
+        {state === 'error' && <span className="text-[11px] text-red-500">{tr ? 'Gönderilemedi.' : 'Could not send.'}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** The user's own support requests with their status and the answers. */
+function SupportRequestsModal({ tr, onClose, onOpenChat }) {
+  const [rows, setRows] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    api.getSupportRequests().then(r => (r.ok ? r.json() : [])).catch(() => [])
+      .then(d => { if (!cancelled) setRows(Array.isArray(d) ? d : []); });
+    return () => { cancelled = true; };
+  }, []);
+  // Escape closes only this list, not the assistant behind it.
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopImmediatePropagation(); onClose(); } };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
+  const STATUS = {
+    open: [tr ? 'Yanıt bekleniyor' : 'Waiting for an answer', 'bg-amber-50 text-amber-700 border-amber-200'],
+    answered: [tr ? 'Yanıtlandı' : 'Answered', 'bg-[#F1FCF2] text-[#175022] border-[#2ABD41]/30'],
+    closed: [tr ? 'Kapandı' : 'Closed', 'bg-[#175022]/5 text-[#175022]/60 border-[#175022]/10'],
+  };
+  const date = (d) => new Date(d).toLocaleString(tr ? 'tr-TR' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/30 p-4" onClick={onClose}>
+      <div role="dialog" aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
+        className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[#175022]/8 px-4 py-3">
+          <span className="flex items-center gap-2 text-[14px] font-bold text-[#175022]">
+            <LifeBuoy className="h-4 w-4" /> {tr ? 'Destek taleplerim' : 'My support requests'}
+          </span>
+          <button type="button" onClick={onClose} aria-label={tr ? 'Kapat' : 'Close'} className="text-[#175022]/40 hover:text-[#175022]">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {rows === null ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-[#175022]/30" /></div>
+          ) : rows.length === 0 ? (
+            <p className="py-8 text-center text-[12px] text-[#175022]/50">
+              {tr ? 'Henüz destek talebiniz yok. Sohbette bir yanıt işinize yaramazsa «Destek ekibine sor» ile sorabilirsiniz.'
+                  : "You haven't asked the support team yet. If an answer in the chat doesn't help, use «Ask the support team»."}
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {rows.map(r => {
+                const [label, cls] = STATUS[r.status] || STATUS.open;
+                return (
+                  <li key={r.id} className="rounded-xl border border-[#175022]/10 p-3">
+                    <div className="mb-1.5 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold text-[#175022]/50">#{r.id} · {date(r.created_at)}</span>
+                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${cls}`}>{label}</span>
+                    </div>
+                    <p className="whitespace-pre-line text-[12px] font-semibold text-[#175022]">{r.question}</p>
+                    {r.answer && (
+                      <p className="mt-2 whitespace-pre-line rounded-lg bg-[#F1FCF2] px-3 py-2 text-[12px] text-[#175022]/85">{r.answer}</p>
+                    )}
+                    {r.session_id && (
+                      <button type="button" onClick={() => onOpenChat(r.session_id)}
+                        className="mt-2 text-[11px] font-bold text-[#2ABD41] hover:underline">
+                        {tr ? 'Sohbeti aç →' : 'Open the chat →'}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -5087,6 +5222,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
     return () => { cancelled = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Support: the user's request list, and the question the AI couldn't
+  // answer (AI service down) so it can still go to the team.
+  const [showSupportList, setShowSupportList] = useState(false);
+  const [failedQuestion, setFailedQuestion] = useState('');
+  const addReferral = useCallback((data) => setMessages(prev => [...prev, {
+    id: data.message_id ?? `m-${++msgIdRef.current}`, role: 'assistant', content: data.message,
+    ui: { support_request_id: data.id, referred: true },
+  }]), []);
   // A link to one chat (the support team's answer): open it once the list is in.
   const [chatToOpen, setChatToOpen] = useState(null);
   useEffect(() => {
@@ -5169,10 +5312,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
       if (!isMountedRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
-        if (isMountedRef.current) setError(d.error || (trRef.current ? 'Bir hata oluştu.' : 'Something went wrong.'));
+        if (isMountedRef.current) {
+          setError(d.error || (trRef.current ? 'Bir hata oluştu.' : 'Something went wrong.'));
+          setFailedQuestion(content);
+        }
       } else {
         const aiMsg = await res.json();
         if (!isMountedRef.current) return;
+        setFailedQuestion('');
         setMessages(prev => [...prev, { id: aiMsg.id ?? `m-${++msgIdRef.current}`, ...aiMsg }]);
         // The chat can save real emission entries in the background (see the
         // ```emission_entry block the backend parses out of the AI reply).
@@ -5190,7 +5337,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
         }
       }
     } catch {
-      if (isMountedRef.current) setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.');
+      if (isMountedRef.current) { setError(trRef.current ? 'Bağlantı hatası.' : 'Connection error.'); setFailedQuestion(content); }
     } finally {
       sendingRef.current = false;
       if (isMountedRef.current) {
@@ -5329,6 +5476,16 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 
   return (
     <>
+      {showSupportList && (
+        <SupportRequestsModal
+          tr={tr}
+          onClose={() => setShowSupportList(false)}
+          onOpenChat={(id) => {
+            setShowSupportList(false);
+            if (sessions.some(s => String(s.id) === String(id))) setActiveId(sessions.find(s => String(s.id) === String(id)).id);
+          }}
+        />
+      )}
       <ConfirmDialog
         open={!!samePeriodAsk}
         onConfirm={() => answerSamePeriod(samePeriodAsk?.can_change ? 'change' : 'add')}
@@ -5438,6 +5595,12 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
             </span>
           )}
 
+          <button type="button" onClick={() => setShowSupportList(true)}
+            title={tr ? 'Destek taleplerim' : 'My support requests'} aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
+            className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl text-[#175022]/40 transition hover:bg-[#175022]/5 hover:text-[#175022]">
+            <LifeBuoy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+          </button>
+
           {/* Language toggle */}
           <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#175022]/8 bg-[#175022]/4 p-0.5">
             {['tr', 'en'].map(l => (
@@ -5465,6 +5628,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
           <p className="text-[11px] font-semibold text-[#175022]/60 truncate max-w-[40%]">
             {activeSession ? activeSession.title : 'Carbon AI'}
           </p>
+          <div className="flex items-center gap-1">
+          <button type="button" onClick={() => setShowSupportList(true)} aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40">
+            <LifeBuoy className="h-3.5 w-3.5" />
+          </button>
           <div className="flex items-center gap-0.5 rounded-md border border-[#175022]/8 bg-[#175022]/4 p-0.5">
             {['tr', 'en'].map(l => (
               <button
@@ -5478,13 +5646,23 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
               </button>
             ))}
           </div>
+          </div>
         </div>
 
         {/* Error banner */}
         {error && (
           <div role="alert" aria-live="assertive" className="shrink-0 mx-4 mt-3 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-xs font-semibold text-red-600">
-            <span className="flex-1">{error}</span>
-            <button onClick={() => setError('')} className="shrink-0 text-red-400 transition hover:text-red-600">
+            <span className="flex-1">
+              {error}
+              {failedQuestion && activeId && (
+                <span className="mt-2 flex flex-wrap items-center gap-2 font-normal text-[#175022]/70">
+                  {tr ? 'Beklemek istemiyorsanız sorunuzu destek ekibine iletebilirim:' : "If you don't want to wait, I can pass your question to the support team:"}
+                  <AskSupportButton question={failedQuestion} sessionId={activeId} tr={tr}
+                    onReferred={(data) => { addReferral(data); setError(''); setFailedQuestion(''); }} />
+                </span>
+              )}
+            </span>
+            <button onClick={() => { setError(''); setFailedQuestion(''); }} className="shrink-0 text-red-400 transition hover:text-red-600">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
@@ -5553,6 +5731,19 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                       </a>
                     </div>
                   )}
+                  {msg.role === 'assistant' && msg.ui?.offer_support && (
+                    <div className="ml-9 mt-2 flex flex-wrap items-center gap-2 text-[11px] text-[#175022]/55">
+                      {tr ? 'Yine de yardım gerekirse:' : 'Still need help?'}
+                      <AskSupportButton
+                        tr={tr} sessionId={activeId} onReferred={addReferral}
+                        question={(() => {
+                          const i = messages.indexOf(msg);
+                          for (let j = i - 1; j >= 0; j--) if (messages[j].role === 'user') return messages[j].content;
+                          return '';
+                        })()}
+                      />
+                    </div>
+                  )}
                   {/* Referred to / answered by the support team */}
                   {msg.role === 'assistant' && msg.ui?.support_request_id && (
                     <div className="ml-9 mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#175022]/15 bg-[#F6F8F6] px-3 py-1.5 text-[11px] font-semibold text-[#175022]/70">
@@ -5562,7 +5753,13 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                         : (tr ? `Destek ekibinin yanıtı · talep #${msg.ui.support_request_id}` : `Support team answer · request #${msg.ui.support_request_id}`)}
                     </div>
                   )}
-                  {msg.role === 'assistant' && !msg.ui?.support_request_id && !msg.pending_entries?.length && !msg.ui?.quick_replies?.length && (
+                  {msg.role === 'assistant' && msg.ui?.support_request_id && !msg.ui.referred && typeof msg.id === 'number' && (
+                    <SupportReply
+                      requestId={msg.ui.support_request_id} tr={tr}
+                      onSent={(data) => setMessages(prev => [...prev, ...(data.messages || [])])}
+                    />
+                  )}
+                  {msg.role === 'assistant' && !msg.ui?.support_request_id && !msg.ui?.offer_support && !msg.pending_entries?.length && !msg.ui?.quick_replies?.length && (
                     <AnswerFeedback
                       msg={msg}
                       tr={tr}
@@ -5572,10 +5769,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                         for (let j = i - 1; j >= 0; j--) if (messages[j].role === 'user') return messages[j].content;
                         return '';
                       })()}
-                      onReferred={(data) => setMessages(prev => [...prev, {
-                        id: data.message_id ?? `m-${++msgIdRef.current}`, role: 'assistant', content: data.message,
-                        ui: { support_request_id: data.id, referred: true },
-                      }])}
+                      onReferred={addReferral}
                     />
                   )}
                   {/* ── Quick reply buttons / Period dropdown ── */}

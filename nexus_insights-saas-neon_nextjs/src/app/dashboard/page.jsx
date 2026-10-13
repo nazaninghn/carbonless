@@ -95,6 +95,10 @@ export default function DashboardPage() {
     if (!tab && !year) return;
     if (tab && DEEP_LINK_TABS.includes(tab)) setActiveTab(tab);
     if (params.get('chat')) openChat(params.get('chat'));
+    // "?tab=settings&section=security": open that part of Settings.
+    if (tab === 'settings' && params.get('section')) {
+      try { sessionStorage.setItem('carbonless_settings_section', params.get('section')); } catch { /* opens on Profile */ }
+    }
     if (year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
     window.history.replaceState(null, '', window.location.pathname);
   // eslint-disable-next-line react-hooks/exhaustive-deps
