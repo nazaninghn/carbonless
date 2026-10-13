@@ -131,10 +131,16 @@ export function useDashboardData(selectedYear) {
   // components with no other shared state — without this listener, saving an
   // entry via chat left the dashboard showing stale totals until the user
   // manually navigated away and back.
+  // Inventory answers arrive one after another: a short wait folds a quick
+  // run of saves into one reload.
   useEffect(() => {
-    const handler = () => fetchData();
+    let timer = null;
+    const handler = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fetchData(), 600);
+    };
     window.addEventListener('carbonless:emissions-updated', handler);
-    return () => window.removeEventListener('carbonless:emissions-updated', handler);
+    return () => { clearTimeout(timer); window.removeEventListener('carbonless:emissions-updated', handler); };
   }, [fetchData]);
 
   return {

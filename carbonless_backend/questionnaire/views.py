@@ -669,6 +669,7 @@ class SubmitStepView(APIView):
                 'completed': True,
                 'status': 'COMPLETED',
                 'report_id': report.id,
+                'reporting_year': report.reporting_year,
                 'message': 'Survey completed successfully'
             })
 
@@ -719,6 +720,8 @@ class SubmitStepView(APIView):
             'bot_messages': [],
             'saved_entry': saved_entry,
             'calc_feedback': calc_feedback,
+            # The dashboard follows the year of the inventory being filled.
+            'reporting_year': report.reporting_year,
         })
 
 

@@ -197,9 +197,17 @@ export default function DashboardPage() {
       const year = Number(e.detail?.year);
       if (year) setSelectedYear(year);
     }
+    // Filling an inventory: the dashboard follows that inventory's year, so
+    // each answer shows up in the totals as it is saved.
+    function handleEmissionsUpdated(e) {
+      const year = Number(e.detail?.year);
+      if (e.detail?.source === 'inventory' && year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
+    }
     window.addEventListener('carbonless:assistant', handleAssistant);
     window.addEventListener('carboniq-navigate', handleNavigate);
+    window.addEventListener('carbonless:emissions-updated', handleEmissionsUpdated);
     return () => {
+      window.removeEventListener('carbonless:emissions-updated', handleEmissionsUpdated);
       window.removeEventListener('carbonless:assistant', handleAssistant);
       window.removeEventListener('carboniq-navigate', handleNavigate);
     };
