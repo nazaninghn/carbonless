@@ -27,6 +27,9 @@ function JoinContent() {
   const tr = language === 'tr';
   const [invite, setInvite] = useState(null);      // {email, role, company}
   const [loadError, setLoadError] = useState('');
+  // The team list, approvals and notifications show this name; with only a
+  // username the new member appeared as "ayse_yilmaz".
+  const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [password2, setPassword2] = useState('');
@@ -57,6 +60,7 @@ function JoinContent() {
     e.preventDefault();
     if (saving) return;
     setError('');
+    if (!fullName.trim()) { setError(tr ? 'Adınızı ve soyadınızı girin.' : 'Enter your full name.'); return; }
     if (!username.trim()) { setError(tr ? 'Kullanıcı adı girin.' : 'Enter a username.'); return; }
     if (password !== password2) { setError(tr ? 'Şifreler eşleşmiyor.' : 'Passwords do not match.'); return; }
     if (!isPasswordStrong(password)) { setError(tr ? 'Şifre yeterince güçlü değil.' : 'Password is not strong enough.'); return; }
@@ -67,6 +71,8 @@ function JoinContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: username.trim(), email: invite.email, password, password2,
+          first_name: fullName.trim().split(/\s+/).slice(0, -1).join(' ') || fullName.trim(),
+          last_name: fullName.trim().split(/\s+/).length > 1 ? fullName.trim().split(/\s+/).slice(-1)[0] : '',
           invite_token: token, language,
         }),
       });
@@ -93,7 +99,7 @@ function JoinContent() {
     } finally {
       setSaving(false);
     }
-  }, [saving, username, password, password2, invite, token, language, tr, router]);
+  }, [saving, fullName, username, password, password2, invite, token, language, tr, router]);
 
   return (
     <main className="min-h-screen bg-[#F1FCF2] flex flex-col items-center justify-center px-4 py-10">
@@ -128,24 +134,31 @@ function JoinContent() {
                   {tr ? `Rolünüz: ${roleLabel(invite.role, true)}. Şirket bilgisi gerekmez — sadece hesabınızı oluşturun.`
                       : `Your role: ${roleLabel(invite.role, false)}. No company details needed — just create your account.`}
                 </p>
+                {invite.invited_by && (
+                  <p className="mt-1 text-[12px] text-[#072C0E]/45">{tr ? `Davet eden: ${invite.invited_by}` : `Invited by ${invite.invited_by}`}</p>
+                )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'E-posta' : 'Email'}</label>
-                <input type="email" value={invite.email} readOnly className={`${FIELD} cursor-not-allowed opacity-70`} />
+                <label htmlFor="join-email" className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'E-posta' : 'Email'}</label>
+                <input id="join-email" type="email" value={invite.email} readOnly className={`${FIELD} cursor-not-allowed opacity-70`} />
                 <p className="mt-1 text-[11px] text-[#072C0E]/45">{tr ? 'Davet bu adrese gönderildi.' : 'The invite was sent to this address.'}</p>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Kullanıcı Adı' : 'Username'} *</label>
-                <input type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" className={FIELD} required />
+                <label htmlFor="join-name" className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Ad Soyad' : 'Full Name'} *</label>
+                <input id="join-name" type="text" value={fullName} onChange={e => setFullName(e.target.value)} autoComplete="name" className={FIELD} required />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Şifre' : 'Password'} *</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" className={FIELD} required />
+                <label htmlFor="join-username" className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Kullanıcı Adı' : 'Username'} *</label>
+                <input id="join-username" type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" className={FIELD} required />
+              </div>
+              <div>
+                <label htmlFor="join-password" className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Şifre' : 'Password'} *</label>
+                <input id="join-password" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" className={FIELD} required />
                 <PasswordStrengthIndicator password={password} language={language} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Şifre Tekrar' : 'Confirm Password'} *</label>
-                <input type="password" value={password2} onChange={e => setPassword2(e.target.value)} autoComplete="new-password" className={FIELD} required />
+                <label htmlFor="join-password2" className="mb-1 block text-xs font-semibold text-[#072C0E]/70">{tr ? 'Şifre Tekrar' : 'Confirm Password'} *</label>
+                <input id="join-password2" type="password" value={password2} onChange={e => setPassword2(e.target.value)} autoComplete="new-password" className={FIELD} required />
               </div>
               {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-[13px] text-red-600">{error}</p>}
               <button type="submit" disabled={saving}

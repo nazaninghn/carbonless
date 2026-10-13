@@ -8,11 +8,20 @@ import { CheckCircle2, XCircle, Loader2, Users } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+const ROLE_NAMES = {
+  admin: { tr: 'Yönetici', en: 'Admin' }, manager: { tr: 'Müdür', en: 'Manager' },
+  data_entry: { tr: 'Veri Girişi', en: 'Data Entry' }, auditor: { tr: 'Denetçi', en: 'Auditor' },
+};
+
 function AcceptInviteContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [status, setStatus] = useState('loading');
   const [message, setMessage] = useState('');
+  // Who invited whom to what, for the signed-out screen (the link said only
+  // "you've been invited to a team").
+  const [info, setInfo] = useState(null);
   const { language } = useLanguage();
   const tr = language === 'tr';
 
@@ -24,7 +33,14 @@ function AcceptInviteContent() {
     // below would just bounce to /login and the token would be lost.
     try { sessionStorage.setItem('pendingInviteToken', token); } catch {}
     const signedIn = typeof document !== 'undefined' && document.cookie.split('; ').includes('carbonless_auth=1');
-    if (!signedIn) { setStatus('signed-out'); return; }
+    if (!signedIn) {
+      setStatus('signed-out');
+      fetch(`${API_BASE}/companies/invite-info/?token=${encodeURIComponent(token)}`)
+        .then(r => (r.ok ? r.json() : null))
+        .then(d => { if (d?.company) setInfo(d); })
+        .catch(() => {});
+      return;
+    }
 
     (async () => {
       try {
@@ -90,11 +106,23 @@ function AcceptInviteContent() {
           {status === 'signed-out' && (
             <>
               <Users className="h-12 w-12 text-[#2ABD41] mx-auto mb-4" />
-              <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Ekibe davet edildiniz' : "You've been invited to a team"}</h1>
+              <h1 className="text-[20px] font-bold text-[#072C0E]">
+                {info
+                  ? (tr ? `${info.company} ekibine davet edildiniz` : `You've been invited to ${info.company}`)
+                  : (tr ? 'Ekibe davet edildiniz' : "You've been invited to a team")}
+              </h1>
+              {info && (
+                <p className="mt-1.5 text-[13px] font-semibold text-[#175022]">
+                  {[
+                    info.invited_by && (tr ? `Davet eden: ${info.invited_by}` : `Invited by ${info.invited_by}`),
+                    ROLE_NAMES[info.role] && (tr ? `Rolünüz: ${ROLE_NAMES[info.role].tr}` : `Your role: ${ROLE_NAMES[info.role].en}`),
+                  ].filter(Boolean).join(' · ')}
+                </p>
+              )}
               <p className="mt-2 text-[14px] text-[#072C0E]/60">
                 {tr
-                  ? 'Daveti kabul etmek için davetin gönderildiği e-posta adresiyle giriş yapın. Hesabınız yoksa "Kayıt Ol" ile sadece kendi hesabınızı oluşturun — şirket bilgisi gerekmez; e-postanızı doğruladığınızda ekibe otomatik olarak eklenirsiniz.'
-                  : 'To accept, log in with the email address the invite was sent to. No account yet? "Sign Up" creates just your account — no company details needed; you join the team once you verify your email.'}
+                  ? `Hesabınız varsa ${info?.email || 'davetin gönderildiği adres'} ile giriş yapın. Yoksa "Kayıt Ol" ile yalnızca kendi hesabınızı oluşturun — şirket bilgisi gerekmez, ekibe hemen eklenirsiniz.`
+                  : `Have an account? Log in with ${info?.email || 'the address the invite was sent to'}. Otherwise "Sign Up" creates just your account — no company details needed — and you join the team right away.`}
               </p>
               <div className="mt-6 flex justify-center gap-3">
                 <Link href="/login" className="inline-flex items-center rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">

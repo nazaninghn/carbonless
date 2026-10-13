@@ -253,7 +253,11 @@ class JoinFromInviteTests(InviteFlowTests):
         data = self._invite('deniz@test.com')
         res = APIClient().get('/api/companies/invite-info/', {'token': data['token']})
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data, {'email': 'deniz@test.com', 'role': 'data_entry', 'company': 'Kaya Tekstil A.Ş.'})
+        self.assertEqual({k: res.data[k] for k in ('email', 'role', 'company')},
+                         {'email': 'deniz@test.com', 'role': 'data_entry', 'company': 'Kaya Tekstil A.Ş.'})
+        # The inviter is named as the invitee would know them: no full name
+        # here, so the email address, not the username.
+        self.assertEqual(res.data['invited_by'], 'owner@test.com')
         self.assertEqual(APIClient().get('/api/companies/invite-info/', {'token': 'x'}).status_code, 404)
 
     def test_signup_with_invite_creates_no_placeholder_company(self):
@@ -262,16 +266,31 @@ class JoinFromInviteTests(InviteFlowTests):
         res = APIClient().post('/api/accounts/register/', {
             'username': 'deniz', 'email': 'deniz@test.com',
             'password': 'StrongPass123', 'password2': 'StrongPass123',
+            'first_name': 'Deniz', 'last_name': 'Kaya',
             'invite_token': data['token'], 'language': 'tr',
         }, format='json')
         self.assertEqual(res.status_code, 201, res.content)
+        # The name typed on the join page is what the team list shows.
+        self.assertEqual(User.objects.get(username='deniz').get_full_name(), 'Deniz Kaya')
         self.assertTrue(res.data['joining_team'])
         deniz = User.objects.get(username='deniz')
-        self.assertFalse(CompanyMembership.objects.filter(user=deniz).exists())
-        code = EmailVerificationToken.objects.get(user=deniz).code
-        APIClient().post('/api/accounts/verify-email-code/', {'email': 'deniz@test.com', 'code': code}, format='json')
+        # The invite link came to this address: no second emailed code — the
+        # account is verified and in the team as soon as it is created.
+        self.assertTrue(deniz.is_active)
+        self.assertTrue(EmailVerificationToken.objects.get(user=deniz).is_verified)
         memberships = CompanyMembership.objects.filter(user=deniz)
         self.assertEqual([(m.company_id, m.role) for m in memberships], [(self.company.id, 'data_entry')])
+        login = APIClient().post('/api/accounts/login/', {'username': 'deniz', 'password': 'StrongPass123'}, format='json')
+        self.assertEqual(login.status_code, 200)
+
+    def test_invite_email_names_role_and_inviter_not_username(self):
+        from django.core import mail
+        mail.outbox.clear()
+        self._invite('deniz@test.com')
+        body = mail.outbox[-1].body
+        self.assertIn('Rolünüz: Veri Girişi', body)
+        self.assertIn('Your role: Data Entry', body)
+        self.assertNotIn('doğruladığınızda', body)
 
     def test_invite_token_for_another_email_still_gets_own_company(self):
         data = self._invite('deniz@test.com')

@@ -149,6 +149,27 @@ def accept_pending_invites(user):
     return joined
 
 
+# Role names as the Team screen shows them, for the invite email and page.
+ROLE_NAMES = {
+    'owner': ('Sahip', 'Owner'), 'admin': ('Yönetici', 'Admin'), 'manager': ('Müdür', 'Manager'),
+    'data_entry': ('Veri Girişi', 'Data Entry'), 'auditor': ('Denetçi', 'Auditor'),
+}
+
+
+def inviter_label(inviter, company_name=''):
+    """Who sent an invite, as the invitee would recognise them: their name,
+    else their email address (a username like "yeni_firma" says nothing).
+    Signup stores the company name as the person's name until they edit
+    their profile — "X invited you to X" reads as a mistake, so that name
+    is skipped too."""
+    if not inviter:
+        return 'Carbonless'
+    name = (inviter.get_full_name() or '').strip()
+    if name and name != (company_name or '').strip():
+        return name
+    return inviter.email or inviter.username
+
+
 def _send_invite_email(invite, inviter):
     """Email the invitee a join link. Returns True if handed to the mail backend.
 
@@ -162,25 +183,24 @@ def _send_invite_email(invite, inviter):
     frontend = (os.environ.get('FRONTEND_URL') or 'http://localhost:3000').strip().rstrip('/')
     link = f"{frontend}/accept-invite?token={invite.token}"
     company = invite.company.legal_entity_name
-    who = (inviter.get_full_name() or inviter.username) if inviter else 'Carbonless'
-    if who.strip() == company.strip() and inviter:
-        # Signup stores the company name as the person's name until they edit
-        # their profile — "X invited you to X" reads as a mistake.
-        who = inviter.username
+    who = inviter_label(inviter, company)
+    role_tr, role_en = ROLE_NAMES.get(invite.role, (invite.role, invite.role))
     days = CompanyInvite.INVITE_TTL_DAYS
     message = (
         f"Merhaba,\n\n"
-        f"{who}, sizi Carbonless'ta {company} ekibine davet etti.\n\n"
+        f"{who}, sizi Carbonless'ta {company} ekibine davet etti.\n"
+        f"Rolünüz: {role_tr}\n\n"
         f"Katılmak için bağlantıya tıklayın:\n{link}\n\n"
-        f"Henüz hesabınız yoksa bu e-posta adresiyle ({invite.email}) kayıt olun; "
-        f"e-postanızı doğruladığınızda ekibe otomatik olarak eklenirsiniz. "
+        f"Henüz hesabınız yoksa bağlantıdan bu e-posta adresiyle ({invite.email}) hesabınızı "
+        f"oluşturun; ekibe hemen eklenirsiniz. "
         f"Davet {days} gün geçerlidir.\n\n"
         f"— — —\n\n"
         f"Hello,\n\n"
-        f"{who} invited you to join {company} on Carbonless.\n\n"
+        f"{who} invited you to join {company} on Carbonless.\n"
+        f"Your role: {role_en}\n\n"
         f"Join here:\n{link}\n\n"
-        f"No account yet? Sign up with this email address ({invite.email}); you will be "
-        f"added to the team automatically once you verify it. "
+        f"No account yet? Create one from the link with this email address ({invite.email}); "
+        f"you join the team right away. "
         f"The invite is valid for {days} days.\n\n"
         f"— Carbonless"
     )
@@ -280,6 +300,8 @@ def invite_info(request):
     return Response({
         'email': invite.email, 'role': invite.role,
         'company': invite.company.legal_entity_name,
+        'invited_by': inviter_label(invite.invited_by, invite.company.legal_entity_name)
+        if invite.invited_by_id else '',
     })
 
 
