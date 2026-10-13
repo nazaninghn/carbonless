@@ -101,14 +101,16 @@ class RegisterView(generics.CreateAPIView):
             if invite is not None and not invite.is_expired:
                 self._company_saved = False
                 self._joining_team = True
+                # The invite link was mailed to this address, and the email
+                # here must match it: following that link is the same proof of
+                # owning the inbox the 6-digit code gives. Asking for a code
+                # on top sent the invitee back to their mail a second time.
+                # The account is verified and joins the team at once.
                 token_obj = EmailVerificationToken.objects.create(user=user)
-                self._email_sent = self._send_verification_email(user, token_obj.code)
-                import os
-                if os.environ.get('SKIP_EMAIL_VERIFICATION', 'false').lower() == 'true':
-                    user.is_active = True
-                    user.save(update_fields=['is_active'])
-                    from companies.views import accept_pending_invites
-                    accept_pending_invites(user)
+                token_obj.verify()
+                from companies.views import accept_pending_invites
+                accept_pending_invites(user)
+                self._email_sent = True
                 return
         placeholder = {
             'legal_entity_name': f"{user.username}'s Company",
@@ -425,6 +427,9 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         # Reports only read the company's data, so every member may download them.
         REPORT_ROLES = {'owner', 'admin', 'manager', 'data_entry', 'auditor'}
         data['role'] = role
+        # For the new member's welcome on the dashboard (which team, since when).
+        data['company_name'] = company.legal_entity_name if company else ''
+        data['member_since'] = membership.created_at if membership else None
         data['role_display'] = (
             dict(CompanyMembership.ROLE_CHOICES).get(role, role.replace('_', ' ').title())
         )

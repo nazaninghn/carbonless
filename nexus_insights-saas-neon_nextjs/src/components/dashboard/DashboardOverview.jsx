@@ -27,6 +27,7 @@ import {
 } from '@/lib/constants/emissions';
 import { fixed } from '@/lib/formatNumber';
 import { notCountedText, hasNotCounted } from '@/lib/notCounted';
+import { roleLabel } from '@/lib/permissions';
 
 // ─── Full month names (only needed here for the detailed monthly breakdown) ──
 const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
@@ -408,8 +409,31 @@ export default function DashboardOverview({
   onYearChange,
   canApprove = false,
   canEdit = true,
+  member = null,
 }) {
   const tr = language === 'tr';
+  // A member who joined from an invite (any role but owner) in the last two
+  // weeks is told once which team they joined and what their role lets them
+  // do — they landed on an empty-year screen with no word of either.
+  const welcomeKey = member?.id ? `carbonless_welcome_seen_${member.id}` : null;
+  const [welcomeSeen, setWelcomeSeen] = useState(true);
+  useEffect(() => {
+    if (!welcomeKey) return;
+    try { setWelcomeSeen(localStorage.getItem(welcomeKey) === '1'); } catch { setWelcomeSeen(true); }
+  }, [welcomeKey]);
+  const isNewMember = !!member?.role && member.role !== 'owner' && member.company_name
+    && member.member_since && (Date.now() - new Date(member.member_since).getTime()) < 14 * 86400000;
+  const roleHint = {
+    admin: { tr: 'Kayıtları girebilir, onaylayabilir ve ekibi yönetebilirsiniz.', en: 'You can enter and approve data and manage the team.' },
+    manager: { tr: 'Kayıt girebilir ve ekibin kayıtlarını onaylayabilirsiniz.', en: "You can enter data and approve the team's entries." },
+    data_entry: { tr: 'Girdiğiniz kayıtlar, bir yönetici onayladıktan sonra toplamlara eklenir.', en: 'Your entries count in the totals once a manager approves them.' },
+    auditor: { tr: 'Verileri ve raporları görüntüleyebilirsiniz; değişiklik yapamazsınız.', en: 'You can view the data and reports; you cannot change them.' },
+  }[member?.role];
+  const dismissWelcome = () => {
+    setWelcomeSeen(true);
+    try { localStorage.setItem(welcomeKey, '1'); } catch { /* shown again next time */ }
+  };
+
   // Items waiting in "Onay Bekleyenler" (entries + advisor approvals), shown
   // to approvers under Pending Actions so they are not only in the bell.
   // Counted apart: "13 kayıt" read as 13 emission entries when 11 were
@@ -559,6 +583,23 @@ export default function DashboardOverview({
   return (
     <div className="space-y-3 sm:space-y-4">
       <style>{DASHBOARD_ANIM_STYLES}</style>
+
+      {isNewMember && !welcomeSeen && (
+        <div role="status" className="flex items-start gap-3 rounded-xl border border-[#2ABD41]/30 bg-[#F1FCF2] px-4 py-3">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#2ABD41]" />
+          <div className="min-w-0 flex-1 text-xs text-[#175022]">
+            <p className="font-bold">
+              {tr
+                ? `${member.company_name} ekibine ${roleLabel(member.role, true)} olarak katıldınız.`
+                : `You joined ${member.company_name} as ${roleLabel(member.role, false)}.`}
+            </p>
+            {roleHint && <p className="mt-0.5">{tr ? roleHint.tr : roleHint.en}</p>}
+          </div>
+          <button onClick={dismissWelcome} className="shrink-0 rounded-full bg-[#2ABD41] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[#1A7B2A]">
+            {tr ? 'Anladım' : 'Got it'}
+          </button>
+        </div>
+      )}
 
       {canEdit && unnamedFacilities.length > 0 && (
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-[#2ABD41]/30 bg-[#F1FCF2] px-4 py-2.5">
@@ -912,14 +953,15 @@ export default function DashboardOverview({
               },
               {
                 dot: targets.length === 0 ? 'bg-amber-400' : 'bg-[#2ABD41]',
-                done: targets.length > 0,
+                // Targets are set by approvers (owner, admin, manager).
+                done: targets.length > 0 || !canApprove,
                 tr: 'Azaltım hedefi belirlenmedi',
                 en: 'No reduction target set',
                 tab: 'reduction',
               },
               {
                 dot: facilityList.length === 0 ? 'bg-[#072C0E]/25' : 'bg-[#2ABD41]',
-                done: facilityList.length > 0,
+                done: facilityList.length > 0 || !canEdit,
                 tr: 'Tesis bilgisi eksik',
                 en: 'No facility added',
                 tab: 'settings',
@@ -938,7 +980,7 @@ export default function DashboardOverview({
               )
             ))}
             {/* All done state */}
-            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0, facilityList.length > 0].every(Boolean) && (
+            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0 || !canApprove, facilityList.length > 0 || !canEdit].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
                 <CheckCircle2 className="h-6 w-6 text-[#2ABD41]" />
                 <p className="text-[11px] font-semibold text-[#072C0E]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>

@@ -312,6 +312,7 @@ export default function DashboardPage() {
                     onYearChange={setSelectedYear}
                     canApprove={perms.canApprove}
                     canEdit={perms.canEdit}
+                    member={user}
                   />
                 </>
               )}
