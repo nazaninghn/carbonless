@@ -52,8 +52,13 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
     if (multi) {
       // Fix 27A/B: store country.code (language-neutral) instead of country[lang]
       const code = country.code;
-      const newList = selected.includes(code) ? selected.filter(s => s !== code) : [...selected, code];
-      onChange(newList.join(', '));
+      // Tapping a country already chosen keeps it: the open list covered its
+      // tag, so un-choosing it here went unnoticed (the headquarters country
+      // is added for the user, who then tapped it and lost it). Removing is
+      // the tag's ✕. After a pick the list closes so the tags show.
+      if (!selected.includes(code)) onChange([...selected, code].join(', '));
+      setSearch('');
+      setOpen(false);
     } else {
       onChange(country.code); // store code, not localized name
       setSearch('');
@@ -86,7 +91,7 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
           {selected.map(name => (
             <span key={name} className="inline-flex items-center gap-1 px-2 py-1 bg-[#8BEA99]/15 border border-[#8BEA99]/35 rounded-md text-xs text-[#175022]">
               {getLabel(name)}
-              <button type="button" onClick={() => handleRemove(name)} className="text-[#2ABD41] hover:text-red-500">✕</button>
+              <button type="button" onClick={() => handleRemove(name)} aria-label={`${language === 'tr' ? 'Kaldır' : 'Remove'}: ${getLabel(name)}`} className="text-[#2ABD41] hover:text-red-500">✕</button>
             </span>
           ))}
         </div>
@@ -114,7 +119,7 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
                 <span>{c.flag}</span>
                 <span className="text-slate">{c[lang]}</span>
                 <span className="text-graphite/60 text-xs ml-auto">{c.code}</span>
-                {isSelected && <span className="text-green-500">✓</span>}
+                {isSelected && <span className="text-xs font-semibold text-green-600">✓ {language === 'tr' ? 'Seçili' : 'Selected'}</span>}
               </button>
             );
           })}
