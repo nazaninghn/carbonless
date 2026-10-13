@@ -294,12 +294,12 @@ export default function InventoryLibrary({ tr = false }) {
 
   return (
     <div className="w-full h-full min-h-0 overflow-y-auto">
-    <div className="w-full max-w-4xl mx-auto p-6 space-y-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-[#175022] mb-2">
+    <div className="w-full max-w-4xl mx-auto p-4 sm:p-5 space-y-5 sm:space-y-6">
+      <div className="text-center mb-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#175022] mb-1">
           {tr ? 'Karbon Envanter Kütüphanesi' : 'Carbon Inventory Library'}
         </h1>
-        <p className="text-[#175022]/60">
+        <p className="text-sm text-[#175022]/60">
           {tr ? 'Karbon envanterlerinizi yönetin' : 'Manage your carbon inventories'}
         </p>
       </div>
@@ -326,22 +326,22 @@ export default function InventoryLibrary({ tr = false }) {
 
       {/* Start New */}
       {canEdit && (
-      <div className="p-6 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
+      <div className="p-4 bg-gradient-to-br from-[#8BEA99]/10 to-[#8BEA99]/5 rounded-xl border border-[#8BEA99]/40">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-[#175022] mb-2">
+            <h2 className="text-base font-semibold text-[#175022] mb-1">
               {tr ? 'Yeni Envanter' : 'New Inventory'}
             </h2>
-            <p className="text-sm text-[#175022]/70">
+            <p className="text-xs text-[#175022]/70">
               {tr ? 'Yeni bir karbon envanteri oluşturun' : 'Create a new carbon inventory'}
             </p>
           </div>
           <button
             onClick={openNewDialog}
             disabled={loading}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-sm shrink-0"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 text-sm bg-[#175022] text-white font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-sm shrink-0"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             {tr ? 'Başla' : 'Start'}
           </button>
         </div>
@@ -351,16 +351,16 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Drafts */}
       {drafts.length > 0 && (
         <div>
-          <h3 className="font-bold text-[#175022] mb-4 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#175022]"></span>
+          <h3 className="text-sm font-bold text-[#175022] mb-2 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#175022]"></span>
             {tr ? 'Taslaklar' : 'Draft Inventories'}
-            <span className="ml-2 text-sm text-[#175022]/50">({drafts.length})</span>
+            <span className="ml-2 text-xs text-[#175022]/50">({drafts.length})</span>
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {drafts.map(report => (
               <div
                 key={report.report_id}
-                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
+                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 border border-[#175022]/20 rounded-lg bg-white hover:bg-[#175022]/5 transition"
               >
                 <div className="flex-1 min-w-0">
                   {titleBlock(report)}
@@ -411,9 +411,9 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
-                        className="flex items-center justify-center h-9 w-9 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-red-600 hover:bg-red-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-red-600 hover:bg-red-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       )}
                     </>
@@ -428,16 +428,16 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Completed */}
       {completed.length > 0 && (
         <div>
-          <h3 className="font-bold text-[#175022] mb-4 flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-[#8BEA99]"></span>
+          <h3 className="text-sm font-bold text-[#175022] mb-2 flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#8BEA99]"></span>
             {tr ? 'Tamamlanan Envanterler' : 'Completed Inventories'}
-            <span className="ml-2 text-sm text-[#175022]/50">({completed.length})</span>
+            <span className="ml-2 text-xs text-[#175022]/50">({completed.length})</span>
           </h3>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {completed.map(report => (
               <div
                 key={report.report_id}
-                className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
+                className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 border border-[#8BEA99]/40 rounded-lg bg-[#8BEA99]/5 hover:bg-[#8BEA99]/10 transition"
               >
                 <div className="flex-1 min-w-0">
                   {titleBlock(report)}
@@ -477,33 +477,33 @@ export default function InventoryLibrary({ tr = false }) {
                         disabled={!!pdfDownloadingId}
                         title={tr ? 'Tam rapor paketi indir (3 rapor)'
                                   : 'Download full report pack (3 reports)'}
-                        className="flex items-center justify-center h-9 w-9 shrink-0 text-[#2ABD41] rounded-full transition-all duration-200 hover:text-[#175022] hover:bg-[#2ABD41]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#2ABD41] rounded-full transition-all duration-200 hover:text-[#175022] hover:bg-[#2ABD41]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
                       >
                         {pdfDownloadingId === `${report.report_id}:pack`
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <Package className="w-4 h-4" />}
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <Package className="w-3.5 h-3.5" />}
                       </button>
                       <button
                         onClick={() => handleDownloadPdf(report.report_id, 'iso')}
                         disabled={!!pdfDownloadingId}
                         title={tr ? 'ISO 14064-1 Envanter Raporu İndir'
                                   : 'Download ISO 14064-1 inventory report'}
-                        className="flex items-center justify-center h-9 w-9 shrink-0 text-[#175022]/60 rounded-full transition-all duration-200 hover:text-[#175022] hover:bg-[#175022]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/60 rounded-full transition-all duration-200 hover:text-[#175022] hover:bg-[#175022]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
                       >
                         {pdfDownloadingId === `${report.report_id}:iso`
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <FileBadge className="w-4 h-4" />}
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <FileBadge className="w-3.5 h-3.5" />}
                       </button>
                       <button
                         onClick={() => handleDownloadPdf(report.report_id, 'profile')}
                         disabled={!!pdfDownloadingId}
                         title={tr ? 'Envanter profili (özet) indir'
                                   : 'Download inventory profile (summary)'}
-                        className="flex items-center justify-center h-9 w-9 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-[#1A7B2A] hover:bg-[#1A7B2A]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-[#1A7B2A] hover:bg-[#1A7B2A]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
                       >
                         {pdfDownloadingId === `${report.report_id}:profile`
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <FileText className="w-4 h-4" />}
+                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          : <FileText className="w-3.5 h-3.5" />}
                       </button>
                       {canEdit && (
                       <button
@@ -528,9 +528,9 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
-                        className="flex items-center justify-center h-9 w-9 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-red-600 hover:bg-red-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-red-600 hover:bg-red-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                       )}
                     </>
@@ -544,17 +544,17 @@ export default function InventoryLibrary({ tr = false }) {
 
       {/* Empty State */}
       {drafts.length === 0 && completed.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <p className="text-[#175022]/60 mb-6">
+        <div className="text-center py-8">
+          <p className="text-sm text-[#175022]/60 mb-4">
             {tr ? 'Henüz envanter yok' : 'No inventories yet'}
           </p>
           {/* An auditor can't start one (the notice above says so). */}
           {canEdit && (
             <button
               onClick={openNewDialog}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm bg-[#175022] text-white font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
             </button>
           )}
@@ -564,7 +564,7 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Naming Dialog */}
       {showNamingDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
             <h2 className="text-lg font-bold text-[#175022] mb-4">
               {tr ? 'Envanter Adı' : 'Inventory Name'}
             </h2>
@@ -579,7 +579,7 @@ export default function InventoryLibrary({ tr = false }) {
               }}
               placeholder={tr ? 'Örnek: 2024 Emisyon Denetimi' : 'e.g., 2024 Emissions Audit'}
               autoFocus
-              className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
+              className="w-full px-4 py-2.5 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
             />
             <p className="mb-4 text-xs text-[#175022]/60">
               {tr
@@ -594,7 +594,7 @@ export default function InventoryLibrary({ tr = false }) {
               id="new-inventory-year"
               value={surveyYear}
               onChange={(e) => setSurveyYear(e.target.value)}
-              className="w-full px-4 py-3 border border-[#175022]/20 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
+              className="w-full px-4 py-2.5 border border-[#175022]/20 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
             >
               {yearOptions.map(o => (
                 <option key={o.value} value={o.value}>{o.label?.[tr ? 'tr' : 'en'] || o.value}</option>
@@ -626,7 +626,7 @@ export default function InventoryLibrary({ tr = false }) {
                   setShowNamingDialog(false);
                   setSurveyName('');
                 }}
-                className="flex-1 px-4 py-3 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] transition-all duration-200 hover:bg-[#175022]/5 hover:border-[#175022]/40 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                className="flex-1 px-4 py-2.5 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] transition-all duration-200 hover:bg-[#175022]/5 hover:border-[#175022]/40 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
@@ -635,7 +635,7 @@ export default function InventoryLibrary({ tr = false }) {
                   <button
                     onClick={handleStartNew}
                     disabled={loading}
-                    className="flex-1 px-4 py-3 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] transition-all duration-200 hover:bg-[#175022]/5 hover:border-[#175022]/40 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50"
+                    className="flex-1 px-4 py-2.5 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] transition-all duration-200 hover:bg-[#175022]/5 hover:border-[#175022]/40 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50"
                   >
                     {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Yine de yeni başlat' : 'Start a new one anyway')}
                   </button>
@@ -646,7 +646,7 @@ export default function InventoryLibrary({ tr = false }) {
                       if (sameYearReport.status === 'completed') handleEditCompleted(sameYearReport.report_id);
                       else handleContinue(sameYearReport.report_id);
                     }}
-                    className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                    className="flex-1 px-4 py-2.5 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
                   >
                     {tr ? 'Mevcut envanteri aç' : 'Open the existing one'}
                   </button>
@@ -655,7 +655,7 @@ export default function InventoryLibrary({ tr = false }) {
                 <button
                   onClick={handleStartNew}
                   disabled={loading}
-                  className="flex-1 px-4 py-3 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                   {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
                 </button>
