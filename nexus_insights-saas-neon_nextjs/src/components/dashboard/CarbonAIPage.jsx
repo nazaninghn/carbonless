@@ -3720,6 +3720,12 @@ export function QuestionnaireTab({
       // ✅ Save succeeded - clear error
       setSaveError('');
       setSaveSuccess(true);
+      // Every saved answer is already calculated on the server: the dashboard,
+      // Emissions and Reports reload now (on the inventory's year), without
+      // waiting for the inventory to be finished.
+      window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
+        detail: { source: 'inventory', year: respData?.reporting_year ?? null },
+      }));
       if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
       saveSuccessTimerRef.current = setTimeout(() => {
         if (isMounted.current) setSaveSuccess(false);
