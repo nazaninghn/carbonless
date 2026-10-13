@@ -1297,7 +1297,21 @@ function groupSessionsByDate(sessions, tr) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Fix #106: memo() prevents re-rendering the full message history on every
 // keystroke in the questionnaire input field.
-const ChatBubble = memo(function ChatBubble({ msg }) {
+// The latest question bubble without its question text — on a phone the same
+// text is pinned above the answer panel, so it is not shown twice.
+// "**Soru 43:** text…" → "**Soru 43**"; "**Soru 43** _(item)_\n\ntext…" drops
+// the text paragraph. The helper paragraph (italic) stays.
+function withoutQuestionText(content) {
+  const parts = String(content || '').split('\n\n');
+  const head = parts[0].match(/^(\*\*(?:Soru|Question) [^*:]+):\*\* \S/);
+  if (head) return [`${head[1]}**`, ...parts.slice(1)].join('\n\n');
+  if (/^\*\*(?:Soru|Question) [^*]+\*\* _\(.*\)_$/.test(parts[0]) && parts.length > 1 && !parts[1].startsWith('_')) {
+    return [parts[0], ...parts.slice(2)].join('\n\n');
+  }
+  return content;
+}
+
+const ChatBubble = memo(function ChatBubble({ msg, compactQuestion = false }) {
   const base = 'rounded-[20px] px-4 py-3 text-[13.5px] leading-[1.65] max-w-[85%] sm:max-w-[75%]';
   if (msg.role === 'user') {
     return (
@@ -1349,7 +1363,14 @@ const ChatBubble = memo(function ChatBubble({ msg }) {
         <span className="block h-2 w-2 rounded-full bg-white/80" />
       </div>
       <div className="flex-1 min-w-0 text-[13.5px] leading-[1.7] text-[#175022]">
-        <Markdown text={msg.content} />
+        {compactQuestion && withoutQuestionText(msg.content) !== msg.content ? (
+          <>
+            <div className="sm:hidden" data-testid="compact-question"><Markdown text={withoutQuestionText(msg.content)} /></div>
+            <div className="hidden sm:block"><Markdown text={msg.content} /></div>
+          </>
+        ) : (
+          <Markdown text={msg.content} />
+        )}
       </div>
     </div>
   );
@@ -2151,13 +2172,17 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
             />
           ))}
         </div>
-        <button
-          onClick={() => onSubmit()}
-          disabled={disabled || vals.length === 0}
-          className="self-start rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
-        >
-          {tr ? 'Onayla →' : 'Confirm →'}
-        </button>
+        {/* Stays at the bottom of the scrolling answer panel, so a long list
+            of chips on a phone never hides it. */}
+        <div className="sticky bottom-0 z-10 -mx-1 bg-white px-1 pt-1 pb-1">
+          <button
+            onClick={() => onSubmit()}
+            disabled={disabled || vals.length === 0}
+            className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+          >
+            {tr ? 'Onayla' : 'Confirm'}{vals.length > 0 ? ` (${vals.length})` : ''} →
+          </button>
+        </div>
       </div>
     );
   }
@@ -2317,14 +2342,16 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           lang={lang}
           disabled={disabled}
         />
-        <button
-          onClick={() => onSubmit()}
-          disabled={disabled || !allRequiredFilled}
-          className="self-start rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
-        >
-          {tr ? 'Onayla →' : 'Confirm →'}
-        </button>
-        <MissingFieldsHint labels={compoundMissing} tr={tr} />
+        <div className="sticky bottom-0 z-10 -mx-1 bg-white px-1 pt-1 pb-1">
+          <button
+            onClick={() => onSubmit()}
+            disabled={disabled || !allRequiredFilled}
+            className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+          >
+            {tr ? 'Onayla →' : 'Confirm →'}
+          </button>
+          <MissingFieldsHint labels={compoundMissing} tr={tr} />
+        </div>
       </div>
     );
   }
@@ -2665,7 +2692,34 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
           ? <>Bu bölümdeki yanıtlarınız aşağıda. Düzenlemek istediğiniz varsa <strong>Düzenle</strong> butonunu kullanın.</>
           : <>Your answers for this section are below. Use <strong>Edit</strong> to change any answer before continuing.</>}
       </p>
-      <div className="overflow-x-auto rounded-xl border border-[#175022]/8 mb-4">
+      {/* Phones: one card per answer — the four-column table does not fit. */}
+      <ul data-testid="block-summary-cards" className="mb-4 flex flex-col gap-2 sm:hidden">
+        {questions.map(q => {
+          const answer = readAnswerValue(answers, q.id);
+          const displayVal = getDisplayValue(q, answer, lang, { isAggregate: true, answers });
+          const qText = stripDocLabels(q.text?.[lang] || q.text?.en || q.id);
+          return (
+            <li key={q.id} className="rounded-xl border border-[#175022]/8 bg-white px-3 py-2.5">
+              <div className="flex items-start gap-2">
+                <p className="min-w-0 flex-1 text-xs leading-snug text-[#175022]/65">
+                  <span className="mr-1 font-mono text-[10px] text-[#175022]/35">{q.number}</span>
+                  {qText}
+                </p>
+                <button
+                  onClick={() => onEdit(q.id)}
+                  aria-label={`${tr ? 'Düzenle' : 'Edit'} — ${tr ? 'Soru' : 'Question'} ${q.number}`}
+                  className="flex shrink-0 items-center gap-1 rounded-lg border border-[#175022]/12 px-2 py-1 text-[10px] font-bold text-[#175022]/50 transition hover:border-[#8BEA99]/40 hover:bg-[#8BEA99]/8 hover:text-[#175022]"
+                >
+                  <Pencil className="h-2.5 w-2.5" strokeWidth={2.5} />
+                  {tr ? 'Düzenle' : 'Edit'}
+                </button>
+              </div>
+              <p className="mt-1 break-words text-xs font-semibold leading-snug text-[#175022]">{displayVal}</p>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="mb-4 hidden overflow-x-auto rounded-xl border border-[#175022]/8 sm:block">
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-[#175022]/8 bg-[#175022]/3">
@@ -3197,6 +3251,9 @@ export function QuestionnaireTab({
   }, []);
 
   const currentQuestion = getQuestionById(currentId);
+  // The answer panel, and the question pinned on top of it.
+  const inputPanelShown = !completed && (!blockSummaryState || editingQuestionId);
+  const pinnedQuestionShown = Boolean(inputPanelShown && currentQuestion && !isTyping);
 
   // ✅ Per-stage answer breakdown for the completion report — reuses the same
   // CARBONIQ_STAGES grouping the ProgressSidebar already shows during the
@@ -4689,8 +4746,12 @@ export function QuestionnaireTab({
             aria-atomic="false"
             aria-label={tr ? 'Sohbet geçmişi' : 'Conversation history'}
           >
-            {messages.map((msg) => (
-              <ChatBubble key={msg.id} msg={msg} />
+            {messages.map((msg, i) => (
+              <ChatBubble
+                key={msg.id}
+                msg={msg}
+                compactQuestion={pinnedQuestionShown && i === messages.length - 1}
+              />
             ))}
             {/* Scope 1 summary table — shown inline when TY-1 (Q63) is current.
                 Rendered as a live component so it always reflects the latest answers
@@ -4790,10 +4851,10 @@ export function QuestionnaireTab({
             chips) never squeezes the conversation — and the question in it —
             down to a line; the current question is also pinned on top of the
             form, so it is in view whatever the scroll position. */}
-        {!completed && (!blockSummaryState || editingQuestionId) && (
+        {inputPanelShown && (
           <div className="min-h-0 max-h-[60%] shrink overflow-y-auto border-t border-[#175022]/6 px-4 pb-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
-              {currentQuestion && !isTyping && (
+              {pinnedQuestionShown && (
                 <div data-testid="pinned-question" className="sticky top-0 z-10 -mx-1 mb-2 bg-white px-1 pt-3 pb-2">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-[#175022]/45">
                     {tr ? 'Soru' : 'Question'} {currentQuestion.number}
@@ -4986,8 +5047,8 @@ export function QuestionnaireTab({
                     <span>{validationError}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between">
-                  <p className="text-[10px] text-[#175022]/45">
+                <div className="flex items-center justify-end sm:justify-between">
+                  <p className="hidden text-[10px] text-[#175022]/45 sm:block">
                     {tr ? 'Verileriniz güvenli şekilde kaydedilir · ' : 'Your data is saved securely · '}
                     <span className="font-semibold text-[#175022]/70">
                       {tr ? 'Her sorunuzu AI\'a sorabilirsiniz →' : 'Ask the AI anything about this question →'}

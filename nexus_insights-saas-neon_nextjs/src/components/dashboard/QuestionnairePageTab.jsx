@@ -67,23 +67,24 @@ export default function QuestionnairePageTab({ language }) {
   return (
     <div className="flex flex-1 flex-col min-h-0">
       {/* Header */}
-      <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/10">
+      {/* One line on a phone, so the inventory keeps the screen. */}
+      <div className="mb-2 flex flex-row items-center justify-between gap-3 sm:mb-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/10 sm:flex">
             <ClipboardList className="h-5 w-5 text-[#2ABD41]" />
           </div>
           <div>
-            <h1 className="text-[18px] sm:text-[22px] font-bold text-[#072C0E] tracking-tight">
+            <h1 className="truncate text-[17px] sm:text-[22px] font-bold text-[#072C0E] tracking-tight">
               {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
             </h1>
-            <p className="text-[12px] sm:text-[13px] text-[#072C0E]/50">
+            <p className="hidden text-[13px] text-[#072C0E]/50 sm:block">
               {tr
                 ? 'Şirketinizin karbon ayak izini adım adım hesaplayın'
                 : 'Calculate your company\'s carbon footprint step by step'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {/* The AI assistant (chat history, calculations) opens beside the inventory. */}
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true } }))}
@@ -92,7 +93,7 @@ export default function QuestionnairePageTab({ language }) {
             <Sparkles className="h-3.5 w-3.5" />
             {tr ? 'AI Asistan' : 'AI Assistant'}
           </button>
-          <div className="flex items-center gap-1.5 rounded-full bg-[#F1FCF2] border border-[#DEFAE1] px-3 py-1.5">
+          <div className="hidden items-center gap-1.5 rounded-full bg-[#F1FCF2] border sm:flex border-[#DEFAE1] px-3 py-1.5">
             <HelpCircle className="h-3.5 w-3.5 text-[#2ABD41]" />
             <span className="text-[11px] font-medium text-[#175022]/60">
               {tr ? 'ISO 14064-1 uyumlu' : 'ISO 14064-1 compliant'}
