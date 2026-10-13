@@ -46,6 +46,15 @@ _schema_cache = None
 # Same sanity ceiling used for EmissionEntry.quantity — not a real-world limit,
 # just a guard against a typo'd or malicious value ("1e15") passing as "numeric".
 _MAX_NUMERIC = 1_000_000_000_000
+# Conservative per-amount cap. Keeps quantity < DB 1e10 integer digits
+# (quantity DecimalField max_digits=14) and quantity*factor < DB 1e12
+# (calculated_co2e_kg DecimalField max_digits=16) for all catalog factors,
+# so no amount at or above this can ever overflow EmissionEntry on save and
+# turn a user typo into an HTTP 500 — while still accepting large but genuine
+# industrial figures (e.g. 5,000,000 kWh). The guard lives here in the
+# validator (not emissions/models.py) so the 400 is returned before any
+# partial EmissionEntry is written.
+_MAX_AMOUNT = 1_000_000_000
 _NUMBER_RE = re.compile(r'^-?\d+(\.\d+)?$')
 
 _MESSAGES = {
@@ -72,6 +81,10 @@ _MESSAGES = {
     'above_max_value': {
         'en': '{prefix}Value must be at most {n}, got {value!r}.',
         'tr': '{prefix}Değer en fazla {n} olmalıdır, girilen: {value!r}.',
+    },
+    'amount_too_large': {
+        'en': '{prefix}Please enter a realistic amount (less than 1,000,000,000).',
+        'tr': '{prefix}Lütfen gerçekçi bir miktar girin (1.000.000.000\'dan az).',
     },
     'unrecognized_unit': {
         'en': '{prefix}Unrecognized unit {unit!r} — expected one of {units}.',
@@ -290,6 +303,13 @@ def _validate_text_value(value, q, errors_prefix='', lang='en'):
             return _msg(lang, 'below_min_value', prefix=errors_prefix, n=min_v, value=value)
         if max_v is not None and amount_num > max_v:
             return _msg(lang, 'above_max_value', prefix=errors_prefix, n=max_v, value=value)
+        # Overflow guard: an amount at or above _MAX_AMOUNT can overflow the
+        # EmissionEntry DecimalFields on save (HTTP 500). Reject it here with a
+        # clean bilingual 400 before any entry is written. This one choke point
+        # covers scalar numeric steps, fuel_loop/equipment_loop items, and
+        # compound numeric sub-fields (all reach _validate_text_value).
+        if amount_num >= _MAX_AMOUNT:
+            return _msg(lang, 'amount_too_large', prefix=errors_prefix)
         if units and unit is not None and unit not in units:
             return _msg(lang, 'unrecognized_unit', prefix=errors_prefix, unit=unit, units=sorted(units))
         return None

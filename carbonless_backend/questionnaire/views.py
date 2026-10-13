@@ -776,7 +776,10 @@ class SubmitStepView(APIView):
                 'id': entries[0].id,
                 'co2e_kg': co2e_kg,
                 'co2e_tonne': co2e_kg / 1000,
-                'factor_name': ', '.join(e.emission_factor.name for e in entries),
+                # Order-preserving de-dupe: one step can create several entries
+                # sharing a factor (e.g. multiple sites on the same grid), and
+                # repeating the factor name once per entry is noise.
+                'factor_name': ', '.join(dict.fromkeys(e.emission_factor.name for e in entries)),
             }
 
         return Response({

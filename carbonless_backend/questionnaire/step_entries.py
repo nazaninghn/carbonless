@@ -1378,7 +1378,12 @@ def uncalculated_notes(answers, year):
             if cat in ('SC-01', 'SC-02', 'SC-03') and _kg(raw) is None:
                 note('K3C1-3a', f'{cat}: miktar kg veya ton olarak girilmediği için hesaplanmadı.',
                      f'{cat}: not calculated — the quantity is not in kg or tonnes.')
-            elif cat in ('SC-01', 'SC-02') and materials.get(cat) not in MATERIAL_SLUG:
+            elif cat in ('SC-01', 'SC-02') and (chosen := materials.get(cat)) and chosen not in MATERIAL_SLUG:
+                # Only warn once the material TYPE (K3C1-3m) has actually been
+                # answered with something off-catalog. A falsy chosen (None/'')
+                # means the type step is still unanswered — the quantity is
+                # pending by design (type is asked after quantity), so stay
+                # silent rather than show a misleading "no material chosen" note.
                 note('K3C1-3a', f'{cat}: malzeme seçilmedi veya listede yok — hesaplanmadı.',
                      f'{cat}: no listed material chosen — not calculated.')
             elif cat == 'SC-11' and unit.lower() not in ('m³', 'm3'):

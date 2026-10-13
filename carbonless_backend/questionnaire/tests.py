@@ -2010,3 +2010,82 @@ class FacilityCountReconcileTests(_StepPatchTestCase):
         res = self._patch('2A-1', {'answer': '10'})
         self.assertEqual(res.status_code, 200, res.content)
         self.assertFalse(res.data['warnings'])
+
+
+class AmountUpperBoundTests(TestCase):
+    """FEAT-002 Fix 1: an unrealistically large amount is rejected with a
+    clean bilingual message before any entry is written, so it can never
+    overflow the EmissionEntry DecimalFields into an HTTP 500. Genuine large
+    industrial figures still pass."""
+
+    def test_scalar_fuel_loop_amount_rejected_bilingually(self):
+        from .carboniq_validation import validate_generic_step
+        valid, msg = validate_generic_step('3A-5', {'answer': {'natural_gas': '999999999999 m³'}}, lang='en')
+        self.assertFalse(valid)
+        self.assertIn('less than 1,000,000,000', msg)
+        valid_tr, msg_tr = validate_generic_step('3A-5', {'answer': {'natural_gas': '999999999999 m³'}}, lang='tr')
+        self.assertFalse(valid_tr)
+        self.assertIn('1.000.000.000', msg_tr)
+
+    def test_compound_amount_sub_field_rejected(self):
+        from .carboniq_validation import validate_generic_step
+        ship = {'transport_mode': 'TM-01', 'load_tonne': '999999999999', 'distance_km': '300', 'load_factor_pct': '60'}
+        valid, msg = validate_generic_step('K3C4-2', {'answer': {'items': [ship]}}, lang='en')
+        self.assertFalse(valid)
+        self.assertIn('less than 1,000,000,000', msg)
+
+    def test_realistic_large_amount_accepted(self):
+        from .carboniq_validation import validate_generic_step
+        self.assertEqual(validate_generic_step('4A-1', {'answer': {'Site': '5000000 kWh'}}, lang='en'), (True, None))
+
+
+class MaterialTypePendingNoteTests(TestCase):
+    """FEAT-002 Fix 2: the K3C1-3a material-quantity step must not surface the
+    'no listed material chosen' note while the K3C1-3m material-TYPE step is
+    still unanswered (pending by design, since type is asked after quantity).
+    The note stays for a genuinely off-catalog answered slug."""
+
+    def _notes(self, answers):
+        from .step_entries import uncalculated_notes
+        return uncalculated_notes(answers, 2024)
+
+    def _base(self):
+        return {'K3C1-0': 'yes', 'K3C1-3': 'yes', 'K3C1-3a': {'answer': {'SC-01': '5000 kg'}}}
+
+    def _material_notes(self, answers):
+        return [n for n in self._notes(answers)
+                if n['step_id'] == 'K3C1-3a' and 'no listed material chosen' in n['en']]
+
+    def test_type_unanswered_suppresses_note(self):
+        self.assertEqual(self._material_notes(self._base()), [])
+
+    def test_valid_slug_stays_suppressed(self):
+        answers = {**self._base(), 'K3C1-3m': {'answer': {'SC-01': 'metal_primary'}}}
+        self.assertEqual(self._material_notes(answers), [])
+
+    def test_answered_unknown_slug_emits_note(self):
+        answers = {**self._base(), 'K3C1-3m': {'answer': {'SC-01': 'unobtanium'}}}
+        self.assertTrue(self._material_notes(answers))
+
+
+class FactorNameDedupeTests(StepEntriesTests):
+    """FEAT-002 Fix 3: when one step creates several entries sharing a factor
+    (e.g. several sites on the same national grid), the response's
+    saved_entry.factor_name lists the factor once, order-preserved, while the
+    per-site entries and the combined co2e are unchanged."""
+
+    def test_two_sites_sharing_the_grid_factor_name_once(self):
+        from companies.models import Facility
+        Facility.objects.create(company=self.company, name='Kocaeli Fabrika')
+        Facility.objects.create(company=self.company, name='İstanbul Ofis')
+        factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        factor.name = 'Turkey national grid'
+        factor.save(update_fields=['name'])
+        self._step('2A-2', {'1': {'name': 'Kocaeli Fabrika', 'country': 'TR'},
+                            '2': {'name': 'İstanbul Ofis', 'country': 'TR'}})
+        res = self._step('4A-1', {'1': '10 MWh', '2': '2 MWh'})
+        saved = res.data['saved_entry']
+        self.assertEqual(saved['factor_name'], 'Turkey national grid')
+        entries = [e for e in self._entries() if e.description.startswith('Questionnaire step 4A-1')]
+        self.assertEqual(len(entries), 2)
+        self.assertAlmostEqual(saved['co2e_kg'], sum(float(e.calculated_co2e_kg) for e in entries), places=3)
