@@ -1547,7 +1547,7 @@ export const CARBONIQ_QUESTIONS = [
     reportField: 'org_boundary.exclusions[N].reason_category',
     text: {
       tr: 'Bu tesisleri neden envanter sınırı dışında tutuyorsunuz?',
-      en: 'Why are you excluding this asset?',
+      en: 'Why are you leaving these facilities out of the inventory boundary?',
     },
     helper: {
       tr: 'ISO 14064-1, kapsam dışı bırakılan her varlık için gerekçe belgelenmesini zorunlu kılar. En uygun kategoriyi seçin.',
@@ -1580,7 +1580,7 @@ export const CARBONIQ_QUESTIONS = [
     reportField: 'org_boundary.exclusions[N].magnitude',
     text: {
       tr: 'Bu tesislerin tahmini emisyon büyüklüğü nedir?',
-      en: 'What is the estimated emission magnitude of this asset?',
+      en: 'What is the estimated emission size of these facilities?',
     },
     helper: {
       tr: 'Kesin değer bilinmese de yaklaşık büyüklük, materyal olmayan dışlamaların belgelenmesi için gereklidir (ISO 14064-1 §5.1).',
@@ -1614,7 +1614,7 @@ export const CARBONIQ_QUESTIONS = [
     reportField: 'org_boundary.exclusions[N].future_inclusion_plan',
     text: {
       tr: 'Bu tesisleri ileride rapora dahil etmeyi düşünüyor musunuz?',
-      en: 'Do you plan to include this asset in future reports?',
+      en: 'Do you plan to include these facilities in future reports?',
     },
     helper: {
       tr: 'İlerideki raporlama planınızı belirtmek, paydaşlara şeffaflık sağlar ve sürekli iyileştirme taahhüdünü gösterir.',
@@ -3004,7 +3004,7 @@ export const CARBONIQ_QUESTIONS = [
     reportField: 'scope1.fugitive.equipment_details',
     text: {
       tr: '[Ekipman adı] — Adet, tesis ve soğutucu/gaz türü nedir?',
-      en: '[Equipment] — Number of units, site, and refrigerant/gas type?',
+      en: '[Equipment] — How many units, at which site, and which refrigerant/gas?',
     },
     helper: {
       tr: 'Gaz türü ekipman tipine göre önerildi. Emin değilseniz klima veya soğutma servis fişinizi kontrol edin — gaz türü orada yazıyor. Bu tipteki ekipmanların gaz türü veya dolum miktarı farklıysa kaç farklı grup olduğunu yazın — dolum sorusu her grup için ayrı sorulur ve her grubun gazını orada seçebilirsiniz.',
@@ -3729,8 +3729,8 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: '4A-3', equals: 'yes' },
     reportField: 'scope2.onsite_generation_detail',
     text: {
-      tr: '[Sahada üretim] Yıllık üretim miktarı ve şebekeye satış var mı?',
-      en: '[On-site generation] Annual production and any grid sales?',
+      tr: '[Sahada üretim] Yılda ne kadar elektrik üretiyorsunuz ve bir kısmını şebekeye satıyor musunuz?',
+      en: '[On-site generation] How much electricity do you generate per year, and do you sell any to the grid?',
     },
     placeholder: {
       tr: 'Üretim: 12.000 kWh | Şebeke satışı: Hayır',
@@ -3772,7 +3772,7 @@ export const CARBONIQ_QUESTIONS = [
     reportField: 'scope2.supplier_ef_declaration',
     text: {
       tr: 'Elektrik tedarikçinizin resmi emisyon beyanı var mı?',
-      en: '[Site name] — Does your electricity supplier have an official emission declaration?',
+      en: 'Does your electricity supplier have an official emission declaration?',
     },
     helper: {
       tr: 'Tedarikçinizin resmi emisyon beyanı Seviye 1 veri sayılır. Yoksa sistem tesisin bulunduğu ülkenin ulusal şebeke emisyon faktörünü (Seviye 2) önerecek.',
@@ -4019,7 +4019,7 @@ export const CARBONIQ_QUESTIONS = [
     reportField: 'scope2.heat_supplier_ef_declaration',
     text: {
       tr: 'Satın aldığınız ısı, buhar veya soğutma için tedarikçinin emisyon beyanı var mı?',
-      en: '[Energy type] — Does your supplier have an emission declaration?',
+      en: 'Does the supplier of your purchased heat, steam or cooling have an emission declaration?',
     },
     helper: {
       tr: 'Bölgesel ısı/buhar ağı işleticisi veya tedarikçi emisyon beyanı sağlıyorsa en doğru veridir. Yoksa sistem bölgesel ısıtma/buhar EF\'sini önerecek.',
@@ -4323,8 +4323,8 @@ export const CARBONIQ_QUESTIONS = [
     required: false,
     reportField: 'scope3.cat1.level2_upgrade',
     text: {
-      tr: '[Kategori] — Miktar bazlı veri var mı? (Seviye 2\'ye yükselt)',
-      en: '[Category] — Do you have quantity-based data? (Upgrade to Level 2)',
+      tr: '[Kategori] — Satın aldığınız miktarı (ton, adet vb.) biliyor musunuz?',
+      en: '[Category] — Do you know the quantity you bought (tonnes, units, etc.)?',
     },
     helper: {
       tr: 'Opsiyonel. Satın aldığınız miktarı biliyorsanız (kg, adet, m²) Seviye 2\'ye geçebilirsiniz — daha doğru bir sonuç verir.',
@@ -4558,8 +4558,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat2.items',
     text: {
-      tr: 'Satın aldığınız sermaye malı kategorileri, yıl ve harcama tutarı?',
-      en: 'Capital goods category, purchase year and spend amount?',
+      tr: 'Satın aldığınız sermaye mallarının kategorisi, alım yılı ve harcama tutarı nedir?',
+      en: 'What capital goods did you buy — category, purchase year and amount spent?',
     },
     helper: {
       tr: 'Her varlık için kategori, satın alma yılı ve tutarı girin. Yıl bu raporlama yılıyla eşleşmiyorsa dışarıda bırakılır — GHG Protocol Kat.2 kuralı.',
@@ -4789,8 +4789,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat4.shipments',
     text: {
-      tr: 'Taşıma modu, yük ve mesafe bilgisi?',
-      en: 'Transport mode, load and distance details?',
+      tr: 'Hangi taşıma moduyla, kaç ton yük, kaç km taşındı?',
+      en: 'Which transport mode was used, how many tonnes were carried and over how many km?',
     },
     helper: {
       tr: 'Her sevkiyat rotası için taşıma modunu, taşınan yükü (ton) ve mesafeyi (km) girin. Ton-km sistem tarafından otomatik hesaplanır. Doluluk oranını bilmiyorsanız boş bırakın — GLEC Tier 1 %50 varsayılanı uygulanır.',
@@ -4874,8 +4874,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat5.data_level',
     text: {
-      tr: 'Atık verisi hakkında bilgi düzeyiniz ve atık türleriniz?',
-      en: 'What is your data level and waste types?',
+      tr: 'Atık verileriniz hakkında ne kadar bilginiz var?',
+      en: 'How much do you know about your waste data?',
     },
     helper: {
       tr: 'Veri düzeyinizi seçin. Bertaraf firmasının beyanı varsa önce beyandaki toplam emisyonu, ardından atık türlerinizi, miktarlarını ve bertaraf yöntemlerini gireceksiniz; diğer düzeylerde doğrudan bu ayrıntılara geçersiniz.',
@@ -4960,8 +4960,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat5.waste_items',
     text: {
-      tr: 'Atık türü, miktarı ve bertaraf yöntemi?',
-      en: 'Waste type, quantity and disposal method?',
+      tr: 'Hangi atık türünden ne kadar oluştu ve nasıl bertaraf edildi?',
+      en: 'Which type of waste, how much of it, and how was it disposed of?',
     },
     helper: {
       tr: 'Her atık türü için yıllık miktarı (kg) ve bertaraf yöntemini girin.',
@@ -5042,8 +5042,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat6.data_level',
     text: {
-      tr: 'Seyahat verisi düzeyi ve kullanılan modlar?',
-      en: 'Travel data level and modes used?',
+      tr: 'İş seyahatleriniz hakkında hangi veriye sahipsiniz?',
+      en: 'What business travel data do you have?',
     },
     helper: {
       tr: 'Acente veya platform raporunuz varsa önce rapordaki toplam emisyonu, ardından seyahat ayrıntılarını gireceksiniz. Yoksa veri düzeyinize uygun seçeneği işaretleyin.',
@@ -5123,8 +5123,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat6.trips',
     text: {
-      tr: 'Seyahat modu, mesafe/gece sayısı, kabin sınıfı ve RFI?',
-      en: 'Travel mode, distance/nights, cabin class and RFI?',
+      tr: 'Her seyahat için ulaşım türü, mesafe (veya otel gecesi) ve uçuşsa kabin sınıfı nedir?',
+      en: 'For each trip: how did you travel, how far (or how many hotel nights) and, for flights, in which cabin class?',
     },
     helper: {
       tr: 'Her seyahat modu için kişi-km (uçak/tren/otobüs/feribot), km (kiralık araç) veya gece sayısı (otel) girin.',
@@ -5236,8 +5236,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.headcount_split',
     text: {
-      tr: 'Tam zamanlı ofis, hibrit ve uzaktan çalışan sayısı?',
-      en: 'Full-time office, hybrid and remote employee counts?',
+      tr: 'Kaç çalışanınız tam zamanlı ofiste, kaçı hibrit, kaçı uzaktan çalışıyor?',
+      en: 'How many of your employees work full-time in the office, hybrid, or remotely?',
     },
     helper: {
       tr: 'Toplamı Aşama 1\'deki çalışan sayınızla yaklaşık eşleşmeli. Hibrit çalışma modeli varsa ofis günlerinde işe gidiş-geliş emisyon faktörü, uzaktan günlerde DEFRA ev ofis EF (2.49 kg CO₂e/gün) uygulanır.',
@@ -5284,8 +5284,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.modal_split',
     text: {
-      tr: 'Çalışanlar işe nasıl geliyor? (ulaşım modu dağılımı)',
-      en: 'Commute modal split?',
+      tr: 'Çalışanlarınızın yüzde kaçı işe hangi yolla geliyor?',
+      en: 'What percentage of your employees commute by each means of transport?',
     },
     helper: {
       tr: 'Dört değer toplamda yaklaşık %100 olmalı. Anketiniz yoksa en yakın tahmininizi girin.',
@@ -5315,8 +5315,8 @@ export const CARBONIQ_QUESTIONS = [
     conditionalShow: { questionId: 'K3C7-3', field: 'shuttle_pct', greaterThan: 0 },
     reportField: 'scope3.cat7.shuttle_ownership',
     text: {
-      tr: 'Servis aracının mülkiyeti nedir?',
-      en: 'What is the shuttle bus ownership?',
+      tr: 'Personel servis araçları kime ait?',
+      en: 'Who owns the staff shuttle buses?',
     },
     helper: {
       tr: 'Bu, servis emisyonunun hangi kapsama gireceğini belirler: şirket mülkiyeti Kapsam 1, sözleşmeli hizmet Kategori 4, çalışan/üçüncü taraf servisi bu kategoride kalır.',
@@ -5352,8 +5352,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.avg_distance_km',
     text: {
-      tr: 'Ortalama tek yön ev–iş mesafesi (km)?',
-      en: 'Average one-way commute distance (km)?',
+      tr: 'Çalışanların evden işe tek yön ortalama mesafesi kaç km?',
+      en: 'What is the average one-way distance from home to work (km)?',
     },
     placeholder: { tr: 'Örn: 15', en: 'Example: 15' },
     helper: {
@@ -5428,8 +5428,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat8.assets',
     text: {
-      tr: 'Kiralık varlık türü, alanı ve bina sahibi enerji beyanı?',
-      en: 'Leased asset type, area and building owner energy declaration?',
+      tr: 'Kiraladığınız varlık nedir, alanı kaç m² ve bina sahibinden enerji tüketimi beyanı alabiliyor musunuz?',
+      en: 'What do you lease, how large is it (m²), and does the building owner declare its energy use?',
     },
     helper: {
       tr: 'Alan (m²) × REEB bina tipi EF = tCO₂e (Seviye 2). Bina sahibinden enerji tüketim belgesi alınabilirse Seviye 1\'e geçilir. Birden fazla kiralık varlığınız varsa (örn. ofis ve depo) her birini "+ Başka Ekle" ile ayrı girin.',
@@ -5510,8 +5510,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat9.shipments',
     text: {
-      tr: 'Taşıma modu, yük ve mesafe bilgisi?',
-      en: 'Transport mode, load and distance details?',
+      tr: 'Hangi taşıma moduyla, kaç ton yük, kaç km taşındı?',
+      en: 'Which transport mode was used, how many tonnes were carried and over how many km?',
     },
     helper: {
       tr: 'Her dağıtım rotası için taşıma modunu, taşınan yükü (ton) ve mesafeyi (km) girin. Ton-km sistem tarafından otomatik hesaplanır.',
@@ -5632,8 +5632,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat11.products',
     text: {
-      tr: 'Ürün tipi, satış hacmi ve ortalama kullanım ömrü?',
-      en: 'Product type, sales volume and average use lifetime?',
+      tr: 'Hangi ürünü ne kadar sattınız ve ortalama kaç yıl kullanılıyor?',
+      en: 'Which product did you sell, how much of it, and for how many years is it used on average?',
     },
     helper: {
       tr: 'Kullanım ömrü bilinmiyorsa sektör standardı uygulanır. Ürününüz için LCA belgesi varsa, belgedeki değer kullanılır (daha doğru sonuç). Birden fazla ürün tipiniz varsa her birini "+ Başka Ekle" ile ayrı girin.',
@@ -5703,8 +5703,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat12.products',
     text: {
-      tr: 'Ürün adı, birim ağırlığı, ana malzemesi ve bertaraf yöntemi?',
-      en: 'Product name, unit weight, primary material and disposal method?',
+      tr: 'Sattığınız ürün nedir, birim ağırlığı ve ana malzemesi ne, ömrü sonunda nasıl bertaraf ediliyor?',
+      en: 'What product do you sell, what are its unit weight and main material, and how is it disposed of at the end of its life?',
     },
     helper: {
       tr: 'Her ürün için tipik ömür sonu bertaraf yöntemini (müşterinin çoğunlukla nasıl attığını) tahmin edin.',
@@ -5758,8 +5758,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat13.assets',
     text: {
-      tr: 'Kiraya verilen varlığın açıklaması ve kiracı veri durumu?',
-      en: 'Leased asset description and tenant data availability?',
+      tr: 'Kiraya verdiğiniz varlık nedir ve kiracıdan enerji verisi alabiliyor musunuz?',
+      en: 'What asset do you lease out, and can you get energy data from the tenant?',
     },
     helper: {
       tr: 'Her kiraya verilen varlık için kısa bir açıklama ve kiracıdan enerji tüketim verisi alınıp alınamadığını belirtin.',
@@ -5905,8 +5905,8 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat15.investments',
     text: {
-      tr: 'Varlık sınıfı, yatırım tutarı ve şirket değeri?',
-      en: 'Asset class, investment amount and company value?',
+      tr: 'Yatırımınız hangi varlık sınıfında, tutarı nedir ve yatırım yapılan şirketin değeri ne kadar?',
+      en: 'What is the asset class and amount of your investment, and what is the investee company worth?',
     },
     helper: {
       tr: 'PCAF Atıf Formülü: tCO₂e = (Yatırım / Şirket değeri + Borç) × Şirket toplam emisyonu. GHG raporu yoksa sektörel EF kullanılır.',

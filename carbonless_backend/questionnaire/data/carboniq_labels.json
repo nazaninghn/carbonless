@@ -1434,7 +1434,7 @@
     "type": "single_select",
     "text": {
       "tr": "Bu tesisleri neden envanter sınırı dışında tutuyorsunuz?",
-      "en": "Why are you excluding this asset?"
+      "en": "Why are you leaving these facilities out of the inventory boundary?"
     },
     "loopSource": null,
     "options": {
@@ -1470,7 +1470,7 @@
     "type": "single_select",
     "text": {
       "tr": "Bu tesislerin tahmini emisyon büyüklüğü nedir?",
-      "en": "What is the estimated emission magnitude of this asset?"
+      "en": "What is the estimated emission size of these facilities?"
     },
     "loopSource": null,
     "options": {
@@ -1498,7 +1498,7 @@
     "type": "single_select",
     "text": {
       "tr": "Bu tesisleri ileride rapora dahil etmeyi düşünüyor musunuz?",
-      "en": "Do you plan to include this asset in future reports?"
+      "en": "Do you plan to include these facilities in future reports?"
     },
     "loopSource": null,
     "options": {
@@ -2648,7 +2648,7 @@
     "type": "compound",
     "text": {
       "tr": "[Ekipman adı] — Adet, tesis ve soğutucu/gaz türü nedir?",
-      "en": "[Equipment] — Number of units, site, and refrigerant/gas type?"
+      "en": "[Equipment] — How many units, at which site, and which refrigerant/gas?"
     },
     "loopSource": "3D-0",
     "options": null,
@@ -3062,8 +3062,8 @@
     "number": 75,
     "type": "compound",
     "text": {
-      "tr": "[Sahada üretim] Yıllık üretim miktarı ve şebekeye satış var mı?",
-      "en": "[On-site generation] Annual production and any grid sales?"
+      "tr": "[Sahada üretim] Yılda ne kadar elektrik üretiyorsunuz ve bir kısmını şebekeye satıyor musunuz?",
+      "en": "[On-site generation] How much electricity do you generate per year, and do you sell any to the grid?"
     },
     "loopSource": null,
     "options": null,
@@ -3103,7 +3103,7 @@
     "type": "single_select",
     "text": {
       "tr": "Elektrik tedarikçinizin resmi emisyon beyanı var mı?",
-      "en": "[Site name] — Does your electricity supplier have an official emission declaration?"
+      "en": "Does your electricity supplier have an official emission declaration?"
     },
     "loopSource": null,
     "options": {
@@ -3270,7 +3270,7 @@
     "type": "single_select",
     "text": {
       "tr": "Satın aldığınız ısı, buhar veya soğutma için tedarikçinin emisyon beyanı var mı?",
-      "en": "[Energy type] — Does your supplier have an emission declaration?"
+      "en": "Does the supplier of your purchased heat, steam or cooling have an emission declaration?"
     },
     "loopSource": null,
     "options": {
@@ -3485,8 +3485,8 @@
     "number": 84,
     "type": "single_select",
     "text": {
-      "tr": "[Kategori] — Miktar bazlı veri var mı? (Seviye 2'ye yükselt)",
-      "en": "[Category] — Do you have quantity-based data? (Upgrade to Level 2)"
+      "tr": "[Kategori] — Satın aldığınız miktarı (ton, adet vb.) biliyor musunuz?",
+      "en": "[Category] — Do you know the quantity you bought (tonnes, units, etc.)?"
     },
     "loopSource": null,
     "options": {
@@ -3688,8 +3688,8 @@
     "number": 87,
     "type": "compound",
     "text": {
-      "tr": "Satın aldığınız sermaye malı kategorileri, yıl ve harcama tutarı?",
-      "en": "Capital goods category, purchase year and spend amount?"
+      "tr": "Satın aldığınız sermaye mallarının kategorisi, alım yılı ve harcama tutarı nedir?",
+      "en": "What capital goods did you buy — category, purchase year and amount spent?"
     },
     "loopSource": null,
     "options": null,
@@ -3911,8 +3911,8 @@
     "number": "90b",
     "type": "compound",
     "text": {
-      "tr": "Taşıma modu, yük ve mesafe bilgisi?",
-      "en": "Transport mode, load and distance details?"
+      "tr": "Hangi taşıma moduyla, kaç ton yük, kaç km taşındı?",
+      "en": "Which transport mode was used, how many tonnes were carried and over how many km?"
     },
     "loopSource": null,
     "options": null,
@@ -4019,8 +4019,8 @@
     "number": 92,
     "type": "single_select",
     "text": {
-      "tr": "Atık verisi hakkında bilgi düzeyiniz ve atık türleriniz?",
-      "en": "What is your data level and waste types?"
+      "tr": "Atık verileriniz hakkında ne kadar bilginiz var?",
+      "en": "How much do you know about your waste data?"
     },
     "loopSource": null,
     "options": {
@@ -4080,8 +4080,8 @@
     "number": "92b",
     "type": "compound",
     "text": {
-      "tr": "Atık türü, miktarı ve bertaraf yöntemi?",
-      "en": "Waste type, quantity and disposal method?"
+      "tr": "Hangi atık türünden ne kadar oluştu ve nasıl bertaraf edildi?",
+      "en": "Which type of waste, how much of it, and how was it disposed of?"
     },
     "loopSource": null,
     "options": null,
@@ -4229,8 +4229,8 @@
     "number": 94,
     "type": "single_select",
     "text": {
-      "tr": "Seyahat verisi düzeyi ve kullanılan modlar?",
-      "en": "Travel data level and modes used?"
+      "tr": "İş seyahatleriniz hakkında hangi veriye sahipsiniz?",
+      "en": "What business travel data do you have?"
     },
     "loopSource": null,
     "options": {
@@ -4286,8 +4286,8 @@
     "number": "94b",
     "type": "compound",
     "text": {
-      "tr": "Seyahat modu, mesafe/gece sayısı, kabin sınıfı ve RFI?",
-      "en": "Travel mode, distance/nights, cabin class and RFI?"
+      "tr": "Her seyahat için ulaşım türü, mesafe (veya otel gecesi) ve uçuşsa kabin sınıfı nedir?",
+      "en": "For each trip: how did you travel, how far (or how many hotel nights) and, for flights, in which cabin class?"
     },
     "loopSource": null,
     "options": null,
@@ -4462,8 +4462,8 @@
     "number": "95a",
     "type": "compound",
     "text": {
-      "tr": "Tam zamanlı ofis, hibrit ve uzaktan çalışan sayısı?",
-      "en": "Full-time office, hybrid and remote employee counts?"
+      "tr": "Kaç çalışanınız tam zamanlı ofiste, kaçı hibrit, kaçı uzaktan çalışıyor?",
+      "en": "How many of your employees work full-time in the office, hybrid, or remotely?"
     },
     "loopSource": null,
     "options": null,
@@ -4506,8 +4506,8 @@
     "number": "95c",
     "type": "compound",
     "text": {
-      "tr": "Çalışanlar işe nasıl geliyor? (ulaşım modu dağılımı)",
-      "en": "Commute modal split?"
+      "tr": "Çalışanlarınızın yüzde kaçı işe hangi yolla geliyor?",
+      "en": "What percentage of your employees commute by each means of transport?"
     },
     "loopSource": null,
     "options": null,
@@ -4546,8 +4546,8 @@
     "number": "95d",
     "type": "single_select",
     "text": {
-      "tr": "Servis aracının mülkiyeti nedir?",
-      "en": "What is the shuttle bus ownership?"
+      "tr": "Personel servis araçları kime ait?",
+      "en": "Who owns the staff shuttle buses?"
     },
     "loopSource": null,
     "options": {
@@ -4570,8 +4570,8 @@
     "number": "95e",
     "type": "text",
     "text": {
-      "tr": "Ortalama tek yön ev–iş mesafesi (km)?",
-      "en": "Average one-way commute distance (km)?"
+      "tr": "Çalışanların evden işe tek yön ortalama mesafesi kaç km?",
+      "en": "What is the average one-way distance from home to work (km)?"
     },
     "loopSource": null,
     "options": null,
@@ -4612,8 +4612,8 @@
     "number": 97,
     "type": "compound",
     "text": {
-      "tr": "Kiralık varlık türü, alanı ve bina sahibi enerji beyanı?",
-      "en": "Leased asset type, area and building owner energy declaration?"
+      "tr": "Kiraladığınız varlık nedir, alanı kaç m² ve bina sahibinden enerji tüketimi beyanı alabiliyor musunuz?",
+      "en": "What do you lease, how large is it (m²), and does the building owner declare its energy use?"
     },
     "loopSource": null,
     "options": null,
@@ -4709,8 +4709,8 @@
     "number": "98a",
     "type": "compound",
     "text": {
-      "tr": "Taşıma modu, yük ve mesafe bilgisi?",
-      "en": "Transport mode, load and distance details?"
+      "tr": "Hangi taşıma moduyla, kaç ton yük, kaç km taşındı?",
+      "en": "Which transport mode was used, how many tonnes were carried and over how many km?"
     },
     "loopSource": null,
     "options": null,
@@ -4900,8 +4900,8 @@
     "number": 101,
     "type": "compound",
     "text": {
-      "tr": "Ürün tipi, satış hacmi ve ortalama kullanım ömrü?",
-      "en": "Product type, sales volume and average use lifetime?"
+      "tr": "Hangi ürünü ne kadar sattınız ve ortalama kaç yıl kullanılıyor?",
+      "en": "Which product did you sell, how much of it, and for how many years is it used on average?"
     },
     "loopSource": null,
     "options": null,
@@ -5012,8 +5012,8 @@
     "number": "102a",
     "type": "compound",
     "text": {
-      "tr": "Ürün adı, birim ağırlığı, ana malzemesi ve bertaraf yöntemi?",
-      "en": "Product name, unit weight, primary material and disposal method?"
+      "tr": "Sattığınız ürün nedir, birim ağırlığı ve ana malzemesi ne, ömrü sonunda nasıl bertaraf ediliyor?",
+      "en": "What product do you sell, what are its unit weight and main material, and how is it disposed of at the end of its life?"
     },
     "loopSource": null,
     "options": null,
@@ -5157,8 +5157,8 @@
     "number": "103a",
     "type": "compound",
     "text": {
-      "tr": "Kiraya verilen varlığın açıklaması ve kiracı veri durumu?",
-      "en": "Leased asset description and tenant data availability?"
+      "tr": "Kiraya verdiğiniz varlık nedir ve kiracıdan enerji verisi alabiliyor musunuz?",
+      "en": "What asset do you lease out, and can you get energy data from the tenant?"
     },
     "loopSource": null,
     "options": null,
@@ -5316,8 +5316,8 @@
     "number": 106,
     "type": "compound",
     "text": {
-      "tr": "Varlık sınıfı, yatırım tutarı ve şirket değeri?",
-      "en": "Asset class, investment amount and company value?"
+      "tr": "Yatırımınız hangi varlık sınıfında, tutarı nedir ve yatırım yapılan şirketin değeri ne kadar?",
+      "en": "What is the asset class and amount of your investment, and what is the investee company worth?"
     },
     "loopSource": null,
     "options": null,
