@@ -415,7 +415,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-[#8BEA99]">
               <Sparkles className="h-4 w-4" />
             </div>
-            <h2 className="text-sm font-bold text-white">{tr ? 'AI Karbon Analizi' : 'AI Carbon Insights'}</h2>
+            <h2 className="text-sm font-bold text-white">{tr ? 'Öne Çıkanlar' : 'Highlights'}</h2>
           </div>
           <div className="space-y-3">
             {totalTonne > 0 ? (
@@ -429,7 +429,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                 {s3 > s1 + s2 && <InsightItem text={tr ? 'Kapsam 3 emisyonları baskın — tedarik zinciri odaklı azaltma önerilir.' : 'Scope 3 dominates — consider supply chain focused reductions.'} />}
               </>
             ) : (
-              <InsightItem text={tr ? 'Veri girildikten sonra AI analizi burada görünecek.' : 'AI analysis will appear here after data entry.'} type="neutral" />
+              <InsightItem text={tr ? 'Veri girildikten sonra öne çıkanlar burada görünecek.' : 'Highlights will appear here after data entry.'} type="neutral" />
             )}
           </div>
         </div>
@@ -544,7 +544,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                   <div className="mb-1 flex items-baseline justify-between gap-3 text-xs">
                     <span className={`min-w-0 truncate font-semibold ${row.muted ? 'text-[#072C0E]/50' : 'text-[#072C0E]'}`}>{row.name}</span>
                     <span className="shrink-0 font-bold tabular-nums text-[#072C0E]/70">
-                      {fixed(row.kg / 1000, 2)} t · {tr ? `%${pctText}` : `${pctText}%`}
+                      {/* small amounts in kg, so a facility with data doesn't read "0,00 t" */}
+                      {Math.abs(row.kg) < 100 ? `${fixed(row.kg, 1)} kg` : `${fixed(row.kg / 1000, 2)} t`} · {tr ? `%${pctText}` : `${pctText}%`}
                     </span>
                   </div>
                   <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/6">
@@ -750,7 +751,10 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
            (reporting_year/ef_database/boundary_approach/scope3_approach).
            Render whichever shape is present instead of forcing legacy field
            names onto CarbonReport data — that previously showed all '-'. */}
-      {questionnaireProfile?.is_complete && (
+      {/* Only for the inventory the reports above use: with none chosen for
+          this year, another year's settings would look like this year's. */}
+      {questionnaireProfile?.is_complete && isoReportId
+        && (!questionnaireProfile.reporting_year || String(questionnaireProfile.reporting_year) === String(selectedYear)) && (
         <ReportCard delay={440}>
           <div className="mb-4 flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#8BEA99]/18 text-[#2ABD41] transition-transform duration-300 group-hover:scale-110">

@@ -49,7 +49,8 @@ class UserProfile(models.Model):
 
     @property
     def can_generate_reports(self):
-        return self.role in ('admin', 'manager', 'auditor')
+        # Reports only read data: every member may download them.
+        return True
 
 
 class Notification(models.Model):

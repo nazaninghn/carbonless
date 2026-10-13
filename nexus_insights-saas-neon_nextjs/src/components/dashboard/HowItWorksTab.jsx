@@ -72,6 +72,12 @@ const SECTIONS = [
       tr: 'Ekip üyelerinin gönderdiği veri girişlerini ve anketteki danışman onaylarını onaylayın veya reddedin.',
       en: "Approve or reject your team's data entries and the questionnaire's advisor approvals.",
     },
+    // For members who can't approve.
+    descLimited: {
+      tr: 'Gönderdiğiniz kayıtların onay durumunu ve reddedilenlerin gerekçesini görün.',
+      en: "See whether the entries you sent are approved, and why any were rejected.",
+    },
+    limitedUnless: 'canApprove',
   },
   {
     key: 'settings', icon: Settings,
@@ -80,6 +86,11 @@ const SECTIONS = [
       tr: 'Şirket bilgilerinizi, kullanıcı rollerini ve bildirim tercihlerinizi yönetin.',
       en: 'Manage your company details, user roles, and notification preferences.',
     },
+    descLimited: {
+      tr: 'Profilinizi, şifrenizi, dil ve bildirim tercihlerinizi yönetin; şirket ve ekip bilgilerini görün.',
+      en: 'Manage your profile, password, language and notifications; see the company and team details.',
+    },
+    limitedUnless: 'canManageTeam',
   },
 ];
 
@@ -165,9 +176,23 @@ const FAQS = [
       en: 'As soon as you finish the Scope 1, 2 & 3 questionnaire, download your PDF from the "Reports" tab immediately.',
     },
   },
+  {
+    q: { tr: 'AI sorumu yanıtlayamazsa ne olur?', en: "What if the AI can't answer my question?" },
+    a: {
+      tr: 'Hesabınız, ödeme, hata veren bir sayfa veya kaybolan veri gibi konularda AI sorunuzu destek ekibine iletir; bir yanıtı yetersiz bulursanız 👎 ile «Destek ekibine sor» da diyebilirsiniz. Ekibin yanıtı aynı sohbete gelir; tüm taleplerinizi sohbetin üstündeki «Destek taleplerim» (🛟) düğmesinden görebilirsiniz.',
+      en: "For things like your account, billing, a page that shows an error or missing data, the AI passes your question to our support team; if an answer doesn't help, use 👎 → «Ask the support team». The team's answer arrives in the same chat, and all your requests are under «My support requests» (🛟) at the top of the chat.",
+    },
+  },
+  {
+    q: { tr: 'Bir kaydı veya sayfayı nasıl hızlıca bulurum?', en: 'How do I quickly find an entry or a page?' },
+    a: {
+      tr: 'Ctrl+K (Mac\'te ⌘K) ile arama açılır: sayfa adını veya kaynağı yazın (örn. «elektrik»). Bir kaydı seçtiğinizde Emisyon Yönetimi\'nde o kayıt işaretlenir.',
+      en: 'Press Ctrl+K (⌘K on a Mac) to open search: type a page or a source (e.g. «electricity»). Picking an entry opens Emissions with that entry marked.',
+    },
+  },
 ];
 
-export default function HowItWorksTab({ language, setActiveTab }) {
+export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
   const tr = language === 'tr';
 
   return (
@@ -254,7 +279,10 @@ export default function HowItWorksTab({ language, setActiveTab }) {
                 {section.title[language] || section.title.en}
               </h3>
               <p className="mt-1 text-[12px] leading-[1.6] text-[#072C0E]/55">
-                {section.desc[language] || section.desc.en}
+                {(() => {
+                  const d = section.limitedUnless && perms[section.limitedUnless] === false ? section.descLimited : section.desc;
+                  return d[language] || d.en;
+                })()}
               </p>
               <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-bold text-[#2ABD41] opacity-0 transition group-hover:opacity-100">
                 {tr ? 'Git' : 'Go to section'}

@@ -422,7 +422,8 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         MANAGE_ROLES = {'owner', 'admin'}
         APPROVE_ROLES = {'owner', 'admin', 'manager'}
         EDIT_ROLES = {'owner', 'admin', 'manager', 'data_entry'}
-        REPORT_ROLES = {'owner', 'admin', 'manager', 'auditor'}
+        # Reports only read the company's data, so every member may download them.
+        REPORT_ROLES = {'owner', 'admin', 'manager', 'data_entry', 'auditor'}
         data['role'] = role
         data['role_display'] = (
             dict(CompanyMembership.ROLE_CHOICES).get(role, role.replace('_', ' ').title())
