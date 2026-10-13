@@ -263,17 +263,20 @@ export default function TeamManagement({ language }) {
             const roleInfo = getRoleInfo(m.role);
             const RoleIcon = roleInfo.icon;
             return (
-              <div key={m.id} className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+              // On a phone the name, role and Deactivate sat on one line and
+              // ran off the right edge (the button cut to "Dev / Dı / Bır"):
+              // there the controls go on a second line.
+              <div key={m.id} className={`flex flex-col gap-2.5 p-3 rounded-2xl border transition-all sm:flex-row sm:items-center sm:justify-between ${
                 !m.is_active ? 'bg-[#F8F8F8] border-[#072C0E]/10 opacity-60' : 'bg-white border-[#072C0E]/10 hover:border-[#2ABD41]/30 hover:shadow-sm'
               }`}>
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   {/* Avatar */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm ${roleInfo.color}`}>
+                  <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-sm ${roleInfo.color}`}>
                     {(m.full_name || m.user_email || m.username || '?')[0].toUpperCase()}
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-[#072C0E]">
+                      <p className="truncate text-sm font-medium text-[#072C0E]">
                         {m.full_name || (m.username !== m.user_email && m.username) || m.user_email || '—'}
                       </p>
                       {m.role === 'owner' && <Crown className="w-3.5 h-3.5 text-amber-500" />}
@@ -284,12 +287,12 @@ export default function TeamManagement({ language }) {
                       )}
                     </div>
                     {(m.full_name || (m.username && m.username !== m.user_email)) && (
-                      <p className="text-xs text-[#072C0E]/55">{m.user_email || '—'}</p>
+                      <p className="truncate text-xs text-[#072C0E]/55">{m.user_email || '—'}</p>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 pl-[52px] sm:shrink-0 sm:pl-0">
                   {/* Role badge / selector */}
                   {m.role === 'owner' ? (
                     <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-medium border ${roleInfo.color}`}>

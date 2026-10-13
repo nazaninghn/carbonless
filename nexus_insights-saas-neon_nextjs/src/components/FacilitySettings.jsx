@@ -1,8 +1,25 @@
 ﻿'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
-import { Plus, AlertCircle, Building2, CheckCircle2, Pencil, Trash2 } from 'lucide-react';
+import { Plus, AlertCircle, Building2, Pencil, Trash2 } from 'lucide-react';
+import CountryPicker from '@/components/CountryPicker';
+import { COUNTRIES } from '@/lib/data/countries';
+
+// The country was a free-text box: facilities ended up as "TR", "Türkiye",
+// "Almanya"… side by side. It is now picked from the list and stored as the
+// code; an older free-text value is matched to its code when edited.
+const countryCode = (v) => {
+  const t = (v || '').trim();
+  if (!t) return '';
+  const low = t.toLocaleLowerCase('tr-TR');
+  const c = COUNTRIES.find(x => x.code.toLowerCase() === low || x.tr.toLocaleLowerCase('tr-TR') === low || x.en.toLowerCase() === low);
+  return c ? c.code : t;
+};
+const countryName = (v, tr) => {
+  const c = COUNTRIES.find(x => x.code === countryCode(v));
+  return c ? c[tr ? 'tr' : 'en'] : v;
+};
 
 // Stored values are English; the list shows them in the UI language.
 const TYPE_LABELS = {
@@ -20,7 +37,6 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   const [showForm, setShowForm]       = useState(false);
   const [saving, setSaving]           = useState(false);
   const [formError, setFormError]     = useState('');
-  const [successMsg, setSuccessMsg]   = useState('');
   const [name, setName]               = useState('');
   const [city, setCity]               = useState('');
   const [country, setCountry]         = useState('');
@@ -28,6 +44,15 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   const [editingId, setEditingId]     = useState(null);   // null = adding a new facility
   const [confirmDelete, setConfirmDelete] = useState(null); // facility awaiting delete confirmation
   const [deleting, setDeleting]       = useState(false);
+  const formRef = useRef(null);
+  const nameRef = useRef(null);
+  // The form opens under the list: on a phone it started below the screen,
+  // so a tap on ✎ seemed to do nothing. Bring it into view, name field first.
+  useEffect(() => {
+    if (!showForm) return;
+    formRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    nameRef.current?.focus({ preventScroll: true });
+  }, [showForm, editingId]);
 
   const tr    = language === 'tr';
   const toast = useToast();
@@ -58,13 +83,13 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
 
   const resetForm = useCallback(() => {
     setName(''); setCity(''); setCountry(''); setFacilityType('');
-    setFormError(''); setSuccessMsg(''); setEditingId(null);
+    setFormError(''); setEditingId(null);
   }, []);
 
   const startEdit = useCallback((f) => {
-    setName(f.name || ''); setCity(f.city || ''); setCountry(f.country || '');
+    setName(f.name || ''); setCity(f.city || ''); setCountry(countryCode(f.country));
     setFacilityType(f.facility_type || '');
-    setFormError(''); setSuccessMsg(''); setConfirmDelete(null);
+    setFormError(''); setConfirmDelete(null);
     setEditingId(f.id); setShowForm(true);
   }, []);
 
@@ -77,7 +102,6 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
         setConfirmDelete(null);
         await fetchFacilities();
         onChange?.();
-        setSuccessMsg(tr ? 'Tesis silindi' : 'Facility deleted');
         toast.success(tr ? 'Tesis silindi' : 'Facility deleted');
       } else {
         toast.error(tr ? 'Tesis silinemedi' : 'Failed to delete facility');
@@ -94,7 +118,6 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
     // Fix 28C: prevent double-submit before React flushes the disabled state
     if (saving) return;
     setFormError('');
-    setSuccessMsg('');
 
     // Manual validation — no browser native popup
     if (!name.trim()) {
@@ -133,7 +156,6 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
         const done = wasEditing
           ? (tr ? 'Tesis güncellendi' : 'Facility updated')
           : (tr ? 'Tesis başarıyla eklendi' : 'Facility added successfully');
-        setSuccessMsg(done);
         toast.success(`${done} ✓`);
       } else if (res.status === 403) {
         setNoCompany(true);
@@ -204,14 +226,6 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   /* ─── Main UI ─── */
   return (
     <div className="space-y-3">
-      {/* Success banner */}
-      {successMsg && (
-        <div className="flex items-center gap-2 rounded-xl border border-[#2ABD41]/30 bg-[#2ABD41]/8 px-3 py-2">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#175022]" />
-          <p className="text-xs text-[#175022]">{successMsg}</p>
-        </div>
-      )}
-
       {/* Facilities list */}
       {facilities.length > 0 ? (
         <div className="space-y-2">
@@ -221,7 +235,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-[#072C0E]">{f.name}</p>
                   <p className="text-xs text-[#072C0E]/55">
-                    {[TYPE_LABELS[f.facility_type]?.[tr ? 'tr' : 'en'] || f.facility_type, f.city, f.country].filter(Boolean).join(' · ')}
+                    {[TYPE_LABELS[f.facility_type]?.[tr ? 'tr' : 'en'] || f.facility_type, f.city, countryName(f.country, tr)].filter(Boolean).join(' · ')}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -299,17 +313,19 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
 
       {/* Form */}
       {showForm ? (
-        <form onSubmit={handleAdd} noValidate className="space-y-3 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] p-4">
+        <form ref={formRef} onSubmit={handleAdd} noValidate className="scroll-mt-4 space-y-3 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] p-4">
           <p className="text-xs font-bold text-[#072C0E]/60 uppercase tracking-wide">
             {editingId !== null ? (tr ? 'Tesisi Düzenle' : 'Edit Facility') : (tr ? 'Yeni Tesis' : 'New Facility')}
           </p>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-[#072C0E]/60">
+              <label htmlFor="facility-name" className="mb-1 block text-xs font-medium text-[#072C0E]/60">
                 {tr ? 'Tesis Adı' : 'Facility Name'} <span className="text-red-500">*</span>
               </label>
               <input
+                id="facility-name"
+                ref={nameRef}
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
@@ -318,10 +334,11 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#072C0E]/60">
+              <label htmlFor="facility-type" className="mb-1 block text-xs font-medium text-[#072C0E]/60">
                 {tr ? 'Tür' : 'Type'}
               </label>
               <select
+                id="facility-type"
                 value={facilityType}
                 onChange={e => setFacilityType(e.target.value)}
                 className="w-full rounded-xl border border-[#072C0E]/15 bg-white px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:outline-none"
@@ -335,10 +352,11 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#072C0E]/60">
+              <label htmlFor="facility-city" className="mb-1 block text-xs font-medium text-[#072C0E]/60">
                 {tr ? 'Şehir' : 'City'}
               </label>
               <input
+                id="facility-city"
                 type="text"
                 value={city}
                 onChange={e => setCity(e.target.value)}
@@ -347,16 +365,10 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-[#072C0E]/60">
+              <p className="mb-1 block text-xs font-medium text-[#072C0E]/60">
                 {tr ? 'Ülke' : 'Country'}
-              </label>
-              <input
-                type="text"
-                value={country}
-                onChange={e => setCountry(e.target.value)}
-                placeholder={tr ? 'Türkiye' : 'Turkey'}
-                className="w-full rounded-xl border border-[#072C0E]/15 bg-white px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:outline-none"
-              />
+              </p>
+              <CountryPicker value={country} onChange={setCountry} language={language} placeholder={tr ? 'Ülke ara...' : 'Search country...'} />
             </div>
           </div>
 
