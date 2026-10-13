@@ -887,11 +887,11 @@ export default function EmissionsTab({
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={tr ? 'Kaynak ara…' : 'Search source…'}
-            aria-label="Search emission sources"
+            aria-label={tr ? 'Emisyon kaynaklarında ara' : 'Search emission sources'}
             className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30"
           />
           {search && (
-            <button onClick={() => setSearch('')} className="text-[#072C0E]/30 hover:text-[#072C0E]">
+            <button aria-label={tr ? 'Aramayı temizle' : 'Clear search'} onClick={() => setSearch('')} className="text-[#072C0E]/30 hover:text-[#072C0E]">
               <X className="h-3.5 w-3.5" />
             </button>
           )}
@@ -1285,7 +1285,7 @@ export default function EmissionsTab({
                 <h2 id="add-entry-title" className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
                 <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
               </div>
-              <button onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
+              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
@@ -1294,14 +1294,14 @@ export default function EmissionsTab({
                 <div className="space-y-3">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Emisyon bilgisi' : 'Emission info'}</p>
                   <div>
-                    <label className={LABEL}>{tr ? 'Kapsam' : 'Scope'}</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <p id="add-entry-scope" className={LABEL}>{tr ? 'Kapsam' : 'Scope'}</p>
+                    <div role="group" aria-labelledby="add-entry-scope" className="grid grid-cols-3 gap-2">
                       {[
                         { val: 'scope1', label: tr ? 'Kapsam 1' : 'Scope 1', sub: tr ? 'Doğrudan' : 'Direct' },
                         { val: 'scope2', label: tr ? 'Kapsam 2' : 'Scope 2', sub: tr ? 'Enerji' : 'Energy' },
                         { val: 'scope3', label: tr ? 'Kapsam 3' : 'Scope 3', sub: tr ? 'Dolaylı' : 'Indirect' },
                       ].map(s => (
-                        <button key={s.val} type="button"
+                        <button key={s.val} type="button" aria-pressed={selScope === s.val}
                           onClick={() => { setSelScope(s.val); setSelCategory(''); setSelFactor(''); }}
                           className={`rounded-2xl border px-3 py-3 text-center transition ${selScope === s.val ? 'border-[#2ABD41]/50 bg-[#2ABD41]/10 ring-2 ring-[#2ABD41]/15' : 'border-[#072C0E]/10 bg-[#DEFAE1]/40 hover:border-[#2ABD41]/30'}`}
                         >
@@ -1314,8 +1314,8 @@ export default function EmissionsTab({
 
                   {selScope && (
                     <div>
-                      <label className={LABEL}>{tr ? 'Kategori' : 'Category'}</label>
-                      <select value={selCategory} onChange={e => { setSelCategory(e.target.value); setSelFactor(''); }} className={FIELD} required>
+                      <label htmlFor="add-entry-category" className={LABEL}>{tr ? 'Kategori' : 'Category'}</label>
+                      <select id="add-entry-category" value={selCategory} onChange={e => { setSelCategory(e.target.value); setSelFactor(''); }} className={FIELD} required>
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {categories.map(c => (
                           <option key={c} value={c}>
@@ -1328,8 +1328,8 @@ export default function EmissionsTab({
 
                   {selCategory && (
                     <div>
-                      <label className={LABEL}>{tr ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
-                      <select value={selFactor} onChange={e => setSelFactor(e.target.value)} className={FIELD} required>
+                      <label htmlFor="add-entry-source" className={LABEL}>{tr ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
+                      <select id="add-entry-source" value={selFactor} onChange={e => setSelFactor(e.target.value)} className={FIELD} required>
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {filteredFactors.map(f => (
                           <option key={f.id} value={f.id}>
@@ -1360,14 +1360,14 @@ export default function EmissionsTab({
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Ölçüm' : 'Measurement'}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
-                      <select value={month} onChange={e => setMonth(e.target.value)} className={FIELD}>
+                      <label htmlFor="add-entry-month" className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
+                      <select id="add-entry-month" value={month} onChange={e => setMonth(e.target.value)} className={FIELD}>
                         {months.map((m, i) => <option key={m} value={i + 1} disabled={isFutureMonth(selectedYear, i + 1)}>{m}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'}{selFactorObj ? ` (${unitLabel(selFactorObj.unit, tr)})` : ''}</label>
-                      <input type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
+                      <label htmlFor="add-entry-quantity" className={LABEL}>{tr ? 'Miktar' : 'Quantity'}{selFactorObj ? ` (${unitLabel(selFactorObj.unit, tr)})` : ''}</label>
+                      <input id="add-entry-quantity" type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
                     </div>
                   </div>
                   {quantity && selFactorObj && (
@@ -1385,7 +1385,7 @@ export default function EmissionsTab({
                 <div className="space-y-3 border-t border-[#072C0E]/8 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Tesis' : 'Facility'}</p>
                   {facilityList.length > 0 ? (
-                    <select value={facility} onChange={e => setFacility(e.target.value)} className={FIELD}>
+                    <select value={facility} onChange={e => setFacility(e.target.value)} className={FIELD} aria-label={tr ? 'Tesis' : 'Facility'}>
                       <option value="">{tr ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
                       {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
                     </select>
@@ -1405,8 +1405,8 @@ export default function EmissionsTab({
                 <div className="space-y-3 border-t border-[#072C0E]/8 pt-5">
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Ek bilgiler' : 'Additional details'}</p>
                   <div>
-                    <label className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
-                    <textarea value={desc} onChange={e => setDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
+                    <label htmlFor="add-entry-description" className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
+                    <textarea id="add-entry-description" value={desc} onChange={e => setDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
                   </div>
                   {/* File upload */}
                   <div>
@@ -1507,7 +1507,7 @@ export default function EmissionsTab({
           <div className={`${MODAL} max-w-md`} role="dialog" aria-modal="true" aria-labelledby="edit-entry-title">
             <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <h2 id="edit-entry-title" className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
-              <button onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
+              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <p className="mb-4 text-sm font-semibold text-[#072C0E]/60">
@@ -1535,23 +1535,23 @@ export default function EmissionsTab({
               ) : (
               <form id="edit-form" onSubmit={handleEdit} className="space-y-4">
                 <div>
-                  <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({unitLabel(editing.unit, tr)})</label>
-                  <input type="text" inputMode="decimal" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
+                  <label htmlFor="edit-entry-quantity" className={LABEL}>{tr ? 'Miktar' : 'Quantity'} ({unitLabel(editing.unit, tr)})</label>
+                  <input id="edit-entry-quantity" type="text" inputMode="decimal" value={editQty} onChange={e => setEditQty(e.target.value)} className={FIELD} required />
                 </div>
                 <div>
-                  <label className={LABEL}>{tr ? 'Tesis' : 'Facility'}</label>
+                  <label htmlFor="edit-entry-facility" className={LABEL}>{tr ? 'Tesis' : 'Facility'}</label>
                   {facilityList.length > 0 ? (
-                    <select value={editFacility} onChange={e => setEditFacility(e.target.value)} className={FIELD}>
+                    <select id="edit-entry-facility" value={editFacility} onChange={e => setEditFacility(e.target.value)} className={FIELD}>
                       <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                       {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
                     </select>
                   ) : (
-                    <input type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className={FIELD} />
+                    <input id="edit-entry-facility" type="text" value={editFacility} onChange={e => setEditFacility(e.target.value)} className={FIELD} />
                   )}
                 </div>
                 <div>
-                  <label className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
-                  <textarea value={isLinkedDescription(editing.description) ? autoDescriptionLabel(editing.description, tr) : editDesc}
+                  <label htmlFor="edit-entry-description" className={LABEL}>{tr ? 'Açıklama' : 'Description'}</label>
+                  <textarea id="edit-entry-description" value={isLinkedDescription(editing.description) ? autoDescriptionLabel(editing.description, tr) : editDesc}
                     readOnly={isLinkedDescription(editing.description)}
                     placeholder={autoDescriptionLabel(editing.description, tr) || ''}
                     onChange={e => setEditDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={2} />
@@ -1675,7 +1675,7 @@ export default function EmissionsTab({
                   ? 'Listede olmayan kaynak mı? Talebi Carbonless ekibi inceler; uygun emisyon faktörü belirlenince kayıt olarak eklenir.'
                   : 'Source not in the list? The Carbonless team reviews the request; once a suitable emission factor is set, it is added as an entry.'}</p>
               </div>
-              <button onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
+              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="custom-form" onSubmit={handleCustom} className="space-y-4">

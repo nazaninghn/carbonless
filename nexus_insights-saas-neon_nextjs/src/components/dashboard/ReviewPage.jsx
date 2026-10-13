@@ -168,7 +168,7 @@ export default function ReviewPage({ tr = false }) {
                         {tr ? 'Kaydet' : 'Save'}
                       </button>
                     ) : NON_TEXT_EDITABLE_TYPES.has(item.question.type) ? null : (
-                      <button
+                      <button aria-label={tr ? 'Düzenle' : 'Edit'}
                         onClick={() => handleEdit(item.qId, item.answer)}
                         className="flex items-center gap-1 px-3 py-2 text-[#175022] hover:bg-[#175022]/10 rounded-full transition"
                       >

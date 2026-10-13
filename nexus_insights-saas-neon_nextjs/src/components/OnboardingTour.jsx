@@ -173,7 +173,7 @@ export default function OnboardingTour({ language, onComplete }) {
             <span className="rounded-full bg-[#2ABD41]/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#175022]">
               {step + 1} / {steps.length}
             </span>
-            <button onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-[#072C0E]/5 hover:text-[#072C0E]">
+            <button aria-label={tr ? 'Kapat' : 'Close'} onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-[#072C0E]/5 hover:text-[#072C0E]">
               <X className="h-4 w-4" />
             </button>
           </div>

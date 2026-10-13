@@ -2444,7 +2444,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
             {unitList[0]}
           </span>
         )}
-        <button
+        <button aria-label={tr ? 'Gönder' : 'Send'}
           onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
@@ -2827,7 +2827,7 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
         <span className="text-[10px] font-bold text-[#175022]/50 uppercase tracking-wider">
           {tr ? 'İlerleme' : 'Progress'}
         </span>
-        <button
+        <button aria-label={tr ? 'İlerleme panelini aç/kapat' : 'Toggle progress panel'}
           onClick={onToggle}
           className="flex h-6 w-6 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
         >
@@ -4675,7 +4675,7 @@ export function QuestionnaireTab({
         {/* Sub-header */}
         <div className="flex shrink-0 items-center gap-2 border-b border-[#175022]/6 px-4 py-2">
           {!sidebarOpen && (
-            <button
+            <button aria-label={tr ? 'İlerleme panelini aç' : 'Open progress panel'}
               onClick={() => setSidebarOpen(true)}
               className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
             >
@@ -5785,7 +5785,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 
         {/* Mobile-only compact bar */}
         <div className="flex sm:hidden shrink-0 items-center justify-between border-b border-[#175022]/6 bg-white px-3 py-1.5">
-          <button
+          <button aria-label={tr ? 'Sohbet listesini aç/kapat' : 'Toggle chat list'}
             onClick={() => setSidebarOpen(v => !v)}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40"
           >
@@ -5849,7 +5849,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                 </span>
               )}
             </span>
-            <button onClick={() => { setError(''); setFailedQuestion(''); }} className="shrink-0 text-red-400 transition hover:text-red-600">
+            <button aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'} onClick={() => { setError(''); setFailedQuestion(''); }} className="shrink-0 text-red-400 transition hover:text-red-600">
               <X className="h-3.5 w-3.5" />
             </button>
           </div>

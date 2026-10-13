@@ -227,7 +227,7 @@ export default function CommandPalette({
           />
           <div className="flex shrink-0 items-center gap-1.5">
             {query && (
-              <button
+              <button aria-label={tr ? 'Aramayı temizle' : 'Clear search'}
                 onClick={() => { setQuery(''); inputRef.current?.focus(); }}
                 className="flex h-5 w-5 items-center justify-center rounded-full bg-[#072C0E]/7 text-[#072C0E]/40 transition hover:bg-[#072C0E]/12"
               >

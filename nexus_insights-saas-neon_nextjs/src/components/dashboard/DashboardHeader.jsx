@@ -212,6 +212,7 @@ export default function DashboardHeader({
 
           {/* Year selector */}
           <select
+            aria-label={tr ? 'Raporlama yılı' : 'Reporting year'}
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
             className="hidden sm:block h-8 rounded-lg border border-[#DEFAE1] bg-white px-2 text-[11px] font-semibold text-[#072C0E]/70 outline-none"
