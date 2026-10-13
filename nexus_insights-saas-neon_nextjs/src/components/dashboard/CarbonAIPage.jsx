@@ -2982,8 +2982,26 @@ export function QuestionnaireTab({
   // (localStorage key 'carboniq_activeInventoryId') — this component is always
   // hydrated with an already-resolved reportId/answers/step from that context.
 
+  // The progress list sits beside the questions only when the inventory's own
+  // column is wide enough: with the assistant docked on a laptop the column is
+  // narrow, and the list squeezed the questions into a strip a word wide. It
+  // closes when the column narrows (still one click away from the menu).
+  const flowRootRef = useRef(null);
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
+    const el = flowRootRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') {
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024) setSidebarOpen(true);
+      return undefined;
+    }
+    let wide = null;
+    const check = () => {
+      const isWide = el.clientWidth >= 900;
+      if (isWide !== wide) { wide = isWide; setSidebarOpen(isWide); }
+    };
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // ✅ On a genuinely fresh report (nothing answered yet, sitting at the very
@@ -4562,7 +4580,7 @@ export function QuestionnaireTab({
   }
 
   return (
-    <div className="flex flex-1 min-h-0 overflow-hidden relative">
+    <div ref={flowRootRef} className="flex flex-1 min-h-0 overflow-hidden relative">
       {/* Mobile backdrop for progress sidebar */}
       {sidebarOpen && (
         <div
@@ -4768,9 +4786,25 @@ export function QuestionnaireTab({
             no way to reach it — the questionnaire simply cannot be advanced.
             min-h-0 is what actually lets a flex child shrink below its content
             height; without it overflow-y-auto here would never engage. */}
+        {/* Capped at 60% of the column, so a long form (four fields, a list of
+            chips) never squeezes the conversation — and the question in it —
+            down to a line; the current question is also pinned on top of the
+            form, so it is in view whatever the scroll position. */}
         {!completed && (!blockSummaryState || editingQuestionId) && (
-          <div className="min-h-0 shrink overflow-y-auto border-t border-[#175022]/6 px-4 py-3 sm:px-6">
+          <div className="min-h-0 max-h-[60%] shrink overflow-y-auto border-t border-[#175022]/6 px-4 pb-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
+              {currentQuestion && !isTyping && (
+                <div data-testid="pinned-question" className="sticky top-0 z-10 -mx-1 mb-2 bg-white px-1 pt-3 pb-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-[#175022]/45">
+                    {tr ? 'Soru' : 'Question'} {currentQuestion.number}
+                    {loopState?.questionId === currentId && (loopState.itemLabels?.[loopState.currentIndex] || loopState.items?.[loopState.currentIndex])
+                      ? ` · ${loopState.itemLabels?.[loopState.currentIndex] || loopState.items[loopState.currentIndex]}` : ''}
+                  </p>
+                  <p className="text-[14px] font-semibold leading-snug text-[#072C0E] sm:text-[15px]">
+                    {stripDocLabels(currentQuestion.text?.[lang] || currentQuestion.text?.en || '')}
+                  </p>
+                </div>
+              )}
               <div className="flex flex-col gap-2">
                 <AnswerInput
                   question={currentQuestion}
