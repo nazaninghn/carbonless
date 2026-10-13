@@ -4658,7 +4658,7 @@ export function QuestionnaireTab({
         </div>
 
         {/* Chat messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 sm:px-6">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           <div
             className="mx-auto flex w-full max-w-2xl flex-col gap-4"
             aria-live="polite"
@@ -4763,7 +4763,7 @@ export function QuestionnaireTab({
             min-h-0 is what actually lets a flex child shrink below its content
             height; without it overflow-y-auto here would never engage. */}
         {!completed && (!blockSummaryState || editingQuestionId) && (
-          <div className="min-h-0 shrink overflow-y-auto border-t border-[#175022]/6 px-4 py-3 sm:px-6">
+          <div className="min-h-0 shrink-0 max-h-[55%] overflow-y-auto border-t border-[#175022]/6 px-4 py-3 sm:px-6">
             <div className="mx-auto w-full max-w-2xl">
               <div className="flex flex-col gap-2">
                 <AnswerInput
