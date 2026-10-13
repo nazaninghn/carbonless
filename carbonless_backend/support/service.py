@@ -23,7 +23,9 @@ _TOPIC_PATTERNS = [
     ('legal', r'kvkk|gdpr|hizmet sözleşme|sözleşme(mi|yi)? (iptal|fesih|feshet)|yasal (sorumluluk|bağlayıcı)|akredit|'
               r'legal(ly)? binding|accredit|terminate (my |the )?contract'),
     ('other', r'(destek|müşteri hizmetleri|yetkili|uzman|insan|gerçek kişi|biriyle) (ekib\w*|ile)? ?(görüş|konuş|bağlan|yardım)|'
-              r'(talk|speak) to (a |an )?(human|person|someone|support|expert)|contact support'),
+              r'(talk|speak) to (a |an )?(human|person|someone|support|expert)|contact support|'
+              r'(destek|müşteri hizmetleri|yetkili|uzman|size|sizinle|ekibinize)\w* (ekib\w* )?(nasıl )?(ulaş|iletişim)|'
+              r'telefon numara|iletişim (bilgi|numara|adres)|phone number|contact (number|details|e-?mail)'),
 ]
 
 
@@ -34,7 +36,7 @@ _BUG_ALWAYS = (r'\bhata (veriyor|alıyorum|çıkıyor|mesajı)|donuyor|çöküyo
                r'indiremiyorum|yükleyemiyorum|açamıyorum|göremiyorum|(bas|tıkla)(ınca|dığımda) (bir şey|hiçbir şey) olmuyor|'
                r'\bbug\b|crash(es|ed)?|won.t load|cannot (save|download|upload|open)|can.t (save|download|upload|open)|'
                r'nothing happens')
-_BUG_WORDS = r'çalışmıyor|açılmıyor|yüklenmiyor|görünmüyor|yanlış (gösteriyor|görünüyor|toplam)|\berror\b|not working|does ?n.t work|wrong totals?|shows wrong'
+_BUG_WORDS = r'hata var|sorun var|sorun yaşıyorum|çalışmıyor|açılmıyor|yüklenmiyor|görünmüyor|yanlış (gösteriyor|görünüyor|toplam)|\berror\b|not working|does ?n.t work|wrong totals?|shows wrong'
 _APP_WORDS = (r'sayfa|ekran|buton|düğme|rapor|uygulama|site|sistem|platform|panel|dashboard|giriş|menü|grafik|pdf|excel|indir|yükle|'
               r'page|screen|button|app\b|report|login|chart|download|upload|totals?')
 
@@ -137,14 +139,19 @@ def referral_text(req, lang):
                 f"you'll get a notification as soon as they answer." if lang == 'en' else
                 f"Bu soru zaten destek ekibimizde (talep #{req.pk}); yanıt gelir gelmez bildirim alacaksınız.")
     by_ai = req.source == req.Source.AI
+    # Asked how to reach us: the address too.
+    from django.conf import settings
+    contact = settings.SUPPORT_EMAIL or settings.CONTACT_EMAIL
     if lang == 'en':
         return ((f"This needs our support team — someone who can look at your account and the system directly. "
                  if by_ai else '') +
                 f"I've passed your question on (request #{req.pk}); they will answer as soon as possible. "
-                f"You'll get a notification and an e-mail, and the answer will also appear here in this chat.")
+                f"You'll get a notification and an e-mail, and the answer will also appear here in this chat." +
+                (f" You can also write to us directly at {contact}." if req.topic == 'other' else ''))
     return (("Bu konuyu hesabınıza ve sisteme doğrudan bakabilen destek ekibimiz yanıtlamalı. " if by_ai else '') +
             f"Sorunuzu destek ekibine ilettim (talep #{req.pk}); en kısa sürede yanıt verecekler. "
-            f"Yanıt geldiğinde bildirim ve e-posta alacaksınız; yanıt bu sohbete de eklenecek.")
+            f"Yanıt geldiğinde bildirim ve e-posta alacaksınız; yanıt bu sohbete de eklenecek." +
+            (f" Bize doğrudan {contact} adresinden de yazabilirsiniz." if req.topic == 'other' else ''))
 
 
 def reopen_request(req, text):
@@ -168,9 +175,9 @@ def alert_team(req, follow_up=''):
         from django.conf import settings
         from django.contrib.auth.models import User
         from django.core.mail import send_mail
-        to = {getattr(settings, 'SUPPORT_EMAIL', '') or getattr(settings, 'CONTACT_EMAIL', '') or 'info@carbonless.info'}
+        to = {settings.SUPPORT_EMAIL or settings.CONTACT_EMAIL or 'info@carbonless.info'}
         to |= set(User.objects.filter(is_staff=True, is_active=True).exclude(email='').values_list('email', flat=True))
-        frontend_admin = (getattr(settings, 'BACKEND_URL', '') or '').rstrip('/')
+        frontend_admin = settings.BACKEND_URL
         link = f'{frontend_admin}/admin/support/supportrequest/{req.pk}/change/' if frontend_admin else f'/admin/support/supportrequest/{req.pk}/change/'
         who = req.user.get_full_name() or req.user.email or req.user.username
         company = req.company.legal_entity_name if req.company_id else '—'

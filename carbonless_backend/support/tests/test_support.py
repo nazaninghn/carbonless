@@ -28,6 +28,9 @@ class SupportTopicTests(TestCase):
             ('The dashboard shows wrong totals', 'bug'),
             ('My data disappeared', 'data'),
             ('I want to speak to someone', 'other'),
+            ('Destek ekibine ulaşmak istiyorum, telefon numaranız var mı?', 'other'),
+            ('Sizinle nasıl iletişime geçerim?', 'other'),
+            ('Rapor sayfasında hata var', 'bug'),
         ]:
             self.assertEqual(support_topic(text), topic, text)
 
@@ -36,7 +39,8 @@ class SupportTopicTests(TestCase):
                      'İade edilen ürünler hangi kategoride?', 'Emisyonlarımızı nasıl azaltabiliriz?',
                      # activity data, and carbon questions that happen to say "doesn't work" / "error"
                      'Jeneratör çalışmıyor ama yakıt aldık 200 litre motorin',
-                     'Klima çalışmıyorsa soğutucu gaz kaçağı olur mu?', 'Error margin of emission factors?']:
+                     'Klima çalışmıyorsa soğutucu gaz kaçağı olur mu?', 'Error margin of emission factors?',
+                     'Jeneratörde sorun var, 300 litre mazot aldık']:
             self.assertIsNone(support_topic(text), text)
 
 
@@ -197,3 +201,19 @@ class SupportFollowUpTests(_SupportBase):
         self.client.post('/api/support/feedback/', {'message_id': answer.id, 'helpful': False}, format='json')
         data = self.client.get(f'/api/chat/sessions/{self.session.id}/').data
         self.assertEqual([m['feedback'] for m in data['messages'] if m['id'] == answer.id], [False])
+
+
+class SupportAlertTests(_SupportBase):
+    def test_alert_link_is_absolute_and_goes_to_support_email(self):
+        from django.test import override_settings
+        with override_settings(BACKEND_URL='https://api.example.com', SUPPORT_EMAIL='destek@example.com'):
+            self._send('Rapor sayfası açılmıyor, hata veriyor')
+        req = SupportRequest.objects.get()
+        self.assertIn(f'https://api.example.com/admin/support/supportrequest/{req.pk}/change/', mail.outbox[0].body)
+        self.assertIn('destek@example.com', mail.outbox[0].to)
+
+    def test_contact_question_gets_the_address(self):
+        from django.test import override_settings
+        with override_settings(SUPPORT_EMAIL='', CONTACT_EMAIL='info@example.com'):
+            res = self._send('Destek ekibine ulaşmak istiyorum, telefon numaranız var mı?')
+        self.assertIn('info@example.com', res.data['content'])
