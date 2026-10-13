@@ -2997,6 +2997,13 @@ export function QuestionnaireTab({
   // Together they show the error only after submit AND only while the answer is still invalid.
   const [validationError, setValidationError] = useState('');
   const [showValidationError, setShowValidationError] = useState(false);
+  // Each failed Confirm brings the error into view: below a long form on a
+  // phone it was off-screen, and the button seemed to do nothing.
+  const [validationTick, setValidationTick] = useState(0);
+  const validationErrorRef = useRef(null);
+  useEffect(() => {
+    if (validationTick) validationErrorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [validationTick]);
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
   // Generic loop info messages already shown ("questionId|text"), so they appear once per loop.
@@ -4003,6 +4010,7 @@ export function QuestionnaireTab({
         // who have already fixed their answer (e.g. country_city after filling both fields).
         setValidationError(err.message || (lang === 'tr' ? 'Geçersiz yanıt.' : 'Invalid answer.'));
         setShowValidationError(true);
+        setValidationTick(t => t + 1);
         return;
       }
       setValidationError(''); // clear any previous inline error on successful validation
@@ -5042,7 +5050,7 @@ export function QuestionnaireTab({
                     showValidationError resets when answerValue changes or question/tab switches,
                     so the error disappears as soon as the user fills the field correctly. */}
                 {showValidationError && validationError && currentQuestion && !validateCarbonIQAnswer(currentQuestion, answerValue, answers, lang).ok && (
-                  <div role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+                  <div ref={validationErrorRef} role="alert" className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
                     <span>{validationError}</span>
                   </div>

@@ -1301,3 +1301,24 @@ class YearlySourceAndYearChangeTests(ApprovalNotificationAndDuplicateTests):
         self.assertEqual((c['months'], c['previous_kg']), (10, 200.0))
         self.assertIsNone(previous_year_change(self.company, 2024, 250, today=date(2026, 10, 11)))
         self.assertIn('previous_year_change', self.client.get('/api/emissions/summary/?year=2025').data)
+
+
+class ListWorkspaceEntriesCommandTests(ApprovalNotificationAndDuplicateTests):
+    """The read-only listing of old Data Panel entries flags the doubles."""
+
+    def test_lists_data_panel_entries_and_flags_doubles(self):
+        from io import StringIO
+        from django.core.management import call_command
+        mk = lambda desc, year: EmissionEntry.objects.create(
+            user=self.users['aylin'], company=self.company, emission_factor=self.factor,
+            year=year, month=1, quantity=1000, calculated_co2e_kg=2500,
+            description=desc, status='approved')
+        mk('Questionnaire step 3A-5', 2023)
+        doubled = mk('Workspace 3A (report 14)', 2023)
+        mk('Workspace 3A (report 9)', 2022)
+        out = StringIO()
+        call_command('list_workspace_entries', stdout=out)
+        text = out.getvalue()
+        self.assertIn(f'#{doubled.id}', text)
+        self.assertIn('2 Data Panel entries, 1 likely counted twice.', text)
+        self.assertEqual(EmissionEntry.objects.count(), 3)
