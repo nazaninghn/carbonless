@@ -6310,6 +6310,9 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
             open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
           }`}
         aria-hidden={!open}
+        // Closed, it stays mounted off-screen: inert keeps its buttons out
+        // of the Tab order too, not only away from screen readers.
+        inert={!open}
         role="dialog"
         aria-label={tr ? 'AI Asistan' : 'AI Assistant'}
       >

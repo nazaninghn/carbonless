@@ -478,6 +478,7 @@ export default function DashboardPage() {
         entries={entries}
         setShowAddForm={setShowAddForm}
         onAddTarget={() => setTargetFormRequested(true)}
+        canEdit={perms.canEdit}
       />
     </div>
     </ToastProvider>

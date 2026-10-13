@@ -25,6 +25,7 @@ import {
   scopeLabel, fmt, unitLabel, factorLabel,
 } from '@/lib/constants/emissions';
 import { fixed } from '@/lib/formatNumber';
+import { FOCUS_ENTRY_EVENT, FOCUS_ENTRY_KEY } from '@/components/dashboard/CommandPalette';
 
 // ─── KPI mini card (count-up + hover lift) ─────────────────────────────────
 function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
@@ -131,7 +132,7 @@ function entryStatusMeta(entry) {
   return STATUS_META[entry.status] ?? STATUS_META.submitted;
 }
 
-function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelDelete, canEdit = true }) {
+function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelDelete, canEdit = true, focused = false }) {
   const tr = language === 'tr';
   const toast = useToast();
   const sm = SCOPE_META[entry.scope] ?? SCOPE_META.scope1;
@@ -141,7 +142,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelD
   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
 
   return (
-    <div className="rounded-2xl border border-[#072C0E]/8 bg-white p-4 shadow-[0_2px_12px_rgba(7,44,14,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/20">
+    <div data-entry-id={entry.id} className={`rounded-2xl border bg-white p-4 shadow-[0_2px_12px_rgba(7,44,14,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/20 ${focused ? 'border-[#2ABD41] ring-2 ring-[#2ABD41]/40' : 'border-[#072C0E]/8'}`}>
       {/* Top row */}
       <div className="mb-2 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
@@ -242,6 +243,31 @@ export default function EmissionsTab({
   const [filterMonth,    setFilterMonth]    = useState(0);   // 0 = all months, ANNUAL = questionnaire's annual entries
   const [filterFacility, setFilterFacility] = useState('');
   const [sortBy,         setSortBy]         = useState('month');
+
+  // An entry picked in the search (Ctrl+K): filters cleared so it is in the
+  // list, then scrolled to and marked for a few seconds.
+  const [focusedId, setFocusedId] = useState(null);
+  useEffect(() => {
+    const focus = (id) => {
+      if (!id) return;
+      try { sessionStorage.removeItem(FOCUS_ENTRY_KEY); } catch { /* nothing kept */ }
+      setSearch(''); setFilterScope(''); setFilterMonth(0); setFilterFacility('');
+      setFocusedId(String(id));
+    };
+    try { focus(sessionStorage.getItem(FOCUS_ENTRY_KEY)); } catch { /* opened normally */ }
+    const onFocus = (e) => focus(e.detail);
+    window.addEventListener(FOCUS_ENTRY_EVENT, onFocus);
+    return () => window.removeEventListener(FOCUS_ENTRY_EVENT, onFocus);
+  }, []);
+  useEffect(() => {
+    if (!focusedId) return undefined;
+    const show = setTimeout(() => {
+      const el = [...document.querySelectorAll(`[data-entry-id="${focusedId}"]`)].find(n => n.offsetParent !== null);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 150);
+    const clear = setTimeout(() => setFocusedId(null), 4000);
+    return () => { clearTimeout(show); clearTimeout(clear); };
+  }, [focusedId]);
 
   // Add form
   const [selScope,    setSelScope]    = useState('');
@@ -1070,7 +1096,8 @@ export default function EmissionsTab({
                   const name = (tr && entry.emission_factor_name_tr) ? entry.emission_factor_name_tr : entry.emission_factor_name;
                   const how = entry.questionnaire_source ? entrySourceLabel(entry, tr) : null;
                   return (
-                    <tr key={entry.id} className="group/row transition-colors hover:bg-[#DEFAE1]/40">
+                    <tr key={entry.id} data-entry-id={entry.id}
+                      className={`group/row transition-colors hover:bg-[#DEFAE1]/40 ${focusedId === String(entry.id) ? 'bg-[#DEFAE1] outline outline-2 outline-[#2ABD41]' : ''}`}>
                       {/* Source */}
                       <td className="max-w-[220px] px-4 py-3">
                         <div className="flex items-center gap-2">
@@ -1188,6 +1215,7 @@ export default function EmissionsTab({
           {filtered.map(entry => (
             <EntryCard
               key={entry.id}
+              focused={focusedId === String(entry.id)}
               entry={entry}
               months={months}
               language={language}
