@@ -51,6 +51,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     calc_detail = serializers.JSONField(read_only=True)
     question_number = serializers.SerializerMethodField()
     replaces = serializers.SerializerMethodField()
+    change_question = serializers.SerializerMethodField()
 
     def get_question_number(self, obj):
         from questionnaire.step_entries import entry_group
@@ -60,6 +61,15 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             return None
         number = (_load_schema().get(group) or {}).get('number')
         return str(number) if number not in (None, '') else None
+
+    def get_change_question(self, obj):
+        """The inventory question whose save left this row waiting ("Soru 54a")."""
+        if not obj.change_batch:
+            return None
+        from questionnaire.step_entries import question_label
+        request = self.context.get('request')
+        lang = 'en' if request is not None and request.query_params.get('lang') == 'en' else 'tr'
+        return question_label(obj.change_batch.split(':')[0], lang)
 
     def get_replaces(self, obj):
         if obj.status != 'submitted':
@@ -163,9 +173,10 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
             'calc_detail', 'question_number', 'replaces', 'replaces_entry', 'delete_requested',
+            'change_batch', 'change_question',
         ]
         read_only_fields = [
-            'calculated_co2e_kg', 'facility_name', 'replaces_entry', 'delete_requested',
+            'calculated_co2e_kg', 'facility_name', 'replaces_entry', 'delete_requested', 'change_batch',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at',
             'factor_value_snapshot', 'factor_source_snapshot',

@@ -45,8 +45,15 @@ def not_counted(queryset):
     for desc, year in queryset.filter(status='approved', description__startswith=ANNUAL_PREFIX).values_list('description', 'year'):
         approved_groups.add((year, entry_group(desc)))
     new_n, new_kg, changes = 0, 0.0, 0
-    for e in queryset.filter(status='submitted').only('description', 'year', 'replaces_entry', 'calculated_co2e_kg'):
+    # One inventory save is one change, however many rows it recalculated.
+    batches = set()
+    for e in queryset.filter(status='submitted').only('description', 'year', 'replaces_entry', 'calculated_co2e_kg',
+                                                      'change_batch'):
         if e.replaces_entry_id or (is_annual(e) and (e.year, entry_group(e.description)) in approved_groups):
+            if e.change_batch:
+                if e.change_batch in batches:
+                    continue
+                batches.add(e.change_batch)
             changes += 1
         else:
             new_n += 1

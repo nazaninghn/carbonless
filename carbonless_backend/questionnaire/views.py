@@ -609,9 +609,9 @@ class SubmitStepView(APIView):
             # A re-signed inventory carries the new signing date.
             ReportStep.objects.filter(report=report, step_id=step).update(completed_at=timezone.now())
         evaluate_advisor_triggers(report, step, data)
-        if before != _saved_answer(report, step):
-            from .notifications import notify_completed_inventory_edited
-            notify_completed_inventory_edited(report, request.user, step)
+        # Told once the entries are recalculated: an edit that went for
+        # approval already notifies the approvers with what it changes.
+        answer_edited = before != _saved_answer(report, step)
 
         # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
         is_final_step = (
@@ -651,6 +651,9 @@ class SubmitStepView(APIView):
                     ],
                 }, status=400)
 
+            if answer_edited:
+                from .notifications import notify_completed_inventory_edited
+                notify_completed_inventory_edited(report, request.user, step)
             report.status = CarbonReport.Status.COMPLETED
             report.current_step = 'DONE'
             report.save(update_fields=['status', 'current_step', 'updated_at', 'client_progress'])
@@ -697,6 +700,9 @@ class SubmitStepView(APIView):
         # A data-entry member's change waits for approval: say so, and give
         # the approved total — the one the dashboard and the reports show.
         pending = any(e.status == 'submitted' for e in entries)
+        if answer_edited and not pending:
+            from .notifications import notify_completed_inventory_edited
+            notify_completed_inventory_edited(report, request.user, step)
         calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
                          'pending': pending, 'notes': notes}
         if step in ('3A-5', '3A-5bio'):

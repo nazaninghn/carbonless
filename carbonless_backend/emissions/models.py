@@ -258,6 +258,10 @@ class EmissionEntry(models.Model):
     # answer.
     replaces_entry = models.ForeignKey('self', null=True, blank=True, on_delete=models.SET_NULL,
                                        related_name='pending_changes')
+    # Inventory rows a data-entry member's one save left waiting for approval
+    # share this tag ("<step saved>:<id>"): the answer they changed and the
+    # rows it recalculated are reviewed as one change.
+    change_batch = models.CharField(max_length=64, blank=True, default='')
     # A data-entry member asked to delete this approved entry: it stays (and
     # counts) until an approver accepts the deletion.
     delete_requested = models.BooleanField(default=False)

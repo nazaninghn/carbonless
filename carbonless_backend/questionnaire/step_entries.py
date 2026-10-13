@@ -1008,6 +1008,10 @@ def sync_step_entries(user, company, report, step_id, data=None):
     # Same approval rule as the form and the chat: an owner/admin/manager's
     # answers count at once, a data-entry member's wait for approval.
     status = _get_entry_status(user, company)
+    # One save, one change: rows it leaves waiting carry the step that was
+    # saved, so they are reviewed (and counted) together.
+    import uuid
+    batch = f'{step_id}:{uuid.uuid4().hex[:12]}' if status == 'submitted' else ''
 
     def sig(items):
         return sorted(items)
@@ -1106,6 +1110,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
             factor_source_snapshot=factor.source,
             facility=facility,
             status=status,
+            change_batch=batch,
         ) for factor, qty, description, detail, facility in rows]
         carried = []
         for e in new_entries:
@@ -1124,10 +1129,16 @@ def sync_step_entries(user, company, report, step_id, data=None):
             log_answer_change(user, company, year, step, before, [], status)
         if status == 'submitted' and new_entries:
             changes.append((step, new_entries, approved if keep_approved else []))
-    for step, new_entries, replaced in changes:
-        # One notice per changed answer, updated while it is still unread —
-        # each facility saved used to send its own copy.
-        notify_questionnaire_change(user, company, year, step, new_entries, replaced)
+    if changes:
+        # One notice per save: the answer that was changed, with what it
+        # recalculated elsewhere (a fuel amount also moves its upstream WTT
+        # rows) — updated while it is still unread.
+        steps = [c[0] for c in changes]
+        main = step_id if step_id in steps else steps[0]
+        notify_questionnaire_change(
+            user, company, year, main,
+            [e for c in changes for e in c[1]], [e for c in changes for e in c[2]],
+            also=[s for s in steps if s != main])
     if deletions:
         from emissions.notifications import notify_delete_requested
         for entry in deletions:

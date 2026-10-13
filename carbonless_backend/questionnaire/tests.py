@@ -942,6 +942,9 @@ class StepEntryApprovalTests(TestCase):
         c.force_authenticate(user=owner)
         pending = c.get('/api/emissions/pending/').data
         self.assertEqual([(p['entered_by'], p['year']) for p in pending], [('de3@test.com', 2025)])
+        # The save's rows carry the question that was saved, for one review card.
+        self.assertTrue(entry.change_batch.startswith('4A-1:'))
+        self.assertTrue(pending[0]['change_question'].startswith('Soru '))
         self.assertEqual(save(owner).status, 'approved')
 
 

@@ -259,7 +259,7 @@ def notify_delete_refused(entry, reason, reviewer):
         logger.exception('Could not notify the author of entry %s', entry.pk)
 
 
-def notify_questionnaire_change(author, company, year, step, entries, replaced):
+def notify_questionnaire_change(author, company, year, step, entries, replaced, also=()):
     """A data-entry member changed an inventory answer: tell the approvers
     what it is now and what it replaces. One notice per answer — while it is
     unread, a later save of the same answer updates it instead of adding
@@ -281,6 +281,9 @@ def notify_questionnaire_change(author, company, year, step, entries, replaced):
             now = _summary(entries, lang)
             before = _summary(replaced, lang) if replaced else ''
             where = question_label(step, lang)
+            if also:
+                others = ', '.join(dict.fromkeys(question_label(x, lang) for x in also))
+                where += (f'; bağlı hesaplamalar: {others}' if lang == 'tr' else f'; recalculated with it: {others}')
             if lang == 'tr':
                 title = 'Onay bekleyen değişiklik' if before else 'Onay bekleyen kayıt'
                 message = (f'{name} {year} envanterinde bir cevabı değiştirdi ({where}): '
