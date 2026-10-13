@@ -549,9 +549,36 @@ export default function DashboardOverview({
     );
   }
 
+  // Signup creates "Tesis 1", "Tesis 2"… from the number of facilities typed
+  // there; until they are named (or given a city) entries and reports carry
+  // those placeholders, so ask once, here, with a way to Settings → Tesisler.
+  const unnamedFacilities = (facilityList || []).filter(
+    f => /^(Tesis|Facility) \d+$/.test((f.name || '').trim()) && !(f.city || '').trim(),
+  );
+
   return (
     <div className="space-y-3 sm:space-y-4">
       <style>{DASHBOARD_ANIM_STYLES}</style>
+
+      {canEdit && unnamedFacilities.length > 0 && (
+        <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-[#2ABD41]/30 bg-[#F1FCF2] px-4 py-2.5">
+          <AlertCircle className="h-4 w-4 shrink-0 text-[#2ABD41]" />
+          <p className="min-w-0 flex-1 text-xs font-semibold text-[#175022]">
+            {tr
+              ? `Tesislerinize ad ve şehir verin: ${unnamedFacilities.map(f => f.name).join(', ')}. Kayıtlarınızda ve raporlarınızda bu adlar görünür.`
+              : `Give your facilities a name and city: ${unnamedFacilities.map(f => f.name).join(', ')}. These names appear on your entries and reports.`}
+          </p>
+          <button
+            onClick={() => {
+              try { sessionStorage.setItem('carbonless_settings_section', 'facilities'); } catch { /* opens on Profile */ }
+              setActiveTab('settings');
+            }}
+            className="shrink-0 rounded-full bg-[#2ABD41] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[#1A7B2A]"
+          >
+            {tr ? 'Düzenle' : 'Edit'}
+          </button>
+        </div>
+      )}
 
       {/* ── EMPTY YEAR  -  this year is empty but other years have data ── */}
       {entries.length === 0 && otherYears.length > 0 && (

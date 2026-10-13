@@ -31,7 +31,21 @@ function VerifyContent() {
   const code = digits.join('');
 
   const handleDigitChange = (index, value) => {
-    const clean = value.replace(/\D/g, '').slice(-1);
+    // The phone's keyboard suggestion ("from Mail / Messages") puts the whole
+    // code into one box: spread it over the boxes from here.
+    const all = value.replace(/\D/g, '');
+    if (all.length > 1) {
+      setDigits(prev => {
+        const next = [...prev];
+        for (let i = 0; i < all.length && index + i < CODE_LENGTH; i++) next[index + i] = all[i];
+        return next;
+      });
+      setStatus('idle');
+      setMessage('');
+      inputRefs.current[Math.min(index + all.length, CODE_LENGTH - 1)]?.focus();
+      return;
+    }
+    const clean = all.slice(-1);
     setDigits(prev => {
       const next = [...prev];
       next[index] = clean;
@@ -201,7 +215,11 @@ function VerifyContent() {
                       ref={el => { inputRefs.current[i] = el; }}
                       type="text"
                       inputMode="numeric"
-                      maxLength={1}
+                      // The first box takes the phone's one-time-code suggestion
+                      // (the whole code), so it is not limited to one digit.
+                      autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                      maxLength={i === 0 ? CODE_LENGTH : 1}
+                      aria-label={tr ? `Doğrulama kodu, hane ${i + 1}/${CODE_LENGTH}` : `Verification code, digit ${i + 1} of ${CODE_LENGTH}`}
                       value={d}
                       onChange={e => handleDigitChange(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
