@@ -795,7 +795,7 @@ export default function ReductionTargetsTab({
                   {editTarget.title}
                 </p>
               </div>
-              <button
+              <button aria-label={tr ? 'Kapat' : 'Close'}
                 onClick={() => setEditTarget(null)}
                 className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 transition hover:bg-[#072C0E]/5"
               >
@@ -911,7 +911,7 @@ export default function ReductionTargetsTab({
                   {tr ? 'Karbon azaltma taahhüdü oluşturun' : 'Create a carbon reduction commitment'}
                 </p>
               </div>
-              <button
+              <button aria-label={tr ? 'Kapat' : 'Close'}
                 onClick={() => { setShowForm(false); resetForm(); }}
                 className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 transition hover:bg-[#072C0E]/5"
               >

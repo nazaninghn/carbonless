@@ -152,7 +152,7 @@ export default function DashboardSidebar({
                 Carbonless
               </span>
             </button>
-            <button
+            <button aria-label={tr ? 'Menüyü kapat' : 'Close menu'}
               onClick={closeSidebar}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-[#072C0E]/40 hover:bg-[#F1FCF2] lg:hidden"
             >
