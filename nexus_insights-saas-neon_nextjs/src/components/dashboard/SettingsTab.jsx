@@ -39,7 +39,15 @@ export default function SettingsTab({ language, user, fetchData }) {
   // Fix #67: use LanguageContext so language change is instant (no reload),
   // preserving CarbonAIPage questionnaire state across the tab switch.
   const { changeLanguage } = useLanguage();
-  const [activeTab, setActiveTab] = useState('profile');
+  // A link may name the part to open ("?tab=settings&section=security").
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const section = sessionStorage.getItem('carbonless_settings_section');
+      sessionStorage.removeItem('carbonless_settings_section');
+      if (section && TABS.some(t => t.id === section)) return section;
+    } catch { /* default below */ }
+    return 'profile';
+  });
   const [deleting, setDeleting] = useState(false);
   const [exporting, setExporting] = useState(false);
   // Delete-account confirmation modal state

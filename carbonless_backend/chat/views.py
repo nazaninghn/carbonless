@@ -935,10 +935,13 @@ def _session_to_dict(session, include_messages=False):
         # Fetch DESC so the DB index is used, then reverse for chronological display.
         msgs = list(session.messages.order_by('-created_at')[:100])
         msgs.reverse()
+        from support.models import AnswerFeedback
+        votes = dict(AnswerFeedback.objects.filter(user_id=session.user_id, message__session=session)
+                     .values_list('message_id', 'helpful'))
         data['messages'] = [
             {
                 'id': m.id, 'role': m.role, 'content': m.content,
-                'created_at': m.created_at, 'ui': m.ui or {},
+                'created_at': m.created_at, 'ui': m.ui or {}, 'feedback': votes.get(m.id),
                 # Never the raw /media/ URL — that's DEBUG-only and served with
                 # no access control. download_attachment below is the only
                 # authenticated, ownership-checked way to fetch the file.
@@ -1827,7 +1830,17 @@ def _send_message(request, session_id):
         lang = 'tr' if (ui_language or getattr(session, 'ui_language', '') or 'tr') == 'tr' else 'en'
         # Account, billing, something broken, lost data, integrations, legal:
         # a person has to look, so the question goes to the support team.
-        from support.service import support_topic
+        from support.service import self_service, support_topic
+        help_ = self_service(content, lang)
+        if help_:
+            ui = {'link': help_[1], 'offer_support': True}
+            msg = ChatMessage.objects.create(session=session, role='assistant', content=help_[0], ui=ui)
+            session.save(update_fields=['updated_at'])
+            return Response({
+                'id': msg.id, 'role': 'assistant', 'content': help_[0],
+                'created_at': msg.created_at, 'session_title': session.title,
+                'pending_entries': [], 'ui': ui, 'source': 'self_service',
+            })
         topic = support_topic(content)
         if topic:
             return _refer_to_support(request.user, session, content, lang, topic)

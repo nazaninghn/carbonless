@@ -17,25 +17,80 @@ _TOPIC_PATTERNS = [
     ('account', r'giriş yapamıyorum|şifre(mi)? (unuttum|sıfırla|değiştiremiyorum)|hesab(ım|ımı) (sil|kapat|kilitlendi|açılmıyor)|'
                 r'iki adımlı|2fa|doğrulama kodu gelmiyor|e-?posta (gelmiyor|değiştir)|'
                 r"can'?t log ?in|cannot log ?in|locked out|delete my account|reset (my )?password|verification code"),
-    ('bug', r'\bhata (veriyor|alıyorum|çıkıyor)|çalışmıyor|açılmıyor|yüklenmiyor|donuyor|çöküyor|sayfa boş|kayded(il)?emiyorum|'
-            r'\bbug\b|\berror\b|not working|does ?n.t work|crash(es|ed)?|won.t load|cannot save|can.t save'),
     ('data', r'veri(lerim)? (kayboldu|silindi|gitti)|kayıtlar(ım)? (kayboldu|silindi|görünmüyor)|geri (yükle|getir)|'
-             r'(data|entries) (is |are )?(lost|missing|gone|deleted)|restore (my )?data'),
+             r'(my |our )?(data|entries|records) (is |are |has |have )?(lost|missing|gone|deleted|disappeared)|restore (my )?data'),
     ('integration', r'\bapi\b|entegrasyon|\bsap\b|\berp\b|logo yazılım|integration'),
     ('legal', r'kvkk|gdpr|hizmet sözleşme|sözleşme(mi|yi)? (iptal|fesih|feshet)|yasal (sorumluluk|bağlayıcı)|akredit|'
               r'legal(ly)? binding|accredit|terminate (my |the )?contract'),
     ('other', r'(destek|müşteri hizmetleri|yetkili|uzman|insan|gerçek kişi|biriyle) (ekib\w*|ile)? ?(görüş|konuş|bağlan|yardım)|'
-              r'(talk|speak) to (a |an )?(human|person|support|expert)|contact support'),
+              r'(talk|speak) to (a |an )?(human|person|someone|support|expert)|contact support'),
 ]
+
+
+# Something in the app is broken. "çalışmıyor" / "error" alone also fit a
+# generator that doesn't run or an emission factor's error margin, so those
+# count only next to a part of the app.
+_BUG_ALWAYS = (r'\bhata (veriyor|alıyorum|çıkıyor|mesajı)|donuyor|çöküyor|sayfa boş|kayded(il)?emiyorum|'
+               r'indiremiyorum|yükleyemiyorum|açamıyorum|göremiyorum|(bas|tıkla)(ınca|dığımda) (bir şey|hiçbir şey) olmuyor|'
+               r'\bbug\b|crash(es|ed)?|won.t load|cannot (save|download|upload|open)|can.t (save|download|upload|open)|'
+               r'nothing happens')
+_BUG_WORDS = r'çalışmıyor|açılmıyor|yüklenmiyor|görünmüyor|yanlış (gösteriyor|görünüyor|toplam)|\berror\b|not working|does ?n.t work|wrong totals?|shows wrong'
+_APP_WORDS = (r'sayfa|ekran|buton|düğme|rapor|uygulama|site|sistem|platform|panel|dashboard|giriş|menü|grafik|pdf|excel|indir|yükle|'
+              r'page|screen|button|app\b|report|login|chart|download|upload|totals?')
+
+
+def _is_bug(t):
+    return bool(re.search(_BUG_ALWAYS, t) or (re.search(_BUG_WORDS, t) and re.search(_APP_WORDS, t)))
+
+
+# A message carrying an amount and a unit is activity data for the
+# calculator, whatever else it says ("jeneratör çalışmıyor ama 200 litre…").
+_ACTIVITY = re.compile(r'\d[\d.,]*\s*(kwh|mwh|gwh|m3|m³|lt\b|litre|liter|l\b|kg\b|ton|tonne|km\b|adet|gallon|ton-km)', re.I)
 
 
 def support_topic(text):
     """The support topic a message is about, or None when the AI can
-    handle it (carbon questions, the app's own how-to, data look-ups)."""
+    handle it (carbon questions, the app's own how-to, data look-ups,
+    activity data)."""
     t = (text or '').lower()
+    if _ACTIVITY.search(t):
+        return None
     for topic, rx in _TOPIC_PATTERNS:
         if re.search(rx, t, re.I):
             return topic
+    if _is_bug(t):
+        return 'bug'
+    return None
+
+
+# Things users can do themselves: a link to the place, with the support
+# team still one click away.
+_SELF_SERVICE = [
+    (r'hesab(ım|ımı|imizi) (sil|kapat)|üyeliğ(im|imi) (sil|iptal)|delete my account|close my account',
+     ('Hesabınızı kendiniz silebilirsiniz: Ayarlar → Veri bölümündeki «Hesabı sil». Şirketin sahibiyseniz sahiplik '
+      'ekipteki bir yönetici/admin üyeye geçer; ekipte başka kimse yoksa şirketin verileri de silinir, bu yüzden önce '
+      'aynı bölümden verilerinizi indirin.',
+      'You can delete your account yourself: Settings → Data → «Delete account». If you own the company, ownership '
+      'passes to an admin/manager on the team; if nobody else is on the team the company\'s data is deleted too, so '
+      'download your data from the same page first.'),
+     'data', ('Ayarlar → Veri', 'Settings → Data')),
+    (r'şifre(mi|mizi)? (nasıl )?(değiştir|sıfırla|yenile|unuttum)|change (my )?password|reset (my )?password|forgot (my )?password',
+     ('Şifrenizi Ayarlar → Güvenlik bölümünden değiştirebilirsiniz. Mevcut şifrenizi hatırlamıyorsanız çıkış yapıp '
+      'giriş sayfasındaki «Şifremi unuttum» bağlantısıyla yeni şifre belirleyin.',
+      'You can change your password in Settings → Security. If you don\'t remember the current one, sign out and use '
+      '«Forgot password» on the sign-in page.'),
+     'security', ('Ayarlar → Güvenlik', 'Settings → Security')),
+]
+
+
+def self_service(text, lang):
+    """(text, link) when the user can do this themselves, else None."""
+    t = (text or '').lower()
+    for rx, texts, section, labels in _SELF_SERVICE:
+        if re.search(rx, t):
+            en = lang == 'en'
+            return texts[1 if en else 0], {'href': f'/dashboard?tab=settings&section={section}',
+                                           'label': labels[1 if en else 0]}
     return None
 
 
@@ -46,9 +101,26 @@ def _conversation(session, limit=8):
     return '\n\n'.join(f"[{'Kullanıcı' if m.role == 'user' else 'AI'}] {m.content[:1500]}" for m in msgs)
 
 
+def _same_open_request(user, question):
+    from datetime import timedelta
+    from .models import SupportRequest
+    norm = ' '.join((question or '').lower().split())
+    since = timezone.now() - timedelta(days=1)
+    for r in SupportRequest.objects.filter(user=user, status=SupportRequest.Status.OPEN, created_at__gte=since):
+        if ' '.join(r.question.lower().split()) == norm:
+            return r
+    return None
+
+
 def create_request(user, question, *, source='user', session=None, topic=None, lang='tr'):
+    """A new request, or the user's same question still open from the last
+    day (asking again doesn't open a second one or alert the team again)."""
     from companies.utils import get_current_company
     from .models import SupportRequest
+    existing = _same_open_request(user, question)
+    if existing:
+        existing.already_open = True
+        return existing
     req = SupportRequest.objects.create(
         user=user, company=get_current_company(user), session=session,
         source=source, topic=topic or support_topic(question) or 'other',
@@ -60,6 +132,10 @@ def create_request(user, question, *, source='user', session=None, topic=None, l
 
 
 def referral_text(req, lang):
+    if getattr(req, 'already_open', False):
+        return (f"This question is already with our support team (request #{req.pk}); "
+                f"you'll get a notification as soon as they answer." if lang == 'en' else
+                f"Bu soru zaten destek ekibimizde (talep #{req.pk}); yanıt gelir gelmez bildirim alacaksınız.")
     by_ai = req.source == req.Source.AI
     if lang == 'en':
         return ((f"This needs our support team — someone who can look at your account and the system directly. "
@@ -71,7 +147,21 @@ def referral_text(req, lang):
             f"Yanıt geldiğinde bildirim ve e-posta alacaksınız; yanıt bu sohbete de eklenecek.")
 
 
-def alert_team(req):
+def reopen_request(req, text):
+    """The user wrote back on an answered request: it is open again and the
+    team is told, with the earlier answer kept in the request's history."""
+    stamp = timezone.localtime().strftime('%d.%m.%Y %H:%M')
+    parts = [req.context]
+    if req.answer:
+        parts.append(f'[Destek yanıtı] {req.answer}')
+    parts.append(f'[Kullanıcı · {stamp}] {text}')
+    req.context = '\n\n'.join(p for p in parts if p)
+    req.status = req.Status.OPEN
+    req.save(update_fields=['context', 'status', 'updated_at'])
+    alert_team(req, follow_up=text)
+
+
+def alert_team(req, follow_up=''):
     """E-mail the support address and staff accounts; the admin dashboard
     and sidebar also show the open requests."""
     try:
@@ -84,9 +174,11 @@ def alert_team(req):
         link = f'{frontend_admin}/admin/support/supportrequest/{req.pk}/change/' if frontend_admin else f'/admin/support/supportrequest/{req.pk}/change/'
         who = req.user.get_full_name() or req.user.email or req.user.username
         company = req.company.legal_entity_name if req.company_id else '—'
+        head = (f'Kullanıcı yanıt verdi, talep yeniden açıldı:\n{follow_up}\n\n' if follow_up
+                else f'Yeni destek talebi ({req.get_source_display()}).\n\n')
         send_mail(
-            f'[Carbonless destek] #{req.pk} {req.get_topic_display()} — {who}',
-            f'Yeni destek talebi ({req.get_source_display()}).\n\nKullanıcı: {who}\nŞirket: {company}\n'
+            f'[Carbonless destek] #{req.pk} {"yanıt" if follow_up else req.get_topic_display()} — {who}',
+            f'{head}Kullanıcı: {who}\nŞirket: {company}\n'
             f'Konu: {req.get_topic_display()}\n\nSoru:\n{req.question}\n\nSohbet:\n{req.context or "—"}\n\n'
             f'Yanıtlamak için: {link}',
             settings.DEFAULT_FROM_EMAIL, sorted(to), fail_silently=True,

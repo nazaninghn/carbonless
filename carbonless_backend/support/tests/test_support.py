@@ -23,17 +23,27 @@ class SupportTopicTests(TestCase):
             ('KVKK kapsamında verilerimiz nerede tutuluyor?', 'legal'),
             ('Bir uzman ile görüşmek istiyorum', 'other'),
             ("I can't log in", 'account'),
+            ('Raporumu PDF olarak indiremiyorum', 'bug'),
+            ('Kaydet butonuna basınca bir şey olmuyor', 'bug'),
+            ('The dashboard shows wrong totals', 'bug'),
+            ('My data disappeared', 'data'),
+            ('I want to speak to someone', 'other'),
         ]:
             self.assertEqual(support_topic(text), topic, text)
 
     def test_the_ai_handles_the_rest(self):
         for text in ['Kapsam 2 nedir?', '500 kWh elektrik', 'Ocak ayında 1200 m3 doğalgaz faturası ödedik',
-                     'İade edilen ürünler hangi kategoride?', 'Emisyonlarımızı nasıl azaltabiliriz?']:
+                     'İade edilen ürünler hangi kategoride?', 'Emisyonlarımızı nasıl azaltabiliriz?',
+                     # activity data, and carbon questions that happen to say "doesn't work" / "error"
+                     'Jeneratör çalışmıyor ama yakıt aldık 200 litre motorin',
+                     'Klima çalışmıyorsa soğutucu gaz kaçağı olur mu?', 'Error margin of emission factors?']:
             self.assertIsNone(support_topic(text), text)
 
 
-class SupportFlowTests(TestCase):
+class _SupportBase(TestCase):
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()  # the chat's per-user rate limit outlives other tests
         from accounts.models import UserProfile
         from companies.models import Company, CompanyMembership
         self.company = Company.objects.create(
@@ -55,6 +65,8 @@ class SupportFlowTests(TestCase):
         return self.client.post(f'/api/chat/sessions/{self.session.id}/message/',
                                 {'content': text, 'language': lang}, format='json')
 
+
+class SupportFlowTests(_SupportBase):
     def test_chat_refers_and_alerts_the_team(self):
         res = self._send('Rapor sayfası açılmıyor, hata veriyor')
         self.assertEqual(res.status_code, 200)
@@ -132,3 +144,56 @@ class SupportFlowTests(TestCase):
                                 format='json').status_code, 404)
         self.session.delete()
         self.assertEqual(AnswerFeedback.objects.count(), 1)
+
+
+class SupportFollowUpTests(_SupportBase):
+    """Self-service answers, asking twice, writing back, and votes kept."""
+
+    def test_self_service_gets_a_link(self):
+        res = self._send('Hesabımı silmek istiyorum')
+        self.assertEqual(res.data['source'], 'self_service')
+        self.assertEqual(res.data['ui']['link']['href'], '/dashboard?tab=settings&section=data')
+        self.assertTrue(res.data['ui']['offer_support'])
+        res = self._send('Şifremi nasıl değiştiririm?')
+        self.assertIn('section=security', res.data['ui']['link']['href'])
+        self.assertFalse(SupportRequest.objects.exists())
+
+    def test_activity_with_doesnt_work_is_not_referred(self):
+        res = self._send('Jeneratör çalışmıyor ama yakıt aldık 200 litre motorin')
+        self.assertNotEqual(res.data.get('source'), 'support_referral')
+        self.assertFalse(SupportRequest.objects.exists())
+
+    def test_same_question_twice_is_one_request(self):
+        self._send('Rapor sayfası açılmıyor, hata veriyor')
+        n_mail = len(mail.outbox)
+        res = self._send('Rapor  sayfası açılmıyor, hata veriyor')
+        self.assertEqual(SupportRequest.objects.count(), 1)
+        self.assertIn('zaten destek ekibimizde', res.data['content'])
+        self.assertEqual(len(mail.outbox), n_mail)
+        api = self.client.post('/api/support/requests/', {'question': 'Rapor sayfası açılmıyor, hata veriyor',
+                                                          'session_id': self.session.id}, format='json')
+        self.assertEqual(api.status_code, 200)
+
+    def test_user_writes_back(self):
+        from support.service import record_answer
+        self._send('Rapor sayfası açılmıyor, hata veriyor')
+        req = SupportRequest.objects.get()
+        record_answer(req, 'Sayfayı yenileyin.', self.staff)
+        mail.outbox.clear()
+        res = self.client.post(f'/api/support/requests/{req.pk}/reply/', {'message': 'Hâlâ açılmıyor'}, format='json')
+        self.assertEqual(res.status_code, 200)
+        req.refresh_from_db()
+        self.assertEqual(req.status, 'open')
+        self.assertIn('[Destek yanıtı] Sayfayı yenileyin.', req.context)
+        self.assertIn('Hâlâ açılmıyor', req.context)
+        self.assertIn('Hâlâ açılmıyor', mail.outbox[0].body)
+        self.assertEqual([m['role'] for m in res.data['messages']], ['user', 'assistant'])
+        other = User.objects.create_user('x', 'x@test.com', 'x')
+        c = APIClient(); c.force_authenticate(user=other)
+        self.assertEqual(c.post(f'/api/support/requests/{req.pk}/reply/', {'message': 'hi'}, format='json').status_code, 404)
+
+    def test_vote_comes_back_with_the_chat(self):
+        answer = self.session.messages.create(role='assistant', content='Cevap')
+        self.client.post('/api/support/feedback/', {'message_id': answer.id, 'helpful': False}, format='json')
+        data = self.client.get(f'/api/chat/sessions/{self.session.id}/').data
+        self.assertEqual([m['feedback'] for m in data['messages'] if m['id'] == answer.id], [False])
