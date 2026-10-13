@@ -414,6 +414,12 @@ else:
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL') or EMAIL_HOST_USER or 'noreply@carbonless.info'
 # Where public contact-form messages are sent.
 CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@carbonless.info')
+# Where support-request alerts go (CONTACT_EMAIL when unset).
+SUPPORT_EMAIL = os.environ.get('SUPPORT_EMAIL', '').strip()
+# This backend's own address, for admin links in e-mails. Render sets
+# RENDER_EXTERNAL_HOSTNAME itself, so nothing needs configuring there.
+BACKEND_URL = (os.environ.get('BACKEND_URL', '').strip().rstrip('/')
+               or (f'https://{RENDER_EXTERNAL_HOSTNAME}' if RENDER_EXTERNAL_HOSTNAME else ''))
 
 # ============================================
 # DJANGO-UNFOLD — modern admin theme

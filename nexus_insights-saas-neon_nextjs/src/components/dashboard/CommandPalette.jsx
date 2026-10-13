@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BarChart3,
   Bot,
   ClipboardCheck,
+  HelpCircle,
   ClipboardList,
   FileText,
   Leaf,
@@ -16,7 +18,24 @@ import {
   X,
 } from 'lucide-react';
 import { num } from '@/lib/formatNumber';
-import { CATEGORY_LABELS, scopeLabel } from '@/lib/constants/emissions';
+import { CATEGORY_LABELS, STATUS_META, getMonths, scopeLabel } from '@/lib/constants/emissions';
+import { entryPeriodLabel } from '@/lib/entryDescription';
+
+export const FOCUS_ENTRY_EVENT = 'carbonless:focus-entry';
+export const FOCUS_ENTRY_KEY = 'carbonless_focus_entry';
+
+// Small amounts in kg, so a few kilograms don't read as "0 t".
+function amountLabel(kg, tr) {
+  if (Math.abs(kg) < 100) return `${num(kg, 1)} kg`;
+  return `${num(kg / 1000, 2)} t`;
+}
+
+function statusLabel(e, tr) {
+  if (e.delete_requested) return tr ? 'Silme talebi' : 'Deletion requested';
+  if (e.status === 'submitted' && e.replaces_entry) return tr ? 'Değişiklik onayda' : 'Change pending';
+  const m = STATUS_META[e.status] ?? STATUS_META.submitted;
+  return tr ? m.tr : m.en;
+}
 
 // ─── Static action catalogue ──────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -27,12 +46,14 @@ const NAV_ITEMS = [
   { id: 'nav_reduction',     group: 'nav', icon: TrendingDown,    tr: 'Azaltma Hedefleri', en: 'Targets',          tab: 'reduction'     },
   { id: 'nav_reporting',     group: 'nav', icon: FileText,        tr: 'Raporlama',         en: 'Reports',          tab: 'reporting'     },
   { id: 'nav_review',        group: 'nav', icon: ClipboardCheck,  tr: 'Onay Bekleyenler',  en: 'Review',           tab: 'review'        },
+  { id: 'nav_benchmark',     group: 'nav', icon: BarChart3,       tr: 'Benchmark',         en: 'Benchmark',        tab: 'benchmark'     },
+  { id: 'nav_how',           group: 'nav', icon: HelpCircle,      tr: 'Nasıl Çalışır?',    en: 'How it works',     tab: 'how_it_works'  },
   { id: 'nav_settings',      group: 'nav', icon: Settings,        tr: 'Ayarlar',           en: 'Settings',         tab: 'settings'      },
 ];
 
 const QUICK_ITEMS = [
-  { id: 'qa_entry',  group: 'quick', icon: Plus,       tr: 'Yeni Emisyon Kaydı',   en: 'Add Emission Entry',   tab: 'emissions', action: 'addEntry'  },
-  { id: 'qa_target', group: 'quick', icon: Target,     tr: 'Yeni Azaltma Hedefi',  en: 'New Reduction Target', tab: 'reduction', action: 'addTarget' },
+  { id: 'qa_entry',  group: 'quick', icon: Plus,       tr: 'Yeni Emisyon Kaydı',   en: 'Add Emission Entry',   tab: 'emissions', action: 'addEntry',  needsEdit: true },
+  { id: 'qa_target', group: 'quick', icon: Target,     tr: 'Yeni Azaltma Hedefi',  en: 'New Reduction Target', tab: 'reduction', action: 'addTarget', needsEdit: true },
   { id: 'qa_report', group: 'quick', icon: FileText,   tr: 'Raporlama Merkezine Git', en: 'Go to Report Center', tab: 'reporting', action: null       },
 ];
 
@@ -49,6 +70,7 @@ export default function CommandPalette({
   entries = [],
   setShowAddForm,
   onAddTarget,
+  canEdit = true,
 }) {
   const [open,        setOpen]        = useState(false);
   const [query,       setQuery]       = useState('');
@@ -91,7 +113,9 @@ export default function CommandPalette({
       .filter(a => !q || a[tr ? 'tr' : 'en'].toLowerCase().includes(q))
       .map(a => ({ ...a, label: a[tr ? 'tr' : 'en'] }));
 
+    // Actions the user's role can't do (an auditor adding an entry) aren't offered.
     const quickResults = QUICK_ITEMS
+      .filter(a => canEdit || !a.needsEdit)
       .filter(a => !q || a[tr ? 'tr' : 'en'].toLowerCase().includes(q))
       .map(a => ({ ...a, label: a[tr ? 'tr' : 'en'] }));
 
@@ -108,14 +132,18 @@ export default function CommandPalette({
             group: 'entry',
             icon:  Leaf,
             label: (tr && e.emission_factor_name_tr) || e.emission_factor_name || e.emission_factor_name_tr,
-            sub:   `${tr ? scopeLabel(e.scope).replace('Scope', 'Kapsam') : scopeLabel(e.scope)} · ${num(parseFloat(e.calculated_co2e_kg) / 1000, 3)} t · ${e.year}`,
+            // Period, facility and status tell apart entries of the same source.
+            sub:   [`${entryPeriodLabel(e, getMonths(tr), tr)} ${e.year}`, e.facility_name,
+              tr ? scopeLabel(e.scope).replace('Scope', 'Kapsam') : scopeLabel(e.scope),
+              amountLabel(parseFloat(e.calculated_co2e_kg) || 0, tr), statusLabel(e, tr)].filter(Boolean).join(' · '),
             tab:   'emissions',
-            action: null,
+            action: 'focusEntry',
+            entryId: e.id,
           }))
       : [];
 
     return [...navResults, ...quickResults, ...entryResults];
-  }, [query, tr, entries]);
+  }, [query, tr, entries, canEdit]);
 
   // ── Activate an item ───────────────────────────────────────────────────────
   // Declared BEFORE the arrow-key useEffect so the dep array can reference it
@@ -128,6 +156,11 @@ export default function CommandPalette({
     }
     if (item.action === 'addTarget' && onAddTarget) {
       setTimeout(() => onAddTarget(), 120);
+    }
+    // Opens the entry itself on Emisyon Yönetimi, not just the page.
+    if (item.action === 'focusEntry') {
+      try { sessionStorage.setItem(FOCUS_ENTRY_KEY, String(item.entryId)); } catch { /* event below still works */ }
+      setTimeout(() => window.dispatchEvent(new CustomEvent(FOCUS_ENTRY_EVENT, { detail: String(item.entryId) })), 120);
     }
   }, [setActiveTab, setShowAddForm, onAddTarget]);
 

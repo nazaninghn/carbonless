@@ -5226,10 +5226,65 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
   // answer (AI service down) so it can still go to the team.
   const [showSupportList, setShowSupportList] = useState(false);
   const [failedQuestion, setFailedQuestion] = useState('');
-  const addReferral = useCallback((data) => setMessages(prev => [...prev, {
-    id: data.message_id ?? `m-${++msgIdRef.current}`, role: 'assistant', content: data.message,
-    ui: { support_request_id: data.id, referred: true },
-  }]), []);
+  // The team's answers reach an open chat without a reload: while a request
+  // is waiting, the list is checked every minute and when the tab comes back.
+  const [supportRows, setSupportRows] = useState([]);
+  const [supportNotice, setSupportNotice] = useState(null);
+  const [supportSeenAt, setSupportSeenAt] = useState(() => {
+    try { return localStorage.getItem('carbonless_support_seen_at') || ''; } catch { return ''; }
+  });
+  const supportPrevRef = useRef(null);
+  const activeIdRef = useRef(null);
+  const refreshSupport = useCallback(async () => {
+    const res = await api.getSupportRequests().catch(() => null);
+    if (!res?.ok || !isMountedRef.current) return;
+    const rows = await res.json().catch(() => null);
+    if (!Array.isArray(rows) || !isMountedRef.current) return;
+    const prev = supportPrevRef.current;
+    if (prev) {
+      const fresh = rows.find(r => r.status === 'answered' && r.answered_at && r.answered_at !== prev[r.id]);
+      if (fresh) {
+        setSupportNotice({ id: fresh.id, session_id: fresh.session_id });
+        const open = activeIdRef.current;
+        if (fresh.session_id && String(fresh.session_id) === String(open)) {
+          const r = await api.getChatSession(open).catch(() => null);
+          const data = r?.ok ? await r.json().catch(() => null) : null;
+          if (data && isMountedRef.current && String(activeIdRef.current) === String(open)) {
+            setMessages((data.messages || []).map((m, i) => ({ id: m.id ?? `hist-${i}`, ...m })));
+          }
+        }
+      }
+    }
+    supportPrevRef.current = Object.fromEntries(rows.map(r => [r.id, r.answered_at]));
+    setSupportRows(rows);
+  }, []);
+  const hasOpenRequest = supportRows.some(r => r.status === 'open');
+  const hasUnseenAnswer = supportRows.some(r => r.answered_at && (!supportSeenAt || new Date(r.answered_at) > new Date(supportSeenAt)));
+  useEffect(() => { refreshSupport(); }, [refreshSupport]);
+  useEffect(() => {
+    if (!hasOpenRequest) return undefined;
+    const t = setInterval(refreshSupport, 60000);
+    return () => clearInterval(t);
+  }, [hasOpenRequest, refreshSupport]);
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') refreshSupport(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refreshSupport]);
+  const openSupportList = useCallback(() => {
+    const now = new Date().toISOString();
+    try { localStorage.setItem('carbonless_support_seen_at', now); } catch { /* dot shows again next visit */ }
+    setSupportSeenAt(now);
+    setSupportNotice(null);
+    setShowSupportList(true);
+  }, []);
+  const addReferral = useCallback((data) => {
+    setMessages(prev => [...prev, {
+      id: data.message_id ?? `m-${++msgIdRef.current}`, role: 'assistant', content: data.message,
+      ui: { support_request_id: data.id, referred: true },
+    }]);
+    refreshSupport();
+  }, [refreshSupport]);
   // A link to one chat (the support team's answer): open it once the list is in.
   const [chatToOpen, setChatToOpen] = useState(null);
   useEffect(() => {
@@ -5473,6 +5528,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
   }, [activeId, sendMessage, startNew]);
 
   const activeSession = useMemo(() => sessions.find(s => s.id === activeId), [sessions, activeId]);
+  useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
 
   return (
     <>
@@ -5595,10 +5651,11 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
             </span>
           )}
 
-          <button type="button" onClick={() => setShowSupportList(true)}
+          <button type="button" onClick={openSupportList}
             title={tr ? 'Destek taleplerim' : 'My support requests'} aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
-            className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl text-[#175022]/40 transition hover:bg-[#175022]/5 hover:text-[#175022]">
+            className="relative flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-xl text-[#175022]/40 transition hover:bg-[#175022]/5 hover:text-[#175022]">
             <LifeBuoy className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            {hasUnseenAnswer && <span data-testid="support-dot" className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#2ABD41]" />}
           </button>
 
           {/* Language toggle */}
@@ -5629,9 +5686,10 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
             {activeSession ? activeSession.title : 'Carbon AI'}
           </p>
           <div className="flex items-center gap-1">
-          <button type="button" onClick={() => setShowSupportList(true)} aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40">
+          <button type="button" onClick={openSupportList} aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
+            className="relative flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40">
             <LifeBuoy className="h-3.5 w-3.5" />
+            {hasUnseenAnswer && <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-[#2ABD41]" />}
           </button>
           <div className="flex items-center gap-0.5 rounded-md border border-[#175022]/8 bg-[#175022]/4 p-0.5">
             {['tr', 'en'].map(l => (
@@ -5648,6 +5706,26 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
           </div>
           </div>
         </div>
+
+        {/* The support team answered while this was open */}
+        {supportNotice && (
+          <div role="status" className="shrink-0 mx-4 mt-3 flex items-center gap-3 rounded-xl border border-[#2ABD41]/30 bg-[#F1FCF2] px-4 py-2.5 text-xs font-semibold text-[#175022]">
+            <LifeBuoy className="h-4 w-4 shrink-0" />
+            <span className="flex-1">{tr ? `Destek ekibi yanıtladı (talep #${supportNotice.id}).` : `The support team answered (request #${supportNotice.id}).`}</span>
+            <button type="button" className="shrink-0 rounded-full bg-[#175022] px-3 py-1 text-[11px] font-bold text-white"
+              onClick={() => {
+                const found = sessions.find(x => String(x.id) === String(supportNotice.session_id));
+                if (found && found.id !== activeId) { setActiveId(found.id); setSupportNotice(null); }
+                else if (found) setSupportNotice(null);
+                else openSupportList();
+              }}>
+              {tr ? 'Gör' : 'View'}
+            </button>
+            <button type="button" onClick={() => setSupportNotice(null)} aria-label={tr ? 'Kapat' : 'Close'} className="shrink-0 text-[#175022]/40 hover:text-[#175022]">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Error banner */}
         {error && (
@@ -5756,7 +5834,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                   {msg.role === 'assistant' && msg.ui?.support_request_id && !msg.ui.referred && typeof msg.id === 'number' && (
                     <SupportReply
                       requestId={msg.ui.support_request_id} tr={tr}
-                      onSent={(data) => setMessages(prev => [...prev, ...(data.messages || [])])}
+                      onSent={(data) => { setMessages(prev => [...prev, ...(data.messages || [])]); refreshSupport(); }}
                     />
                   )}
                   {msg.role === 'assistant' && !msg.ui?.support_request_id && !msg.ui?.offer_support && !msg.pending_entries?.length && !msg.ui?.quick_replies?.length && (
@@ -6232,6 +6310,9 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
             open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
           }`}
         aria-hidden={!open}
+        // Closed, it stays mounted off-screen: inert keeps its buttons out
+        // of the Tab order too, not only away from screen readers.
+        inert={!open}
         role="dialog"
         aria-label={tr ? 'AI Asistan' : 'AI Assistant'}
       >
