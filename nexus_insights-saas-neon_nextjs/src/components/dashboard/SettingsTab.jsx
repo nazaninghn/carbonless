@@ -224,7 +224,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                       { key: 'can_edit_entries', tr: 'Veri Girişi', en: 'Edit Entries' },
                       { key: 'can_manage_users', tr: 'Kullanıcı Yönetimi', en: 'Manage Users' },
                       { key: 'can_approve_requests', tr: 'Talep Onayı', en: 'Approve Requests' },
-                      { key: 'can_generate_reports', tr: 'Rapor Oluşturma', en: 'Generate Reports' },
+                      { key: 'can_generate_reports', tr: 'Rapor İndirme', en: 'Download Reports' },
                     ].map((p) => {
                       const allowed = user.permissions[p.key];
                       return (

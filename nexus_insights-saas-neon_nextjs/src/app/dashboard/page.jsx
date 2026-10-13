@@ -395,7 +395,7 @@ export default function DashboardPage() {
           {/* ===== HOW IT WORKS TAB ===== */}
           {activeTab === 'how_it_works' && (
             <ErrorBoundary language={language}>
-              <HowItWorksTab language={language} setActiveTab={setActiveTab} />
+              <HowItWorksTab language={language} setActiveTab={setActiveTab} perms={perms} />
             </ErrorBoundary>
           )}
 
