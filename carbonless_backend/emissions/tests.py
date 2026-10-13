@@ -520,6 +520,19 @@ class AnnualQuestionnaireEntryTests(TestCase):
         profile = self.client.get('/api/emissions/summary/?year=2026').data['questionnaire_profile']
         self.assertEqual(profile['title'], 'Envanter 2024')
 
+    def test_summary_says_this_years_inventory_is_in_progress(self):
+        from questionnaire.models import CarbonReport
+        draft = CarbonReport.objects.create(company=self.company, created_by=self.user, title='Envanter 2023',
+                                            reporting_year=2023, status='in_progress',
+                                            client_progress={'answered': 20, 'total': 50})
+        info = self.client.get('/api/emissions/summary/?year=2023').data['inventory_in_progress']
+        self.assertEqual((info['report_id'], info['year'], info['percent']), (draft.id, 2023, 40))
+        # Another year, or a year whose inventory is finished: nothing to say.
+        self.assertIsNone(self.client.get('/api/emissions/summary/?year=2025').data['inventory_in_progress'])
+        draft.status = 'completed'
+        draft.save()
+        self.assertIsNone(self.client.get('/api/emissions/summary/?year=2023').data['inventory_in_progress'])
+
 
 class ExcelExportLanguageTests(TestCase):
     """The Excel export follows the UI language and shows each entry's status."""

@@ -729,20 +729,25 @@ export default function DashboardOverview({
         </p>
       )}
 
-      {/* ── QUESTIONNAIRE BANNER ─────────────────────────────────────── */}
-      {questionnaireProfile && !questionnaireProfile.is_complete && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
+      {/* ── INVENTORY IN PROGRESS ────────────────────────────────────── */}
+      {/* This year's inventory is being filled: its answers already count in
+          the totals above, so say they are not final and where to go on. */}
+      {summary?.inventory_in_progress && (
+        <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-amber-500" />
-          <p className="text-xs font-semibold text-amber-800">
+          <p className="min-w-0 flex-1 text-xs font-semibold text-amber-800">
             {tr
-              ? 'Karbon envanteri anketi tamamlanmadı  -  AI Carbon sekmesinden devam edin.'
-              : 'Carbon inventory questionnaire incomplete  -  continue from the AI Carbon tab.'}
+              ? `${summary.inventory_in_progress.year} envanteri devam ediyor (%${summary.inventory_in_progress.percent}). Rakamlar şu ana kadar verilen cevaplardan; envanter tamamlandıkça güncellenir.`
+              : `The ${summary.inventory_in_progress.year} inventory is in progress (${summary.inventory_in_progress.percent}%). Figures come from the answers so far and update as you go.`}
           </p>
           <button
-            onClick={() => setActiveTab('ai_carbon')}
-            className="ml-auto shrink-0 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold text-white transition hover:bg-amber-600"
+            onClick={() => {
+              try { sessionStorage.setItem('carbonless_continue_inventory', String(summary.inventory_in_progress.report_id)); } catch { /* opens the library */ }
+              setActiveTab('questionnaire');
+            }}
+            className="shrink-0 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold text-white transition hover:bg-amber-600"
           >
-            {tr ? 'Devam' : 'Continue'}
+            {tr ? 'Devam et' : 'Continue'}
           </button>
         </div>
       )}

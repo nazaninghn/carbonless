@@ -435,6 +435,21 @@ def emission_summary(request):
                 'employee_band': (b3.get('employee_band') or company.number_of_employees or ''),
             }
 
+    # This year's inventory still being filled: its answers are already in
+    # the totals, so the dashboard says they are not final yet.
+    inventory_in_progress = None
+    if company:
+        from questionnaire.views import _progress
+        open_report = (CarbonReport.objects.filter(company=company, reporting_year=year)
+                       .exclude(status=CarbonReport.Status.COMPLETED).order_by('-updated_at').first())
+        if open_report and not CarbonReport.objects.filter(
+                company=company, reporting_year=year, status=CarbonReport.Status.COMPLETED).exists():
+            prog = _progress(open_report.steps.count(), open_report.status, open_report.client_progress)
+            inventory_in_progress = {
+                'report_id': open_report.id, 'title': open_report.title,
+                'year': open_report.reporting_year, 'percent': prog['percent'],
+            }
+
     # Custom emission requests (approved)
     custom_approved = CustomEmissionRequest.objects.filter(
         company=company, year=year, status='approved', calculated_co2e_kg__isnull=False
@@ -521,6 +536,7 @@ def emission_summary(request):
             'pending_count': custom_pending,
         },
         'questionnaire_profile': questionnaire_profile,
+        'inventory_in_progress': inventory_in_progress,
         # Lets the dashboard tell "no data for this year" apart from "no data yet".
         'years_with_data': sorted(
             set(EmissionEntry.objects.filter(company=company).values_list('year', flat=True)),

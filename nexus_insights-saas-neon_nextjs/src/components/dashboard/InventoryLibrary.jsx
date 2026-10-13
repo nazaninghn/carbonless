@@ -91,6 +91,17 @@ export default function InventoryLibrary({ tr = false }) {
     }
   };
 
+  // "Devam et" on the dashboard's in-progress notice opens that inventory.
+  useEffect(() => {
+    let id = null;
+    try {
+      id = sessionStorage.getItem('carbonless_continue_inventory');
+      sessionStorage.removeItem('carbonless_continue_inventory');
+    } catch { /* stays on the library */ }
+    if (id) handleContinue(Number(id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // A finished inventory opens on the sign-off check (7C-1): its "Hayır —
   // bir bölüme dönüp düzeltmek istiyorum" lists the stages to fix, and after
   // the stage the survey comes back there to sign off again.
