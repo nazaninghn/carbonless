@@ -86,12 +86,18 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
     window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'questionnaire' } }));
   }, []);
 
+  // `id` may be several entries: one inventory save's rows, one per answer
+  // they belong to (approving one row of an answer approves all its rows).
   const handleApprove = useCallback(async (id, type) => {
-    setProcessing(id);
+    setProcessing(Array.isArray(id) ? id.join(',') : id);
     try {
-      const res = type === 'advisor'
-        ? await api.approveAdvisorApproval(id, 'approve')
-        : await api.approveEntry(id, 'approve');
+      let res;
+      for (const one of (Array.isArray(id) ? id : [id])) {
+        res = type === 'advisor'
+          ? await api.approveAdvisorApproval(one, 'approve')
+          : await api.approveEntry(one, 'approve');
+        if (!res.ok) break;
+      }
       const body = res.ok ? await res.clone().json().catch(() => ({})) : {};
       if (res.ok && body.status === 'deleted') toast.success(tr ? 'Kayıt silindi ✓' : 'Entry deleted ✓');
       else if (res.ok) toast.success(tr ? 'Kayıt onaylandı ✓' : 'Entry approved ✓');
@@ -136,13 +142,17 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
     if (!rejectTarget) return;
     const { id, type } = rejectTarget;
     const reason = rejectReason;   // capture before clearing state
-    setProcessing(id);
+    setProcessing(Array.isArray(id) ? id.join(',') : id);
     setRejectTarget(null);
     setRejectReason('');
     try {
-      const res = type === 'advisor'
-        ? await api.approveAdvisorApproval(id, 'reject', reason)
-        : await api.approveEntry(id, 'reject', reason);
+      let res;
+      for (const one of (Array.isArray(id) ? id : [id])) {
+        res = type === 'advisor'
+          ? await api.approveAdvisorApproval(one, 'reject', reason)
+          : await api.approveEntry(one, 'reject', reason);
+        if (!res.ok) break;
+      }
       const body = res.ok ? await res.clone().json().catch(() => ({})) : {};
       if (res.ok && body.status === 'kept') toast.info(tr ? 'Silme talebi reddedildi — kayıt kalıyor' : 'Deletion refused — the entry stays');
       else if (res.ok) toast.warning(tr ? 'Kayıt reddedildi' : 'Entry rejected');
@@ -192,6 +202,206 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   }, [tr, toast, fetchPending, fetchData]);
 
   const totalPending = pending.length + advisorPending.length;
+
+  // A data-entry member's one inventory save can leave several rows waiting
+  // (the answer they changed, and rows it recalculated elsewhere): they are
+  // one change, shown and approved together.
+  const stepOf = (e) => ((e.description || '').match(/^Questionnaire step (\S+)/) || [])[1];
+  const pendingItems = (() => {
+    const out = [];
+    const byBatch = new Map();
+    for (const e of pending) {
+      if (e.change_batch) {
+        if (!byBatch.has(e.change_batch)) {
+          const item = { batch: e.change_batch, rows: [] };
+          byBatch.set(e.change_batch, item);
+          out.push(item);
+        }
+        byBatch.get(e.change_batch).rows.push(e);
+      } else out.push({ entry: e });
+    }
+    return out;
+  })();
+
+  const renderEntry = (entry, inBatch = false) => (
+                <div key={`entry-${entry.id}`} className={inBatch
+                  ? 'rounded-xl border border-[#072C0E]/8 bg-white px-3 py-2.5'
+                  : 'rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]'}>
+                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 space-y-1.5">
+                      <h3 className="truncate text-sm font-bold text-[#072C0E]">
+                        {entry.delete_requested && (
+                          <span className="mr-1.5 rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-bold text-amber-800">
+                            {tr ? 'Silme talebi' : 'Deletion request'}
+                          </span>
+                        )}
+                        {tr && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}
+                      </h3>
+                      {entry.delete_requested && (
+                        <p className="text-[11px] text-[#072C0E]/55">
+                          {canApprove
+                            ? (tr ? 'Onaylarsanız kayıt silinir; reddederseniz kalır. Onaylanana kadar toplamlarda kalır.'
+                                  : 'Approving deletes the entry; rejecting keeps it. Until approved it stays in the totals.')
+                            : (tr ? 'Onaycı onaylarsa kayıt silinir; reddederse kalır. Onaylanana kadar toplamlarda kalır.'
+                                  : 'If an approver approves, the entry is deleted; if they reject, it stays. Until approved it stays in the totals.')}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          entry.scope === 'scope1' ? 'bg-[#072C0E]/10 text-[#072C0E]' :
+                          entry.scope === 'scope2' ? 'bg-[#2ABD41]/15 text-[#175022]' :
+                          'bg-[#8BEA99]/18 text-[#175022]'
+                        }`}>{entry.scope?.replace('scope', 'S')}</span>
+                        <span className="text-[11px] font-semibold text-[#072C0E]/50">{num(entry.quantity, tr)} {unitLabel(entry.unit, tr)}</span>
+                        <span className="text-[11px] font-bold text-[#2ABD41]">{num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e</span>
+                        <span className="text-[10px] text-[#072C0E]/45">
+                          {entryPeriodLabel(entry, tr ? MONTHS_TR : MONTHS_EN, tr)} {entry.year}
+                        </span>
+                        {entry.facility_name && (
+                          <span className="text-[10px] font-semibold text-[#072C0E]/60">
+                            {tr ? 'Tesis' : 'Facility'}: {entry.facility_name}
+                          </span>
+                        )}
+                        {entry.proof_document && (
+                          <button
+                            type="button"
+                            onClick={() => downloadProofDocument(entry.id, toast, tr)}
+                            className={`inline-flex items-center gap-1 text-[10px] font-bold hover:underline ${entry.proof_available === false ? 'text-amber-600' : 'text-[#1D9C31]'}`}
+                          >
+                            <Paperclip className="h-3 w-3" />
+                            {entry.proof_available === false
+                              ? (tr ? 'Belge sunucuda yok' : 'File missing on the server')
+                              : (tr ? 'Belgeyi aç' : 'Open document')}
+                          </button>
+                        )}
+                        {entry.description && !autoDescriptionLabel(entry.description, tr) && (
+                          <span className="w-full text-[11px] italic text-[#072C0E]/60">“{entry.description}”</span>
+                        )}
+                        {entry.replaces_entry && entry.replaces && (
+                          // A form entry's change: what else moved besides the amount.
+                          <>
+                            {(entry.replaces.month !== entry.month || entry.replaces.year !== entry.year) && (
+                              <span className="w-full text-[11px] font-semibold text-[#175022]">
+                                {tr ? 'Dönem' : 'Period'}: {(tr ? MONTHS_TR : MONTHS_EN)[entry.replaces.month - 1]} {entry.replaces.year} → {(tr ? MONTHS_TR : MONTHS_EN)[entry.month - 1]} {entry.year}
+                              </span>
+                            )}
+                            {(entry.replaces.facility ?? null) !== (entry.facility ?? null) && (
+                              <span className="w-full text-[11px] font-semibold text-[#175022]">
+                                {tr ? 'Tesis' : 'Facility'}: {entry.replaces.facility_name || '—'} → {entry.facility_name || '—'}
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {entry.replaces && !entry.replaces_entry && entry.replaces.quantity != null
+                          && Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit ? (
+                          // Another facility of the same answer, not changed itself:
+                          // it is approved with the changed rows.
+                          <span className="w-full text-[11px] text-[#072C0E]/50">
+                            {tr ? 'Bu satır değişmedi — aynı cevabın diğer satırlarıyla birlikte onaylanır.' : 'This row did not change — it is approved together with the rest of the answer.'}
+                          </span>
+                        ) : entry.replaces && !(entry.replaces_entry && Number(entry.replaces.quantity) === Number(entry.quantity)) && (
+                          // An inventory answer changed: what it replaces, which
+                          // stays in the totals until this is approved.
+                          <span className="w-full text-[11px] font-semibold text-[#175022]">
+                            {tr ? 'Değişiklik' : 'Change'}:{' '}
+                            {entry.replaces.quantity != null
+                              ? `${num(entry.replaces.quantity, tr)} ${unitLabel(entry.replaces.unit, tr)}`
+                              : `${num(entry.replaces.co2e_kg, tr, 1)} kg CO₂e`}
+                            {' → '}
+                            {entry.replaces.quantity != null ? `${num(entry.quantity, tr)} ${unitLabel(entry.unit, tr)}` : `${num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e`}
+                            {' '}({(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg) >= 0 ? '+' : '−'}{num(Math.abs(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg), tr, 1)} kg CO₂e)
+                            <span className="font-normal text-[#072C0E]/45"> · {tr ? 'onaylanana kadar önceki değer toplamlarda kalır' : 'the previous value stays in the totals until approved'}</span>
+                          </span>
+                        )}
+                        {entry.replaces?.proof_carried && (
+                          // The proof came from the approved row this one replaces.
+                          <span className="w-full text-[11px] font-semibold text-amber-700">
+                            {tr ? 'Kanıt belgesi önceki değerden taşındı — yeni değere ait olmayabilir.'
+                                : 'The proof document was carried over from the previous value — it may not belong to the new value.'}
+                          </span>
+                        )}
+                        {(entry.description || '').startsWith('Questionnaire step') && (
+                          <span className="w-full truncate text-[10px] text-[#072C0E]/45" title={entrySourceLabel(entry, tr)}>{entrySourceLabel(entry, tr)}</span>
+                        )}
+                        {(entry.entered_by || (entry.description || '').startsWith('Questionnaire step')) && (
+                          <span className="text-[10px] text-[#072C0E]/45">
+                            {(entry.description || '').startsWith('Questionnaire step')
+                              ? (tr ? 'Kaynak: Anket' : 'Source: Questionnaire')
+                              : null}
+                            {(entry.description || '').startsWith('Questionnaire step') && entry.entered_by ? ' · ' : ''}
+                            {entry.entered_by ? `${tr ? 'Giren' : 'Entered by'}: ${entry.entered_by}` : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {canApprove && !inBatch && <div className="flex shrink-0 items-center gap-1.5">
+                      <button
+                        onClick={() => handleApprove(entry.id, 'entry')}
+                        disabled={processing === entry.id}
+                        className="inline-flex items-center gap-1 rounded-full bg-[#2ABD41]/12 px-3 py-2 text-[11px] font-bold text-[#175022] transition hover:bg-[#2ABD41]/22 disabled:opacity-50"
+                      >
+                        <Check className="h-3 w-3" />
+                        {entry.delete_requested ? (tr ? 'Silmeyi onayla' : 'Approve deletion') : (tr ? 'Onayla' : 'Approve')}
+                      </button>
+                      <button
+                        onClick={() => setRejectTarget({ id: entry.id, type: 'entry' })}
+                        disabled={processing === entry.id}
+                        className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-2 text-[11px] font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
+                      >
+                        <X className="h-3 w-3" />
+                        {tr ? 'Reddet' : 'Reject'}
+                      </button>
+                    </div>}
+                  </div>
+                </div>
+  );
+
+  const renderBatch = ({ batch, rows }) => {
+    const reps = [...new Map(rows.map(r => [stepOf(r) || r.id, r.id])).values()];
+    const busy = processing === reps.join(',');
+    const delta = rows.reduce((sum, r) => sum + Number(r.calculated_co2e_kg || 0) - (r.replaces ? Number(r.replaces.co2e_kg || 0) : 0), 0);
+    const main = rows[0];
+    const sign = delta >= 0 ? '+' : '−';
+    return (
+      <div key={`batch-${batch}`} className="rounded-[1.25rem] border border-[#2ABD41]/30 bg-[#F8FDF9] p-3.5 shadow-sm">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0 space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-[#175022]/55">
+              {tr ? 'Envanter cevabı değişikliği' : 'Inventory answer change'}
+            </p>
+            <h3 className="text-sm font-bold text-[#072C0E]">
+              {main.change_question} {tr ? 'değiştirildi' : 'changed'}
+              {main.entered_by && <span className="font-semibold text-[#072C0E]/50"> · {main.entered_by}</span>}
+            </h3>
+            <p className="text-[11px] text-[#072C0E]/60">
+              {tr
+                ? `Etkisi: ${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e · ${rows.length} satır birlikte onaylanır; onaylanana kadar önceki değerler toplamlarda kalır.`
+                : `Effect: ${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e · ${rows.length} rows are approved together; until then the previous values stay in the totals.`}
+            </p>
+          </div>
+          {canApprove && <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              onClick={() => handleApprove(reps, 'entry')}
+              disabled={busy}
+              className="inline-flex items-center gap-1 rounded-full bg-[#2ABD41]/12 px-3 py-2 text-[11px] font-bold text-[#175022] transition hover:bg-[#2ABD41]/22 disabled:opacity-50"
+            >
+              <Check className="h-3 w-3" />
+              {tr ? 'Değişikliği onayla' : 'Approve change'}
+            </button>
+            <button
+              onClick={() => setRejectTarget({ id: reps, type: 'entry' })}
+              disabled={busy}
+              className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-2 text-[11px] font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
+            >
+              <X className="h-3 w-3" />
+              {tr ? 'Reddet' : 'Reject'}
+            </button>
+          </div>}
+        </div>
+        <div className="mt-2.5 space-y-1.5">{rows.map(r => renderEntry(r, true))}</div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3 text-[#072C0E]">
@@ -358,136 +568,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                   </button>
                 </div>
               )}
-              {pending.map(entry => (
-                <div key={`entry-${entry.id}`} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
-                  <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0 space-y-1.5">
-                      <h3 className="truncate text-sm font-bold text-[#072C0E]">
-                        {entry.delete_requested && (
-                          <span className="mr-1.5 rounded-full bg-amber-100 px-2 py-0.5 align-middle text-[10px] font-bold text-amber-800">
-                            {tr ? 'Silme talebi' : 'Deletion request'}
-                          </span>
-                        )}
-                        {tr && entry.emission_factor_name_tr ? entry.emission_factor_name_tr : entry.emission_factor_name}
-                      </h3>
-                      {entry.delete_requested && (
-                        <p className="text-[11px] text-[#072C0E]/55">
-                          {canApprove
-                            ? (tr ? 'Onaylarsanız kayıt silinir; reddederseniz kalır. Onaylanana kadar toplamlarda kalır.'
-                                  : 'Approving deletes the entry; rejecting keeps it. Until approved it stays in the totals.')
-                            : (tr ? 'Onaycı onaylarsa kayıt silinir; reddederse kalır. Onaylanana kadar toplamlarda kalır.'
-                                  : 'If an approver approves, the entry is deleted; if they reject, it stays. Until approved it stays in the totals.')}
-                        </p>
-                      )}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          entry.scope === 'scope1' ? 'bg-[#072C0E]/10 text-[#072C0E]' :
-                          entry.scope === 'scope2' ? 'bg-[#2ABD41]/15 text-[#175022]' :
-                          'bg-[#8BEA99]/18 text-[#175022]'
-                        }`}>{entry.scope?.replace('scope', 'S')}</span>
-                        <span className="text-[11px] font-semibold text-[#072C0E]/50">{num(entry.quantity, tr)} {unitLabel(entry.unit, tr)}</span>
-                        <span className="text-[11px] font-bold text-[#2ABD41]">{num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e</span>
-                        <span className="text-[10px] text-[#072C0E]/45">
-                          {entryPeriodLabel(entry, tr ? MONTHS_TR : MONTHS_EN, tr)} {entry.year}
-                        </span>
-                        {entry.facility_name && (
-                          <span className="text-[10px] font-semibold text-[#072C0E]/60">
-                            {tr ? 'Tesis' : 'Facility'}: {entry.facility_name}
-                          </span>
-                        )}
-                        {entry.proof_document && (
-                          <button
-                            type="button"
-                            onClick={() => downloadProofDocument(entry.id, toast, tr)}
-                            className={`inline-flex items-center gap-1 text-[10px] font-bold hover:underline ${entry.proof_available === false ? 'text-amber-600' : 'text-[#1D9C31]'}`}
-                          >
-                            <Paperclip className="h-3 w-3" />
-                            {entry.proof_available === false
-                              ? (tr ? 'Belge sunucuda yok' : 'File missing on the server')
-                              : (tr ? 'Belgeyi aç' : 'Open document')}
-                          </button>
-                        )}
-                        {entry.description && !autoDescriptionLabel(entry.description, tr) && (
-                          <span className="w-full text-[11px] italic text-[#072C0E]/60">“{entry.description}”</span>
-                        )}
-                        {entry.replaces_entry && entry.replaces && (
-                          // A form entry's change: what else moved besides the amount.
-                          <>
-                            {(entry.replaces.month !== entry.month || entry.replaces.year !== entry.year) && (
-                              <span className="w-full text-[11px] font-semibold text-[#175022]">
-                                {tr ? 'Dönem' : 'Period'}: {(tr ? MONTHS_TR : MONTHS_EN)[entry.replaces.month - 1]} {entry.replaces.year} → {(tr ? MONTHS_TR : MONTHS_EN)[entry.month - 1]} {entry.year}
-                              </span>
-                            )}
-                            {(entry.replaces.facility ?? null) !== (entry.facility ?? null) && (
-                              <span className="w-full text-[11px] font-semibold text-[#175022]">
-                                {tr ? 'Tesis' : 'Facility'}: {entry.replaces.facility_name || '—'} → {entry.facility_name || '—'}
-                              </span>
-                            )}
-                          </>
-                        )}
-                        {entry.replaces && !entry.replaces_entry && entry.replaces.quantity != null
-                          && Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit ? (
-                          // Another facility of the same answer, not changed itself:
-                          // it is approved with the changed rows.
-                          <span className="w-full text-[11px] text-[#072C0E]/50">
-                            {tr ? 'Bu satır değişmedi — aynı cevabın diğer satırlarıyla birlikte onaylanır.' : 'This row did not change — it is approved together with the rest of the answer.'}
-                          </span>
-                        ) : entry.replaces && !(entry.replaces_entry && Number(entry.replaces.quantity) === Number(entry.quantity)) && (
-                          // An inventory answer changed: what it replaces, which
-                          // stays in the totals until this is approved.
-                          <span className="w-full text-[11px] font-semibold text-[#175022]">
-                            {tr ? 'Değişiklik' : 'Change'}:{' '}
-                            {entry.replaces.quantity != null
-                              ? `${num(entry.replaces.quantity, tr)} ${unitLabel(entry.replaces.unit, tr)}`
-                              : `${num(entry.replaces.co2e_kg, tr, 1)} kg CO₂e`}
-                            {' → '}
-                            {entry.replaces.quantity != null ? `${num(entry.quantity, tr)} ${unitLabel(entry.unit, tr)}` : `${num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e`}
-                            {' '}({(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg) >= 0 ? '+' : '−'}{num(Math.abs(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg), tr, 1)} kg CO₂e)
-                            <span className="font-normal text-[#072C0E]/45"> · {tr ? 'onaylanana kadar önceki değer toplamlarda kalır' : 'the previous value stays in the totals until approved'}</span>
-                          </span>
-                        )}
-                        {entry.replaces?.proof_carried && (
-                          // The proof came from the approved row this one replaces.
-                          <span className="w-full text-[11px] font-semibold text-amber-700">
-                            {tr ? 'Kanıt belgesi önceki değerden taşındı — yeni değere ait olmayabilir.'
-                                : 'The proof document was carried over from the previous value — it may not belong to the new value.'}
-                          </span>
-                        )}
-                        {(entry.description || '').startsWith('Questionnaire step') && (
-                          <span className="w-full truncate text-[10px] text-[#072C0E]/45" title={entrySourceLabel(entry, tr)}>{entrySourceLabel(entry, tr)}</span>
-                        )}
-                        {(entry.entered_by || (entry.description || '').startsWith('Questionnaire step')) && (
-                          <span className="text-[10px] text-[#072C0E]/45">
-                            {(entry.description || '').startsWith('Questionnaire step')
-                              ? (tr ? 'Kaynak: Anket' : 'Source: Questionnaire')
-                              : null}
-                            {(entry.description || '').startsWith('Questionnaire step') && entry.entered_by ? ' · ' : ''}
-                            {entry.entered_by ? `${tr ? 'Giren' : 'Entered by'}: ${entry.entered_by}` : ''}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {canApprove && <div className="flex shrink-0 items-center gap-1.5">
-                      <button
-                        onClick={() => handleApprove(entry.id, 'entry')}
-                        disabled={processing === entry.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-[#2ABD41]/12 px-3 py-2 text-[11px] font-bold text-[#175022] transition hover:bg-[#2ABD41]/22 disabled:opacity-50"
-                      >
-                        <Check className="h-3 w-3" />
-                        {entry.delete_requested ? (tr ? 'Silmeyi onayla' : 'Approve deletion') : (tr ? 'Onayla' : 'Approve')}
-                      </button>
-                      <button
-                        onClick={() => setRejectTarget({ id: entry.id, type: 'entry' })}
-                        disabled={processing === entry.id}
-                        className="inline-flex items-center gap-1 rounded-full bg-red-50 px-3 py-2 text-[11px] font-bold text-red-500 transition hover:bg-red-100 disabled:opacity-50"
-                      >
-                        <X className="h-3 w-3" />
-                        {tr ? 'Reddet' : 'Reject'}
-                      </button>
-                    </div>}
-                  </div>
-                </div>
-              ))}
+              {pendingItems.map(item => (item.rows ? renderBatch(item) : renderEntry(item.entry)))}
             </div>
           )}
         </>

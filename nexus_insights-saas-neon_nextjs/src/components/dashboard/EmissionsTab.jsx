@@ -128,8 +128,19 @@ function WithdrawDeleteButton({ tr, onClick }) {
 
 function entryStatusMeta(entry) {
   if (entry.delete_requested) return DELETE_REQUESTED_META;
-  if (entry.status === 'submitted' && entry.replaces_entry) return PENDING_CHANGE_META;
+  // A form entry's change, or an inventory answer's new rows next to its
+  // approved ones: both wait as a change, not as a new entry.
+  if (entry.status === 'submitted' && (entry.replaces_entry || entry.replaces)) return PENDING_CHANGE_META;
   return STATUS_META[entry.status] ?? STATUS_META.submitted;
+}
+
+// "(onaylı: 12.000 litre)": the approved value that stays in the totals
+// until a waiting change is approved.
+function approvedValueText(entry, tr) {
+  const r = entry.status === 'submitted' ? entry.replaces : null;
+  if (!r) return '';
+  const value = r.quantity != null ? `${fmt(r.quantity)} ${unitLabel(r.unit, tr)}` : `${fmt(r.co2e_kg)} kg CO₂e`;
+  return tr ? `onaylı: ${value}` : `approved: ${value}`;
 }
 
 function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelDelete, canEdit = true, focused = false }) {
@@ -195,6 +206,9 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelD
         <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
           {tr ? st.tr : st.en}
         </span>
+        {approvedValueText(entry, tr) && (
+          <span className="text-[9px] font-semibold text-amber-700">({approvedValueText(entry, tr)})</span>
+        )}
         {entry.status === 'draft' && entry.rejected_reason && (
           <span className="w-full text-[10px] font-medium text-red-600">
             {tr ? 'Red nedeni' : 'Reason'}: {entry.rejected_reason}
@@ -443,9 +457,18 @@ export default function EmissionsTab({
     // A change or a deletion waiting on an approved entry is counted apart,
     // without an amount: until approved the approved figure stands.
     const out = { pending: { n: 0, kg: 0 }, rejected: { n: 0, kg: 0 }, changes: 0, deletes: 0 };
+    // One inventory save is one change, however many rows it recalculated.
+    const batches = new Set();
     for (const e of entries) {
       if (e.delete_requested) { out.deletes++; continue; }
-      if (e.status === 'submitted' && e.replaces) { out.changes++; continue; }
+      if (e.status === 'submitted' && e.replaces) {
+        if (e.change_batch) {
+          if (batches.has(e.change_batch)) continue;
+          batches.add(e.change_batch);
+        }
+        out.changes++;
+        continue;
+      }
       const bucket = e.status === 'submitted' ? out.pending : e.status === 'draft' ? out.rejected : null;
       if (bucket) { bucket.n++; bucket.kg += parseFloat(e.calculated_co2e_kg) || 0; }
     }
@@ -1111,6 +1134,9 @@ export default function EmissionsTab({
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${st.bg} ${st.text}`}>
                             {tr ? st.tr : st.en}
                           </span>
+                          {approvedValueText(entry, tr) && (
+                            <span className="text-[10px] font-semibold text-amber-700">({approvedValueText(entry, tr)})</span>
+                          )}
                           {entry.status === 'draft' && entry.rejected_reason && (
                             <span className="truncate text-[10px] font-medium text-red-600" title={entry.rejected_reason}>
                               {tr ? 'Red nedeni' : 'Reason'}: {entry.rejected_reason}
