@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import {
   Package, Building2, Flame, Truck, Trash2, Zap, Home, Users, Briefcase,
   Ship, Factory, Lightbulb, Recycle, Store, Landmark,
@@ -64,7 +65,28 @@ function ColumnArrow({ label, sub, tone, items, delay, tr }) {
   );
 }
 
+// The diagram is laid out at 620px. On a narrower screen it is scaled down to
+// fit (it was cut off at the right on a phone, with "Kapsam 1" half hidden).
+const DIAGRAM_WIDTH = 620;
+
 export default function ScopeFlowDiagram({ tr = false }) {
+  const boxRef = useRef(null);
+  const innerRef = useRef(null);
+  const [fit, setFit] = useState({ scale: 1, height: null });
+  useEffect(() => {
+    const box = boxRef.current;
+    const inner = innerRef.current;
+    if (!box || !inner || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const scale = Math.min(1, box.clientWidth / DIAGRAM_WIDTH);
+      setFit({ scale, height: scale < 1 ? inner.offsetHeight * scale : null });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    ro.observe(inner);
+    measure();
+    return () => ro.disconnect();
+  }, []);
   const columns = [
     {
       id: 'scope3-up-a',
@@ -127,7 +149,7 @@ export default function ScopeFlowDiagram({ tr = false }) {
   ];
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div ref={boxRef} className="w-full overflow-hidden" style={fit.height ? { height: fit.height } : undefined}>
       <style>{`
         @keyframes scopeSmokeDrift {
           0%, 100% { transform: translateY(0) scale(1); opacity: 0.9; }
@@ -147,7 +169,11 @@ export default function ScopeFlowDiagram({ tr = false }) {
           .scope-diagram-root * { animation: none !important; }
         }
       `}</style>
-      <div className="scope-diagram-root mx-auto min-w-[620px] max-w-3xl px-2">
+      <div
+        ref={innerRef}
+        className="scope-diagram-root mx-auto min-w-[620px] max-w-3xl px-2"
+        style={fit.scale < 1 ? { width: DIAGRAM_WIDTH, transform: `scale(${fit.scale})`, transformOrigin: 'top left' } : undefined}
+      >
         {/* Gas clouds */}
         <div className="mb-3 flex items-center justify-center gap-2.5">
           {GASES.map((g, i) => <GasCloud key={g} gas={g} delay={i * 220} />)}
