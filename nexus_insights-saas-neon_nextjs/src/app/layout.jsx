@@ -1,6 +1,7 @@
 import '@/styles/globals.css';
 import { Inter } from 'next/font/google';
 import { LanguageProvider } from '@/lib/i18n/LanguageContext';
+import PageTitle from '@/components/PageTitle';
 
 const inter = Inter({
   // latin-ext is required for Turkish: ğ Ğ ş Ş ı İ live in Latin Extended-A
@@ -52,6 +53,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-inter antialiased min-h-screen overflow-x-hidden">
         <LanguageProvider>
+          <PageTitle />
           {children}
         </LanguageProvider>
       </body>

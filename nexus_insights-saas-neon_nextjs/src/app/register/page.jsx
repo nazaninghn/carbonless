@@ -257,21 +257,23 @@ export default function RegisterPage() {
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#51D766]">{tr ? 'Carbonless katılım' : 'Carbonless onboarding'}</p>
                   <h1 className="mt-1.5 text-[16px] font-bold tracking-[-0.03em] text-[#072C0E]">{t.register.title}</h1>
-                  <p className="mt-1 text-[11px] leading-5 text-[#072C0E]/60">{t.register.subtitle}</p>
+                  <p className="mt-1 hidden text-[11px] leading-5 text-[#072C0E]/60 sm:block">{t.register.subtitle}</p>
                 </div>
               </div>
-              <div className="mb-3">
+              <div className="sm:mb-3">
                 <div className="mb-1.5 flex items-center justify-between text-[10px] font-bold text-[#072C0E]/55"><span>{language === 'tr' ? 'İlerleme' : 'Progress'}</span><span>{language === 'tr' ? `%${progress}` : `${progress}%`}</span></div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-[#072C0E]/10"><div className="h-full rounded-full bg-gradient-to-r from-[#51D766] to-[#2ABD41] transition-all duration-500" style={{ width: `${progress}%` }} /></div>
               </div>
-              <div className="grid gap-1.5 sm:grid-cols-3 lg:grid-cols-1">
+              {/* On a phone the step cards and the note filled the first screen, the
+                  form starting below it; the form header names the step there. */}
+              <div className="hidden gap-1.5 sm:grid sm:grid-cols-3 lg:grid-cols-1">
                 {steps.map(step => { const Icon = step.icon; const active = currentSection === step.id; const done = currentSection > step.id; return (
                   <button key={step.id} type="button" onClick={() => goToSection(step.id)} className={`group flex min-w-0 items-center gap-2.5 rounded-xl border p-2.5 text-left transition ${active ? 'border-[#51D766]/45 bg-[#51D766]/14 shadow-md shadow-[#072C0E]/5' : done ? 'border-[#2ABD41]/35 bg-white/65 hover:border-[#51D766]/45' : 'border-[#072C0E]/10 bg-white/35 hover:bg-white/60'}`}>
                     <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition ${active ? 'bg-[#51D766] text-white' : done ? 'bg-[#2ABD41] text-white' : 'bg-[#F8F8F8] text-[#072C0E]/55 ring-1 ring-[#072C0E]/10'}`}>{done ? <Check className="h-3.5 w-3.5" /> : <Icon className="h-3.5 w-3.5" />}</span>
                     <span className="min-w-0"><span className="block truncate text-[12px] font-bold text-[#072C0E]">{step.title}</span><span className="block truncate text-[10px] font-medium text-[#072C0E]/55">{step.subtitle}</span></span>
                   </button>); })}
               </div>
-              <div className="mt-3 rounded-2xl border border-[#072C0E]/10 bg-[#072C0E] p-3 text-[#F5F5F5] shadow-lg shadow-[#072C0E]/10">
+              <div className="mt-3 hidden rounded-2xl border border-[#072C0E]/10 bg-[#072C0E] p-3 sm:block text-[#F5F5F5] shadow-lg shadow-[#072C0E]/10">
                 <div className="flex items-center gap-2 text-[11px] font-bold"><ShieldCheck className="h-3.5 w-3.5 text-[#51D766]" />{language === 'tr' ? 'Güvenli kayıt' : 'Secure registration'}</div>
                 <p className="mt-1.5 text-[10px] leading-4 text-[#F5F5F5]/70">{language === 'tr' ? 'Şirket profiliniz güvenli şekilde kaydedilir.' : 'Your company profile is stored securely.'}</p>
               </div>
@@ -379,7 +381,9 @@ export default function RegisterPage() {
 }
 
 /* Sub-components */
-function Panel({ title, icon: Icon, children }) { return (<section className="rounded-xl border border-[#072C0E]/10 bg-white/50 p-3 shadow-sm backdrop-blur-xl sm:p-4"><div className="mb-3 flex items-center gap-2.5"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#51D766]/14 text-[#2ABD41] ring-1 ring-[#51D766]/25"><Icon className="h-4 w-4" /></div><h3 className="text-[13px] font-bold text-[#072C0E] sm:text-[14px]">{title}</h3></div>{children}</section>); }
+// A dropdown open in one panel (countries, NACE) is drawn above the next
+// panel; each panel's blur makes its own layer, which hid the list behind it.
+function Panel({ title, icon: Icon, children }) { return (<section className="relative focus-within:z-30 rounded-xl border border-[#072C0E]/10 bg-white/50 p-3 shadow-sm backdrop-blur-xl sm:p-4"><div className="mb-3 flex items-center gap-2.5"><div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#51D766]/14 text-[#2ABD41] ring-1 ring-[#51D766]/25"><Icon className="h-4 w-4" /></div><h3 className="text-[13px] font-bold text-[#072C0E] sm:text-[14px]">{title}</h3></div>{children}</section>); }
 function Label({ children, required }) { return <label className="mb-1.5 block text-[12px] font-bold text-[#072C0E]/75">{children} {required && <span className="text-[#51D766]">*</span>}</label>; }
 function TextField({ label, required, icon: Icon, ...props }) { return (<div><Label required={required}>{label}</Label><div className="group flex items-center gap-2.5 rounded-xl border border-[#072C0E]/10 bg-white/55 px-3 py-2.5 shadow-sm backdrop-blur-xl transition focus-within:border-[#51D766]/60 focus-within:ring-3 focus-within:ring-[#51D766]/15">{Icon && <Icon className="h-4 w-4 shrink-0 text-[#2ABD41]" />}<input {...props} className="w-full bg-transparent text-[12px] font-semibold text-[#072C0E] outline-none placeholder:text-[#072C0E]/35" /></div></div>); }
 function SelectField({ label, required, children, ...props }) { return (<div><Label required={required}>{label}</Label><div className="relative"><select {...props} className="field-premium appearance-none pr-10 text-[12px]">{children}</select><ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#072C0E]/40" /></div></div>); }
