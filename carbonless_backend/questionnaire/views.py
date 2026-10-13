@@ -431,6 +431,43 @@ def _saved_answer(report, step_id):
     return ReportStep.objects.filter(report=report, step_id=step_id).values_list('answer', flat=True).first()
 
 
+def _facility_count_warning(report, data, lang):
+    """Fix 4: a non-blocking bilingual warning when 2A-1 (number of facilities)
+    contradicts the stored B4 answer for the same report. Returns the warning
+    string, or None when B4 is absent or either value is unparseable — 2A-1 is
+    saved regardless (this never hard-rejects)."""
+    from chat.local_parser import parse_localized_number
+    stored_b4 = _saved_answer(report, 'B4')
+    if isinstance(stored_b4, dict) and 'answer' in stored_b4:
+        stored_b4 = stored_b4['answer']
+    if not isinstance(stored_b4, dict):
+        return None
+    b4_count = stored_b4.get('number_of_facilities')
+    submitted = data.get('answer') if isinstance(data, dict) and 'answer' in data else data
+
+    def _as_int(v):
+        if isinstance(v, bool):
+            return None
+        if isinstance(v, int):
+            return v
+        try:
+            n = parse_localized_number(str(v))
+        except (ValueError, TypeError):
+            return None
+        return int(n) if n is not None and float(n).is_integer() else None
+
+    b4_n, a21_n = _as_int(b4_count), _as_int(submitted)
+    if b4_n is None or a21_n is None or b4_n == a21_n:
+        return None
+    if lang == 'tr':
+        return (f'Girdiğiniz tesis sayısı ({a21_n}), daha önce B4 adımında belirtilen '
+                f'sayıyla ({b4_n}) uyuşmuyor. Yanıt kaydedildi; lütfen hangisinin doğru '
+                f'olduğunu kontrol edin.')
+    return (f'The number of facilities you entered ({a21_n}) does not match the number '
+            f'given earlier in step B4 ({b4_n}). The answer has been saved; please check '
+            f'which value is correct.')
+
+
 SIGN_OFF_STEP = '7C-2'
 SIGNER_ROLES = ('owner', 'admin', 'manager')
 
@@ -562,8 +599,26 @@ class SubmitStepView(APIView):
         # a numeric question can't be saved as garbage text, a select can't be
         # saved with a value outside its option list, etc. — this used to be
         # enforced only client-side.
-        from .carboniq_validation import validate_generic_step
+        from .carboniq_validation import validate_generic_step, is_known_step
         lang = request.data.get('language') or 'en'
+        # Fix 1: refuse a step id that is neither a strict step nor a real
+        # Phase-2 schema step (nor a system sentinel) BEFORE any side effect —
+        # no ReportStep is created and current_step is not moved. The generic
+        # path otherwise stores whatever id it is given, letting a typo or a
+        # junk client write bogus rows that even count toward the completion
+        # gate. Scoped to unknown ids only: it never pre-empts the option /
+        # format validation that known ids still go through below.
+        if not is_known_step(step):
+            msg = ('Bu, tanınan bir anket adımı değil.' if lang == 'tr'
+                   else 'This is not a recognised questionnaire step.')
+            return Response({
+                'success': False,
+                'step': step,
+                'next_step': step,
+                'error': msg,
+                'code': 'unknown_step',
+                'bot_messages': [f'❌ {msg}'],
+            }, status=400)
         # The ISO 14064-1 §7.5 signature belongs to someone who can sign for
         # the company — a data-entry member could re-confirm the previous
         # signatory's name with one click.
@@ -703,6 +758,13 @@ class SubmitStepView(APIView):
         if answer_edited and not pending:
             from .notifications import notify_completed_inventory_edited
             notify_completed_inventory_edited(report, request.user, step)
+        # Fix 4: a 2A-1 facility count that contradicts B4 is flagged, never
+        # rejected — 2A-1 has already been saved above.
+        warnings = []
+        if step == '2A-1':
+            fac_warning = _facility_count_warning(report, data, lang)
+            if fac_warning:
+                warnings.append(fac_warning)
         calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
                          'pending': pending, 'notes': notes}
         if step in ('3A-5', '3A-5bio'):
@@ -722,8 +784,8 @@ class SubmitStepView(APIView):
             'step': step,
             'next_step': step,
             'message': 'Step saved.',
-            'warnings': [],
-            'bot_messages': [],
+            'warnings': warnings,
+            'bot_messages': [f'⚠️ {w}' for w in warnings],
             'saved_entry': saved_entry,
             'calc_feedback': calc_feedback,
             # The dashboard follows the year of the inventory being filled.
@@ -1127,9 +1189,10 @@ class QuestionnairePDFView(APIView):
             return Response({'error': 'Not found'}, status=404)
 
         lang = request.query_params.get('lang', 'en')
+        draft = report.status != CarbonReport.Status.COMPLETED
         try:
             from .report_pdf import generate_questionnaire_report
-            pdf_bytes = generate_questionnaire_report(report, lang)
+            pdf_bytes = generate_questionnaire_report(report, lang, draft=draft)
         except Exception as e:
             logger.error(f'Questionnaire PDF generation failed for report {report_id}: {e}', exc_info=True)
             return Response({'error': f'PDF generation failed: {e}'}, status=500)
@@ -1161,9 +1224,10 @@ class ISOInventoryReportView(APIView):
             return Response({'error': 'Not found'}, status=404)
 
         lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
+        draft = report.status != CarbonReport.Status.COMPLETED
         try:
             from .iso_report_pdf import generate_iso_report
-            pdf_bytes = generate_iso_report(report, lang)
+            pdf_bytes = generate_iso_report(report, lang, draft=draft)
         except Exception as e:
             logger.error(
                 f'ISO 14064-1 report generation failed for report {report_id}: {e}',
@@ -1206,9 +1270,10 @@ class CombinedReportView(APIView):
         except ValueError:
             return Response({'error': 'year must be a whole number'}, status=400)
 
+        draft = report.status != CarbonReport.Status.COMPLETED
         try:
             from .combined_report_pdf import generate_combined_report
-            pdf_bytes = generate_combined_report(report, lang, year)
+            pdf_bytes = generate_combined_report(report, lang, year, draft=draft)
         except Exception as e:
             logger.error(
                 f'Combined report generation failed for report {report_id}: {e}',

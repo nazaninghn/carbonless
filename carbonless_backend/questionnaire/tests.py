@@ -1903,3 +1903,110 @@ class AnswerTextTests(TestCase):
         self.assertEqual(answer_text('2B-OC1', {'answer': 'yes'}, answers)[:5], 'Evet ')
         self.assertTrue(is_navigation('4C-edit'))
         self.assertTrue(is_navigation('3-GİRİŞ'))
+
+
+class _StepPatchTestCase(TestCase):
+    """Shared setup: an owner on a company with an in-progress report, and a
+    small PATCH helper for the step endpoint."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.owner = User.objects.create_user('fixuser', 'fix@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Fix Co', tax_number='555',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        self.report = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2024,
+            title='Fix', status=CarbonReport.Status.IN_PROGRESS, current_step='A1')
+        self.c = APIClient()
+        self.c.force_authenticate(user=self.owner)
+
+    def _patch(self, step, data, lang='en'):
+        return self.c.patch(
+            f'/api/questionnaire/{self.report.id}/step/',
+            {'step': step, 'data': data, 'language': lang}, format='json')
+
+
+class UnknownStepRejectionTests(_StepPatchTestCase):
+    """Fix 1: a step id that is neither a strict step nor a real schema step
+    is refused with 400 and no side effects; real ids still save."""
+
+    def test_unknown_id_rejected_without_side_effects(self):
+        res = self._patch('ZZ-999', {'answer': 'x'})
+        self.assertEqual(res.status_code, 400, res.content)
+        self.assertFalse(res.data['success'])
+        self.assertEqual(res.data['code'], 'unknown_step')
+        self.assertFalse(ReportStep.objects.filter(report=self.report, step_id='ZZ-999').exists())
+        self.report.refresh_from_db()
+        self.assertNotEqual(self.report.current_step, 'ZZ-999')
+
+    def test_known_id_still_accepted(self):
+        res = self._patch('SCOPE-GROUPING', {'answer': 'combined'})
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertTrue(ReportStep.objects.filter(report=self.report, step_id='SCOPE-GROUPING').exists())
+
+    def test_known_id_option_validation_not_pre_empted(self):
+        # Fix 1 must not short-circuit the existing option validation.
+        res = self._patch('3A-0', {'answer': 'garbage_option'})
+        self.assertEqual(res.status_code, 400, res.content)
+        self.assertIn('garbage_option', res.data['error'])
+
+
+class AmountAfterScopeNoNoteTests(_StepPatchTestCase):
+    """Fix 2: an amount entered after its scope gate = 'no' is kept but not
+    counted, and a note explains why; a 'yes'/empty gate emits no such note."""
+
+    def test_amount_after_no_gets_a_note(self):
+        self.assertEqual(self._patch('3A-0', {'answer': 'no'}).status_code, 200)
+        res = self._patch('3A-5', {'answer': {'natural_gas': '100 kWh'}})
+        self.assertEqual(res.status_code, 200, res.content)
+        cf = res.data['calc_feedback']
+        self.assertTrue(cf['notes'])
+        self.assertTrue(any('not counted' in n for n in cf['notes']))
+        self.assertEqual(cf['delta_kg'], 0)
+        self.assertIsNone(res.data['saved_entry'])
+
+    def test_no_note_when_gate_yes_and_amount_empty(self):
+        self.assertEqual(self._patch('3A-0', {'answer': 'yes'}).status_code, 200)
+        res = self._patch('3A-5', {'answer': {'natural_gas': ''}})
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertFalse(res.data['calc_feedback']['notes'])
+
+    def test_uncalculated_notes_unit(self):
+        from .step_entries import uncalculated_notes
+        notes = uncalculated_notes({'3A-0': 'no', '3A-5': {'answer': {'natural_gas': '100 kWh'}}}, 2024)
+        self.assertTrue(any(n['step_id'] == '3A-5' for n in notes))
+        notes = uncalculated_notes({'3A-0': 'yes', '3A-5': {'answer': {'natural_gas': ''}}}, 2024)
+        self.assertFalse([n for n in notes if n['step_id'] == '3A-5'])
+
+
+class FacilityCountReconcileTests(_StepPatchTestCase):
+    """Fix 4: a 2A-1 facility count that contradicts B4 is flagged (not
+    rejected); a matching count or an absent B4 produces no warning."""
+
+    def _set_b4(self, n):
+        res = self._patch('B4', {'number_of_facilities': n})
+        self.assertEqual(res.status_code, 200, res.content)
+
+    def test_mismatch_warns_and_still_saves(self):
+        self._set_b4(2)
+        res = self._patch('2A-1', {'answer': '10'})
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertTrue(res.data['warnings'])
+        self.assertTrue(ReportStep.objects.filter(report=self.report, step_id='2A-1').exists())
+
+    def test_matching_count_no_warning(self):
+        self._set_b4(2)
+        res = self._patch('2A-1', {'answer': '2'})
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertFalse(res.data['warnings'])
+
+    def test_no_b4_no_warning(self):
+        res = self._patch('2A-1', {'answer': '10'})
+        self.assertEqual(res.status_code, 200, res.content)
+        self.assertFalse(res.data['warnings'])

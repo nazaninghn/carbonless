@@ -135,11 +135,13 @@ class _PackDocTemplate(BaseDocTemplate):
     ahead of Part I, and numbering starts with the first part, the way a bound
     report's front matter does."""
 
-    def __init__(self, buf, company_name, year, lang, **kw):
+    def __init__(self, buf, company_name, year, lang, draft=False, **kw):
         super().__init__(buf, **kw)
         self.company_name = company_name
         self.year = year
         self.lang = lang
+        # Mark the pack front matter DRAFT/TASLAK when the inventory is not completed.
+        self.draft = draft
         frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
         frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
         self.addPageTemplates([
@@ -161,6 +163,9 @@ class _PackDocTemplate(BaseDocTemplate):
         opens with read as the same family of document."""
         fn, fnb = _fonts()
         w, h = A4
+        if self.draft:
+            from emissions.report_pdf import draw_draft_watermark
+            draw_draft_watermark(canvas, self.lang)
         canvas.setStrokeColor(ACCENT)
         canvas.setLineWidth(0.75)
         canvas.line(20*mm, h-22*mm, w-20*mm, h-22*mm)
@@ -176,6 +181,9 @@ class _PackDocTemplate(BaseDocTemplate):
     def _content_page(self, canvas, doc):
         fn, fnb = _fonts()
         w, h = A4
+        if self.draft:
+            from emissions.report_pdf import draw_draft_watermark
+            draw_draft_watermark(canvas, self.lang)
         canvas.setStrokeColor(LINE)
         canvas.setLineWidth(0.6)
         canvas.line(20*mm, h-15*mm, w-20*mm, h-15*mm)
@@ -193,7 +201,7 @@ class _PackDocTemplate(BaseDocTemplate):
         canvas.drawRightString(w-20*mm, 10*mm, datetime.now().strftime('%d.%m.%Y'))
 
 
-def _build_front_matter(company_name, year, prepared_by, lang, parts):
+def _build_front_matter(company_name, year, prepared_by, lang, parts, draft=False):
     """Cover + contents for the pack. `parts` is the list of
     (roman, title, description, start_page) rows the contents page lists;
     start_page may be None on the sizing pass, when the page count is what is
@@ -203,7 +211,7 @@ def _build_front_matter(company_name, year, prepared_by, lang, parts):
     fn, fnb = _fonts()
     buf = io.BytesIO()
     doc = _PackDocTemplate(
-        buf, company_name, year, lang, pagesize=A4,
+        buf, company_name, year, lang, draft=draft, pagesize=A4,
         topMargin=20*mm, bottomMargin=20*mm, leftMargin=20*mm, rightMargin=20*mm,
         title=f'{_t("pack_title", lang)} {year}', author='Carbonless')
 
@@ -261,12 +269,15 @@ def _page_count(pdf_bytes):
     return len(PdfReader(io.BytesIO(pdf_bytes)).pages)
 
 
-def generate_combined_report(report: CarbonReport, lang='en', year=None) -> bytes:
+def generate_combined_report(report: CarbonReport, lang='en', year=None, draft=False) -> bytes:
     """Build the three-part pack for `report`. Returns PDF bytes.
 
     `year` defaults to the report's own reporting year so that every part
     covers the same period — the pack would be misleading otherwise, since the
     emissions summary is keyed on a year rather than on the report.
+
+    `draft` marks the pack (front matter and every part) with a DRAFT/TASLAK
+    watermark; defaults to False.
     """
     lang = 'tr' if lang == 'tr' else 'en'
     company = report.company
@@ -286,18 +297,18 @@ def generate_combined_report(report: CarbonReport, lang='en', year=None) -> byte
     # parts are built once, after the offset is known, because they are the
     # expensive half.
     sizing = _build_front_matter(company_name, year, report.prepared_by, lang,
-                                 [(r, t_, d, None) for r, t_, d in part_meta])
+                                 [(r, t_, d, None) for r, t_, d in part_meta], draft=draft)
     front_pages = _page_count(sizing)
 
     parts, offset = [], front_pages
     starts = []
     for roman, _title, _desc in part_meta:
         if roman == 'I':
-            pdf = generate_iso_report(report, lang, page_offset=offset)
+            pdf = generate_iso_report(report, lang, page_offset=offset, draft=draft)
         elif roman == 'II':
-            pdf = generate_questionnaire_report(report, lang, page_offset=offset)
+            pdf = generate_questionnaire_report(report, lang, page_offset=offset, draft=draft)
         else:
-            pdf = generate_report(report.created_by, year, lang, page_offset=offset)
+            pdf = generate_report(report.created_by, year, lang, page_offset=offset, draft=draft)
         # Each part opens on an unnumbered cover that acts as its divider, so
         # the first *numbered* page is the one after it — which is the page the
         # contents should send a reader to.
@@ -307,7 +318,7 @@ def generate_combined_report(report: CarbonReport, lang='en', year=None) -> byte
 
     front = _build_front_matter(
         company_name, year, report.prepared_by, lang,
-        [(r, t_, d, s) for (r, t_, d), s in zip(part_meta, starts)])
+        [(r, t_, d, s) for (r, t_, d), s in zip(part_meta, starts)], draft=draft)
     if _page_count(front) != front_pages:
         # Filling the page numbers in changed the front matter's length, so the
         # offsets the parts were stamped with are now wrong. Rather than ship a

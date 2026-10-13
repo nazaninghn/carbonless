@@ -137,6 +137,33 @@ def _fonts():
     return ('CF', 'CFB') if _font_registered else ('Helvetica', 'Helvetica-Bold')
 
 
+def draw_draft_watermark(canvas, lang='en'):
+    """Draw a light grey diagonal DRAFT/TASLAK watermark across the page.
+
+    Used by every report's page hook when the inventory is not COMPLETED, so a
+    verifier-facing PDF for an in-progress inventory is visibly marked. Wrapped
+    so a drawing failure can never break generation (same spirit as _draw_logo).
+    """
+    try:
+        word = 'TASLAK' if lang == 'tr' else 'DRAFT'
+        _fn, fnb = _fonts()
+        w, h = A4
+        canvas.saveState()
+        canvas.translate(w / 2, h / 2)
+        canvas.rotate(45)
+        # Light grey; a low-alpha fill where the backend supports it, else a
+        # pale solid grey — either way faint enough not to obscure the content.
+        try:
+            canvas.setFillColor(colors.Color(0, 0, 0, alpha=0.08))
+        except TypeError:
+            canvas.setFillColor(colors.HexColor('#E6E6E6'))
+        canvas.setFont(fnb, 120)
+        canvas.drawCentredString(0, -40, word)
+        canvas.restoreState()
+    except Exception:
+        pass
+
+
 # ═══════════════════════════════════════════════════════
 # CATEGORY LABELS
 # ═══════════════════════════════════════════════════════
@@ -396,7 +423,7 @@ def _monthly_trend_chart(monthly_kg, months, fn, width_mm=170, height_mm=68, tr=
 # PAGE TEMPLATES
 # ═══════════════════════════════════════════════════════
 class _ReportDocTemplate(BaseDocTemplate):
-    def __init__(self, buf, company_name, year, lang, page_offset=0, **kw):
+    def __init__(self, buf, company_name, year, lang, page_offset=0, draft=False, **kw):
         super().__init__(buf, **kw)
         self.company_name = company_name
         self.year = year
@@ -405,6 +432,8 @@ class _ReportDocTemplate(BaseDocTemplate):
         # report is bound into the combined pack, where numbering has to run
         # continuously across the parts instead of restarting at each one.
         self.page_offset = page_offset
+        # Mark every page DRAFT/TASLAK when the inventory is not completed.
+        self.draft = draft
 
         frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
         frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
@@ -416,6 +445,8 @@ class _ReportDocTemplate(BaseDocTemplate):
 
     def _cover_page(self, canvas, doc):
         w, h = A4
+        if self.draft:
+            draw_draft_watermark(canvas, self.lang)
         # Top accent bar - olive gradient effect
         canvas.setFillColor(OLIVE_DARK)
         canvas.rect(0, h-6*mm, w, 6*mm, fill=1, stroke=0)
@@ -437,6 +468,8 @@ class _ReportDocTemplate(BaseDocTemplate):
     def _content_page(self, canvas, doc):
         fn, fnb = _fonts()
         w, h = A4
+        if self.draft:
+            draw_draft_watermark(canvas, self.lang)
         # Header - thin olive line
         canvas.setStrokeColor(OLIVE)
         canvas.setLineWidth(1.2)
@@ -466,12 +499,15 @@ class _ReportDocTemplate(BaseDocTemplate):
 # ═══════════════════════════════════════════════════════
 # MAIN GENERATOR
 # ═══════════════════════════════════════════════════════
-def generate_report(user, year, lang='tr', page_offset=0):
+def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     """Generate premium ISO 14064-1 PDF report. Returns bytes.
 
     `page_offset` is the number of pages that precede this one when it is
     bound into the combined report pack; it only shifts the printed page
     number, nothing else.
+
+    `draft` marks every page with a DRAFT/TASLAK watermark; it defaults to
+    False so the emissions app's own endpoint is unchanged.
     """
     S = _styles()
     fn, fnb = S['fn'], S['fnb']
@@ -646,7 +682,7 @@ def generate_report(user, year, lang='tr', page_offset=0):
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
-    doc = _ReportDocTemplate(buf, cname, year, lang, page_offset=page_offset, pagesize=A4,
+    doc = _ReportDocTemplate(buf, cname, year, lang, page_offset=page_offset, draft=draft, pagesize=A4,
                               leftMargin=20*mm, rightMargin=20*mm,
                               topMargin=22*mm, bottomMargin=20*mm)
     E = []

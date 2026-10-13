@@ -157,6 +157,40 @@ def _load_schema():
     return _schema_cache
 
 
+# The A1..D4 steps that go through the strict serializer path. Kept in sync
+# with SubmitStepView.STRICT_STEPS in views.py (they point at each other) —
+# the schema already covers A1..D4 too, but the union is defensive.
+STRICT_STEP_IDS = {
+    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
+    'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+}
+# Code-only sentinels that are set on report.current_step / used as flow
+# markers but are never a client-submitted answer. 'DONE' is set as the
+# current_step on completion; whitelisting it keeps a resync/replay of the
+# completion pointer from being mis-rejected.
+SYSTEM_STEP_IDS = {'DONE'}
+
+_known_step_ids_cache = None
+
+
+def known_step_ids():
+    """Every step id the flow legitimately uses: all schema ids unioned with
+    the strict A1..D4 ids and the system sentinels. Cached next to the schema
+    so a schema reload (resetting _schema_cache) is reflected on next call."""
+    global _known_step_ids_cache, _schema_cache
+    if _known_step_ids_cache is None or _schema_cache is None:
+        _known_step_ids_cache = set(_load_schema().keys()) | STRICT_STEP_IDS | SYSTEM_STEP_IDS
+    return _known_step_ids_cache
+
+
+def is_known_step(step_id):
+    """True when step_id is a real strict step, a Phase-2 schema step, or a
+    legitimate system sentinel. Genuinely-unknown ids ('ZZ-999') return
+    False so SubmitStepView can refuse them without side effects."""
+    return step_id in known_step_ids()
+
+
 def _is_valid_number(s):
     s = str(s).strip()
     if not _NUMBER_RE.match(s):

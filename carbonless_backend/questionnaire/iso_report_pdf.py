@@ -1237,7 +1237,7 @@ def _donut_chart(rows, S, lang, max_slices=8, width_mm=170, height_mm=56):
 # reports, which keep their bolder brand-forward chrome).
 # ═══════════════════════════════════════════════════════════════════════════
 class _ReportDocTemplate(BaseDocTemplate):
-    def __init__(self, buf, company_name, year, lang, page_offset=0, **kw):
+    def __init__(self, buf, company_name, year, lang, page_offset=0, draft=False, **kw):
         super().__init__(buf, **kw)
         self.company_name = company_name
         self.year = year
@@ -1245,6 +1245,8 @@ class _ReportDocTemplate(BaseDocTemplate):
         # See emissions.report_pdf._ReportDocTemplate — pages printed ahead of
         # this one, so the combined pack numbers straight through.
         self.page_offset = page_offset
+        # Mark every page DRAFT/TASLAK when the inventory is not completed.
+        self.draft = draft
 
         frame_cover = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-40*mm, id='cover')
         frame_body = Frame(20*mm, 20*mm, A4[0]-40*mm, A4[1]-48*mm, id='body')
@@ -1268,6 +1270,9 @@ class _ReportDocTemplate(BaseDocTemplate):
     def _cover_page(self, canvas, doc):
         fn, fnb = _fonts()
         w, h = A4
+        if self.draft:
+            from emissions.report_pdf import draw_draft_watermark
+            draw_draft_watermark(canvas, self.lang)
         # A single thin rule frames a small wordmark row — no color blocks,
         # no corner decoration, no panel behind the title.
         canvas.setStrokeColor(ACCENT)
@@ -1289,6 +1294,9 @@ class _ReportDocTemplate(BaseDocTemplate):
     def _content_page(self, canvas, doc):
         fn, fnb = _fonts()
         w, h = A4
+        if self.draft:
+            from emissions.report_pdf import draw_draft_watermark
+            draw_draft_watermark(canvas, self.lang)
         # Header — a hairline rule, small left wordmark, small right meta.
         canvas.setStrokeColor(LINE)
         canvas.setLineWidth(0.6)
@@ -3815,7 +3823,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
 # ═══════════════════════════════════════════════════════════════════════════
 # ENTRY POINT
 # ═══════════════════════════════════════════════════════════════════════════
-def generate_iso_report(report: CarbonReport, lang: str = 'en', page_offset: int = 0) -> bytes:
+def generate_iso_report(report: CarbonReport, lang: str = 'en', page_offset: int = 0, draft: bool = False) -> bytes:
     """Build the full ISO 14064-1:2018 inventory report. Returns PDF bytes.
 
     `page_offset` shifts the printed page number so the report numbers on
@@ -3830,7 +3838,7 @@ def generate_iso_report(report: CarbonReport, lang: str = 'en', page_offset: int
 
     buf = io.BytesIO()
     doc = _ReportDocTemplate(
-        buf, cname, D['year'], lang, page_offset=page_offset,
+        buf, cname, D['year'], lang, page_offset=page_offset, draft=draft,
         pagesize=A4, topMargin=20*mm, bottomMargin=20*mm,
         leftMargin=20*mm, rightMargin=20*mm,
         title=f'{t("standard", lang)} {t("doc_title", lang)} {D["year"]}',

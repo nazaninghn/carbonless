@@ -1256,6 +1256,37 @@ def uncalculated_notes(answers, year):
         gate = _GATES.get(step)
         return not gate or A.get(gate) in (None, '', 'yes')
 
+    def _has_amount(step):
+        """True when the step's own answer carries a numeric amount, mirroring
+        the entry extractors' amount detection — a dict answer has an amount
+        when any present value yields a number from its '<n> <unit>' string
+        (or a row's quantity field), a scalar answer when it parses to one."""
+        raw = A.get(step)
+        if isinstance(raw, dict):
+            if any(_number(row.get('quantity_kg')) or _number(row.get('load_tonne'))
+                   or _number(row.get('quantity')) for row in _rows(raw) if isinstance(row, dict)):
+                return True
+            return any(_number(_split_amount_unit(v)[0]) for v in raw.values()
+                       if not isinstance(v, (dict, list)))
+        if isinstance(raw, list):
+            return any(_number(row.get('quantity_kg')) or _number(row.get('load_tonne'))
+                       or _number(row.get('quantity')) for row in _rows(raw) if isinstance(row, dict))
+        return bool(_number(_split_amount_unit(raw)[0])) if raw not in (None, '') else False
+
+    # An amount entered after its scope gate was answered 'no' is intentionally
+    # dropped by activities_for_report (the user said the source is absent),
+    # but a silent zero is indistinguishable from a calculation miss — flag
+    # that the figure was not counted because the scope was marked absent.
+    # Only when the gate is a non-yes answer AND an amount is actually present;
+    # this runs independently of the open_()-guarded blocks below (those only
+    # fire when the gate is open), so there is no double-note.
+    for step, gate in _GATES.items():
+        if A.get(gate) not in (None, '', 'yes') and _has_amount(step):
+            note(step,
+                 "Bu miktar sayılmadı — ilgili kapsam 'yok' olarak işaretlendi (geçit sorusuna 'hayır').",
+                 "This amount was not counted — the scope was marked as not present "
+                 "(answer 'no' to its gate question).")
+
     if open_('3A-5') and isinstance(A.get('3A-5'), dict):
         given = {f for f, raw in A['3A-5'].items() if _number(_split_amount_unit(raw)[0])}
         if 'biomass' in given and not _biomass_amount(A):

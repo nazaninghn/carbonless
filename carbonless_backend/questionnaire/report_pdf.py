@@ -139,7 +139,7 @@ def _answered_by_stage(answered_ids):
     return counts
 
 
-def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0) -> bytes:
+def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0, draft=False) -> bytes:
     """Generate the qualitative Carbon Inventory Profile PDF for a completed
     (or in-progress) CarbonReport. Returns raw PDF bytes.
 
@@ -162,7 +162,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
 
     # ── Build PDF ───────────────────────────────────
     buf = io.BytesIO()
-    doc = _ReportDocTemplate(buf, cname, year, lang, page_offset=page_offset, pagesize=A4,
+    doc = _ReportDocTemplate(buf, cname, year, lang, page_offset=page_offset, draft=draft, pagesize=A4,
                               leftMargin=20 * mm, rightMargin=20 * mm,
                               topMargin=22 * mm, bottomMargin=20 * mm)
     E = []
