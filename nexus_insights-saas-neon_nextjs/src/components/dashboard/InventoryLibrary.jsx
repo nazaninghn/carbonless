@@ -295,15 +295,6 @@ export default function InventoryLibrary({ tr = false }) {
   return (
     <div className="w-full h-full min-h-0 overflow-y-auto">
     <div className="w-full max-w-4xl mx-auto p-4 sm:p-5 space-y-5 sm:space-y-6">
-      <div className="text-center mb-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-[#175022] mb-1">
-          {tr ? 'Karbon Envanter Kütüphanesi' : 'Carbon Inventory Library'}
-        </h1>
-        <p className="text-sm text-[#175022]/60">
-          {tr ? 'Karbon envanterlerinizi yönetin' : 'Manage your carbon inventories'}
-        </p>
-      </div>
-
       {error && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
           {error}
