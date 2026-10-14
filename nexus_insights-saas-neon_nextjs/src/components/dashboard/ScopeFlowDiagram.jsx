@@ -55,7 +55,10 @@ function ColumnArrow({ label, sub, tone, items, delay, tr }) {
         {items.map(({ icon: Icon, en, tr: trLabel }, i) => (
           <div key={i} className="scope-icon-bounce flex w-[80px] flex-col items-center gap-1 text-center cursor-pointer">
             <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: text }} />
-            <p className="text-[8.5px] font-medium leading-[1.15]" style={{ color: text }}>
+            {/* Fixed label height (3 lines, clamped) so the arrow — and the whole
+                diagram — is the same size in English and Turkish, where the label
+                text wraps to a different number of lines. */}
+            <p className="flex h-[33px] items-start justify-center overflow-hidden text-[8.5px] font-medium leading-[1.15] [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]" style={{ color: text }}>
               {tr ? (trLabel ?? en) : en}
             </p>
           </div>
@@ -65,8 +68,9 @@ function ColumnArrow({ label, sub, tone, items, delay, tr }) {
   );
 }
 
-// The diagram is laid out at 620px. On a narrower screen it is scaled down to
-// fit (it was cut off at the right on a phone, with "Kapsam 1" half hidden).
+// The diagram is laid out at 620px wide. It is scaled down to fit BOTH the
+// available width (so it isn't cut off on a narrow screen) AND the available
+// viewport height (so the whole figure is visible on entry without scrolling).
 const DIAGRAM_WIDTH = 620;
 
 export default function ScopeFlowDiagram({ tr = false }) {
@@ -78,14 +82,26 @@ export default function ScopeFlowDiagram({ tr = false }) {
     const inner = innerRef.current;
     if (!box || !inner || typeof ResizeObserver === 'undefined') return;
     const measure = () => {
-      const scale = Math.min(1, box.clientWidth / DIAGRAM_WIDTH);
-      setFit({ scale, height: scale < 1 ? inner.offsetHeight * scale : null });
+      // Natural (un-scaled) size of the diagram.
+      const naturalH = inner.offsetHeight / (fit.scale || 1);
+      // Width fit: never wider than the container.
+      const widthScale = box.clientWidth / DIAGRAM_WIDTH;
+      // Height fit: leave the diagram's top where it is and let it use the
+      // space down to the bottom of the viewport, minus a small margin, so the
+      // whole figure (gas clouds -> arrows -> bottom band) shows at a glance.
+      const top = box.getBoundingClientRect().top;
+      const avail = (typeof window !== 'undefined' ? window.innerHeight : 800) - top - 24;
+      const heightScale = naturalH > 0 ? avail / naturalH : 1;
+      const scale = Math.max(0.5, Math.min(1, widthScale, heightScale));
+      setFit({ scale, height: scale < 1 ? naturalH * scale : null });
     };
     const ro = new ResizeObserver(measure);
     ro.observe(box);
     ro.observe(inner);
     measure();
-    return () => ro.disconnect();
+    window.addEventListener('resize', measure);
+    return () => { ro.disconnect(); window.removeEventListener('resize', measure); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const columns = [
     {
