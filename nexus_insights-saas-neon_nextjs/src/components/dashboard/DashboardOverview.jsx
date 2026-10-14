@@ -656,15 +656,10 @@ export default function DashboardOverview({
       {/* ── EMPTY STATE  -  when no data yet ─────────────────────────── */}
       {entries.length === 0 && otherYears.length === 0 && (
         <div className="rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 pb-8 sm:p-10 sm:pb-12 overflow-hidden">
-          {/* Scope 1/2/3 explainer — custom image */}
+          {/* Scope 1/2/3 explainer — the same drawn diagram in both languages,
+              with its labels switched to the active language. */}
           <div className="dash-fade-up mb-6">
-            {/* The picture's labels are English; Turkish users get the same
-                diagram drawn with Turkish labels. */}
-            {tr ? (
-              <div className="mx-auto w-full max-w-[640px]"><ScopeFlowDiagram tr /></div>
-            ) : (
-              <img src="/scope-diagram.png" alt="GHG Protocol Scopes" className="w-[70%] sm:w-[60%] max-w-[500px] h-auto rounded-xl mx-auto" />
-            )}
+            <div className="mx-auto w-full max-w-[640px]"><ScopeFlowDiagram tr={tr} /></div>
           </div>
 
           <div className="mx-auto max-w-lg flex flex-col items-center text-center gap-6">
