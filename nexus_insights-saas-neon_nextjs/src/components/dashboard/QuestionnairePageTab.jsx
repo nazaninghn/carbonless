@@ -68,16 +68,16 @@ export default function QuestionnairePageTab({ language }) {
     <div className="flex flex-1 flex-col min-h-0">
       {/* Header */}
       {/* One line on a phone, so the inventory keeps the screen. */}
-      <div className="mb-2 flex flex-row items-center justify-between gap-3 sm:mb-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/10 sm:flex">
-            <ClipboardList className="h-5 w-5 text-[#2ABD41]" />
+      <div className="mb-1.5 flex flex-row items-center justify-between gap-3 sm:mb-2.5">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="hidden h-8 w-8 items-center justify-center rounded-lg bg-[#2ABD41]/10 sm:flex">
+            <ClipboardList className="h-4 w-4 text-[#2ABD41]" />
           </div>
-          <div>
-            <h1 className="truncate text-[17px] sm:text-[22px] font-bold text-[#072C0E] tracking-tight">
+          <div className="leading-tight">
+            <h1 className="truncate text-[16px] sm:text-[18px] font-bold text-[#072C0E] tracking-tight">
               {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
             </h1>
-            <p className="hidden text-[13px] text-[#072C0E]/50 sm:block">
+            <p className="hidden text-[11px] text-[#072C0E]/50 sm:block">
               {tr
                 ? 'Şirketinizin karbon ayak izini adım adım hesaplayın'
                 : 'Calculate your company\'s carbon footprint step by step'}
