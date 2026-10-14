@@ -1138,12 +1138,12 @@ function EmptyState({ onNew, tr }) {
   const [showGuide, setShowGuide] = useState(false);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-6 pb-4 sm:pb-6">
-      <div className="w-full max-w-2xl flex flex-col items-center gap-4 sm:gap-6">
+    <div className="flex flex-1 flex-col items-center justify-center px-3 sm:px-6 pb-3 sm:pb-4">
+      <div className="w-full max-w-2xl flex flex-col items-center gap-3 sm:gap-4">
 
         {/* Hero image — carbon-hero.png sphere */}
         <div className="relative">
-          <div className="h-24 w-24 sm:h-44 sm:w-44 relative cb-float">
+          <div className="h-20 w-20 sm:h-32 sm:w-32 relative cb-float">
             <Image
               src="/carbon-hero.png"
               alt="CarbonIQ AI"
@@ -1161,7 +1161,7 @@ function EmptyState({ onNew, tr }) {
           <p className="text-[12px] sm:text-[13px] text-[#2ABD41] font-medium mb-1">
             {tr ? 'Merhaba 👋' : 'Hi, there'}
           </p>
-          <h2 className="text-[20px] sm:text-[28px] font-bold text-[#072C0E] tracking-tight leading-tight">
+          <h2 className="text-[18px] sm:text-[22px] font-bold text-[#072C0E] tracking-tight leading-tight">
             {tr ? 'Size nasıl yardımcı olabilirim?' : 'How can I assist?'}
           </h2>
         </div>
@@ -5767,20 +5767,6 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
             {hasUnseenAnswer && <span data-testid="support-dot" className="absolute right-1 top-1 h-2 w-2 rounded-full bg-[#2ABD41]" />}
           </button>
 
-          {/* Language toggle */}
-          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#175022]/8 bg-[#175022]/4 p-0.5">
-            {['tr', 'en'].map(l => (
-              <button
-                key={l}
-                onClick={() => setActiveLang(l)}
-                className={`rounded-md px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold uppercase tracking-wide transition ${
-                  activeLang === l ? 'bg-white text-[#175022] shadow-sm' : 'text-[#175022]/40 hover:text-[#175022]'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
         </header>
 
         {/* Mobile-only compact bar */}
@@ -5800,19 +5786,6 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
             <LifeBuoy className="h-3.5 w-3.5" />
             {hasUnseenAnswer && <span className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-[#2ABD41]" />}
           </button>
-          <div className="flex items-center gap-0.5 rounded-md border border-[#175022]/8 bg-[#175022]/4 p-0.5">
-            {['tr', 'en'].map(l => (
-              <button
-                key={l}
-                onClick={() => setActiveLang(l)}
-                className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase transition ${
-                  activeLang === l ? 'bg-white text-[#175022] shadow-sm' : 'text-[#175022]/35'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
-          </div>
           </div>
         </div>
 

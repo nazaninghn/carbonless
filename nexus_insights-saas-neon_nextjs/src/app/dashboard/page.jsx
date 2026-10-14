@@ -431,18 +431,37 @@ export default function DashboardPage() {
                 {language === 'tr' ? 'Kontrol Paneli' : 'Dashboard'}
               </button>
             </div>
-            <button
-              onClick={() => setAssistantOpen(v => !v)}
-              className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition sm:text-[12px] ${
-                assistantOpen ? 'bg-[#DEFAE1] text-[#175022]' : 'bg-[#2ABD41] text-white hover:bg-[#1A7B2A]'
-              }`}
-            >
-              <Image src="/chatbot.png" alt="" width={20} height={20} className="h-5 w-5 object-contain" />
-              <span className="hidden sm:inline">{language === 'tr' ? 'AI Asistan' : 'AI Assistant'}</span>
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              {/* Language toggle — top-right, so you don't have to switch to the
+                  Dashboard tab to change the language. Uses the shared context. */}
+              <div className="flex items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-[#F5F5F5] p-0.5">
+                {['tr', 'en'].map(l => (
+                  <button
+                    key={l}
+                    type="button"
+                    onClick={() => changeLanguage(l)}
+                    aria-pressed={language === l}
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition sm:px-2.5 sm:py-1 ${
+                      language === l ? 'bg-white text-[#175022] shadow-sm' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setAssistantOpen(v => !v)}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition sm:text-[12px] ${
+                  assistantOpen ? 'bg-[#DEFAE1] text-[#175022]' : 'bg-[#2ABD41] text-white hover:bg-[#1A7B2A]'
+                }`}
+              >
+                <Image src="/chatbot.png" alt="" width={20} height={20} className="h-5 w-5 object-contain" />
+                <span className="hidden sm:inline">{language === 'tr' ? 'AI Asistan' : 'AI Assistant'}</span>
+              </button>
+            </div>
           </div>
           <div className="flex min-h-0 flex-1">
-            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto p-3 sm:p-4 lg:p-5">
+            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 lg:px-5 lg:pb-5">
               <ErrorBoundary language={language}>
                 <QuestionnairePageTab language={language} />
               </ErrorBoundary>
