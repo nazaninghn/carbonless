@@ -1125,6 +1125,38 @@ def _might_be_emission_entry(text):
     return bool(_EMISSION_HINT_RE.search(stripped))
 
 
+# The exact phrasings the LOCAL parser can calculate without Groq. Shown when a
+# message looks like emission data (an amount is present) but neither the local
+# parser nor Groq could place it — so the user gets an actionable next step
+# instead of a bare "AI unavailable" error. Shared by the nlu_hard_failure
+# guidance (Fix 4a) and the Groq-outage conversational fallback (Fix 4b).
+_EMISSION_INPUT_EXAMPLES = (
+    '14000 kWh of electricity',
+    '500 liters of diesel',
+    '1000 m3 of natural gas',
+    '2000 kg of waste to landfill',
+    '10 MWh of electricity',
+    '2 tonnes of paper waste to landfill',
+)
+
+
+def _emission_input_guidance(lang):
+    """Bilingual, actionable guidance listing the formats the local parser
+    accepts, so a user can still log emissions while Groq is unavailable."""
+    examples = '\n'.join(f'• {ex}' for ex in _EMISSION_INPUT_EXAMPLES)
+    if lang == 'tr':
+        return (
+            'Bu mesajı tam olarak çözümleyemedim. Emisyon kaydı için miktarı ve '
+            'faaliyeti şu biçimlerden biriyle yazabilirsiniz:\n\n'
+            f'{examples}'
+        )
+    return (
+        "I couldn't fully read that. To log an emission, type the amount and the "
+        'activity in one of these formats:\n\n'
+        f'{examples}'
+    )
+
+
 def _calculation_help_text():
     return (
         "I can calculate emissions when you provide activity data.\n\n"
@@ -2015,13 +2047,11 @@ def _send_message(request, session_id):
         local = local_data_answer(request.user, content, ui_language)
         if local:
             return _local_reply(local, 'local_data_answer')
-        clean_text = (
-            'Şu an bunu işlerken bir sorun yaşıyorum (AI hizmetinde geçici bir aksaklık). '
-            'Birazdan tekrar gönderebilir misiniz?'
-            if ui_language == 'tr' else
-            "I'm having trouble processing that right now (temporary AI service hiccup). "
-            "Could you try sending it again in a moment?"
-        )
+        # The message carried an amount (that's why it reached this branch) but
+        # neither the local parser nor Groq could place it. Instead of a
+        # "temporary AI hiccup" apology, guide the user to the exact phrasings
+        # the local parser can calculate right now (works with Groq absent).
+        clean_text = _emission_input_guidance(ui_language)
         ai_msg = ChatMessage.objects.create(session=session, role='assistant', content=clean_text)
         session.save(update_fields=['updated_at'])
         return Response({
@@ -2031,7 +2061,7 @@ def _send_message(request, session_id):
             'created_at': ai_msg.created_at,
             'session_title': session.title,
             'pending_entries': [],
-            'source': 'nlu_hard_failure',
+            'source': 'local_guidance',
         })
 
     # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
@@ -2194,6 +2224,14 @@ def confirm_entry(request):
 
     entry, err = _create_emission_from_chat(request.user, entry_data)
     if err:
+        from emissions.factor_lookup import AMOUNT_TOO_LARGE_ERROR
+        if err == AMOUNT_TOO_LARGE_ERROR:
+            return Response({
+                'error': err,
+                'code': 'amount_too_large',
+                'message_en': 'That amount is too large to record. Please check the value and try again.',
+                'message_tr': 'Bu miktar kaydedilemeyecek kadar büyük. Lütfen değeri kontrol edip tekrar deneyin.',
+            }, status=400)
         return Response({'error': err}, status=400)
     from emissions.notifications import notify_entry_submitted
     notify_entry_submitted(entry)

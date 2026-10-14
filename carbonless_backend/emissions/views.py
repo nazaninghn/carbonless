@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timezone as dt_timezone
 from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissionRequest
 from .serializers import (
     EmissionFactorSerializer, EmissionEntrySerializer,
@@ -370,8 +370,11 @@ class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
 @permission_classes([IsAuthenticated])
 def emission_summary(request):
     """Get emission summary for a given year, enriched with questionnaire profile"""
-    # Fix #63: was hardcoded to 2026 — use current year as the dynamic default
-    year = request.query_params.get('year', datetime.now().year)
+    # Fix #63: was hardcoded to 2026 — use current year as the dynamic default.
+    # Use UTC year to match the chat pipeline (chat/views.py, chat/local_parser.py
+    # all use datetime.now(timezone.utc).year), so a dateless chat entry lands in
+    # the same year the dashboard shows by default.
+    year = request.query_params.get('year', datetime.now(dt_timezone.utc).year)
     company = get_current_company(request.user)
     # Only approved entries are part of the inventory (see emissions/inventory.py):
     # pending ('submitted') and rejected ('draft') ones stay listed on the

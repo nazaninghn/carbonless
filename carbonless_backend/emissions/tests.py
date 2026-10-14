@@ -1322,3 +1322,58 @@ class ListWorkspaceEntriesCommandTests(ApprovalNotificationAndDuplicateTests):
         self.assertIn(f'#{doubled.id}', text)
         self.assertIn('2 Data Panel entries, 1 likely counted twice.', text)
         self.assertEqual(EmissionEntry.objects.count(), 3)
+
+
+class AmountCeilingTests(TestCase):
+    """Fix 1: an over-capacity amount is rejected cleanly (no 500), while a
+    realistically-large amount is still accepted and calculates co2e."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('ceiluser', 'ceil@test.com', 'testpass123')
+        from companies.models import Company, CompanyMembership
+        self.company = Company.objects.create(
+            legal_entity_name='Ceiling Co', tax_number='999',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='Test', number_of_employees='1-10',
+            annual_turnover_range='<1M', number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(company=self.company, user=self.user, role='owner')
+        # Resolver looks up electricity/kwh via slug 'turkey-grid'.
+        self.factor = EmissionFactor.objects.create(
+            slug='turkey-grid', name='Turkey Grid', name_tr='Türkiye Şebeke',
+            scope='scope2', category='electricity', country='turkey',
+            unit='kwh', factor_kg_co2e=Decimal('0.4199'), year=2023, source='atom_kablo',
+            is_active=True, is_default=True,
+        )
+
+    def test_resolver_rejects_over_capacity(self):
+        from .factor_lookup import resolve_factor_and_amount, AMOUNT_TOO_LARGE_ERROR
+        factor, qty, co2e, err = resolve_factor_and_amount('electricity', 999000000000, 'kwh', None)
+        self.assertIsNone(factor)
+        self.assertIsNone(qty)
+        self.assertIsNone(co2e)
+        self.assertEqual(err, AMOUNT_TOO_LARGE_ERROR)
+
+    def test_resolver_accepts_realistic_value(self):
+        from .factor_lookup import resolve_factor_and_amount
+        factor, qty, co2e, err = resolve_factor_and_amount('electricity', 5000000, 'kwh', None)
+        self.assertIsNone(err)
+        self.assertIsNotNone(factor)
+        self.assertGreater(co2e, 0)
+
+    def test_create_entry_rejects_over_capacity_without_row(self):
+        from .factor_lookup import create_entry_from_activity, AMOUNT_TOO_LARGE_ERROR
+        before = EmissionEntry.objects.count()
+        entry, err = create_entry_from_activity(
+            self.user, self.company, 'electricity', 999000000000, 'kwh', 2024, 1)
+        self.assertIsNone(entry)
+        self.assertEqual(err, AMOUNT_TOO_LARGE_ERROR)
+        self.assertEqual(EmissionEntry.objects.count(), before)
+
+    def test_create_entry_accepts_realistic_value(self):
+        from .factor_lookup import create_entry_from_activity
+        entry, err = create_entry_from_activity(
+            self.user, self.company, 'electricity', 5000000, 'kwh', 2024, 1)
+        self.assertIsNone(err)
+        self.assertIsNotNone(entry)
+        self.assertGreater(float(entry.calculated_co2e_kg), 0)
