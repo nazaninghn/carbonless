@@ -15,7 +15,25 @@ guessing, and no `slug__icontains` fuzzy fallback that could match the wrong row
 """
 from decimal import Decimal, InvalidOperation
 
+from django.db import DataError
+
 from .models import EmissionFactor, EmissionEntry
+
+# DB column ceilings (emissions/models.py :: EmissionEntry):
+#   quantity          = DecimalField(max_digits=14, decimal_places=4) -> integer part < 1e10
+#   calculated_co2e_kg = DecimalField(max_digits=16, decimal_places=4) -> integer part < 1e12
+# A value whose integer part reaches these would overflow on save() and raise
+# decimal.InvalidOperation; we reject it cleanly here instead. These are the
+# post-conversion ceilings — the check runs after any unit multiplier is applied.
+MAX_QUANTITY = Decimal('1e10')
+MAX_CO2E_KG = Decimal('1e12')
+
+# Stable sentinel so the chat layer (chat/views.py :: confirm_entry) can tell
+# an over-capacity rejection apart from any other resolver/creation error and
+# attach a bilingual message with code 'amount_too_large'.
+AMOUNT_TOO_LARGE_ERROR = (
+    'AMOUNT_TOO_LARGE: the amount is too large to record — please check the value.'
+)
 try:
     from .scope3_categories import SCOPE3_CATEGORIES
 except ImportError:
@@ -274,20 +292,26 @@ def resolve_factor_and_amount(activity_type, quantity, unit, company=None):
         return None, None, None, f'Invalid quantity: {quantity!r}.'
     if qty <= 0:
         return None, None, None, 'Quantity must be greater than zero.'
-    # Sanity ceiling — not a real-world limit, just a guard against a typo'd
-    # or malicious value (e.g. "1e15") silently corrupting a company's
-    # calculated_co2e_kg totals and downstream reports.
-    if qty > Decimal('1000000000000'):
-        return None, None, None, 'Quantity is unrealistically large — please check the value.'
 
     factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit, company)
     if error:
         return None, None, None, error
 
+    # Apply the dimensional conversion BEFORE the capacity check so the ceiling
+    # sees the real stored quantity (e.g. "10000 MWh" becomes 1e7 kWh).
     if multiplier and multiplier != 1:
         qty = qty * multiplier
 
-    return factor, qty, qty * factor.factor_kg_co2e, None
+    co2e = qty * factor.factor_kg_co2e
+    # Capacity ceiling — the accepted quantity AND the resulting co2e must both
+    # fit their DB columns, otherwise EmissionEntry.save() overflows with a
+    # decimal.InvalidOperation. Reject cleanly instead of 500ing. This is not a
+    # real-world limit: realistic values (e.g. 5,000,000 kWh -> co2e ~2.1e9)
+    # pass; a typo'd/malicious "999000000000 kWh" does not.
+    if qty >= MAX_QUANTITY or co2e >= MAX_CO2E_KG:
+        return None, None, None, AMOUNT_TOO_LARGE_ERROR
+
+    return factor, qty, co2e, None
 
 
 def resolve_scope3_activity(category, subtype, quantity, unit):
@@ -364,27 +388,33 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     if error:
         return None, error
 
-    entry = EmissionEntry.objects.create(
-        user=user,
-        company=company,
-        emission_factor=factor,
-        year=year,
-        month=month,
-        quantity=qty,
-        calculated_co2e_kg=co2e_kg,
-        description=description or f'{activity_type} {quantity} {unit}',
-        facility=facility,
-        factor_value_snapshot=factor.factor_kg_co2e,
-        factor_source_snapshot=factor.source,
-        status=_get_entry_status(user, company),
-    )
-    # Company change history (Settings → History) lists chat entries too.
-    from accounts.models import ActivityLog
-    ActivityLog.objects.create(
-        user=user, action='entry_created', target_type='EmissionEntry', target_id=str(entry.id),
-        detail=f'{factor.name} · {year}/{int(month):02d} · {format(qty.normalize(), "f") if hasattr(qty, "normalize") else qty} {factor.unit}',
-        metadata={'company_id': company.id, 'via': 'chat'},
-    )
+    # Belt-and-braces behind the resolver ceiling above: EmissionEntry.save()
+    # recomputes co2e from quantity * factor, so any magnitude that still
+    # overflows the DB columns raises here — degrade to a clean error, never a 500.
+    try:
+        entry = EmissionEntry.objects.create(
+            user=user,
+            company=company,
+            emission_factor=factor,
+            year=year,
+            month=month,
+            quantity=qty,
+            calculated_co2e_kg=co2e_kg,
+            description=description or f'{activity_type} {quantity} {unit}',
+            facility=facility,
+            factor_value_snapshot=factor.factor_kg_co2e,
+            factor_source_snapshot=factor.source,
+            status=_get_entry_status(user, company),
+        )
+        # Company change history (Settings → History) lists chat entries too.
+        from accounts.models import ActivityLog
+        ActivityLog.objects.create(
+            user=user, action='entry_created', target_type='EmissionEntry', target_id=str(entry.id),
+            detail=f'{factor.name} · {year}/{int(month):02d} · {format(qty.normalize(), "f") if hasattr(qty, "normalize") else qty} {factor.unit}',
+            metadata={'company_id': company.id, 'via': 'chat'},
+        )
+    except (InvalidOperation, DataError):
+        return None, AMOUNT_TOO_LARGE_ERROR
     return entry, None
 
 

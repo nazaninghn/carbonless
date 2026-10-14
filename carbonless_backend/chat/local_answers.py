@@ -452,10 +452,19 @@ def local_data_answer(user, content, lang):
 
 
 def ai_unavailable_text(lang, rate_limited=False):
+    # Even when the AI can't answer free-form questions, the user can still log
+    # emissions by typing an amount + activity (handled by the local parser).
+    # Surface that as an actionable next step rather than a bare apology.
     if lang == 'tr':
+        log_hint = ('Serbest sorulara şu an yanıt veremesem de, bir miktar ve faaliyet yazarak '
+                    '("14000 kWh of electricity" gibi) emisyon kaydetmeye devam edebilirsiniz; '
+                    'ayrıca verilerinizi Emisyon Yönetimi sayfasından da girebilirsiniz.')
         if rate_limited:
-            return '⚠️ AI kullanım sınırına ulaşıldı. Lütfen biraz sonra tekrar deneyin; bu arada verilerinizi Emisyon Yönetimi sayfasından girebilirsiniz.'
-        return '⚠️ AI hizmetine şu an ulaşılamıyor. Lütfen birkaç dakika sonra tekrar deneyin; bu arada verilerinizi Emisyon Yönetimi sayfasından girebilirsiniz.'
+            return '⚠️ AI kullanım sınırına ulaşıldı. Lütfen biraz sonra tekrar deneyin. ' + log_hint
+        return '⚠️ AI hizmetine şu an ulaşılamıyor. Lütfen birkaç dakika sonra tekrar deneyin. ' + log_hint
+    log_hint = ('I can\'t answer free-form questions right now, but you can still log emissions by '
+                'typing an amount and activity (e.g. "14000 kWh of electricity"); '
+                'you can also add data on the Emissions page.')
     if rate_limited:
-        return '⚠️ The AI usage limit was reached. Please try again later; meanwhile you can add data on the Emissions page.'
-    return '⚠️ The AI service is unavailable right now. Please try again in a few minutes; meanwhile you can add data on the Emissions page.'
+        return '⚠️ The AI usage limit was reached. Please try again later. ' + log_hint
+    return '⚠️ The AI service is unavailable right now. Please try again in a few minutes. ' + log_hint

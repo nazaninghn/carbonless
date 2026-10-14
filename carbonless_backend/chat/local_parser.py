@@ -73,7 +73,7 @@ ACTIVITY_PATTERNS: dict[str, list[str]] = {
         'landfill', 'waste landfill', 'düzenli depolama', 'دفن زباله',
     ],
     'waste_recyclable': [
-        'recyclable', 'recycle waste', 'geri dönüşüm', 'بازیافت',
+        'recyclable', 'recycled', 'recycle waste', 'geri dönüşüm', 'بازیافت',
     ],
     'waste_organic_compost': [
         'compost', 'organic waste', 'organik atık', 'kompost', 'کمپوست',
@@ -139,17 +139,26 @@ UNIT_SYNONYMS: dict[str, str] = {
     'liter': 'liters', 'litre': 'liters', 'litres': 'liters',
     'l': 'liters', 'lt': 'liters',
     'ton': 'tonne', 'tons': 'tonne', 'tonnes': 'tonne',
-    'tkm': 'tonne-km',
+    'tkm': 'tonne-km', 'ton-km': 'tonne-km',
+    'mwh': 'mwh',
 }
 
+# Ordered alternation: the freight unit `tonne-km|tkm` MUST come before the mass
+# token `tonnes|tonne` so "tonne-km" / "ton-km" never collapses to plain mass.
+# `mwh` sits beside `kwh` (resolver converts it to kWh ×1000); `tonne(s)` resolve
+# to tonne -> kg ×1000. The bare short form `ton` is deliberately NOT a unit here:
+# "3 ton çelik" stays an un-placed amount the reply asks about (it is far more
+# often a rough count/typo than a precise metric-tonne figure), matching the
+# long-standing behaviour the chat tests pin.
 UNIT_PATTERN = (
     r'(?P<unit>'
-    r'kwh|kw/h|'
+    r'tonne-km|ton-km|tkm|'
+    r'kwh|kw/h|mwh|'
     r'm3|m³|m\^3|'
-    r'liters?|litres?|l|lt|'
+    r'liters?|litres?|lt|l|'
     r'kg|'
     r'km|'
-    r'tonne-km|tkm|'
+    r'tonnes|tonne|'
     r'gj'
     r')'
 )
