@@ -2625,7 +2625,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     # questions told the user these would be documented here.
     from .assumptions import derive_assumptions
     # (the exclusions are already listed in 3.4)
-    recorded = [x for x in derive_assumptions(A, lang, report.reporting_year) if x['step_id'] != '6A-1a']
+    recorded = [x for x in derive_assumptions(A, lang, report.reporting_year, report.company) if x['step_id'] != '6A-1a']
     if recorded:
         E.append(Paragraph(
             'Assumptions recorded while the inventory was compiled:' if lang == 'en'

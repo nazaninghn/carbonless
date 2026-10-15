@@ -46,7 +46,7 @@ FUEL_LABELS = {
 }
 
 
-def derive_assumptions(answers, lang='tr', reporting_year=None):
+def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
     """answers: {step_id: stored answer}. Returns the list in survey order."""
     tr = lang != 'en'
     A = {k: _value(v) for k, v in (answers or {}).items()}
@@ -148,7 +148,7 @@ def derive_assumptions(answers, lang='tr', reporting_year=None):
     # Amounts given but not calculated (no factor, other year, …): a data gap
     # the report has to disclose rather than show as zero.
     from .step_entries import uncalculated_notes
-    for n in uncalculated_notes(answers, reporting_year or year):
+    for n in uncalculated_notes(answers, reporting_year or year, company):
         add(n['step_id'], 'A', f'Hesaplanmayan cevap — {n["tr"]}', f'Not calculated — {n["en"]}')
 
     if A.get('6A-1') == 'yes':
@@ -162,4 +162,4 @@ def derive_assumptions(answers, lang='tr', reporting_year=None):
 
 def report_assumptions(report, lang='tr'):
     answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
-    return derive_assumptions(answers, lang, report.reporting_year)
+    return derive_assumptions(answers, lang, report.reporting_year, report.company)

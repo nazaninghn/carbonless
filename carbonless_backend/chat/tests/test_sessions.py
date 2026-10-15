@@ -6,6 +6,10 @@ from ..models import ChatSession, ChatMessage
 
 class ChatSessionTests(TestCase):
     def setUp(self):
+        # The chat's per-user rate limit (20/min) is kept in the cache, and
+        # test users share ids across classes: start each test with none used.
+        from django.core.cache import cache
+        cache.clear()
         self.user = User.objects.create_user('chatuser', 'chat@test.com', 'testpass123')
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
@@ -51,6 +55,10 @@ class CompanyChatTests(TestCase):
     working in it."""
 
     def setUp(self):
+        # The chat's per-user rate limit (20/min) is kept in the cache, and
+        # test users share ids across classes: start each test with none used.
+        from django.core.cache import cache
+        cache.clear()
         from companies.models import Company, CompanyMembership
         from accounts.models import UserProfile
         def company(name, tax):
@@ -89,6 +97,10 @@ class MultiItemMessageTests(TestCase):
         call_command('seed_factors', stdout=StringIO())
 
     def setUp(self):
+        # The chat's per-user rate limit (20/min) is kept in the cache, and
+        # test users share ids across classes: start each test with none used.
+        from django.core.cache import cache
+        cache.clear()
         from companies.models import Company, CompanyMembership
         from accounts.models import UserProfile
         self.user = User.objects.create_user('multi', 'multi@test.com', 'testpass123')
@@ -115,19 +127,31 @@ class MultiItemMessageTests(TestCase):
         self.assertEqual(kinds, [('electricity', 1), ('natural_gas', 1)])
         self.assertNotIn('anlayamadım', res.data['content'])
 
-    def test_facility_in_another_country_is_pointed_out(self):
-        # Electricity uses the headquarters country's grid; a facility named
-        # in the message that is elsewhere is flagged on the card (the factor
-        # itself is not changed).
+    def test_facility_electricity_uses_its_own_countrys_grid(self):
+        # A Turkish company's site in Germany: the German grid, not Turkey's.
+        # A site in a country without its own grid factor (Austria) is not
+        # calculated — no EU average or headquarters grid in its place.
         from companies.models import Facility
+        from emissions.models import EmissionEntry
         company = self.user.profile.active_company
-        Facility.objects.create(company=company, name='Werk Linz', country='AT')
+        Facility.objects.create(company=company, name='Werk Stuttgart', country='DE')
+        linz = Facility.objects.create(company=company, name='Werk Linz', country='AT')
         Facility.objects.create(company=company, name='Gebze Fabrika', country='TR')
-        pe = self._send("Mart 2024 Werk Linz'de 5.000 kWh elektrik kullandık").data['pending_entries'][0]
-        self.assertTrue(pe.get('factor_country_mismatch'))
-        self.assertEqual(pe['facility_country'], 'AT')
+        pe = self._send("Mart 2024 Werk Stuttgart'ta 5.000 kWh elektrik kullandık").data['pending_entries'][0]
+        self.assertEqual(pe['factor_name'], 'Germany grid')
+        self.assertAlmostEqual(pe['co2e_kg'], 5000 * pe['factor_used'], places=2)
+        res = self._send("Mart 2024 Werk Linz'de 5.000 kWh elektrik kullandık")
+        self.assertEqual(res.data['pending_entries'], [])
+        self.assertIn('Werk Linz', res.data['content'])
+        self.assertIn('Özel Talep', res.data['content'])
         pe = self._send("Mart 2024 Gebze Fabrika'da 5.000 kWh elektrik kullandık").data['pending_entries'][0]
-        self.assertNotIn('factor_country_mismatch', pe)
+        self.assertEqual(pe['factor_name_tr'], 'Türkiye ulusal şebekesi')
+        # The confirm endpoint applies the same rule.
+        bad = self.client.post('/api/chat/confirm-entry/', {**pe, 'facility_id': linz.id, 'year': 2024, 'month': 3},
+                               format='json')
+        self.assertEqual(bad.status_code, 400)
+        self.assertEqual(bad.data['code'], 'facility_grid_missing')
+        self.assertFalse(EmissionEntry.objects.filter(facility=linz).exists())
 
     def test_named_facility_and_annual_inventory_overlap(self):
         from companies.models import Facility
@@ -174,6 +198,10 @@ class LocalDataAnswerTests(TestCase):
     from the database, and the chat speaks the UI language."""
 
     def setUp(self):
+        # The chat's per-user rate limit (20/min) is kept in the cache, and
+        # test users share ids across classes: start each test with none used.
+        from django.core.cache import cache
+        cache.clear()
         from unittest import mock
         from companies.models import Company, CompanyMembership
         from accounts.models import UserProfile

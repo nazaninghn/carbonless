@@ -1122,6 +1122,44 @@ class CompanyCountryFactorTests(TestCase):
         self.assertFalse(EmissionEntrySerializer(mk(tr)).data['factor_country_mismatch'])
         self.assertFalse(EmissionEntrySerializer(mk(None)).data['factor_country_mismatch'])
 
+    def test_facility_electricity_uses_its_own_countrys_grid(self):
+        from companies.models import Facility
+        from .factor_lookup import FACILITY_GRID_MISSING, resolve_factor
+        EmissionFactor.objects.create(slug='germany-grid', name='Germany grid', scope='scope2',
+                                      category='electricity', country='global', unit='kwh',
+                                      factor_kg_co2e=0.364, year=2024, source='iea_2024',
+                                      is_active=True, is_default=True)
+        mk = lambda c, n: Facility.objects.create(company=self.tr, name=n, country=c)
+        f = lambda fac: resolve_factor('electricity', 'kwh', self.tr, fac)
+        self.assertEqual(f(mk('DE', 'Stuttgart'))[0].slug, 'germany-grid')
+        self.assertEqual(f(mk('TR', 'Gebze'))[0].slug, 'turkey-grid')
+        self.assertEqual(f(mk('AT', 'Linz'))[3], FACILITY_GRID_MISSING)   # no EU average in its place
+        self.assertEqual(f(mk('', 'Unknown'))[0].slug, 'turkey-grid')     # no country: headquarters
+        # A UK company's site in Turkey: Turkey's grid.
+        uk_site = Facility.objects.create(company=self.gb, name='Izmir', country='TR')
+        self.assertEqual(resolve_factor('electricity', 'kwh', self.gb, uk_site)[0].slug, 'turkey-grid')
+
+    def test_form_entry_checks_the_facility_grid(self):
+        from django.contrib.auth.models import User
+        from rest_framework.test import APIClient
+        from accounts.models import UserProfile
+        from companies.models import CompanyMembership, Facility
+        user = User.objects.create_user('grid', 'grid@t.com', 'x')
+        UserProfile.objects.create(user=user, active_company=self.tr)
+        CompanyMembership.objects.create(company=self.tr, user=user, role='owner')
+        c = APIClient(); c.force_authenticate(user=user)
+        grid = EmissionFactor.objects.get(slug='turkey-grid')
+        de = Facility.objects.create(company=self.tr, name='Werk Stuttgart', country='DE')
+        at = Facility.objects.create(company=self.tr, name='Werk Linz', country='AT')
+        tr = Facility.objects.create(company=self.tr, name='Gebze', country='TR')
+        post = lambda fac: c.post('/api/emissions/entries/', {'emission_factor': grid.id, 'year': 2025, 'month': 1,
+                                                              'quantity': 100, 'facility': fac.id}, format='json')
+        res = post(de)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('Werk Stuttgart', str(res.data['message_tr']))
+        self.assertIn('facility_grid_missing', str(post(at).data['code']))
+        self.assertEqual(post(tr).status_code, 201)
+
     def test_iea_source_has_a_name(self):
         # Shown as "Registered factor — iea_2024" in the chat before.
         self.assertEqual(EmissionFactor(source='iea_2024').get_source_display(), 'IEA 2024')
