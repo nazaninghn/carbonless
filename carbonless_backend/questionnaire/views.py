@@ -775,7 +775,8 @@ class SubmitStepView(APIView):
         after_kg, approved_kg = questionnaire_totals(report)
         answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
         notes = [n['tr' if lang == 'tr' else 'en']
-                 for n in uncalculated_notes(answers, report.reporting_year or 2024) if n['step_id'] == step]
+                 for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
+                 if n['step_id'] == step]
         # A data-entry member's change waits for approval: say so, and give
         # the approved total — the one the dashboard and the reports show.
         pending = any(e.status == 'submitted' for e in entries)
@@ -970,6 +971,15 @@ def _registration_prefill_answers(company):
     return answers
 
 
+def _registration_turnover(company):
+    """The turnover range chosen at sign-up, in B6's ranges (one reference
+    table), or None. Shown at B6 as a hint only: B6 is asked for the
+    inventory's year, so it is not filled in."""
+    from .serializers import StepB6Serializer
+    band = (getattr(company, 'annual_turnover_range', '') or '').strip()
+    return band if band in StepB6Serializer.BANDS and band != 'skip' else None
+
+
 def _facility_count(company):
     """Facilities registered today (sign-up or Settings). Only a hint for
     B4: an inventory for an earlier year may have had a different number, so
@@ -1069,6 +1079,7 @@ class PreviousCompanyProfileView(APIView):
             return Response({
                 'available': False,
                 'answers': _registration_prefill_answers(report.company),
+                'registration_turnover': _registration_turnover(report.company),
                 'other_inventories': _other_inventories(report),
                 'facility_count': _facility_count(report.company),
                 'current_reporting_year': report.reporting_year,
@@ -1102,6 +1113,7 @@ class PreviousCompanyProfileView(APIView):
             # What the user answers "No, let me re-enter" with: only the name
             # and tax number from sign-up, nothing from the earlier report.
             'registration_answers': registration,
+            'registration_turnover': _registration_turnover(report.company),
             'other_inventories': _other_inventories(report),
             'facility_count': _facility_count(report.company),
             'current_reporting_year': report.reporting_year,

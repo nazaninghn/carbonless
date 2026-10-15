@@ -1708,7 +1708,8 @@ def download_attachment(request, message_id):
 @ratelimit(key='user', rate='20/m', method='POST', block=True)
 def send_message(request, session_id):
     response = _send_message(request, session_id)
-    _tag_facility(getattr(response, 'data', None), request.user, request.data.get('content'))
+    _tag_facility(getattr(response, 'data', None), request.user, request.data.get('content'),
+                  (request.data.get('language') or '').strip().lower())
     _tag_company(getattr(response, 'data', None), request.user)
     return response
 
@@ -1738,9 +1739,12 @@ def _chat_facility(user, entry_data):
     return Facility.objects.filter(company=company, pk=fid).first()
 
 
-def _tag_facility(data, user, content):
+def _tag_facility(data, user, content, lang=''):
     """A message naming one of the company's facilities ("… Gebze Fabrika'da
-    …") puts its entries on that facility; the confirmation card shows it."""
+    …") puts its entries on that facility; the confirmation card shows it.
+    Grid electricity is then calculated with that facility's country's grid
+    factor; a country without one is not calculated (the item is dropped
+    from the card and the answer says why)."""
     if not isinstance(data, dict) or not data.get('pending_entries') or not content:
         return
     from companies.utils import get_current_company
@@ -1749,18 +1753,41 @@ def _tag_facility(data, user, content):
     facility = _facility_in(company, content) if company else None
     if facility is None:
         return
-    from emissions.factor_lookup import grid_matches_country
-    from emissions.models import EmissionFactor
+    from emissions.factor_lookup import (FACILITY_GRID_MISSING, facility_grid_missing_message,
+                                         resolve_factor_and_amount)
+    kept, missing, changed = [], [], False
     for pe in data['pending_entries']:
-        if isinstance(pe, dict) and not pe.get('facility_id'):
-            pe['facility_id'], pe['facility_name'] = facility.pk, facility.name
-            # Electricity uses the grid of the company's headquarters country;
-            # a facility in another country (Werk Linz in Austria, Germany
-            # grid) is pointed out on the card so the user can choose.
-            factor = EmissionFactor.objects.filter(pk=pe.get('factor_id')).first()
-            if grid_matches_country(factor, facility.country) is False:
-                pe['facility_country'] = (facility.country or '').strip().upper()
-                pe['factor_country_mismatch'] = True
+        if not isinstance(pe, dict) or pe.get('facility_id'):
+            kept.append(pe)
+            continue
+        pe['facility_id'], pe['facility_name'] = facility.pk, facility.name
+        if (pe.get('fuel_type') or '').strip().lower() == 'electricity' and (facility.country or '').strip():
+            # The quantity is already in the factor's unit (MWh -> kWh).
+            factor, qty, co2e, err = resolve_factor_and_amount(
+                'electricity', pe.get('quantity'), pe.get('factor_unit') or 'kwh', company, facility)
+            if err == FACILITY_GRID_MISSING:
+                missing.append(facility_grid_missing_message(facility, 'tr' if lang == 'tr' else 'en'))
+                changed = True
+                continue
+            if factor and factor.pk != pe.get('factor_id'):
+                pe.update({
+                    'co2e_kg': float(co2e), 'co2e_tonne': float(co2e) / 1000,
+                    'factor_used': float(factor.factor_kg_co2e), 'factor_unit': factor.unit,
+                    'factor_id': factor.pk, 'factor_name': factor.name,
+                    'factor_name_tr': factor.name_tr or '', 'factor_source': factor.source,
+                    'factor_source_label': factor.get_source_display(),
+                    'factor_source_label_tr': SOURCE_LABELS_TR.get(factor.source, ''),
+                    'factor_reference': factor.reference or '', 'scope': factor.scope,
+                })
+                changed = True
+        kept.append(pe)
+    if not changed:
+        return
+    data['pending_entries'] = kept
+    text = _build_pending_entries_text(kept, lang) if kept else ''
+    data['content'] = '\n\n'.join(filter(None, [text] + [f'⚠️ {m}' for m in missing]))
+    if data.get('id'):
+        ChatMessage.objects.filter(pk=data['id'], role='assistant').update(content=data['content'])
 
 
 def _send_message(request, session_id):
@@ -2185,13 +2212,28 @@ def confirm_entry(request):
             'code': INVALID_YEAR_CODE,
         }, status=400)
 
+    # Grid electricity on a facility uses that facility's country's grid; a
+    # country without its own grid factor is not calculated.
+    chat_facility = _chat_facility(request.user, entry_data)
+    if chat_facility is not None and (entry_data.get('fuel_type') or '').strip().lower() == 'electricity':
+        from companies.utils import get_current_company
+        from emissions.factor_lookup import FACILITY_GRID_MISSING, facility_grid_missing_message, resolve_factor
+        _f, _u, _m, grid_err = resolve_factor('electricity', 'kwh', get_current_company(request.user), chat_facility)
+        if grid_err == FACILITY_GRID_MISSING:
+            return Response({
+                'error': facility_grid_missing_message(chat_facility, 'en'),
+                'code': FACILITY_GRID_MISSING,
+                'message_en': facility_grid_missing_message(chat_facility, 'en'),
+                'message_tr': facility_grid_missing_message(chat_facility, 'tr'),
+            }, status=400)
+
     from emissions.duplicates import find_duplicate, is_confirmed
     if not is_confirmed(entry_data):
         from companies.utils import get_current_company
         from emissions.factor_lookup import resolve_factor_and_amount
         factor, qty, _co2e, _err = resolve_factor_and_amount(
             entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''),
-            get_current_company(request.user))
+            get_current_company(request.user), chat_facility)
         now = datetime.now(timezone.utc)
         existing = find_duplicate(
             get_current_company(request.user), factor,
@@ -2223,7 +2265,8 @@ def confirm_entry(request):
         from emissions.factor_lookup import resolve_factor_and_amount
         company = get_current_company(request.user)
         factor, qty, _co2e, _err = resolve_factor_and_amount(
-            entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''), company)
+            entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''), company,
+            chat_facility)
         now = datetime.now(timezone.utc)
         same = find_same_period(company, factor, entry_data.get('year') or now.year,
                                 entry_data.get('month') or now.month,

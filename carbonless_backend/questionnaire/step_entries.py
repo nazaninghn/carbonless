@@ -881,8 +881,9 @@ def _calculated_factor(scope, category):
     return factor
 
 
-def _resolve(activity, company=None):
-    """(factor, quantity Decimal, co2e_kg Decimal) for one activity, or None."""
+def _resolve(activity, company=None, facility_of=None):
+    """(factor, quantity Decimal, co2e_kg Decimal) for one activity, or None.
+    A per-facility activity uses that facility (its country's electricity grid)."""
     from emissions.factor_lookup import resolve_factor_and_amount
     if 'reported_kg' in activity:
         kg = Decimal(str(activity['reported_kg']))
@@ -896,8 +897,9 @@ def _resolve(activity, company=None):
         except (InvalidOperation, ValueError):
             return None
         return factor, qty, qty * factor.factor_kg_co2e
+    facility = facility_of(activity.get('facility_name')) if facility_of else None
     factor, qty, co2e, error = resolve_factor_and_amount(
-        activity['activity'], activity['quantity'], activity['unit'], company)
+        activity['activity'], activity['quantity'], activity['unit'], company, facility)
     if error:
         logger.info('Questionnaire activity skipped (%s): %s', activity, error)
         return None
@@ -908,7 +910,8 @@ def _entry_specs(step, activities, A, year, company):
     """[(factor, quantity, label, facility name)] of one step: the catalog factor, or the
     "calculated" factor of the same scope / category when the CO2e comes
     from elsewhere (supplier factor, declaration, reporting category)."""
-    resolved = [(a, r) for a, r in ((a, _resolve(a, company)) for a in activities) if r]
+    facility_of = _facility_lookup(company) if company else None
+    resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of)) for a in activities) if r]
     supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT else None
     targets = []
     if supplier:
@@ -1242,7 +1245,7 @@ def questionnaire_totals(report):
 
 # ── Answers that are kept but not calculated ─────────────────────────────────
 
-def uncalculated_notes(answers, year):
+def uncalculated_notes(answers, year, company=None):
     """[{step_id, tr, en}] for every answered amount that does not reach the
     dashboard and why — shown right after the answer and listed with the
     inventory's assumptions, so nobody takes a missing number for zero."""
@@ -1280,6 +1283,22 @@ def uncalculated_notes(answers, year):
     # Only when the gate is a non-yes answer AND an amount is actually present;
     # this runs independently of the open_()-guarded blocks below (those only
     # fire when the gate is open), so there is no double-note.
+    # Each facility's electricity uses its own country's grid factor; a
+    # country without one is not calculated (no other country's grid in its
+    # place) until the right factor is set.
+    if company is not None and open_('4A-1') and A.get('4A-1') not in (None, ''):
+        from emissions.factor_lookup import facility_grid_slug
+        facility_of = _facility_lookup(company)
+        for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2')):
+            fac = facility_of(a.get('facility_name'))
+            code = (getattr(fac, 'country', '') or '').strip().upper()
+            if fac is not None and code and not facility_grid_slug(code):
+                note('4A-1',
+                     f'{fac.name} ({code}) elektriği hesaplanmadı — bu ülke için kayıtlı bir elektrik şebekesi '
+                     f'faktörü yok. Doğru faktörün belirlenmesi için Özel Talep gönderin.',
+                     f'The electricity of {fac.name} ({code}) was not calculated — there is no registered '
+                     f'electricity grid factor for that country. Send a Custom Request so the right factor can be set.')
+
     for step, gate in _GATES.items():
         if A.get(gate) not in (None, '', 'yes') and _has_amount(step):
             note(step,

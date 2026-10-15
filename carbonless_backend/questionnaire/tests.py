@@ -2230,3 +2230,35 @@ class ISOReportSigningStateTests(TestCase):
         self.assertIn('Açık danışman inceleme maddeleri', text)
         self.assertIn('Reddedildi — Belgeyi kontrol edin', text)
         self.assertIn('İnceleme bekliyor', text)
+
+
+class FacilityGridQuestionnaireTests(TestCase):
+    """4A-1 electricity per facility: its own country's grid factor; a
+    country without one is not calculated and says so."""
+
+    def setUp(self):
+        from companies.models import Company, Facility
+        self.company = Company.objects.create(
+            legal_entity_name='Kaya A.Ş.', tax_number='1234567890', country_of_headquarters='TR',
+            countries_of_operation='TR', main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='1-10M', number_of_facilities=2)
+        Facility.objects.create(company=self.company, name='Gebze', country='TR')
+        Facility.objects.create(company=self.company, name='Werk Linz', country='AT')
+
+    def test_note_for_a_facility_without_a_grid_factor(self):
+        from .step_entries import uncalculated_notes
+        answers = {'4A-0': {'answer': 'yes'},
+                   '2A-2': {'answer': {'0': {'name': 'Gebze'}, '1': {'name': 'Werk Linz'}}},
+                   '4A-1': {'answer': {'0': '1000 kWh', '1': '500 kWh'}}}
+        notes = [n for n in uncalculated_notes(answers, 2024, self.company) if n['step_id'] == '4A-1']
+        self.assertEqual(len(notes), 1)
+        self.assertIn('Werk Linz', notes[0]['tr'])
+        self.assertIn('Özel Talep', notes[0]['tr'])
+        # Without the company (old callers) nothing changes.
+        self.assertFalse([n for n in uncalculated_notes(answers, 2024) if n['step_id'] == '4A-1'])
+
+    def test_signup_turnover_is_a_b6_range(self):
+        from .views import _registration_turnover
+        self.assertEqual(_registration_turnover(self.company), '1-10M')
+        self.company.annual_turnover_range = '<500K'   # an older sign-up range
+        self.assertIsNone(_registration_turnover(self.company))

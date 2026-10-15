@@ -20,6 +20,16 @@ import { api as apiModule, markSessionActive as activate } from '@/lib/utils/api
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
+// The same turnover ranges (and stored values) as the inventory's question B6
+// — one reference table, so the two answers cannot contradict each other.
+const TURNOVER_BANDS = [
+  { value: '<1M', tr: "1 Milyon ₺'nin altı", en: 'Under 1 million ₺' },
+  { value: '1-10M', tr: '1–10 Milyon ₺', en: '1–10 million ₺' },
+  { value: '10-100M', tr: '10–100 Milyon ₺', en: '10–100 million ₺' },
+  { value: '100M-1B', tr: '100 Milyon – 1 Milyar ₺', en: '100 million – 1 billion ₺' },
+  { value: '1B+', tr: '1 Milyar ₺ ve üzeri', en: '1 billion ₺ and above' },
+];
+
 
 export default function RegisterPage() {
   const { language, t } = useLanguage();
@@ -333,7 +343,7 @@ export default function RegisterPage() {
                 <Panel title={language === 'tr' ? 'Ölçek' : 'Scale'} icon={Factory}>
                   <div className="grid gap-3 md:grid-cols-2">
                     <SelectField label={language === 'tr' ? 'Çalışan Sayısı' : 'Employees'} required value={formData.numberOfEmployees} onChange={e => handleInputChange('numberOfEmployees', e.target.value)}><option value=""> - </option><option value="1-10">1-10</option><option value="11-50">11-50</option><option value="51-250">51-250</option><option value="251-1000">251-1000</option><option value="1000+">1000+</option></SelectField>
-                    <SelectField label={language === 'tr' ? 'Yıllık Ciro (₺)' : 'Annual Turnover (₺, Turkish lira)'} hint={formData.countryOfHeadquarters && !isTurkeyCountry(formData.countryOfHeadquarters) ? (language === 'tr' ? 'Aralıklar Türk lirası cinsindendir: cironuzu yaklaşık TL karşılığına çevirip en yakın aralığı seçin.' : 'The ranges are in Turkish lira: convert your turnover to TRY roughly and pick the closest range.') : null} required value={formData.annualTurnoverRange} onChange={e => handleInputChange('annualTurnoverRange', e.target.value)}><option value=""> - </option><option value="<500K">&lt;500K ₺</option><option value="500K-2M">500K - 2M ₺</option><option value="2M-10M">2M - 10M ₺</option><option value="10M-50M">10M - 50M ₺</option><option value="50M-250M">50M - 250M ₺</option><option value="250M-1B">250M - 1B ₺</option><option value="1B+">1B+ ₺</option></SelectField>
+                    <SelectField label={language === 'tr' ? 'Yıllık Ciro (₺)' : 'Annual Turnover (₺, Turkish lira)'} hint={formData.countryOfHeadquarters && !isTurkeyCountry(formData.countryOfHeadquarters) ? (language === 'tr' ? 'Aralıklar Türk lirası cinsindendir: cironuzu yaklaşık TL karşılığına çevirip en yakın aralığı seçin.' : 'The ranges are in Turkish lira: convert your turnover to TRY roughly and pick the closest range.') : null} required value={formData.annualTurnoverRange} onChange={e => handleInputChange('annualTurnoverRange', e.target.value)}><option value=""> - </option>{TURNOVER_BANDS.map(b => <option key={b.value} value={b.value}>{b[language === 'tr' ? 'tr' : 'en']}</option>)}</SelectField>
                     <TextField label={language === 'tr' ? 'Tesis Sayısı' : 'Facilities'} type="number" min="0" required value={formData.numberOfFacilities} onChange={e => handleInputChange('numberOfFacilities', e.target.value)} icon={Factory} />
                     <TextField label={language === 'tr' ? 'Bağlı Şirket' : 'Subsidiaries'} type="number" min="0" required value={formData.numberOfSubsidiaries} onChange={e => handleInputChange('numberOfSubsidiaries', e.target.value)} icon={Building2} />
                   </div>

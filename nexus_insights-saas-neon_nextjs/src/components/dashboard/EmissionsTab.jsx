@@ -80,14 +80,16 @@ const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR',
 const TURKEY_CODES = new Set(['TR', 'TUR', 'TURKEY', 'TÜRKIYE', 'TÜRKİYE', 'TURKIYE']);
 const COUNTRY_NAME = Object.fromEntries(COUNTRIES.map(c => [c.code, c]));
 
-// The electricity grid a country's own factor would be (same fallback as the
-// chat: own grid, else the EU average for a member, else the global average).
-function gridForCountry(country) {
+// A facility's electricity uses its own country's grid factor, never another
+// country's or an average in its place (same rule as the backend's
+// facility_grid_slug); null = that country has no grid factor of its own.
+function facilityGridSlug(country) {
   const c = String(country || '').trim().toUpperCase();
   if (!c) return null;
   if (TURKEY_CODES.has(c)) return 'turkey-grid';
-  return GRID_BY_COUNTRY[c] || (EU_COUNTRIES.has(c) ? 'eu-grid' : 'grid-average');
+  return GRID_BY_COUNTRY[c] || null;
 }
+const GRID_SLUGS = new Set(['turkey-grid', 'eu-grid', 'grid-average', ...Object.values(GRID_BY_COUNTRY)]);
 
 // Month-filter value for the questionnaire's annual entries (after the 12 months).
 const ANNUAL = 13;
@@ -368,17 +370,13 @@ export default function EmissionsTab({
   const fullMonths = FULL_MONTHS[tr ? 'tr' : 'en'];
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
 
-  // The picked facility's country, when its electricity grid differs from the
-  // company's own (a site abroad).
+  // The picked facility's country: its electricity is calculated with that
+  // country's own grid factor only (null when the country has none).
   const facilityCountry = useMemo(() => {
     const f = (facilityList || []).find(x => String(x.id) === String(facility));
     return String(f?.country || '').trim().toUpperCase();
   }, [facilityList, facility]);
-  const facilityGrid = useMemo(() => {
-    const own = gridForCountry(companyCountry || 'TR');
-    const g = gridForCountry(facilityCountry);
-    return g && g !== own ? g : null;
-  }, [companyCountry, facilityCountry]);
+  const facilityGrid = useMemo(() => facilityGridSlug(facilityCountry), [facilityCountry]);
 
   // Filtered factors (same logic as page.jsx, incl. questionnaire preferred source)
   const filteredFactors = useMemo(() => {
@@ -409,20 +407,28 @@ export default function EmissionsTab({
       if (preferred) m = m && preferred.includes(f.source);
       return m;
     });
-    // A facility in another country (a Turkish company's site in Germany):
-    // its own country's grid is offered too, on top — the list was locked to
-    // the company's country, so that factor could not be picked at all.
-    // Only an option: the user still chooses the factor.
-    if (facilityGrid) {
+    // A facility with a country: of the electricity grids, only that
+    // country's own is offered (added when the company's list lacks it);
+    // other countries' grids and averages are left out. Non-grid sources
+    // (e.g. 100% renewable) stay.
+    if (facilityCountry) {
       const seen = new Set(list.map(f => f.id));
-      list.push(...factors.filter(f => f.slug === facilityGrid && !seen.has(f.id)
-        && (!selScope || f.scope === selScope) && (!selCategory || f.category === selCategory)));
+      if (facilityGrid) {
+        list.push(...factors.filter(f => f.slug === facilityGrid && !seen.has(f.id)
+          && (!selScope || f.scope === selScope) && (!selCategory || f.category === selCategory)));
+      }
+      return list.filter(f => !GRID_SLUGS.has(f.slug) || f.slug === facilityGrid)
+        .sort((a, b) => (b.slug === facilityGrid) - (a.slug === facilityGrid));
     }
     // The company's own grid first (a UK company sees "UK grid" on top).
     const ownGrid = GRID_BY_COUNTRY[companyCountry] || (EU_COUNTRIES.has(companyCountry) ? 'eu-grid' : null);
-    const rank = f => (facilityGrid && f.slug === facilityGrid ? 2 : 0) + (ownGrid && f.slug === ownGrid ? 1 : 0);
-    return (ownGrid || facilityGrid) ? [...list].sort((a, b) => rank(b) - rank(a)) : list;
-  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry, facilityGrid]);
+    return ownGrid ? [...list].sort((a, b) => (b.slug === ownGrid) - (a.slug === ownGrid)) : list;
+  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry, facilityCountry, facilityGrid]);
+  // Picking a facility can take the chosen source off the list (another
+  // country's grid): clear it rather than save what is no longer offered.
+  useEffect(() => {
+    if (selFactor && !filteredFactors.some(f => String(f.id) === String(selFactor))) setSelFactor('');
+  }, [filteredFactors, selFactor]);
 
   const categories = useMemo(() => {
     // Hoist the country-category Set — O(n) not O(n²)
@@ -653,10 +659,18 @@ export default function EmissionsTab({
         } else if (res.status === 403) {
           setFormError(noPermissionMessage(tr));
           toast.error(noPermissionMessage(tr));
-        } else if (String((await res.json().catch(() => ({}))).code || '').includes('future_period')) {
-          setFormError(futurePeriodMessage(tr));
         } else {
-          setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
+          const d = await res.json().catch(() => ({}));
+          const one = (v) => (Array.isArray(v) ? v[0] : v);
+          if (String(one(d.code) || '').includes('future_period')) {
+            setFormError(futurePeriodMessage(tr));
+          } else if (one(d.message_tr) && one(d.message_en)) {
+            // A rule the server explains itself (e.g. a facility's electricity
+            // needs its own country's grid factor).
+            setFormError(String(one(tr ? d.message_tr : d.message_en)));
+          } else {
+            setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
+          }
         }
       }
     } catch {
@@ -1422,15 +1436,24 @@ export default function EmissionsTab({
                         ))}
                       </select>
                       {(() => {
-                        const g = facilityGrid && filteredFactors.find(f => f.slug === facilityGrid);
-                        if (!g) return null;
+                        if (!facilityCountry || selCategory !== 'electricity') return null;
                         const where = COUNTRY_NAME[facilityCountry]?.[tr ? 'tr' : 'en'] || facilityCountry;
+                        const g = facilityGrid && filteredFactors.find(f => f.slug === facilityGrid);
+                        if (!g) {
+                          return (
+                            <p role="note" className="mt-1.5 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800">
+                              {tr
+                                ? `Seçili tesis ${where} konumunda ve bu ülke için kayıtlı bir elektrik şebekesi faktörü yok; başka bir ülkenin faktörü kullanılmaz. Doğru faktörün belirlenmesi için Özel Talep gönderin.`
+                                : `The selected facility is in ${where}, and there is no registered electricity grid factor for that country; another country's factor is not used. Send a Custom Request so the right factor can be set.`}
+                            </p>
+                          );
+                        }
                         const name = tr && g.name_tr ? g.name_tr : g.name;
                         return (
                           <p className="mt-1.5 text-[11px] text-[#072C0E]/60">
                             {tr
-                              ? `Seçili tesis ${where} konumunda: o ülkenin faktörü "${name}" listenin başında. Hangisinin uygun olduğunu siz seçin.`
-                              : `The selected facility is in ${where}: that country's factor "${name}" is at the top of the list. You choose which one applies.`}
+                              ? `Seçili tesis ${where} konumunda: elektriği o ülkenin şebeke faktörüyle ("${name}") hesaplanır.`
+                              : `The selected facility is in ${where}: its electricity is calculated with that country's grid factor ("${name}").`}
                           </p>
                         );
                       })()}

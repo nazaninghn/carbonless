@@ -223,6 +223,35 @@ EU_COUNTRIES = {
 }
 
 
+# A facility's electricity uses its own country's grid factor. A country
+# without one is not calculated (no EU / global average, no headquarters
+# grid in its place) until the right factor is set — e.g. via a custom
+# request.
+FACILITY_GRID_MISSING = 'facility_grid_missing'
+
+
+def facility_grid_slug(country):
+    """The grid factor slug for a facility in `country` (a country code), or
+    None when that country has no registered grid factor of its own."""
+    from questionnaire.serializers import TURKEY_CODES
+    code = (country or '').strip().upper()
+    if not code:
+        return None
+    if code in TURKEY_CODES:
+        return 'turkey-grid'
+    return GRID_BY_COUNTRY.get(code)
+
+
+def facility_grid_missing_message(facility, lang='en'):
+    name = getattr(facility, 'name', '') or ''
+    code = (getattr(facility, 'country', '') or '').strip().upper()
+    if lang == 'tr':
+        return (f'{name} tesisinin ülkesi ({code}) için kayıtlı bir elektrik şebekesi faktörü yok; '
+                f'bu elektrik kaydı hesaplanmadı. Doğru faktörün belirlenmesi için Özel Talep gönderin.')
+    return (f'There is no registered electricity grid factor for the country of {name} ({code}), '
+            f'so this electricity was not calculated. Send a Custom Request so the right factor can be set.')
+
+
 def grid_matches_country(factor, country):
     """Whether an electricity grid factor stands for `country` (a facility's
     country code): True / False, or None when it does not apply (not a
@@ -255,12 +284,14 @@ def _foreign_country(company):
     return (company.country_of_headquarters or '').strip().upper()
 
 
-def resolve_factor(activity_type, unit, company=None):
+def resolve_factor(activity_type, unit, company=None, facility=None):
     """
     Resolves (activity_type, unit) to a real EmissionFactor, preferring the
     Turkey-specific row and falling back to global. For a company based
     outside Turkey (when `company` is given) the global row comes first and
-    electricity uses that country's grid factor.
+    electricity uses that country's grid factor. With a `facility` that has a
+    country, grid electricity uses that country's own grid factor, or returns
+    the FACILITY_GRID_MISSING error when it has none.
     Returns (factor, normalized_unit, quantity_multiplier, error) — multiplier
     is 1 unless a dimensional conversion (e.g. MWh -> kWh) was needed to reach
     a registered unit.
@@ -281,6 +312,17 @@ def resolve_factor(activity_type, unit, company=None):
     slug = ACTIVITY_TO_SLUG[(activity_type, norm_unit)]
     countries = ('turkey', 'global')
     foreign = _foreign_country(company)
+    facility_country = (getattr(facility, 'country', '') or '').strip()
+    if slug == 'turkey-grid' and facility_country:
+        grid = facility_grid_slug(facility_country)
+        factor = None
+        if grid:
+            factor = (EmissionFactor.objects.filter(slug=grid, country='turkey' if grid == 'turkey-grid' else 'global',
+                                                    is_active=True, is_default=True).first()
+                      or EmissionFactor.objects.filter(slug=grid, is_active=True, is_default=True).first())
+        if not factor:
+            return None, norm_unit, None, FACILITY_GRID_MISSING
+        return factor, norm_unit, multiplier, None
     if foreign:
         countries = ('global', 'turkey')
         if slug == 'turkey-grid':
@@ -301,7 +343,7 @@ def resolve_factor(activity_type, unit, company=None):
     return factor, norm_unit, multiplier, None
 
 
-def resolve_factor_and_amount(activity_type, quantity, unit, company=None):
+def resolve_factor_and_amount(activity_type, quantity, unit, company=None, facility=None):
     """
     Resolves (activity_type, unit) to a real factor AND normalizes quantity for
     any dimensional conversion (e.g. tonne -> kg, MWh -> kWh, mile -> km,
@@ -315,7 +357,7 @@ def resolve_factor_and_amount(activity_type, quantity, unit, company=None):
     if qty <= 0:
         return None, None, None, 'Quantity must be greater than zero.'
 
-    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit, company)
+    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit, company, facility)
     if error:
         return None, None, None, error
 
@@ -406,8 +448,10 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     if not company:
         return None, 'No company found. Please create a company first.'
 
-    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company)
+    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility)
     if error:
+        if error == FACILITY_GRID_MISSING:
+            return None, facility_grid_missing_message(facility)
         return None, error
 
     # Belt-and-braces behind the resolver ceiling above: EmissionEntry.save()

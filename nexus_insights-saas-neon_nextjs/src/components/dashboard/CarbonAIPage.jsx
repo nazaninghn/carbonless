@@ -5128,6 +5128,22 @@ export function QuestionnaireTab({
                     </p>
                   );
                 })()}
+                {/* B6 is asked per year (not pre-filled); sign-up uses the same
+                    ranges, so its answer is shown as a hint. */}
+                {currentId === 'B6' && (() => {
+                  const reg = previousProfile?.registration_turnover;
+                  const value = reg ? unmapPhase1Answer('B6', { revenue_band: reg }) : null;
+                  const opt = value && getQuestionById('B6')?.options?.find(o => o.value === value);
+                  if (!opt) return null;
+                  const year = readAnswerValue(answers, 'A4');
+                  return (
+                    <p className="text-xs text-[#175022]/60">
+                      {tr
+                        ? `Kayıt olurken seçtiğiniz ciro aralığı: ${opt.label.tr}.${year ? ` ${year} yılı için farklıysa o yılın aralığını seçin.` : ''}`
+                        : `The turnover range you chose at sign-up: ${opt.label.en}.${year ? ` If it was different in ${year}, choose that year's range.` : ''}`}
+                    </p>
+                  );
+                })()}
                 {/* Inline validation error — only shows after a failed Confirm attempt
                     AND while the current answer is still actually invalid.
                     showValidationError resets when answerValue changes or question/tab switches,
@@ -6234,14 +6250,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                               const o = periodOverrides[key] || {};
                               const name = 'facility_id' in o ? o.facility_name : pe.facility_name;
                               if (!name) return null;
-                              // Electricity is calculated with the grid of the company's
-                              // headquarters country; say so when this facility is
-                              // elsewhere (the factor itself is not changed here).
-                              const mismatch = pe.factor_country_mismatch && !('facility_id' in o);
-                              const where = COUNTRY_BY_CODE[pe.facility_country]?.[tr ? 'tr' : 'en'] || pe.facility_country;
-                              const factorName = (tr ? pe.factor_name_tr : '') || pe.factor_name;
                               return (
-                                <>
                                 <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-[#1A7B2A]">
                                   <span>{tr ? 'Tesis' : 'Facility'}: {name}</span>
                                   <button
@@ -6256,17 +6265,6 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                     ×
                                   </button>
                                 </div>
-                                {mismatch && (
-                                  <p role="note" className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1.5 text-[10px] font-medium leading-snug text-amber-800">
-                                    <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2.25} />
-                                    <span>
-                                      {tr
-                                        ? `${name} tesisi ${where} konumunda; bu sonuç şirket merkezinin ülkesine göre seçilen "${factorName}" faktörüyle hesaplandı. ${where} faktörünü kullanmak için bu kaydı Emisyon Yönetimi'ndeki formdan ekleyin ve tesisi seçin: o ülkenin faktörü listenin başına gelir. Listede uygun faktör yoksa Özel Talep gönderin.`
-                                        : `${name} is in ${where}; this result uses "${factorName}", chosen from the company's headquarters country. To use ${where}'s factor, add this entry from the form in Emission Management and pick the facility: that country's factor is then at the top of the list. If no suitable factor is listed, send a Custom Request.`}
-                                    </span>
-                                  </p>
-                                )}
-                                </>
                               );
                             })()}
                           </div>
@@ -6324,7 +6322,9 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                 }
                                 if (!res.ok) {
                                   setError(res.status === 403 ? noPermissionMessage(tr)
-                                    : data.code === 'card_other_company' ? (tr ? data.message_tr : data.message_en)
+                                    // Errors that come in both languages (other company's card,
+                                    // no grid factor for the facility's country, …).
+                                    : (data.message_tr && data.message_en) ? (tr ? data.message_tr : data.message_en)
                                     : (data.error || (tr ? 'Kayıt başarısız.' : 'Save failed.')));
                                   return;
                                 }

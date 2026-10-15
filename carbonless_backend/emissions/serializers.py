@@ -245,7 +245,36 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if 'year' in attrs and is_invalid_year(year):
             raise serializers.ValidationError(
                 {'year': [invalid_year_message('en')], 'code': INVALID_YEAR_CODE})
+        # A facility's electricity uses its own country's grid factor only —
+        # not another country's grid or an average (checked when the factor
+        # or the facility is set or changed; older entries keep theirs).
+        factor = attrs.get('emission_factor', getattr(self.instance, 'emission_factor', None))
+        facility = attrs.get('facility', getattr(self.instance, 'facility', None))
+        changed = self.instance is None or (
+            ('emission_factor' in attrs and attrs['emission_factor'] != self.instance.emission_factor)
+            or ('facility' in attrs and attrs['facility'] != self.instance.facility))
+        country = (getattr(facility, 'country', '') or '').strip()
+        if changed and factor is not None and country and (factor.slug or '') in _GRID_SLUGS():
+            from .factor_lookup import FACILITY_GRID_MISSING, facility_grid_missing_message, facility_grid_slug
+            wanted = facility_grid_slug(country)
+            if factor.slug != wanted:
+                if not wanted:
+                    msg_en, msg_tr = facility_grid_missing_message(facility, 'en'), facility_grid_missing_message(facility, 'tr')
+                    code = FACILITY_GRID_MISSING
+                else:
+                    msg_en = (f"{facility.name} is in {country.upper()}: its electricity must use that country's "
+                              f"grid factor, not \"{factor.name}\".")
+                    msg_tr = (f"{facility.name} tesisi {country.upper()} konumunda: elektriği o ülkenin şebeke "
+                              f"faktörüyle hesaplanmalı, \"{factor.name_tr or factor.name}\" ile değil.")
+                    code = 'facility_grid_mismatch'
+                raise serializers.ValidationError(
+                    {'emission_factor': [msg_en], 'code': code, 'message_en': msg_en, 'message_tr': msg_tr})
         return attrs
+
+
+def _GRID_SLUGS():
+    from .factor_lookup import GRID_BY_COUNTRY
+    return {'turkey-grid', 'eu-grid', 'grid-average', *GRID_BY_COUNTRY.values()}
 
 
 class ReductionTargetSerializer(serializers.ModelSerializer):
