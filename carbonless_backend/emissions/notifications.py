@@ -42,7 +42,9 @@ def _unit(code, lang):
 
 
 def _prefs(user):
-    """(wants approval notifications, language) for a user."""
+    """(wants approval e-mails, language) for a user. The switch in
+    Settings → Notifications governs e-mail only: the in-app notices always
+    arrive — turned off, a member never learned an entry was rejected."""
     profile = getattr(user, 'profile', None)
     if profile is None:
         return True, 'tr'
@@ -117,6 +119,8 @@ def _email_approver(user, company_id, lang, latest):
     """Tell an approver by e-mail that entries are waiting — at most once a
     day, counting everything waiting in the company at that moment. The
     in-app bell is only seen by someone who logs in."""
+    if not _prefs(user)[0]:
+        return
     from datetime import timedelta
     from django.utils import timezone
     from accounts.models import UserProfile
@@ -171,9 +175,7 @@ def notify_entry_submitted(entry):
         )
         old = entry.replaces_entry if entry.replaces_entry_id else None
         for membership in approvers:
-            wants, lang = _prefs(membership.user)
-            if not wants:
-                continue
+            _, lang = _prefs(membership.user)
             if old is not None:
                 # A change to an approved entry, not a new one: what it was
                 # and what it would become.
@@ -217,9 +219,7 @@ def notify_delete_requested(author, entry):
                      .exclude(user_id=getattr(author, 'pk', None))
                      .select_related('user', 'user__profile'))
         for membership in approvers:
-            wants, lang = _prefs(membership.user)
-            if not wants:
-                continue
+            _, lang = _prefs(membership.user)
             what = _describe(entry, lang)
             if lang == 'tr':
                 _notify(membership.user, 'entry_submitted', 'Silme talebi',
@@ -242,9 +242,7 @@ def notify_delete_refused(entry, reason, reviewer):
     if author is None or author.pk == reviewer.pk:
         return
     try:
-        wants, lang = _prefs(author)
-        if not wants:
-            return
+        _, lang = _prefs(author)
         what = _describe(entry, lang)
         link = f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}'
         reason = (reason or '').strip().rstrip('.').rstrip()
@@ -276,9 +274,7 @@ def notify_questionnaire_change(author, company, year, step, entries, replaced, 
                      .exclude(user_id=getattr(author, 'pk', None))
                      .select_related('user', 'user__profile'))
         for membership in approvers:
-            wants, lang = _prefs(membership.user)
-            if not wants:
-                continue
+            _, lang = _prefs(membership.user)
             now = _summary(entries, lang)
             before = _summary(replaced, lang) if replaced else ''
             where = question_label(step, lang)
@@ -374,8 +370,6 @@ def notify_entry_reviewed(entry, approved, reviewer):
         return
     try:
         wants, lang = _prefs(entry.user)
-        if not wants:
-            return
         what = _describe(entry, lang)
         # A change to an approved entry: rejected, the approved figure stays.
         old = entry.replaces_entry if entry.replaces_entry_id else None
@@ -399,7 +393,8 @@ def notify_entry_reviewed(entry, approved, reviewer):
             _notify(entry.user, 'entry_rejected',
                     'Değişiklik talebiniz reddedildi' if old is not None else 'Kaydınız reddedildi',
                     f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
-            _send_email(entry.user, 'Carbonless: kaydınız reddedildi',
+            if wants:
+                _send_email(entry.user, 'Carbonless: kaydınız reddedildi',
                         f'Merhaba {entry.user.first_name or entry.user.email},\n\n{what} reddedildi.'
                         + (f'\nNeden: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}&company={entry.company_id}\n\n'
                         'Ayarlar → Bildirimler bölümünden bu e-postaları kapatabilirsiniz.\n\n— Carbonless')
@@ -411,7 +406,8 @@ def notify_entry_reviewed(entry, approved, reviewer):
             _notify(entry.user, 'entry_rejected',
                     'Your change was rejected' if old is not None else 'Your entry was rejected',
                     f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
-            _send_email(entry.user, 'Carbonless: your entry was rejected',
+            if wants:
+                _send_email(entry.user, 'Carbonless: your entry was rejected',
                         f'Hello {entry.user.first_name or entry.user.email},\n\n{what} was rejected.'
                         + (f'\nReason: {reason}' if reason else '') + f'\n\n{fix.strip()}\n{_frontend()}{link}&company={entry.company_id}\n\n'
                         'You can turn these e-mails off in Settings → Notifications.\n\n— Carbonless')

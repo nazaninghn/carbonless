@@ -73,6 +73,20 @@ class NotAuditorForWrites(BasePermission):
         return membership is not None and membership.role != 'auditor'
 
 
+class ManagerForWrites(BasePermission):
+    """Company details and facilities are changed by owners, admins and
+    managers only. A data-entry member could rename the company, change its
+    tax number and delete a facility — whose approved entries, signed
+    inventory included, then silently lost their facility. Reads stay open
+    to every member."""
+    message = 'Only the company owner, admins and managers can change company details and facilities.'
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return current_role(request.user) in ('owner', 'admin', 'manager')
+
+
 def current_role(user):
     """The user's role in their current company, or None."""
     company = get_current_company(user)

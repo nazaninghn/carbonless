@@ -82,6 +82,38 @@ class FacilityTests(TestCase):
         self.assertEqual(len(data), 1)
 
 
+class CompanyAndFacilityRoleTests(FacilityTests):
+    """Members read company details and facilities; only owners, admins and
+    managers change them (a data-entry member could delete a facility, and
+    its approved entries lost their facility)."""
+
+    def _member(self, name, role):
+        u = User.objects.create_user(name, f'{name}@test.com', 'testpass123')
+        CompanyMembership.objects.create(company=self.company, user=u, role=role)
+        c = APIClient()
+        c.force_authenticate(user=u)
+        return c
+
+    def test_data_entry_reads_but_cannot_change(self):
+        fac = Facility.objects.create(company=self.company, name='HQ', city='Istanbul')
+        c = self._member('clerk', 'data_entry')
+        self.assertEqual(c.get('/api/companies/detail/').status_code, 200)
+        self.assertEqual(c.get('/api/companies/facilities/').status_code, 200)
+        self.assertEqual(c.patch('/api/companies/detail/', {'tax_number': '1'}, format='json').status_code, 403)
+        self.assertEqual(c.post('/api/companies/facilities/', {'name': 'Depo'}, format='json').status_code, 403)
+        self.assertEqual(c.patch(f'/api/companies/facilities/{fac.id}/', {'name': 'X'}, format='json').status_code, 403)
+        self.assertEqual(c.delete(f'/api/companies/facilities/{fac.id}/').status_code, 403)
+        self.assertTrue(Facility.objects.filter(pk=fac.id, name='HQ').exists())
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.tax_number, '999')
+
+    def test_manager_can_change(self):
+        fac = Facility.objects.create(company=self.company, name='HQ', city='Istanbul')
+        c = self._member('mgr', 'manager')
+        self.assertEqual(c.patch(f'/api/companies/facilities/{fac.id}/', {'city': 'Bursa'}, format='json').status_code, 200)
+        self.assertEqual(c.post('/api/companies/facilities/', {'name': 'Depo'}, format='json').status_code, 201)
+
+
 class CompanyIsolationTests(TestCase):
     """Test that users cannot access other companies' data"""
 
