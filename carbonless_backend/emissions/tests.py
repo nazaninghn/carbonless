@@ -1103,6 +1103,25 @@ class CompanyCountryFactorTests(TestCase):
         self.assertIsNone(grid_matches_country(f('uk-grid'), ''))
         self.assertIsNone(grid_matches_country(f('natural-gas-m3'), 'TR'))
 
+    def test_entry_shows_a_factor_of_another_country(self):
+        # A Turkish company's site in Germany on the Turkish grid is marked;
+        # a site in Turkey is not. The calculation is unchanged.
+        from django.contrib.auth.models import User
+        from companies.models import Facility
+        from .models import EmissionEntry
+        from .serializers import EmissionEntrySerializer
+        user = User.objects.create_user('fc', 'fc@t.com', 'x')
+        grid = EmissionFactor.objects.get(slug='turkey-grid')
+        de = Facility.objects.create(company=self.tr, name='Werk Stuttgart', country='DE')
+        tr = Facility.objects.create(company=self.tr, name='Gebze', country='TR')
+        mk = lambda fac: EmissionEntry.objects.create(user=user, company=self.tr, emission_factor=grid,
+                                                      year=2025, month=1, quantity=100, facility=fac)
+        data = EmissionEntrySerializer(mk(de)).data
+        self.assertTrue(data['factor_country_mismatch'])
+        self.assertEqual(data['facility_country'], 'DE')
+        self.assertFalse(EmissionEntrySerializer(mk(tr)).data['factor_country_mismatch'])
+        self.assertFalse(EmissionEntrySerializer(mk(None)).data['factor_country_mismatch'])
+
     def test_iea_source_has_a_name(self):
         # Shown as "Registered factor — iea_2024" in the chat before.
         self.assertEqual(EmissionFactor(source='iea_2024').get_source_display(), 'IEA 2024')

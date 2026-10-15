@@ -6258,8 +6258,8 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                     <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2.25} />
                                     <span>
                                       {tr
-                                        ? `${name} tesisi ${where} konumunda; bu sonuç şirket merkezinin ülkesine göre seçilen "${factorName}" faktörüyle hesaplandı. Başka bir faktör gerekiyorsa (örn. AB şebekesi) bu kaydı Emisyon Yönetimi'ndeki formdan ekleyin.`
-                                        : `${name} is in ${where}; this result uses "${factorName}", chosen from the company's headquarters country. If you need another factor (e.g. EU grid), add this entry from the form in Emission Management instead.`}
+                                        ? `${name} tesisi ${where} konumunda; bu sonuç şirket merkezinin ülkesine göre seçilen "${factorName}" faktörüyle hesaplandı. ${where} faktörünü kullanmak için bu kaydı Emisyon Yönetimi'ndeki formdan ekleyin ve tesisi seçin: o ülkenin faktörü listenin başına gelir. Listede uygun faktör yoksa Özel Talep gönderin.`
+                                        : `${name} is in ${where}; this result uses "${factorName}", chosen from the company's headquarters country. To use ${where}'s factor, add this entry from the form in Emission Management and pick the facility: that country's factor is then at the top of the list. If no suitable factor is listed, send a Custom Request.`}
                                     </span>
                                   </p>
                                 )}
