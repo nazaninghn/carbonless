@@ -10,7 +10,7 @@ import { COUNTRIES } from '@/lib/data/countries';
  * @param {boolean} multi - allow multiple selections
  * @param {string} placeholder
  */
-export default function CountryPicker({ value, onChange, language = 'tr', multi = false, placeholder }) {
+export default function CountryPicker({ value, onChange, language = 'tr', multi = false, placeholder, inputId }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -77,6 +77,7 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
   return (
     <div ref={ref} className="relative">
       <input
+        id={inputId}
         type="text"
         value={search}
         onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
