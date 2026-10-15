@@ -21,7 +21,7 @@ class Command(BaseCommand):
         for user in users_without_company:
             company = Company.objects.create(
                 legal_entity_name=f"{user.username}'s Company",
-                tax_number='—',
+                tax_number='',
                 country_of_headquarters='Not set',
                 countries_of_operation='Not set',
                 nace_code='',

@@ -371,6 +371,13 @@ class CompanyContactValidationTests(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn('internet sitesi', str(res.data['website']))
 
+    def test_tax_number_can_be_cleared(self):
+        # Optional at sign-up, so Settings must accept removing it too (it
+        # used to be required here, and sign-up stored '—' instead).
+        res = self._patch(tax_number='')
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.data['tax_number'], '')
+
     def test_questionnaire_step_uses_the_same_check(self):
         from questionnaire.serializers import StepA7bSerializer
         s = StepA7bSerializer(data={'telephone': 'abc', 'website': 'kaya'}, context={'lang': 'tr'})

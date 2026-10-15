@@ -77,7 +77,7 @@ class RegisterView(generics.CreateAPIView):
 
         # Create the user's company now, from the details the three-step
         # registration form collected. This used to be a placeholder
-        # ("<username>'s Company", tax '—', country 'Not set') with the real
+        # ("<username>'s Company", country 'Not set') with the real
         # details only sent in a follow-up call after login — but a new
         # account is inactive until the email is verified, so that login fails
         # and the follow-up never ran: every verified signup lost everything it
@@ -114,7 +114,7 @@ class RegisterView(generics.CreateAPIView):
                 return
         placeholder = {
             'legal_entity_name': f"{user.username}'s Company",
-            'tax_number': '—',
+            'tax_number': '',
             'country_of_headquarters': 'Not set',
             'countries_of_operation': 'Not set',
             'nace_code': '',
@@ -244,7 +244,7 @@ class RateLimitedLoginView(TokenObtainPairView):
                 if not CompanyMembership.objects.filter(user=user).exists():
                     company = Company.objects.create(
                         legal_entity_name=f"{user.username}'s Company",
-                        tax_number='—', country_of_headquarters='Not set',
+                        tax_number='', country_of_headquarters='Not set',
                         countries_of_operation='Not set', nace_code='',
                         main_activity_description='Not set',
                         number_of_employees='1-10', annual_turnover_range='Not set',
@@ -327,7 +327,7 @@ class GoogleLoginView(generics.GenericAPIView):
             if not CompanyMembership.objects.filter(user=user).exists():
                 company = Company.objects.create(
                     legal_entity_name=f"{user.username}'s Company",
-                    tax_number='—',
+                    tax_number='',
                     country_of_headquarters='Not set',
                     countries_of_operation='Not set',
                     nace_code='',

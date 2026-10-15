@@ -237,7 +237,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
 
     profile_rows = [
         ('Yasal Unvan' if tr else 'Legal Entity Name', cname),
-        ('Vergi/Kayıt No' if tr else 'Tax / Registration ID', company.tax_number if company else '—'),
+        ('Vergi/Kayıt No' if tr else 'Tax / Registration ID', (company.tax_number if company else '') or '—'),
         ('Merkez Ülke' if tr else 'Headquarters Country', company.country_of_headquarters if company else '—'),
         ('NACE Sektör Kodu' if tr else 'NACE Sector Code', company.nace_code if company and company.nace_code else '—'),
         ('Faaliyet Açıklaması' if tr else 'Activity Description', (company.main_activity_description[:120] + '…') if company and company.main_activity_description and len(company.main_activity_description) > 120 else (company.main_activity_description if company else '—') or '—'),

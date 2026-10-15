@@ -1,5 +1,5 @@
 ﻿'use client';
-import { phoneOk, websiteOk, phoneMessage, websiteMessage } from '@/lib/companyFields';
+import { phoneOk, websiteOk, phoneMessage, websiteMessage, phoneExample, normalizeTaxNumber, taxNumberOk, taxNumberMessage, taxNumberPlaceholder } from '@/lib/companyFields';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { useToast } from '@/components/ToastProvider';
@@ -150,13 +150,16 @@ export default function CompanySettings({ language, readOnly = false }) {
       return;
     }
     // Printed as stated in the ISO report: must look like a phone / website.
-    if (!phoneOk(form.telephone)) { setError(phoneMessage(tr)); return; }
+    if (!phoneOk(form.telephone)) { setError(phoneMessage(tr, form.country_of_headquarters)); return; }
+    // VKN/TCKN for a company based in Turkey, the local tax / VAT number
+    // elsewhere — the same rule as sign-up and the inventory's Question 2.
+    if (!taxNumberOk(form.tax_number, form.country_of_headquarters)) { setError(taxNumberMessage(tr, form.country_of_headquarters)); return; }
     if (!websiteOk(form.website)) { setError(websiteMessage(tr)); return; }
     setSaving(true);
     try {
       const res = await api.updateCompany({
         legal_entity_name: form.legal_entity_name,
-        tax_number: form.tax_number || '',
+        tax_number: normalizeTaxNumber(form.tax_number, form.country_of_headquarters),
         country_of_headquarters: form.country_of_headquarters || '',
         nace_code: form.nace_code || '',
         main_activity_description: form.main_activity_description || '',
@@ -328,7 +331,7 @@ export default function CompanySettings({ language, readOnly = false }) {
           <input type="text" value={field('legal_entity_name')} onChange={set('legal_entity_name')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Vergi No' : 'Tax Number'}>
-          <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <input type="text" maxLength={30} placeholder={taxNumberPlaceholder(tr, field('country_of_headquarters'))} value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
           <CountrySelect value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} tr={tr} />
@@ -343,7 +346,7 @@ export default function CompanySettings({ language, readOnly = false }) {
           <input type="text" value={field('trade_registry_number')} onChange={set('trade_registry_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Telefon' : 'Telephone'}>
-          <input type="tel" inputMode="tel" placeholder="+90 212 555 01 23" value={field('telephone')} onChange={set('telephone')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <input type="tel" inputMode="tel" placeholder={phoneExample(field('country_of_headquarters'), tr)} value={field('telephone')} onChange={set('telephone')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'İnternet Sitesi' : 'Website'}>
           <input type="text" inputMode="url" placeholder={tr ? 'www.sirketiniz.com.tr' : 'www.yourcompany.com'} value={field('website')} onChange={set('website')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />

@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 class Company(models.Model):
     # Note: user field removed. Use CompanyMembership for ownership.
     legal_entity_name = models.CharField(max_length=255)
-    tax_number = models.CharField(max_length=100)
+    # Optional at sign-up; empty when not given (was stored as '—').
+    tax_number = models.CharField(max_length=100, blank=True, default='')
     country_of_headquarters = models.CharField(max_length=100)
     countries_of_operation = models.TextField()
     nace_code = models.CharField(max_length=50, blank=True)

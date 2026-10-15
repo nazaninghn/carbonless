@@ -97,7 +97,9 @@ class RegistrationCompanyTests(TestCase):
         })
         self.assertTrue(data['company_saved'])
         self.assertEqual(company.legal_entity_name, 'Blank Tax Ltd')
-        self.assertEqual(company.tax_number, '—')
+        # Stored empty (not as a '—' placeholder that then showed up in the
+        # Settings edit field and the ISO report).
+        self.assertEqual(company.tax_number, '')
 
     def test_without_company_details_a_placeholder_is_created(self):
         data, company = self._register('nocompany')
