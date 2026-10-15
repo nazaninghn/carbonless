@@ -618,6 +618,44 @@ const sameEmployeeBand = (a, b) => a === b || (a === '1001_plus' && ['1001_5000'
 // The "is this right?" question for an answer that differs from what the user
 // said before, or null. Never a refusal: the employee count and the year may
 // well be different on purpose.
+// "120000 kWh" → { n: 120000, unit: 'kwh' }.
+function parseAmount(v) {
+  const m = /^\s*(\d+(?:\.\d+)?)\s*(\S.*)?$/.exec(String(v ?? ''));
+  if (!m) return null;
+  return { n: Number(m[1]), unit: (m[2] || '').trim().toLowerCase() };
+}
+// Units that can be compared with each other, as a multiple of the first.
+const UNIT_FAMILIES = [
+  { kwh: 1, mwh: 1000, gwh: 1e6 },
+  { kg: 1, ton: 1000, tonne: 1000, t: 1000 },
+];
+const unitScale = (a, b) => {
+  if (a === b) return [1, 1];
+  const fam = UNIT_FAMILIES.find(f => a in f && b in f);
+  return fam ? [fam[a], fam[b]] : null;
+};
+
+// This year's amount against last year's for the same item: ten times more
+// or less is usually a unit (kWh / MWh) or a digit slip — "9 kWh" went in
+// with "120.000 kWh" shown right under it. Asked, never blocked.
+function yearOverYearMessage(prevRaw, value, lang, prevYear) {
+  const prev = parseAmount(prevRaw);
+  const cur = parseAmount(value);
+  if (!prev || !cur || !(prev.n > 0) || !(cur.n > 0)) return null;
+  const scale = unitScale(cur.unit, prev.unit);
+  if (!scale) return null;
+  const ratio = (cur.n * scale[0]) / (prev.n * scale[1]);
+  if (ratio < 10 && ratio > 0.1) return null;
+  const tr = lang === 'tr';
+  const loc = tr ? 'tr-TR' : 'en-US';
+  const times = ratio >= 10
+    ? (tr ? `yaklaşık ${Math.round(ratio).toLocaleString(loc)} katı` : `about ${Math.round(ratio).toLocaleString(loc)} times`)
+    : (tr ? `yaklaşık 1/${Math.round(1 / ratio).toLocaleString(loc)}'i` : `about 1/${Math.round(1 / ratio).toLocaleString(loc)} of`);
+  return tr
+    ? `${prevYear ? `${prevYear} envanterinizde` : 'Önceki envanterinizde'} ${formatPreviousAmount(prevRaw, lang)} vardı; şimdi ${formatPreviousAmount(value, lang)} girdiniz — ${times}. Birim (kWh / MWh) veya hane hatası olabilir. Bu yıl için doğru mu?`
+    : `${prevYear ? `Your ${prevYear} inventory had` : 'Your previous inventory had'} ${formatPreviousAmount(prevRaw, lang)}; you entered ${formatPreviousAmount(value, lang)} — ${times} that. It may be a unit (kWh / MWh) or digit slip. Is it right for this year?`;
+}
+
 function softCheckMessage(q, value, { answers, lang, registered, previous, reportYear }) {
   const tr = lang === 'tr';
   const bandLabel = (v) => {
@@ -3242,6 +3280,7 @@ export function QuestionnaireTab({
   const msgIdRef = useRef(0);
   // "Not calculated" notes already shown after a save (each is said once).
   const shownCalcNotesRef = useRef(new Set());
+  const fixHintShownRef = useRef(false);
   // Tracks messages.length at the moment the CURRENT question bubble was shown.
   // Stored in history entries so goBack() can slice precisely back to that point,
   // correctly removing all loop-item bubbles regardless of how many there were.
@@ -3346,8 +3385,8 @@ export function QuestionnaireTab({
         ? (tr ? `Bu envanter tamamlandı. Bir bölümü düzeltmek için "Hayır — bir bölüme dönüp düzeltmek istiyorum"u seçin; bölüm bitince buraya dönersiniz — Soru ${qRef}:`
               : `This inventory is complete. To fix a section choose "No — I want to go back and fix a section"; you come back here when the section is done — Question ${qRef}:`)
         : inventoryCompleted
-          ? (tr ? `Tamamlanmış bir envanteri düzenliyorsunuz — Soru ${qRef}. İşiniz bitince "Düzenlemeyi bitir" ile imza adımına dönün:`
-                : `You are editing Question ${qRef} of a completed inventory. When you are done, use "Finish editing" to return to the sign-off step:`)
+          ? (tr ? `Tamamlanmış bir envanteri düzenliyorsunuz — Soru ${qRef}. İşiniz bitince üstteki "Bitir" düğmesiyle imza adımına dönün:`
+                : `You are editing Question ${qRef} of a completed inventory. When you are done, use "Finish" at the top to return to the sign-off step:`)
           : (tr ? `Düzenlediğiniz soru — Soru ${qRef}:` : `You are editing Question ${qRef}:`);
     const intro = isFresh
       ? (tr ? `Karbon envanterinize başlayalım — Soru ${qRef}:` : `Let's start your carbon inventory — Question ${qRef}:`)
@@ -3849,6 +3888,15 @@ export function QuestionnaireTab({
           shownCalcNotesRef.current.add(note);
           parts.push(`ℹ️ ${trL ? 'Hesaplanmadı' : 'Not calculated'}: ${note}`);
         }
+        // Fixing one answer of a finished inventory moves on to the next
+        // question (or the next facility's); say once that nothing else
+        // needs answering — people kept going, unsure when they were done.
+        if (parts.length && inventoryCompleted && !fixHintShownRef.current) {
+          fixHintShownRef.current = true;
+          parts.push(trL
+            ? 'Düzeltmeniz kaydedildi. Başka değişiklik yoksa üstteki "Bitir" ile imza adımına geçin; sonraki soruları yeniden cevaplamanız gerekmez.'
+            : 'Your fix is saved. If there is nothing else to change, use "Finish" at the top to go to the sign-off step; you do not need to answer the next questions again.');
+        }
         if (parts.length) {
           setMessages(prev => [...prev, { id: `m-${++msgIdRef.current}`, role: 'assistant', type: 'assistant', content: parts.join('\n\n') }]);
         }
@@ -3876,7 +3924,7 @@ export function QuestionnaireTab({
       }
       return { success: false, data: {} };
     }
-  }, [reportId, lang]);
+  }, [reportId, lang, inventoryCompleted]);
 
   // ── advanceToQuestion ──────────────────────────────────────────────────────
   // Shared helper: navigate to nextId and post its question bubble.
@@ -4024,6 +4072,11 @@ export function QuestionnaireTab({
       reportYear: reportYearRef.current,
     });
     if (softMessage && !(await askSoft(softMessage, q.id))) return;
+    if (!softMessage) {
+      const hintIdx = loopState && loopState.questionId === currentId ? loopState.currentIndex : 0;
+      const yoy = yearOverYearMessage(amountHint(q, hintIdx), value, lang, facilitySourcesRef.current.previousYear);
+      if (yoy && !(await askSoft(yoy, q.id))) return;
+    }
     if (q.id === 'A4' && value) reportYearRef.current = Number(value) || reportYearRef.current;
 
     // ── Loop handling ──────────────────────────────────────────────────────────
