@@ -48,6 +48,24 @@ def _entries(company, year):
             .filter(status='approved').select_related('emission_factor'))
 
 
+def _custom_note(company, year, lang):
+    """The year's approved custom requests, which the dashboard total adds
+    to the entries. Said apart rather than summed in, so the answer still
+    matches the entries — it said "no data" while the dashboard showed them."""
+    from django.db.models import Sum
+    from emissions.models import CustomEmissionRequest
+    kg = float(CustomEmissionRequest.objects.filter(
+        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
+    ).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+    if not kg:
+        return ''
+    if lang == 'tr':
+        return (f'Onaylı özel talepleriniz: **{_fmt(kg / 1000, lang)} tCO₂e** '
+                f'(Kontrol Paneli toplamına dahil).')
+    return (f'Your approved custom requests: **{_fmt(kg / 1000, lang)} tCO₂e** '
+            f'(included in the dashboard total).')
+
+
 def _month_in(text, year_given):
     """(year or None, month) the question is about, or None: "bu ay", "geçen ay",
     or a month name ("Mart", "March")."""
@@ -183,20 +201,26 @@ def _total_answer(company, year, lang):
     from django.db.models import Sum
     qs = _entries(company, year)
     total = float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    custom = _custom_note(company, year, lang)
     if total == 0:
+        if custom:
+            return (f'{year} yılı için onaylı emisyon kaydı yok. {custom}' if lang == 'tr'
+                    else f'There are no approved emission entries for {year}. {custom}')
         return (f'{year} yılı için kayıtlı emisyon verisi yok.' if lang == 'tr'
                 else f'There is no emission data recorded for {year}.')
     by = {s: float(qs.filter(emission_factor__scope=s).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
           for s in ('scope1', 'scope2', 'scope3')}
     if lang == 'tr':
-        return (f'{year} yılı toplam emisyonunuz **{_fmt(total, lang)} tCO₂e**.\n\n'
-                f'• Kapsam 1: {_fmt(by["scope1"], lang)} t\n'
-                f'• Kapsam 2: {_fmt(by["scope2"], lang)} t\n'
-                f'• Kapsam 3: {_fmt(by["scope3"], lang)} t')
-    return (f'Your total emissions for {year} are **{_fmt(total, lang)} tCO₂e**.\n\n'
-            f'• Scope 1: {_fmt(by["scope1"], lang)} t\n'
-            f'• Scope 2: {_fmt(by["scope2"], lang)} t\n'
-            f'• Scope 3: {_fmt(by["scope3"], lang)} t')
+        answer = (f'{year} yılı toplam emisyonunuz **{_fmt(total, lang)} tCO₂e**.\n\n'
+                  f'• Kapsam 1: {_fmt(by["scope1"], lang)} t\n'
+                  f'• Kapsam 2: {_fmt(by["scope2"], lang)} t\n'
+                  f'• Kapsam 3: {_fmt(by["scope3"], lang)} t')
+    else:
+        answer = (f'Your total emissions for {year} are **{_fmt(total, lang)} tCO₂e**.\n\n'
+                  f'• Scope 1: {_fmt(by["scope1"], lang)} t\n'
+                  f'• Scope 2: {_fmt(by["scope2"], lang)} t\n'
+                  f'• Scope 3: {_fmt(by["scope3"], lang)} t')
+    return answer + (f'\n\n{custom}' if custom else '')
 
 
 def _top_source_answer(company, year, lang):
@@ -209,6 +233,10 @@ def _top_source_answer(company, year, lang):
             .annotate(t=Sum('calculated_co2e_kg')).order_by('-t'))
     rows = [r for r in rows if r['t']]
     if not rows:
+        custom = _custom_note(company, year, lang)
+        if custom:
+            return (f'{year} yılı için onaylı emisyon kaydı yok. {custom}' if lang == 'tr'
+                    else f'There are no approved emission entries for {year}. {custom}')
         return (f'{year} yılı için kayıtlı emisyon verisi yok.' if lang == 'tr'
                 else f'There is no emission data recorded for {year}.')
     total = sum(float(r['t']) for r in rows)

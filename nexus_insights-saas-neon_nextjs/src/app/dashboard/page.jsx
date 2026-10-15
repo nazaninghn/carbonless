@@ -168,9 +168,11 @@ export default function DashboardPage() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState(null);
   useEffect(() => {
-    // Beside the inventory on a wide screen; on a phone it would cover it,
-    // so there it opens from the top bar's button.
-    if (activeTab === 'ai_carbon') setAssistantOpen(typeof window !== 'undefined' && window.innerWidth >= 1024);
+    // Open on entry: beside the inventory on a wide screen, over it on a
+    // phone. On a phone "AI" in the bottom bar is how people look for the
+    // chat — it used to land on the inventory list with the chat closed
+    // behind an unlabelled round button. Closing it shows the inventory.
+    if (activeTab === 'ai_carbon') setAssistantOpen(true);
     else if (activeTab !== 'questionnaire') setAssistantOpen(false);
   }, [activeTab]);
   // A link to one chat (the support team's answer) opens the assistant.
@@ -451,6 +453,8 @@ export default function DashboardPage() {
               </div>
               <button
                 onClick={() => setAssistantOpen(v => !v)}
+                aria-label={language === 'tr' ? 'AI Asistan' : 'AI Assistant'}
+                aria-expanded={assistantOpen}
                 className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition sm:text-[12px] ${
                   assistantOpen ? 'bg-[#DEFAE1] text-[#175022]' : 'bg-[#2ABD41] text-white hover:bg-[#1A7B2A]'
                 }`}

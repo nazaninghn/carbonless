@@ -334,11 +334,23 @@ export default function EmissionsTab({
   const [cUnitOther, setCUnitOther] = useState(false);
   const [cQty,    setCQty]     = useState('');
   const [cMonth,  setCMonth]   = useState(new Date().getMonth() + 1);
+  const [cFacility, setCFacility] = useState('');
   const [cSaving, setCSaving]  = useState(false);
   const [withdrawing, setWithdrawing] = useState(null); // custom request to withdraw
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const months = tr ? MONTHS_TR : MONTHS_EN;
+  // Both forms save to the year chosen at the top of the page; they did not
+  // say so, and a December bill typed in January met greyed-out months.
+  const yearHint = tr
+    ? `${selectedYear} yılına kaydedilir. Başka bir yıl için sayfanın üstündeki yıl seçimini değiştirin.`
+    : `Saved to ${selectedYear}. For another year, change the year at the top of the page.`;
+  // Approved custom requests are added to the dashboard and report totals
+  // (the summary does that), not to the entry totals on this page — said
+  // here, since the cards read 0,00 while the dashboard showed the amount.
+  const customApprovedKg = customRequests
+    .filter(cr => cr.status === 'approved' && String(cr.year) === String(selectedYear) && cr.calculated_co2e_kg)
+    .reduce((t, cr) => t + Number(cr.calculated_co2e_kg), 0);
   const fullMonths = FULL_MONTHS[tr ? 'tr' : 'en'];
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
 
@@ -792,10 +804,11 @@ export default function EmissionsTab({
         scope: cScope, category_name: cCat, source_name: cSrc,
         description: cDesc, unit: cUnit, quantity: parseLocalizedNumber(cQty),
         year: selectedYear, month: parseInt(cMonth),
+        facility: cFacility ? parseInt(cFacility) : null,
       });
       if (res.ok) {
         setShowCustom(false);
-        setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCUnitOther(false); setCQty('');
+        setCCat(''); setCSrc(''); setCDesc(''); setCUnit(''); setCUnitOther(false); setCQty(''); setCFacility('');
         fetchData();
         toast.info(tr ? 'Özel talep gönderildi — Carbonless ekibi inceleyecek' : 'Custom request submitted — the Carbonless team will review it');
       } else {
@@ -806,7 +819,7 @@ export default function EmissionsTab({
     } finally {
       setCSaving(false);
     }
-  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, selectedYear, cMonth, cSaving, tr, toast, fetchData, setShowCustom]);
+  }, [cScope, cCat, cSrc, cDesc, cUnit, cQty, cFacility, selectedYear, cMonth, cSaving, tr, toast, fetchData, setShowCustom]);
 
   // ── Escape key handlers — one per modal ─────────────────────────────────
   useEffect(() => {
@@ -1030,12 +1043,19 @@ export default function EmissionsTab({
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">
             {tr ? 'Özel Talepler' : 'Custom Requests'}
           </p>
+          {customApprovedKg > 0 && (
+            <p role="note" className="mb-3 rounded-xl border border-[#2ABD41]/25 bg-[#F1FCF2] px-3 py-2 text-[11px] font-semibold leading-4 text-[#175022]">
+              {tr
+                ? `${selectedYear} yılı onaylı özel talepler: ${fixed(customApprovedKg / 1000, 2)} tCO₂e. Bu tutar Kontrol Paneli ve raporlardaki toplama dahildir; bu sayfadaki kayıt toplamlarına dahil değildir.`
+                : `Approved custom requests for ${selectedYear}: ${fixed(customApprovedKg / 1000, 2)} tCO₂e. This is included in the dashboard and report totals, not in the entry totals on this page.`}
+            </p>
+          )}
           <div className="space-y-2">
             {customRequests.map(cr => (
               <div key={cr.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#072C0E]/6 bg-[#F8F8F8]/60 px-4 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-[#072C0E]">{cr.source_name}</p>
-                  <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {fmt(cr.quantity, 4)} {cr.unit}</p>
+                  <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {fmt(cr.quantity, 4)} {cr.unit} · {months[(cr.month || 1) - 1]} {cr.year}</p>
                   {cr.status === 'rejected' && cr.admin_notes && (
                     <p className="mt-0.5 text-[10px] text-red-500">{tr ? 'Not' : 'Note'}: {cr.admin_notes}</p>
                   )}
@@ -1076,7 +1096,9 @@ export default function EmissionsTab({
           </div>
           <div>
             <p className="text-base font-bold text-[#072C0E]">
-              {otherYears.length > 0
+              {customApprovedKg > 0
+                ? (tr ? `${selectedYear} için henüz kayıt yok` : `No entries for ${selectedYear} yet`)
+                : otherYears.length > 0
                 ? (tr ? `${selectedYear} için henüz veri yok` : `No data for ${selectedYear} yet`)
                 : (tr ? 'Henüz veri yok' : 'No emission data yet')}
             </p>
@@ -1385,7 +1407,7 @@ export default function EmissionsTab({
                   <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">{tr ? 'Ölçüm' : 'Measurement'}</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label htmlFor="add-entry-month" className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
+                      <label htmlFor="add-entry-month" className={LABEL}>{tr ? `Ay · ${selectedYear}` : `Month · ${selectedYear}`}</label>
                       <select id="add-entry-month" value={month} onChange={e => setMonth(e.target.value)} className={FIELD}>
                         {months.map((m, i) => <option key={m} value={i + 1} disabled={isFutureMonth(selectedYear, i + 1)}>{m}</option>)}
                       </select>
@@ -1395,6 +1417,7 @@ export default function EmissionsTab({
                       <input id="add-entry-quantity" type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
                     </div>
                   </div>
+                  <p className="-mt-1 text-[11px] text-[#072C0E]/45">{yearHint}</p>
                   {quantity && selFactorObj && (
                     <div className="rounded-2xl border border-[#2ABD41]/25 bg-[#2ABD41]/8 px-4 py-3">
                       <p className="text-xs font-bold text-[#175022]">
@@ -1723,21 +1746,22 @@ export default function EmissionsTab({
                   </div>
                 </div>
                 <div>
-                  <label className={LABEL}>{tr ? 'Kategori Adı' : 'Category Name'} *</label>
-                  <input type="text" value={cCat} onChange={e => setCCat(e.target.value)} placeholder={tr ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className={FIELD} required />
+                  <label htmlFor="custom-category" className={LABEL}>{tr ? 'Kategori Adı' : 'Category Name'} *</label>
+                  <input id="custom-category" type="text" value={cCat} onChange={e => setCCat(e.target.value)} placeholder={tr ? 'Örn: Jeneratör yakıtı' : 'e.g. Generator fuel'} className={FIELD} required />
                 </div>
                 <div>
-                  <label className={LABEL}>{tr ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
-                  <input type="text" value={cSrc} onChange={e => setCSrc(e.target.value)} placeholder={tr ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className={FIELD} required />
+                  <label htmlFor="custom-source" className={LABEL}>{tr ? 'Emisyon Kaynağı' : 'Emission Source'} *</label>
+                  <input id="custom-source" type="text" value={cSrc} onChange={e => setCSrc(e.target.value)} placeholder={tr ? 'Örn: Dizel jeneratör' : 'e.g. Diesel generator'} className={FIELD} required />
                 </div>
                 <div>
-                  <label className={LABEL}>{tr ? 'Açıklama' : 'Description'} *</label>
-                  <textarea value={cDesc} onChange={e => setCDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={3} required />
+                  <label htmlFor="custom-description" className={LABEL}>{tr ? 'Açıklama' : 'Description'} *</label>
+                  <textarea id="custom-description" value={cDesc} onChange={e => setCDesc(e.target.value)} className="w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 py-3 text-sm font-medium outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15" rows={3} required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className={LABEL}>{tr ? 'Birim' : 'Unit'} *</label>
+                    <label htmlFor="custom-unit" className={LABEL}>{tr ? 'Birim' : 'Unit'} *</label>
                     <select
+                      id="custom-unit"
                       value={cUnitOther ? '__other' : cUnit}
                       onChange={e => {
                         if (e.target.value === '__other') { setCUnitOther(true); setCUnit(''); }
@@ -1751,20 +1775,35 @@ export default function EmissionsTab({
                     </select>
                     {cUnitOther && (
                       <input type="text" value={cUnit} onChange={e => setCUnit(e.target.value)} maxLength={20}
+                        aria-label={tr ? 'Diğer birim' : 'Other unit'}
                         placeholder={tr ? 'Birim (örn. paket)' : 'Unit (e.g. packages)'} className={`${FIELD} mt-2`} required autoFocus />
                     )}
                   </div>
                   <div>
-                    <label className={LABEL}>{tr ? 'Miktar' : 'Quantity'} *</label>
-                    <input type="text" inputMode="decimal" value={cQty} onChange={e => setCQty(e.target.value)} className={FIELD} required />
+                    <label htmlFor="custom-quantity" className={LABEL}>{tr ? 'Miktar' : 'Quantity'} *</label>
+                    <input id="custom-quantity" type="text" inputMode="decimal" value={cQty} onChange={e => setCQty(e.target.value)} className={FIELD} required />
                   </div>
                 </div>
-                <div>
-                  <label className={LABEL}>{tr ? 'Ay' : 'Month'}</label>
-                  <select value={cMonth} onChange={e => setCMonth(e.target.value)} className={FIELD}>
-                    {months.map((m, i) => <option key={m} value={i + 1} disabled={isFutureMonth(selectedYear, i + 1)}>{m}</option>)}
-                  </select>
+                <div className={facilityList.length > 0 ? 'grid grid-cols-2 gap-3' : ''}>
+                  <div>
+                    <label htmlFor="custom-month" className={LABEL}>{tr ? `Ay · ${selectedYear}` : `Month · ${selectedYear}`}</label>
+                    <select id="custom-month" value={cMonth} onChange={e => setCMonth(e.target.value)} className={FIELD}>
+                      {months.map((m, i) => <option key={m} value={i + 1} disabled={isFutureMonth(selectedYear, i + 1)}>{m}</option>)}
+                    </select>
+                  </div>
+                  {/* The request is stored per facility (and the ISO report
+                      splits by facility); the form had no way to say which. */}
+                  {facilityList.length > 0 && (
+                    <div>
+                      <label htmlFor="custom-facility" className={LABEL}>{tr ? 'Tesis' : 'Facility'}</label>
+                      <select id="custom-facility" value={cFacility} onChange={e => setCFacility(e.target.value)} className={FIELD}>
+                        <option value="">{tr ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
+                        {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
+                      </select>
+                    </div>
+                  )}
                 </div>
+                <p className="-mt-2 text-[11px] text-[#072C0E]/45">{yearHint}</p>
               </form>
             </div>
             <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 sm:px-6 sm:py-4">

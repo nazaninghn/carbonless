@@ -622,7 +622,9 @@ export default function DashboardOverview({
       )}
 
       {/* ── EMPTY YEAR  -  this year is empty but other years have data ── */}
-      {entries.length === 0 && otherYears.length > 0 && (
+      {/* Not when approved custom requests already count for this year: the
+          banner said "no data" right above their total. */}
+      {entries.length === 0 && otherYears.length > 0 && !(summary?.custom_emissions?.approved_total_kg > 0) && (
         <div className="dash-fade-up rounded-2xl border border-[#DEFAE1] bg-gradient-to-b from-[#F1FCF2]/60 to-white p-6 text-center sm:p-10">
           <h2 className="text-[19px] font-bold text-[#072C0E]">
             {tr ? `${selectedYear} için henüz veri yok` : `No data for ${selectedYear} yet`}

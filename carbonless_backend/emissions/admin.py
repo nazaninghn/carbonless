@@ -160,18 +160,5 @@ class CustomEmissionRequestAdmin(ModelAdmin):
         super().save_model(request, obj, form, change)
 
         if change and 'status' in form.changed_data and obj.user_id:
-            from accounts.models import Notification
-            if obj.status == 'approved':
-                Notification.objects.create(
-                    user=obj.user, company=obj.company, notification_type='custom_approved',
-                    title='Özel talep onaylandı',
-                    message=f'{obj.source_name}: {obj.calculated_co2e_kg or 0:.2f} kg CO2e',
-                    link='/dashboard',
-                )
-            elif obj.status == 'rejected':
-                Notification.objects.create(
-                    user=obj.user, company=obj.company, notification_type='custom_rejected',
-                    title='Özel talep reddedildi',
-                    message=f'{obj.source_name}: {obj.admin_notes or ""}',
-                    link='/dashboard',
-                )
+            from .notifications import notify_custom_request_reviewed
+            notify_custom_request_reviewed(obj)
