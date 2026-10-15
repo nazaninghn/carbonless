@@ -856,7 +856,8 @@ class EntryChangeRulesTests(TestCase):
         n = Notification.objects.filter(user=self.users['sahip']).latest('id')
         self.assertEqual(n.title, 'Değişiklik talebi')
         self.assertIn('300 m³ → 250 m³', n.message)
-        self.assertEqual(n.link, '/dashboard?tab=review')
+        # The link names the entry, so the review page opens on it.
+        self.assertRegex(n.link, r'^/dashboard\?tab=review&entry=\d+$')
 
     def test_export_marks_changes_and_deletion_requests(self):
         from .views import _export_rows

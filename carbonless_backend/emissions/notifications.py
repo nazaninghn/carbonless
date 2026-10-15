@@ -182,12 +182,12 @@ def notify_entry_submitted(entry):
                     _notify(membership.user, 'entry_submitted', 'Değişiklik talebi',
                             f'{author} onaylı bir kaydı değiştirmek istiyor: {what}. '
                             'Onaylanana kadar onaylı değer toplamlarda kalır.',
-                            link='/dashboard?tab=review', company_id=entry.company_id)
+                            link=f'/dashboard?tab=review&entry={entry.id}', company_id=entry.company_id)
                 else:
                     _notify(membership.user, 'entry_submitted', 'Change request',
                             f'{author} asks to change an approved entry: {what}. '
                             'Until approved the approved value stays in the totals.',
-                            link='/dashboard?tab=review', company_id=entry.company_id)
+                            link=f'/dashboard?tab=review&entry={entry.id}', company_id=entry.company_id)
                 _email_approver(membership.user, entry.company_id, lang,
                                 f'{author} — ' + ('değişiklik talebi: ' if lang == 'tr' else 'change request: ') + what)
                 continue
@@ -195,12 +195,12 @@ def notify_entry_submitted(entry):
                 _notify(membership.user, 'entry_submitted', 'Onay bekleyen kayıt',
                         f'{author} yeni bir kayıt ekledi: {_describe(entry, lang)}. '
                         f'Onay Bekleyenler sayfasından inceleyebilirsiniz.',
-                        link='/dashboard?tab=review', company_id=entry.company_id)
+                        link=f'/dashboard?tab=review&entry={entry.id}', company_id=entry.company_id)
             else:
                 _notify(membership.user, 'entry_submitted', 'Entry awaiting approval',
                         f'{author} added a new entry: {_describe(entry, lang)}. '
                         f'Review it on the Pending Review page.',
-                        link='/dashboard?tab=review', company_id=entry.company_id)
+                        link=f'/dashboard?tab=review&entry={entry.id}', company_id=entry.company_id)
             _email_approver(membership.user, entry.company_id, lang, f'{author} — {_describe(entry, lang)}')
     except Exception:  # a notification must never break saving the entry
         logger.exception('Could not notify approvers about entry %s', entry.pk)
@@ -224,11 +224,11 @@ def notify_delete_requested(author, entry):
             if lang == 'tr':
                 _notify(membership.user, 'entry_submitted', 'Silme talebi',
                         f'{name} onaylı bir kaydın silinmesini istiyor: {what}. Onaylanana kadar kayıt toplamlarda kalır.',
-                        link='/dashboard?tab=review', company_id=entry.company_id)
+                        link=f'/dashboard?tab=review&entry={entry.id}', company_id=entry.company_id)
             else:
                 _notify(membership.user, 'entry_submitted', 'Deletion request',
                         f'{name} asks to delete an approved entry: {what}. Until approved it stays in the totals.',
-                        link='/dashboard?tab=review', company_id=entry.company_id)
+                        link=f'/dashboard?tab=review&entry={entry.id}', company_id=entry.company_id)
             _email_approver(membership.user, entry.company_id, lang,
                             f'{name} — ' + ('silme talebi: ' if lang == 'tr' else 'deletion request: ') + what)
     except Exception:

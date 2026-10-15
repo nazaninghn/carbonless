@@ -6,6 +6,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { downloadProofDocument } from '@/lib/proofDownload';
 import { useToast } from '@/components/ToastProvider';
 import { noPermissionMessage } from '@/lib/permissions';
+import { REVIEW_FOCUS_KEY, REVIEW_FOCUS_EVENT } from '@/lib/reviewFocus';
 import { advisorReasonText, advisorCategoryLabel } from '@/lib/advisorReasons';
 import { formatAdvisorAnswer } from '@/lib/advisorAnswer';
 import { MONTHS_TR, MONTHS_EN, unitLabel } from '@/lib/constants/emissions';
@@ -65,6 +66,29 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   }, []);
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
+
+  // An "Onay bekleyen kayıt" notification opens this page on that entry: it
+  // sat below every advisor card (about three screens down on a phone).
+  const [focusId, setFocusId] = useState(null);
+  useEffect(() => {
+    const take = () => {
+      try {
+        const id = sessionStorage.getItem(REVIEW_FOCUS_KEY);
+        if (id) { sessionStorage.removeItem(REVIEW_FOCUS_KEY); setFocusId(Number(id)); }
+      } catch { /* opens at the top */ }
+    };
+    take();
+    window.addEventListener(REVIEW_FOCUS_EVENT, take);
+    return () => window.removeEventListener(REVIEW_FOCUS_EVENT, take);
+  }, []);
+  useEffect(() => {
+    if (!focusId || loading) return;
+    const el = document.querySelector(`[data-review-entry-id="${focusId}"]`);
+    if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const t = setTimeout(() => setFocusId(null), 4000);
+    return () => clearTimeout(t);
+  }, [focusId, loading, pending]);
+  const jumpTo = (id) => document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
 
   // Dismiss reject dialog on Escape — consistent with all other modals
   useEffect(() => {
@@ -224,9 +248,9 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   })();
 
   const renderEntry = (entry, inBatch = false) => (
-                <div key={`entry-${entry.id}`} className={inBatch
+                <div key={`entry-${entry.id}`} data-review-entry-id={entry.id} className={`${inBatch
                   ? 'rounded-xl border border-[#072C0E]/8 bg-white px-3 py-2.5'
-                  : 'rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]'}>
+                  : 'rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]'}${focusId === entry.id ? ' ring-2 ring-[#2ABD41]' : ''}`}>
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-1.5">
                       <h3 className="truncate text-sm font-bold text-[#072C0E]">
@@ -448,9 +472,53 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
         </div>
       ) : (
         <>
+          {/* Both lists waiting: say so up top, with a way to each. */}
+          {pending.length > 0 && advisorPending.length > 0 && (
+            <div className="flex flex-wrap gap-2 px-1">
+              <button type="button" onClick={() => jumpTo('review-entries')}
+                className="rounded-full border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-[11px] font-bold text-[#175022] hover:bg-[#F1FCF2]">
+                {tr ? `Kayıtlar (${pending.length})` : `Entries (${pending.length})`}
+              </button>
+              <button type="button" onClick={() => jumpTo('review-advisor')}
+                className="rounded-full border border-[#072C0E]/12 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E]/70 hover:bg-[#F8F8F8]">
+                {tr ? `Danışman onayı (${advisorPending.length})` : `Advisor approval (${advisorPending.length})`}
+              </button>
+            </div>
+          )}
+
+          {/* ── Emission entries (manual dashboard data-entry approvals) ────── */}
+          {pending.length > 0 && (
+            <div id="review-entries" className="scroll-mt-20 space-y-2">
+              {advisorPending.length > 0 && (
+                <div className="flex items-center gap-1.5 px-1 pt-1">
+                  <ClipboardCheck className="h-3.5 w-3.5 text-[#2ABD41]" />
+                  <h2 className="text-xs font-bold uppercase tracking-wide text-[#072C0E]/60">
+                    {tr ? 'Emisyon Kayıtları' : 'Emission Entries'} ({pending.length})
+                  </h2>
+                </div>
+              )}
+              {canApprove && bulkEntries.length > 1 && (
+                <div className="flex flex-wrap gap-2 px-1">
+                  <button
+                    type="button"
+                    disabled={processing !== null}
+                    onClick={() => setConfirmBulk(true)}
+                    className="inline-flex items-center gap-1 rounded-xl border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-[11px] font-bold text-[#175022] hover:bg-[#F1FCF2] disabled:opacity-50"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    {processing === 'entries-all'
+                      ? (tr ? 'Onaylanıyor…' : 'Approving…')
+                      : (tr ? `Yeni kayıtların tümünü onayla (${bulkEntries.length})` : `Approve all new entries (${bulkEntries.length})`)}
+                  </button>
+                </div>
+              )}
+              {pendingItems.map(item => (item.rows ? renderBatch(item) : renderEntry(item.entry)))}
+            </div>
+          )}
+
           {/* ── Danışman Onayı (Advisor Approval) ─────────────────────────── */}
           {advisorPending.length > 0 && (
-            <div className="space-y-2">
+            <div id="review-advisor" className="scroll-mt-20 space-y-2">
               <div className="flex items-center gap-1.5 px-1">
                 <ShieldAlert className="h-3.5 w-3.5 text-[#2ABD41]" />
                 <h2 className="text-xs font-bold uppercase tracking-wide text-[#072C0E]/60">
@@ -542,35 +610,6 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
             </div>
           )}
 
-          {/* ── Emission entries (manual dashboard data-entry approvals) ────── */}
-          {pending.length > 0 && (
-            <div className="space-y-2">
-              {advisorPending.length > 0 && (
-                <div className="flex items-center gap-1.5 px-1 pt-1">
-                  <ClipboardCheck className="h-3.5 w-3.5 text-[#2ABD41]" />
-                  <h2 className="text-xs font-bold uppercase tracking-wide text-[#072C0E]/60">
-                    {tr ? 'Emisyon Kayıtları' : 'Emission Entries'} ({pending.length})
-                  </h2>
-                </div>
-              )}
-              {canApprove && bulkEntries.length > 1 && (
-                <div className="flex flex-wrap gap-2 px-1">
-                  <button
-                    type="button"
-                    disabled={processing !== null}
-                    onClick={() => setConfirmBulk(true)}
-                    className="inline-flex items-center gap-1 rounded-xl border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-[11px] font-bold text-[#175022] hover:bg-[#F1FCF2] disabled:opacity-50"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    {processing === 'entries-all'
-                      ? (tr ? 'Onaylanıyor…' : 'Approving…')
-                      : (tr ? `Yeni kayıtların tümünü onayla (${bulkEntries.length})` : `Approve all new entries (${bulkEntries.length})`)}
-                  </button>
-                </div>
-              )}
-              {pendingItems.map(item => (item.rows ? renderBatch(item) : renderEntry(item.entry)))}
-            </div>
-          )}
         </>
       )}
 
