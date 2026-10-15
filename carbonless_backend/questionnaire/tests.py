@@ -1000,7 +1000,8 @@ class RejectedQuestionnaireEntryTests(TestCase):
     def test_rejection_notification_opens_the_entry_year(self):
         from accounts.models import Notification
         n = Notification.objects.get(user=self.clerk, notification_type='entry_rejected')
-        self.assertEqual(n.link, '/dashboard?tab=emissions&year=2021')
+        # Opens the entry's year, on the entry itself.
+        self.assertEqual(n.link, f'/dashboard?tab=emissions&year=2021&entry={self.entry.id}')
         self.assertIn('Ankette düzelt', n.message)
 
     def test_rejected_entry_not_in_summary(self):

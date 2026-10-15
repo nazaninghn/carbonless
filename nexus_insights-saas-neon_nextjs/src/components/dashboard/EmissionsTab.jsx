@@ -273,15 +273,24 @@ export default function EmissionsTab({
     window.addEventListener(FOCUS_ENTRY_EVENT, onFocus);
     return () => window.removeEventListener(FOCUS_ENTRY_EVENT, onFocus);
   }, []);
+  // A notification can also switch the year, so the entry may only appear once
+  // that year's entries have loaded: look for it as the list changes, and
+  // start the 4-second mark only once it has been scrolled to.
+  const focusShownRef = useRef(null);
   useEffect(() => {
-    if (!focusedId) return undefined;
+    if (!focusedId) { focusShownRef.current = null; return undefined; }
+    if (focusShownRef.current === focusedId) return undefined;
     const show = setTimeout(() => {
       const el = [...document.querySelectorAll(`[data-entry-id="${focusedId}"]`)].find(n => n.offsetParent !== null);
-      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!el) return;
+      focusShownRef.current = focusedId;
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => setFocusedId(id => (id === focusedId ? null : id)), 4000);
     }, 150);
-    const clear = setTimeout(() => setFocusedId(null), 4000);
-    return () => { clearTimeout(show); clearTimeout(clear); };
-  }, [focusedId]);
+    // Not in this year's list at all: stop waiting after a while.
+    const giveUp = setTimeout(() => setFocusedId(id => (id === focusedId && focusShownRef.current !== id ? null : id)), 10000);
+    return () => { clearTimeout(show); clearTimeout(giveUp); };
+  }, [focusedId, entries]);
 
   // Add form
   const [selScope,    setSelScope]    = useState('');
@@ -1520,6 +1529,10 @@ export default function EmissionsTab({
                   )}
                   <p className="mt-0.5">
                     {tr ? 'Düzelttiğinizde kayıt tekrar onaya gönderilir.' : 'Once corrected, the entry is sent for approval again.'}
+                  </p>
+                  {/* Only the amount, facility and note can change here. */}
+                  <p className="mt-0.5">
+                    {tr ? 'Kaynak veya ay yanlışsa bu kaydı silip yeniden ekleyin.' : 'If the source or month is wrong, delete this entry and add it again.'}
                   </p>
                 </div>
               )}

@@ -356,6 +356,13 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                             {entry.entered_by ? `${tr ? 'Giren' : 'Entered by'}: ${entry.entered_by}` : ''}
                           </span>
                         )}
+                        {/* The author was warned the year's inventory already
+                            holds this source, and sent it anyway. */}
+                        {entry.overlap_warning && (
+                          <p role="note" className="w-full rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold leading-snug text-amber-800">
+                            ⚠ {tr ? entry.overlap_warning.tr : entry.overlap_warning.en}
+                          </p>
+                        )}
                       </div>
                     </div>
                     {canApprove && !inBatch && <div className="flex shrink-0 items-center gap-1.5">

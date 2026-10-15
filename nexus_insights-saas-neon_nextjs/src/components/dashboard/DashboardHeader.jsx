@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { REVIEW_FOCUS_KEY, REVIEW_FOCUS_EVENT } from '@/lib/reviewFocus';
+import { FOCUS_ENTRY_EVENT, FOCUS_ENTRY_KEY } from '@/components/dashboard/CommandPalette';
 import { openChat } from '@/lib/openChat';
 
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - i);
@@ -134,6 +135,12 @@ export default function DashboardHeader({
     if (tab) setActiveTab?.(tab);
     // The support team's answer opens the chat it was posted in.
     if (params.get('chat')) openChat(params.get('chat'));
+    // "Kaydınız onaylandı / reddedildi" opens Emisyon Yönetimi on that entry
+    // (the year is set below), scrolled to it and marked.
+    if (params.get('entry') && tab === 'emissions') {
+      try { sessionStorage.setItem(FOCUS_ENTRY_KEY, params.get('entry')); } catch { /* event below */ }
+      setTimeout(() => window.dispatchEvent(new CustomEvent(FOCUS_ENTRY_EVENT, { detail: params.get('entry') })), 120);
+    }
     // "Onay bekleyen kayıt" opens the review page on that entry.
     if (params.get('entry') && tab === 'review') {
       try { sessionStorage.setItem(REVIEW_FOCUS_KEY, params.get('entry')); } catch { /* opens at the top */ }
