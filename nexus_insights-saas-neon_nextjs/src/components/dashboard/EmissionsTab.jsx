@@ -25,6 +25,8 @@ import {
   scopeLabel, fmt, unitLabel, factorLabel,
 } from '@/lib/constants/emissions';
 import { fixed } from '@/lib/formatNumber';
+import { COUNTRIES } from '@/lib/data/countries';
+import FactorCountryBadge from '@/components/FactorCountryBadge';
 import { FOCUS_ENTRY_EVENT, FOCUS_ENTRY_KEY } from '@/components/dashboard/CommandPalette';
 
 // ─── KPI mini card (count-up + hover lift) ─────────────────────────────────
@@ -75,6 +77,17 @@ const GRID_BY_COUNTRY = {
   KR: 'south-korea-grid', SA: 'saudi-arabia-grid', AE: 'uae-grid',
 };
 const EU_COUNTRIES = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE']);
+const TURKEY_CODES = new Set(['TR', 'TUR', 'TURKEY', 'TÜRKIYE', 'TÜRKİYE', 'TURKIYE']);
+const COUNTRY_NAME = Object.fromEntries(COUNTRIES.map(c => [c.code, c]));
+
+// The electricity grid a country's own factor would be (same fallback as the
+// chat: own grid, else the EU average for a member, else the global average).
+function gridForCountry(country) {
+  const c = String(country || '').trim().toUpperCase();
+  if (!c) return null;
+  if (TURKEY_CODES.has(c)) return 'turkey-grid';
+  return GRID_BY_COUNTRY[c] || (EU_COUNTRIES.has(c) ? 'eu-grid' : 'grid-average');
+}
 
 // Month-filter value for the questionnaire's annual entries (after the 12 months).
 const ANNUAL = 13;
@@ -219,6 +232,7 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelD
             {entry.facility_name}
           </span>
         )}
+        <FactorCountryBadge entry={entry} tr={tr} />
         <span className="ml-auto text-[12px] font-bold text-[#072C0E]">
           {fmt(kg)} <span className="text-[9px] font-semibold text-[#072C0E]/40">kg</span>
         </span>
@@ -354,6 +368,18 @@ export default function EmissionsTab({
   const fullMonths = FULL_MONTHS[tr ? 'tr' : 'en'];
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
 
+  // The picked facility's country, when its electricity grid differs from the
+  // company's own (a site abroad).
+  const facilityCountry = useMemo(() => {
+    const f = (facilityList || []).find(x => String(x.id) === String(facility));
+    return String(f?.country || '').trim().toUpperCase();
+  }, [facilityList, facility]);
+  const facilityGrid = useMemo(() => {
+    const own = gridForCountry(companyCountry || 'TR');
+    const g = gridForCountry(facilityCountry);
+    return g && g !== own ? g : null;
+  }, [companyCountry, facilityCountry]);
+
   // Filtered factors (same logic as page.jsx, incl. questionnaire preferred source)
   const filteredFactors = useMemo(() => {
     // Hoist the country-category Set out of the per-item callback — O(n) not O(n²)
@@ -383,10 +409,20 @@ export default function EmissionsTab({
       if (preferred) m = m && preferred.includes(f.source);
       return m;
     });
+    // A facility in another country (a Turkish company's site in Germany):
+    // its own country's grid is offered too, on top — the list was locked to
+    // the company's country, so that factor could not be picked at all.
+    // Only an option: the user still chooses the factor.
+    if (facilityGrid) {
+      const seen = new Set(list.map(f => f.id));
+      list.push(...factors.filter(f => f.slug === facilityGrid && !seen.has(f.id)
+        && (!selScope || f.scope === selScope) && (!selCategory || f.category === selCategory)));
+    }
     // The company's own grid first (a UK company sees "UK grid" on top).
     const ownGrid = GRID_BY_COUNTRY[companyCountry] || (EU_COUNTRIES.has(companyCountry) ? 'eu-grid' : null);
-    return ownGrid ? [...list].sort((a, b) => (b.slug === ownGrid) - (a.slug === ownGrid)) : list;
-  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry]);
+    const rank = f => (facilityGrid && f.slug === facilityGrid ? 2 : 0) + (ownGrid && f.slug === ownGrid ? 1 : 0);
+    return (ownGrid || facilityGrid) ? [...list].sort((a, b) => rank(b) - rank(a)) : list;
+  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry, facilityGrid]);
 
   const categories = useMemo(() => {
     // Hoist the country-category Set — O(n) not O(n²)
@@ -1192,6 +1228,7 @@ export default function EmissionsTab({
                           {entry.facility_name && (
                             <span className="text-[9px] text-[#072C0E]/35">{entry.facility_name}</span>
                           )}
+                          <FactorCountryBadge entry={entry} tr={tr} className="w-fit" />
                         </div>
                       </td>
                       {/* Scope */}
@@ -1384,6 +1421,19 @@ export default function EmissionsTab({
                           </option>
                         ))}
                       </select>
+                      {(() => {
+                        const g = facilityGrid && filteredFactors.find(f => f.slug === facilityGrid);
+                        if (!g) return null;
+                        const where = COUNTRY_NAME[facilityCountry]?.[tr ? 'tr' : 'en'] || facilityCountry;
+                        const name = tr && g.name_tr ? g.name_tr : g.name;
+                        return (
+                          <p className="mt-1.5 text-[11px] text-[#072C0E]/60">
+                            {tr
+                              ? `Seçili tesis ${where} konumunda: o ülkenin faktörü "${name}" listenin başında. Hangisinin uygun olduğunu siz seçin.`
+                              : `The selected facility is in ${where}: that country's factor "${name}" is at the top of the list. You choose which one applies.`}
+                          </p>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -1799,9 +1849,11 @@ export default function EmissionsTab({
                       splits by facility); the form had no way to say which. */}
                   {facilityList.length > 0 && (
                     <div>
-                      <label htmlFor="custom-facility" className={LABEL}>{tr ? 'Tesis' : 'Facility'}</label>
+                      {/* Half width on a phone: "(optional)" moved to the label so
+                          the empty choice is not cut off ("Seçiniz (opsiy…"). */}
+                      <label htmlFor="custom-facility" className={LABEL}>{tr ? 'Tesis (opsiyonel)' : 'Facility (optional)'}</label>
                       <select id="custom-facility" value={cFacility} onChange={e => setCFacility(e.target.value)} className={FIELD}>
-                        <option value="">{tr ? 'Seçiniz (opsiyonel)' : 'Select (optional)'}</option>
+                        <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
                       </select>
                     </div>

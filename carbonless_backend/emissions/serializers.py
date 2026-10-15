@@ -42,6 +42,11 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     # Whether the recorded proof file is actually in storage (a server disk
     # wiped by a redeploy leaves the record but loses the file).
     proof_available = serializers.SerializerMethodField()
+    # An electricity grid factor of another country than the entry's facility
+    # (a site in Germany on the Turkish grid): shown next to the entry so an
+    # approver or auditor sees it. The calculation is not touched.
+    facility_country = serializers.SerializerMethodField()
+    factor_country_mismatch = serializers.SerializerMethodField()
     # For entries the questionnaire created: which inventory and question they
     # come from, so the UI can send the user there to correct them.
     questionnaire_source = serializers.SerializerMethodField()
@@ -130,6 +135,15 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             return None
         return {'report_id': cache[key], 'step_id': step_id}
 
+    def get_facility_country(self, obj):
+        return ((obj.facility.country if obj.facility_id and obj.facility else '') or '').strip().upper() or None
+
+    def get_factor_country_mismatch(self, obj):
+        from .factor_lookup import grid_matches_country
+        if not obj.facility_id or not obj.facility:
+            return False
+        return grid_matches_country(obj.emission_factor, obj.facility.country) is False
+
     def get_proof_available(self, obj):
         f = obj.proof_document
         if not f:
@@ -173,7 +187,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
             'calc_detail', 'question_number', 'replaces', 'replaces_entry', 'delete_requested',
-            'change_batch', 'change_question',
+            'change_batch', 'change_question', 'facility_country', 'factor_country_mismatch',
         ]
         read_only_fields = [
             'calculated_co2e_kg', 'facility_name', 'replaces_entry', 'delete_requested', 'change_batch',

@@ -1,4 +1,5 @@
 'use client';
+import FactorCountryBadge from '@/components/FactorCountryBadge';
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '@/lib/utils/api';
 import { ClipboardCheck, Check, X, ShieldAlert, Paperclip } from 'lucide-react';
@@ -286,6 +287,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                             {tr ? 'Tesis' : 'Facility'}: {entry.facility_name}
                           </span>
                         )}
+                        <FactorCountryBadge entry={entry} tr={tr} />
                         {entry.proof_document && (
                           <button
                             type="button"
