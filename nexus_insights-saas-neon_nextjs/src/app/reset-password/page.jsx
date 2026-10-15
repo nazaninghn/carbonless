@@ -165,7 +165,7 @@ function ResetContent() {
                       minLength={8}
                       className="flex-1 bg-transparent text-[14px] outline-none placeholder:text-[#072C0E]/30"
                     />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="text-[#072C0E]/40 hover:text-[#072C0E]">
+                    <button type="button" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="text-[#072C0E]/40 hover:text-[#072C0E]">
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>

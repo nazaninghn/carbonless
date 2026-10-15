@@ -396,11 +396,12 @@ export default function SettingsTab({ language, user, fetchData }) {
       {/* ─── Delete Account Confirmation Modal ─────────────────────────────── */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]">
+          <div className="w-full max-w-sm rounded-[1.5rem] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]"
+            role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100">
               <Trash2 className="h-5 w-5 text-red-600" />
             </div>
-            <h3 className="text-base font-bold text-[#072C0E]">
+            <h3 id="delete-account-title" className="text-base font-bold text-[#072C0E]">
               {tr ? 'Hesabı Sil' : 'Delete Account'}
             </h3>
             <p className="mt-1.5 text-xs leading-5 text-[#072C0E]/60">
