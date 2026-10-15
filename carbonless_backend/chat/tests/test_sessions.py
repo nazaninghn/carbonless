@@ -115,6 +115,20 @@ class MultiItemMessageTests(TestCase):
         self.assertEqual(kinds, [('electricity', 1), ('natural_gas', 1)])
         self.assertNotIn('anlayamadım', res.data['content'])
 
+    def test_facility_in_another_country_is_pointed_out(self):
+        # Electricity uses the headquarters country's grid; a facility named
+        # in the message that is elsewhere is flagged on the card (the factor
+        # itself is not changed).
+        from companies.models import Facility
+        company = self.user.profile.active_company
+        Facility.objects.create(company=company, name='Werk Linz', country='AT')
+        Facility.objects.create(company=company, name='Gebze Fabrika', country='TR')
+        pe = self._send("Mart 2024 Werk Linz'de 5.000 kWh elektrik kullandık").data['pending_entries'][0]
+        self.assertTrue(pe.get('factor_country_mismatch'))
+        self.assertEqual(pe['facility_country'], 'AT')
+        pe = self._send("Mart 2024 Gebze Fabrika'da 5.000 kWh elektrik kullandık").data['pending_entries'][0]
+        self.assertNotIn('factor_country_mismatch', pe)
+
     def test_named_facility_and_annual_inventory_overlap(self):
         from companies.models import Facility
         from emissions.models import EmissionEntry, EmissionFactor

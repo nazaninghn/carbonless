@@ -6231,7 +6231,14 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                               const o = periodOverrides[key] || {};
                               const name = 'facility_id' in o ? o.facility_name : pe.facility_name;
                               if (!name) return null;
+                              // Electricity is calculated with the grid of the company's
+                              // headquarters country; say so when this facility is
+                              // elsewhere (the factor itself is not changed here).
+                              const mismatch = pe.factor_country_mismatch && !('facility_id' in o);
+                              const where = COUNTRY_BY_CODE[pe.facility_country]?.[tr ? 'tr' : 'en'] || pe.facility_country;
+                              const factorName = (tr ? pe.factor_name_tr : '') || pe.factor_name;
                               return (
+                                <>
                                 <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-[#1A7B2A]">
                                   <span>{tr ? 'Tesis' : 'Facility'}: {name}</span>
                                   <button
@@ -6246,6 +6253,17 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                     ×
                                   </button>
                                 </div>
+                                {mismatch && (
+                                  <p role="note" className="mt-1.5 flex items-start gap-1.5 rounded-lg border border-amber-100 bg-amber-50 px-2.5 py-1.5 text-[10px] font-medium leading-snug text-amber-800">
+                                    <AlertCircle className="mt-px h-3.5 w-3.5 shrink-0 text-amber-500" strokeWidth={2.25} />
+                                    <span>
+                                      {tr
+                                        ? `${name} tesisi ${where} konumunda; bu sonuç şirket merkezinin ülkesine göre seçilen "${factorName}" faktörüyle hesaplandı. Başka bir faktör gerekiyorsa (örn. AB şebekesi) bu kaydı Emisyon Yönetimi'ndeki formdan ekleyin.`
+                                        : `${name} is in ${where}; this result uses "${factorName}", chosen from the company's headquarters country. If you need another factor (e.g. EU grid), add this entry from the form in Emission Management instead.`}
+                                    </span>
+                                  </p>
+                                )}
+                                </>
                               );
                             })()}
                           </div>

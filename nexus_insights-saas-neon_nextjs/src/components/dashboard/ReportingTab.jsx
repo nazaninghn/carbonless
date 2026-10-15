@@ -159,14 +159,14 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
     if (allReports.length > 0) {
       return {
         text: tr
-          ? 'Envanteriniz henüz tamamlanmadı. Bu raporları açmak için Karbon Envanteri anketini bitirin.'
-          : "Your inventory isn't finished yet. Finish the Carbon Inventory questionnaire to unlock these reports.",
+          ? 'Envanteriniz henüz tamamlanmadı. Karbon Envanteri Profili ve Tam ISO 14064-1 Raporu için Karbon Envanteri anketini bitirin. Emisyon Raporu şimdi de indirilebilir.'
+          : "Your inventory isn't finished yet. Finish the Carbon Inventory questionnaire to unlock the Carbon Inventory Profile and the Full ISO 14064-1 Report. The Emissions Report is available now.",
       };
     }
     return {
       text: tr
-        ? 'Bu raporlar için önce Karbon Envanteri anketini tamamlayın.'
-        : 'Complete the Carbon Inventory questionnaire to unlock these reports.',
+        ? 'Karbon Envanteri Profili ve Tam ISO 14064-1 Raporu için önce Karbon Envanteri anketini tamamlayın. Emisyon Raporu, girdiğiniz verilerden şimdi de indirilebilir.'
+        : 'Complete the Carbon Inventory questionnaire to unlock the Carbon Inventory Profile and the Full ISO 14064-1 Report. The Emissions Report, built from your entered data, is available now.',
     };
   }, [reportsState, isoReportId, completedReports, allReports.length, selectedYear, tr]);
 
@@ -244,8 +244,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           setDlError(inventoryHint?.text || (reportsState === 'loading'
             ? (tr ? 'Envanterleriniz yükleniyor, birkaç saniye sonra tekrar deneyin.' : 'Your inventories are still loading — try again in a few seconds.')
             : tr
-            ? 'Bu raporlar için önce Karbon Envanteri anketini tamamlayın.'
-            : 'Complete the Carbon Inventory questionnaire to unlock these reports.'));
+            ? 'Bu rapor için önce Karbon Envanteri anketini tamamlayın.'
+            : 'Complete the Carbon Inventory questionnaire to unlock this report.'));
           return;
         }
         res = type === 'pack'
@@ -338,7 +338,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
         ].map(({ type, label, gated, primary }) => (
           <div
             key={type}
-            className={`rounded-2xl border p-4 ${primary ? 'border-[#2ABD41]/35 bg-[#F1FCF2]' : 'border-[#072C0E]/10 bg-white'} ${gated && !isoReportId ? 'opacity-50' : ''}`}
+            className={`rounded-2xl border p-4 ${primary && isoReportId ? 'border-[#2ABD41]/35 bg-[#F1FCF2]' : 'border-[#072C0E]/10 bg-white'} ${gated && !isoReportId ? 'opacity-50' : ''}`}
           >
             <p className="text-sm font-bold text-[#072C0E]">{label}</p>
             <div className="mt-3 grid grid-cols-2 gap-3">
@@ -399,7 +399,11 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               <ClipboardList className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile')}
             </button>
-            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60">
+            <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className={isoReportId
+              ? 'inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60'
+              // Locked (no completed inventory): not the strongest button on
+              // the page while the Emissions Report next to it is the one that works.
+              : 'inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] disabled:opacity-60'}>
               <Shield className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report')}
             </button>
@@ -437,7 +441,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
-                <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]/50 line-through' : 'text-[#072C0E]/70'}`}>{c.label}</span>
+                <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]/80' : 'text-[#072C0E]/55'}`}>{c.label}</span>
               </div>
             ))}
           </div>
