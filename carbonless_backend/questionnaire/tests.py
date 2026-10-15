@@ -2257,6 +2257,22 @@ class FacilityGridQuestionnaireTests(TestCase):
         # Without the company (old callers) nothing changes.
         self.assertFalse([n for n in uncalculated_notes(answers, 2024) if n['step_id'] == '4A-1'])
 
+    def test_report_states_the_exclusion_and_its_amount(self):
+        # The app tells the user what to do; the report discloses the
+        # exclusion and the kWh left out, without instructions.
+        from .assumptions import derive_assumptions
+        from .iso_report_pdf import _not_calculated_sites_note
+        from .step_entries import sites_without_grid, _value
+        answers = {'4A-0': {'answer': 'yes'},
+                   '2A-2': {'answer': {'0': {'name': 'Gebze'}, '1': {'name': 'Werk Linz'}}},
+                   '4A-1': {'answer': {'0': '1000 kWh', '1': '8000 kWh'}}}
+        texts = [x['text'] for x in derive_assumptions(answers, 'tr', 2024, self.company) if x['step_id'] == '4A-1']
+        self.assertTrue(any('8.000 kWh' in t and 'dahil edilmemiştir' in t for t in texts), texts)
+        self.assertFalse(any('Özel Talep' in t for t in texts))
+        sites = sites_without_grid({k: _value(v) for k, v in answers.items()}, self.company)
+        self.assertEqual(sites, [('Werk Linz', 'AT', 8000.0)])
+        self.assertIn('Werk Linz (AT, 8.000 kWh)', _not_calculated_sites_note({'sites_without_grid': sites}, 'tr', True))
+
     def test_signup_turnover_is_a_b6_range(self):
         from .views import _registration_turnover
         self.assertEqual(_registration_turnover(self.company), '1-10M')

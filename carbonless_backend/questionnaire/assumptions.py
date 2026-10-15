@@ -149,7 +149,10 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
     # the report has to disclose rather than show as zero.
     from .step_entries import uncalculated_notes
     for n in uncalculated_notes(answers, reporting_year or year, company):
-        add(n['step_id'], 'A', f'Hesaplanmayan cevap — {n["tr"]}', f'Not calculated — {n["en"]}')
+        # The report's own wording when there is one (a disclosure, not an
+        # instruction to the user).
+        add(n['step_id'], 'A', f'Hesaplanmayan cevap — {n.get("report_tr", n["tr"])}',
+            f'Not calculated — {n.get("report_en", n["en"])}')
 
     if A.get('6A-1') == 'yes':
         names = [str(r.get('source')) for r in _items(A.get('6A-1a')) if r.get('source')]
