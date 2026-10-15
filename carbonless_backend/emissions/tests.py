@@ -1090,6 +1090,23 @@ class CompanyCountryFactorTests(TestCase):
         self.assertEqual(self._slug('electricity', 'kwh', self.nl), ('eu-grid', 'global'))
         self.assertEqual(self._slug('electricity', 'kwh', self.br), ('grid-average', 'global'))  # no brazil-grid here
 
+    def test_grid_matches_country(self):
+        from .factor_lookup import grid_matches_country
+        f = lambda slug: EmissionFactor.objects.filter(slug=slug).first()
+        self.assertTrue(grid_matches_country(f('turkey-grid'), 'tr'))
+        self.assertFalse(grid_matches_country(f('turkey-grid'), 'DE'))
+        self.assertTrue(grid_matches_country(f('uk-grid'), 'GB'))
+        self.assertFalse(grid_matches_country(f('uk-grid'), 'AT'))
+        self.assertTrue(grid_matches_country(f('eu-grid'), 'AT'))
+        self.assertFalse(grid_matches_country(f('eu-grid'), 'TR'))
+        self.assertIsNone(grid_matches_country(f('grid-average'), 'TR'))
+        self.assertIsNone(grid_matches_country(f('uk-grid'), ''))
+        self.assertIsNone(grid_matches_country(f('natural-gas-m3'), 'TR'))
+
+    def test_iea_source_has_a_name(self):
+        # Shown as "Registered factor — iea_2024" in the chat before.
+        self.assertEqual(EmissionFactor(source='iea_2024').get_source_display(), 'IEA 2024')
+
     def test_foreign_company_prefers_the_global_version(self):
         self.assertEqual(self._slug('natural_gas', 'm3', self.tr), ('natural-gas-m3', 'turkey'))
         self.assertEqual(self._slug('natural_gas', 'm3', self.gb), ('natural-gas-m3', 'global'))

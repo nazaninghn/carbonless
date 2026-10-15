@@ -64,6 +64,9 @@ class EmissionFactor(models.Model):
         ('ipcc_2006', 'IPCC 2006'),
         ('ipcc_2019', 'IPCC 2019 + AR6 GWP'),
         ('turkey_grid', 'Turkey Grid/National'),
+        # Country electricity grids (Germany, France, …) for companies based
+        # outside Turkey; shown as its slug "iea_2024" before it was listed.
+        ('iea_2024', 'IEA 2024'),
         ('atom_kablo', 'Turkey ISO 14064-1 verified inventory'),
         ('icao', 'ICAO'),
         ('turkey_fleet', 'Turkey Fleet'),

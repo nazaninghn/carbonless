@@ -1009,6 +1009,7 @@ SOURCE_LABELS_TR = {
     'ipcc_2006': 'IPCC 2006',
     'ipcc_2019': 'IPCC 2019 + AR6 GWP',
     'turkey_grid': 'Türkiye ulusal elektrik şebekesi',
+    'iea_2024': 'IEA 2024',
     'atom_kablo': 'Türkiye ISO 14064-1 doğrulanmış envanteri',
     'icao': 'ICAO',
     'turkey_fleet': 'Türkiye araç filosu',
@@ -1748,9 +1749,18 @@ def _tag_facility(data, user, content):
     facility = _facility_in(company, content) if company else None
     if facility is None:
         return
+    from emissions.factor_lookup import grid_matches_country
+    from emissions.models import EmissionFactor
     for pe in data['pending_entries']:
         if isinstance(pe, dict) and not pe.get('facility_id'):
             pe['facility_id'], pe['facility_name'] = facility.pk, facility.name
+            # Electricity uses the grid of the company's headquarters country;
+            # a facility in another country (Werk Linz in Austria, Germany
+            # grid) is pointed out on the card so the user can choose.
+            factor = EmissionFactor.objects.filter(pk=pe.get('factor_id')).first()
+            if grid_matches_country(factor, facility.country) is False:
+                pe['facility_country'] = (facility.country or '').strip().upper()
+                pe['factor_country_mismatch'] = True
 
 
 def _send_message(request, session_id):

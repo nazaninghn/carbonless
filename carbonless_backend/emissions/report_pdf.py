@@ -917,10 +917,11 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
             scope3_by_cat[cat_key] = scope3_by_cat.get(cat_key, 0) + float(cr.calculated_co2e_kg)
 
     # Build table data for all 15 categories
+    # One category column in the report's language (an English report showed
+    # a "Category (TR)" column of Turkish names next to the English ones).
     s3_breakdown_hdr = [
         '#',
-        'Kategori (EN)' if tr else 'Category (EN)',
-        'Kategori (TR)' if tr else 'Category (TR)',
+        'Kategori' if tr else 'Category',
         'kg CO\u2082e',
         'tCO\u2082e',
     ]
@@ -941,8 +942,7 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
         s3_total_for_breakdown += cat_total
         s3_breakdown_rows.append([
             str(ghg_num),
-            name_en,
-            name_tr,
+            name_tr if tr else name_en,
             _fmt(cat_total, tr),
             _fmt4(cat_total / 1000, tr),
         ])
@@ -951,12 +951,11 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     s3_breakdown_rows.append([
         '',
         'TOPLAM' if tr else 'TOTAL',
-        '',
         _fmt(s3_total_for_breakdown, tr),
         _fmt4(s3_total_for_breakdown / 1000, tr),
     ])
 
-    s3_tbl = Table(s3_breakdown_rows, colWidths=[8*mm, 50*mm, 50*mm, 28*mm, 22*mm])
+    s3_tbl = Table(s3_breakdown_rows, colWidths=[8*mm, 100*mm, 28*mm, 22*mm])
     s3_tbl.setStyle(_tbl_style(fn, fnb, SCOPE3_COLOR))
     s3_tbl.setStyle(_total_row_style(fnb))
     E.append(s3_tbl)

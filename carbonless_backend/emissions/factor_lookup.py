@@ -223,6 +223,28 @@ EU_COUNTRIES = {
 }
 
 
+def grid_matches_country(factor, country):
+    """Whether an electricity grid factor stands for `country` (a facility's
+    country code): True / False, or None when it does not apply (not a
+    country grid, or no country). Only used to tell the user; the factor
+    choice itself is unchanged."""
+    from questionnaire.serializers import TURKEY_CODES
+    code = (country or '').strip().upper()
+    slug = getattr(factor, 'slug', '') or ''
+    if not code or not slug:
+        return None
+    if code in TURKEY_CODES:
+        code = 'TR'
+    if slug == 'turkey-grid':
+        return code == 'TR'
+    if slug == 'eu-grid':
+        return code in EU_COUNTRIES
+    countries = {c for c, g in GRID_BY_COUNTRY.items() if g == slug}
+    if not countries:
+        return None
+    return code in countries
+
+
 def _foreign_country(company):
     """HQ country code of a company based outside Turkey, else None."""
     if company is None:
