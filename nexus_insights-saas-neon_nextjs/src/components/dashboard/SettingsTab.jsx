@@ -17,6 +17,7 @@ import CompanySettings from '@/components/CompanySettings';
 import FacilitySettings from '@/components/FacilitySettings';
 import PasswordChange from '@/components/PasswordChange';
 import TeamManagement from '@/components/TeamManagement';
+import TeamList from '@/components/TeamList';
 import { getPermissions, roleLabel } from '@/lib/permissions';
 import ProfileEdit from '@/components/ProfileEdit';
 import CompanyHistory from '@/components/CompanyHistory';
@@ -275,11 +276,14 @@ export default function SettingsTab({ language, user, fetchData }) {
               {perms.canManageTeam ? (
                 <TeamManagement language={language} />
               ) : (
-                <p className="text-sm text-[#072C0E]/60">
-                  {tr
-                    ? `Takım üyelerini yalnızca şirket sahibi ve yöneticiler yönetebilir. Rolünüz: ${roleLabel(user?.role, tr)}.`
-                    : `Only the company owner and admins can manage team members. Your role: ${roleLabel(user?.role, tr)}.`}
-                </p>
+                <div className="space-y-3">
+                  <p className="text-sm text-[#072C0E]/60">
+                    {tr
+                      ? `Takım üyelerini yalnızca şirket sahibi ve yöneticiler yönetebilir. Rolünüz: ${roleLabel(user?.role, tr)}.`
+                      : `Only the company owner and admins can manage team members. Your role: ${roleLabel(user?.role, tr)}.`}
+                  </p>
+                  {perms.canApprove && <TeamList tr={tr} />}
+                </div>
               )}
             </Panel>
           )}

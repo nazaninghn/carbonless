@@ -43,6 +43,12 @@ class HasCompanyAdminRole(BasePermission):
         return membership is not None and membership.role in self.allowed_roles
 
 
+class CanSeeTeam(HasCompanyAdminRole):
+    """The team list: owners and admins manage it; managers, who approve the
+    team's entries, may read it (they could not see who was on the team)."""
+    allowed_roles = {'owner', 'admin', 'manager'}
+
+
 class NotAuditorForWrites(BasePermission):
     """Blocks write methods (POST/PUT/PATCH/DELETE) for the 'auditor' role.
 

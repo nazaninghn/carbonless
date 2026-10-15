@@ -463,3 +463,23 @@ class TwoCompaniesTests(TestCase):
         res = self.client.get('/api/accounts/notifications/unread-count/').json()
         self.assertEqual(res['unread_count'], 0)
         self.assertEqual(res['other_companies'], [{'id': self.b.pk, 'name': 'Ege A.Ş.', 'unread': 1}])
+
+
+class TeamListForManagerTests(FacilityTests):
+    def test_manager_reads_the_team_but_data_entry_does_not(self):
+        for name, role in (('tm_mgr', 'manager'), ('tm_clerk', 'data_entry')):
+            u = User.objects.create_user(name, f'{name}@test.com', 'testpass123')
+            CompanyMembership.objects.create(company=self.company, user=u, role=role)
+            setattr(self, name, u)
+        c = APIClient()
+        c.force_authenticate(user=self.tm_mgr)
+        res = c.get('/api/companies/memberships/')
+        self.assertEqual(res.status_code, 200)
+        rows = res.data.get('results', res.data) if isinstance(res.data, dict) else res.data
+        self.assertEqual(len(rows), 3)
+        # Reading only: changing a role stays with owners and admins.
+        clerk_row = next(r for r in rows if r['user'] == self.tm_clerk.pk)
+        self.assertEqual(c.patch(f"/api/companies/memberships/{clerk_row['id']}/", {'role': 'manager'},
+                                 format='json').status_code, 403)
+        c.force_authenticate(user=self.tm_clerk)
+        self.assertEqual(c.get('/api/companies/memberships/').status_code, 403)

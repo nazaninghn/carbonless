@@ -2129,3 +2129,50 @@ class EditedAfterSigningTests(_StepPatchTestCase):
         listed = self._listed()
         self.assertIsNone(listed['signed_at'])
         self.assertIsNone(listed['edited_after_signing_at'])
+
+
+class AdvisorRejectionFlowTests(_StepPatchTestCase):
+    """A rejected Danışman Onayı reaches the inventory's creator, shows at the
+    question and on the inventory list, and goes back to the approver once the
+    answer is corrected."""
+
+    def setUp(self):
+        super().setUp()
+        from rest_framework.test import APIClient
+        self.mgr = User.objects.create_user('advmgr', 'advmgr@test.com', 'pass12345', first_name='Murat', last_name='Kaya')
+        CompanyMembership.objects.create(user=self.mgr, company=self.company, role='manager')
+        self.cm = APIClient()
+        self.cm.force_authenticate(user=self.mgr)
+        self._patch('3A-EF', {'answer': 'yes'})
+        self._patch('3A-EF-a', {'answer': {'ef_value': '5', 'ef_unit': 'kgCO2e_kWh',
+                                           'ef_source': 'XYZ', 'ef_year': '2024'}})
+
+    def _flag(self):
+        from .models import AdvisorApproval
+        return AdvisorApproval.objects.get(report=self.report, question_id='3A-EF-a')
+
+    def test_rejection_notifies_shows_and_reopens_on_a_new_answer(self):
+        from accounts.models import Notification
+        flag = self._flag()
+        r = self.cm.post(f'/api/questionnaire/advisor-approvals/{flag.pk}/approve/',
+                         {'action': 'reject', 'reason': 'Belgeyi kontrol edin.'}, format='json')
+        self.assertEqual(r.status_code, 200)
+        note = Notification.objects.get(user=self.owner, title__in=('Advisor approval rejected', 'Danışman onayı reddedildi'))
+        self.assertIn('Belgeyi kontrol edin', note.message)
+        self.assertIn('Murat Kaya', note.message)
+        self.assertEqual(note.link, f'/dashboard?tab=questionnaire&report={self.report.pk}&step=3A-EF-a')
+        status = self.c.get(f'/api/questionnaire/{self.report.pk}/').data
+        self.assertEqual(status['advisor_rejected'][0]['question_id'], '3A-EF-a')
+        listed = next(x for x in self.c.get('/api/questionnaire/').data['reports'] if x['report_id'] == self.report.pk)
+        self.assertEqual(listed['advisor_rejected'], 1)
+
+        # Same answer again: stays rejected. A corrected answer: back to pending.
+        self._patch('3A-EF-a', {'answer': {'ef_value': '5', 'ef_unit': 'kgCO2e_kWh',
+                                           'ef_source': 'XYZ', 'ef_year': '2024'}})
+        self.assertEqual(self._flag().status, 'rejected')
+        self._patch('3A-EF-a', {'answer': {'ef_value': '0.2', 'ef_unit': 'kgCO2e_kWh',
+                                           'ef_source': 'XYZ', 'ef_year': '2024'}})
+        flag = self._flag()
+        self.assertEqual(flag.status, 'pending')
+        self.assertEqual(flag.rejection_reason, '')
+        self.assertEqual(self.c.get(f'/api/questionnaire/{self.report.pk}/').data['advisor_pending'], 1)

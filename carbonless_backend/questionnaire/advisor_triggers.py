@@ -435,6 +435,16 @@ def evaluate_advisor_triggers(report, question_id, answer):
     return created
 
 
+def reopen_rejected(report, question_id):
+    """A rejected flag is about the answer as it was. When that answer
+    changes it goes back to pending: the trigger check that follows removes it
+    if the new answer no longer raises it, or leaves it for the approver."""
+    from .models import AdvisorApproval
+    AdvisorApproval.objects.filter(
+        report=report, question_id=question_id, status=AdvisorApproval.Status.REJECTED,
+    ).update(status=AdvisorApproval.Status.PENDING, reviewed_by=None, reviewed_at=None, rejection_reason='')
+
+
 def reconcile_advisor_approvals(report):
     """Re-check a report's pending flags against its current answers — for
     flags raised before evaluate_advisor_triggers kept them in sync, whose

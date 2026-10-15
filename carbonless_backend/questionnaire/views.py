@@ -234,6 +234,9 @@ def _save_report_step(report, step_id, answer, is_skipped=False):
                     defaults={'answer': answer, 'is_skipped': is_skipped},
                 )
             _track_signature(report, step_id, before, result[0].answer)
+            if before is not None and before != result[0].answer:
+                from .advisor_triggers import reopen_rejected
+                reopen_rejected(report, step_id)
             return result
         except (IntegrityError, OperationalError) as exc:
             last_exc = exc
@@ -870,6 +873,15 @@ class ReportStatusView(APIView):
                     else (report.created_by.get_full_name() or report.created_by.email or report.created_by.username)
                 ),
                 'progress': _progress(len(completed_steps), report.status, report.client_progress),
+                # Danışman Onayı: rejected answers are shown at their question
+                # with the reason; the pending count is shown at sign-off.
+                'advisor_rejected': [
+                    {'question_id': a.question_id, 'reason': a.rejection_reason,
+                     'reviewed_by': (a.reviewed_by.get_full_name() or a.reviewed_by.email) if a.reviewed_by else ''}
+                    for a in report.advisor_approvals.filter(
+                        status=AdvisorApproval.Status.REJECTED).select_related('reviewed_by')
+                ],
+                'advisor_pending': report.advisor_approvals.filter(status=AdvisorApproval.Status.PENDING).count(),
             })
         except Exception as e:
             logger.error(f'Error in ReportStatusView: {e}', exc_info=True)
@@ -1431,7 +1443,7 @@ class ReportListView(APIView):
 
         reports = CarbonReport.objects.filter(
             company=company
-        ).select_related('company', 'created_by').prefetch_related('steps').order_by('-updated_at')
+        ).select_related('company', 'created_by').prefetch_related('steps', 'advisor_approvals').order_by('-updated_at')
 
         data = []
         for r in reports:
@@ -1446,6 +1458,8 @@ class ReportListView(APIView):
                 'created_at': r.created_at.isoformat() if r.created_at else None,
                 'updated_at': r.updated_at.isoformat() if r.updated_at else None,
                 'signed_at': r.signed_at.isoformat() if r.signed_at else None,
+                'advisor_pending': sum(1 for a in r.advisor_approvals.all() if a.status == AdvisorApproval.Status.PENDING),
+                'advisor_rejected': sum(1 for a in r.advisor_approvals.all() if a.status == AdvisorApproval.Status.REJECTED),
                 'edited_after_signing_at': (
                     r.edited_after_signing_at.isoformat() if r.edited_after_signing_at else None),
                 'progress': _progress(completed, r.status, r.client_progress),
@@ -1576,6 +1590,36 @@ def pending_advisor_approvals_view(request):
     } for a in approvals])
 
 
+def _notify_advisor_rejected(approval, reviewer):
+    """Tell the inventory's creator (or, when they rejected it themselves,
+    nobody else) that a Danışman Onayı was rejected, with the reason and a
+    link to the question — it used to be recorded and shown nowhere."""
+    report = approval.report
+    user = report.created_by
+    if user is None or user.pk == reviewer.pk:
+        return
+    try:
+        from emissions.notifications import _prefs, _notify
+        from .step_entries import question_label
+        _, lang = _prefs(user)
+        who = reviewer.get_full_name() or reviewer.email or reviewer.username
+        reason = (approval.rejection_reason or '').strip().rstrip('.').rstrip()
+        q = question_label(approval.question_id, lang)
+        link = f'/dashboard?tab=questionnaire&report={report.pk}&step={approval.question_id}'
+        if lang == 'tr':
+            _notify(user, 'entry_rejected', 'Danışman onayı reddedildi',
+                    f'{report.reporting_year} envanteri · {q}: {who} cevabı onaylamadı.'
+                    + (f' Neden: {reason}.' if reason else '') + ' Cevabı gözden geçirip düzeltin.',
+                    link, company_id=report.company_id)
+        else:
+            _notify(user, 'entry_rejected', 'Advisor approval rejected',
+                    f'{report.reporting_year} inventory · {q}: {who} did not approve the answer.'
+                    + (f' Reason: {reason}.' if reason else '') + ' Review and correct the answer.',
+                    link, company_id=report.company_id)
+    except Exception:
+        logger.exception('Could not notify about advisor approval %s', approval.pk)
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def approve_advisor_approval_view(request, pk):
@@ -1625,5 +1669,6 @@ def approve_advisor_approval_view(request, pk):
         approval.rejection_reason = request.data.get('reason', '')
         approval.save()
         log('advisor_rejected', reason=approval.rejection_reason)
+        _notify_advisor_rejected(approval, request.user)
         return Response({'status': 'rejected'})
     return Response({'error': 'action must be approve or reject'}, status=400)
