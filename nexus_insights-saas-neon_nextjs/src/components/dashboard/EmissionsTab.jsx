@@ -302,6 +302,9 @@ export default function EmissionsTab({
   const [facility,    setFacility]    = useState('');
   const [file,        setFile]        = useState(null);
   const [formError,   setFormError]   = useState('');
+  // The duplicate warning sits at the end of the long form; on a phone it
+  // appeared below the fold and Save seemed to do nothing.
+  const dupWarningRef = useRef(null);
   const [submitting,  setSubmitting]  = useState(false);
 
   // Edit
@@ -460,6 +463,14 @@ export default function EmissionsTab({
     for (const e of entries) if (e.status === 'approved' && c[e.scope] !== undefined) c[e.scope]++;
     return c;
   }, [entries]);
+  // Waiting for approval, per scope: the cards said "0 kayıt" while the K2
+  // filter beside them counted the pending entry as 1.
+  const pendingCount = useMemo(() => {
+    const c = { scope1: 0, scope2: 0, scope3: 0 };
+    for (const e of entries) if (e.status === 'submitted' && c[e.scope] !== undefined) c[e.scope]++;
+    return c;
+  }, [entries]);
+  const countLabel = (approved, pending) => `${approved} ${tr ? 'onaylı' : 'approved'}${pending ? ` · ${pending} ${tr ? 'bekleyen' : 'pending'}` : ''}`;
 
   // Not in any total above; shown under the cards for information.
   const notCounted = useMemo(() => {
@@ -487,6 +498,9 @@ export default function EmissionsTab({
   // ── Handlers ─────────────────────────────────────────────────────────────
   // Set by "Save anyway" after the server flagged a likely duplicate.
   const [dupWarning, setDupWarning] = useState(false);
+  useEffect(() => {
+    if (dupWarning) dupWarningRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [dupWarning]);
   const confirmDupRef = useRef(false);
   // "Kaydet ve sonraki ay": keep the source and facility, move to the next
   // month — twelve bills no longer mean twelve times picking the source.
@@ -595,12 +609,14 @@ export default function EmissionsTab({
           setFormError(futurePeriodMessage(tr));
         } else {
           setFormError(tr ? 'Kayıt eklenemedi. Lütfen alanları kontrol edin.' : 'Could not save entry. Please check your inputs.');
-          toast.error(tr ? 'Kayıt eklenemedi' : 'Failed to add entry');
         }
       }
     } catch {
-      setFormError(tr ? 'Bağlantı hatası' : 'Connection error');
-      toast.error(tr ? 'Bağlantı hatası oluştu' : 'Connection error');
+      // Shown next to the Save buttons (a toast sat on top of them on a
+      // phone, and the form's own error was below the fold).
+      setFormError(tr
+        ? 'Kaydedilemedi — internet bağlantınızı kontrol edin. Girdiğiniz bilgiler duruyor; bağlantı gelince tekrar Kaydet\'e basın.'
+        : "Couldn't save — check your internet connection. What you entered is kept; press Save again once you're back online.");
     }
     finally { setSubmitting(false); }
   }, [file, tr, selFactor, selectedYear, month, fullMonths, quantity, desc, facility, submitting, toast, resetAddForm, fetchData, setShowAddForm]);
@@ -867,10 +883,10 @@ export default function EmissionsTab({
       {/* ── KPI mini cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {[
-          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: totKg/1000, sub: `${approvedCount.scope1 + approvedCount.scope2 + approvedCount.scope3} ${tr?'onaylı kayıt':'approved'}`, color: null },
-          { label: tr ? 'Kapsam 1' : 'Scope 1', value: s1kg/1000, sub: `${approvedCount.scope1} ${tr?'kayıt':'entries'}`, color: '#072C0E' },
-          { label: tr ? 'Kapsam 2' : 'Scope 2', value: s2kg/1000, sub: `${approvedCount.scope2} ${tr?'kayıt':'entries'}`, color: '#2ABD41' },
-          { label: tr ? 'Kapsam 3' : 'Scope 3', value: s3kg/1000, sub: `${approvedCount.scope3} ${tr?'kayıt':'entries'}`, color: '#8BEA99' },
+          { label: tr ? 'Toplam tCO₂e' : 'Total tCO₂e', value: totKg/1000, sub: countLabel(approvedCount.scope1 + approvedCount.scope2 + approvedCount.scope3, pendingCount.scope1 + pendingCount.scope2 + pendingCount.scope3), color: null },
+          { label: tr ? 'Kapsam 1' : 'Scope 1', value: s1kg/1000, sub: countLabel(approvedCount.scope1, pendingCount.scope1), color: '#072C0E' },
+          { label: tr ? 'Kapsam 2' : 'Scope 2', value: s2kg/1000, sub: countLabel(approvedCount.scope2, pendingCount.scope2), color: '#2ABD41' },
+          { label: tr ? 'Kapsam 3' : 'Scope 3', value: s3kg/1000, sub: countLabel(approvedCount.scope3, pendingCount.scope3), color: '#8BEA99' },
         ].map((k, i) => (
           <EmissionsKPI key={k.label} label={k.label} value={k.value} sub={k.sub} color={k.color} delay={i * 60} />
         ))}
@@ -1452,13 +1468,8 @@ export default function EmissionsTab({
                   </div>
                 </div>
 
-                {formError && (
-                  <div className="flex items-center gap-2 rounded-2xl border border-red-200/60 bg-red-50/60 px-4 py-3 text-xs font-bold text-red-600">
-                    <AlertCircle className="h-4 w-4 shrink-0" />{formError}
-                  </div>
-                )}
                 {dupWarning && (
-                  <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                  <div ref={dupWarningRef} role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
                     <p className="flex items-center gap-2 font-bold">
                       <AlertCircle className="h-4 w-4 shrink-0" />
                       {dupWarning.kind === 'yearly_repeat'
@@ -1485,6 +1496,13 @@ export default function EmissionsTab({
               </form>
             </div>
 
+            {/* Right above the Save buttons, so it is in view on a phone
+                whichever part of the long form is scrolled to. */}
+            {formError && (
+              <div role="alert" className="flex shrink-0 items-center gap-2 border-t border-red-200/60 bg-red-50 px-4 py-2.5 text-xs font-bold text-red-600 sm:px-6">
+                <AlertCircle className="h-4 w-4 shrink-0" />{formError}
+              </div>
+            )}
             <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
                 {tr ? 'İptal' : 'Cancel'}
