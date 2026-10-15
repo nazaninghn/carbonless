@@ -246,7 +246,8 @@ def notify_delete_refused(entry, reason, reviewer):
         if not wants:
             return
         what = _describe(entry, lang)
-        link = f'/dashboard?tab=emissions&year={entry.year}'
+        link = f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}'
+        reason = (reason or '').strip().rstrip('.').rstrip()
         if lang == 'tr':
             _notify(author, 'entry_rejected', 'Silme talebiniz reddedildi',
                     f'{what} silinmedi.' + (f' Neden: {reason}.' if reason else '')
@@ -335,13 +336,15 @@ def notify_entry_reviewed(entry, approved, reviewer):
         old = entry.replaces_entry if entry.replaces_entry_id else None
         if approved:
             if lang == 'tr':
-                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}', company_id=entry.company_id)
+                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}', company_id=entry.company_id)
             else:
-                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}', company_id=entry.company_id)
+                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}', company_id=entry.company_id)
             return
-        reason = (entry.rejected_reason or '').strip()
+        # The sentence adds its own full stop: "… sayılır.." when the reason
+        # already ended with one.
+        reason = (entry.rejected_reason or '').strip().rstrip('.').rstrip()
         # Opens Emisyon Yönetimi on the entry's own year.
-        link = f'/dashboard?tab=emissions&year={entry.year}'
+        link = f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}'
         from_questionnaire = (entry.description or '').startswith('Questionnaire step ')
         if lang == 'tr':
             fix = (' Kayıt anketten geldi: Emisyon Yönetimi\'nde "Ankette düzelt" ile ilgili soruyu açıp düzeltin.'

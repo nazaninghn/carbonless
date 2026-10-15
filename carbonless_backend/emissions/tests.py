@@ -1378,3 +1378,36 @@ class AmountCeilingTests(TestCase):
         self.assertIsNone(err)
         self.assertIsNotNone(entry)
         self.assertGreater(float(entry.calculated_co2e_kg), 0)
+
+
+class ApproverSeesOverlapTests(ApprovalNotificationAndDuplicateTests):
+    """A monthly entry of a source the year's inventory already holds reaches
+    the approver with the same warning its author was shown."""
+
+    def test_pending_entry_carries_the_overlap_warning(self):
+        EmissionEntry.objects.create(
+            user=self.users['aylin'], company=self.company, emission_factor=self.factor,
+            year=2025, month=1, quantity=1000, calculated_co2e_kg=2500,
+            description='Questionnaire step 3A-5', status='approved')
+        self._as('ali')
+        r = self._entry(year=2025, month=9)
+        self.assertEqual(r.status_code, 409)
+        self.assertEqual(r.data['code'], 'annual_overlap')
+        r = self._entry(year=2025, month=9, confirm_duplicate=True)
+        self.assertEqual(r.status_code, 201, r.content)
+        self._as('aylin')
+        rows = self.client.get('/api/emissions/pending/').data
+        row = next(x for x in rows if x['id'] == r.data['id'])
+        self.assertIn('iki kez sayılabilir', row['overlap_warning']['tr'])
+        self.assertIn('counted twice', row['overlap_warning']['en'])
+
+    def test_rejection_reason_full_stop_is_not_doubled(self):
+        from accounts.models import Notification
+        self._as('ali')
+        entry_id = self._entry(year=2025, month=9).data['id']
+        self._as('aylin')
+        r = self.client.post(f'/api/emissions/entries/{entry_id}/approve/', {'action': 'reject', 'reason': 'Fatura eksik.'}, format='json')
+        self.assertIn(r.status_code, (200, 204), r.content)
+        n = Notification.objects.filter(user=self.users['ali'], notification_type='entry_rejected').latest('id')
+        self.assertNotIn('..', n.message)
+        self.assertTrue(n.link.endswith(f'&entry={entry_id}'))

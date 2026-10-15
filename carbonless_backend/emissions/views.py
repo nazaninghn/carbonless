@@ -1153,7 +1153,19 @@ def pending_entries_view(request):
     ).select_related('emission_factor', 'facility', 'user', 'replaces_entry').order_by('-created_at')
 
     from .serializers import EmissionEntrySerializer
-    return Response(EmissionEntrySerializer(entries, many=True).data)
+    from .duplicates import find_annual_overlap
+    from .inventory import ANNUAL_PREFIX
+    data = EmissionEntrySerializer(entries, many=True).data
+    # The author may have been warned that the year's inventory already holds
+    # this source as an annual amount, and sent it anyway: the approver has to
+    # see the same warning, or one "Onayla" counts the consumption twice.
+    for row, entry in zip(data, entries):
+        row['overlap_warning'] = None
+        if entry.status == 'submitted' and not (entry.description or '').startswith(ANNUAL_PREFIX):
+            overlap = find_annual_overlap(company, entry.emission_factor, entry.year, entry.facility)
+            if overlap:
+                row['overlap_warning'] = {'tr': overlap['tr'], 'en': overlap['en']}
+    return Response(data)
 
 
 @api_view(['GET'])
