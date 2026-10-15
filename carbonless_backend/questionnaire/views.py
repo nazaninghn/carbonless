@@ -224,18 +224,39 @@ def _save_report_step(report, step_id, answer, is_skipped=False):
     is rejected, so an immediate .get() can itself raise DoesNotExist. A
     short retry loop is safe either way — update_or_create is idempotent.
     """
+    before = ReportStep.objects.filter(report=report, step_id=step_id).values_list('answer', flat=True).first()
     last_exc = None
     for attempt in range(5):
         try:
             with transaction.atomic():
-                return ReportStep.objects.update_or_create(
+                result = ReportStep.objects.update_or_create(
                     report=report, step_id=step_id,
                     defaults={'answer': answer, 'is_skipped': is_skipped},
                 )
+            _track_signature(report, step_id, before, result[0].answer)
+            return result
         except (IntegrityError, OperationalError) as exc:
             last_exc = exc
             time.sleep(0.05 * (attempt + 1))
     raise last_exc
+
+
+SIGN_OFF_STEP = '7C-2'
+
+
+def _track_signature(report, step_id, before, after):
+    """Saving the sign-off signs the inventory (again); changing any other
+    answer of a signed, completed inventory marks it edited after signing.
+    Stage-7 steps are the sign-off flow itself and do not count."""
+    from django.utils import timezone
+    now = timezone.now()
+    if step_id == SIGN_OFF_STEP:
+        CarbonReport.objects.filter(pk=report.pk).update(signed_at=now, edited_after_signing_at=None)
+        report.signed_at, report.edited_after_signing_at = now, None
+    elif (not str(step_id).startswith('7') and report.signed_at
+          and report.status == CarbonReport.Status.COMPLETED and before != after):
+        CarbonReport.objects.filter(pk=report.pk).update(edited_after_signing_at=now)
+        report.edited_after_signing_at = now
 from .serializers import (
     StepA1Serializer, StepA2Serializer, StepA3Serializer,
     StepA4Serializer, StepA5Serializer, StepA6Serializer,
@@ -1424,6 +1445,9 @@ class ReportListView(APIView):
                 'current_step': r.current_step,
                 'created_at': r.created_at.isoformat() if r.created_at else None,
                 'updated_at': r.updated_at.isoformat() if r.updated_at else None,
+                'signed_at': r.signed_at.isoformat() if r.signed_at else None,
+                'edited_after_signing_at': (
+                    r.edited_after_signing_at.isoformat() if r.edited_after_signing_at else None),
                 'progress': _progress(completed, r.status, r.client_progress),
                 # Who started it, when that was a teammate (None for your own).
                 'created_by': (

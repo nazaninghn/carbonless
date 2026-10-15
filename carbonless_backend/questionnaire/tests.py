@@ -2090,3 +2090,42 @@ class FactorNameDedupeTests(StepEntriesTests):
         entries = [e for e in self._entries() if e.description.startswith('Questionnaire step 4A-1')]
         self.assertEqual(len(entries), 2)
         self.assertAlmostEqual(saved['co2e_kg'], sum(float(e.calculated_co2e_kg) for e in entries), places=3)
+
+
+class EditedAfterSigningTests(_StepPatchTestCase):
+    """The sign-off records when it was signed; changing an answer of the
+    signed, completed inventory afterwards is flagged until it is signed
+    again — the library used to show it as completed that day."""
+
+    SIGN = {'answer': {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür',
+                       'declaration_accepted': 'accepted'}}
+
+    def _listed(self):
+        res = self.c.get('/api/questionnaire/')
+        return next(r for r in res.data['reports'] if r['report_id'] == self.report.id)
+
+    def test_fix_after_signing_is_flagged_until_signed_again(self):
+        self.assertEqual(self._patch('4A-1', {'answer': {'1': '1000 kWh'}}).status_code, 200)
+        self.assertEqual(self._patch('7C-2', self.SIGN).status_code, 200)
+        CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED)
+        listed = self._listed()
+        self.assertIsNotNone(listed['signed_at'])
+        self.assertIsNone(listed['edited_after_signing_at'])
+
+        # Same answer again: nothing changed.
+        self._patch('4A-1', {'answer': {'1': '1000 kWh'}})
+        self.assertIsNone(self._listed()['edited_after_signing_at'])
+        # A real change, and the sign-off flow's own steps do not count.
+        self._patch('4A-1', {'answer': {'1': '121300 kWh'}})
+        self._patch('7C-1', {'answer': 'all_complete'})
+        self.assertIsNotNone(self._listed()['edited_after_signing_at'])
+
+        self._patch('7C-2', self.SIGN)
+        self.assertIsNone(self._listed()['edited_after_signing_at'])
+
+    def test_unsigned_draft_is_never_flagged(self):
+        self._patch('4A-1', {'answer': {'1': '1000 kWh'}})
+        self._patch('4A-1', {'answer': {'1': '2000 kWh'}})
+        listed = self._listed()
+        self.assertIsNone(listed['signed_at'])
+        self.assertIsNone(listed['edited_after_signing_at'])

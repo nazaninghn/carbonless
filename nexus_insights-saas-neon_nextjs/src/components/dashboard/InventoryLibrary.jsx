@@ -477,8 +477,29 @@ export default function InventoryLibrary({ tr = false }) {
                     </p>
                   )}
                   <p className="text-xs text-[#175022]/60 mt-1">
-                    {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
+                    {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.signed_at || report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
                   </p>
+                  {/* An answer fixed after the sign-off is already in the
+                      numbers; the card used to move its date to that day as
+                      if it had been signed again. */}
+                  {report.edited_after_signing_at && (
+                    <div role="status" className="mt-1.5 flex flex-wrap items-center gap-2 text-xs font-semibold text-amber-800">
+                      <span>
+                        {tr
+                          ? `${new Date(report.edited_after_signing_at).toLocaleDateString('tr-TR')} tarihinde düzenlendi — imza yenilenmedi.`
+                          : `Edited on ${new Date(report.edited_after_signing_at).toLocaleDateString('en-GB')} — not signed again.`}
+                      </span>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          onClick={() => continueInventory(report.report_id, '7C-2')}
+                          className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800 transition hover:bg-amber-100"
+                        >
+                          {tr ? 'Yeniden imzala' : 'Sign again'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
                   {confirmDeleteId === report.report_id ? (

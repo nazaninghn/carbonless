@@ -79,6 +79,12 @@ class CarbonReport(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # When the sign-off (7C-2) was last saved, and when an answer changed
+    # after that. An answer fixed on a finished inventory goes straight into
+    # its numbers; without these the library showed it as completed "today",
+    # as if signed again.
+    signed_at = models.DateTimeField(null=True, blank=True)
+    edited_after_signing_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-created_at']
