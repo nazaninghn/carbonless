@@ -74,23 +74,36 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
   const [allReports, setAllReports] = useState([]);
   const [isoReportId, setIsoReportId] = useState(null);
   const [manualIsoPick, setManualIsoPick] = useState(false);
+  // 'loading' | 'ok' | 'error'. Until the list arrives (or when it cannot be
+  // loaded) the page must not say "complete the inventory first" — on a slow
+  // or dropped connection that told users their finished inventory was gone.
+  const [reportsState, setReportsState] = useState('loading');
+  const [reportsLoadKey, setReportsLoadKey] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    setReportsState('loading');
     (async () => {
       try {
         const res = await api.listReports();
-        if (!res.ok) return;
+        if (!res.ok) throw new Error(String(res.status));
         const data = await res.json().catch(() => ({}));
         // This endpoint answers {reports: [...]} — not a bare array and not the
         // DRF {results: [...]} envelope. InventoryLibrary reads it the same way.
         const list = Array.isArray(data) ? data : (data.reports ?? data.results ?? []);
-        if (!cancelled) setAllReports(list);
+        if (!cancelled) { setAllReports(list); setReportsState('ok'); }
       } catch {
-        if (!cancelled) setAllReports([]);
+        if (!cancelled) setReportsState('error');
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [reportsLoadKey]);
+  // Coming back online retries a list that failed to load.
+  useEffect(() => {
+    if (reportsState !== 'error') return;
+    const retry = () => setReportsLoadKey(k => k + 1);
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [reportsState]);
 
   // Re-derive the default pick whenever the year changes or the list loads,
   // but only while the user hasn't manually chosen a different inventory —
@@ -122,6 +135,15 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
   // inventory IS complete, but for a different reporting year than the one
   // selected in the header, so nothing is picked by default.
   const inventoryHint = useMemo(() => {
+    if (reportsState === 'loading') return null;
+    if (reportsState === 'error') {
+      return {
+        error: true,
+        text: tr
+          ? 'Envanterleriniz yüklenemedi — internet bağlantınızı kontrol edin. Kayıtlı envanterleriniz silinmedi.'
+          : "Your inventories couldn't be loaded — check your internet connection. Your saved inventories are not deleted.",
+      };
+    }
     if (isoReportId) return null;
     const latestCompleted = [...completedReports]
       .sort((a, b) => Number(b.reporting_year || 0) - Number(a.reporting_year || 0))[0];
@@ -146,12 +168,25 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
         ? 'Bu raporlar için önce Karbon Envanteri anketini tamamlayın.'
         : 'Complete the Carbon Inventory questionnaire to unlock these reports.',
     };
-  }, [isoReportId, completedReports, allReports.length, selectedYear, tr]);
+  }, [reportsState, isoReportId, completedReports, allReports.length, selectedYear, tr]);
 
-  const inventoryNotice = inventoryHint && (
-    <div role="status" className="flex flex-wrap items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+  const inventoryNotice = reportsState === 'loading' ? (
+    <div role="status" className="flex items-center gap-2 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] px-4 py-3 text-xs font-semibold text-[#072C0E]/60">
+      <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[#175022]/20 border-t-[#175022]" />
+      {tr ? 'Envanterleriniz yükleniyor…' : 'Loading your inventories…'}
+    </div>
+  ) : inventoryHint && (
+    <div role={inventoryHint.error ? 'alert' : 'status'} className={`flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-3 text-xs font-semibold ${inventoryHint.error ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
       <AlertCircle className="h-4 w-4 shrink-0" />
       <span className="min-w-0 flex-1">{inventoryHint.text}</span>
+      {inventoryHint.error && (
+        <button
+          onClick={() => setReportsLoadKey(k => k + 1)}
+          className="shrink-0 rounded-full bg-[#072C0E] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0b3d14]"
+        >
+          {tr ? 'Tekrar dene' : 'Try again'}
+        </button>
+      )}
       {inventoryHint.year && onYearChange && (
         <button
           onClick={() => onYearChange(Number(inventoryHint.year))}
@@ -206,7 +241,9 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       // are keyed to the selected year instead.
       if (type === 'pack' || type === 'iso' || type === 'inv') {
         if (!isoReportId) {
-          setDlError(inventoryHint?.text || (tr
+          setDlError(inventoryHint?.text || (reportsState === 'loading'
+            ? (tr ? 'Envanterleriniz yükleniyor, birkaç saniye sonra tekrar deneyin.' : 'Your inventories are still loading — try again in a few seconds.')
+            : tr
             ? 'Bu raporlar için önce Karbon Envanteri anketini tamamlayın.'
             : 'Complete the Carbon Inventory questionnaire to unlock these reports.'));
           return;
@@ -255,7 +292,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
     } finally {
       setPdfLoading('');
     }
-  }, [selectedYear, pdfLoading, tr, isoReportId, inventoryHint]); // pdfLoading added — read inside guard
+  }, [selectedYear, pdfLoading, tr, isoReportId, inventoryHint, reportsState]); // pdfLoading added — read inside guard
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so the GPU-heavy complex view is never rendered to screen on Android tablets.
@@ -388,11 +425,11 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               </div>
               <h2 className="text-sm font-bold">{tr ? 'Rapor Hazırlığı' : 'Report Readiness'}</h2>
             </div>
-            <span className="text-2xl font-bold tabular-nums text-[#2ABD41]">{Math.round(animatedReadiness)}%</span>
+            <span className="text-2xl font-bold tabular-nums text-[#2ABD41]">{reportsState === 'ok' ? `${Math.round(animatedReadiness)}%` : '—'}</span>
           </div>
           {/* Progress ring simplified as bar */}
           <div className="mb-4 h-3 overflow-hidden rounded-full bg-[#072C0E]/6">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700 ease-out" style={{ width: `${mounted ? readiness : 0}%` }} />
+            <div className="h-full rounded-full bg-gradient-to-r from-[#175022] to-[#2ABD41] transition-all duration-700 ease-out" style={{ width: `${mounted && reportsState === 'ok' ? readiness : 0}%` }} />
           </div>
           <div className="space-y-2">
             {checks.map((c) => (
@@ -556,6 +593,15 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               );
             })}
           </div>
+          {/* Most inventory answers are given for the company as a whole, so
+              facilities can look almost empty next to the company-wide row. */}
+          {summary.unassigned_kg > summary.total_kg / 2 && (
+            <p className="mt-3 text-[11px] font-semibold leading-4 text-[#072C0E]/50">
+              {tr
+                ? 'Envanter cevaplarının çoğu şirket geneli için verildi; tesis kırılımı yalnızca tesis bazında girilen kayıtları gösterir.'
+                : 'Most inventory answers were given for the company as a whole; the facility split only shows what was entered per facility.'}
+            </p>
+          )}
         </ReportCard>
       )}
 
@@ -685,16 +731,17 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                     key={l}
                     onClick={() => handleDownload('pack', l)}
                     disabled={!!pdfLoading || !isoReportId}
+                    aria-label={downloadLabel(tr ? 'Üçü tek PDF' : 'All three as one PDF', l, tr)}
                     className="rounded-lg border border-[#072C0E]/15 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#F1FCF2] disabled:opacity-50"
                   >
-                    {pdfLoading === `pack-${l}` ? '...' : l.toUpperCase()}
+                    {pdfLoading === `pack${l}` ? '...' : l.toUpperCase()}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {completedReports.length === 0 && (
+          {reportsState === 'ok' && completedReports.length === 0 && (
             <p className="mt-2 text-[11px] font-semibold text-[#072C0E]/40">
               {tr
                 ? 'Envanter ve tam ISO raporu için önce bir anketi tamamlayın.'
@@ -795,6 +842,13 @@ function InsightItem({ text, type }) {
   );
 }
 
+// "Emisyon Raporu — Türkçe PDF indir": the buttons only read "TR" / "EN",
+// which a screen reader announces four times over without saying which report.
+function downloadLabel(title, l, tr) {
+  const lang = l === 'tr' ? (tr ? 'Türkçe' : 'Turkish') : (tr ? 'İngilizce' : 'English');
+  return tr ? `${title} — ${lang} PDF indir` : `${title} — download ${lang} PDF`;
+}
+
 // One of the three report types: what it is, what it is scoped to, and the
 // two language buttons that produce it. Grouping the TR/EN pair under a named,
 // described block is what makes the three types distinguishable — a flat grid
@@ -827,6 +881,7 @@ function ReportType({ icon: Icon, title, scope, desc, onDownload, loading, prefi
                 key={l}
                 onClick={() => onDownload(l)}
                 disabled={!!loading || disabled}
+                aria-label={downloadLabel(title, l, tr)}
                 title={disabled ? (tr ? 'Önce bir envanter tamamlayın' : 'Complete an inventory first') : undefined}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-[#072C0E]/10 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:cursor-not-allowed disabled:opacity-50"
               >

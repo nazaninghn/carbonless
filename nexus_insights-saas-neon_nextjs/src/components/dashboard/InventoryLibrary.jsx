@@ -18,6 +18,10 @@ export default function InventoryLibrary({ tr = false }) {
 
   const [reports, setReports] = useState([]);
   const [loadingReports, setLoadingReports] = useState(true);
+  // The list could not be fetched (offline, server down). Shown as its own
+  // state: an empty "No inventories yet" told users their inventories were
+  // gone and invited them to start a duplicate.
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showNamingDialog, setShowNamingDialog] = useState(false);
   const [surveyName, setSurveyName] = useState('');
   // Reporting year of the new inventory — asked here so it is not left to a
@@ -56,16 +60,27 @@ export default function InventoryLibrary({ tr = false }) {
     loadInventories();
   }, []);
 
+  // Coming back online retries a list that failed to load.
+  useEffect(() => {
+    if (!loadFailed) return;
+    const retry = () => loadInventories();
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [loadFailed]);
+
   const loadInventories = async () => {
     setLoadingReports(true);
     try {
       const res = await api.listReports();
+      if (!res.ok) throw new Error(String(res.status));
       const data = await res.json().catch(() => ({}));
       if (data.reports) {
         setReports(data.reports);
       }
+      setLoadFailed(false);
     } catch (e) {
       console.error('Failed to load inventories:', e);
+      setLoadFailed(true);
     } finally {
       setLoadingReports(false);
     }
@@ -288,6 +303,30 @@ export default function InventoryLibrary({ tr = false }) {
     return (
       <div className="w-full max-w-4xl mx-auto p-8 text-center">
         <div className="animate-spin w-8 h-8 border-4 border-[#175022]/20 border-t-[#175022] rounded-full mx-auto"></div>
+      </div>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="w-full max-w-4xl mx-auto p-4 sm:p-5">
+        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5 text-center">
+          <p className="text-sm font-semibold text-red-700">
+            {tr ? 'Envanterleriniz yüklenemedi' : "Your inventories couldn't be loaded"}
+          </p>
+          <p className="mt-1 text-xs text-red-700/80">
+            {tr
+              ? 'İnternet bağlantınızı kontrol edip tekrar deneyin. Kayıtlı envanterleriniz silinmedi.'
+              : 'Check your internet connection and try again. Your saved inventories are not deleted.'}
+          </p>
+          <button
+            type="button"
+            onClick={loadInventories}
+            className="mt-3 rounded-lg bg-[#175022] px-4 py-2 text-xs font-semibold text-white hover:bg-[#072C0E]"
+          >
+            {tr ? 'Tekrar dene' : 'Try again'}
+          </button>
+        </div>
       </div>
     );
   }
