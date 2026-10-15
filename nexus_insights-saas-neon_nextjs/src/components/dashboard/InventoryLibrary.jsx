@@ -625,8 +625,12 @@ export default function InventoryLibrary({ tr = false }) {
       {/* Naming Dialog */}
       {showNamingDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
-            <h2 className="text-lg font-bold text-[#175022] mb-4">
+          {/* A real dialog: DialogFocus keeps Tab inside it (it walked out to
+              the page behind) and Escape closes it from any of its controls. */}
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+            role="dialog" aria-modal="true" aria-labelledby="new-inventory-title"
+            onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setShowNamingDialog(false); } }}>
+            <h2 id="new-inventory-title" className="text-lg font-bold text-[#175022] mb-4">
               {tr ? 'Envanter Adı' : 'Inventory Name'}
             </h2>
 
@@ -639,6 +643,7 @@ export default function InventoryLibrary({ tr = false }) {
                 if (e.key === 'Escape') setShowNamingDialog(false);
               }}
               placeholder={tr ? 'Örnek: 2024 Emisyon Denetimi' : 'e.g., 2024 Emissions Audit'}
+              aria-labelledby="new-inventory-title"
               autoFocus
               className="w-full px-4 py-2.5 border border-[#175022]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BEA99] mb-2"
             />

@@ -1042,7 +1042,8 @@ function SupportRequestsModal({ tr, onClose, onOpenChat }) {
   const date = (d) => new Date(d).toLocaleString(tr ? 'tr-TR' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/30 p-4" onClick={onClose}>
-      <div role="dialog" aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
+      <div role="dialog" aria-modal="true" aria-label={tr ? 'Destek taleplerim' : 'My support requests'}
+        onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}
         className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-2xl bg-white shadow-xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#175022]/8 px-4 py-3">
           <span className="flex items-center gap-2 text-[14px] font-bold text-[#175022]">
@@ -1237,6 +1238,8 @@ function EmptyState({ onNew, tr }) {
             <div
               className="w-full max-w-lg rounded-[1.5rem] bg-white p-6 shadow-2xl border border-[#DEFAE1] animate-[cbFadeUp_0.25s_ease-out_both]"
               onClick={e => e.stopPropagation()}
+              role="dialog" aria-modal="true" aria-label={tr ? 'Rehber' : 'Guide'}
+              onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); setShowGuide(false); } }}
             >
               <div className="flex items-start justify-between gap-3 mb-1">
                 <div className="flex items-center gap-2.5">
@@ -6423,6 +6426,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                       onKeyDown={handleKeyDown}
                       disabled={sending || creatingSession}
                       placeholder={tr ? 'Carbonless\'a sor…' : 'Ask Carbonless…'}
+                      aria-label={tr ? 'Carbonless\'a mesajınız' : 'Your message to Carbonless'}
                       rows={1}
                       className="min-h-[24px] max-h-[120px] w-full resize-none bg-transparent text-sm font-medium text-[#175022] outline-none placeholder:text-[#175022]/30 disabled:cursor-not-allowed"
                       style={{ scrollbarWidth: 'none' }}
@@ -6438,6 +6442,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                       else sendMessage();
                     }}
                     disabled={!input.trim() || sending || creatingSession || charOver}
+                    aria-label={tr ? 'Gönder' : 'Send'}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     {(sending || creatingSession)
@@ -6471,12 +6476,33 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 // separate "AI Yardımı" drawer, so there is one assistant everywhere.
 export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false }) {
   const tr = language === 'tr';
+  const panelRef = useRef(null);
+  const openerRef = useRef(null);
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+  // Opening moves the keyboard focus to the message box (it stayed on the
+  // button that opened it, so what a keyboard user typed next went nowhere);
+  // closing puts it back on that button.
+  useEffect(() => {
+    if (!open) return undefined;
+    openerRef.current = document.activeElement;
+    const t = setTimeout(() => {
+      // Not while the user is typing somewhere else (an inventory answer).
+      const cur = document.activeElement;
+      if (cur && cur !== document.body && /^(INPUT|TEXTAREA|SELECT)$/.test(cur.tagName) && !panelRef.current?.contains(cur)) return;
+      const box = panelRef.current?.querySelector('textarea');
+      if (box && !box.disabled) box.focus();
+    }, 60);
+    return () => {
+      clearTimeout(t);
+      const back = openerRef.current;
+      if (back && panelRef.current?.contains(document.activeElement) && document.contains(back)) back.focus();
+    };
+  }, [open]);
   return (
     <>
       <style>{CHAT_ANIM_STYLES}</style>
@@ -6489,6 +6515,7 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
           : `fixed inset-y-0 right-0 z-[80] flex w-full flex-col border-l border-[#DEFAE1] bg-white shadow-2xl transition-transform duration-300 sm:w-[460px] lg:w-[540px] ${
             open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
           }`}
+        ref={panelRef}
         aria-hidden={!open}
         // Closed, it stays mounted off-screen: inert keeps its buttons out
         // of the Tab order too, not only away from screen readers.

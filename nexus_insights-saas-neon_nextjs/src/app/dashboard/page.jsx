@@ -253,6 +253,13 @@ export default function DashboardPage() {
   return (
     <ToastProvider language={language}>
     <div className="dashboard-android-fix h-screen overflow-hidden bg-[#F1FCF2] text-[#072C0E] flex font-inter">
+      {/* First Tab stop: jump past the sidebar and header (17 stops) to the
+          page content. Shown only while focused. */}
+      <a href="#main-content"
+        onClick={(e) => { e.preventDefault(); document.getElementById('main-content')?.focus(); }}
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[300] focus:rounded-full focus:bg-[#072C0E] focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-white">
+        {language === 'tr' ? 'İçeriğe geç' : 'Skip to content'}
+      </a>
       {/* Sidebar */}
       <DashboardSidebar
         language={language}
@@ -280,7 +287,7 @@ export default function DashboardPage() {
           onLanguageChange={changeLanguage}
         />
 
-        <main className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden ${
+        <main id="main-content" tabIndex={-1} className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden outline-none ${
           'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
         }`}>
           {/* Slim top bar  -  only on very first load, no layout shift */}

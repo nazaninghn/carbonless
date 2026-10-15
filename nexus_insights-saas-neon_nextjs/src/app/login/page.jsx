@@ -194,18 +194,20 @@ function LoginContent() {
                   <input id="login-email" type="text" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30" placeholder={t.login.emailPlaceholder} required />
                 </div>
               </div>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label htmlFor="login-password" className="block text-[12px] font-bold uppercase tracking-wide text-[#072C0E]/55">{t.login.password}</label>
-                  <NextLink href="/forgot-password" className="text-[12px] font-semibold text-[#2ABD41] hover:underline">{t.login.forgotPassword}</NextLink>
-                </div>
-                <div className="flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3.5 shadow-sm transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
+              {/* "Forgot password" sits above the field but comes after it in
+                  the page order: Tab from the email goes to the password, not
+                  to the link (typing the password there and pressing Enter
+                  opened the forgot-password page). */}
+              <div className="grid grid-cols-[1fr_auto] items-center gap-y-2">
+                <label htmlFor="login-password" className="col-start-1 row-start-1 block text-[12px] font-bold uppercase tracking-wide text-[#072C0E]/55">{t.login.password}</label>
+                <div className="col-span-2 row-start-2 flex items-center gap-3 rounded-2xl border border-[#DEFAE1] bg-white px-4 py-3.5 shadow-sm transition focus-within:border-[#2ABD41] focus-within:ring-4 focus-within:ring-[#2ABD41]/10">
                   <LockKeyhole className="h-[18px] w-[18px] text-[#2ABD41]" strokeWidth={1.8} />
                   <input id="login-password" type={showPassword ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full bg-transparent text-[14px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30" placeholder="********" required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-[#072C0E]/35 hover:text-[#072C0E]">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-pressed={showPassword} aria-label={tr ? (showPassword ? 'Şifreyi gizle' : 'Şifreyi göster') : (showPassword ? 'Hide password' : 'Show password')} className="text-[#072C0E]/35 hover:text-[#072C0E]">
                     {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
                   </button>
                 </div>
+                <NextLink href="/forgot-password" className="col-start-2 row-start-1 text-[12px] font-semibold text-[#2ABD41] hover:underline">{t.login.forgotPassword}</NextLink>
               </div>
 
               {sessionExpired && (

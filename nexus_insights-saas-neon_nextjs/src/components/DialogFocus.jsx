@@ -26,12 +26,20 @@ export default function DialogFocus() {
   useEffect(() => {
     let current = null;
     let opener = null;
+    // The last element focused outside any dialog: a dialog whose field has
+    // autoFocus already holds the focus when it is noticed here, so the
+    // control that opened it would otherwise be lost (Escape left focus on
+    // the page body).
+    let lastOutside = null;
+    const onFocusIn = (e) => {
+      if (e.target instanceof Element && !e.target.closest('[aria-modal="true"]')) lastOutside = e.target;
+    };
 
     const sync = () => {
       const d = activeDialog();
       if (d === current) return;
       if (d) {
-        if (!current) opener = document.activeElement;
+        if (!current) opener = d.contains(document.activeElement) ? lastOutside : document.activeElement;
         current = d;
         if (!d.contains(document.activeElement)) {
           // The first control after the header's Close button, so the user
@@ -70,8 +78,13 @@ export default function DialogFocus() {
     });
     obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-modal', 'inert', 'class', 'style'] });
     document.addEventListener('keydown', onKey, true);
+    document.addEventListener('focusin', onFocusIn, true);
     sync();
-    return () => { obs.disconnect(); document.removeEventListener('keydown', onKey, true); };
+    return () => {
+      obs.disconnect();
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('focusin', onFocusIn, true);
+    };
   }, []);
   return null;
 }

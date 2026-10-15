@@ -1531,8 +1531,11 @@ export default function EmissionsTab({
                         </div>
                       ) : (
                         <>
-                          <input type="file" id="proof-upload" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={e => setFile(e.target.files[0] || null)} className="hidden" />
-                          <label htmlFor="proof-upload" className="cursor-pointer">
+                          {/* Visually hidden but focusable (it was display:none, so
+                              Tab skipped it and a keyboard user could not attach a
+                              proof); the label below shows the focus ring. */}
+                          <input type="file" id="proof-upload" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onChange={e => setFile(e.target.files[0] || null)} className="peer sr-only" />
+                          <label htmlFor="proof-upload" className="block cursor-pointer rounded-xl peer-focus-visible:ring-4 peer-focus-visible:ring-[#2ABD41]/30">
                             <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/15 text-[#2ABD41]">
                               <Paperclip className="h-5 w-5" />
                             </div>
@@ -1693,10 +1696,10 @@ export default function EmissionsTab({
                 ) : (
                   <p className="mt-1 text-xs text-[#072C0E]/50">{tr ? 'Bu kayda henüz belge eklenmedi.' : 'No document attached yet.'}</p>
                 )}
-                <label className={`mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#175022] transition hover:bg-[#DEFAE1] ${proofBusy ? 'pointer-events-none opacity-60' : ''}`}>
+                <label className={`mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#2ABD41]/40 bg-white px-3 py-1.5 text-xs font-bold text-[#175022] transition hover:bg-[#DEFAE1] focus-within:ring-4 focus-within:ring-[#2ABD41]/30 ${proofBusy ? 'pointer-events-none opacity-60' : ''}`}>
                   <Paperclip className="h-3.5 w-3.5" />
                   {proofBusy ? '…' : editing.proof_document ? (tr ? 'Belgeyi değiştir' : 'Replace document') : (tr ? 'Belge ekle' : 'Attach document')}
-                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" className="hidden"
+                  <input type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" className="sr-only" disabled={proofBusy}
                     onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadProof(f); }} />
                 </label>
                 <p className="mt-1 text-[10px] text-[#072C0E]/40">PDF, JPG, PNG, Word, Excel · {tr ? 'en fazla 10 MB' : 'max 10 MB'}</p>
