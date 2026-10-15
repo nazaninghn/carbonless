@@ -969,7 +969,32 @@ def _gather(report, lang):
         # Pending / rejected entries: outside every figure, noted for information.
         'not_counted': (_not_counted(EmissionEntry.objects.filter(company=company, year=year))
                         if company else None),
+        # Facilities whose electricity is not calculated (no grid factor for
+        # their country): named in the location tables, not left out silently.
+        'sites_without_grid': _sites_without_grid(report),
     }
+
+
+def _sites_without_grid(report):
+    from .step_entries import _value, sites_without_grid
+    if report is None or report.company is None:
+        return []
+    A = {k: _value(v) for k, v in _answers(report).items()}
+    return sites_without_grid(A, report.company)
+
+
+def _not_calculated_sites_note(D, lang, tr):
+    """One sentence naming the facilities left out of the location figures."""
+    sites = D.get('sites_without_grid') or []
+    if not sites:
+        return ''
+    from .step_entries import _fmt as _fmt_kwh
+    names = ', '.join(f'{n} ({c}, {_fmt_kwh(k, 0, "tr" if tr else "en")} kWh)' for n, c, k in sites)
+    return (f'Not calculated and not included in the location figures: the electricity of {names} — '
+            f'no registered grid emission factor exists for that country.'
+            if lang == 'en' else
+            f'Hesaplanmayan ve lokasyon değerlerine dahil edilmeyen: {names} elektrik tüketimi — '
+            f'bu ülke için kayıtlı bir şebeke emisyon faktörü bulunmamaktadır.')
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -3606,6 +3631,9 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             if lang == 'en' else
             'Her bir tesise atanan emisyon 0,01 t CO₂e\'nin altındadır; emisyonların '
             'tamamına yakını kuruluş düzeyinde raporlanmıştır.', S['body']))
+        missing_note = _not_calculated_sites_note(D, lang, tr)
+        if missing_note:
+            E.append(Paragraph(missing_note, S['small']))
     elif facs:
         ordered = sorted(facs.items(), key=lambda kv: -sum(kv[1].values()))
         E.append(Paragraph(
@@ -3630,6 +3658,17 @@ def _section4(E, S, D, report, lang, TBL, FIG):
             dominant_cat = max(sorted(ROMAN), key=lambda c: cats[c])
             if cats[dominant_cat] > 0:
                 dominant_cells.append((row_i, sorted(ROMAN).index(dominant_cat) + 1))
+        # A facility whose electricity is not calculated (no grid factor for
+        # its country) and that has nothing else: a row saying so, instead of
+        # the facility silently missing from the comparison.
+        listed = {n for n, _c in ordered[:20]}
+        for name, _code, _kwh in D.get('sites_without_grid') or []:
+            if name not in listed:
+                data.append([Paragraph(name, S['small'])] +
+                            [Paragraph('—', S['num']) for _c in sorted(ROMAN)] +
+                            [Paragraph('<i>' + ('not calculated' if lang == 'en' else 'hesaplanmadı') + '</i>',
+                                       S['num'])])
+                listed.add(name)
         tbl = Table(data, colWidths=[54*mm] + [16*mm]*6 + [20*mm], hAlign='LEFT',
                     repeatRows=1)
         st = _tbl_style(fn, fnb)
@@ -3645,6 +3684,10 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         tbl.setStyle(st)
         E.append(_caption(S, TBL, t('t_loc', lang), lang))
         E.append(tbl)
+        missing_note = _not_calculated_sites_note(D, lang, tr)
+        if missing_note:
+            E.append(Spacer(1, 2*mm))
+            E.append(Paragraph(missing_note, S['small']))
 
         # The inter-location reading the table supports but does not state:
         # which locations carry the inventory, and by how much.

@@ -210,19 +210,28 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       || (!!questionnaireProfile?.is_complete && questionnaireProfile.reporting_year === undefined),
     [allReports, selectedYear, questionnaireProfile],
   );
+  // A completed inventory of this year changed after it was signed: still
+  // completed, but its signature no longer covers what the reports show.
+  const unsignedEdit = useMemo(() => {
+    const r = allReports.find(x => x.status === 'completed' && String(x.reporting_year) === String(selectedYear)
+      && x.edited_after_signing_at);
+    if (!r) return null;
+    const d = new Date(r.edited_after_signing_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB');
+    return tr ? `${d} tarihinde düzenlendi — imza yenilenmedi` : `Edited on ${d} — not signed again`;
+  }, [allReports, selectedYear, tr]);
   // Readiness, insights and compliance ticks follow the reports: only
   // approved entries count (pending / rejected ones are not in any PDF).
   const counted = useMemo(() => (entries || []).filter(e => e.status === 'approved'), [entries]);
   const { checks, readiness } = useMemo(() => {
     const list = [
-      { done: inventoryDoneForYear, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed' },
+      { done: inventoryDoneForYear, label: tr ? 'Anket tamamlandı' : 'Questionnaire completed', note: unsignedEdit },
       { done: counted.length > 0, label: tr ? 'Emisyon verisi girildi' : 'Emission data entered' },
       { done: counted.length >= 5, label: tr ? 'Yeterli veri (5+ kayıt)' : 'Sufficient data (5+ entries)' },
       { done: totalTonne > 0, label: tr ? 'Kapsam eşleştirmesi tamam' : 'Scope mapping complete' },
       { done: targets.length > 0, label: tr ? 'Azaltma hedefi belirlendi' : 'Reduction target set' },
     ];
     return { checks: list, readiness: Math.round((list.filter(c => c.done).length / list.length) * 100) };
-  }, [inventoryDoneForYear, counted.length, targets.length, totalTonne, tr]);
+  }, [inventoryDoneForYear, unsignedEdit, counted.length, targets.length, totalTonne, tr]);
   const animatedReadiness = useCountUp(readiness, 900);
 
   // Monthly chart max — computed once, not inside the render IIFE
@@ -444,7 +453,10 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                 <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
-                <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]/80' : 'text-[#072C0E]/55'}`}>{c.label}</span>
+                <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]/80' : 'text-[#072C0E]/55'}`}>
+                  {c.label}
+                  {c.note && <span className="ml-1.5 text-[11px] font-semibold text-amber-700">· {c.note}</span>}
+                </span>
               </div>
             ))}
           </div>

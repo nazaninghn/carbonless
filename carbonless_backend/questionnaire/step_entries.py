@@ -1245,6 +1245,23 @@ def questionnaire_totals(report):
 
 # ── Answers that are kept but not calculated ─────────────────────────────────
 
+def sites_without_grid(A, company):
+    """[(facility name, country code, kWh)] of the 4A-1 electricity answered
+    for facilities whose country has no grid factor of its own (not
+    calculated). `A` is the unwrapped answers ({step: value})."""
+    from emissions.factor_lookup import facility_grid_slug
+    if company is None or A.get('4A-1') in (None, ''):
+        return []
+    facility_of = _facility_lookup(company)
+    out = []
+    for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2')):
+        fac = facility_of(a.get('facility_name'))
+        code = (getattr(fac, 'country', '') or '').strip().upper()
+        if fac is not None and code and not facility_grid_slug(code):
+            out.append((fac.name, code, float(a['quantity'])))
+    return out
+
+
 def uncalculated_notes(answers, year, company=None):
     """[{step_id, tr, en}] for every answered amount that does not reach the
     dashboard and why — shown right after the answer and listed with the
@@ -1285,19 +1302,23 @@ def uncalculated_notes(answers, year, company=None):
     # fire when the gate is open), so there is no double-note.
     # Each facility's electricity uses its own country's grid factor; a
     # country without one is not calculated (no other country's grid in its
-    # place) until the right factor is set.
-    if company is not None and open_('4A-1') and A.get('4A-1') not in (None, ''):
-        from emissions.factor_lookup import facility_grid_slug
-        facility_of = _facility_lookup(company)
-        for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2')):
-            fac = facility_of(a.get('facility_name'))
-            code = (getattr(fac, 'country', '') or '').strip().upper()
-            if fac is not None and code and not facility_grid_slug(code):
-                note('4A-1',
-                     f'{fac.name} ({code}) elektriği hesaplanmadı — bu ülke için kayıtlı bir elektrik şebekesi '
-                     f'faktörü yok. Doğru faktörün belirlenmesi için Özel Talep gönderin.',
-                     f'The electricity of {fac.name} ({code}) was not calculated — there is no registered '
-                     f'electricity grid factor for that country. Send a Custom Request so the right factor can be set.')
+    # place) until the right factor is set. The app tells the user what to
+    # do; the report states the exclusion and its amount.
+    if company is not None and open_('4A-1'):
+        for name, code, kwh in sites_without_grid(A, company):
+            amount_tr, amount_en = _fmt(kwh, 0, 'tr'), _fmt(kwh, 0, 'en')
+            out.append({
+                'step_id': '4A-1',
+                'tr': f'{name} ({code}) elektriği ({amount_tr} kWh) hesaplanmadı — bu ülke için kayıtlı bir '
+                      f'elektrik şebekesi faktörü yok. Doğru faktörün belirlenmesi için Özel Talep gönderin.',
+                'en': f'The electricity of {name} ({code}, {amount_en} kWh) was not calculated — there is no '
+                      f'registered electricity grid factor for that country. Send a Custom Request so the '
+                      f'right factor can be set.',
+                'report_tr': f'{name} ({code}) elektrik tüketimi ({amount_tr} kWh), bu ülke için kayıtlı bir '
+                             f'elektrik şebekesi emisyon faktörü bulunmadığından envantere dahil edilmemiştir.',
+                'report_en': f'The electricity consumption of {name} ({code}, {amount_en} kWh) is not included '
+                             f'in the inventory, as no registered grid emission factor exists for that country.',
+            })
 
     for step, gate in _GATES.items():
         if A.get(gate) not in (None, '', 'yes') and _has_amount(step):
