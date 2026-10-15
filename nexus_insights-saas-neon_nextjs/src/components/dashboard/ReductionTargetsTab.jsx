@@ -856,19 +856,27 @@ export default function ReductionTargetsTab({
                     <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#175022]/60">
                       {tr ? 'Önizleme' : 'Preview'}
                     </p>
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="text-center">
-                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
-                        <p className="text-sm font-bold">{fmt(parseLocalizedNumber(editBaseEmit))} t</p>
+                    {targetNumbersError(editBaseEmit, editReducePct, tr) === null && parseInt(editTgtYear) > parseInt(editBaseYear) ? (
+                      <div className="mt-2 flex items-center gap-3">
+                        <div className="text-center">
+                          <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
+                          <p className="text-sm font-bold">{fmt(parseLocalizedNumber(editBaseEmit))} t</p>
+                        </div>
+                        <div className="flex-1 text-center text-xs font-bold text-[#175022]">→ {pctLabel(-parseLocalizedNumber(editReducePct), tr)} →</div>
+                        <div className="text-center">
+                          <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
+                          <p className="text-sm font-bold text-[#175022]">
+                            {fmt(parseLocalizedNumber(editBaseEmit) * (1 - parseLocalizedNumber(editReducePct) / 100))} t
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#175022]">→ {pctLabel(-parseLocalizedNumber(editReducePct), tr)} →</div>
-                      <div className="text-center">
-                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
-                        <p className="text-sm font-bold text-[#175022]">
-                          {fmt(parseLocalizedNumber(editBaseEmit) * (1 - parseLocalizedNumber(editReducePct) / 100))} t
-                        </p>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-[#175022]/60">
+                        {tr
+                          ? 'Önizleme için 0 ile 100 arasında bir azaltma ve baz yıldan sonra bir hedef yıl girin.'
+                          : 'Enter a reduction between 0 and 100 and a target year after the base year to preview.'}
+                      </p>
+                    )}
                   </div>
                 )}
               </form>
@@ -994,26 +1002,36 @@ export default function ReductionTargetsTab({
                     <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#175022]/60">
                       {tr ? 'Önizleme' : 'Preview'}
                     </p>
-                    <div className="mt-2 flex items-center gap-3">
-                      <div className="text-center">
-                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
-                        <p className="text-sm font-bold">{fmt(parseLocalizedNumber(baseEmit))} t</p>
-                      </div>
-                      <div className="flex-1 text-center text-xs font-bold text-[#175022]">
-                        → {pctLabel(-parseLocalizedNumber(reducePct), tr)} →
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
-                        <p className="text-sm font-bold text-[#175022]">
-                          {fmt(parseLocalizedNumber(baseEmit) * (1 - parseLocalizedNumber(reducePct) / 100))} t
+                    {targetNumbersError(baseEmit, reducePct, tr) === null && parseInt(tgtYear) > parseInt(baseYear) ? (
+                      <>
+                        <div className="mt-2 flex items-center gap-3">
+                          <div className="text-center">
+                            <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Baz' : 'Base'}</p>
+                            <p className="text-sm font-bold">{fmt(parseLocalizedNumber(baseEmit))} t</p>
+                          </div>
+                          <div className="flex-1 text-center text-xs font-bold text-[#175022]">
+                            → {pctLabel(-parseLocalizedNumber(reducePct), tr)} →
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[10px] text-[#072C0E]/40">{tr ? 'Hedef' : 'Goal'}</p>
+                            <p className="text-sm font-bold text-[#175022]">
+                              {fmt(parseLocalizedNumber(baseEmit) * (1 - parseLocalizedNumber(reducePct) / 100))} t
+                            </p>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-[10px] text-[#175022]/60">
+                          {tr
+                            ? `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)} yıllık dönem`
+                            : `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)}-year period`}
                         </p>
-                      </div>
-                    </div>
-                    <p className="mt-2 text-[10px] text-[#175022]/60">
-                      {tr
-                        ? `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)} yıllık dönem`
-                        : `${baseYear} → ${tgtYear} · ${Math.max(tgtYear - baseYear, 0)}-year period`}
-                    </p>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-[11px] text-[#175022]/60">
+                        {tr
+                          ? 'Önizleme için 0 ile 100 arasında bir azaltma ve baz yıldan sonra bir hedef yıl girin.'
+                          : 'Enter a reduction between 0 and 100 and a target year after the base year to preview.'}
+                      </p>
+                    )}
                   </div>
                 )}
               </form>

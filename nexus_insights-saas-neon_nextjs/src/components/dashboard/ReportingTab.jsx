@@ -111,7 +111,10 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
   useEffect(() => {
     if (manualIsoPick) return;
     const forYear = allReports.filter(r => String(r.reporting_year) === String(selectedYear));
-    const pick = forYear.find(r => r.status === 'completed') || forYear[0] || null;
+    // Only a COMPLETED inventory may unlock the Profile / ISO / pack reports —
+    // a draft/incomplete inventory must never enable them. No completed match
+    // for the year leaves isoReportId null and the buttons gated.
+    const pick = forYear.find(r => r.status === 'completed') || null;
     setIsoReportId(pick ? (pick.report_id ?? pick.id) : null);
   }, [allReports, selectedYear, manualIsoPick]);
 
@@ -759,8 +762,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               {tr ? `Ham veri (${selectedYear})` : `Raw data (${selectedYear})`}
             </p>
             <div className="grid grid-cols-2 gap-2">
-              <ExportBtn icon={Table2} label="CSV Export" loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
-              <ExportBtn icon={Table2} label="Excel Export" loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
+              <ExportBtn icon={Table2} label={tr ? 'CSV Dışa Aktar' : 'CSV Export'} loading={pdfLoading === 'csv'} onClick={() => handleDownload('csv', '')} />
+              <ExportBtn icon={Table2} label={tr ? 'Excel Dışa Aktar' : 'Excel Export'} loading={pdfLoading === 'excel'} onClick={() => handleDownload('excel', '')} />
             </div>
           </div>
         </ReportCard>

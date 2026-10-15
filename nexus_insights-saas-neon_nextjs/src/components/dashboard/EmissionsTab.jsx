@@ -1399,7 +1399,7 @@ export default function EmissionsTab({
                   {selScope && (
                     <div>
                       <label htmlFor="add-entry-category" className={LABEL}>{tr ? 'Kategori' : 'Category'}</label>
-                      <select id="add-entry-category" value={selCategory} onChange={e => { setSelCategory(e.target.value); setSelFactor(''); }} className={FIELD} required>
+                      <select id="add-entry-category" value={selCategory} onChange={e => { setSelCategory(e.target.value); setSelFactor(''); }} className={FIELD}>
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {categories.map(c => (
                           <option key={c} value={c}>
@@ -1413,7 +1413,7 @@ export default function EmissionsTab({
                   {selCategory && (
                     <div>
                       <label htmlFor="add-entry-source" className={LABEL}>{tr ? 'Emisyon Kaynağı' : 'Emission Source'}</label>
-                      <select id="add-entry-source" value={selFactor} onChange={e => setSelFactor(e.target.value)} className={FIELD} required>
+                      <select id="add-entry-source" value={selFactor} onChange={e => setSelFactor(e.target.value)} className={FIELD}>
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {filteredFactors.map(f => (
                           <option key={f.id} value={f.id}>
@@ -1464,7 +1464,7 @@ export default function EmissionsTab({
                     </div>
                     <div>
                       <label htmlFor="add-entry-quantity" className={LABEL}>{tr ? 'Miktar' : 'Quantity'}{selFactorObj ? ` (${unitLabel(selFactorObj.unit, tr)})` : ''}</label>
-                      <input id="add-entry-quantity" type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} required />
+                      <input id="add-entry-quantity" type="text" inputMode="decimal" value={quantity} onChange={e => setQuantity(e.target.value)} className={FIELD} />
                     </div>
                   </div>
                   <p className="-mt-1 text-[11px] text-[#072C0E]/45">{yearHint}</p>

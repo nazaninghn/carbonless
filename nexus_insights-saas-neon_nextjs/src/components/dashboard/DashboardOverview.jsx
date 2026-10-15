@@ -740,7 +740,7 @@ export default function DashboardOverview({
             {selectedYear} {tr ? 'Özet' : 'Summary'}
           </p>
           <h1 className="mt-0.5 text-base font-bold text-[#072C0E] sm:text-[17px]">
-            {tr ? 'Ana Dashboard' : 'Main Dashboard'}
+            {tr ? 'Ana Panel' : 'Main Dashboard'}
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
