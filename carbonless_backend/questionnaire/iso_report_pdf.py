@@ -670,9 +670,62 @@ def _sign_off(report, A):
         return None, None
     who = str(raw.get('signatory_name')).strip()
     title = str(raw.get('signatory_title') or '').strip()
-    step = ReportStep.objects.filter(report=report, step_id='7C-2').only('completed_at').first()
-    when = step.completed_at.strftime('%d.%m.%Y') if step and step.completed_at else None
+    # The latest sign-off (signing again updates it); the step's own date is
+    # when it was first saved.
+    signed = getattr(report, 'signed_at', None)
+    if signed is None:
+        step = ReportStep.objects.filter(report=report, step_id='7C-2').only('completed_at').first()
+        signed = step.completed_at if step else None
+    when = signed.strftime('%d.%m.%Y') if signed else None
     return (f'{who} — {title}' if title else who), when
+
+
+def _open_advisor_items(E, S, report, lang, TBL):
+    """Danışman Onayı items still waiting for review or rejected, so a
+    reader does not take every flagged answer as reviewed and accepted."""
+    from .models import AdvisorApproval
+    from .step_entries import question_label
+    items = list(report.advisor_approvals.exclude(status=AdvisorApproval.Status.APPROVED)
+                 .order_by('status', 'question_id'))
+    E.append(Spacer(1, 3*mm))
+    if not items:
+        E.append(Paragraph(
+            'All answers flagged for advisor review have been reviewed and accepted.'
+            if lang == 'en' else
+            'Danışman incelemesi gerektiren tüm cevaplar incelenmiş ve kabul edilmiştir.', S['body']))
+        return
+    E.append(Paragraph(
+        f'{len(items)} answer(s) flagged for advisor review are not yet accepted; they are listed below.'
+        if lang == 'en' else
+        f'Danışman incelemesi gerektiren {len(items)} cevap henüz kabul edilmemiştir; aşağıda listelenmiştir.',
+        S['body']))
+    status_label = {
+        AdvisorApproval.Status.PENDING: ('Waiting for review', 'İnceleme bekliyor'),
+        AdvisorApproval.Status.REJECTED: ('Rejected', 'Reddedildi'),
+    }
+    rows = []
+    for a in items:
+        en_tr = status_label.get(a.status, (a.status, a.status))
+        status = en_tr[0] if lang == 'en' else en_tr[1]
+        if a.status == AdvisorApproval.Status.REJECTED and a.rejection_reason:
+            status += f' — {a.rejection_reason}'
+        rows.append([question_label(a.question_id, lang), a.trigger_category, status])
+    _ref_table(E, S, lang, TBL,
+               'Open advisor review items' if lang == 'en' else 'Açık danışman inceleme maddeleri',
+               ['Question' if lang == 'en' else 'Soru', 'Topic' if lang == 'en' else 'Konu',
+                'Status' if lang == 'en' else 'Durum'],
+               rows, [60*mm, 35*mm, 75*mm])
+
+
+def _edited_after_signing(report, lang):
+    """'15.10.2026 — not signed again' when an answer changed after the
+    sign-off, else ''. The report shows the current numbers; without this
+    they read as signed on the earlier date."""
+    edited = getattr(report, 'edited_after_signing_at', None)
+    if not edited:
+        return ''
+    day = edited.strftime('%d.%m.%Y')
+    return f'{day} — not signed again' if lang == 'en' else f'{day} — yeniden imzalanmadı'
 
 
 def _signed_from_account(A):
@@ -1343,10 +1396,16 @@ def _cover(E, S, D, report, lang):
     period = (f"1 January {D['year']} – 31 December {D['year']}" if lang == 'en'
               else f"1 Ocak {D['year']} – 31 Aralık {D['year']}")
     E.append(Paragraph(f"{t('reporting_period', lang)}: {period}", S['cover_date']))
-    issued = datetime.now().strftime('%B %Y' if lang == 'en' else '%m.%Y')
+    # The same full date as the report information table and page headers.
+    issued = datetime.now().strftime('%d.%m.%Y')
     E.append(Paragraph(
         f"{t('report_issued', lang)}: {issued}  |  {t('revision', lang)} 01",
         S['cover_date']))
+    edited = _edited_after_signing(report, lang)
+    if edited:
+        E.append(Paragraph(
+            ('Edited after signing: ' if lang == 'en' else 'İmzadan sonra düzenlendi: ') + edited,
+            S['cover_date']))
     E.append(NextPageTemplate('content'))
     E.append(PageBreak())
 
@@ -1546,6 +1605,10 @@ def _section1(E, S, D, report, lang, TBL, FIG):
         *([] if not signer else [
             ('Approved and signed by' if lang == 'en' else 'Onaylayan ve imzalayan', signer),
             ('Date of signature' if lang == 'en' else 'İmza tarihi', signed_on or t('not_declared', lang)),
+            *([] if not _edited_after_signing(report, lang) else [
+                ('Edited after signing' if lang == 'en' else 'İmzadan sonra düzenlendi',
+                 _edited_after_signing(report, lang)),
+            ]),
         ]),
         *([] if not (signer and _signed_from_account(D['answers'])) else [
             ('Confirmed on the platform by' if lang == 'en' else 'Platformda onaylayan hesap',
@@ -3523,6 +3586,7 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         'faaliyetler çıkarılır; emisyonların belirlenmesinde ve hesaplanmasında '
         'kullanılan verinin kalitesi de aynı döngüde risk değerlendirmesine tabi '
         'tutulur.', S['body']))
+    _open_advisor_items(E, S, report, lang, TBL)
     E.append(PageBreak())
 
     # 4.2 Evaluation by location and by activity — the two cuts of the same

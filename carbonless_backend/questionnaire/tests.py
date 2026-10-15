@@ -2176,3 +2176,57 @@ class AdvisorRejectionFlowTests(_StepPatchTestCase):
         self.assertEqual(flag.status, 'pending')
         self.assertEqual(flag.rejection_reason, '')
         self.assertEqual(self.c.get(f'/api/questionnaire/{self.report.pk}/').data['advisor_pending'], 1)
+
+
+class ISOReportSigningStateTests(TestCase):
+    """The report says when its numbers changed after the sign-off and lists
+    the advisor items that are not accepted; the cover date is the full date."""
+
+    def _pdf_text(self, report):
+        import io
+        from pypdf import PdfReader
+        from .iso_report_pdf import generate_iso_report
+        pdf = generate_iso_report(report, lang='tr')
+        return ' '.join(' '.join(p.extract_text() for p in PdfReader(io.BytesIO(pdf)).pages).split())
+
+    def setUp(self):
+        from datetime import datetime, timezone as dt_tz
+        owner = User.objects.create_user('isosign', 'isosign@test.com', 'pass12345')
+        company = Company.objects.create(
+            legal_entity_name='Sign Co', tax_number='7', country_of_headquarters='TR',
+            countries_of_operation='TR', nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
+        CompanyMembership.objects.create(user=owner, company=company, role='owner')
+        self.report = CarbonReport.objects.create(
+            company=company, created_by=owner, reporting_year=2025, title='Sign',
+            status=CarbonReport.Status.COMPLETED,
+            signed_at=datetime(2026, 10, 6, 12, tzinfo=dt_tz.utc))
+        ReportStep.objects.create(report=self.report, step_id='7C-2', answer={
+            'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'})
+
+    def test_signed_and_untouched(self):
+        from datetime import datetime
+        text = self._pdf_text(self.report)
+        self.assertIn('İmza tarihi 06.10.2026', text)
+        self.assertNotIn('İmzadan sonra düzenlendi', text)
+        self.assertIn(f"Rapor tarihi: {datetime.now().strftime('%d.%m.%Y')}", text)
+        self.assertIn('tüm cevaplar incelenmiş ve kabul edilmiştir', text)
+
+    def test_edited_after_signing_and_open_advisor_items(self):
+        from datetime import datetime, timezone as dt_tz
+        from .models import AdvisorApproval
+        CarbonReport.objects.filter(pk=self.report.pk).update(
+            edited_after_signing_at=datetime(2026, 10, 15, 9, tzinfo=dt_tz.utc))
+        AdvisorApproval.objects.create(report=self.report, question_id='3A-EF-a', field_id='x',
+                                       reason_code='supplier_declaration', trigger_category='Veri Girişi',
+                                       risk_level='medium', status='rejected',
+                                       rejection_reason='Belgeyi kontrol edin')
+        AdvisorApproval.objects.create(report=self.report, question_id='K3C4-1', field_id='x',
+                                       reason_code='scope3_na', trigger_category='Kapsam',
+                                       risk_level='medium')
+        self.report.refresh_from_db()
+        text = self._pdf_text(self.report)
+        self.assertIn('İmzadan sonra düzenlendi: 15.10.2026 — yeniden imzalanmadı', text)
+        self.assertIn('Açık danışman inceleme maddeleri', text)
+        self.assertIn('Reddedildi — Belgeyi kontrol edin', text)
+        self.assertIn('İnceleme bekliyor', text)
