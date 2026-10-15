@@ -18,7 +18,7 @@ class CompanyCreateView(generics.CreateAPIView):
         )
 
 
-from .permissions import IsCompanyMember, HasCompanyAdminRole, NotAuditorForWrites, ManagerForWrites
+from .permissions import IsCompanyMember, HasCompanyAdminRole, NotAuditorForWrites, ManagerForWrites, CanSeeTeam
 
 
 class CompanyDetailView(generics.RetrieveUpdateAPIView):
@@ -70,9 +70,9 @@ from .serializers import CompanyMembershipSerializer
 
 
 class CompanyMembershipListView(generics.ListAPIView):
-    """List all members of current company (admin/owner only)"""
+    """List all members of current company (owner/admin; managers read it)"""
     serializer_class = CompanyMembershipSerializer
-    permission_classes = (IsAuthenticated, HasCompanyAdminRole)
+    permission_classes = (IsAuthenticated, CanSeeTeam)
 
     def get_queryset(self):
         company = get_current_company(self.request.user)

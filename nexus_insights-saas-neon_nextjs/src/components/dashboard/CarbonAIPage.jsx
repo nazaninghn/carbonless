@@ -3068,6 +3068,19 @@ export function QuestionnaireTab({
   // or in last year's inventory, the year the inventory was created for): asked
   // once — "is this right?" — never refused, as it may well have changed.
   const [softAsk, setSoftAsk] = useState(null);
+  // Danışman Onayı state of this inventory: answers an approver rejected
+  // (shown at their question with the reason) and how many still wait
+  // (shown at sign-off). Both were recorded and shown nowhere here.
+  const [advisorInfo, setAdvisorInfo] = useState({ rejected: [], pending: 0 });
+  useEffect(() => {
+    if (!reportId) return undefined;
+    let cancelled = false;
+    api.getReportStatus(reportId)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (!cancelled && d) setAdvisorInfo({ rejected: d.advisor_rejected || [], pending: d.advisor_pending || 0 }); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [reportId, currentId]);
   const askSoft = useCallback((message, kind) => new Promise(resolve => setSoftAsk({ message, kind, resolve })), []);
   const answerSoft = useCallback((ok) => setSoftAsk(prev => { prev?.resolve(ok); return null; }), []);
   const companyEmployeesRef = useRef('');
@@ -5073,6 +5086,20 @@ export function QuestionnaireTab({
                     </p>
                   );
                 })()}
+                {advisorInfo.rejected.filter(r => r.question_id === currentId).map(r => (
+                  <p key={`adv-${r.question_id}`} role="alert" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                    {tr
+                      ? `Danışman onayı reddedildi${r.reviewed_by ? ` (${r.reviewed_by})` : ''}${r.reason ? `: ${r.reason.replace(/[.!?]\s*$/, '')}.` : '.'} Cevabı düzeltip kaydedin; onaylayan tekrar inceler.`
+                      : `Advisor approval rejected${r.reviewed_by ? ` (${r.reviewed_by})` : ''}${r.reason ? `: ${r.reason.replace(/[.!?]\s*$/, '')}.` : '.'} Correct and save the answer; the approver reviews it again.`}
+                  </p>
+                ))}
+                {(currentId === '7C-1' || currentId === '7C-2') && (advisorInfo.pending > 0 || advisorInfo.rejected.length > 0) && (
+                  <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                    {tr
+                      ? `${[advisorInfo.pending > 0 && `${advisorInfo.pending} danışman onayı henüz bekliyor`, advisorInfo.rejected.length > 0 && `${advisorInfo.rejected.length} danışman maddesi reddedildi`].filter(Boolean).join(', ')} (Onay Bekleyenler sayfası). Yine de imzalayabilirsiniz; bu maddeler raporda çözülmemiş olarak kalır.`
+                      : `${[advisorInfo.pending > 0 && `${advisorInfo.pending} advisor approval${advisorInfo.pending > 1 ? 's' : ''} still waiting`, advisorInfo.rejected.length > 0 && `${advisorInfo.rejected.length} advisor item${advisorInfo.rejected.length > 1 ? 's' : ''} rejected`].filter(Boolean).join(', ')} (Pending Review page). You can still sign; these items stay unresolved.`}
+                  </p>
+                )}
                 {PREVIOUS_SELECTION_STEPS.includes(currentId) && currentQuestion && carriedNow(currentQuestion, 0) === undefined && !(currentId in answers) && (facilitySources.selections[currentId] || []).length > 0 && (() => {
                   const labels = facilitySources.selections[currentId].map(v => {
                     const opt = (currentQuestion.options || []).find(o => o.value === v);

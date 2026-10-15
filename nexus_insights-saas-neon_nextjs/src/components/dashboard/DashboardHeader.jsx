@@ -131,7 +131,9 @@ export default function DashboardHeader({
     // A notice may name its page in its link ("/dashboard?tab=questionnaire"
     // for an edited inventory); the type decides for the others.
     const params = new URLSearchParams((n.link || '').split('?')[1] || '');
-    const tab = NOTIFICATION_TAB[n.notification_type] || params.get('tab');
+    // The link's own tab first: a rejected Danışman Onayı is an
+    // "entry_rejected" notice but opens the inventory, not Emisyon.
+    const tab = params.get('tab') || NOTIFICATION_TAB[n.notification_type];
     if (tab) setActiveTab?.(tab);
     // The support team's answer opens the chat it was posted in.
     if (params.get('chat')) openChat(params.get('chat'));
@@ -145,6 +147,14 @@ export default function DashboardHeader({
     if (params.get('entry') && tab === 'review') {
       try { sessionStorage.setItem(REVIEW_FOCUS_KEY, params.get('entry')); } catch { /* opens at the top */ }
       window.dispatchEvent(new Event(REVIEW_FOCUS_EVENT));
+    }
+    // "Danışman onayı reddedildi" opens the inventory on that question.
+    if (tab === 'questionnaire' && params.get('report') && params.get('step')) {
+      try {
+        sessionStorage.setItem('carboniq_open_request',
+          JSON.stringify({ report_id: Number(params.get('report')), step_id: params.get('step') }));
+      } catch { /* opens the inventory list */ }
+      window.dispatchEvent(new CustomEvent('carboniq-navigate', { detail: { tab: 'questionnaire' } }));
     }
     // An entry notification opens on the entry's own year.
     const year = Number(params.get('year'));

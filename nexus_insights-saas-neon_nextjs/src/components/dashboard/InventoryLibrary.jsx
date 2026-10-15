@@ -479,6 +479,16 @@ export default function InventoryLibrary({ tr = false }) {
                   <p className="text-xs text-[#175022]/60 mt-1">
                     {report.reporting_year} • {tr ? 'Tamamlandı' : 'Completed'} {new Date(report.signed_at || report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
                   </p>
+                  {/* Danışman Onayı items still open, or rejected and not yet
+                      corrected — a signed inventory said nothing of them. */}
+                  {(report.advisor_pending > 0 || report.advisor_rejected > 0) && (
+                    <p className="mt-1 text-xs font-semibold text-amber-800">
+                      {[
+                        report.advisor_pending > 0 && (tr ? `${report.advisor_pending} danışman onayı bekliyor` : `${report.advisor_pending} advisor approval${report.advisor_pending > 1 ? 's' : ''} waiting`),
+                        report.advisor_rejected > 0 && (tr ? `${report.advisor_rejected} danışman maddesi reddedildi — cevabı düzeltin` : `${report.advisor_rejected} advisor item${report.advisor_rejected > 1 ? 's' : ''} rejected — correct the answer`),
+                      ].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
                   {/* An answer fixed after the sign-off is already in the
                       numbers; the card used to move its date to that day as
                       if it had been signed again. */}
