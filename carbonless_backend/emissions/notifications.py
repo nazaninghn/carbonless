@@ -323,6 +323,51 @@ def _summary(entries, lang):
     return (f'{len(entries)} kayıt, {text}' if lang == 'tr' else f'{len(entries)} entries, {text}')
 
 
+def _num(value, lang, decimals=2):
+    """1250.5 -> '1.250,5' (tr) / '1,250.5' (en), trailing zeros dropped."""
+    text = f'{float(value):,.{decimals}f}'.rstrip('0').rstrip('.')
+    if lang == 'tr':
+        text = text.replace(',', '\x00').replace('.', ',').replace('\x00', '.')
+    return text
+
+
+def notify_custom_request_reviewed(req):
+    """Tell the member who sent a custom request that the Carbonless team
+    approved or rejected it — in their language, with the amount in their
+    number format ("625.25 kg" reached Turkish users), opening the
+    Emissions page on the request's year."""
+    if not req.user_id or req.status not in ('approved', 'rejected'):
+        return
+    try:
+        _, lang = _prefs(req.user)
+        month = _MONTHS[lang][req.month - 1] if 1 <= (req.month or 0) <= 12 else ''
+        what = f'{req.source_name} · {_num(req.quantity, lang)} {req.unit} · {month} {req.year}'.strip()
+        link = f'/dashboard?tab=emissions&year={req.year}'
+        if req.status == 'approved':
+            kg = float(req.calculated_co2e_kg or 0)
+            amount = f'{_num(kg, lang)} kg CO₂e ({_num(kg / 1000, lang)} t)'
+            if lang == 'tr':
+                _notify(req.user, 'custom_approved', 'Özel talebiniz onaylandı',
+                        f'{what} onaylandı: {amount}. Kontrol Paneli ve rapor toplamlarına eklendi.',
+                        link, company_id=req.company_id)
+            else:
+                _notify(req.user, 'custom_approved', 'Your custom request was approved',
+                        f'{what} was approved: {amount}. It is added to the dashboard and report totals.',
+                        link, company_id=req.company_id)
+            return
+        reason = (req.admin_notes or '').strip().rstrip('.').rstrip()
+        if lang == 'tr':
+            _notify(req.user, 'custom_rejected', 'Özel talebiniz reddedildi',
+                    f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else ''),
+                    link, company_id=req.company_id)
+        else:
+            _notify(req.user, 'custom_rejected', 'Your custom request was rejected',
+                    f'{what} was rejected.' + (f' Reason: {reason}.' if reason else ''),
+                    link, company_id=req.company_id)
+    except Exception:  # a notification never blocks the review
+        logger.exception('custom request notification failed')
+
+
 def notify_entry_reviewed(entry, approved, reviewer):
     """Tell the entry's author that it was approved or rejected."""
     if not entry.user_id or entry.user_id == reviewer.pk:

@@ -1411,3 +1411,71 @@ class ApproverSeesOverlapTests(ApprovalNotificationAndDuplicateTests):
         n = Notification.objects.filter(user=self.users['ali'], notification_type='entry_rejected').latest('id')
         self.assertNotIn('..', n.message)
         self.assertTrue(n.link.endswith(f'&entry={entry_id}'))
+
+
+class CustomRequestReviewTests(ApprovalNotificationAndDuplicateTests):
+    """A reviewed custom request reaches its author in their language and
+    number format; the chat names approved requests instead of "no data"."""
+
+    def _request(self, **extra):
+        from emissions.models import CustomEmissionRequest
+        return CustomEmissionRequest.objects.create(
+            user=self.users['ali'], company=self.company, scope='scope1',
+            category_name='Jeneratör', source_name='Biyodizel jeneratör', description='x',
+            unit='litre', quantity=1250.5, year=2026, month=9, **extra)
+
+    def _review(self, req, status, **fields):
+        from django.contrib.admin.sites import site
+        from emissions.admin import CustomEmissionRequestAdmin
+        from emissions.models import CustomEmissionRequest
+        req.status = status
+        for k, v in fields.items():
+            setattr(req, k, v)
+
+        class Form:
+            changed_data = ['status']
+        CustomEmissionRequestAdmin(CustomEmissionRequest, site).save_model(None, req, Form(), True)
+
+    def test_approval_is_in_the_authors_language_and_opens_the_year(self):
+        req = self._request()
+        self._review(req, 'approved', approved_factor_kg_co2e=0.5)
+        [note] = self._notes('ali', 'custom_approved')  # ali reads English
+        self.assertEqual(note.title, 'Your custom request was approved')
+        self.assertIn('1,250.5 litre · September 2026', note.message)
+        self.assertIn('625.25 kg CO₂e (0.63 t)', note.message)
+        self.assertEqual(note.link, '/dashboard?tab=emissions&year=2026')
+
+    def test_turkish_author_gets_turkish_numbers_and_the_reason(self):
+        profile = self.users['ali'].profile
+        profile.language_preference = 'tr'
+        profile.save()
+        req = self._request()
+        self._review(req, 'rejected', admin_notes='Fatura eksik.')
+        [note] = self._notes('ali', 'custom_rejected')
+        self.assertEqual(note.title, 'Özel talebiniz reddedildi')
+        self.assertIn('1.250,5 litre · Eylül 2026 reddedildi. Neden: Fatura eksik.', note.message)
+
+    def test_chat_total_names_approved_requests(self):
+        from chat.local_answers import _total_answer
+        self.assertIn('kayıtlı emisyon verisi yok', _total_answer(self.company, 2026, 'tr'))
+        self._review(self._request(), 'approved', approved_factor_kg_co2e=0.5)
+        answer = _total_answer(self.company, 2026, 'tr')
+        self.assertIn('onaylı emisyon kaydı yok', answer)
+        self.assertIn('Onaylı özel talepleriniz: **0,63 tCO₂e**', answer)
+
+    def test_request_keeps_a_facility_of_the_company_only(self):
+        from companies.models import Company, Facility
+        own = Facility.objects.create(company=self.company, name='Gebze')
+        other_co = Company.objects.create(
+            legal_entity_name='Other', tax_number='9', country_of_headquarters='TR',
+            countries_of_operation='TR', main_activity_description='x', number_of_employees='1-10',
+            annual_turnover_range='x', number_of_facilities=1)
+        other = Facility.objects.create(company=other_co, name='Elsewhere')
+        self._as('ali')
+        data = {'scope': 'scope1', 'category_name': 'Jeneratör', 'source_name': 'Dizel',
+                'description': 'x', 'unit': 'litre', 'quantity': 5, 'year': 2026, 'month': 1}
+        res = self.client.post('/api/emissions/custom-requests/', {**data, 'facility': own.id}, format='json')
+        self.assertEqual(res.status_code, 201)
+        self.assertEqual(res.data['facility'], own.id)
+        res = self.client.post('/api/emissions/custom-requests/', {**data, 'facility': other.id}, format='json')
+        self.assertEqual(res.status_code, 400)
