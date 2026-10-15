@@ -601,7 +601,7 @@ export default function DashboardOverview({
         </div>
       )}
 
-      {canEdit && unnamedFacilities.length > 0 && (
+      {canApprove && unnamedFacilities.length > 0 && (
         <div role="status" className="flex flex-wrap items-center gap-3 rounded-xl border border-[#2ABD41]/30 bg-[#F1FCF2] px-4 py-2.5">
           <AlertCircle className="h-4 w-4 shrink-0 text-[#2ABD41]" />
           <p className="min-w-0 flex-1 text-xs font-semibold text-[#175022]">

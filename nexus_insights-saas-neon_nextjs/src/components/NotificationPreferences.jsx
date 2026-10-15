@@ -36,17 +36,18 @@ export default function NotificationPreferences({ language, user }) {
 
   return (
     <div className="space-y-3 max-w-md">
-      {/* The only switch the backend honours (emissions/notifications.py).
+      {/* The only switch the backend honours (emissions/notifications.py) —
+          e-mail only; the in-app notices always arrive.
           A "system notifications" switch used to sit here too; it was saved
           but nothing ever read it, so turning it off changed nothing. */}
       <label className="flex items-start gap-3 cursor-pointer">
         <input type="checkbox" checked={approvals} onChange={e => setApprovals(e.target.checked)} className="mt-0.5 w-4 h-4 accent-[#2ABD41] rounded" />
         <span>
-          <span className="block text-sm text-[#072C0E]">{tr ? 'Kayıt onay bildirimleri' : 'Entry approval notifications'}</span>
+          <span className="block text-sm text-[#072C0E]">{tr ? 'Kayıt onay e-postaları' : 'Entry approval e-mails'}</span>
           <span className="block text-xs text-[#072C0E]/50">
             {tr
-              ? 'Onayınızı bekleyen yeni kayıtlar ile kayıtlarınızın onaylanması veya reddedilmesi — uygulamada ve e-posta ile (onay bekleyenler için günde en fazla bir e-posta, reddedilen kaydınız için hemen). Kapalıyken bu bildirimler gelmez.'
-              : 'New entries waiting for your approval, and your own entries being approved or rejected — in the app and by e-mail (at most one e-mail a day about waiting entries; a rejected entry right away). When off, these notifications are not sent.'}
+              ? 'Onayınızı bekleyen kayıtlar (günde en fazla bir e-posta) ve reddedilen kayıtlarınız (hemen) için e-posta. Kapalıyken e-posta gelmez; uygulama içi bildirimler (zil simgesi) her zaman gelir.'
+              : 'E-mails about entries waiting for your approval (at most one a day) and your rejected entries (right away). When off, no e-mails are sent; in-app notifications (the bell) always arrive.'}
           </span>
         </span>
       </label>

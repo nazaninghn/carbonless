@@ -288,7 +288,13 @@ export default function SettingsTab({ language, user, fetchData }) {
           {activeTab === 'company' && (
             <Panel>
               <PanelTitle icon={Leaf} title={tr ? 'Şirket Bilgileri' : 'Company Information'} />
-              <CompanySettings language={language} readOnly={!perms.canEdit} />
+              {!perms.canApprove && (
+                <p role="note" className="mb-3 text-xs text-[#072C0E]/55">
+                  {tr ? 'Şirket bilgilerini ve tesisleri şirket sahibi, yönetici veya müdür değiştirebilir.' : 'Company details and facilities are changed by the owner, admins or managers.'}
+                </p>
+              )}
+              {/* Owners, admins and managers only — the server refuses the rest. */}
+              <CompanySettings language={language} readOnly={!perms.canApprove} />
             </Panel>
           )}
 
@@ -296,7 +302,12 @@ export default function SettingsTab({ language, user, fetchData }) {
           {activeTab === 'facilities' && (
             <Panel>
               <PanelTitle icon={Target} title={tr ? 'Tesis Yönetimi' : 'Facility Management'} />
-              <FacilitySettings language={language} readOnly={!perms.canEdit} onChange={fetchData} />
+              {!perms.canApprove && (
+                <p role="note" className="mb-3 text-xs text-[#072C0E]/55">
+                  {tr ? 'Şirket bilgilerini ve tesisleri şirket sahibi, yönetici veya müdür değiştirebilir.' : 'Company details and facilities are changed by the owner, admins or managers.'}
+                </p>
+              )}
+              <FacilitySettings language={language} readOnly={!perms.canApprove} onChange={fetchData} />
             </Panel>
           )}
 

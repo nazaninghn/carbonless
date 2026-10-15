@@ -1440,10 +1440,14 @@ export default function EmissionsTab({
                   ) : (
                     <div className="rounded-2xl border border-amber-200/60 bg-amber-50/60 px-4 py-3">
                       <p className="text-xs text-amber-800">{tr ? 'Henüz tesis eklenmemiş.' : 'No facilities added yet.'}</p>
-                      {setActiveTab && (
+                      {setActiveTab && canApprove ? (
                         <button type="button" onClick={() => { setShowAddForm(false); setActiveTab('settings'); }} className="mt-1 text-xs font-bold text-[#2ABD41] hover:underline">
                           {tr ? '→ Ayarlar\'dan tesis ekleyin' : '→ Add facility from Settings'}
                         </button>
+                      ) : (
+                        <p className="mt-1 text-xs text-amber-800/80">
+                          {tr ? 'Tesisleri şirket sahibi, yönetici veya müdür ekler.' : 'Facilities are added by the owner, admins or managers.'}
+                        </p>
                       )}
                     </div>
                   )}

@@ -388,12 +388,22 @@ class ApprovalNotificationAndDuplicateTests(TestCase):
         self.client.post(f'/api/emissions/entries/{entry_id}/approve/', {'action': 'approve'}, format='json')
         self.assertEqual(len(self._notes('ali', 'entry_approved')), 1)
 
-    def test_turned_off_approval_notifications_are_respected(self):
-        self.users['aylin'].profile.notify_approvals = False
-        self.users['aylin'].profile.save()
+    def test_switch_off_stops_emails_but_not_in_app_notices(self):
+        # The switch is for e-mail: turned off, a rejection still reaches the
+        # author in the app (they never learned of it before).
+        from django.core import mail
+        for name in ('aylin', 'ali'):
+            self.users[name].profile.notify_approvals = False
+            self.users[name].profile.save()
         self._as('ali')
-        self._entry()
-        self.assertEqual(self._notes('aylin', 'entry_submitted'), [])
+        entry_id = self._entry().data['id']
+        self.assertEqual(len(self._notes('aylin', 'entry_submitted')), 1)
+        self._as('aylin')
+        self.client.post(f'/api/emissions/entries/{entry_id}/approve/',
+                         {'action': 'reject', 'reason': 'Fatura eksik'}, format='json')
+        [note] = self._notes('ali', 'entry_rejected')
+        self.assertIn('Fatura eksik', note.message)
+        self.assertEqual(mail.outbox, [])
 
     def test_same_entry_twice_is_flagged_unless_confirmed(self):
         self._as('aylin')
