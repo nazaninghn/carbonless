@@ -259,7 +259,9 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             wanted = facility_grid_slug(country)
             if factor.slug != wanted:
                 if not wanted:
-                    msg_en, msg_tr = facility_grid_missing_message(facility, 'en'), facility_grid_missing_message(facility, 'tr')
+                    year = attrs.get('year', getattr(self.instance, 'year', None))
+                    msg_en = facility_grid_missing_message(facility, 'en', year)
+                    msg_tr = facility_grid_missing_message(facility, 'tr', year)
                     code = FACILITY_GRID_MISSING
                 else:
                     msg_en = (f"{facility.name} is in {country.upper()}: its electricity must use that country's "

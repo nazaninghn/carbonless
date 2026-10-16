@@ -1766,7 +1766,8 @@ def _tag_facility(data, user, content, lang=''):
             factor, qty, co2e, err = resolve_factor_and_amount(
                 'electricity', pe.get('quantity'), pe.get('factor_unit') or 'kwh', company, facility)
             if err == FACILITY_GRID_MISSING:
-                missing.append(facility_grid_missing_message(facility, 'tr' if lang == 'tr' else 'en'))
+                missing.append(facility_grid_missing_message(facility, 'tr' if lang == 'tr' else 'en',
+                                                             pe.get('year')))
                 changed = True
                 continue
             if factor and factor.pk != pe.get('factor_id'):
@@ -2221,10 +2222,10 @@ def confirm_entry(request):
         _f, _u, _m, grid_err = resolve_factor('electricity', 'kwh', get_current_company(request.user), chat_facility)
         if grid_err == FACILITY_GRID_MISSING:
             return Response({
-                'error': facility_grid_missing_message(chat_facility, 'en'),
+                'error': facility_grid_missing_message(chat_facility, 'en', entry_data.get('year')),
                 'code': FACILITY_GRID_MISSING,
-                'message_en': facility_grid_missing_message(chat_facility, 'en'),
-                'message_tr': facility_grid_missing_message(chat_facility, 'tr'),
+                'message_en': facility_grid_missing_message(chat_facility, 'en', entry_data.get('year')),
+                'message_tr': facility_grid_missing_message(chat_facility, 'tr', entry_data.get('year')),
             }, status=400)
 
     from emissions.duplicates import find_duplicate, is_confirmed

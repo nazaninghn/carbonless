@@ -379,6 +379,11 @@ export default function EmissionsTab({
     return String(f?.country || '').trim().toUpperCase();
   }, [facilityList, facility]);
   const facilityGrid = useMemo(() => facilityGridSlug(facilityCountry), [facilityCountry]);
+  // An electricity factor approved for this facility and year (Özel Talep)
+  // applies in the inventory's electricity question, not in this form.
+  const approvedFacilityFactor = useMemo(() => customRequests.find(cr =>
+    cr.status === 'approved' && cr.electricity_method === 'location_based'
+    && String(cr.facility) === String(facility) && String(cr.year) === String(selectedYear)), [customRequests, facility, selectedYear]);
 
   // Filtered factors (same logic as page.jsx, incl. questionnaire preferred source)
   const filteredFactors = useMemo(() => {
@@ -1450,6 +1455,15 @@ export default function EmissionsTab({
                         if (!facilityCountry || selCategory !== 'electricity') return null;
                         const where = COUNTRY_NAME[facilityCountry]?.[tr ? 'tr' : 'en'] || facilityCountry;
                         const g = facilityGrid && filteredFactors.find(f => f.slug === facilityGrid);
+                        if (!g && approvedFacilityFactor) {
+                          return (
+                            <p role="note" className="mt-1.5 rounded-xl bg-[#2ABD41]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[#175022]">
+                              {tr
+                                ? `Bu tesisin ${selectedYear} elektrik faktörü Özel Talep #${approvedFacilityFactor.id} ile onaylandı (${fmt(approvedFacilityFactor.approved_factor_kg_co2e, 6)} kg CO₂e/kWh). Bu faktör envanterin elektrik sorusunda (Soru 68) uygulanır — bu tesisin elektrik tüketimini orada girin veya güncelleyin.`
+                                : `This facility's ${selectedYear} electricity factor was approved with Custom Request #${approvedFacilityFactor.id} (${fmt(approvedFacilityFactor.approved_factor_kg_co2e, 6)} kg CO₂e/kWh). It applies in the inventory's electricity question (Q68) — enter or update this facility's electricity consumption there.`}
+                            </p>
+                          );
+                        }
                         if (!g) {
                           return (
                             <p role="note" className="mt-1.5 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800">
@@ -1893,6 +1907,22 @@ export default function EmissionsTab({
                         <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
                         {facilityList.map(f => <option key={f.id} value={f.id}>{f.name}{f.city ? ` – ${f.city}` : ''}</option>)}
                       </select>
+                      {(() => {
+                        // Already approved for this facility and year: a second
+                        // request for the same electricity would only wait.
+                        const done = cFacility && customRequests.find(cr =>
+                          cr.status === 'approved' && cr.electricity_method
+                          && String(cr.facility) === String(cFacility) && String(cr.year) === String(selectedYear));
+                        if (!done) return null;
+                        const market = done.electricity_method === 'market_based';
+                        return (
+                          <p role="note" className="mt-1.5 rounded-xl bg-[#2ABD41]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[#175022]">
+                            {tr
+                              ? `Bu tesisin ${selectedYear} elektrik faktörü Özel Talep #${done.id} ile zaten onaylandı (${fmt(done.approved_factor_kg_co2e, 6)} kg CO₂e/kWh${market ? ', piyasa bazlı' : ''}). Elektrik için yeni talep gerekmez${market ? '' : ' — tüketimi envanterin elektrik sorusunda (Soru 68) girin'}.`
+                              : `This facility's ${selectedYear} electricity factor is already approved with Custom Request #${done.id} (${fmt(done.approved_factor_kg_co2e, 6)} kg CO₂e/kWh${market ? ', market-based' : ''}). No new request is needed for its electricity${market ? '' : ' — enter the consumption in the inventory\'s electricity question (Q68)'}.`}
+                          </p>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
