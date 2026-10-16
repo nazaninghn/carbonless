@@ -749,6 +749,10 @@ export const CARBONIQ_QUESTIONS = [
       requiredMessage: { tr: 'Lokasyon sayısı zorunludur.', en: 'Location count is required.' },
       formatMessage: { tr: 'Lütfen yalnızca rakam girin.', en: 'Please enter digits only.' },
       maxLengthMessage: { tr: 'En fazla 6 karakter girin.', en: 'Maximum 6 characters allowed.' },
+      minValue: 1,
+      minValueMessage: { tr: 'En az 1 tesis girilmelidir.', en: 'At least 1 facility must be entered.' },
+      maxValue: 10000,
+      maxValueMessage: { tr: 'Gerçekçi bir tesis sayısı girin.', en: 'Enter a realistic number of facilities.' },
     },
     next: 'B5',
   },
@@ -7374,13 +7378,40 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     };
   }
 
-  if (question.numericOnly && !/^\d+$/.test(String(value))) {
-    return {
-      ok: false,
-      message:
-        question.validate?.formatMessage?.[lang] ||
-        (lang === 'tr' ? 'Yalnızca rakam girin.' : 'Please enter digits only.'),
-    };
+  if (question.numericOnly) {
+    if (!/^\d+$/.test(String(value))) {
+      return {
+        ok: false,
+        message:
+          question.validate?.formatMessage?.[lang] ||
+          (lang === 'tr' ? 'Yalnızca rakam girin.' : 'Please enter digits only.'),
+      };
+    }
+    // Strict-integer fields may still declare an inclusive range (e.g. B4's
+    // 1..10000 facility count). The !numericOnly min/max block below never runs
+    // for these, so enforce the bound here on the parsed integer. parseInt on a
+    // /^\d+$/-validated string is a safe plain-integer parse (digits only, no
+    // locale separators or unit suffix), so parseLocalizedNumber isn't needed.
+    const { minValue, maxValue } = question.validate || {};
+    const n = parseInt(String(value), 10);
+    if (minValue !== undefined && n < minValue) {
+      return {
+        ok: false,
+        message:
+          question.validate?.rangeMessage?.[lang] ||
+          question.validate?.minValueMessage?.[lang] ||
+          (lang === 'tr' ? `Değer en az ${minValue} olmalıdır.` : `Value must be at least ${minValue}.`),
+      };
+    }
+    if (maxValue !== undefined && n > maxValue) {
+      return {
+        ok: false,
+        message:
+          question.validate?.rangeMessage?.[lang] ||
+          question.validate?.maxValueMessage?.[lang] ||
+          (lang === 'tr' ? `Değer en fazla ${maxValue} olmalıdır.` : `Value must be at most ${maxValue}.`),
+      };
+    }
   }
 
   // fuel_loop/equipment_loop questions that collect a free-text quantity

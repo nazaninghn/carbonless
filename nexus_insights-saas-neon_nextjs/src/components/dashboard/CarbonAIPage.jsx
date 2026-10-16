@@ -738,10 +738,14 @@ function orderedFieldEntries(q, obj) {
   return Object.entries(obj || {}).sort(([a], [b]) => idx(a) - idx(b));
 }
 
-// Unit codes that need a Turkish label (the stored value keeps the code).
+// Unit codes that need a localized label (the stored value keeps the code).
 const UNIT_LABELS_TR = { tonnes: 'ton', litres: 'litre' };
+// Some unit tokens are stored in Turkish (e.g. 3A-3's 'kg buhar/h'); show an
+// English label for EN users while the stored token stays byte-stable.
+const UNIT_LABELS_EN = { 'kg buhar/h': 'kg steam/h' };
 function unitLabel(u, lang) {
-  return (lang === 'tr' && UNIT_LABELS_TR[u]) || u;
+  if (lang === 'tr') return UNIT_LABELS_TR[u] || u;
+  return UNIT_LABELS_EN[u] || u;
 }
 
 // "12000 m³" (stored with a plain dot decimal) → "12.000 m³" in Turkish.
@@ -3092,6 +3096,10 @@ export function QuestionnaireTab({
   // own and is never copied from the earlier one.
   const [reuseYear, setReuseYear] = useState('');
   const previousProfileCheckedRef = useRef(false);
+  // Set once the user declines "reuse previous company profile": from then on
+  // no prior-inventory draft may seed this inventory's facility-name inputs
+  // (OBS-1/4). The handleConfirmReuseProfile accept path never touches it.
+  const reuseDeclinedRef = useRef(false);
 
   // reportId persistence/restore lives entirely in InventoryWorkflow.jsx now
   // (localStorage key 'carboniq_activeInventoryId') — this component is always
@@ -3265,6 +3273,23 @@ export function QuestionnaireTab({
     setPreviousProfile(prev => (prev ? { ...prev, source_answers: prev.answers, answers: prev.registration_answers || {} } : prev));
     const registered = unmapPhase1Answer(currentId, previousProfile?.registration_answers?.[currentId]);
     setAnswerValue(registered !== undefined ? registered : getInitialValue(getQuestionById(currentId)));
+    // OBS-1/4: a brand-new inventory the user chose to re-enter must not have
+    // its facility-name inputs seeded from a *different* inventory's draft.
+    // The year-over-year facility list (previous/activities/structure/amounts)
+    // is only a convenience carry; drop it on decline so 2A-2/2A-3/4A-1 start
+    // clean. The registered sign-up facilities stay (they are this company's
+    // own, not a prior inventory draft).
+    reuseDeclinedRef.current = true;
+    setFacilitySources(prev => ({
+      ...prev,
+      previous: [],
+      activities: {},
+      subsidiaries: [],
+      selections: {},
+      structure: {},
+      amounts: {},
+      previousYear: null,
+    }));
   }, [currentId, previousProfile]);
 
   const scrollRef = useRef(null);
@@ -3516,7 +3541,7 @@ export function QuestionnaireTab({
 
   const previousFacilitiesFetchedRef = useRef(false);
   useEffect(() => {
-    if (!reportId || previousFacilitiesFetchedRef.current) return;
+    if (!reportId || previousFacilitiesFetchedRef.current || reuseDeclinedRef.current) return;
     // From Stage 2 on: last year's facilities, equipment and amounts are
     // offered from 2A-1 onwards (see carriedValue / amountHint).
     if (!((getQuestionById(currentId)?.stage ?? 0) >= 2)) return;
@@ -3857,12 +3882,23 @@ export function QuestionnaireTab({
       // ✅ Save succeeded - clear error
       setSaveError('');
       setSaveSuccess(true);
-      // Every saved answer is already calculated on the server: the dashboard,
-      // Emissions and Reports reload now (on the inventory's year), without
-      // waiting for the inventory to be finished.
-      window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
-        detail: { source: 'inventory', year: respData?.reporting_year ?? null },
-      }));
+      // BUG-B: only reload the dashboard when the step actually touched the
+      // emission data, using the backend's own authoritative signals. A data
+      // step returns a saved_entry or a non-zero delta_kg (an edit that zeros
+      // a prior value still moves delta_kg, so it still refetches); non-data
+      // steps (names, gates, boundary approach) return saved_entry=null and
+      // delta_kg=0 and no longer trigger the 8-endpoint reload. Answering 2A-2
+      // runs sync_facilities with no entry/delta, so refresh it explicitly to
+      // keep the facility list in sync.
+      const touchedEmissions =
+        !!respData?.saved_entry ||
+        Math.abs(Number(respData?.calc_feedback?.delta_kg) || 0) > 0;
+      const touchedFacilities = currentId === '2A-2';
+      if (touchedEmissions || touchedFacilities) {
+        window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
+          detail: { source: 'inventory', year: respData?.reporting_year ?? null },
+        }));
+      }
       if (saveSuccessTimerRef.current) clearTimeout(saveSuccessTimerRef.current);
       saveSuccessTimerRef.current = setTimeout(() => {
         if (isMounted.current) setSaveSuccess(false);
@@ -3899,6 +3935,14 @@ export function QuestionnaireTab({
             ? `🌱 Biyojenik CO₂: ${tonnes(Number(fb.biogenic_kg))} — kapsam toplamlarına eklenmez, raporda ayrıca gösterilir.`
             : `🌱 Biogenic CO₂: ${tonnes(Number(fb.biogenic_kg))} — not added to the scope totals, reported separately.`);
         }
+        // BUG-D: the backend scopes fb.notes to the just-saved step, so these
+        // are exactly the notes that should re-appear when the user re-saves
+        // the same step. Re-arm them (drop from the session-lived Set) before
+        // the once-each guard, so an honest "not calculated — no factor" note
+        // resurfaces on a re-save instead of being silently suppressed. The
+        // guard below still prevents a duplicate within this same save and
+        // still suppresses other steps' notes (never carried by this save).
+        for (const note of fb.notes || []) shownCalcNotesRef.current.delete(note);
         for (const note of fb.notes || []) {
           if (shownCalcNotesRef.current.has(note)) continue;
           shownCalcNotesRef.current.add(note);
