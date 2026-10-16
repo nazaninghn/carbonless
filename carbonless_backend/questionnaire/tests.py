@@ -2373,6 +2373,17 @@ class ElectricityFactorDecisionTests(TestCase):
         self._save_in_admin(req)
         self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
 
+    def test_form_points_to_the_inventory_once_the_factor_is_approved(self):
+        from emissions.factor_lookup import facility_grid_missing_message
+        self.assertIn('Özel Talep gönderin', facility_grid_missing_message(self.linz, 'tr', 2025))
+        req = self._request()
+        tr, en = facility_grid_missing_message(self.linz, 'tr', 2025), facility_grid_missing_message(self.linz, 'en', 2025)
+        self.assertIn(f'Özel Talep #{req.pk}', tr)
+        self.assertIn('Soru 68', tr)
+        self.assertIn('Q68', en)
+        # another year still has no factor
+        self.assertIn('Özel Talep gönderin', facility_grid_missing_message(self.linz, 'tr', 2024))
+
     def test_market_based_factor_leaves_location_based_untouched(self):
         from .step_entries import scope2_market_based
         self._save_in_admin(self._request(method='market_based', factor='0.3'))

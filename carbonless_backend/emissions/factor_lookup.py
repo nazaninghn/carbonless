@@ -242,14 +242,41 @@ def facility_grid_slug(country):
     return GRID_BY_COUNTRY.get(code)
 
 
-def facility_grid_missing_message(facility, lang='en'):
+def facility_grid_missing_message(facility, lang='en', year=None):
     name = getattr(facility, 'name', '') or ''
     code = (getattr(facility, 'country', '') or '').strip().upper()
+    req = _approved_location_request(facility, year)
+    if req is not None:
+        # The factor is already approved: it applies to this facility's
+        # electricity in the inventory, so asking for another request would
+        # send the user in a circle.
+        per = f'{float(req.approved_factor_kg_co2e):g}'
+        if lang == 'tr':
+            return (f'{name} tesisinin {year} elektrik faktörü Özel Talep #{req.pk} ile onaylandı '
+                    f'({per.replace(".", ",")} kg CO₂e/kWh). Bu faktör envanterin elektrik sorusunda (Soru 68) '
+                    f'uygulanır; bu tesisin elektrik tüketimini orada girin veya güncelleyin.')
+        return (f'The {year} electricity factor of {name} was approved with Custom Request #{req.pk} '
+                f'({per} kg CO₂e/kWh). It applies in the inventory\'s electricity question (Q68): enter or '
+                f'update this facility\'s electricity consumption there.')
     if lang == 'tr':
         return (f'{name} tesisinin ülkesi ({code}) için kayıtlı bir elektrik şebekesi faktörü yok; '
                 f'bu elektrik kaydı hesaplanmadı. Doğru faktörün belirlenmesi için Özel Talep gönderin.')
     return (f'There is no registered electricity grid factor for the country of {name} ({code}), '
             f'so this electricity was not calculated. Send a Custom Request so the right factor can be set.')
+
+
+def _approved_location_request(facility, year):
+    from .models import CustomEmissionRequest
+    if facility is None or not getattr(facility, 'pk', None) or not year:
+        return None
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        return None
+    return (CustomEmissionRequest.objects
+            .filter(facility=facility, year=year, status='approved', electricity_method='location_based',
+                    approved_factor_kg_co2e__isnull=False)
+            .order_by('-updated_at').first())
 
 
 def grid_matches_country(factor, country):
@@ -451,7 +478,7 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility)
     if error:
         if error == FACILITY_GRID_MISSING:
-            return None, facility_grid_missing_message(facility)
+            return None, facility_grid_missing_message(facility, year=year)
         return None, error
 
     # Belt-and-braces behind the resolver ceiling above: EmissionEntry.save()
