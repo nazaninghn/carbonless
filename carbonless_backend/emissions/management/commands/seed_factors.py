@@ -45,6 +45,8 @@ class Command(BaseCommand):
                 data['gas_split_reference'] = ''
                 stale_splits += 1
 
+            if data.get('scope') == 'scope2' and (data['slug'].endswith('-grid') or data['slug'] == 'grid-average'):
+                data.setdefault('method', 'location_based')   # grid averages
             obj, was_created = EmissionFactor.objects.update_or_create(
                 slug=data['slug'],
                 country=data.get('country', 'global'),

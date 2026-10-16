@@ -833,6 +833,9 @@ def _gather(report, lang):
             'unit': _unit_label(f, lang),
             'factor': float(f.factor_kg_co2e or 0),
             'reference': f.reference or _source_label(f, lang),
+            # A catalog factor of another reference year is an estimate here.
+            'ref_year': (f.year if f.year and f.year != year and not f.slug.startswith('calculated-')
+                         else None),
             'quantity': 0.0,
             'kg': 0.0,
             'count': 0,
@@ -1027,6 +1030,11 @@ def _scope2_market_paragraphs(D, S, lang):
         basis = _MARKET_BASIS[r['basis']]['tr' if tr else 'en']
         lines.append(f'{escape(str(r["site"]))}: {_fmt_n(r["kwh"], 0, lang)} kWh × '
                      f'{_fmt_n(r["factor"], 6, lang)} kg CO₂e/kWh — {basis}')
+    if m.get('outside_market'):
+        names = ', '.join(escape(str(x)) for x in m['outside_market'])
+        lines.append(f'Tedarikçi beyanı yalnızca {m["supplier_market"]} pazarını kapsar; {names} için uygulanmadı.'
+                     if tr else
+                     f'The supplier declaration covers only the {m["supplier_market"]} market; not applied to {names}.')
     for site, kwh in m['missing']:
         lines.append(f'{escape(str(site))}: {_fmt_n(kwh, 0, lang)} kWh — '
                      + ('faktör olmadığından piyasa bazlı sonuçta da hesaplanmadı'
@@ -3119,7 +3127,10 @@ def _section4(E, S, D, report, lang, TBL, FIG):
                 Paragraph(str(r['unit'] or '—'), S['small']),
                 Paragraph(_localize_num(f'{r["factor"]:,.4f}', tr), S['num']),
                 Paragraph(_fmt(r['kg'] / 1000.0, tr), S['num']),
-                Paragraph(escape(r['reference']) if r.get('details') else _ellipsize(r['reference'], 90), S['small']),
+                Paragraph((escape(r['reference']) if r.get('details') else _ellipsize(r['reference'], 90))
+                          + (f' <i>({"reference year" if lang == "en" else "referans yılı"} {r["ref_year"]} — '
+                             f'{"estimated" if lang == "en" else "tahmini"})</i>' if r.get('ref_year') else ''),
+                          S['small']),
             ])
         tbl = Table(data, colWidths=[44*mm, 18*mm, 18*mm, 18*mm, 18*mm, 54*mm],
                     hAlign='LEFT', repeatRows=1)

@@ -92,6 +92,18 @@ class EmissionFactor(models.Model):
     source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='defra_2024')
     reference = models.TextField(blank=True, help_text='Source reference text')
     is_active = models.BooleanField(default=True)
+    # Scope 2 method the factor is for: a grid average is location-based, a
+    # supplier / contractual or residual-mix factor is market-based. Blank
+    # for factors where the distinction does not apply (fuels, Scope 3).
+    METHOD_CHOICES = [
+        ('', 'Not applicable'),
+        ('location_based', 'Location-based'),
+        ('market_based', 'Market-based'),
+    ]
+    method = models.CharField(max_length=20, choices=METHOD_CHOICES, blank=True, default='',
+                              help_text='Scope 2 method this factor is for (electricity, heat)')
+    valid_until = models.DateField(null=True, blank=True,
+                                   help_text='Last date the factor is valid for, when the source states one')
 
     # ── Per-gas breakdown of factor_kg_co2e ──────────────────────────────
     # ISO 14064-1 reports an inventory gas by gas, not as a single CO2e
