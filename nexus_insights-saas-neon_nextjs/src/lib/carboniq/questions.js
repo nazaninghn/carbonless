@@ -1212,8 +1212,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Facility N] What is the name and country of this facility?',
     },
     helper: {
-      tr: 'Tesisin tanımlayıcı adını girin ve bulunduğu ülkeyi seçin. Ülke, bu tesisin elektrik şebeke emisyon faktörünü belirler.',
-      en: "Enter the facility's identifying name and select the country it is located in. Country determines this site's electricity grid emission factor.",
+      tr: 'Tesisin tanımlayıcı adını girin ve bulunduğu ülkeyi seçin. Ülke, bu tesisin elektrik şebeke emisyon faktörünü belirler. Türkiye\'deki bir tesis için şebeke bağlantısını (iletim / dağıtım) da seçin: resmi faktör buna göre değişir. Faturanızda veya dağıtım şirketi aboneliğinizde görebilirsiniz.',
+      en: "Enter the facility's identifying name and select the country it is located in. Country determines this site's electricity grid emission factor. For a facility in Turkey also choose the grid connection (transmission / distribution): the official factor depends on it. It is on your bill or distribution-company subscription.",
     },
     fields: [
       {
@@ -1232,9 +1232,25 @@ export const CARBONIQ_QUESTIONS = [
         renderAs: 'native_select',
         options: COUNTRY_SELECT_OPTIONS,
       },
+      {
+        // The official Turkish electricity consumption factor depends on the
+        // grid connection (ETKB: transmission 0.436, distribution 0.469);
+        // without it the facility's electricity waits.
+        id: 'grid_connection',
+        type: 'select',
+        required: true,
+        conditionalOn: 'country',
+        conditionalOnValue: ['TR'],
+        label: { tr: 'Elektrik şebeke bağlantısı', en: 'Electricity grid connection' },
+        renderAs: 'native_select',
+        options: [
+          { value: 'distribution', label: { tr: 'Dağıtım şebekesi (çoğu tesis — OG/AG aboneliği)', en: 'Distribution grid (most sites — MV/LV supply)' } },
+          { value: 'transmission', label: { tr: 'İletim şebekesi (doğrudan TEİAŞ / YG bağlantısı)', en: 'Transmission grid (direct TEİAŞ / HV connection)' } },
+        ],
+      },
     ],
     validate: {
-      requiredMessage: { tr: 'Tesis adı ve ülkesi zorunludur.', en: 'Facility name and country are required.' },
+      requiredMessage: { tr: 'Tesis adı, ülkesi ve (Türkiye için) şebeke bağlantısı zorunludur.', en: 'Facility name, country and (for Turkey) the grid connection are required.' },
     },
     next: '2A-3',
   },

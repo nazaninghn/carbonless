@@ -70,6 +70,15 @@ class Facility(models.Model):
     city = models.CharField(max_length=100, blank=True)
     country = models.CharField(max_length=100, blank=True)
     facility_type = models.CharField(max_length=100, blank=True, help_text='e.g. Office, Factory, Warehouse')
+    # How a facility in Turkey takes its electricity: the official Turkish
+    # consumption factor differs between the transmission and the
+    # distribution grid. Blank = not chosen yet (its electricity waits).
+    GRID_CONNECTION_CHOICES = [
+        ('', 'Not chosen'),
+        ('transmission', 'Transmission grid (İletim)'),
+        ('distribution', 'Distribution grid (Dağıtım)'),
+    ]
+    grid_connection = models.CharField(max_length=20, choices=GRID_CONNECTION_CHOICES, blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

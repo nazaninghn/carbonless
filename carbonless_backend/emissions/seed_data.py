@@ -4,6 +4,22 @@ Based on: Defra/DESNZ 2024, IPCC 2006/2019 + AR6 GWP, Turkey ISO 14064-1 verifie
 Formula: Emission (kg CO2e) = Activity Amount x Emission Factor
 """
 
+# Official electricity consumption factors of the Turkish Ministry of Energy
+# and Natural Resources (ETKB), data year 2023, by grid connection — the
+# latest annual files published. Used for a 2024 / 2025 inventory too, with
+# the reference year stated in the report.
+TURKEY_GRID_2023 = [
+    {'slug': 'turkey-grid-transmission', 'name': 'Turkey grid — transmission connection', 'name_tr': 'Türkiye şebekesi — iletim bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.436, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, iletim (İletim) bağlantısı, 2023 veri yılı', 'year': 2023, 'method': 'location_based'},
+    {'slug': 'turkey-grid-distribution', 'name': 'Turkey grid — distribution connection', 'name_tr': 'Türkiye şebekesi — dağıtım bağlantısı', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.469, 'source': 'turkey_grid', 'reference': 'T.C. Enerji ve Tabii Kaynaklar Bakanlığı — elektrik tüketimi emisyon faktörü, dağıtım (Dağıtım) bağlantısı, 2023 veri yılı', 'year': 2023, 'method': 'location_based'},
+]
+
+# DESNZ 2025 (UK government GHG conversion factors 2025) — UK reference set
+# only; never a factor for electricity in Turkey.
+DESNZ_2025_UK = [
+    {'slug': 'uk-grid', 'name': 'UK grid', 'name_tr': 'İngiltere şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.17700, 'source': 'desnz_2025', 'reference': 'DESNZ 2025 – UK electricity (Scope 2)', 'year': 2025, 'method': 'location_based'},
+    {'slug': 'uk-transmission-losses', 'name': 'UK T&D losses', 'name_tr': 'İngiltere iletim ve dağıtım kayıpları', 'scope': 'scope3', 'category': 'fuel_energy', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.01853, 'source': 'desnz_2025', 'reference': 'DESNZ 2025 – UK electricity T&D losses (Scope 3)', 'year': 2025},
+]
+
 EMISSION_FACTORS = [
     # ============================================
     # SCOPE 1 - STATIONARY COMBUSTION (Global)
@@ -86,10 +102,17 @@ EMISSION_FACTORS = [
     {'slug': 'us-grid', 'name': 'US grid', 'name_tr': 'ABD şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.417, 'source': 'generic', 'reference': ''},
     {'slug': 'eu-grid', 'name': 'EU grid', 'name_tr': 'AB şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.295, 'source': 'generic', 'reference': ''},
     {'slug': 'china-grid', 'name': 'China grid', 'name_tr': 'Çin şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.581, 'source': 'generic', 'reference': ''},
-    {'slug': 'renewable', 'name': '100% renewable', 'name_tr': '%100 yenilenebilir', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.0, 'source': 'generic', 'reference': ''},
+    # Market-based only (owner decision): a zero factor needs traceable proof
+    # of renewable supply for that facility and period, so it is not offered
+    # as a location-based choice — it comes in as a supplier declaration or
+    # an approved market-based factor.
+    {'slug': 'renewable', 'name': '100% renewable', 'name_tr': '%100 yenilenebilir', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.0, 'source': 'generic', 'reference': '', 'method': 'market_based', 'is_active': False},
 
     # SCOPE 2 - ELECTRICITY (Turkey)
-    {'slug': 'turkey-grid', 'name': 'Turkey national grid', 'name_tr': 'Türkiye ulusal şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.4199, 'source': 'turkey_grid', 'reference': 'Turkey national grid electricity, ISO 14064-1 verified (CO2=0.4183 + CH4=0.0001 + N2O=0.0015)'},
+    # Replaced by the official consumption factors by grid connection (below);
+    # kept inactive for the entries that were calculated with it.
+    {'slug': 'turkey-grid', 'name': 'Turkey national grid', 'name_tr': 'Türkiye ulusal şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'turkey', 'unit': 'kwh', 'factor_kg_co2e': 0.4199, 'source': 'turkey_grid', 'reference': 'Turkey national grid electricity, ISO 14064-1 verified (CO2=0.4183 + CH4=0.0001 + N2O=0.0015)', 'is_active': False, 'is_default': False},
+    *TURKEY_GRID_2023,
 
     # SCOPE 2 - STEAM, HEAT & COOLING (Global)
     {'slug': 'district-heating', 'name': 'District heating', 'name_tr': 'Bölgesel ısıtma', 'scope': 'scope2', 'category': 'steam_heat', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.233, 'source': 'generic', 'reference': ''},
@@ -361,6 +384,7 @@ EMISSION_FACTORS = [
     # SCOPE 2 - ELECTRICITY (More Countries) — IEA 2024
     # ============================================
     {'slug': 'uk-grid', 'name': 'UK grid', 'name_tr': 'İngiltere şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.207, 'source': 'defra_2024', 'reference': 'DEFRA 2024 – UK Electricity'},
+    *DESNZ_2025_UK,
     {'slug': 'germany-grid', 'name': 'Germany grid', 'name_tr': 'Almanya şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.364, 'source': 'iea_2024', 'reference': 'IEA 2024 – Germany electricity mix'},
     {'slug': 'france-grid', 'name': 'France grid', 'name_tr': 'Fransa şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.052, 'source': 'iea_2024', 'reference': 'IEA 2024 – France (nuclear dominant)'},
     {'slug': 'india-grid', 'name': 'India grid', 'name_tr': 'Hindistan şebekesi', 'scope': 'scope2', 'category': 'electricity', 'country': 'global', 'unit': 'kwh', 'factor_kg_co2e': 0.708, 'source': 'iea_2024', 'reference': 'IEA 2024 – India electricity mix'},

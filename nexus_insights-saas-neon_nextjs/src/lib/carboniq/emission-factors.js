@@ -55,7 +55,7 @@ export const EMISSION_FACTORS = {
     kg: 0.01553, ton: 15.53, tonne: 15.53,
   },
   // Scope 2 — purchased electricity
-  electricity: { kwh: 0.4199, mwh: 419.9 }, // backend: turkey-grid
+  electricity: { kwh: 0.469, mwh: 469 }, // backend: turkey-grid-distribution (no facility: distribution assumed)
 
   // Scope 3 Cat 5 — business travel
   flight_domestic:   { pkm: 0.232, km: 0.232 },   // backend: flight-domestic (turkey)

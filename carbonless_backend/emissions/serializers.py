@@ -255,8 +255,13 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             or ('facility' in attrs and attrs['facility'] != self.instance.facility))
         country = (getattr(facility, 'country', '') or '').strip()
         if changed and factor is not None and country and (factor.slug or '') in _GRID_SLUGS():
-            from .factor_lookup import FACILITY_GRID_MISSING, facility_grid_missing_message, facility_grid_slug
+            from .factor_lookup import (FACILITY_GRID_MISSING, facility_grid_missing_message, facility_grid_slug,
+                                        turkey_grid_slug)
             wanted = facility_grid_slug(country)
+            if wanted == 'turkey-grid':
+                # Turkey: the factor of the facility's grid connection; none
+                # chosen yet -> nothing to calculate with (it waits).
+                wanted = turkey_grid_slug(getattr(facility, 'grid_connection', ''))
             if factor.slug != wanted:
                 if not wanted:
                     year = attrs.get('year', getattr(self.instance, 'year', None))
@@ -276,7 +281,8 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
 
 def _GRID_SLUGS():
     from .factor_lookup import GRID_BY_COUNTRY
-    return {'turkey-grid', 'eu-grid', 'grid-average', *GRID_BY_COUNTRY.values()}
+    from .factor_lookup import TURKEY_GRID_SLUGS
+    return {*TURKEY_GRID_SLUGS, 'eu-grid', 'grid-average', *GRID_BY_COUNTRY.values()}
 
 
 class ReductionTargetSerializer(serializers.ModelSerializer):

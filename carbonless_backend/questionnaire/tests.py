@@ -276,6 +276,12 @@ class StepEntriesTests(TestCase):
 
     def _factor(self, slug, unit, value, scope='scope3', country='global'):
         from emissions.models import EmissionFactor
+        if slug == 'turkey-grid':
+            # Turkey's grid is now the official factor of each grid connection
+            # (both registered by the migrations): give them the test value.
+            EmissionFactor.objects.filter(slug__in=['turkey-grid-transmission', 'turkey-grid-distribution']).update(
+                factor_kg_co2e=value)
+            return EmissionFactor.objects.get(slug='turkey-grid-distribution')
         return EmissionFactor.objects.update_or_create(
             slug=slug, country=country, year=2024,
             defaults=dict(name=slug, scope=scope, category='x', unit=unit,
@@ -372,7 +378,7 @@ class InventoryCalculationTests(StepEntriesTests):
         self._step('4A-EV', {'ev_kwh': '2000', 'in_site_bill': 'yes'})
         self.assertEqual(self._entries(), [])
         self._step('4A-EV', {'ev_kwh': '2000', 'in_site_bill': 'no'})
-        self.assertEqual(self._by_step(), {'4A-EV': [('turkey-grid', 2000.0, 800.0)]})
+        self.assertEqual(self._by_step(), {'4A-EV': [('turkey-grid-distribution', 2000.0, 800.0)]})
 
     def test_electricity_supplier_factor_is_market_based_only(self):
         from .step_entries import scope2_market_based
@@ -386,7 +392,7 @@ class InventoryCalculationTests(StepEntriesTests):
         self.assertEqual((m['total_kg'], m['rows'][0]['basis'], m['has_instrument']), (400.0, 'location_fallback', False))
         self._step('4A-EF-a', {'ef_value': '300', 'ef_unit': 'kgCO2e_MWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
         # the inventory stays location-based (grid) …
-        self.assertEqual(self._by_step()['4A-1'], [('turkey-grid', 1000.0, 400.0)])
+        self.assertEqual(self._by_step()['4A-1'], [('turkey-grid-distribution', 1000.0, 400.0)])
         # … and the supplier factor is the separate market-based result
         m = scope2_market_based(answers(), 2025, self.company)
         self.assertEqual((round(m['total_kg'], 6), m['rows'][0]['basis'], m['has_instrument']), (300.0, 'supplier', True))
@@ -395,8 +401,8 @@ class InventoryCalculationTests(StepEntriesTests):
         from companies.models import Facility
         gebze = Facility.objects.create(company=self.company, name='Gebze Fabrika')
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'},
-                            '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'},
+                            '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh', '3': '0 kWh'})
         rows = sorted((e.facility.name, e.description, float(e.quantity)) for e in self._entries())
         # same total as one 1.500 kWh entry, each on its facility
@@ -407,7 +413,7 @@ class InventoryCalculationTests(StepEntriesTests):
         self._step('4A-EF', 'yes')
         self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
         self.assertEqual(sorted(self._by_step()['4A-1']),
-                         [('turkey-grid', 500.0, 200.0), ('turkey-grid', 1000.0, 400.0)])
+                         [('turkey-grid-distribution', 500.0, 200.0), ('turkey-grid-distribution', 1000.0, 400.0)])
 
     def test_backfill_splits_an_old_combined_entry_keeping_its_approval(self):
         from django.core.management import call_command
@@ -415,7 +421,7 @@ class InventoryCalculationTests(StepEntriesTests):
         from emissions.models import EmissionEntry
         gebze = Facility.objects.create(company=self.company, name='Gebze Fabrika')
         factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
         # as an earlier version saved it: one entry for both facilities
         EmissionEntry.objects.filter(company=self.company).delete()
@@ -439,7 +445,7 @@ class InventoryCalculationTests(StepEntriesTests):
         from questionnaire.models import ReportStep
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
         self._factor('natural-gas-m3', 'm3', 2.0, scope='scope1', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
         gebze = Facility.objects.get(company=self.company, name='Gebze Fabrika')
         r = self.client.patch(f'/api/companies/facilities/{gebze.id}/', {'name': 'Gebze Tesisi'}, format='json')
@@ -459,7 +465,7 @@ class InventoryCalculationTests(StepEntriesTests):
         from django.core.files.base import ContentFile
         from emissions.models import EmissionEntry
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
         rows = {e.facility.name: e for e in self._entries()}
         rows['Depo'].proof_document.save('depo.pdf', ContentFile(b'%PDF'), save=True)
@@ -488,7 +494,7 @@ class InventoryCalculationTests(StepEntriesTests):
         from accounts.models import ActivityLog
         from emissions.models import EmissionEntry
         factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
         EmissionEntry.objects.filter(company=self.company).delete()
         old = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
@@ -504,7 +510,7 @@ class InventoryCalculationTests(StepEntriesTests):
         orphan.proof_document.save('eski.pdf', ContentFile(b'%PDF'), save=True)
         ActivityLog.objects.create(user=self.user, action='entry_updated', target_type='EmissionEntry',
                                    target_id=str(orphan.pk), metadata={'company_id': self.company.pk},
-                                   detail=f'turkey-grid · 2025/01 · 1500 kwh · Kanıt eklendi: '
+                                   detail=f'{factor.name} · 2025/01 · 1500 kwh · Kanıt eklendi: '
                                           f'{orphan.proof_document.name.rsplit("/", 1)[-1]}')
         name = orphan.proof_document.name
         EmissionEntry.objects.filter(company=self.company).exclude(pk=orphan.pk).update(proof_document='')
@@ -518,7 +524,7 @@ class InventoryCalculationTests(StepEntriesTests):
         Facility.objects.create(company=self.company, name='Gebze Fabrika')
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
         self._factor('natural-gas-m3', 'm3', 2.0, scope='scope1', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
         self._step('3A-5', {'natural_gas': '100 m³'})   # asked for the company, not per facility
         text = local_data_answer(self.user, '2025 yılında Gebze Fabrika tesisinin emisyonu ne kadar?', 'tr')
@@ -817,10 +823,9 @@ class PendingChangeTests(TestCase):
         )
         CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
         CompanyMembership.objects.create(user=self.clerk, company=self.company, role='data_entry')
-        EmissionFactor.objects.update_or_create(
-            slug='turkey-grid', country='turkey', year=2024,
-            defaults=dict(name='grid', scope='scope2', category='electricity', unit='kwh',
-                          factor_kg_co2e=0.4, source='test', is_active=True, is_default=True))
+        # Turkey's grid: the connection factors registered by the migrations, at the test value
+        EmissionFactor.objects.filter(slug__in=['turkey-grid-transmission', 'turkey-grid-distribution']).update(
+            factor_kg_co2e=0.4)
         self.report = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2025)
         self.c_owner, self.c_clerk = APIClient(), APIClient()
         self.c_owner.force_authenticate(user=self.owner)
@@ -1152,8 +1157,8 @@ class TaxIdStepTests(TestCase):
         client, report, company = self._setup('TR')
         url = f'/api/questionnaire/{report.id}/previous-profile/'
         self.assertEqual(client.get(url).json()['facility_count'], 0)
-        Facility.objects.create(company=company, name='Tesis 1', country='TR')
-        Facility.objects.create(company=company, name='Tesis 2', country='TR')
+        Facility.objects.create(company=company, name='Tesis 1', country='TR', grid_connection='distribution')
+        Facility.objects.create(company=company, name='Tesis 2', country='TR', grid_connection='distribution')
         data = client.get(url).json()
         self.assertEqual(data['facility_count'], 2)
         self.assertNotIn('B4', data['answers'])
@@ -1172,8 +1177,8 @@ class FacilitySyncTests(TestCase):
             number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=3)
         CompanyMembership.objects.create(user=self.user, company=self.company, role='owner')
         self.report = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2026)
-        Facility.objects.create(company=self.company, name='Tesis 1', country='TR')
-        Facility.objects.create(company=self.company, name='Depo Ankara', country='TR')
+        Facility.objects.create(company=self.company, name='Tesis 1', country='TR', grid_connection='distribution')
+        Facility.objects.create(company=self.company, name='Depo Ankara', country='TR', grid_connection='distribution')
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
@@ -1183,8 +1188,8 @@ class FacilitySyncTests(TestCase):
 
     def test_answer_renames_placeholders_matches_names_and_adds_the_rest(self):
         answer = {'answer': {
-            '1': {'name': 'İzmir Fabrika', 'country': 'TR'},
-            '2': {'name': 'Depo Ankara', 'country': 'TR'},
+            '1': {'name': 'İzmir Fabrika', 'country': 'TR', 'grid_connection': 'distribution'},
+            '2': {'name': 'Depo Ankara', 'country': 'TR', 'grid_connection': 'distribution'},
             '3': {'name': 'Berlin Ofis', 'country': 'DE'},
         }}
         res = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
@@ -1198,8 +1203,8 @@ class FacilitySyncTests(TestCase):
 
     def test_same_name_for_two_facilities_is_rejected(self):
         answer = {'answer': {
-            '1': {'name': 'Fabrika', 'country': 'TR'},
-            '2': {'name': 'fabrika ', 'country': 'TR'},
+            '1': {'name': 'Fabrika', 'country': 'TR', 'grid_connection': 'distribution'},
+            '2': {'name': 'fabrika ', 'country': 'TR', 'grid_connection': 'distribution'},
         }}
         res = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
                                 {'step': '2A-2', 'data': answer, 'language': 'tr'}, format='json')
@@ -1210,7 +1215,7 @@ class FacilitySyncTests(TestCase):
 
     def test_never_deletes_facilities(self):
         from .facility_sync import sync_facilities
-        sync_facilities(self.company, {'answer': {'1': {'name': 'Tek Tesis', 'country': 'TR'}}})
+        sync_facilities(self.company, {'answer': {'1': {'name': 'Tek Tesis', 'country': 'TR', 'grid_connection': 'distribution'}}})
         self.assertEqual(self._names(), [('Tek Tesis', 'TR'), ('Depo Ankara', 'TR')])
 
 
@@ -1476,13 +1481,13 @@ class AdvisorFlagsFollowAnswersTests(TestCase):
         self.assertFalse({q for q, _ in self._pending()} & {'6A-2', '6A-4'})
         # facility count: the text follows the current number
         self._save('B4', {'number_of_facilities': 2})
-        self._save('2A-2', {'answer': {'1': {'name': 'A', 'country': 'TR'}}})
+        self._save('2A-2', {'answer': {'1': {'name': 'A', 'country': 'TR', 'grid_connection': 'distribution'}}})
         flag = AdvisorApproval.objects.get(report=self.report, reason_code='site_count_mismatch')
         self.assertIn('but 1 were entered', flag.description)
-        self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR'} for i in (1, 2, 3)}})
+        self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR', 'grid_connection': 'distribution'} for i in (1, 2, 3)}})
         flag.refresh_from_db()
         self.assertIn('but 3 were entered', flag.description)
-        self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR'} for i in (1, 2)}})
+        self._save('2A-2', {'answer': {str(i): {'name': f'S{i}', 'country': 'TR', 'grid_connection': 'distribution'} for i in (1, 2)}})
         self.assertNotIn(('2A-2', 'site_count_mismatch'), self._pending())
 
     def test_exclusion_rows_flag_entity_and_largest_band(self):
@@ -1580,7 +1585,7 @@ class NewInventoryYearTests(TestCase):
             title='Prev', status=CarbonReport.Status.COMPLETED)
         ReportStep.objects.create(report=prev, step_id='A1', answer={'legal_name': 'Year Co'})
         ReportStep.objects.create(report=prev, step_id='2A-2', answer={'answer': {
-            '2': {'name': 'Depo', 'country': 'TR'}, '1': {'name': 'Fabrika', 'country': 'TR'},
+            '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}, '1': {'name': 'Fabrika', 'country': 'TR', 'grid_connection': 'distribution'},
             '10': {'name': 'Ofis', 'country': 'DE'}}})
         res = self.client.post('/api/questionnaire/start/', {'title': 'Year Co 2024', 'force_new': True, 'reporting_year': 2024}, format='json')
         self.assertEqual(res.status_code, 201)
@@ -1610,16 +1615,16 @@ class NewInventoryYearTests(TestCase):
             title='Prev', status=CarbonReport.Status.COMPLETED)
         ReportStep.objects.create(report=prev, step_id='A1', answer={'legal_name': 'Year Co'})
         ReportStep.objects.create(report=prev, step_id='2A-2', answer={'answer': {
-            '1': {'name': 'Fabrika', 'country': 'TR'}, '2': {'name': 'Depo', 'country': 'TR'}}})
+            '1': {'name': 'Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}}})
         ReportStep.objects.create(report=prev, step_id='2A-3', answer={'answer': {'1': 'Üretim', '2': 'Depolama'}})
-        ReportStep.objects.create(report=prev, step_id='2A-4', answer={'answer': {'name': 'Lojistik', 'country': 'TR'}})
+        ReportStep.objects.create(report=prev, step_id='2A-4', answer={'answer': {'name': 'Lojistik', 'country': 'TR', 'grid_connection': 'distribution'}})
         rid = self.client.post('/api/questionnaire/start/', {'force_new': True, 'reporting_year': 2024}, format='json').json()['report_id']
         data = self.client.get(f'/api/questionnaire/{rid}/previous-profile/').json()
         self.assertEqual(data['previous_facility_activities'], {'Fabrika': 'Üretim', 'Depo': 'Depolama'})
         self.assertEqual(data['previous_subsidiaries'], [{'name': 'Lojistik', 'country': 'TR'}])
         ok = lambda sid, ans: validate_generic_step(sid, {'answer': ans}, lang='tr')
         self.assertEqual(ok('2B-OC1a', {'items': [{'facility': 'Depo'}]}), (True, None))
-        self.assertEqual(ok('2A-4', {'items': [{'name': 'Lojistik', 'country': 'TR'}, {'name': 'Kimya GmbH', 'country': 'DE'}]}), (True, None))
+        self.assertEqual(ok('2A-4', {'items': [{'name': 'Lojistik', 'country': 'TR', 'grid_connection': 'distribution'}, {'name': 'Kimya GmbH', 'country': 'DE'}]}), (True, None))
 
     def test_previous_equipment_selections_are_listed(self):
         prev = CarbonReport.objects.create(
@@ -1776,7 +1781,7 @@ class PreviousYearCarryTests(TestCase):
             title='2025', status=CarbonReport.Status.COMPLETED)
         for step_id, answer in {
             'A1': {'legal_name': 'Carry Co'},
-            '2A-2': {'1': {'name': 'Fabrika', 'country': 'TR'}, '2': {'name': 'Ofis', 'country': 'TR'}},
+            '2A-2': {'1': {'name': 'Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Ofis', 'country': 'TR', 'grid_connection': 'distribution'}},
             '3B-1': ['EQ-3B-01'],
             '3B-5': {'EQ-3B-01': 'diesel'},
             '3B-7': {'EQ-3B-01': '12000 litre'},
@@ -1902,7 +1907,7 @@ class AnswerTextTests(TestCase):
 
     def test_codes_become_words(self):
         from .answer_text import answer_text, is_navigation, question_title
-        answers = {'2A-2': {'answer': {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}}}}
+        answers = {'2A-2': {'answer': {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}}}}
         self.assertEqual(question_title('3A-4'), 'Soru 43 — Hangi yakıt türlerini kullanıyor?')
         self.assertEqual(answer_text('3A-4', {'answer': {'EQ-3A-01': ['natural_gas']}}, answers),
                          'Sıcak su kazanı: Doğalgaz')
@@ -2090,8 +2095,8 @@ class FactorNameDedupeTests(StepEntriesTests):
         factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
         factor.name = 'Turkey national grid'
         factor.save(update_fields=['name'])
-        self._step('2A-2', {'1': {'name': 'Kocaeli Fabrika', 'country': 'TR'},
-                            '2': {'name': 'İstanbul Ofis', 'country': 'TR'}})
+        self._step('2A-2', {'1': {'name': 'Kocaeli Fabrika', 'country': 'TR', 'grid_connection': 'distribution'},
+                            '2': {'name': 'İstanbul Ofis', 'country': 'TR', 'grid_connection': 'distribution'}})
         res = self._step('4A-1', {'1': '10 MWh', '2': '2 MWh'})
         saved = res.data['saved_entry']
         self.assertEqual(saved['factor_name'], 'Turkey national grid')
@@ -2250,7 +2255,7 @@ class FacilityGridQuestionnaireTests(TestCase):
             legal_entity_name='Kaya A.Ş.', tax_number='1234567890', country_of_headquarters='TR',
             countries_of_operation='TR', main_activity_description='x', number_of_employees='1-10',
             annual_turnover_range='1-10M', number_of_facilities=2)
-        Facility.objects.create(company=self.company, name='Gebze', country='TR')
+        Facility.objects.create(company=self.company, name='Gebze', country='TR', grid_connection='distribution')
         Facility.objects.create(company=self.company, name='Werk Linz', country='AT')
 
     def test_note_for_a_facility_without_a_grid_factor(self):
@@ -2301,11 +2306,11 @@ class ElectricityFactorDecisionTests(TestCase):
         StepEntriesTests.setUp(self)
         from companies.models import Facility
         self.linz = Facility.objects.create(company=self.company, name='Werk Linz', country='AT')
-        Facility.objects.create(company=self.company, name='Gebze', country='TR')
+        Facility.objects.create(company=self.company, name='Gebze', country='TR', grid_connection='distribution')
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
         self._factor('upstream-electricity', 'kwh', 0.025)
         self._factor('transmission-losses', 'kwh', 0.02)
-        self._step('2A-2', {'1': {'name': 'Gebze', 'country': 'TR'}, '2': {'name': 'Werk Linz', 'country': 'AT'}})
+        self._step('2A-2', {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Werk Linz', 'country': 'AT'}})
         self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
         self._step('K3C3-INFO', 'confirmed')
 
@@ -2338,7 +2343,7 @@ class ElectricityFactorDecisionTests(TestCase):
 
     def test_uncalculated_site_is_left_out_of_category_3_and_reported_as_pending(self):
         from .step_entries import uncalculated_notes
-        self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])
         # only Gebze's 1.000 kWh — not Linz's 500 kWh that has no factor
         self.assertEqual(self._rows('K3C3-INFO'), [('transmission-losses', 1000.0, 20.0),
                                                    ('upstream-electricity', 1000.0, 25.0)])
@@ -2353,7 +2358,7 @@ class ElectricityFactorDecisionTests(TestCase):
         req = self._request()
         self._save_in_admin(req)
         self.assertEqual(self._rows('4A-1'), [('calculated-scope2-electricity', 100.0, 100.0),
-                                              ('turkey-grid', 1000.0, 400.0)])
+                                              ('turkey-grid-distribution', 1000.0, 400.0)])
         linz = next(e for e in self._entries() if e.facility_id == self.linz.pk)
         self.assertIn(f'Özel Talep #{req.pk}', linz.description)
         self.assertEqual(linz.status, 'approved')
@@ -2371,7 +2376,7 @@ class ElectricityFactorDecisionTests(TestCase):
         req.status = 'rejected'
         req.save()
         self._save_in_admin(req)
-        self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])
 
     def test_form_points_to_the_inventory_once_the_factor_is_approved(self):
         from emissions.factor_lookup import facility_grid_missing_message
@@ -2387,7 +2392,7 @@ class ElectricityFactorDecisionTests(TestCase):
     def test_market_based_factor_leaves_location_based_untouched(self):
         from .step_entries import scope2_market_based
         self._save_in_admin(self._request(method='market_based', factor='0.3'))
-        self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])
         m = scope2_market_based(self._answers(), 2025, self.company)
         self.assertEqual(sorted((r['site'], r['basis']) for r in m['rows']),
                          [('Gebze', 'location_fallback'), ('Werk Linz', 'facility_request')])
@@ -2441,12 +2446,13 @@ class ElectricityFactorDecisionTests(TestCase):
         from .assumptions import derive_assumptions
         from .step_entries import factor_reference_years
         # the test factors are of reference year 2024, the inventory is 2025
-        self.assertIn(('turkey-grid', 'turkey-grid', 2024), factor_reference_years(self.company, 2025))
+        self.assertIn(('Türkiye şebekesi — dağıtım bağlantısı', 'Turkey grid — distribution connection', 2023),
+                      factor_reference_years(self.company, 2025))
         self.assertEqual(factor_reference_years(self.company, 2024), [])
         texts = [x['text'] for x in derive_assumptions(self._answers(), 'tr', 2025, self.company)
                  if x['step_id'] == 'EF-YEAR']
-        self.assertEqual(len(texts), 1)
-        self.assertIn('2024 referans yılı', texts[0])
+        self.assertTrue(texts)
+        self.assertIn('2023 referans yılı', ' '.join(texts))
         self.assertIn('tahminidir', texts[0])
 
     def test_one_approved_factor_per_facility_year_and_method(self):
@@ -2466,3 +2472,96 @@ class ElectricityFactorDecisionTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('unit', form.errors)
         self.assertIn('facility', form.errors)
+
+
+class TurkeyConnectionAndDesnz2025Tests(TestCase):
+    """Owner's decisions: Turkey's official consumption factors by grid
+    connection (ETKB, data year 2023) — not chosen: pending; no facility:
+    distribution, as an assumption; DESNZ 2025 UK grid / T&D for UK sites of
+    2025; "100% renewable" market-based only."""
+
+    _factor, _step, _entries = StepEntriesTests._factor, StepEntriesTests._step, StepEntriesTests._entries
+
+    def setUp(self):
+        StepEntriesTests.setUp(self)          # Turkish company, inventory 2025
+        self._factor('upstream-electricity', 'kwh', 0.025)
+        self._factor('transmission-losses', 'kwh', 0.02)
+        self._step('K3C3-INFO', 'confirmed')
+
+    def _rows(self, step):
+        return sorted((e.emission_factor.slug, round(float(e.quantity), 3), round(float(e.calculated_co2e_kg), 3))
+                      for e in self._entries() if e.description.startswith(f'Questionnaire step {step}')
+                      and e.year == self.report.reporting_year)
+
+    def _answers(self):
+        return dict(self.report.steps.values_list('step_id', 'answer'))
+
+    def test_connection_decides_the_factor_and_unknown_waits(self):
+        from companies.models import Facility
+        from .step_entries import uncalculated_notes
+        self._step('2A-2', {'1': {'name': 'Dilovası', 'country': 'TR', 'grid_connection': 'transmission'},
+                            '2': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
+                            '3': {'name': 'Bursa', 'country': 'TR'}})
+        self.assertEqual(Facility.objects.get(name='Dilovası').grid_connection, 'transmission')  # synced
+        self._step('4A-1', {'1': '1000 kWh', '2': '1000 kWh', '3': '500 kWh'})
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 469.0),
+                                              ('turkey-grid-transmission', 1000.0, 436.0)])
+        # Bursa waits: also out of Category 3
+        self.assertEqual(self._rows('K3C3-INFO'), [('transmission-losses', 2000.0, 40.0),
+                                                   ('upstream-electricity', 2000.0, 50.0)])
+        note = next(n for n in uncalculated_notes(self._answers(), 2025, self.company)
+                    if n['step_id'] == '4A-1' and 'Bursa' in n['tr'])
+        self.assertIn('bağlantı türü', note['tr'])
+        self.assertIn('sıfır tüketim anlamına gelmez', note['report_tr'])
+        # chosen later in Settings: calculated on the next save
+        Facility.objects.filter(name='Bursa').update(grid_connection='distribution')
+        self._step('4A-1', {'1': '1000 kWh', '2': '1000 kWh', '3': '500 kWh'})
+        self.assertIn(('turkey-grid-distribution', 500.0, 234.5), self._rows('4A-1'))
+
+    def test_electricity_without_a_facility_uses_distribution_as_an_assumption(self):
+        from .assumptions import derive_assumptions
+        self._step('4A-1', {'1': '1000 kWh'})
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 469.0)])
+        texts = [x['text'] for x in derive_assumptions(self._answers(), 'tr', 2025, self.company)]
+        self.assertTrue(any('dağıtım bağlantısı faktörü (0,469' in t for t in texts), texts)
+        # the 2023 data year is stated as the reference year
+        self.assertTrue(any('2023 referans yılı' in t and 'dağıtım bağlantısı' in t for t in texts), texts)
+
+    def test_uk_site_uses_the_desnz_factor_of_its_year(self):
+        from companies.models import Facility
+        Facility.objects.create(company=self.company, name='Leeds', country='GB')
+        self._factor('uk-grid', 'kwh', 0.207, scope='scope2')          # 2024 row
+        self._step('2A-2', {'1': {'name': 'Leeds', 'country': 'GB'}})
+        self._step('4A-1', {'1': '1000 kWh'})
+        self.assertEqual(self._rows('4A-1'), [('uk-grid', 1000.0, 177.0)])          # DESNZ 2025
+        self.assertEqual(self._rows('K3C3-INFO'), [('uk-transmission-losses', 1000.0, 18.53),
+                                                   ('upstream-electricity', 1000.0, 25.0)])
+        # a 2024 inventory: the 2024 grid row and the generic T&D estimate
+        self.report.reporting_year = 2024
+        self.report.save(update_fields=['reporting_year'])
+        self._step('4A-1', {'1': '1000 kWh'})
+        self.assertEqual(self._rows('4A-1'), [('uk-grid', 1000.0, 207.0)])
+
+    def test_renewable_is_market_based_and_not_offered(self):
+        import importlib
+        from django.apps import apps
+        from emissions.models import EmissionFactor
+        from emissions.seed_data import EMISSION_FACTORS as ALL_FACTORS
+        seed = {f['slug']: f for f in ALL_FACTORS if f['slug'] in ('renewable', 'turkey-grid')}
+        self.assertEqual((seed['renewable']['method'], seed['renewable']['is_active']), ('market_based', False))
+        self.assertFalse(seed['turkey-grid']['is_active'])
+        # the migration applies the same to a database seeded before it
+        for slug, value in (('renewable', 0), ('turkey-grid', 0.4199)):
+            EmissionFactor.objects.create(slug=slug, name=slug, scope='scope2', category='electricity',
+                                          country='turkey' if slug == 'turkey-grid' else 'global', unit='kwh',
+                                          factor_kg_co2e=value, year=2024, source='generic',
+                                          is_active=True, is_default=True)
+        mig = importlib.import_module('emissions.migrations.0025_factors_turkey_connection_desnz_2025')
+        mig.apply(apps, None)
+        self.assertEqual(tuple(EmissionFactor.objects.filter(slug='renewable').values_list('method', 'is_active')[0]),
+                         ('market_based', False))
+        self.assertFalse(EmissionFactor.objects.get(slug='turkey-grid').is_active)
+        data = self.client.get('/api/emissions/factors/?scope=scope2').json()
+        listed = {x['slug'] for x in (data if isinstance(data, list) else data.get('results', []))}
+        self.assertNotIn('renewable', listed)
+        self.assertIn('turkey-grid-distribution', listed)

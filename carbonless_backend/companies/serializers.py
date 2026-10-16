@@ -71,7 +71,7 @@ class FacilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Facility
         fields = ['id', 'company', 'name', 'address', 'city', 'country',
-                  'facility_type', 'is_active', 'created_at', 'entry_count']
+                  'facility_type', 'grid_connection', 'is_active', 'created_at', 'entry_count']
         # 'company' is set server-side from the requester's own membership
         # (see FacilityListCreateView.perform_create) — it must never be
         # settable by the client, or a PATCH could reassign a facility to a

@@ -974,7 +974,7 @@ def _build_pending_entries_from_data(emission_blocks, user=None):
         description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
         date_extracted = entry_data.get('date_extracted', False)
 
-        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit, company)
+        factor, qty, co2e_kg, err = resolve_factor_and_amount(activity_type, quantity, unit, company, year=year)
         if factor and co2e_kg is not None:
             pending_entries.append({
                 'fuel_type': activity_type,
@@ -1006,6 +1006,7 @@ def _build_pending_entries_from_data(emission_blocks, user=None):
 # Turkish chat answer (the model's choice labels are English).
 SOURCE_LABELS_TR = {
     'defra_2024': 'Defra/DESNZ 2024',
+    'desnz_2025': 'DESNZ 2025',
     'ipcc_2006': 'IPCC 2006',
     'ipcc_2019': 'IPCC 2019 + AR6 GWP',
     'turkey_grid': 'Türkiye ulusal elektrik şebekesi',
@@ -1764,7 +1765,7 @@ def _tag_facility(data, user, content, lang=''):
         if (pe.get('fuel_type') or '').strip().lower() == 'electricity' and (facility.country or '').strip():
             # The quantity is already in the factor's unit (MWh -> kWh).
             factor, qty, co2e, err = resolve_factor_and_amount(
-                'electricity', pe.get('quantity'), pe.get('factor_unit') or 'kwh', company, facility)
+                'electricity', pe.get('quantity'), pe.get('factor_unit') or 'kwh', company, facility, pe.get('year'))
             if err == FACILITY_GRID_MISSING:
                 missing.append(facility_grid_missing_message(facility, 'tr' if lang == 'tr' else 'en',
                                                              pe.get('year')))
@@ -2219,7 +2220,8 @@ def confirm_entry(request):
     if chat_facility is not None and (entry_data.get('fuel_type') or '').strip().lower() == 'electricity':
         from companies.utils import get_current_company
         from emissions.factor_lookup import FACILITY_GRID_MISSING, facility_grid_missing_message, resolve_factor
-        _f, _u, _m, grid_err = resolve_factor('electricity', 'kwh', get_current_company(request.user), chat_facility)
+        _f, _u, _m, grid_err = resolve_factor('electricity', 'kwh', get_current_company(request.user), chat_facility,
+                                              entry_data.get('year'))
         if grid_err == FACILITY_GRID_MISSING:
             return Response({
                 'error': facility_grid_missing_message(chat_facility, 'en', entry_data.get('year')),
@@ -2234,7 +2236,7 @@ def confirm_entry(request):
         from emissions.factor_lookup import resolve_factor_and_amount
         factor, qty, _co2e, _err = resolve_factor_and_amount(
             entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''),
-            get_current_company(request.user), chat_facility)
+            get_current_company(request.user), chat_facility, entry_data.get('year'))
         now = datetime.now(timezone.utc)
         existing = find_duplicate(
             get_current_company(request.user), factor,
@@ -2267,7 +2269,7 @@ def confirm_entry(request):
         company = get_current_company(request.user)
         factor, qty, _co2e, _err = resolve_factor_and_amount(
             entry_data.get('fuel_type', ''), entry_data.get('quantity'), entry_data.get('unit', ''), company,
-            chat_facility)
+            chat_facility, entry_data.get('year'))
         now = datetime.now(timezone.utc)
         same = find_same_period(company, factor, entry_data.get('year') or now.year,
                                 entry_data.get('month') or now.month,

@@ -512,7 +512,7 @@ def _litres(raw):
     return qty if qty and unit.lower() in ('litre', 'liter', 'l', 'lt') else None
 
 
-def _upstream_energy(A, groups, skip_sites=frozenset()):
+def _upstream_energy(A, groups, skip_sites=frozenset(), uk_sites=frozenset(), year=None):
     """K3C3 "confirmed": upstream electricity and T&D losses on the kWh of
     4A-1 (and of EV charging counted in 4A-EV); fuel extraction on litres of
     liquid fuel (3A-5 diesel / fuel oil / LPG, vehicles). The kWh of a
@@ -521,8 +521,12 @@ def _upstream_energy(A, groups, skip_sites=frozenset()):
     category and missing from the other."""
     if A.get('K3C3-INFO') != 'confirmed':
         return []
-    kwh = sum(a['quantity'] for a in groups.get('4A-1', [])
-              if str(a.get('facility_name') or '').strip().lower() not in skip_sites)
+    site = lambda a: str(a.get('facility_name') or '').strip().lower()
+    kwh = sum(a['quantity'] for a in groups.get('4A-1', []) if site(a) not in skip_sites)
+    # A UK facility's T&D losses use the DESNZ UK factor of a year up to the
+    # inventory's (none earlier: the generic estimate, as before).
+    uk_kwh = (sum(a['quantity'] for a in groups.get('4A-1', []) if site(a) in uk_sites and site(a) not in skip_sites)
+              if uk_sites and _uk_td_available(year) else 0)
     kwh += sum(a.get('kwh', 0) for a in groups.get('4A-EV', []))
     litres = 0.0
     if groups.get('3A-5') and isinstance(A.get('3A-5'), dict):
@@ -533,12 +537,26 @@ def _upstream_energy(A, groups, skip_sites=frozenset()):
     if kwh:
         out.append({'slug': 'upstream-electricity', 'quantity': kwh,
                     'label': {'tr': 'Elektrik üretim zinciri (WTT)', 'en': 'Electricity supply chain (WTT)'}})
-        out.append({'slug': 'transmission-losses', 'quantity': kwh,
-                    'label': {'tr': 'İletim ve dağıtım kayıpları', 'en': 'Transmission and distribution losses'}})
+        if kwh - uk_kwh:
+            out.append({'slug': 'transmission-losses', 'quantity': kwh - uk_kwh,
+                        'label': {'tr': 'İletim ve dağıtım kayıpları', 'en': 'Transmission and distribution losses'}})
+        if uk_kwh:
+            out.append({'slug': 'uk-transmission-losses', 'quantity': uk_kwh,
+                        'label': {'tr': 'İletim ve dağıtım kayıpları (Birleşik Krallık)',
+                                  'en': 'Transmission and distribution losses (UK)'}})
     if litres:
         out.append({'slug': 'fuel-extraction', 'quantity': litres,
                     'label': {'tr': 'Yakıt üretim zinciri (WTT)', 'en': 'Fuel supply chain (WTT)'}})
     return out
+
+
+def _uk_td_available(year):
+    from emissions.models import EmissionFactor
+    try:
+        y = int(year)
+    except (TypeError, ValueError):
+        return False
+    return EmissionFactor.objects.filter(slug='uk-transmission-losses', is_active=True, year__lte=y).exists()
 
 
 def _provider_report(A, step, year, scope_category):
@@ -812,9 +830,14 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
         if A.get(gate) not in (None, '', 'yes'):
             g[step] = []
     # Upstream energy follows from the (gated) amounts above.
-    skip = (frozenset(n.strip().lower() for n, _c, _k in sites_without_grid(A, company, year))
-            if company is not None else frozenset())
-    g['K3C3-INFO'] = _upstream_energy(A, g, skip)
+    skip, uk = frozenset(), frozenset()
+    if company is not None:
+        skip = frozenset([n.strip().lower() for n, _c, _k in sites_without_grid(A, company, year)]
+                         + [n.strip().lower() for n, _k in sites_pending_connection(A, company, year)])
+        from companies.models import Facility
+        uk = frozenset(f.name.strip().lower() for f in Facility.objects.filter(company=company)
+                       if (f.country or '').strip().upper() in ('GB', 'UK'))
+    g['K3C3-INFO'] = _upstream_energy(A, g, skip, uk, year)
     return g
 
 
@@ -847,12 +870,11 @@ def _supplier_ef(A, step, year):
     return per_unit, value * mult, _bi(lambda lg: f'{source} ({_fmt(value, lang=lg)} {unit})')
 
 
-def _factor_by_slug(slug):
-    from emissions.models import EmissionFactor
-    return (
-        EmissionFactor.objects.filter(slug=slug, country='turkey', is_active=True, is_default=True).first()
-        or EmissionFactor.objects.filter(slug=slug, country='global', is_active=True, is_default=True).first()
-    )
+def _factor_by_slug(slug, year=None):
+    """The active catalog factor of `slug` (Turkey row first) for the
+    inventory year — see emissions.factor_lookup.pick_factor."""
+    from emissions.factor_lookup import pick_factor
+    return pick_factor(slug, 'turkey', year) or pick_factor(slug, 'global', year)
 
 
 # Names of the categories a calculated entry can belong to.
@@ -895,7 +917,7 @@ def _calculated_factor(scope, category):
     return factor
 
 
-def _resolve(activity, company=None, facility_of=None):
+def _resolve(activity, company=None, facility_of=None, year=None):
     """(factor, quantity Decimal, co2e_kg Decimal) for one activity, or None.
     A per-facility activity uses that facility (its country's electricity grid)."""
     from emissions.factor_lookup import resolve_factor_and_amount
@@ -903,7 +925,7 @@ def _resolve(activity, company=None, facility_of=None):
         kg = Decimal(str(activity['reported_kg']))
         return _calculated_factor(*activity['report_as']), kg, kg
     if 'slug' in activity:
-        factor = _factor_by_slug(activity['slug'])
+        factor = _factor_by_slug(activity['slug'], year)
         if not factor:
             return None
         try:
@@ -913,7 +935,7 @@ def _resolve(activity, company=None, facility_of=None):
         return factor, qty, qty * factor.factor_kg_co2e
     facility = facility_of(activity.get('facility_name')) if facility_of else None
     factor, qty, co2e, error = resolve_factor_and_amount(
-        activity['activity'], activity['quantity'], activity['unit'], company, facility)
+        activity['activity'], activity['quantity'], activity['unit'], company, facility, year)
     if error:
         logger.info('Questionnaire activity skipped (%s): %s', activity, error)
         return None
@@ -938,7 +960,7 @@ def _entry_specs(step, activities, A, year, company):
             else:
                 rest.append(a)
         activities = rest
-    resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of)) for a in activities) if r]
+    resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of, year)) for a in activities) if r]
     # The electricity supplier's factor is market-based: it never replaces
     # the location-based grid factor of 4A-1 (see scope2_market_based).
     supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT and step != '4A-1' else None
@@ -1326,6 +1348,25 @@ def sites_without_grid(A, company, year=None):
     return out
 
 
+def sites_pending_connection(A, company, year=None):
+    """[(facility name, kWh)] of the 4A-1 electricity of facilities in Turkey
+    whose grid connection (transmission / distribution) is not chosen — the
+    official factor depends on it, so it waits (not calculated) — unless an
+    approved location-based factor of the year covers it."""
+    from emissions.factor_lookup import facility_grid_slug
+    if company is None or A.get('4A-1') in (None, ''):
+        return []
+    facility_of = _facility_lookup(company)
+    requested = approved_electricity_requests(company, year) if year else {}
+    out = []
+    for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2')):
+        fac = facility_of(a.get('facility_name'))
+        if (fac is not None and facility_grid_slug(fac.country) == 'turkey-grid'
+                and not fac.grid_connection and fac.pk not in requested):
+            out.append((fac.name, float(a['quantity'])))
+    return out
+
+
 def scope2_market_based(answers, year, company=None):
     """The market-based Scope 2 of the purchased electricity (4A-1 sites and
     EV charging counted in 4A-EV) — reported next to, never added to, the
@@ -1369,7 +1410,7 @@ def scope2_market_based(answers, year, company=None):
         elif fac is not None and fac.pk in location:
             factor, basis = float(location[fac.pk].approved_factor_kg_co2e), 'location_fallback'
         else:
-            r = _resolve(a, company, facility_of)
+            r = _resolve(a, company, facility_of, year)
             if r:
                 factor, basis = float(r[0].factor_kg_co2e), 'location_fallback'
         if supplier_per is not None and basis != 'facility_request' and where != supplier_market:
@@ -1489,6 +1530,38 @@ def uncalculated_notes(answers, year, company=None):
                              + '. It is tracked as pending data until the factor is set; it does not mean '
                                'zero consumption.',
             })
+
+        # Turkey: the official factor follows the grid connection; until it
+        # is chosen the facility's electricity waits (here and in Category 3).
+        for name, kwh in sites_pending_connection(A, company, year):
+            amount_tr, amount_en = _fmt(kwh, 0, 'tr'), _fmt(kwh, 0, 'en')
+            out.append({
+                'step_id': '4A-1',
+                'tr': f'{name} elektriği ({amount_tr} kWh) hesaplanmadı — tesisin şebeke bağlantı türü '
+                      f'(iletim / dağıtım) seçilmedi; resmi faktör buna göre değişir. Bağlantı türünü Soru 24\'te '
+                      f'veya Ayarlar › Tesisler\'de seçin; tüketim kayıtlı ve tamamlanmayı bekliyor.',
+                'en': f'The electricity of {name} ({amount_en} kWh) was not calculated — the facility\'s grid '
+                      f'connection (transmission / distribution) is not chosen, and the official factor depends '
+                      f'on it. Choose it in Question 24 or Settings › Facilities; the consumption is kept and pending.',
+                'report_tr': f'{name} elektrik tüketimi ({amount_tr} kWh), tesisin şebeke bağlantı türü (iletim / '
+                             f'dağıtım) belirtilmediğinden envantere dahil edilmemiştir (Kapsam 2 ve Kapsam 3 '
+                             f'Kategori 3). Tamamlanmayı bekleyen veridir; sıfır tüketim anlamına gelmez.',
+                'report_en': f'The electricity consumption of {name} ({amount_en} kWh) is not included in the '
+                             f'inventory, as the facility\'s grid connection (transmission / distribution) is not '
+                             f'given (Scope 2 and Scope 3 Category 3). It is pending data, not zero consumption.',
+            })
+        # Electricity not tied to a facility in Turkey: the distribution
+        # factor, as an assumption (owner's decision).
+        from .serializers import is_turkish_company
+        if is_turkish_company(company):
+            facility_of = _facility_lookup(company)
+            loose = [a for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2'))
+                     if facility_of(a.get('facility_name')) is None] if A.get('4A-1') not in (None, '') else []
+            if loose:
+                note('4A-1', 'Bir tesise bağlı olmayan elektrik tüketimi için şebeke bağlantısı bilinmediğinden '
+                             'dağıtım bağlantısı faktörü (0,469 kg CO₂e/kWh, ETKB 2023 veri yılı) varsayılmıştır.',
+                     'For electricity not tied to a facility the grid connection is unknown, so the distribution '
+                     'connection factor (0.469 kg CO₂e/kWh, ETKB data year 2023) is assumed.', kind='method')
 
     for step, gate in _GATES.items():
         if A.get(gate) not in (None, '', 'yes') and _has_amount(step):

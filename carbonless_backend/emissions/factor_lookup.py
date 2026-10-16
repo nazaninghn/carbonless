@@ -242,6 +242,40 @@ def facility_grid_slug(country):
     return GRID_BY_COUNTRY.get(code)
 
 
+# Turkey: the official consumption factor depends on the grid connection.
+TURKEY_GRID_BY_CONNECTION = {'transmission': 'turkey-grid-transmission',
+                             'distribution': 'turkey-grid-distribution'}
+# Electricity not tied to a facility (no connection known) — the owner's
+# decision: the distribution factor, stated as an assumption.
+TURKEY_GRID_DEFAULT = 'turkey-grid-distribution'
+TURKEY_GRID_SLUGS = {'turkey-grid', *TURKEY_GRID_BY_CONNECTION.values()}
+
+
+def turkey_grid_slug(connection):
+    """The Turkish grid factor slug of a grid connection, or None."""
+    return TURKEY_GRID_BY_CONNECTION.get((connection or '').strip())
+
+
+def pick_factor(slug, country=None, year=None):
+    """The active default factor of `slug` (and country) for an inventory
+    year: that year's row, else the latest earlier one, else the earliest —
+    the report states the reference year of a factor of another year."""
+    qs = EmissionFactor.objects.filter(slug=slug, is_active=True, is_default=True)
+    if country:
+        qs = qs.filter(country=country)
+    rows = list(qs.order_by('year', 'pk'))
+    if not rows:
+        return None
+    try:
+        y = int(year) if year else None
+    except (TypeError, ValueError):
+        y = None
+    if y is None:
+        return rows[-1]
+    earlier = [r for r in rows if r.year <= y]
+    return earlier[-1] if earlier else rows[0]
+
+
 def facility_grid_missing_message(facility, lang='en', year=None):
     name = getattr(facility, 'name', '') or ''
     code = (getattr(facility, 'country', '') or '').strip().upper()
@@ -258,6 +292,15 @@ def facility_grid_missing_message(facility, lang='en', year=None):
         return (f'The {year} electricity factor of {name} was approved with Custom Request #{req.pk} '
                 f'({per} kg CO₂e/kWh). It applies in the inventory\'s electricity question (Q68): enter or '
                 f'update this facility\'s electricity consumption there.')
+    if facility_grid_slug(code) == 'turkey-grid':
+        # In Turkey the factor follows the grid connection, not chosen yet.
+        if lang == 'tr':
+            return (f'{name} tesisinin şebeke bağlantı türü (iletim / dağıtım) seçilmedi; bu elektrik kaydı '
+                    f'hesaplanmadı ve tamamlanmayı bekliyor. Bağlantı türünü Ayarlar › Tesisler\'den veya '
+                    f'envanterde Soru 24\'ten seçin.')
+        return (f'The grid connection (transmission / distribution) of {name} is not chosen, so this '
+                f'electricity was not calculated and is pending. Choose it in Settings › Facilities or in '
+                f'Question 24 of the inventory.')
     if lang == 'tr':
         return (f'{name} tesisinin ülkesi ({code}) için kayıtlı bir elektrik şebekesi faktörü yok; '
                 f'bu elektrik kaydı hesaplanmadı. Doğru faktörün belirlenmesi için Özel Talep gönderin.')
@@ -291,7 +334,7 @@ def grid_matches_country(factor, country):
         return None
     if code in TURKEY_CODES:
         code = 'TR'
-    if slug == 'turkey-grid':
+    if slug in TURKEY_GRID_SLUGS:
         return code == 'TR'
     if slug == 'eu-grid':
         return code in EU_COUNTRIES
@@ -311,14 +354,17 @@ def _foreign_country(company):
     return (company.country_of_headquarters or '').strip().upper()
 
 
-def resolve_factor(activity_type, unit, company=None, facility=None):
+def resolve_factor(activity_type, unit, company=None, facility=None, year=None):
     """
     Resolves (activity_type, unit) to a real EmissionFactor, preferring the
     Turkey-specific row and falling back to global. For a company based
     outside Turkey (when `company` is given) the global row comes first and
     electricity uses that country's grid factor. With a `facility` that has a
     country, grid electricity uses that country's own grid factor, or returns
-    the FACILITY_GRID_MISSING error when it has none.
+    the FACILITY_GRID_MISSING error when it has none — or, in Turkey, when
+    the facility's grid connection is not chosen (the factor depends on it).
+    Electricity in Turkey without a facility uses the distribution factor.
+    A factor with rows of several years is taken for the inventory `year`.
     Returns (factor, normalized_unit, quantity_multiplier, error) — multiplier
     is 1 unless a dimensional conversion (e.g. MWh -> kWh) was needed to reach
     a registered unit.
@@ -342,11 +388,12 @@ def resolve_factor(activity_type, unit, company=None, facility=None):
     facility_country = (getattr(facility, 'country', '') or '').strip()
     if slug == 'turkey-grid' and facility_country:
         grid = facility_grid_slug(facility_country)
+        if grid == 'turkey-grid':
+            grid = turkey_grid_slug(getattr(facility, 'grid_connection', ''))
         factor = None
         if grid:
-            factor = (EmissionFactor.objects.filter(slug=grid, country='turkey' if grid == 'turkey-grid' else 'global',
-                                                    is_active=True, is_default=True).first()
-                      or EmissionFactor.objects.filter(slug=grid, is_active=True, is_default=True).first())
+            factor = (pick_factor(grid, 'turkey' if grid in TURKEY_GRID_SLUGS else 'global', year)
+                      or pick_factor(grid, None, year))
         if not factor:
             return None, norm_unit, None, FACILITY_GRID_MISSING
         return factor, norm_unit, multiplier, None
@@ -360,9 +407,11 @@ def resolve_factor(activity_type, unit, company=None, facility=None):
                 if EmissionFactor.objects.filter(slug=grid, country='global', is_active=True, is_default=True).exists():
                     slug = grid
                     break
+    elif slug == 'turkey-grid':
+        slug = TURKEY_GRID_DEFAULT
     factor = None
     for country in countries:
-        factor = EmissionFactor.objects.filter(slug=slug, country=country, is_active=True, is_default=True).first()
+        factor = pick_factor(slug, country, year)
         if factor:
             break
     if not factor:
@@ -370,7 +419,7 @@ def resolve_factor(activity_type, unit, company=None, facility=None):
     return factor, norm_unit, multiplier, None
 
 
-def resolve_factor_and_amount(activity_type, quantity, unit, company=None, facility=None):
+def resolve_factor_and_amount(activity_type, quantity, unit, company=None, facility=None, year=None):
     """
     Resolves (activity_type, unit) to a real factor AND normalizes quantity for
     any dimensional conversion (e.g. tonne -> kg, MWh -> kWh, mile -> km,
@@ -384,7 +433,7 @@ def resolve_factor_and_amount(activity_type, quantity, unit, company=None, facil
     if qty <= 0:
         return None, None, None, 'Quantity must be greater than zero.'
 
-    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit, company, facility)
+    factor, norm_unit, multiplier, error = resolve_factor(activity_type, unit, company, facility, year)
     if error:
         return None, None, None, error
 
@@ -475,7 +524,7 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     if not company:
         return None, 'No company found. Please create a company first.'
 
-    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility)
+    factor, qty, co2e_kg, error = resolve_factor_and_amount(activity_type, quantity, unit, company, facility, year)
     if error:
         if error == FACILITY_GRID_MISSING:
             return None, facility_grid_missing_message(facility, year=year)
