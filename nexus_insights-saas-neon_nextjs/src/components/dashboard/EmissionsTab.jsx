@@ -365,7 +365,9 @@ export default function EmissionsTab({
   // (the summary does that), not to the entry totals on this page — said
   // here, since the cards read 0,00 while the dashboard showed the amount.
   const customApprovedKg = customRequests
-    .filter(cr => cr.status === 'approved' && String(cr.year) === String(selectedYear) && cr.calculated_co2e_kg)
+    // A facility electricity factor replaces that facility's factor — it is
+    // not an amount of its own in any total.
+    .filter(cr => cr.status === 'approved' && !cr.electricity_method && String(cr.year) === String(selectedYear) && cr.calculated_co2e_kg)
     .reduce((t, cr) => t + Number(cr.calculated_co2e_kg), 0);
   const fullMonths = FULL_MONTHS[tr ? 'tr' : 'en'];
   const catLabel = k => CATEGORY_LABELS[k]?.[tr ? 'tr' : 'en'] ?? k;
@@ -1106,6 +1108,15 @@ export default function EmissionsTab({
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-[#072C0E]">{cr.source_name}</p>
                   <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {fmt(cr.quantity, 4)} {cr.unit} · {months[(cr.month || 1) - 1]} {cr.year}</p>
+                  {cr.status === 'approved' && cr.electricity_method && (
+                    <p className="mt-0.5 text-[10px] text-[#175022]">
+                      {cr.electricity_method === 'market_based'
+                        ? (tr ? `Onaylanan faktör ${fmt(cr.approved_factor_kg_co2e, 6)} kg CO₂e/kWh — yalnızca piyasa bazlı Kapsam 2 sonucunda kullanılır, toplamlara eklenmez.`
+                              : `Approved factor ${fmt(cr.approved_factor_kg_co2e, 6)} kg CO₂e/kWh — used only in the market-based Scope 2 result, not added to the totals.`)
+                        : (tr ? `Onaylanan faktör ${fmt(cr.approved_factor_kg_co2e, 6)} kg CO₂e/kWh — bu tesisin ${cr.year} elektriği envanterde bu faktörle hesaplanır; talebin miktarı ayrıca eklenmez.`
+                              : `Approved factor ${fmt(cr.approved_factor_kg_co2e, 6)} kg CO₂e/kWh — this facility's ${cr.year} electricity in the inventory is calculated with it; the request's amount is not added on top.`)}
+                    </p>
+                  )}
                   {cr.status === 'rejected' && cr.admin_notes && (
                     <p className="mt-0.5 text-[10px] text-red-500">{tr ? 'Not' : 'Note'}: {cr.admin_notes}</p>
                   )}
@@ -1119,7 +1130,7 @@ export default function EmissionsTab({
                   {cr.status === 'approved' ? (tr ? 'Onaylandı' : 'Approved') :
                    cr.status === 'rejected' ? (tr ? 'Reddedildi' : 'Rejected') :
                    (tr ? 'Beklemede' : 'Pending')}
-                  {cr.status === 'approved' && cr.calculated_co2e_kg
+                  {cr.status === 'approved' && cr.calculated_co2e_kg && !cr.electricity_method
                     ? ` · ${fixed((cr.calculated_co2e_kg / 1000), 4)} t` : ''}
                 </span>
                 {cr.status === 'pending' && (canApprove || cr.username === currentUsername) && (

@@ -24,7 +24,8 @@ mapping the company's carbon expert approved:
           steam, district cooling (kWh)
   - K3C1  spend in USD only (SC-07, SC-09); quantity by material; supplier
           declarations replace the generic calculation of their category
-  - K3C3  "confirmed": upstream electricity + T&D losses on 4A-1 kWh,
+  - K3C3  "confirmed": upstream electricity + T&D losses on 4A-1 kWh
+          (not on the kWh of a facility whose electricity is not calculated),
           fuel extraction on litres of liquid fuel
   - K3C4-2 / K3C9-1 transport rows       -> the CarbonIQ catalog factor whose
     slug is the TM code (tm-01, tm-01-ds …), in tonne-km = load × distance
@@ -35,7 +36,14 @@ mapping the company's carbon expert approved:
     products, franchises (reported total only), investments (PCAF)
 An answer without a registered factor is skipped, never guessed.
 
-A supplier / facility-specific factor (3A/3B/3C/4A/4B-EF-a), a supplier or
+Electricity (4A-1) is location-based: each facility's own country grid, or
+the factor an admin approved for that facility and year (Özel Talep,
+location-based), which replaces the grid factor rather than adding a second
+amount. The electricity supplier's declaration (4A-EF-a) and a market-based
+approved request only feed the separate market-based result
+(scope2_market_based), never the inventory total.
+
+A supplier / facility-specific factor (3A/3B/3C/4B-EF-a), a supplier or
 provider declaration and a PCAF attribution are not catalog factors: such an
 entry is stored as kg CO2e on a "calculated" factor of the same scope and
 category (factor 1), with the real factor named in its description. The same
@@ -504,13 +512,17 @@ def _litres(raw):
     return qty if qty and unit.lower() in ('litre', 'liter', 'l', 'lt') else None
 
 
-def _upstream_energy(A, groups):
+def _upstream_energy(A, groups, skip_sites=frozenset()):
     """K3C3 "confirmed": upstream electricity and T&D losses on the kWh of
     4A-1 (and of EV charging counted in 4A-EV); fuel extraction on litres of
-    liquid fuel (3A-5 diesel / fuel oil / LPG, vehicles)."""
+    liquid fuel (3A-5 diesel / fuel oil / LPG, vehicles). The kWh of a
+    facility whose electricity is not calculated (`skip_sites`, lower-case
+    names) stays out here too — it is reported as pending, not counted in one
+    category and missing from the other."""
     if A.get('K3C3-INFO') != 'confirmed':
         return []
-    kwh = sum(a['quantity'] for a in groups.get('4A-1', []))
+    kwh = sum(a['quantity'] for a in groups.get('4A-1', [])
+              if str(a.get('facility_name') or '').strip().lower() not in skip_sites)
     kwh += sum(a.get('kwh', 0) for a in groups.get('4A-EV', []))
     litres = 0.0
     if groups.get('3A-5') and isinstance(A.get('3A-5'), dict):
@@ -800,7 +812,9 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
         if A.get(gate) not in (None, '', 'yes'):
             g[step] = []
     # Upstream energy follows from the (gated) amounts above.
-    g['K3C3-INFO'] = _upstream_energy(A, g)
+    skip = (frozenset(n.strip().lower() for n, _c, _k in sites_without_grid(A, company, year))
+            if company is not None else frozenset())
+    g['K3C3-INFO'] = _upstream_energy(A, g, skip)
     return g
 
 
@@ -911,8 +925,23 @@ def _entry_specs(step, activities, A, year, company):
     "calculated" factor of the same scope / category when the CO2e comes
     from elsewhere (supplier factor, declaration, reporting category)."""
     facility_of = _facility_lookup(company) if company else None
+    # 4A-1: a facility with an approved location-based factor (Özel Talep)
+    # for this year is calculated with that factor instead of the grid.
+    requested = approved_electricity_requests(company, year) if step == '4A-1' and company else {}
+    by_request = []
+    if requested:
+        rest = []
+        for a in activities:
+            fac = facility_of(a.get('facility_name'))
+            if fac is not None and fac.pk in requested:
+                by_request.append((a, requested[fac.pk]))
+            else:
+                rest.append(a)
+        activities = rest
     resolved = [(a, r) for a, r in ((a, _resolve(a, company, facility_of)) for a in activities) if r]
-    supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT else None
+    # The electricity supplier's factor is market-based: it never replaces
+    # the location-based grid factor of 4A-1 (see scope2_market_based).
+    supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT and step != '4A-1' else None
     targets = []
     if supplier:
         matching = [a for a, (f, _q, _c) in resolved
@@ -929,6 +958,13 @@ def _entry_specs(step, activities, A, year, company):
         return {lg: ' · '.join(filter(None, [p[lg] for p in parts])) for lg in ('tr', 'en')}
 
     specs = []
+    for activity, req in by_request:
+        qty, per = Decimal(str(activity['quantity'])), req.approved_factor_kg_co2e
+        specs.append((_calculated_factor('scope2', 'electricity'), qty * per, joined(
+            _lab(activity.get('label')),
+            _bi(lambda lg: f'{_fmt(float(qty), lang=lg)} kWh × {_fmt(float(per), 6, lg)} kg CO2e/kWh '
+                           f'({"Özel Talep" if lg == "tr" else "Custom Request"} #{req.pk})')),
+            activity.get('facility_name')))
     for activity, (factor, qty, co2e) in resolved:
         label = _lab(activity.get('label'))
         site = activity.get('facility_name')
@@ -983,7 +1019,19 @@ def entry_group(description):
     return desc[len(DESCRIPTION_PREFIX) + 1:].split(' ')[0]
 
 
-def sync_step_entries(user, company, report, step_id, data=None):
+def resync_inventory(company, year, user):
+    """Recalculate the company's inventory of `year` from its saved answers
+    after a factor it uses was approved or withdrawn (Özel Talep) — as an
+    approved change: the factor was reviewed, the answers did not change."""
+    from .models import CarbonReport
+    report = (CarbonReport.objects.filter(company=company, reporting_year=year)
+              .order_by('-updated_at').first())
+    if report is None:
+        return []
+    return sync_step_entries(user, company, report, '4A-1', as_status='approved')
+
+
+def sync_step_entries(user, company, report, step_id, data=None, as_status=None):
     """
     Recalculate the entries of the whole inventory from its saved answers —
     an answer can change another step's entries (the fuel type of 3B-5 and
@@ -1010,7 +1058,7 @@ def sync_step_entries(user, company, report, step_id, data=None):
     groups = activities_for_report(answers, year, company)
     # Same approval rule as the form and the chat: an owner/admin/manager's
     # answers count at once, a data-entry member's wait for approval.
-    status = _get_entry_status(user, company)
+    status = as_status or _get_entry_status(user, company)
     # One save, one change: rows it leaves waiting carry the step that was
     # saved, so they are reviewed (and counted) together.
     import uuid
@@ -1245,21 +1293,84 @@ def questionnaire_totals(report):
 
 # ── Answers that are kept but not calculated ─────────────────────────────────
 
-def sites_without_grid(A, company):
+def approved_electricity_requests(company, year, method='location_based'):
+    """{facility id: CustomEmissionRequest} — the electricity factor an admin
+    approved (Özel Talep) for a facility and reporting year, for one Scope 2
+    method. Unique per facility + year + method (admin validation); should
+    two exist anyway, the latest approval wins."""
+    from emissions.models import CustomEmissionRequest
+    if company is None or not year:
+        return {}
+    qs = CustomEmissionRequest.objects.filter(
+        company=company, year=year, status='approved', electricity_method=method,
+        facility__isnull=False, approved_factor_kg_co2e__isnull=False).order_by('updated_at', 'pk')
+    return {r.facility_id: r for r in qs}
+
+
+def sites_without_grid(A, company, year=None):
     """[(facility name, country code, kWh)] of the 4A-1 electricity answered
-    for facilities whose country has no grid factor of its own (not
-    calculated). `A` is the unwrapped answers ({step: value})."""
+    for facilities whose country has no grid factor of its own and no
+    approved location-based factor for `year` (not calculated — pending).
+    `A` is the unwrapped answers ({step: value})."""
     from emissions.factor_lookup import facility_grid_slug
     if company is None or A.get('4A-1') in (None, ''):
         return []
     facility_of = _facility_lookup(company)
+    requested = approved_electricity_requests(company, year) if year else {}
     out = []
     for a in _named_sites(_electricity(A.get('4A-1')), A.get('2A-2')):
         fac = facility_of(a.get('facility_name'))
         code = (getattr(fac, 'country', '') or '').strip().upper()
-        if fac is not None and code and not facility_grid_slug(code):
+        if fac is not None and code and not facility_grid_slug(code) and fac.pk not in requested:
             out.append((fac.name, code, float(a['quantity'])))
     return out
+
+
+def scope2_market_based(answers, year, company=None):
+    """The market-based Scope 2 of the purchased electricity (4A-1 sites and
+    EV charging counted in 4A-EV) — reported next to, never added to, the
+    location-based inventory total. Per activity, in this order:
+      1. the market-based factor approved for that facility and year (Özel Talep);
+      2. the electricity supplier's declaration (4A-EF-a) valid for the year;
+      3. a residual mix — none is registered, so this level is skipped;
+      4. the location-based factor of the activity (its grid / approved request).
+    Activities with none of these are listed as not calculated.
+    Returns None when no electricity is answered, else
+    {'total_kg', 'rows': [{site, kwh, factor, basis, kg}], 'missing': [(site, kwh)],
+     'has_instrument': bool}."""
+    A = {k: _value(v) for k, v in (answers or {}).items()}
+    groups = activities_for_report(answers, year, company)
+    acts = list(groups.get('4A-1', [])) + list(groups.get('4A-EV', []))
+    if not acts:
+        return None
+    facility_of = _facility_lookup(company) if company else (lambda _n: None)
+    market = approved_electricity_requests(company, year, 'market_based') if company else {}
+    location = approved_electricity_requests(company, year) if company else {}
+    supplier = _supplier_ef(A, '4A-1', year)
+    supplier_per = supplier[1] if supplier and supplier[0] == 'kwh' else None
+    rows, missing = [], []
+    for a in acts:
+        site = a.get('facility_name') or _lab(a.get('label'))['tr'] or ''
+        kwh = float(a['quantity'])
+        fac = facility_of(a.get('facility_name'))
+        factor = basis = None
+        if fac is not None and fac.pk in market:
+            factor, basis = float(market[fac.pk].approved_factor_kg_co2e), 'facility_request'
+        elif supplier_per is not None:
+            factor, basis = float(supplier_per), 'supplier'
+        elif fac is not None and fac.pk in location:
+            factor, basis = float(location[fac.pk].approved_factor_kg_co2e), 'location_fallback'
+        else:
+            r = _resolve(a, company, facility_of)
+            if r:
+                factor, basis = float(r[0].factor_kg_co2e), 'location_fallback'
+        if factor is None:
+            missing.append((site, kwh))
+            continue
+        rows.append({'site': site, 'kwh': kwh, 'factor': factor, 'basis': basis, 'kg': kwh * factor,
+                     'source': supplier[2] if basis == 'supplier' else None})
+    return {'total_kg': sum(r['kg'] for r in rows), 'rows': rows, 'missing': missing,
+            'has_instrument': any(r['basis'] != 'location_fallback' for r in rows)}
 
 
 def uncalculated_notes(answers, year, company=None):
@@ -1304,20 +1415,36 @@ def uncalculated_notes(answers, year, company=None):
     # country without one is not calculated (no other country's grid in its
     # place) until the right factor is set. The app tells the user what to
     # do; the report states the exclusion and its amount.
+    # The same kWh stays out of Scope 3 Category 3 (upstream electricity and
+    # T&D losses), and the report says it is pending — not zero consumption.
     if company is not None and open_('4A-1'):
-        for name, code, kwh in sites_without_grid(A, company):
+        cat3 = A.get('K3C3-INFO') == 'confirmed'
+        for name, code, kwh in sites_without_grid(A, company, year):
             amount_tr, amount_en = _fmt(kwh, 0, 'tr'), _fmt(kwh, 0, 'en')
             out.append({
                 'step_id': '4A-1',
                 'tr': f'{name} ({code}) elektriği ({amount_tr} kWh) hesaplanmadı — bu ülke için kayıtlı bir '
-                      f'elektrik şebekesi faktörü yok. Doğru faktörün belirlenmesi için Özel Talep gönderin.',
+                      f'elektrik şebekesi faktörü yok'
+                      + (' (Kapsam 3 Kategori 3\'e de dahil edilmedi)' if cat3 else '')
+                      + '. Tüketim kayıtlı ve tamamlanmayı bekliyor: doğru faktörün belirlenmesi için '
+                        'Özel Talep gönderin.',
                 'en': f'The electricity of {name} ({code}, {amount_en} kWh) was not calculated — there is no '
-                      f'registered electricity grid factor for that country. Send a Custom Request so the '
-                      f'right factor can be set.',
+                      f'registered electricity grid factor for that country'
+                      + (' (also left out of Scope 3 Category 3)' if cat3 else '')
+                      + '. The consumption is kept and pending: send a Custom Request so the right '
+                        'factor can be set.',
                 'report_tr': f'{name} ({code}) elektrik tüketimi ({amount_tr} kWh), bu ülke için kayıtlı bir '
-                             f'elektrik şebekesi emisyon faktörü bulunmadığından envantere dahil edilmemiştir.',
+                             f'elektrik şebekesi emisyon faktörü bulunmadığından envantere dahil edilmemiştir'
+                             + (' (Kapsam 2 ve Kapsam 3 Kategori 3 — elektrik üretim zinciri ve iletim '
+                                'kayıpları)' if cat3 else ' (Kapsam 2)')
+                             + '. Bu tüketim, faktör belirlenene kadar tamamlanmayı bekleyen veri olarak '
+                               'izlenmektedir; sıfır tüketim anlamına gelmez.',
                 'report_en': f'The electricity consumption of {name} ({code}, {amount_en} kWh) is not included '
-                             f'in the inventory, as no registered grid emission factor exists for that country.',
+                             f'in the inventory, as no registered grid emission factor exists for that country'
+                             + (' (Scope 2 and Scope 3 Category 3 — upstream electricity and T&D losses)'
+                                if cat3 else ' (Scope 2)')
+                             + '. It is tracked as pending data until the factor is set; it does not mean '
+                               'zero consumption.',
             })
 
     for step, gate in _GATES.items():
@@ -1396,6 +1523,13 @@ def uncalculated_notes(answers, year, company=None):
             elif ans.get('ef_unit') not in _EF_UNITS:
                 note(doc, f'{what_tr} — tedarikçi faktör belgesinin birimi tanınmadı; genel faktör kullanıldı.',
                      f'{what_en} — the supplier factor document\'s unit is not recognised; the generic factor is used.')
+            elif gate == '4A-EF':
+                note(doc, 'Elektrik tedarikçi faktörü yalnızca piyasa bazlı Kapsam 2 sonucunda kullanılır; '
+                          'envanter toplamı konum bazlıdır (her tesisin kendi ülkesinin şebeke faktörü). '
+                          'İki sonuç ayrı raporlanır, toplanmaz.',
+                     'The electricity supplier factor is used only in the market-based Scope 2 result; the '
+                     'inventory total is location-based (each facility\'s own country grid). The two results '
+                     'are reported separately, never added together.')
 
     declared = _purchase_declarations(A, year) if open_('K3C1-4a') else {}
     if open_('K3C1-2') and isinstance(A.get('K3C1-2'), dict):

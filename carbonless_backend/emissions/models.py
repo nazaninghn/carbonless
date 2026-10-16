@@ -372,6 +372,22 @@ class CustomEmissionRequest(models.Model):
         EmissionEntry, on_delete=models.SET_NULL, null=True, blank=True,
         help_text='EmissionEntry created after approval'
     )
+    # A factor approved for one facility's purchased electricity in one year
+    # is not an extra amount: it replaces the factor of that facility's
+    # electricity (questionnaire 4A-1) — location-based in the inventory
+    # total, market-based in the separate market-based result. Such a request
+    # is never added to the totals on its own (that would count the same kWh
+    # twice). One approved request per facility + year + method.
+    ELECTRICITY_METHOD_CHOICES = [
+        ('', 'Not a facility electricity factor (counted on its own)'),
+        ('location_based', 'Facility electricity factor — location-based'),
+        ('market_based', 'Facility electricity factor — market-based'),
+    ]
+    electricity_method = models.CharField(
+        max_length=20, choices=ELECTRICITY_METHOD_CHOICES, blank=True, default='',
+        help_text="Set when the approved factor is the facility's electricity factor for the year: it "
+                  "replaces that facility's 4A-1 factor instead of adding the request's own amount."
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

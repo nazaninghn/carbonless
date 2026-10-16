@@ -56,6 +56,7 @@ def _custom_note(company, year, lang):
     from emissions.models import CustomEmissionRequest
     kg = float(CustomEmissionRequest.objects.filter(
         company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
+        electricity_method='',
     ).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     if not kg:
         return ''

@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin
@@ -118,8 +119,47 @@ class ReductionTargetAdmin(ModelAdmin):
     search_fields = ['user__username', 'title']
 
 
+class CustomEmissionRequestForm(forms.ModelForm):
+    """A facility electricity factor needs a facility, Scope 2 and kWh, and
+    there is at most one approved factor per facility + year + method —
+    approving a second one would leave two factors for the same kWh."""
+
+    class Meta:
+        model = CustomEmissionRequest
+        fields = '__all__'
+
+    def clean(self):
+        data = super().clean()
+        method = data.get('electricity_method')
+        if not method:
+            return data
+        errors = {}
+        facility, year = data.get('facility'), data.get('year')
+        if not facility:
+            errors['facility'] = 'A facility electricity factor needs the facility.'
+        if data.get('scope') != 'scope2':
+            errors['scope'] = 'A facility electricity factor is Scope 2.'
+        if (data.get('unit') or '').strip().lower() != 'kwh':
+            errors['unit'] = 'A facility electricity factor is per kWh.'
+        if data.get('status') == 'approved':
+            if not data.get('approved_factor_kg_co2e'):
+                errors['approved_factor_kg_co2e'] = 'Enter the approved factor (kg CO2e per kWh).'
+            if facility and year:
+                other = (CustomEmissionRequest.objects
+                         .filter(facility=facility, year=year, electricity_method=method, status='approved')
+                         .exclude(pk=self.instance.pk).first())
+                if other:
+                    errors['electricity_method'] = (
+                        f'Request #{other.pk} is already the approved {method.replace("_", "-")} electricity '
+                        f'factor of {facility.name} for {year}. Reject or change that one first.')
+        if errors:
+            raise forms.ValidationError(errors)
+        return data
+
+
 @admin.register(CustomEmissionRequest)
 class CustomEmissionRequestAdmin(ModelAdmin):
+    form = CustomEmissionRequestForm
     list_display = ['user', 'source_name', 'scope_badge', 'category_name',
                     'quantity', 'unit', 'status_badge', 'created_at']
     list_filter = ['status', 'scope', 'year']
@@ -133,9 +173,13 @@ class CustomEmissionRequestAdmin(ModelAdmin):
                        'unit', 'quantity', 'year', 'month', 'facility'),
         }),
         ('Admin Review', {
-            'fields': ('status', 'admin_notes', 'approved_factor_kg_co2e',
+            'fields': ('status', 'admin_notes', 'approved_factor_kg_co2e', 'electricity_method',
                        'calculated_co2e_kg', 'linked_entry'),
-            'description': 'Set status to Approved and enter the factor to auto-calculate.',
+            'description': 'Set status to Approved and enter the factor to auto-calculate. For a '
+                           "facility's purchased electricity, set the electricity method: the factor then "
+                           "replaces that facility's electricity factor for the year (location-based: the "
+                           'inventory is recalculated; market-based: the separate market-based result) and '
+                           "the request's own amount is not added to any total.",
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
@@ -158,6 +202,17 @@ class CustomEmissionRequestAdmin(ModelAdmin):
         if obj.status == 'approved' and obj.approved_factor_kg_co2e and not obj.calculated_co2e_kg:
             obj.calculated_co2e_kg = obj.quantity * obj.approved_factor_kg_co2e
         super().save_model(request, obj, form, change)
+
+        # A location-based facility factor changes that facility's electricity
+        # entries (and their Scope 3 Category 3 rows): recalculate the
+        # inventory of the year now, whether it was approved, withdrawn or edited.
+        touched = {'status', 'electricity_method', 'approved_factor_kg_co2e', 'facility', 'year'}
+        before = getattr(form, 'initial', {}) if change else {}
+        if obj.company_id and touched & set(getattr(form, 'changed_data', ())) and 'location_based' in (
+                obj.electricity_method, before.get('electricity_method')):
+            from questionnaire.step_entries import resync_inventory
+            for year in {obj.year, before.get('year') or obj.year}:
+                resync_inventory(obj.company, year, getattr(request, 'user', None) or obj.user)
 
         if change and 'status' in form.changed_data and obj.user_id:
             from .notifications import notify_custom_request_reviewed

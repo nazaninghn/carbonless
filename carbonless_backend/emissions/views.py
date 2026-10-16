@@ -455,7 +455,8 @@ def emission_summary(request):
 
     # Custom emission requests (approved)
     custom_approved = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False
+        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
+        electricity_method=''
     ) if company else CustomEmissionRequest.objects.none()
     custom_total = float(custom_approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     custom_pending = CustomEmissionRequest.objects.filter(
