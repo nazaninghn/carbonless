@@ -3904,6 +3904,12 @@ export function QuestionnaireTab({
           shownCalcNotesRef.current.add(note);
           parts.push(`ℹ️ ${trL ? 'Hesaplanmadı' : 'Not calculated'}: ${note}`);
         }
+        // Used, but only in a separately reported result (market-based Scope 2).
+        for (const note of fb.method_notes || []) {
+          if (shownCalcNotesRef.current.has(note)) continue;
+          shownCalcNotesRef.current.add(note);
+          parts.push(`ℹ️ ${trL ? 'Yöntem notu' : 'Method note'}: ${note}`);
+        }
         // Fixing one answer of a finished inventory moves on to the next
         // question (or the next facility's); say once that nothing else
         // needs answering — people kept going, unsure when they were done.

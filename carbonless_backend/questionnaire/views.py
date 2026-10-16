@@ -774,9 +774,12 @@ class SubmitStepView(APIView):
         # number is never taken for zero.
         after_kg, approved_kg = questionnaire_totals(report)
         answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
-        notes = [n['tr' if lang == 'tr' else 'en']
-                 for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
-                 if n['step_id'] == step]
+        step_notes = [n for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
+                      if n['step_id'] == step]
+        # A method note (the answer is used, in a separately reported result)
+        # is not an uncalculated amount: told apart so it is not shown as one.
+        notes = [n['tr' if lang == 'tr' else 'en'] for n in step_notes if n.get('kind') != 'method']
+        method_notes = [n['tr' if lang == 'tr' else 'en'] for n in step_notes if n.get('kind') == 'method']
         # A data-entry member's change waits for approval: say so, and give
         # the approved total — the one the dashboard and the reports show.
         pending = any(e.status == 'submitted' for e in entries)
@@ -791,7 +794,7 @@ class SubmitStepView(APIView):
             if fac_warning:
                 warnings.append(fac_warning)
         calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
-                         'pending': pending, 'notes': notes}
+                         'pending': pending, 'notes': notes, 'method_notes': method_notes}
         if step in ('3A-5', '3A-5bio'):
             # Biomass CO2 is biogenic: shown, but not in the inventory total.
             calc_feedback['biogenic_kg'] = round(biogenic_co2_kg(answers), 2)
