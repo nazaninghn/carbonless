@@ -339,6 +339,29 @@ def notify_custom_request_reviewed(req):
         month = _MONTHS[lang][req.month - 1] if 1 <= (req.month or 0) <= 12 else ''
         what = f'{req.source_name} · {_num(req.quantity, lang)} {req.unit} · {month} {req.year}'.strip()
         link = f'/dashboard?tab=emissions&year={req.year}'
+        if req.status == 'approved' and req.electricity_method:
+            # The factor replaces the facility's electricity factor — not an
+            # amount added on top (that would count the same kWh twice).
+            fac = req.facility.name if req.facility_id else ''
+            factor = _num(float(req.approved_factor_kg_co2e or 0), lang)
+            market = req.electricity_method == 'market_based'
+            if lang == 'tr':
+                body = (f'{what} onaylandı: {fac} için {req.year} elektrik faktörü {factor} kg CO₂e/kWh. '
+                        + ('Bu faktör yalnızca piyasa bazlı Kapsam 2 sonucunda kullanılır; toplamlar değişmez.'
+                           if market else
+                           'Envanterdeki bu tesisin elektriği bu faktörle yeniden hesaplandı; talebin kendi '
+                           'miktarı ayrıca eklenmez.'))
+                _notify(req.user, 'custom_approved', 'Özel talebiniz onaylandı', body, link,
+                        company_id=req.company_id)
+            else:
+                body = (f'{what} was approved: {req.year} electricity factor for {fac} is {factor} kg CO₂e/kWh. '
+                        + ('It is used only in the market-based Scope 2 result; the totals do not change.'
+                           if market else
+                           "This facility's electricity in the inventory is recalculated with it; the request's "
+                           'own amount is not added on top.'))
+                _notify(req.user, 'custom_approved', 'Your custom request was approved', body, link,
+                        company_id=req.company_id)
+            return
         if req.status == 'approved':
             kg = float(req.calculated_co2e_kg or 0)
             amount = f'{_num(kg, lang)} kg CO₂e ({_num(kg / 1000, lang)} t)'

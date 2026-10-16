@@ -3780,8 +3780,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Does your electricity supplier have an official emission declaration?',
     },
     helper: {
-      tr: 'Tedarikçinizin resmi emisyon beyanı Seviye 1 veri sayılır. Yoksa sistem tesisin bulunduğu ülkenin ulusal şebeke emisyon faktörünü (Seviye 2) önerecek.',
-      en: 'Your supplier\'s official emission declaration is considered Level 1 data. If unavailable, the system will suggest the national grid emission factor for the country where the facility is located (Level 2).',
+      tr: 'Tedarikçinizin resmi emisyon beyanı piyasa bazlı Kapsam 2 sonucunda kullanılır. Envanter toplamı her zaman konum bazlıdır: her tesisin kendi ülkesinin şebeke emisyon faktörü. İki sonuç raporda ayrı verilir, toplanmaz.',
+      en: 'Your supplier\'s official emission declaration is used in the market-based Scope 2 result. The inventory total is always location-based: each facility\'s own country grid emission factor. The report gives the two results separately; they are never added together.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet — tedarikçi resmi emisyon beyanı var', en: 'Yes — supplier has an official emission declaration' } },
@@ -3808,8 +3808,9 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     // "Evet" on 4A-EF used to lead nowhere — the document was never asked
-    // for. A factor valid for the reporting year and in the activity's unit
-    // replaces the generic one (questionnaire/step_entries.py).
+    // for. A factor valid for the reporting year feeds the market-based
+    // Scope 2 result; the location-based grid factor stays in the inventory
+    // (questionnaire/step_entries.py scope2_market_based).
     id: '4A-EF-a',
     number: '76a',
     stage: 4,
@@ -4051,8 +4052,9 @@ export const CARBONIQ_QUESTIONS = [
   },
   {
     // "Evet" on 4B-EF used to lead nowhere — the document was never asked
-    // for. A factor valid for the reporting year and in the activity's unit
-    // replaces the generic one (questionnaire/step_entries.py).
+    // for. A factor valid for the reporting year feeds the market-based
+    // Scope 2 result; the location-based grid factor stays in the inventory
+    // (questionnaire/step_entries.py scope2_market_based).
     id: '4B-EF-a',
     number: '79a',
     stage: 4,

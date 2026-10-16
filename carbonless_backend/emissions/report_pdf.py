@@ -529,7 +529,8 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     s3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
 
     custom_qs = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False
+        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
+        electricity_method=''
     ) if company else CustomEmissionRequest.objects.none()
     for cr in custom_qs:
         v = float(cr.calculated_co2e_kg)

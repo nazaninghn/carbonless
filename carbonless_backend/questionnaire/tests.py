@@ -374,14 +374,22 @@ class InventoryCalculationTests(StepEntriesTests):
         self._step('4A-EV', {'ev_kwh': '2000', 'in_site_bill': 'no'})
         self.assertEqual(self._by_step(), {'4A-EV': [('turkey-grid', 2000.0, 800.0)]})
 
-    def test_supplier_factor_of_the_reporting_year_replaces_the_generic_one(self):
+    def test_electricity_supplier_factor_is_market_based_only(self):
+        from .step_entries import scope2_market_based
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
         self._step('4A-1', {'1': '1000 kWh'})
         self._step('4A-EF', 'yes')
         self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2024'})
-        self.assertEqual(self._by_step()['4A-1'], [('turkey-grid', 1000.0, 400.0)])  # other year
+        answers = lambda: dict(self.report.steps.values_list('step_id', 'answer'))
+        # other year: no instrument, market-based falls back to the grid
+        m = scope2_market_based(answers(), 2025, self.company)
+        self.assertEqual((m['total_kg'], m['rows'][0]['basis'], m['has_instrument']), (400.0, 'location_fallback', False))
         self._step('4A-EF-a', {'ef_value': '300', 'ef_unit': 'kgCO2e_MWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
-        self.assertEqual(self._by_step()['4A-1'], [('calculated-scope2-x', 300.0, 300.0)])  # same scope & category
+        # the inventory stays location-based (grid) …
+        self.assertEqual(self._by_step()['4A-1'], [('turkey-grid', 1000.0, 400.0)])
+        # … and the supplier factor is the separate market-based result
+        m = scope2_market_based(answers(), 2025, self.company)
+        self.assertEqual((round(m['total_kg'], 6), m['rows'][0]['basis'], m['has_instrument']), (300.0, 'supplier', True))
 
     def test_electricity_of_each_facility_is_its_own_entry(self):
         from companies.models import Facility
@@ -395,11 +403,11 @@ class InventoryCalculationTests(StepEntriesTests):
         self.assertEqual(rows, [('Depo', 'Questionnaire step 4A-1 · Depo', 500.0),
                                 ('Gebze Fabrika', 'Questionnaire step 4A-1 · Gebze Fabrika', 1000.0)])
         self.assertEqual(Facility.objects.get(name='Gebze Fabrika').pk, gebze.pk)
-        # a supplier factor applies to the electricity of every facility
+        # a supplier factor is market-based: the grid entries stay as they are
         self._step('4A-EF', 'yes')
         self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
         self.assertEqual(sorted(self._by_step()['4A-1']),
-                         [('calculated-scope2-x', 150.0, 150.0), ('calculated-scope2-x', 300.0, 300.0)])
+                         [('turkey-grid', 500.0, 200.0), ('turkey-grid', 1000.0, 400.0)])
 
     def test_backfill_splits_an_old_combined_entry_keeping_its_approval(self):
         from django.core.management import call_command
@@ -2278,3 +2286,117 @@ class FacilityGridQuestionnaireTests(TestCase):
         self.assertEqual(_registration_turnover(self.company), '1-10M')
         self.company.annual_turnover_range = '<500K'   # an older sign-up range
         self.assertIsNone(_registration_turnover(self.company))
+
+
+class ElectricityFactorDecisionTests(TestCase):
+    """Owner's rules: the kWh of a facility that is not calculated stays out
+    of Scope 3 Category 3 too (pending, not zero); an approved facility
+    electricity factor (Özel Talep) replaces that facility's factor instead
+    of adding an amount; location- and market-based stay separate."""
+
+    # StepEntriesTests' helpers, without running its tests again here.
+    _factor, _step, _entries = StepEntriesTests._factor, StepEntriesTests._step, StepEntriesTests._entries
+
+    def setUp(self):
+        StepEntriesTests.setUp(self)
+        from companies.models import Facility
+        self.linz = Facility.objects.create(company=self.company, name='Werk Linz', country='AT')
+        Facility.objects.create(company=self.company, name='Gebze', country='TR')
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._factor('upstream-electricity', 'kwh', 0.025)
+        self._factor('transmission-losses', 'kwh', 0.02)
+        self._step('2A-2', {'1': {'name': 'Gebze', 'country': 'TR'}, '2': {'name': 'Werk Linz', 'country': 'AT'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        self._step('K3C3-INFO', 'confirmed')
+
+    def _rows(self, step):
+        return sorted((e.emission_factor.slug, round(float(e.quantity), 3), round(float(e.calculated_co2e_kg), 3))
+                      for e in self._entries()
+                      if e.description.startswith(f'Questionnaire step {step}'))
+
+    def _answers(self):
+        return dict(self.report.steps.values_list('step_id', 'answer'))
+
+    def _request(self, method='location_based', status='approved', factor='0.2', facility=None):
+        from decimal import Decimal
+        from emissions.models import CustomEmissionRequest
+        return CustomEmissionRequest.objects.create(
+            user=self.user, company=self.company, scope='scope2', category_name='Elektrik',
+            source_name='Linz şebeke', description='x', unit='kWh', quantity=500, year=2025, month=1,
+            facility=facility or self.linz, status=status, approved_factor_kg_co2e=Decimal(factor),
+            electricity_method=method)
+
+    def _save_in_admin(self, req, changed=('status',), initial=None):
+        from django.contrib.admin.sites import AdminSite
+        from emissions.admin import CustomEmissionRequestAdmin
+        from emissions.models import CustomEmissionRequest
+
+        class Form:
+            changed_data = list(changed)
+        Form.initial = initial or {}
+        CustomEmissionRequestAdmin(CustomEmissionRequest, AdminSite()).save_model(None, req, Form(), True)
+
+    def test_uncalculated_site_is_left_out_of_category_3_and_reported_as_pending(self):
+        from .step_entries import uncalculated_notes
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
+        # only Gebze's 1.000 kWh — not Linz's 500 kWh that has no factor
+        self.assertEqual(self._rows('K3C3-INFO'), [('transmission-losses', 1000.0, 20.0),
+                                                   ('upstream-electricity', 1000.0, 25.0)])
+        note = next(n for n in uncalculated_notes(self._answers(), 2025, self.company) if n['step_id'] == '4A-1')
+        self.assertIn('Kapsam 3 Kategori 3', note['tr'])
+        self.assertIn('tamamlanmayı bekliyor', note['tr'])
+        self.assertIn('sıfır tüketim anlamına gelmez', note['report_tr'])
+        self.assertIn('Scope 3 Category 3', note['report_en'])
+
+    def test_approved_location_factor_replaces_instead_of_adding(self):
+        from .step_entries import uncalculated_notes, sites_without_grid, _value
+        req = self._request()
+        self._save_in_admin(req)
+        self.assertEqual(self._rows('4A-1'), [('calculated-scope2-electricity', 100.0, 100.0),
+                                              ('turkey-grid', 1000.0, 400.0)])
+        linz = next(e for e in self._entries() if e.facility_id == self.linz.pk)
+        self.assertIn(f'Özel Talep #{req.pk}', linz.description)
+        self.assertEqual(linz.status, 'approved')
+        # Category 3 now covers Linz too, and the "not calculated" note is gone
+        self.assertEqual(self._rows('K3C3-INFO'), [('transmission-losses', 1500.0, 30.0),
+                                                   ('upstream-electricity', 1500.0, 37.5)])
+        A = {k: _value(v) for k, v in self._answers().items()}
+        self.assertEqual(sites_without_grid(A, self.company, 2025), [])
+        self.assertFalse([n for n in uncalculated_notes(self._answers(), 2025, self.company)
+                          if n['step_id'] == '4A-1'])
+        # the request's own amount (500 kWh × 0.2) is not added a second time
+        summary = self.client.get('/api/emissions/summary/?year=2025').json()
+        self.assertEqual(summary['custom_emissions']['approved_total_kg'], 0)
+        # withdrawn: back to not calculated
+        req.status = 'rejected'
+        req.save()
+        self._save_in_admin(req)
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
+
+    def test_market_based_factor_leaves_location_based_untouched(self):
+        from .step_entries import scope2_market_based
+        self._save_in_admin(self._request(method='market_based', factor='0.3'))
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid', 1000.0, 400.0)])
+        m = scope2_market_based(self._answers(), 2025, self.company)
+        self.assertEqual(sorted((r['site'], r['basis']) for r in m['rows']),
+                         [('Gebze', 'location_fallback'), ('Werk Linz', 'facility_request')])
+        self.assertAlmostEqual(m['total_kg'], 1000 * 0.4 + 500 * 0.3)
+        self.assertEqual(m['missing'], [])
+
+    def test_one_approved_factor_per_facility_year_and_method(self):
+        from emissions.admin import CustomEmissionRequestForm
+        first = self._request()
+        data = {'scope': 'scope2', 'category_name': 'Elektrik', 'source_name': 'Linz', 'description': 'x',
+                'unit': 'kWh', 'quantity': '500', 'year': 2025, 'month': 1, 'facility': self.linz.pk,
+                'status': 'approved', 'approved_factor_kg_co2e': '0.25', 'electricity_method': 'location_based',
+                'admin_notes': ''}
+        form = CustomEmissionRequestForm(data=data)
+        self.assertFalse(form.is_valid())
+        self.assertIn(f'#{first.pk}', str(form.errors['electricity_method']))
+        form = CustomEmissionRequestForm(data={**data, 'electricity_method': 'market_based'})
+        self.assertTrue(form.is_valid(), form.errors)   # the other method is its own result
+        form = CustomEmissionRequestForm(data={**data, 'electricity_method': 'market_based', 'unit': 'litre',
+                                               'facility': ''})
+        self.assertFalse(form.is_valid())
+        self.assertIn('unit', form.errors)
+        self.assertIn('facility', form.errors)

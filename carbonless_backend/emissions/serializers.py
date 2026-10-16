@@ -296,12 +296,12 @@ class CustomEmissionRequestSerializer(serializers.ModelSerializer):
             'id', 'username', 'scope', 'category_name', 'source_name',
             'description', 'unit', 'quantity', 'year', 'month', 'facility',
             'status', 'admin_notes', 'approved_factor_kg_co2e',
-            'calculated_co2e_kg', 'linked_entry',
+            'calculated_co2e_kg', 'linked_entry', 'electricity_method',
             'created_at', 'updated_at'
         ]
         read_only_fields = [
             'user', 'status', 'admin_notes', 'approved_factor_kg_co2e',
-            'calculated_co2e_kg', 'linked_entry', 'created_at', 'updated_at'
+            'calculated_co2e_kg', 'linked_entry', 'electricity_method', 'created_at', 'updated_at'
         ]
 
     def validate_quantity(self, value):

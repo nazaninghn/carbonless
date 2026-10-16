@@ -129,6 +129,7 @@ def previous_year_change(company, year, current_kg, today=None):
         prev_kg = float(prev_qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
         prev_kg += float(CustomEmissionRequest.objects.filter(
             company=company, year=year - 1, status='approved', calculated_co2e_kg__isnull=False,
+        electricity_method='',
         ).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
         cur_kg, months = float(current_kg or 0), 12
     else:

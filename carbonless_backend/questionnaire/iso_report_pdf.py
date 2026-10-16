@@ -875,7 +875,8 @@ def _gather(report, lang):
     # Scope-based report already counts them; without this the ISO totals would
     # silently disagree with the existing report for the same year.
     customs = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False
+        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
+        electricity_method=''
     ) if company else CustomEmissionRequest.objects.none()
     for cr in customs:
         kg = float(cr.calculated_co2e_kg or 0)
@@ -944,7 +945,8 @@ def _gather(report, lang):
             if float(row['total'] or 0) > 0:
                 year_categories.setdefault(row['year'], set()).add(row['emission_factor__category'])
         for cr in CustomEmissionRequest.objects.filter(
-                company=company, status='approved', calculated_co2e_kg__isnull=False):
+                company=company, status='approved', calculated_co2e_kg__isnull=False,
+        electricity_method=''):
             year_totals[cr.year] = year_totals.get(cr.year, 0.0) + float(cr.calculated_co2e_kg or 0)
 
     return {
@@ -972,6 +974,9 @@ def _gather(report, lang):
         # Facilities whose electricity is not calculated (no grid factor for
         # their country): named in the location tables, not left out silently.
         'sites_without_grid': _sites_without_grid(report),
+        # Market-based Scope 2: reported next to the location-based Category
+        # II figure, never added to it.
+        'scope2_market': _scope2_market(report),
     }
 
 
@@ -980,7 +985,54 @@ def _sites_without_grid(report):
     if report is None or report.company is None:
         return []
     A = {k: _value(v) for k, v in _answers(report).items()}
-    return sites_without_grid(A, report.company)
+    return sites_without_grid(A, report.company, report.reporting_year)
+
+
+def _scope2_market(report):
+    from .step_entries import scope2_market_based
+    if report is None or report.company is None or not report.reporting_year:
+        return None
+    return scope2_market_based(_answers(report), report.reporting_year, report.company)
+
+
+_MARKET_BASIS = {
+    'facility_request': {'tr': 'tesis için onaylanan piyasa bazlı faktör (Özel Talep)',
+                         'en': 'market-based factor approved for the facility (Custom Request)'},
+    'supplier': {'tr': 'elektrik tedarikçisinin emisyon beyanı',
+                 'en': "the electricity supplier's emission declaration"},
+    'location_fallback': {'tr': 'sözleşmeye dayalı araç ve kalıntı karışım faktörü olmadığından konum bazlı faktör',
+                          'en': 'location-based factor, as no contractual instrument or residual mix is available'},
+}
+
+
+def _scope2_market_paragraphs(D, S, lang):
+    """Category II method: the location-based figure is the inventory's; the
+    market-based result is stated separately, never added."""
+    m = D.get('scope2_market')
+    if not m:
+        return []
+    from .step_entries import _fmt as _fmt_n
+    tr = lang == 'tr'
+    out = [Paragraph(
+        'Kategori II (satın alınan elektrik) envanterde konum bazlı yöntemle raporlanmıştır: her tesisin '
+        'kendi ülkesinin şebeke faktörü veya o tesis ve yıl için onaylanan konum bazlı faktör. Piyasa bazlı '
+        f'sonuç ayrıca verilmiştir ve toplamlara eklenmemiştir: <b>{_fmt(m["total_kg"] / 1000.0, True)} t CO₂e</b>.'
+        if tr else
+        'Category II (purchased electricity) is reported location-based in the inventory: each facility\'s own '
+        'country grid factor, or the location-based factor approved for that facility and year. The '
+        f'market-based result is given separately and not added to any total: '
+        f'<b>{_fmt(m["total_kg"] / 1000.0, False)} t CO₂e</b>.', S['body'])]
+    lines = []
+    for r in m['rows']:
+        basis = _MARKET_BASIS[r['basis']]['tr' if tr else 'en']
+        lines.append(f'{escape(str(r["site"]))}: {_fmt_n(r["kwh"], 0, lang)} kWh × '
+                     f'{_fmt_n(r["factor"], 6, lang)} kg CO₂e/kWh — {basis}')
+    for site, kwh in m['missing']:
+        lines.append(f'{escape(str(site))}: {_fmt_n(kwh, 0, lang)} kWh — '
+                     + ('faktör olmadığından piyasa bazlı sonuçta da hesaplanmadı'
+                        if tr else 'not calculated in the market-based result either (no factor)'))
+    out.extend(_bullets(S, lines))
+    return out
 
 
 def _not_calculated_sites_note(D, lang, tr):
@@ -991,10 +1043,12 @@ def _not_calculated_sites_note(D, lang, tr):
     from .step_entries import _fmt as _fmt_kwh
     names = ', '.join(f'{n} ({c}, {_fmt_kwh(k, 0, "tr" if tr else "en")} kWh)' for n, c, k in sites)
     return (f'Not calculated and not included in the location figures: the electricity of {names} — '
-            f'no registered grid emission factor exists for that country.'
+            f'no registered grid emission factor exists for that country. It is pending data until the '
+            f'factor is set, not zero consumption.'
             if lang == 'en' else
             f'Hesaplanmayan ve lokasyon değerlerine dahil edilmeyen: {names} elektrik tüketimi — '
-            f'bu ülke için kayıtlı bir şebeke emisyon faktörü bulunmamaktadır.')
+            f'bu ülke için kayıtlı bir şebeke emisyon faktörü bulunmamaktadır. Bu tüketim, faktör '
+            f'belirlenene kadar tamamlanmayı bekleyen veridir; sıfır tüketim anlamına gelmez.')
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -2435,6 +2489,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
         E.append(Paragraph(
             f'<b>{t("c_cat", lang)} {ROMAN[cat]}</b> — {name}: '
             f'{_fmt(val, lang == "tr")} t CO₂e', S['body']))
+    E.extend(_scope2_market_paragraphs(D, S, lang))
     E.append(Spacer(1, 3*mm))
 
     # 3.3.1 / 3.3.2 — the actual GHG sources found in category I (direct) vs
