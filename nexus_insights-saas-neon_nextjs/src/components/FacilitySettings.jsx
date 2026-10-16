@@ -21,6 +21,13 @@ const countryName = (v, tr) => {
   return c ? c[tr ? 'tr' : 'en'] : v;
 };
 
+// Turkey: the official electricity factor depends on the grid connection.
+const TURKEY = new Set(['TR', 'TUR']);
+const CONNECTION_LABELS = {
+  transmission: { tr: 'İletim bağlantısı', en: 'Transmission connection' },
+  distribution: { tr: 'Dağıtım bağlantısı', en: 'Distribution connection' },
+};
+
 // Stored values are English; the list shows them in the UI language.
 const TYPE_LABELS = {
   Office: { tr: 'Ofis', en: 'Office' },
@@ -41,6 +48,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   const [city, setCity]               = useState('');
   const [country, setCountry]         = useState('');
   const [facilityType, setFacilityType] = useState('');
+  const [gridConnection, setGridConnection] = useState('');
   const [editingId, setEditingId]     = useState(null);   // null = adding a new facility
   const [confirmDelete, setConfirmDelete] = useState(null); // facility awaiting delete confirmation
   const [deleting, setDeleting]       = useState(false);
@@ -82,13 +90,14 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   useEffect(() => { fetchFacilities(); }, [fetchFacilities]);
 
   const resetForm = useCallback(() => {
-    setName(''); setCity(''); setCountry(''); setFacilityType('');
+    setName(''); setCity(''); setCountry(''); setFacilityType(''); setGridConnection('');
     setFormError(''); setEditingId(null);
   }, []);
 
   const startEdit = useCallback((f) => {
     setName(f.name || ''); setCity(f.city || ''); setCountry(countryCode(f.country));
     setFacilityType(f.facility_type || '');
+    setGridConnection(f.grid_connection || '');
     setFormError(''); setConfirmDelete(null);
     setEditingId(f.id); setShowForm(true);
   }, []);
@@ -136,16 +145,18 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
     setSaving(true);
 
     try {
+      const inTurkey = TURKEY.has(countryCode(country).toUpperCase());
       const payload = {
         name,
         city: city || undefined,
         country: country || undefined,
         facility_type: facilityType || undefined,
+        grid_connection: inTurkey ? gridConnection : '',
       };
       const wasEditing = editingId !== null;
       // Editing sends blanks as '' so a cleared field is actually cleared.
       const res = wasEditing
-        ? await api.updateFacility(editingId, { name, city, country, facility_type: facilityType })
+        ? await api.updateFacility(editingId, { name, city, country, facility_type: facilityType, grid_connection: inTurkey ? gridConnection : '' })
         : await api.createFacility(payload);
 
       if (res.ok) {
@@ -186,7 +197,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
     } finally {
       setSaving(false);
     }
-  }, [name, city, country, facilityType, saving, editingId, facilities, onChange, tr, toast, fetchFacilities, resetForm]); // saving added
+  }, [name, city, country, facilityType, gridConnection, saving, editingId, facilities, onChange, tr, toast, fetchFacilities, resetForm]); // saving added
 
   /* ─── Loading ─── */
   if (loading) {
@@ -235,8 +246,16 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-[#072C0E]">{f.name}</p>
                   <p className="text-xs text-[#072C0E]/55">
-                    {[TYPE_LABELS[f.facility_type]?.[tr ? 'tr' : 'en'] || f.facility_type, f.city, countryName(f.country, tr)].filter(Boolean).join(' · ')}
+                    {[TYPE_LABELS[f.facility_type]?.[tr ? 'tr' : 'en'] || f.facility_type, f.city, countryName(f.country, tr),
+                      CONNECTION_LABELS[f.grid_connection]?.[tr ? 'tr' : 'en']].filter(Boolean).join(' · ')}
                   </p>
+                  {TURKEY.has(countryCode(f.country).toUpperCase()) && !f.grid_connection && (
+                    <p className="mt-0.5 text-xs font-semibold text-amber-700">
+                      {tr
+                        ? 'Şebeke bağlantı türü seçilmedi — bu tesisin elektriği hesaplanmıyor (tamamlanmayı bekliyor).'
+                        : 'Grid connection not chosen — this facility\'s electricity is not calculated (pending).'}
+                    </p>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
@@ -370,6 +389,28 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
               </p>
               <CountryPicker value={country} onChange={setCountry} language={language} placeholder={tr ? 'Ülke ara...' : 'Search country...'} />
             </div>
+            {TURKEY.has(countryCode(country).toUpperCase()) && (
+              <div className="sm:col-span-2">
+                <label htmlFor="facility-grid-connection" className="mb-1 block text-xs font-medium text-[#072C0E]/60">
+                  {tr ? 'Elektrik şebeke bağlantısı' : 'Electricity grid connection'}
+                </label>
+                <select
+                  id="facility-grid-connection"
+                  value={gridConnection}
+                  onChange={e => setGridConnection(e.target.value)}
+                  className="w-full rounded-xl border border-[#072C0E]/15 bg-white px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:outline-none"
+                >
+                  <option value="">{tr ? 'Seçiniz' : 'Select'}</option>
+                  <option value="distribution">{tr ? 'Dağıtım şebekesi (çoğu tesis — OG/AG aboneliği)' : 'Distribution grid (most sites — MV/LV supply)'}</option>
+                  <option value="transmission">{tr ? 'İletim şebekesi (doğrudan TEİAŞ / YG bağlantısı)' : 'Transmission grid (direct TEİAŞ / HV connection)'}</option>
+                </select>
+                <p className="mt-1 text-[11px] text-[#072C0E]/50">
+                  {tr
+                    ? 'Resmi Türkiye elektrik faktörü bağlantıya göre değişir (ETKB, 2023 veri yılı: iletim 0,436 · dağıtım 0,469 kg CO₂e/kWh). Seçilmezse tesisin elektriği hesaplanmaz.'
+                    : 'The official Turkish electricity factor depends on the connection (ETKB, data year 2023: transmission 0.436 · distribution 0.469 kg CO₂e/kWh). Without it the facility\'s electricity is not calculated.'}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Error message */}

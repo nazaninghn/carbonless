@@ -29,6 +29,17 @@ def _rows(data):
     return rows
 
 
+def _connections(data):
+    """{facility name (lower): grid connection} given in a 2A-2 answer."""
+    answer = data.get('answer', data) if isinstance(data, dict) else None
+    out = {}
+    if isinstance(answer, dict):
+        for row in answer.values():
+            if isinstance(row, dict) and row.get('grid_connection') in ('transmission', 'distribution'):
+                out[str(row.get('name') or '').strip().lower()] = row['grid_connection']
+    return out
+
+
 def duplicate_name(data):
     """The first facility name given twice in a 2A-2 answer (case-insensitive),
     or None. Each facility needs its own name: identical names are
@@ -58,6 +69,7 @@ def sync_facilities(company, data):
     if not rows:
         return 0
     existing = list(Facility.objects.filter(company=company).order_by('id'))
+    connections = _connections(data)
     used = set()
     changed = 0
     for name, country in rows:
@@ -65,7 +77,8 @@ def sync_facilities(company, data):
         match = (next((f for f in free if f.name.strip().lower() == name.lower()), None)
                  or next((f for f in free if PLACEHOLDER.match(f.name.strip())), None))
         if match is None:
-            match = Facility.objects.create(company=company, name=name, country=country)
+            match = Facility.objects.create(company=company, name=name, country=country,
+                                            grid_connection=connections.get(name.lower(), ''))
             existing.append(match)
             used.add(match.id)
             changed += 1
@@ -81,6 +94,10 @@ def sync_facilities(company, data):
         if not match.is_active:
             match.is_active = True
             fields.append('is_active')
+        conn = connections.get(name.lower())
+        if conn and match.grid_connection != conn:
+            match.grid_connection = conn
+            fields.append('grid_connection')
         if fields:
             match.save(update_fields=fields)
             changed += 1

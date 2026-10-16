@@ -18,7 +18,8 @@ class EmissionFactorTests(TestCase):
         )
 
     def test_factor_created(self):
-        self.assertEqual(EmissionFactor.objects.count(), 1)
+        # (the migrations also register the reference factors)
+        self.assertEqual(EmissionFactor.objects.filter(slug='test-gas').count(), 1)
         self.assertEqual(self.factor.factor_kg_co2e, 2.5)
 
     def test_factor_str(self):
@@ -1084,8 +1085,9 @@ class CompanyCountryFactorTests(TestCase):
         return factor.slug, factor.country
 
     def test_electricity_grid_follows_the_company_country(self):
-        self.assertEqual(self._slug('electricity', 'kwh', self.tr), ('turkey-grid', 'turkey'))
-        self.assertEqual(self._slug('electricity', 'kwh', None), ('turkey-grid', 'turkey'))
+        # Turkey without a facility: the distribution-connection factor (owner's decision)
+        self.assertEqual(self._slug('electricity', 'kwh', self.tr), ('turkey-grid-distribution', 'turkey'))
+        self.assertEqual(self._slug('electricity', 'kwh', None), ('turkey-grid-distribution', 'turkey'))
         self.assertEqual(self._slug('electricity', 'kwh', self.gb), ('uk-grid', 'global'))
         self.assertEqual(self._slug('electricity', 'kwh', self.nl), ('eu-grid', 'global'))
         self.assertEqual(self._slug('electricity', 'kwh', self.br), ('grid-average', 'global'))  # no brazil-grid here
@@ -1132,12 +1134,17 @@ class CompanyCountryFactorTests(TestCase):
         mk = lambda c, n: Facility.objects.create(company=self.tr, name=n, country=c)
         f = lambda fac: resolve_factor('electricity', 'kwh', self.tr, fac)
         self.assertEqual(f(mk('DE', 'Stuttgart'))[0].slug, 'germany-grid')
-        self.assertEqual(f(mk('TR', 'Gebze'))[0].slug, 'turkey-grid')
+        # Turkey: the factor of the grid connection; none chosen -> it waits
+        gebze = mk('TR', 'Gebze')
+        self.assertEqual(f(gebze)[3], FACILITY_GRID_MISSING)
+        gebze.grid_connection = 'transmission'
+        self.assertEqual(f(gebze)[0].slug, 'turkey-grid-transmission')
+        self.assertEqual(float(f(gebze)[0].factor_kg_co2e), 0.436)
         self.assertEqual(f(mk('AT', 'Linz'))[3], FACILITY_GRID_MISSING)   # no EU average in its place
-        self.assertEqual(f(mk('', 'Unknown'))[0].slug, 'turkey-grid')     # no country: headquarters
-        # A UK company's site in Turkey: Turkey's grid.
-        uk_site = Facility.objects.create(company=self.gb, name='Izmir', country='TR')
-        self.assertEqual(resolve_factor('electricity', 'kwh', self.gb, uk_site)[0].slug, 'turkey-grid')
+        self.assertEqual(f(mk('', 'Unknown'))[0].slug, 'turkey-grid-distribution')  # no country: headquarters
+        # A UK company's site in Turkey: Turkey's grid of its connection.
+        uk_site = Facility.objects.create(company=self.gb, name='Izmir', country='TR', grid_connection='distribution')
+        self.assertEqual(resolve_factor('electricity', 'kwh', self.gb, uk_site)[0].slug, 'turkey-grid-distribution')
 
     def test_form_entry_checks_the_facility_grid(self):
         from django.contrib.auth.models import User
@@ -1148,10 +1155,12 @@ class CompanyCountryFactorTests(TestCase):
         UserProfile.objects.create(user=user, active_company=self.tr)
         CompanyMembership.objects.create(company=self.tr, user=user, role='owner')
         c = APIClient(); c.force_authenticate(user=user)
-        grid = EmissionFactor.objects.get(slug='turkey-grid')
+        grid = EmissionFactor.objects.get(slug='turkey-grid-distribution')
         de = Facility.objects.create(company=self.tr, name='Werk Stuttgart', country='DE')
         at = Facility.objects.create(company=self.tr, name='Werk Linz', country='AT')
-        tr = Facility.objects.create(company=self.tr, name='Gebze', country='TR')
+        tr = Facility.objects.create(company=self.tr, name='Gebze', country='TR', grid_connection='distribution')
+        tr_hv = Facility.objects.create(company=self.tr, name='Dilovası', country='TR', grid_connection='transmission')
+        tr_unknown = Facility.objects.create(company=self.tr, name='Bursa', country='TR')
         post = lambda fac: c.post('/api/emissions/entries/', {'emission_factor': grid.id, 'year': 2025, 'month': 1,
                                                               'quantity': 100, 'facility': fac.id}, format='json')
         res = post(de)
@@ -1159,6 +1168,10 @@ class CompanyCountryFactorTests(TestCase):
         self.assertIn('Werk Stuttgart', str(res.data['message_tr']))
         self.assertIn('facility_grid_missing', str(post(at).data['code']))
         self.assertEqual(post(tr).status_code, 201)
+        self.assertEqual(post(tr_hv).status_code, 400)          # its connection is transmission
+        res = post(tr_unknown)
+        self.assertIn('facility_grid_missing', str(res.data['code']))
+        self.assertIn('bağlantı türü', str(res.data['message_tr']))
 
     def test_iea_source_has_a_name(self):
         # Shown as "Registered factor — iea_2024" in the chat before.

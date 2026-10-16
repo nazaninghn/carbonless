@@ -83,13 +83,32 @@ const COUNTRY_NAME = Object.fromEntries(COUNTRIES.map(c => [c.code, c]));
 // A facility's electricity uses its own country's grid factor, never another
 // country's or an average in its place (same rule as the backend's
 // facility_grid_slug); null = that country has no grid factor of its own.
-function facilityGridSlug(country) {
+// In Turkey the official factor follows the facility's grid connection
+// (transmission / distribution); none chosen yet = null (its electricity waits).
+const TURKEY_GRID_BY_CONNECTION = { transmission: 'turkey-grid-transmission', distribution: 'turkey-grid-distribution' };
+function facilityGridSlug(country, connection) {
   const c = String(country || '').trim().toUpperCase();
   if (!c) return null;
-  if (TURKEY_CODES.has(c)) return 'turkey-grid';
+  if (TURKEY_CODES.has(c)) return TURKEY_GRID_BY_CONNECTION[connection] || null;
   return GRID_BY_COUNTRY[c] || null;
 }
-const GRID_SLUGS = new Set(['turkey-grid', 'eu-grid', 'grid-average', ...Object.values(GRID_BY_COUNTRY)]);
+const GRID_SLUGS = new Set(['turkey-grid', ...Object.values(TURKEY_GRID_BY_CONNECTION), 'eu-grid', 'grid-average', ...Object.values(GRID_BY_COUNTRY)]);
+
+// A source published for several years (UK grid 2024, 2025): the row of the
+// entry year, else the latest earlier one, else the earliest — as the backend
+// picks it (emissions/factor_lookup.pick_factor).
+function factorsForYear(factors, year) {
+  const y = Number(year) || null;
+  const best = new Map();
+  for (const f of factors) {
+    const key = `${f.slug}|${f.country}`;
+    const cur = best.get(key);
+    if (!cur) { best.set(key, f); continue; }
+    const score = (r) => (y == null ? r.year : (r.year <= y ? 10000 + r.year : -r.year));
+    if (score(f) > score(cur)) best.set(key, f);
+  }
+  return factors.filter(f => best.get(`${f.slug}|${f.country}`) === f);
+}
 
 // Month-filter value for the questionnaire's annual entries (after the 12 months).
 const ANNUAL = 13;
@@ -374,11 +393,11 @@ export default function EmissionsTab({
 
   // The picked facility's country: its electricity is calculated with that
   // country's own grid factor only (null when the country has none).
-  const facilityCountry = useMemo(() => {
-    const f = (facilityList || []).find(x => String(x.id) === String(facility));
-    return String(f?.country || '').trim().toUpperCase();
-  }, [facilityList, facility]);
-  const facilityGrid = useMemo(() => facilityGridSlug(facilityCountry), [facilityCountry]);
+  const facilityObj = useMemo(() => (facilityList || []).find(x => String(x.id) === String(facility)), [facilityList, facility]);
+  const facilityCountry = String(facilityObj?.country || '').trim().toUpperCase();
+  const facilityGrid = useMemo(() => facilityGridSlug(facilityCountry, facilityObj?.grid_connection),
+    [facilityCountry, facilityObj]);
+  const needsConnection = TURKEY_CODES.has(facilityCountry) && !facilityObj?.grid_connection;
   // An electricity factor approved for this facility and year (Özel Talep)
   // applies in the inventory's electricity question, not in this form.
   const approvedFacilityFactor = useMemo(() => customRequests.find(cr =>
@@ -402,7 +421,8 @@ export default function EmissionsTab({
       const srcMap = { national: ['turkey_grid','turkey_fleet','atom_kablo'], defra: ['defra_2024'], ipcc: ['ipcc_2006','ipcc_2019'] };
       preferred = srcMap[questionnaireProfile.preferred_factor_source] ?? null;
     }
-    const list = factors.filter(f => {
+    const yearFactors = factorsForYear(factors, selectedYear);
+    const list = yearFactors.filter(f => {
       let m = true;
       if (selScope)    m = m && f.scope === selScope;
       if (selCategory) m = m && f.category === selCategory;
@@ -421,7 +441,7 @@ export default function EmissionsTab({
     if (facilityCountry) {
       const seen = new Set(list.map(f => f.id));
       if (facilityGrid) {
-        list.push(...factors.filter(f => f.slug === facilityGrid && !seen.has(f.id)
+        list.push(...yearFactors.filter(f => f.slug === facilityGrid && !seen.has(f.id)
           && (!selScope || f.scope === selScope) && (!selCategory || f.category === selCategory)));
       }
       return list.filter(f => !GRID_SLUGS.has(f.slug) || f.slug === facilityGrid)
@@ -430,7 +450,7 @@ export default function EmissionsTab({
     // The company's own grid first (a UK company sees "UK grid" on top).
     const ownGrid = GRID_BY_COUNTRY[companyCountry] || (EU_COUNTRIES.has(companyCountry) ? 'eu-grid' : null);
     return ownGrid ? [...list].sort((a, b) => (b.slug === ownGrid) - (a.slug === ownGrid)) : list;
-  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry, facilityCountry, facilityGrid]);
+  }, [factors, selScope, selCategory, selectedCountry, questionnaireProfile, companyCountry, facilityCountry, facilityGrid, selectedYear]);
   // Picking a facility can take the chosen source off the list (another
   // country's grid): clear it rather than save what is no longer offered.
   useEffect(() => {
@@ -1455,6 +1475,15 @@ export default function EmissionsTab({
                         if (!facilityCountry || selCategory !== 'electricity') return null;
                         const where = COUNTRY_NAME[facilityCountry]?.[tr ? 'tr' : 'en'] || facilityCountry;
                         const g = facilityGrid && filteredFactors.find(f => f.slug === facilityGrid);
+                        if (!g && needsConnection && !approvedFacilityFactor) {
+                          return (
+                            <p role="note" className="mt-1.5 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-semibold text-amber-800">
+                              {tr
+                                ? 'Bu tesisin şebeke bağlantı türü (iletim / dağıtım) seçilmedi; resmi Türkiye faktörü buna göre değişir. Ayarlar › Tesisler\'den bağlantı türünü seçin — o zamana kadar bu tesisin elektriği hesaplanmaz.'
+                                : 'This facility\'s grid connection (transmission / distribution) is not chosen; the official Turkish factor depends on it. Choose it in Settings › Facilities — until then this facility\'s electricity is not calculated.'}
+                            </p>
+                          );
+                        }
                         if (!g && approvedFacilityFactor) {
                           return (
                             <p role="note" className="mt-1.5 rounded-xl bg-[#2ABD41]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[#175022]">

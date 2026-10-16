@@ -61,6 +61,7 @@ class EmissionFactor(models.Model):
 
     SOURCE_CHOICES = [
         ('defra_2024', 'Defra/DESNZ 2024'),
+        ('desnz_2025', 'DESNZ 2025'),
         ('ipcc_2006', 'IPCC 2006'),
         ('ipcc_2019', 'IPCC 2019 + AR6 GWP'),
         ('turkey_grid', 'Turkey Grid/National'),

@@ -136,7 +136,8 @@ class MultiItemMessageTests(TestCase):
         company = self.user.profile.active_company
         Facility.objects.create(company=company, name='Werk Stuttgart', country='DE')
         linz = Facility.objects.create(company=company, name='Werk Linz', country='AT')
-        Facility.objects.create(company=company, name='Gebze Fabrika', country='TR')
+        Facility.objects.create(company=company, name='Gebze Fabrika', country='TR', grid_connection='distribution')
+        Facility.objects.create(company=company, name='Bursa Depo', country='TR')   # connection not chosen
         pe = self._send("Mart 2024 Werk Stuttgart'ta 5.000 kWh elektrik kullandık").data['pending_entries'][0]
         self.assertEqual(pe['factor_name'], 'Germany grid')
         self.assertAlmostEqual(pe['co2e_kg'], 5000 * pe['factor_used'], places=2)
@@ -145,7 +146,10 @@ class MultiItemMessageTests(TestCase):
         self.assertIn('Werk Linz', res.data['content'])
         self.assertIn('Özel Talep', res.data['content'])
         pe = self._send("Mart 2024 Gebze Fabrika'da 5.000 kWh elektrik kullandık").data['pending_entries'][0]
-        self.assertEqual(pe['factor_name_tr'], 'Türkiye ulusal şebekesi')
+        self.assertEqual(pe['factor_name_tr'], 'Türkiye şebekesi — dağıtım bağlantısı')
+        res = self._send("Mart 2024 Bursa Depo'da 5.000 kWh elektrik kullandık")
+        self.assertEqual(res.data['pending_entries'], [])
+        self.assertIn('bağlantı türü', res.data['content'])
         # The confirm endpoint applies the same rule.
         bad = self.client.post('/api/chat/confirm-entry/', {**pe, 'facility_id': linz.id, 'year': 2024, 'month': 3},
                                format='json')

@@ -977,6 +977,8 @@ def _gather(report, lang):
         # Facilities whose electricity is not calculated (no grid factor for
         # their country): named in the location tables, not left out silently.
         'sites_without_grid': _sites_without_grid(report),
+        # Facilities in Turkey whose grid connection is not chosen: pending.
+        'sites_pending_connection': _sites_pending_connection(report),
         # Market-based Scope 2: reported next to the location-based Category
         # II figure, never added to it.
         'scope2_market': _scope2_market(report),
@@ -1043,20 +1045,39 @@ def _scope2_market_paragraphs(D, S, lang):
     return out
 
 
+def _sites_pending_connection(report):
+    from .step_entries import _value, sites_pending_connection
+    if report is None or report.company is None:
+        return []
+    A = {k: _value(v) for k, v in _answers(report).items()}
+    return sites_pending_connection(A, report.company, report.reporting_year)
+
+
 def _not_calculated_sites_note(D, lang, tr):
-    """One sentence naming the facilities left out of the location figures."""
+    """The facilities left out of the location figures, and why."""
+    from .step_entries import _fmt as _fmt_kwh
+    parts = []
+    pending = D.get('sites_pending_connection') or []
+    if pending:
+        names = ', '.join(f'{n} ({_fmt_kwh(k, 0, "tr" if tr else "en")} kWh)' for n, k in pending)
+        parts.append(f'Pending and not included in the location figures: the electricity of {names} — the '
+                     f'grid connection (transmission / distribution) the official Turkish factor depends on is '
+                     f'not given. Not zero consumption.'
+                     if lang == 'en' else
+                     f'Tamamlanmayı bekleyen ve lokasyon değerlerine dahil edilmeyen: {names} elektrik tüketimi — '
+                     f'resmi Türkiye faktörünün bağlı olduğu şebeke bağlantı türü (iletim / dağıtım) '
+                     f'belirtilmemiştir. Sıfır tüketim anlamına gelmez.')
     sites = D.get('sites_without_grid') or []
     if not sites:
-        return ''
-    from .step_entries import _fmt as _fmt_kwh
+        return ' '.join(parts)
     names = ', '.join(f'{n} ({c}, {_fmt_kwh(k, 0, "tr" if tr else "en")} kWh)' for n, c, k in sites)
-    return (f'Not calculated and not included in the location figures: the electricity of {names} — '
+    return ' '.join(parts + [(f'Not calculated and not included in the location figures: the electricity of {names} — '
             f'no registered grid emission factor exists for that country. It is pending data until the '
             f'factor is set, not zero consumption.'
             if lang == 'en' else
             f'Hesaplanmayan ve lokasyon değerlerine dahil edilmeyen: {names} elektrik tüketimi — '
             f'bu ülke için kayıtlı bir şebeke emisyon faktörü bulunmamaktadır. Bu tüketim, faktör '
-            f'belirlenene kadar tamamlanmayı bekleyen veridir; sıfır tüketim anlamına gelmez.')
+            f'belirlenene kadar tamamlanmayı bekleyen veridir; sıfır tüketim anlamına gelmez.')])
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -3728,7 +3749,8 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         # its country) and that has nothing else: a row saying so, instead of
         # the facility silently missing from the comparison.
         listed = {n for n, _c in ordered[:20]}
-        for name, _code, _kwh in D.get('sites_without_grid') or []:
+        for name in ([n for n, _c, _k in D.get('sites_without_grid') or []]
+                     + [n for n, _k in D.get('sites_pending_connection') or []]):
             if name not in listed:
                 data.append([Paragraph(name, S['small'])] +
                             [Paragraph('—', S['num']) for _c in sorted(ROMAN)] +
