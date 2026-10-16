@@ -157,6 +157,21 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
         add(n['step_id'], 'A', f'Hesaplanmayan cevap — {n.get("report_tr", n["tr"])}',
             f'Not calculated — {n.get("report_en", n["en"])}')
 
+    # A factor whose reference year is not the reporting year (no factor of
+    # that year registered yet) is used as an estimate — said so, by year.
+    from .step_entries import factor_reference_years
+    by_year = {}
+    for name_tr, name_en, fy in factor_reference_years(company, reporting_year):
+        by_year.setdefault(fy, []).append((name_tr, name_en))
+    for fy, names in sorted(by_year.items()):
+        add('EF-YEAR', 'A',
+            f'Raporlama yılı ({reporting_year}) için kayıtlı faktör olmadığından şu emisyon faktörlerinin '
+            f'{fy} referans yılı değerleri kullanılmıştır; bu değerler tahminidir: '
+            + ', '.join(n[0] for n in names) + '.',
+            f'With no factor registered for the reporting year ({reporting_year}), the {fy} reference-year '
+            f'values of these emission factors are used; they are estimates: '
+            + ', '.join(n[1] for n in names) + '.')
+
     if A.get('6A-1') == 'yes':
         names = [str(r.get('source')) for r in _items(A.get('6A-1a')) if r.get('source')]
         if names:

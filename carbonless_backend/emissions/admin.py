@@ -9,8 +9,8 @@ from .models import EmissionFactor, EmissionEntry, ReductionTarget, CustomEmissi
 class EmissionFactorAdmin(ModelAdmin):
     """Full management of emission factors — add new scopes, categories, sources"""
     list_display = ['name', 'scope_badge', 'category', 'country_flag', 'unit',
-                    'factor_display', 'year', 'source', 'is_default', 'is_active']
-    list_filter = ['scope', 'category', 'country', 'source', 'is_active', 'is_default', 'year']
+                    'factor_display', 'year', 'method', 'source', 'is_default', 'is_active']
+    list_filter = ['scope', 'category', 'country', 'source', 'method', 'is_active', 'is_default', 'year']
     search_fields = ['name', 'name_tr', 'slug', 'reference']
     list_editable = ['is_active', 'is_default']
     list_per_page = 50
@@ -25,7 +25,10 @@ class EmissionFactorAdmin(ModelAdmin):
             'description': 'Select scope and category. You can type new category values if needed.',
         }),
         ('Factor Data', {
-            'fields': ('unit', 'factor_kg_co2e', 'year'),
+            'fields': ('unit', 'factor_kg_co2e', 'year', 'method', 'valid_until'),
+            'description': 'Year = the factor\'s reference year: an inventory of another year that uses it '
+                           'says so in its report (reference year, estimated). Method = the Scope 2 method '
+                           'the factor is for (grid average: location-based).',
         }),
         ('Per-Gas Breakdown', {
             'fields': ('gas_split_basis',

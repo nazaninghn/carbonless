@@ -2400,14 +2400,45 @@ class ElectricityFactorDecisionTests(TestCase):
         self._step('4A-EF', 'yes')
         self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
         market = local_data_answer(self.user, '2025 piyasa bazlı kapsam 2 ne kadar?', 'tr')
-        # 1.500 kWh × 0,3: the company's supplier declaration covers every site (an open owner decision)
-        self.assertIn('piyasa bazlı Kapsam 2 sonucunuz **0,45 tCO₂e**', market)
+        # 1.000 kWh × 0,3 — the declaration covers the company's market (TR), not Linz (AT)
+        self.assertIn('piyasa bazlı Kapsam 2 sonucunuz **0,30 tCO₂e**', market)
         self.assertIn('konum bazlıdır: 0,40 tCO₂e', market)
+        self.assertIn('1 elektrik kaydı', market)
         self.assertIn('piyasa bazlı sonuç ayrıca', local_data_answer(self.user, '2025 kapsam 2 emisyonu ne kadar?', 'tr'))
         # the supplier note is a method note, not an uncalculated answer
         texts = [x['text'] for x in derive_assumptions(self._answers(), 'tr', 2025, self.company)
                  if x['step_id'] == '4A-EF-a']
         self.assertTrue(texts and all(t.startswith('Yöntem notu') for t in texts), texts)
+
+    def test_supplier_declaration_only_for_its_own_market(self):
+        from .step_entries import scope2_market_based, uncalculated_notes
+        self._step('4A-EF', 'yes')
+        doc = {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'}
+        self._step('4A-EF-a', {**doc, 'ef_market': 'TR'})
+        m = scope2_market_based(self._answers(), 2025, self.company)
+        self.assertEqual([(r['site'], r['basis']) for r in m['rows']], [('Gebze', 'supplier')])
+        self.assertEqual(m['missing'], [('Werk Linz', 500.0)])      # AT: no factor of its own market
+        self.assertEqual((m['supplier_market'], m['outside_market']), ('TR', ['Werk Linz']))
+        note = next(n for n in uncalculated_notes(self._answers(), 2025, self.company) if n['step_id'] == '4A-EF-a')
+        self.assertIn('Beyan TR pazarını kapsar', note['tr'])
+        # an Austrian supplier's declaration: Linz by it, Gebze by its own grid
+        self._step('4A-EF-a', {**doc, 'ef_market': 'AT'})
+        m = scope2_market_based(self._answers(), 2025, self.company)
+        self.assertEqual(sorted((r['site'], r['basis'], r['factor']) for r in m['rows']),
+                         [('Gebze', 'location_fallback', 0.4), ('Werk Linz', 'supplier', 0.3)])
+        self.assertEqual(m['outside_market'], ['Gebze'])
+
+    def test_factor_of_another_reference_year_is_disclosed_as_estimate(self):
+        from .assumptions import derive_assumptions
+        from .step_entries import factor_reference_years
+        # the test factors are of reference year 2024, the inventory is 2025
+        self.assertIn(('turkey-grid', 'turkey-grid', 2024), factor_reference_years(self.company, 2025))
+        self.assertEqual(factor_reference_years(self.company, 2024), [])
+        texts = [x['text'] for x in derive_assumptions(self._answers(), 'tr', 2025, self.company)
+                 if x['step_id'] == 'EF-YEAR']
+        self.assertEqual(len(texts), 1)
+        self.assertIn('2024 referans yılı', texts[0])
+        self.assertIn('tahminidir', texts[0])
 
     def test_one_approved_factor_per_facility_year_and_method(self):
         from emissions.admin import CustomEmissionRequestForm

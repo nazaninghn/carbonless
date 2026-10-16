@@ -1331,13 +1331,17 @@ def scope2_market_based(answers, year, company=None):
     EV charging counted in 4A-EV) — reported next to, never added to, the
     location-based inventory total. Per activity, in this order:
       1. the market-based factor approved for that facility and year (Özel Talep);
-      2. the electricity supplier's declaration (4A-EF-a) valid for the year;
+      2. the electricity supplier's declaration (4A-EF-a) valid for the year,
+         only for activities in the market the declaration covers (its
+         ef_market country; the company's country when not given) — a
+         Turkish supplier's factor is never applied to a site in Austria;
       3. a residual mix — none is registered, so this level is skipped;
       4. the location-based factor of the activity (its grid / approved request).
     Activities with none of these are listed as not calculated.
     Returns None when no electricity is answered, else
     {'total_kg', 'rows': [{site, kwh, factor, basis, kg}], 'missing': [(site, kwh)],
-     'has_instrument': bool}."""
+     'has_instrument': bool, 'supplier_market': code or None,
+     'outside_market': [site]}."""
     A = {k: _value(v) for k, v in (answers or {}).items()}
     groups = activities_for_report(answers, year, company)
     acts = list(groups.get('4A-1', [])) + list(groups.get('4A-EV', []))
@@ -1348,15 +1352,19 @@ def scope2_market_based(answers, year, company=None):
     location = approved_electricity_requests(company, year) if company else {}
     supplier = _supplier_ef(A, '4A-1', year)
     supplier_per = supplier[1] if supplier and supplier[0] == 'kwh' else None
-    rows, missing = [], []
+    supplier_market = supplier_market_code(A, company) if supplier_per is not None else None
+    home = _market_code(getattr(company, 'country_of_headquarters', '') if company else '')
+    rows, missing, outside = [], [], []
     for a in acts:
         site = a.get('facility_name') or _lab(a.get('label'))['tr'] or ''
         kwh = float(a['quantity'])
         fac = facility_of(a.get('facility_name'))
+        where = _market_code(getattr(fac, 'country', '')) if fac is not None else ''
+        where = where or home
         factor = basis = None
         if fac is not None and fac.pk in market:
             factor, basis = float(market[fac.pk].approved_factor_kg_co2e), 'facility_request'
-        elif supplier_per is not None:
+        elif supplier_per is not None and supplier_market and where == supplier_market:
             factor, basis = float(supplier_per), 'supplier'
         elif fac is not None and fac.pk in location:
             factor, basis = float(location[fac.pk].approved_factor_kg_co2e), 'location_fallback'
@@ -1364,13 +1372,48 @@ def scope2_market_based(answers, year, company=None):
             r = _resolve(a, company, facility_of)
             if r:
                 factor, basis = float(r[0].factor_kg_co2e), 'location_fallback'
+        if supplier_per is not None and basis != 'facility_request' and where != supplier_market:
+            outside.append(site)   # the declaration does not cover this market
         if factor is None:
             missing.append((site, kwh))
             continue
         rows.append({'site': site, 'kwh': kwh, 'factor': factor, 'basis': basis, 'kg': kwh * factor,
                      'source': supplier[2] if basis == 'supplier' else None})
     return {'total_kg': sum(r['kg'] for r in rows), 'rows': rows, 'missing': missing,
-            'has_instrument': any(r['basis'] != 'location_fallback' for r in rows)}
+            'has_instrument': any(r['basis'] != 'location_fallback' for r in rows),
+            'supplier_market': supplier_market, 'outside_market': outside}
+
+
+def factor_reference_years(company, year):
+    """[(name_tr, name_en, factor year)] of the catalog factors this
+    inventory's approved entries use whose reference year is not the
+    reporting year — used as an estimate and said so in the report."""
+    from emissions.models import EmissionEntry
+    if company is None or not year:
+        return []
+    rows = (EmissionEntry.objects.filter(company=company, year=year, status='approved')
+            .exclude(emission_factor__slug__startswith='calculated-')
+            .exclude(emission_factor__year=year)
+            .values_list('emission_factor__name_tr', 'emission_factor__name', 'emission_factor__year')
+            .distinct())
+    return sorted({(tr or en, en, y) for tr, en, y in rows if y}, key=lambda r: (r[2], r[1]))
+
+
+def _market_code(country):
+    """A country as the electricity market it stands for: 'TR' for every
+    spelling of Turkey, else the upper-case code."""
+    from .serializers import TURKEY_CODES
+    code = (country or '').strip().upper()
+    return 'TR' if code in TURKEY_CODES else code
+
+
+def supplier_market_code(A, company=None):
+    """The market (country code) the electricity supplier's declaration
+    (4A-EF-a) covers: its ef_market answer, or the company's country for
+    declarations saved before the question asked it."""
+    ans = A.get('4A-EF-a') if isinstance(A.get('4A-EF-a'), dict) else {}
+    return _market_code(ans.get('ef_market')) or _market_code(
+        getattr(company, 'country_of_headquarters', '') if company else '')
 
 
 def uncalculated_notes(answers, year, company=None):
@@ -1524,13 +1567,17 @@ def uncalculated_notes(answers, year, company=None):
                 note(doc, f'{what_tr} — tedarikçi faktör belgesinin birimi tanınmadı; genel faktör kullanıldı.',
                      f'{what_en} — the supplier factor document\'s unit is not recognised; the generic factor is used.')
             elif gate == '4A-EF':
-                # Not a gap: the answer is used, in the market-based result.
+                # Not a gap: the answer is used, in the market-based result —
+                # only for the sites in the market the declaration covers.
+                mkt = supplier_market_code(A, company) or '—'
                 note(doc, 'Elektrik tedarikçi faktörü yalnızca piyasa bazlı Kapsam 2 sonucunda kullanılır; '
                           'envanter toplamı konum bazlıdır (her tesisin kendi ülkesinin şebeke faktörü). '
+                          f'Beyan {mkt} pazarını kapsar; başka ülkedeki tesislere uygulanmaz. '
                           'İki sonuç ayrı raporlanır, toplanmaz.',
                      'The electricity supplier factor is used only in the market-based Scope 2 result; the '
-                     'inventory total is location-based (each facility\'s own country grid). The two results '
-                     'are reported separately, never added together.', kind='method')
+                     'inventory total is location-based (each facility\'s own country grid). '
+                     f'The declaration covers the {mkt} market and is not applied to facilities in other '
+                     'countries. The two results are reported separately, never added together.', kind='method')
 
     declared = _purchase_declarations(A, year) if open_('K3C1-4a') else {}
     if open_('K3C1-2') and isinstance(A.get('K3C1-2'), dict):

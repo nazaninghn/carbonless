@@ -3825,8 +3825,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Enter the supplier emission declaration details',
     },
     helper: {
-      tr: 'Elektrik tedarikçinizin beyanındaki emisyon faktörünü, birimini, belge adını ve yılını girin. Bu bilgiler raporunuzda belgelenir.',
-      en: 'Enter the emission factor, its unit, the document name and year from the electricity supplier declaration. This is documented in your report.',
+      tr: 'Elektrik tedarikçinizin beyanındaki emisyon faktörünü, birimini, belge adını, yılını ve beyanın geçerli olduğu pazarı (ülkeyi) girin. Beyan yalnızca o ülkedeki tesislerin piyasa bazlı sonucunda kullanılır.',
+      en: 'Enter the emission factor, its unit, the document name and year from the electricity supplier declaration, and the market (country) it covers. It is used only in the market-based result of the facilities in that country.',
     },
     fields: [
       {
@@ -3865,6 +3865,17 @@ export const CARBONIQ_QUESTIONS = [
         format: 'year',
         label: { tr: 'Beyan yılı', en: 'Declaration year' },
         placeholder: { tr: 'Örn: 2023', en: 'e.g. 2023' },
+      },
+      {
+        // A supplier's declaration is valid for its own electricity market
+        // only: a Turkish supplier's factor is not applied to a site abroad.
+        id: 'ef_market',
+        type: 'select',
+        renderAs: 'native_select',
+        optionsFrom: 'facility_countries',
+        options: COUNTRY_SELECT_OPTIONS,
+        required: true,
+        label: { tr: 'Beyanın geçerli olduğu pazar (ülke)', en: 'Market (country) the declaration covers' },
       },
     ],
     validate: {
@@ -7740,6 +7751,17 @@ export function resolveFieldOptions(fields, answersMap) {
     let options = [];
     if (f.optionsFrom === 'facilities') {
       options = facilityNameOptions(answersMap);
+    } else if (f.optionsFrom === 'facility_countries') {
+      // The company's and its facilities' countries first, then every other.
+      const first = [];
+      const hq = readAnswerValue(answersMap || {}, 'A3');
+      if (hq && typeof hq === 'object' && hq.country) first.push(String(hq.country).toUpperCase());
+      const sites = readAnswerValue(answersMap || {}, '2A-2');
+      if (sites && typeof sites === 'object') {
+        for (const v of Object.values(sites)) if (v?.country) first.push(String(v.country).toUpperCase());
+      }
+      const lead = [...new Set(first)].map(code => COUNTRY_SELECT_OPTIONS.find(o => o.value === code)).filter(Boolean);
+      options = [...lead, ...COUNTRY_SELECT_OPTIONS.filter(o => !lead.includes(o))];
     } else if (typeof f.optionsFrom === 'string' && f.optionsFrom.startsWith('answer:')) {
       // 'answer:K3C1-1': the options the user picked in that question, with
       // their labels (K3C1-4a's category of each supplier declaration).
