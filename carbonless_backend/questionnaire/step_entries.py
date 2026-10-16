@@ -1380,8 +1380,8 @@ def uncalculated_notes(answers, year, company=None):
     A = {k: _value(v) for k, v in (answers or {}).items()}
     out = []
 
-    def note(step, tr, en):
-        out.append({'step_id': step, 'tr': tr, 'en': en})
+    def note(step, tr, en, kind='not_calculated'):
+        out.append({'step_id': step, 'tr': tr, 'en': en, 'kind': kind})
 
     def open_(step):
         gate = _GATES.get(step)
@@ -1524,12 +1524,13 @@ def uncalculated_notes(answers, year, company=None):
                 note(doc, f'{what_tr} — tedarikçi faktör belgesinin birimi tanınmadı; genel faktör kullanıldı.',
                      f'{what_en} — the supplier factor document\'s unit is not recognised; the generic factor is used.')
             elif gate == '4A-EF':
+                # Not a gap: the answer is used, in the market-based result.
                 note(doc, 'Elektrik tedarikçi faktörü yalnızca piyasa bazlı Kapsam 2 sonucunda kullanılır; '
                           'envanter toplamı konum bazlıdır (her tesisin kendi ülkesinin şebeke faktörü). '
                           'İki sonuç ayrı raporlanır, toplanmaz.',
                      'The electricity supplier factor is used only in the market-based Scope 2 result; the '
                      'inventory total is location-based (each facility\'s own country grid). The two results '
-                     'are reported separately, never added together.')
+                     'are reported separately, never added together.', kind='method')
 
     declared = _purchase_declarations(A, year) if open_('K3C1-4a') else {}
     if open_('K3C1-2') and isinstance(A.get('K3C1-2'), dict):

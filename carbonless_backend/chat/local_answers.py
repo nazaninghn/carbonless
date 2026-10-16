@@ -172,11 +172,66 @@ def _scope_answer(company, year, scope_n, lang):
     part = float(qs.filter(emission_factor__scope=f'scope{scope_n}')
                  .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     share = part / total * 100 if total else 0
+    market = _market_result(company, year) if scope_n == 2 else None
     if lang == 'tr':
-        return (f'{year} yılı Kapsam {scope_n} emisyonunuz **{_fmt(part, lang)} tCO₂e** '
+        text = (f'{year} yılı Kapsam {scope_n} emisyonunuz **{_fmt(part, lang)} tCO₂e** '
                 f'(toplam {_fmt(total, lang)} tCO₂e içinde %{_fmt(share, lang, 1)}).')
-    return (f'Your Scope {scope_n} emissions for {year} are **{_fmt(part, lang)} tCO₂e** '
+        if market and market['has_instrument']:
+            text += (f' Bu konum bazlı sonuçtur; piyasa bazlı sonuç ayrıca '
+                     f'{_fmt(market["total_kg"] / 1000, lang)} tCO₂e (toplama eklenmez).')
+        return text
+    text = (f'Your Scope {scope_n} emissions for {year} are **{_fmt(part, lang)} tCO₂e** '
             f'({_fmt(share, lang, 1)}% of {_fmt(total, lang)} tCO₂e in total).')
+    if market and market['has_instrument']:
+        text += (f' This is the location-based result; the market-based result is separately '
+                 f'{_fmt(market["total_kg"] / 1000, lang)} tCO₂e (not added).')
+    return text
+
+
+_MARKET_RE = re.compile(r'piyasa[\s-]*baz|market[\s-]*based', re.I)
+
+
+def _market_result(company, year):
+    """The market-based Scope 2 of the company's inventory of `year` (the
+    figure the ISO report states next to Category II), or None."""
+    from questionnaire.models import CarbonReport
+    from questionnaire.step_entries import scope2_market_based
+    report = (CarbonReport.objects.filter(company=company, reporting_year=year)
+              .order_by('-updated_at').first())
+    if report is None:
+        return None
+    return scope2_market_based(dict(report.steps.values_list('step_id', 'answer')), year, company)
+
+
+def _market_answer(company, year, lang):
+    from django.db.models import Sum
+    m = _market_result(company, year)
+    location = float(_entries(company, year).filter(emission_factor__scope='scope2')
+                     .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    if not m:
+        return (f'{year} için piyasa bazlı Kapsam 2 hesaplanamıyor: bu sonuç envanterin elektrik sorusundan '
+                f'(Soru 68) hesaplanır ve {year} envanterinde elektrik tüketimi yok.'
+                if lang == 'tr' else
+                f'No market-based Scope 2 for {year}: it is calculated from the inventory\'s electricity '
+                f'question (Q68), and the {year} inventory has no electricity consumption.')
+    t = m['total_kg'] / 1000
+    if lang == 'tr':
+        text = (f'{year} piyasa bazlı Kapsam 2 sonucunuz **{_fmt(t, lang)} tCO₂e** — ayrıca raporlanır, '
+                f'toplamlara eklenmez. Envanter toplamındaki Kapsam 2 konum bazlıdır: {_fmt(location, lang)} tCO₂e.')
+        if not m['has_instrument']:
+            text += (' Tedarikçi beyanı veya onaylı piyasa bazlı faktör olmadığından piyasa bazlı sonuç '
+                     'konum bazlı faktörlerle hesaplandı.')
+        if m['missing']:
+            text += f' Faktörü olmayan {len(m["missing"])} elektrik kaydı bu sonuçta da hesaplanmadı.'
+        return text
+    text = (f'Your market-based Scope 2 for {year} is **{_fmt(t, lang)} tCO₂e** — reported separately, not '
+            f'added to the totals. Scope 2 in the inventory total is location-based: {_fmt(location, lang)} tCO₂e.')
+    if not m['has_instrument']:
+        text += (' With no supplier declaration or approved market-based factor, the market-based result uses '
+                 'the location-based factors.')
+    if m['missing']:
+        text += f' {len(m["missing"])} electricity record(s) without a factor are not calculated in it either.'
+    return text
 
 
 def _compare_answer(company, year, lang):
@@ -464,6 +519,8 @@ def local_data_answer(user, content, lang):
     if _TOP_WORDS.search(text) and (_SOURCE_WORDS.search(text) or _EMISSION_WORDS.search(text)):
         return _top_source_answer(company, year, lang)
     about_emissions = _EMISSION_WORDS.search(text) or _SCOPE_RE.search(text)
+    if _MARKET_RE.search(text) and (about_emissions or _TOTAL_WORDS.search(text)):
+        return _market_answer(company, year, lang)
     if _COMPARE_WORDS.search(text) and (about_emissions or re.search(r'durum|nasıl|nasil|doing|how are we', text, re.I)):
         return _compare_answer(company, year, lang)
     facility = _facility_in(company, text)

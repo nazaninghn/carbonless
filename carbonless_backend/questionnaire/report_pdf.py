@@ -17,8 +17,11 @@ the real Scope 1/2/3 totals using the exact same aggregation this app's
 existing report already uses. No new calculation logic is introduced here.
 """
 import io
+import logging
+from html import escape
 from datetime import datetime
 from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
     Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, NextPageTemplate,
@@ -36,6 +39,8 @@ from emissions.report_pdf import (
 )
 from .step_handlers import NACE_CLUSTER
 from .models import CarbonReport, ReportStep
+
+logger = logging.getLogger(__name__)
 
 try:
     from emissions.models import EmissionEntry, CustomEmissionRequest
@@ -102,6 +107,28 @@ SCOPE2_METHOD_LABELS = {
     'market_based': {'tr': 'Piyasa bazlı', 'en': 'Market-based'},
     'dual': {'tr': 'Konum ve piyasa bazlı', 'en': 'Location- and market-based'},
 }
+
+
+def _scope2_method_text(report, lang):
+    """The Scope 2 method row: the configured method and, when a supplier
+    declaration or an approved market-based factor exists, the separate
+    market-based result (the ISO report gives the same figure)."""
+    tr = lang == 'tr'
+    text = (_label(SCOPE2_METHOD_LABELS, report.scope2_method, lang)
+            or (report.scope2_method or '').replace('_', ' ').title() or '—')
+    try:
+        from .step_entries import scope2_market_based
+        answers = dict(report.steps.values_list('step_id', 'answer'))
+        m = scope2_market_based(answers, report.reporting_year, report.company) if report.company_id else None
+    except Exception:
+        logger.exception('market-based Scope 2 for the report failed')
+        m = None
+    if not m or not m['has_instrument']:
+        return text
+    t = m['total_kg'] / 1000.0
+    amount = _fmt(t, tr)
+    return (f'{text} (envanter toplamı) · piyasa bazlı sonuç ayrıca: {amount} t CO₂e, toplama eklenmez'
+            if tr else f'{text} (inventory total) · market-based result separately: {amount} t CO₂e, not added')
 
 
 def _label(map_, key, lang):
@@ -296,11 +323,13 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
         ('Organizasyon Sınırı Yaklaşımı' if tr else 'Organizational Boundary Approach', boundary_label or '—'),
         ('Emisyon Faktör Veritabanı' if tr else 'Emission Factor Database', ef_label or '—'),
         ('Kapsam 3 Yaklaşımı' if tr else 'Scope 3 Approach', scope3_label or '—'),
-        ('Kapsam 2 Yöntemi' if tr else 'Scope 2 Method',
-         _label(SCOPE2_METHOD_LABELS, report.scope2_method, lang)
-         or (report.scope2_method or '').replace('_', ' ').title() or '—'),
+        ('Kapsam 2 Yöntemi' if tr else 'Scope 2 Method', _scope2_method_text(report, lang)),
     ]
-    ft = Table([[k, v] for k, v in framework_rows], colWidths=[55 * mm, 95 * mm])
+    # A long value (the Scope 2 method with its market-based result) wraps in
+    # its cell instead of running off the page.
+    cell = ParagraphStyle('fw_cell', fontName=fn, fontSize=8.5, leading=11, textColor=GRAY_800)
+    ft = Table([[k, Paragraph(escape(v), cell) if len(v) > 60 else v] for k, v in framework_rows],
+               colWidths=[55 * mm, 95 * mm])
     ft.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (0, -1), fnb),
         ('FONTNAME', (1, 0), (1, -1), fn),

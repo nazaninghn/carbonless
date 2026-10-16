@@ -2394,6 +2394,21 @@ class ElectricityFactorDecisionTests(TestCase):
         self.assertAlmostEqual(m['total_kg'], 1000 * 0.4 + 500 * 0.3)
         self.assertEqual(m['missing'], [])
 
+    def test_chat_and_report_tell_the_market_based_result_apart(self):
+        from chat.local_answers import local_data_answer
+        from .assumptions import derive_assumptions
+        self._step('4A-EF', 'yes')
+        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
+        market = local_data_answer(self.user, '2025 piyasa bazlı kapsam 2 ne kadar?', 'tr')
+        # 1.500 kWh × 0,3: the company's supplier declaration covers every site (an open owner decision)
+        self.assertIn('piyasa bazlı Kapsam 2 sonucunuz **0,45 tCO₂e**', market)
+        self.assertIn('konum bazlıdır: 0,40 tCO₂e', market)
+        self.assertIn('piyasa bazlı sonuç ayrıca', local_data_answer(self.user, '2025 kapsam 2 emisyonu ne kadar?', 'tr'))
+        # the supplier note is a method note, not an uncalculated answer
+        texts = [x['text'] for x in derive_assumptions(self._answers(), 'tr', 2025, self.company)
+                 if x['step_id'] == '4A-EF-a']
+        self.assertTrue(texts and all(t.startswith('Yöntem notu') for t in texts), texts)
+
     def test_one_approved_factor_per_facility_year_and_method(self):
         from emissions.admin import CustomEmissionRequestForm
         first = self._request()
