@@ -2565,3 +2565,121 @@ class TurkeyConnectionAndDesnz2025Tests(TestCase):
         listed = {x['slug'] for x in (data if isinstance(data, list) else data.get('results', []))}
         self.assertNotIn('renewable', listed)
         self.assertIn('turkey-grid-distribution', listed)
+
+
+class StepB4SerializerTests(TestCase):
+    """BUG-A / OBS-3: B4 facility count is bounded 1..10000 with a bilingual
+    400 at the server choke point, before the 32-bit column is reached."""
+
+    def setUp(self):
+        from rest_framework.test import APIClient
+        self.user = User.objects.create_user('b4', 'b4@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='B4 Co', tax_number='9',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.user, company=self.company, role='owner')
+        self.report = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2025)
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_serializer_rejects_out_of_range_with_bilingual_message(self):
+        from questionnaire.serializers import StepB4Serializer
+        for bad in (2147483648, 10001, 0):
+            s = StepB4Serializer(data={'number_of_facilities': bad})
+            self.assertFalse(s.is_valid(), bad)
+            msg = str(s.errors['number_of_facilities'][0])
+            # bilingual tr / en, never the raw DRF ">= 1" / "<= 10000" string
+            self.assertIn('/', msg)
+            self.assertNotIn('>=', msg)
+            self.assertNotIn('<=', msg)
+
+    def test_serializer_accepts_a_valid_count(self):
+        from questionnaire.serializers import StepB4Serializer
+        s = StepB4Serializer(data={'number_of_facilities': 2})
+        self.assertTrue(s.is_valid(), s.errors)
+        self.assertEqual(s.validated_data['number_of_facilities'], 2)
+
+    def test_out_of_range_patch_is_400_and_writes_no_entry(self):
+        from emissions.models import EmissionEntry
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
+            'step': 'B4', 'data': {'number_of_facilities': 2147483648}}, format='json')
+        self.assertEqual(r.status_code, 400, r.content)
+        self.assertFalse(EmissionEntry.objects.filter(company=self.company).exists())
+        # the 32-bit column was never reached by the overflow value
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.number_of_facilities, 1)
+
+    def test_valid_patch_advances(self):
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
+            'step': 'B4', 'data': {'number_of_facilities': 2}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.number_of_facilities, 2)
+
+
+class FacilityAttributionTests(StepEntriesTests):
+    """BUG-C: an entry lands in the facility bucket the user chose; an
+    unresolved/ambiguous selection stays unassigned. CO2e never changes --
+    only which facility string the activity carries."""
+
+    def test_natural_gas_with_a_single_3a_2_site_is_attributed_to_it(self):
+        self._factor('natural-gas-m3', 'm3', 2.02, scope='scope1', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Istanbul HQ Plant', 'country': 'TR'}})
+        self._step('3A-2', {'EQ-3A-01': {'unit_count': '2', 'site': 'Istanbul HQ Plant', 'group_count': '1'}})
+        self._step('3A-5', {'natural_gas': '10000 m³'})
+        entries = self._entries()
+        self.assertEqual(len(entries), 1)
+        e = entries[0]
+        self.assertEqual(e.facility.name, 'Istanbul HQ Plant')
+        # regression guard: 10,000 m³ × 2.02 = 20,200 kg, unchanged by the attribution
+        self.assertEqual(float(e.quantity), 10000.0)
+        self.assertAlmostEqual(float(e.calculated_co2e_kg), 20200.0, places=3)
+
+    def test_natural_gas_spanning_two_sites_stays_unassigned(self):
+        self._factor('natural-gas-m3', 'm3', 2.02, scope='scope1', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Istanbul HQ Plant', 'country': 'TR'},
+                            '2': {'name': 'Ankara Warehouse', 'country': 'TR'}})
+        self._step('3A-2', {'EQ-3A-01': {'unit_count': '1', 'site': 'Istanbul HQ Plant', 'group_count': '1'},
+                            'EQ-3A-02': {'unit_count': '1', 'site': 'Ankara Warehouse', 'group_count': '1'}})
+        self._step('3A-5', {'natural_gas': '10000 m³'})
+        entries = self._entries()
+        self.assertEqual(len(entries), 1)
+        e = entries[0]
+        self.assertIsNone(e.facility)
+        # CO2e is identical whether or not a facility bucket was set
+        self.assertAlmostEqual(float(e.calculated_co2e_kg), 20200.0, places=3)
+
+    def test_biomass_is_never_attributed_by_the_collapse_rule(self):
+        from emissions.models import EmissionEntry
+        self._factor('natural-gas-m3', 'm3', 2.02, scope='scope1', country='turkey')
+        self._factor('wood-pellets', 'kg', 0.016, scope='scope1')
+        self._step('2A-2', {'1': {'name': 'Istanbul HQ Plant', 'country': 'TR'}})
+        self._step('3A-2', {'EQ-3A-01': {'unit_count': '1', 'site': 'Istanbul HQ Plant', 'group_count': '1'}})
+        self._step('3A-5bio', 'wood_pellets')
+        self._step('3A-5', {'natural_gas': '10000 m³', 'biomass': '1000 kg'})
+        biomass = EmissionEntry.objects.get(company=self.company, emission_factor__slug='wood-pellets')
+        self.assertIsNone(biomass.facility)
+        gas = EmissionEntry.objects.get(company=self.company, emission_factor__slug='natural-gas-m3')
+        self.assertEqual(gas.facility.name, 'Istanbul HQ Plant')
+
+    def test_electricity_keyed_to_facility_1_is_attributed_to_facility_1(self):
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh'})
+        entries = self._entries()
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].facility.name, 'Gebze Fabrika')
+        self.assertAlmostEqual(float(entries[0].calculated_co2e_kg), 400.0, places=3)
+
+    def test_electricity_with_an_unresolvable_key_stays_unassigned(self):
+        self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}})
+        self._step('4A-1', {'site': '1 MWh'})
+        entries = self._entries()
+        self.assertEqual(len(entries), 1)
+        self.assertIsNone(entries[0].facility)
+        self.assertAlmostEqual(float(entries[0].calculated_co2e_kg), 400.0, places=3)

@@ -150,7 +150,15 @@ class StepB3Serializer(serializers.Serializer):
 
 
 class StepB4Serializer(serializers.Serializer):
-    number_of_facilities = serializers.IntegerField(min_value=1)
+    number_of_facilities = serializers.IntegerField(
+        min_value=1,
+        max_value=10000,
+        error_messages={
+            'min_value': 'En az 1 tesis / At least 1 facility.',
+            'max_value': 'Gerçekçi bir tesis sayısı girin / Enter a realistic number of facilities.',
+            'invalid': 'Geçerli bir sayı girin / Enter a valid number.',
+        },
+    )
 
 
 class StepB5Serializer(serializers.Serializer):

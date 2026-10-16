@@ -163,6 +163,30 @@ def _stationary_fuels(answer):
     return out
 
 
+def _collapse_fuel_site(activities, facilities_answer):
+    """Attribute 3A-5 stationary-fuel activities to the single 3A-2 site, if any.
+
+    Fuel use (3A-5) is entered as a per-fuel total, not per equipment, so there
+    is no 1:1 fuel->equipment link to a 3A-2 site. 3A-2 has the shape
+    {equipmentKey: {unit_count, site, group_count}} where 'site' is a facility
+    name string. When the distinct non-empty sites collapse to exactly ONE, that
+    site is set as facility_name on each fuel activity (activity in
+    _STATIONARY_FUELS); zero or more than one site -> leave unassigned (no guess).
+    The biomass activity has no 'activity' key, so it is never selected here;
+    nothing about quantity/unit/slug/factor is touched -- only the facility bucket.
+    """
+    equipment = facilities_answer if isinstance(facilities_answer, dict) else {}
+    sites = {str(v.get('site')).strip() for v in equipment.values()
+             if isinstance(v, dict) and str(v.get('site') or '').strip()}
+    if len(sites) != 1:
+        return activities
+    site = next(iter(sites))
+    for a in activities:
+        if a.get('activity') in _STATIONARY_FUELS:
+            a['facility_name'] = site
+    return activities
+
+
 # 3A-5bio biomass type -> (bioenergy factor of the CH4 + N2O of burning it,
 # unit it is entered in). Its CO2 is biogenic: not in the scope totals.
 _BIOMASS = {'wood_pellets': ('wood-pellets', 'kg'), 'biogas': ('biogas', 'kwh')}
@@ -783,9 +807,11 @@ def activities_for_report(answers, year, company=None, factor_exists=None):
 
     biomass = _biomass_amount(A)
     g = {
-        '3A-5': own('3A-5') + ([{'slug': _BIOMASS[biomass[0]][0], 'quantity': biomass[1],
-                                 'label': {'tr': 'Biyokütle', 'en': 'Biomass'}}]
-                               if biomass else []),
+        '3A-5': _collapse_fuel_site(
+            own('3A-5') + ([{'slug': _BIOMASS[biomass[0]][0], 'quantity': biomass[1],
+                             'label': {'tr': 'Biyokütle', 'en': 'Biomass'}}]
+                           if biomass else []),
+            A.get('3A-2')),
         '3B-7': _vehicles(A),
         '3C-2': _process(A),
         '4A-1': _named_sites(own('4A-1'), A.get('2A-2')),
