@@ -2428,6 +2428,15 @@ class ElectricityFactorDecisionTests(TestCase):
                          [('Gebze', 'location_fallback', 0.4), ('Werk Linz', 'supplier', 0.3)])
         self.assertEqual(m['outside_market'], ['Gebze'])
 
+    def test_saved_supplier_declaration_is_a_method_note_not_uncalculated(self):
+        self._step('4A-EF', 'yes')
+        r = self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ',
+                                   'ef_year': '2025', 'ef_market': 'TR'})
+        fb = r.json()['calc_feedback']
+        self.assertEqual(fb['notes'], [])
+        self.assertEqual(len(fb['method_notes']), 1)
+        self.assertIn('market-based', fb['method_notes'][0])   # language of the request (default en)
+
     def test_factor_of_another_reference_year_is_disclosed_as_estimate(self):
         from .assumptions import derive_assumptions
         from .step_entries import factor_reference_years
