@@ -1393,6 +1393,22 @@ def sites_pending_connection(A, company, year=None):
     return out
 
 
+def sites_on_superseded_grid(company, year):
+    """{facility name: kWh} of 4A-1 electricity still counted with the single
+    Turkey grid factor ('turkey-grid'), which the connection-based official
+    factors replaced: entries saved before that change keep it until the
+    inventory is saved again (owner's decision) — so they are in the totals
+    with it, not pending."""
+    if company is None or not year:
+        return {}
+    out = {}
+    for e in (_step_entries(company, year, '4A-1')
+              .filter(status='approved', emission_factor__slug='turkey-grid', facility__isnull=False)
+              .select_related('facility')):
+        out[e.facility.name] = out.get(e.facility.name, 0.0) + float(e.quantity or 0)
+    return out
+
+
 def scope2_market_based(answers, year, company=None):
     """The market-based Scope 2 of the purchased electricity (4A-1 sites and
     EV charging counted in 4A-EV) — reported next to, never added to, the
@@ -1559,8 +1575,30 @@ def uncalculated_notes(answers, year, company=None):
 
         # Turkey: the official factor follows the grid connection; until it
         # is chosen the facility's electricity waits (here and in Category 3).
+        superseded = sites_on_superseded_grid(company, year)
         for name, kwh in sites_pending_connection(A, company, year):
             amount_tr, amount_en = _fmt(kwh, 0, 'tr'), _fmt(kwh, 0, 'en')
+            if name in superseded:
+                # Saved before the connection-based factors: still counted
+                # with the earlier single factor until it is recalculated.
+                out.append({
+                    'step_id': '4A-1', 'kind': 'method',
+                    'tr': f'{name} elektriği ({amount_tr} kWh) hâlâ önceki tek Türkiye şebeke faktörüyle '
+                          f'hesaplı; resmi faktör tesisin şebeke bağlantı türüne (iletim / dağıtım) göre değişir. '
+                          f'Bağlantı türünü Soru 24\'te veya Ayarlar › Tesisler\'de seçin; envanter yeniden hesaplanır.',
+                    'en': f'The electricity of {name} ({amount_en} kWh) is still calculated with the earlier single '
+                          f'Turkey grid factor; the official factor depends on the facility\'s grid connection '
+                          f'(transmission / distribution). Choose it in Question 24 or Settings › Facilities and the '
+                          f'inventory is recalculated.',
+                    'report_tr': f'{name} elektrik tüketimi ({amount_tr} kWh), tesisin şebeke bağlantı türü (iletim / '
+                                 f'dağıtım) belirtilmediğinden, yerini bağlantı türüne göre resmi faktörlere bırakan '
+                                 f'önceki tek Türkiye şebeke faktörüyle hesaplanmıştır (Kapsam 2 ve Kapsam 3 Kategori 3).',
+                    'report_en': f'The electricity consumption of {name} ({amount_en} kWh) is calculated with the '
+                                 f'earlier single Turkey grid factor, since replaced by the official connection-based '
+                                 f'factors, as the facility\'s grid connection (transmission / distribution) is not '
+                                 f'given (Scope 2 and Scope 3 Category 3).',
+                })
+                continue
             out.append({
                 'step_id': '4A-1',
                 'tr': f'{name} elektriği ({amount_tr} kWh) hesaplanmadı — tesisin şebeke bağlantı türü '

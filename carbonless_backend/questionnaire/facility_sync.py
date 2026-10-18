@@ -133,3 +133,36 @@ def rename_in_answers(company, old_name, new_name):
         refresh_entry_text(report)
     return len(changed_reports)
 
+
+
+def set_connection_in_answers(company, user, name, connection):
+    """A facility's grid connection chosen in Settings: write it into the 2A-2
+    answers that list the facility (so the questionnaire shows it, and a later
+    2A-2 save does not bring the old one back), then recalculate those
+    inventories — the official Turkish factor depends on it. Recalculated as
+    the user's own save (same approval rule as answering 4A-1 again)."""
+    from .models import CarbonReport, ReportStep
+    from .step_entries import sync_step_entries
+    key = (name or '').strip().lower()
+    if not key:
+        return 0
+    reports = []
+    for step in ReportStep.objects.filter(report__company=company, step_id='2A-2'):
+        stored = step.answer
+        answer = stored.get('answer', stored) if isinstance(stored, dict) else None
+        if not isinstance(answer, dict):
+            continue
+        hit = False
+        for row in answer.values():
+            if isinstance(row, dict) and str(row.get('name') or '').strip().lower() == key:
+                if connection:
+                    row['grid_connection'] = connection
+                else:
+                    row.pop('grid_connection', None)
+                hit = True
+        if hit:
+            step.save(update_fields=['answer'])
+            reports.append(step.report_id)
+    for report in CarbonReport.objects.filter(id__in=reports):
+        sync_step_entries(user, company, report, '4A-1')
+    return len(reports)

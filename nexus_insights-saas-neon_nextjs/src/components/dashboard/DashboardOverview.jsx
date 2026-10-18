@@ -579,6 +579,12 @@ export default function DashboardOverview({
   const unnamedFacilities = (facilityList || []).filter(
     f => /^(Tesis|Facility) \d+$/.test((f.name || '').trim()) && !(f.city || '').trim(),
   );
+  // Facilities in Turkey with no grid connection: the official electricity
+  // factor depends on it, so their electricity waits until it is chosen.
+  const noConnectionFacilities = (facilityList || []).filter(
+    f => f.is_active !== false && !f.grid_connection
+      && ['tr', 'tur', 'türkiye', 'turkiye', 'turkey'].includes((f.country || '').trim().toLocaleLowerCase('tr-TR')),
+  );
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -963,11 +969,25 @@ export default function DashboardOverview({
                 en: 'No facility added',
                 tab: 'settings',
               },
+              {
+                dot: 'bg-amber-400',
+                // Facilities are edited by approvers (owner, admin, manager).
+                done: noConnectionFacilities.length === 0 || !canApprove,
+                tr: `${noConnectionFacilities.length} tesiste şebeke bağlantı türü seçilmedi (elektrik hesaplanamıyor)`,
+                en: `Grid connection not chosen for ${noConnectionFacilities.length} facilit${noConnectionFacilities.length === 1 ? 'y' : 'ies'} (electricity cannot be calculated)`,
+                tab: 'settings',
+                section: 'facilities',
+              },
             ].map((item) => (
               !item.done && (
                 <button
                   key={item.en}
-                  onClick={() => setActiveTab(item.tab)}
+                  onClick={() => {
+                    if (item.section) {
+                      try { sessionStorage.setItem('carbonless_settings_section', item.section); } catch { /* opens on Profile */ }
+                    }
+                    setActiveTab(item.tab);
+                  }}
                   className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 transition hover:bg-[#072C0E]/4"
                 >
                   <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} />
@@ -977,7 +997,7 @@ export default function DashboardOverview({
               )
             ))}
             {/* All done state */}
-            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0 || !canApprove, facilityList.length > 0 || !canEdit].every(Boolean) && (
+            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0 || !canApprove, facilityList.length > 0 || !canEdit, noConnectionFacilities.length === 0 || !canApprove].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
                 <CheckCircle2 className="h-6 w-6 text-[#2ABD41]" />
                 <p className="text-[11px] font-semibold text-[#072C0E]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>
