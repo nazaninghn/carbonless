@@ -867,6 +867,28 @@ class PendingChangeTests(TestCase):
         self.c_owner.post(f'/api/emissions/entries/{new.id}/approve/', {'action': 'approve'}, format='json')
         self.assertEqual(self._rows(), [('approved', 500.0), ('approved', 1200.0)])
 
+    def test_review_shows_facility_rows_a_change_removes(self):
+        """Two facilities on the old values; the clerk's 2A-2 answer leaves one
+        of them without a grid connection: its row is removed on approval —
+        listed, and the remaining row is compared with its own facility only."""
+        from emissions.models import EmissionEntry
+        step = lambda c, sid, ans: c.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                           {'step': sid, 'data': {'answer': ans}, 'language': 'tr'}, format='json')
+        step(self.c_owner, '2A-2', {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
+                                    '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._save(self.c_owner, {'1': '1000 kWh', '2': '500 kWh'})
+        self.assertEqual(self._rows(), [('approved', 500.0), ('approved', 1000.0)])
+        # the clerk drops Depo from the answer: only Gebze's row waits
+        self._save(self.c_clerk, {'1': '1200 kWh'})
+        pending = self.c_owner.get('/api/emissions/pending/').data
+        row = next(r for r in pending if r['status'] == 'submitted')
+        self.assertEqual(row['replaces']['co2e_kg'], 400.0)          # Gebze's own 1.000 kWh, not both
+        self.assertEqual([(x['facility_name'], x['co2e_kg']) for x in row['removed_by_change']], [('Depo', 200.0)])
+        # and approving does remove it
+        self.c_owner.post(f'/api/emissions/entries/{row["id"]}/approve/', {'action': 'approve'}, format='json')
+        self.assertEqual(self._rows(), [('approved', 1200.0)])
+        self.assertFalse(EmissionEntry.objects.filter(facility__name='Depo').exists())
+
     def test_removing_an_approved_answer_is_a_deletion_request(self):
         from emissions.models import EmissionEntry
         self._save(self.c_owner, {'1': '1000 kWh'})

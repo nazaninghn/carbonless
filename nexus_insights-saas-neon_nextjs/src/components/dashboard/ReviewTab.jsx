@@ -319,7 +319,8 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                           </>
                         )}
                         {entry.replaces && !entry.replaces_entry && entry.replaces.quantity != null
-                          && Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit ? (
+                          && Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit
+                          && Math.abs(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg) < 0.05 ? (
                           // Another facility of the same answer, not changed itself:
                           // it is approved with the changed rows.
                           <span className="w-full text-[11px] text-[#072C0E]/50">
@@ -330,11 +331,14 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                           // stays in the totals until this is approved.
                           <span className="w-full text-[11px] font-semibold text-[#175022]">
                             {tr ? 'Değişiklik' : 'Change'}:{' '}
-                            {entry.replaces.quantity != null
-                              ? `${num(entry.replaces.quantity, tr)} ${unitLabel(entry.replaces.unit, tr)}`
-                              : `${num(entry.replaces.co2e_kg, tr, 1)} kg CO₂e`}
-                            {' → '}
-                            {entry.replaces.quantity != null ? `${num(entry.quantity, tr)} ${unitLabel(entry.unit, tr)}` : `${num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e`}
+                            {(() => {
+                              // Same amount, another factor (e.g. a grid connection chosen): the CO₂e is what changed.
+                              const byAmount = entry.replaces.quantity != null
+                                && !(Number(entry.replaces.quantity) === Number(entry.quantity) && entry.replaces.unit === entry.unit);
+                              return byAmount
+                                ? `${num(entry.replaces.quantity, tr)} ${unitLabel(entry.replaces.unit, tr)} → ${num(entry.quantity, tr)} ${unitLabel(entry.unit, tr)}`
+                                : `${num(entry.replaces.co2e_kg, tr, 1)} kg CO₂e → ${num(entry.calculated_co2e_kg, tr, 1)} kg CO₂e`;
+                            })()}
                             {' '}({(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg) >= 0 ? '+' : '−'}{num(Math.abs(Number(entry.calculated_co2e_kg) - entry.replaces.co2e_kg), tr, 1)} kg CO₂e)
                             <span className="font-normal text-[#072C0E]/45"> · {tr ? 'onaylanana kadar önceki değer toplamlarda kalır' : 'the previous value stays in the totals until approved'}</span>
                           </span>
@@ -392,9 +396,17 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   const renderBatch = ({ batch, rows }) => {
     const reps = [...new Map(rows.map(r => [stepOf(r) || r.id, r.id])).values()];
     const busy = processing === reps.join(',');
-    const delta = rows.reduce((sum, r) => sum + Number(r.calculated_co2e_kg || 0) - (r.replaces ? Number(r.replaces.co2e_kg || 0) : 0), 0);
+    // Approved rows the change removes with nothing in their place (e.g. a
+    // facility whose electricity is no longer calculated).
+    const removed = [...new Map(rows.flatMap(r => r.removed_by_change || []).map(x => [x.id, x])).values()];
+    const delta = rows.reduce((sum, r) => sum + Number(r.calculated_co2e_kg || 0) - (r.replaces ? Number(r.replaces.co2e_kg || 0) : 0), 0)
+      - removed.reduce((sum, x) => sum + Number(x.co2e_kg || 0), 0);
     const main = rows[0];
     const sign = delta >= 0 ? '+' : '−';
+    // A small change in kg: "−0 tCO₂e" reads as no change.
+    const effect = Math.abs(delta) < 10
+      ? `${sign}${num(Math.abs(delta), tr, 1)} kg CO₂e`
+      : `${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e`;
     return (
       <div key={`batch-${batch}`} className="rounded-[1.25rem] border border-[#2ABD41]/30 bg-[#F8FDF9] p-3.5 shadow-sm">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
@@ -408,9 +420,23 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
             </h3>
             <p className="text-[11px] text-[#072C0E]/60">
               {tr
-                ? `Etkisi: ${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e · ${rows.length} satır birlikte onaylanır; onaylanana kadar önceki değerler toplamlarda kalır.`
-                : `Effect: ${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e · ${rows.length} rows are approved together; until then the previous values stay in the totals.`}
+                ? `Etkisi: ${effect} · ${rows.length} satır birlikte onaylanır; onaylanana kadar önceki değerler toplamlarda kalır.`
+                : `Effect: ${effect} · ${rows.length} rows are approved together; until then the previous values stay in the totals.`}
             </p>
+            {removed.length > 0 && (
+              <div role="note" className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] leading-snug text-amber-800">
+                <p className="font-semibold">
+                  {tr ? 'Onaylanınca toplamlardan çıkar (yerine yeni satır yok):' : 'Removed from the totals on approval (no new row takes its place):'}
+                </p>
+                <ul className="mt-0.5 list-disc pl-4">
+                  {removed.map(x => (
+                    <li key={x.id}>
+                      {[x.facility_name, (tr && x.factor_name_tr) || x.factor_name].filter(Boolean).join(' — ')} · {num(x.quantity, tr)} {unitLabel(x.unit, tr)} (−{num(x.co2e_kg, tr, 1)} kg CO₂e)
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
           {canApprove && <div className="flex shrink-0 items-center gap-1.5">
             <button
