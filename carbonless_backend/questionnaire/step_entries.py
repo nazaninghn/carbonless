@@ -1424,7 +1424,8 @@ def scope2_market_based(answers, year, company=None):
     Returns None when no electricity is answered, else
     {'total_kg', 'rows': [{site, kwh, factor, basis, kg}], 'missing': [(site, kwh)],
      'has_instrument': bool, 'supplier_market': code or None,
-     'outside_market': [site]}."""
+     'outside_market': [site], 'pending_connection': [site]} — the missing
+    sites that wait for their grid connection (Turkey), not for a factor."""
     A = {k: _value(v) for k, v in (answers or {}).items()}
     groups = activities_for_report(answers, year, company)
     acts = list(groups.get('4A-1', [])) + list(groups.get('4A-EV', []))
@@ -1462,9 +1463,12 @@ def scope2_market_based(answers, year, company=None):
             continue
         rows.append({'site': site, 'kwh': kwh, 'factor': factor, 'basis': basis, 'kg': kwh * factor,
                      'source': supplier[2] if basis == 'supplier' else None})
+    waiting = ({n.strip().lower() for n, _k in sites_pending_connection(A, company, year)}
+               if company else set())
     return {'total_kg': sum(r['kg'] for r in rows), 'rows': rows, 'missing': missing,
             'has_instrument': any(r['basis'] != 'location_fallback' for r in rows),
-            'supplier_market': supplier_market, 'outside_market': outside}
+            'supplier_market': supplier_market, 'outside_market': outside,
+            'pending_connection': [site for site, _k in missing if str(site).strip().lower() in waiting]}
 
 
 def factor_reference_years(company, year):

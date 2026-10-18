@@ -1037,10 +1037,15 @@ def _scope2_market_paragraphs(D, S, lang):
         lines.append(f'Tedarikçi beyanı yalnızca {m["supplier_market"]} pazarını kapsar; {names} için uygulanmadı.'
                      if tr else
                      f'The supplier declaration covers only the {m["supplier_market"]} market; not applied to {names}.')
+    waiting = set(m.get('pending_connection') or [])
     for site, kwh in m['missing']:
-        lines.append(f'{escape(str(site))}: {_fmt_n(kwh, 0, lang)} kWh — '
-                     + ('faktör olmadığından piyasa bazlı sonuçta da hesaplanmadı'
-                        if tr else 'not calculated in the market-based result either (no factor)'))
+        if site in waiting:
+            why = ('şebeke bağlantı türü belirtilmediğinden piyasa bazlı sonuçta da hesaplanmadı'
+                   if tr else 'not calculated in the market-based result either (grid connection not given)')
+        else:
+            why = ('faktör olmadığından piyasa bazlı sonuçta da hesaplanmadı'
+                   if tr else 'not calculated in the market-based result either (no factor)')
+        lines.append(f'{escape(str(site))}: {_fmt_n(kwh, 0, lang)} kWh — ' + why)
     out.extend(_bullets(S, lines))
     return out
 
