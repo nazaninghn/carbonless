@@ -774,8 +774,10 @@ class SubmitStepView(APIView):
         # number is never taken for zero.
         after_kg, approved_kg = questionnaire_totals(report)
         answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+        # A note also belongs to the answer that decides it (a facility's
+        # grid connection, Q24, decides whether its electricity is calculated).
         step_notes = [n for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
-                      if n['step_id'] == step]
+                      if n['step_id'] == step or step in n.get('related_steps', ())]
         # A method note (the answer is used, in a separately reported result)
         # is not an uncalculated amount: told apart so it is not shown as one.
         notes = [n['tr' if lang == 'tr' else 'en'] for n in step_notes if n.get('kind') != 'method']

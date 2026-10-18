@@ -2592,6 +2592,18 @@ class TurkeyConnectionAndDesnz2025Tests(TestCase):
         self.assertIn('Şebeke bağlantı türü seçilmemiş 1 tesisin', text)
         self.assertNotIn('Faktörü olmayan', text)
 
+    def test_saving_q24_says_which_facility_electricity_now_waits(self):
+        self._step('2A-2', {'1': {'name': 'Dilovası', 'country': 'TR'}, '2': {'name': 'Bursa', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        # Q24 answered for Dilovası only: Bursa's electricity still waits — said on this save
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
+            'step': '2A-2', 'language': 'tr',
+            'data': {'answer': {'1': {'name': 'Dilovası', 'country': 'TR', 'grid_connection': 'transmission'},
+                                '2': {'name': 'Bursa', 'country': 'TR'}}}}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        notes = r.data['calc_feedback']['notes']
+        self.assertTrue(any('Bursa' in n and 'bağlantı türü' in n for n in notes), notes)
+
     def test_electricity_without_a_facility_uses_distribution_as_an_assumption(self):
         from .assumptions import derive_assumptions
         self._step('4A-1', {'1': '1000 kWh'})
