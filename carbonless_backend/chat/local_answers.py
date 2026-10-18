@@ -206,8 +206,12 @@ def _market_result(company, year):
 def _market_answer(company, year, lang):
     from django.db.models import Sum
     m = _market_result(company, year)
-    location = float(_entries(company, year).filter(emission_factor__scope='scope2')
-                     .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    scope2 = _entries(company, year).filter(emission_factor__scope='scope2')
+    location = float(scope2.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    # The market-based result covers purchased electricity only: its
+    # location-based counterpart, so the two are compared like for like.
+    location_el = float(scope2.filter(emission_factor__category='electricity')
+                        .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     if not m:
         return (f'{year} için piyasa bazlı Kapsam 2 hesaplanamıyor: bu sonuç envanterin elektrik sorusundan '
                 f'(Soru 68) hesaplanır ve {year} envanterinde elektrik tüketimi yok.'
@@ -217,20 +221,30 @@ def _market_answer(company, year, lang):
     t = m['total_kg'] / 1000
     if lang == 'tr':
         text = (f'{year} piyasa bazlı Kapsam 2 sonucunuz **{_fmt(t, lang)} tCO₂e** — ayrıca raporlanır, '
-                f'toplamlara eklenmez. Envanter toplamındaki Kapsam 2 konum bazlıdır: {_fmt(location, lang)} tCO₂e.')
-        if not m['has_instrument']:
+                f'toplamlara eklenmez. Envanter toplamındaki Kapsam 2 konum bazlıdır: {_fmt(location, lang)} tCO₂e'
+                + (f' (satın alınan elektrik: {_fmt(location_el, lang)} tCO₂e).' if abs(location - location_el) > 1e-9 else '.'))
+        if m['rows'] and not m['has_instrument']:
             text += (' Tedarikçi beyanı veya onaylı piyasa bazlı faktör olmadığından piyasa bazlı sonuç '
                      'konum bazlı faktörlerle hesaplandı.')
-        if m['missing']:
-            text += f' Faktörü olmayan {len(m["missing"])} elektrik kaydı bu sonuçta da hesaplanmadı.'
+        waiting = len(m.get('pending_connection') or [])
+        if len(m['missing']) - waiting:
+            text += f' Faktörü olmayan {len(m["missing"]) - waiting} elektrik kaydı bu sonuçta da hesaplanmadı.'
+        if waiting:
+            text += (f' Şebeke bağlantı türü seçilmemiş {waiting} tesisin elektriği bu sonuçta da hesaplanmadı; '
+                     f'bağlantı türünü Ayarlar › Tesisler\'den seçin.')
         return text
     text = (f'Your market-based Scope 2 for {year} is **{_fmt(t, lang)} tCO₂e** — reported separately, not '
-            f'added to the totals. Scope 2 in the inventory total is location-based: {_fmt(location, lang)} tCO₂e.')
-    if not m['has_instrument']:
+            f'added to the totals. Scope 2 in the inventory total is location-based: {_fmt(location, lang)} tCO₂e'
+            + (f' (purchased electricity: {_fmt(location_el, lang)} tCO₂e).' if abs(location - location_el) > 1e-9 else '.'))
+    if m['rows'] and not m['has_instrument']:
         text += (' With no supplier declaration or approved market-based factor, the market-based result uses '
                  'the location-based factors.')
-    if m['missing']:
-        text += f' {len(m["missing"])} electricity record(s) without a factor are not calculated in it either.'
+    waiting = len(m.get('pending_connection') or [])
+    if len(m['missing']) - waiting:
+        text += f' {len(m["missing"]) - waiting} electricity record(s) without a factor are not calculated in it either.'
+    if waiting:
+        text += (f' The electricity of {waiting} facilit{"y" if waiting == 1 else "ies"} with no grid connection '
+                 f'chosen is not calculated in it either; choose it in Settings › Facilities.')
     return text
 
 

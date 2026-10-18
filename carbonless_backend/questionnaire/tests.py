@@ -2580,6 +2580,18 @@ class TurkeyConnectionAndDesnz2025Tests(TestCase):
         self.assertFalse(any('Bursa' in t and 'dahil edilmemiştir' in t for t in texts), texts)
         self.assertEqual(_sites_pending_connection(self.report), [])
 
+    def test_market_result_says_a_site_waits_for_its_connection_not_a_factor(self):
+        from chat.local_answers import local_data_answer
+        from .step_entries import scope2_market_based
+        self._step('2A-2', {'1': {'name': 'Dilovası', 'country': 'TR', 'grid_connection': 'transmission'},
+                            '2': {'name': 'Bursa', 'country': 'TR'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        m = scope2_market_based(self._answers(), 2025, self.company)
+        self.assertEqual((m['missing'], m['pending_connection']), ([('Bursa', 500.0)], ['Bursa']))
+        text = local_data_answer(self.user, '2025 piyasa bazlı kapsam 2 ne kadar?', 'tr')
+        self.assertIn('Şebeke bağlantı türü seçilmemiş 1 tesisin', text)
+        self.assertNotIn('Faktörü olmayan', text)
+
     def test_electricity_without_a_facility_uses_distribution_as_an_assumption(self):
         from .assumptions import derive_assumptions
         self._step('4A-1', {'1': '1000 kWh'})
