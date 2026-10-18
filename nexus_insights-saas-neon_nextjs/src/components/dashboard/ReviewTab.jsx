@@ -46,7 +46,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
     setLoading(true);
     try {
       const [entriesRes, advisorRes] = await Promise.all([
-        api.getPendingEntries(),
+        api.getPendingEntries(tr ? 'tr' : 'en'),
         api.getPendingAdvisorApprovals(),
       ]);
       if (entriesRes.ok) {
@@ -64,7 +64,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [tr]);
 
   useEffect(() => { fetchPending(); }, [fetchPending]);
 

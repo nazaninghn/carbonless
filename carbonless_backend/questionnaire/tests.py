@@ -884,6 +884,10 @@ class PendingChangeTests(TestCase):
         row = next(r for r in pending if r['status'] == 'submitted')
         self.assertEqual(row['replaces']['co2e_kg'], 400.0)          # Gebze's own 1.000 kWh, not both
         self.assertEqual([(x['facility_name'], x['co2e_kg']) for x in row['removed_by_change']], [('Depo', 200.0)])
+        # the question is named in the reviewer's language
+        self.assertEqual(row['change_question'], 'Soru 68')
+        en = self.c_owner.get('/api/emissions/pending/?lang=en').data
+        self.assertEqual(next(r for r in en if r['id'] == row['id'])['change_question'], 'Question 68')
         # and approving does remove it
         self.c_owner.post(f'/api/emissions/entries/{row["id"]}/approve/', {'action': 'approve'}, format='json')
         self.assertEqual(self._rows(), [('approved', 1200.0)])

@@ -303,7 +303,8 @@ export const api = {
   approveEntry: (id, action, reason) => request(`/emissions/entries/${id}/approve/`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
   downloadProofDocument: (entryId) => request(`/emissions/entries/${entryId}/proof/`),
   getByFacility: (year) => request(`/emissions/by-facility/?year=${year}`),
-  getPendingEntries: () => request('/emissions/pending/'),
+  // lang names the questions in the reviewer's language ("Question 24" / "Soru 24").
+  getPendingEntries: (lang) => request(`/emissions/pending/${lang ? `?lang=${lang}` : ''}`),
 
   // Danışman Onayı (Advisor Approval) — questionnaire answers flagged by the
   // 32-rule trigger system (custom EF override, RFI applied, K3 category "No", etc.)
