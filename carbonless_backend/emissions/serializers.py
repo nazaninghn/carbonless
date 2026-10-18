@@ -56,6 +56,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     calc_detail = serializers.JSONField(read_only=True)
     question_number = serializers.SerializerMethodField()
     replaces = serializers.SerializerMethodField()
+    removed_by_change = serializers.SerializerMethodField()
     change_question = serializers.SerializerMethodField()
 
     def get_question_number(self, obj):
@@ -99,9 +100,13 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
                           if e.status == 'approved']
         approved = cache[key]
         # The approved row of the same facility / site (an answer asked per
-        # facility has one row each); else everything the answer had.
-        old = [e for e in approved
-               if e.facility_id == obj.facility_id and e.description == obj.description] or approved
+        # facility has one row each — its text may differ: a single facility
+        # left drops the " · name" suffix); else everything the answer had.
+        old = ([e for e in approved
+                if e.facility_id == obj.facility_id and e.description == obj.description]
+               or ([e for e in approved if e.facility_id == obj.facility_id] if obj.facility_id else []))
+        if not old and not (obj.facility_id and any(e.facility_id for e in approved)):
+            old = approved   # a new facility's row replaces nothing (see removed_by_change)
         if not old:
             return None
         same = len(old) == 1
@@ -117,6 +122,39 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
                 e.proof_document and e.proof_document.name == proof and e.quantity != obj.quantity for e in old),
         }
 
+
+    def get_removed_by_change(self, obj):
+        """The approved rows of the same inventory answer that approving this
+        change removes with no row taking their place (a facility whose
+        electricity is no longer calculated, a source answered away) — so the
+        reviewer sees them, not only the rows that change."""
+        if obj.status != 'submitted' or obj.replaces_entry_id or not obj.change_batch:
+            return []
+        from questionnaire.step_entries import entry_group, _step_entries
+        group = entry_group(obj.description)
+        if not group:
+            return []
+        cache = self.context.setdefault('_removed', {})
+        key = (obj.company_id, obj.year, group)
+        if key not in cache:
+            rows = list(_step_entries(obj.company_id, obj.year, group)
+                        .select_related('emission_factor', 'facility'))
+            approved = [e for e in rows if e.status == 'approved']
+            waiting = [e for e in rows if e.status == 'submitted']
+            if not waiting or any(not e.facility_id for e in waiting):
+                # a row with no facility stands for the whole answer (replaces)
+                cache[key] = []
+            else:
+                kept_facilities = {e.facility_id for e in waiting if e.facility_id}
+                kept_text = {e.description for e in waiting}
+                cache[key] = [{
+                    'id': e.id, 'facility_name': e.facility.name if e.facility_id else None,
+                    'factor_name': e.emission_factor.name, 'factor_name_tr': e.emission_factor.name_tr or '',
+                    'quantity': float(e.quantity),
+                    'unit': e.emission_factor.unit, 'co2e_kg': float(e.calculated_co2e_kg),
+                } for e in approved
+                    if e.facility_id and e.facility_id not in kept_facilities and e.description not in kept_text]
+        return cache[key]
 
     def get_questionnaire_source(self, obj):
         desc = obj.description or ''
@@ -186,7 +224,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
-            'calc_detail', 'question_number', 'replaces', 'replaces_entry', 'delete_requested',
+            'calc_detail', 'question_number', 'replaces', 'removed_by_change', 'replaces_entry', 'delete_requested',
             'change_batch', 'change_question', 'facility_country', 'factor_country_mismatch',
         ]
         read_only_fields = [
