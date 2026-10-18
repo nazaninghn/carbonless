@@ -184,6 +184,13 @@ const FAQS = [
     },
   },
   {
+    q: { tr: 'Bir tesisin elektriği neden "hesaplanmadı / bekliyor" görünüyor?', en: 'Why does a facility\'s electricity show as "not calculated / pending"?' },
+    a: {
+      tr: 'Elektrik, tesisin ülkesinin şebeke faktörüyle hesaplanır. Türkiye\'deki bir tesiste resmi faktör şebeke bağlantı türüne (iletim / dağıtım) göre değişir: bunu Ayarlar › Tesisler\'de veya envanterde Soru 24\'te seçin; envanter hemen yeniden hesaplanır (bağlantı türünü faturanızda veya dağıtım şirketi aboneliğinizde görebilirsiniz). Ülkesi için kayıtlı faktör olmayan bir tesis için Özel Talep gönderin. Tüketim silinmez; o zamana kadar raporlarda tamamlanmayı bekleyen veri olarak görünür, sıfır değildir.',
+      en: 'Electricity is calculated with the grid factor of the facility\'s country. For a facility in Turkey the official factor depends on its grid connection (transmission / distribution): choose it in Settings › Facilities or Question 24 of the inventory and the inventory is recalculated at once (the connection type is on your bill or your distribution-company subscription). For a facility whose country has no registered factor, send a Custom Request. The consumption is kept; until then reports show it as pending data, not zero.',
+    },
+  },
+  {
     q: { tr: 'Bir kaydı veya sayfayı nasıl hızlıca bulurum?', en: 'How do I quickly find an entry or a page?' },
     a: {
       tr: 'Ctrl+K (Mac\'te ⌘K) ile arama açılır: sayfa adını veya kaynağı yazın (örn. «elektrik»). Bir kaydı seçtiğinizde Emisyon Yönetimi\'nde o kayıt işaretlenir.',
