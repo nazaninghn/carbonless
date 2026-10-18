@@ -256,6 +256,27 @@ class ClientProgressTests(TestCase):
         self.assertIsNone(self.report.client_progress)
 
 
+    def test_profile_pdf_counts_what_the_survey_counts(self):
+        from io import BytesIO
+        from pypdf import PdfReader
+        from .report_pdf import generate_questionnaire_report
+        self._step({'answered': 9, 'total': 20, 'by_stage': {'1': 5, '2': 3, '5': 1}})
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.client_progress['by_stage'], {'1': 5, '2': 3, '5': 1})
+        text = ' '.join(' '.join(p.extract_text() for p in PdfReader(BytesIO(
+            generate_questionnaire_report(self.report, 'tr'))).pages).split())
+        self.assertIn('Toplam yanıtlanan soru: 9', text)
+        self.assertIn('Merkez Ülke Türkiye', text)
+        # counts that do not add up to the answered total are not kept
+        self._step({'answered': 9, 'total': 20, 'by_stage': {'1': 50}})
+        self.report.refresh_from_db()
+        self.assertNotIn('by_stage', self.report.client_progress)
+        # a completed inventory lists the survey's count too, not every stored step
+        self.report.status = CarbonReport.Status.COMPLETED
+        self.report.save(update_fields=['status'])
+        self.assertEqual(self._listed(), {'completed': 9, 'total': 9, 'percent': 100})
+
+
 class StepEntriesTests(TestCase):
     """Only questions that ask for an activity amount become emission entries."""
 

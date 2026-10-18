@@ -166,6 +166,16 @@ def _answered_by_stage(answered_ids):
     return counts
 
 
+def _country_label(code, lang):
+    """A stored country code as a name ("TR" -> "Türkiye" / "Turkey"), from
+    the questionnaire's own country list; anything else is shown as stored."""
+    from .answer_text import _labels
+    raw = (code or '').strip()
+    opts = ((_labels().get('A3') or {}).get('options') or {}) if raw else {}
+    names = opts.get(raw.upper())
+    return (names.get(lang) or names.get('en')) if isinstance(names, dict) else (raw or '—')
+
+
 def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0, draft=False) -> bytes:
     """Generate the qualitative Carbon Inventory Profile PDF for a completed
     (or in-progress) CarbonReport. Returns raw PDF bytes.
@@ -184,7 +194,14 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
 
     steps = list(ReportStep.objects.filter(report=report))
     answered_ids = {s.step_id for s in steps}
-    stage_counts = _answered_by_stage(answered_ids)
+    # The questionnaire's own counts (questions on the user's route), when it
+    # sent them: answers left on an abandoned branch are not counted, so the
+    # report says what the progress panel says (128, not 143).
+    by_stage = (report.client_progress or {}).get('by_stage') if isinstance(report.client_progress, dict) else None
+    if by_stage:
+        stage_counts = [int(by_stage.get(str(i + 1), 0)) for i in range(len(STAGE_BLOCKS))]
+    else:
+        stage_counts = _answered_by_stage(answered_ids)
     answered_total = sum(stage_counts)
 
     # ── Build PDF ───────────────────────────────────
@@ -265,7 +282,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
     profile_rows = [
         ('Yasal Unvan' if tr else 'Legal Entity Name', cname),
         ('Vergi/Kayıt No' if tr else 'Tax / Registration ID', (company.tax_number if company else '') or '—'),
-        ('Merkez Ülke' if tr else 'Headquarters Country', company.country_of_headquarters if company else '—'),
+        ('Merkez Ülke' if tr else 'Headquarters Country', _country_label(company.country_of_headquarters, lang) if company else '—'),
         ('NACE Sektör Kodu' if tr else 'NACE Sector Code', company.nace_code if company and company.nace_code else '—'),
         ('Faaliyet Açıklaması' if tr else 'Activity Description', (company.main_activity_description[:120] + '…') if company and company.main_activity_description and len(company.main_activity_description) > 120 else (company.main_activity_description if company else '—') or '—'),
         ('Çalışan Sayısı Aralığı' if tr else 'Employee Count Band', company.number_of_employees if company and company.number_of_employees else '—'),

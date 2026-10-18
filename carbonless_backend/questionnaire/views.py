@@ -32,7 +32,19 @@ def _client_progress_from(payload):
         return None
     if total <= 0 or answered < 0 or answered > total or total > 1000:
         return None
-    return {'answered': answered, 'total': total}
+    out = {'answered': answered, 'total': total}
+    # Answered questions per stage on the user's route (the sidebar's section
+    # counts), used by the Profile PDF so it lists the same numbers.
+    by_stage = payload.get('by_stage')
+    if isinstance(by_stage, dict):
+        try:
+            stages = {str(int(k)): int(v) for k, v in by_stage.items()}
+        except (TypeError, ValueError):
+            stages = None
+        if stages and all(1 <= int(k) <= 20 and 0 <= v <= total for k, v in stages.items()) \
+                and sum(stages.values()) == answered:
+            out['by_stage'] = stages
+    return out
 
 
 def datetime_now_year():
@@ -182,9 +194,12 @@ def _progress(completed_count, status, client_progress=None):
     sit at ~80% forever purely because the user never hit the branches that
     don't apply to them.
     """
-    if status == CarbonReport.Status.COMPLETED:
-        return {'completed': completed_count, 'total': completed_count, 'percent': 100}
     client = _client_progress_from(client_progress)
+    if status == CarbonReport.Status.COMPLETED:
+        # The questions on the user's route (as the survey counts them) when
+        # known — not every stored step, abandoned branches included.
+        done = client['answered'] if client else completed_count
+        return {'completed': done, 'total': done, 'percent': 100}
     if client:
         # Same numbers the survey's own progress bar shows.
         percent = min(99, round(client['answered'] / client['total'] * 100))

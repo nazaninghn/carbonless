@@ -330,10 +330,15 @@ function questionPath(answersMap) {
 // saved step, so the inventory library shows the very same numbers.
 function computeSurveyProgress(answersMap, completed = false) {
   const route = questionPath(answersMap).filter(q => q.type !== 'info');
-  const answered = route.filter(q => q.id in answersMap).length;
+  const done = route.filter(q => q.id in answersMap);
+  const answered = done.length;
   const total = completed ? answered : route.length;
   const percent = completed ? 100 : (total ? Math.min(100, Math.round((answered / total) * 100)) : 0);
-  return { answered, total, percent };
+  // Answered questions per stage on the route — the sidebar's section counts,
+  // sent with each save so the Profile PDF lists the very same numbers.
+  const byStage = {};
+  done.forEach(q => { if (q.stage) byStage[q.stage] = (byStage[q.stage] || 0) + 1; });
+  return { answered, total, percent, byStage };
 }
 
 // Supplier EF form → the step whose consumption amounts it applies to.
@@ -3211,8 +3216,8 @@ export function QuestionnaireTab({
         if (raw !== undefined) copied[stepId] = raw;
       });
       copied.A4 = String(reuseYear);
-      const { answered, total } = computeSurveyProgress(copied);
-      const res = await api.reuseCompanyProfile(reportId, Number(reuseYear), { answered, total });
+      const { answered, total, byStage } = computeSurveyProgress(copied);
+      const res = await api.reuseCompanyProfile(reportId, Number(reuseYear), { answered, total, by_stage: byStage });
       const data = await res.json().catch(() => ({}));
       if (res.ok && data.success) {
         setAnswers(prev => {
@@ -3856,8 +3861,8 @@ export function QuestionnaireTab({
     if (!rid_) return { success: true, data: {} };
     try {
       const backendData = mapAnswerForBackend(questionId, value);
-      const { answered, total } = computeSurveyProgress({ ...answersRef.current, [questionId]: value });
-      const res = await api.submitReportStep(rid_, questionId, backendData, lang, { answered, total });
+      const { answered, total, byStage } = computeSurveyProgress({ ...answersRef.current, [questionId]: value });
+      const res = await api.submitReportStep(rid_, questionId, backendData, lang, { answered, total, by_stage: byStage });
 
       // Guard: component may have unmounted while the save request was in-flight
       if (!isMounted.current) return { success: false, data: {} };
