@@ -914,6 +914,26 @@ class PendingChangeTests(TestCase):
         self.assertEqual(self._rows(), [('approved', 1200.0)])
         self.assertFalse(EmissionEntry.objects.filter(facility__name='Depo').exists())
 
+    def test_notice_names_the_edited_question_not_the_first_recalculated(self):
+        from accounts.models import Notification
+        step = lambda c, sid, ans: c.patch(f'/api/questionnaire/{self.report.id}/step/',
+                                           {'step': sid, 'data': {'answer': ans}, 'language': 'tr'}, format='json')
+        step(self.c_owner, '2A-2', {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
+                                    '2': {'name': 'Depo', 'country': 'TR'}})
+        self._save(self.c_owner, {'1': '1000 kWh', '2': '500 kWh'})
+        # the clerk chooses Depo's connection in Q24: Q68's rows change
+        step(self.c_clerk, '2A-2', {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
+                                    '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'transmission'}})
+        note = Notification.objects.get(user=self.owner, notification_type='entry_submitted')
+        self.assertIn('bir cevabı değiştirdi (Soru 24; bağlı hesaplamalar: Soru 68', note.message)
+        # approved: the clerk is told the Q24 change was approved, as a yearly amount
+        from emissions.models import EmissionEntry
+        row = EmissionEntry.objects.filter(status='submitted').first()
+        self.c_owner.post(f'/api/emissions/entries/{row.id}/approve/', {'action': 'approve'}, format='json')
+        done = Notification.objects.get(user=self.clerk, notification_type='entry_approved')
+        self.assertEqual((done.title, done.message),
+                         ('Değişikliğiniz onaylandı', '2025 envanterinde Soru 24 değişikliğiniz onaylandı.'))
+
     def test_removing_an_approved_answer_is_a_deletion_request(self):
         from emissions.models import EmissionEntry
         self._save(self.c_owner, {'1': '1000 kWh'})

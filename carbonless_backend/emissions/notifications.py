@@ -52,11 +52,20 @@ def _prefs(user):
     return profile.notify_approvals, lang
 
 
+def _period(entry, lang):
+    """'Nisan 2026' — or the year alone for an inventory answer, which is a
+    yearly amount (stored on month 1, it is not January's)."""
+    from .inventory import is_annual
+    if is_annual(entry):
+        return f'{entry.year} (yıllık)' if lang == 'tr' else f'{entry.year} (annual)'
+    month = _MONTHS[lang][entry.month - 1] if 1 <= (entry.month or 0) <= 12 else ''
+    return f'{month} {entry.year}'.strip()
+
+
 def _describe(entry, lang):
     factor = entry.emission_factor
     name = (factor.name_tr or factor.name) if lang == 'tr' else factor.name
-    month = _MONTHS[lang][entry.month - 1] if 1 <= (entry.month or 0) <= 12 else ''
-    return f'{name} · {_qty(entry, lang)} · {month} {entry.year}'.strip()
+    return f'{name} · {_qty(entry, lang)} · {_period(entry, lang)}'.strip()
 
 
 def _qty(entry, lang):
@@ -76,8 +85,7 @@ def _describe_change(old, new, lang):
         name = f"{(of.name_tr or of.name) if lang == 'tr' else of.name} → {name}"
 
     def period(e):
-        m = _MONTHS[lang][e.month - 1] if 1 <= (e.month or 0) <= 12 else ''
-        return f'{m} {e.year}'.strip()
+        return _period(e, lang)
     parts = [name]
     parts.append(f'{_qty(old, lang)} → {_qty(new, lang)}' if old.quantity != new.quantity or
                  old.emission_factor_id != new.emission_factor_id else _qty(new, lang))
@@ -258,7 +266,7 @@ def notify_delete_refused(entry, reason, reviewer):
         logger.exception('Could not notify the author of entry %s', entry.pk)
 
 
-def notify_questionnaire_change(author, company, year, step, entries, replaced, also=()):
+def notify_questionnaire_change(author, company, year, step, entries, replaced, also=(), edited=None):
     """A data-entry member changed an inventory answer: tell the approvers
     what it is now and what it replaces. One notice per answer — while it is
     unread, a later save of the same answer updates it instead of adding
@@ -277,9 +285,10 @@ def notify_questionnaire_change(author, company, year, step, entries, replaced, 
             _, lang = _prefs(membership.user)
             now = _summary(entries, lang)
             before = _summary(replaced, lang) if replaced else ''
-            where = question_label(step, lang)
-            if also:
-                others = ', '.join(dict.fromkeys(question_label(x, lang) for x in also))
+            where = question_label(edited or step, lang)
+            recalculated = ([step] + list(also)) if edited else list(also)
+            if recalculated:
+                others = ', '.join(dict.fromkeys(question_label(x, lang) for x in recalculated))
                 where += (f'; bağlı hesaplamalar: {others}' if lang == 'tr' else f'; recalculated with it: {others}')
             if lang == 'tr':
                 title = 'Onay bekleyen değişiklik' if before else 'Onay bekleyen kayıt'
@@ -394,13 +403,25 @@ def notify_entry_reviewed(entry, approved, reviewer):
     try:
         wants, lang = _prefs(entry.user)
         what = _describe(entry, lang)
+        # An inventory answer's change is reviewed as one: name the question
+        # that was changed, not one of the rows it recalculated.
+        batch_step = entry.change_batch.split(':')[0] if entry.change_batch else ''
+        if batch_step:
+            from questionnaire.step_entries import question_label
+            label = question_label(batch_step, lang)
+            what = (f'{entry.year} envanterinde {label} değişikliğiniz' if lang == 'tr'
+                    else f'Your change to {label} of the {entry.year} inventory')
         # A change to an approved entry: rejected, the approved figure stays.
         old = entry.replaces_entry if entry.replaces_entry_id else None
         if approved:
             if lang == 'tr':
-                _notify(entry.user, 'entry_approved', 'Kaydınız onaylandı', f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}', company_id=entry.company_id)
+                _notify(entry.user, 'entry_approved',
+                        'Değişikliğiniz onaylandı' if batch_step else 'Kaydınız onaylandı',
+                        f'{what} onaylandı.', f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}', company_id=entry.company_id)
             else:
-                _notify(entry.user, 'entry_approved', 'Your entry was approved', f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}', company_id=entry.company_id)
+                _notify(entry.user, 'entry_approved',
+                        'Your change was approved' if batch_step else 'Your entry was approved',
+                        f'{what} was approved.', f'/dashboard?tab=emissions&year={entry.year}&entry={entry.id}', company_id=entry.company_id)
             return
         # The sentence adds its own full stop: "… sayılır.." when the reason
         # already ended with one.
@@ -414,7 +435,7 @@ def notify_entry_reviewed(entry, approved, reviewer):
             if old is not None:
                 fix = f' Onaylı kayıt ({_describe(old, lang)}) geçerli kalıyor.' + fix
             _notify(entry.user, 'entry_rejected',
-                    'Değişiklik talebiniz reddedildi' if old is not None else 'Kaydınız reddedildi',
+                    'Değişiklik talebiniz reddedildi' if (old is not None or batch_step) else 'Kaydınız reddedildi',
                     f'{what} reddedildi.' + (f' Neden: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
             if wants:
                 _send_email(entry.user, 'Carbonless: kaydınız reddedildi',
@@ -427,7 +448,7 @@ def notify_entry_reviewed(entry, approved, reviewer):
             if old is not None:
                 fix = f' The approved entry ({_describe(old, lang)}) stays as it is.' + fix
             _notify(entry.user, 'entry_rejected',
-                    'Your change was rejected' if old is not None else 'Your entry was rejected',
+                    'Your change was rejected' if (old is not None or batch_step) else 'Your entry was rejected',
                     f'{what} was rejected.' + (f' Reason: {reason}.' if reason else '') + fix, link, company_id=entry.company_id)
             if wants:
                 _send_email(entry.user, 'Carbonless: your entry was rejected',
