@@ -1586,7 +1586,7 @@ def uncalculated_notes(answers, year, company=None):
                 # Saved before the connection-based factors: still counted
                 # with the earlier single factor until it is recalculated.
                 out.append({
-                    'step_id': '4A-1', 'kind': 'method',
+                    'step_id': '4A-1', 'kind': 'method', 'related_steps': ['2A-2'],
                     'tr': f'{name} elektriği ({amount_tr} kWh) hâlâ önceki tek Türkiye şebeke faktörüyle '
                           f'hesaplı; resmi faktör tesisin şebeke bağlantı türüne (iletim / dağıtım) göre değişir. '
                           f'Bağlantı türünü Soru 24\'te veya Ayarlar › Tesisler\'de seçin; envanter yeniden hesaplanır.',
@@ -1604,7 +1604,7 @@ def uncalculated_notes(answers, year, company=None):
                 })
                 continue
             out.append({
-                'step_id': '4A-1',
+                'step_id': '4A-1', 'related_steps': ['2A-2'],
                 'tr': f'{name} elektriği ({amount_tr} kWh) hesaplanmadı — tesisin şebeke bağlantı türü '
                       f'(iletim / dağıtım) seçilmedi; resmi faktör buna göre değişir. Bağlantı türünü Soru 24\'te '
                       f'veya Ayarlar › Tesisler\'de seçin; tüketim kayıtlı ve tamamlanmayı bekliyor.',

@@ -1,7 +1,7 @@
 'use client';
 
 import { getPermissions, noPermissionMessage } from '@/lib/permissions';
-import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, memo, useId } from 'react';
 import Image from 'next/image';
 import {
   Send, Plus, Trash2, MessageSquare, Sparkles, Loader2, ChevronLeft,
@@ -1546,6 +1546,9 @@ function CountryCityInput({ value, onChange, lang }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
   const val = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
+  // Each field's label names its control (screen readers announced the
+  // facility name by its placeholder and the selects with no name at all).
+  const uid = useId();
   return (
     <div className="flex flex-col gap-3 w-full max-w-lg">
       {fields.map(field => {
@@ -1563,9 +1566,11 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
         const fieldVal = val[field.id] ?? '';
         const setField = (v) => onChange({ ...val, [field.id]: v });
         const charLen = field.maxLength ? String(fieldVal).length : null;
+        const ctrlId = `${uid}-${field.id}`;
+        const labelId = `${ctrlId}-label`;
         return (
           <div key={field.id} className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-[#175022]/70">
+            <label id={labelId} htmlFor={ctrlId} className="text-xs font-semibold text-[#175022]/70">
               {/* labelByValue: the label follows another field's choice
                   (K3C6-2's quantity says "Gece sayısı" for a hotel). */}
               {(() => {
@@ -1576,7 +1581,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               {field.required && <span className="ml-1 text-red-400">*</span>}
             </label>
             {field.type === 'boolean' ? (
-              <div role="radiogroup" className="flex gap-2">
+              <div role="radiogroup" aria-labelledby={labelId} className="flex gap-2">
                 {[{ value: 'true', label: lang === 'tr' ? 'Evet' : 'Yes' }, { value: 'false', label: lang === 'tr' ? 'Hayır' : 'No' }].map(opt => (
                   <Chip
                     key={opt.value}
@@ -1594,6 +1599,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               // compact native <select> the dedicated CountryCityInput widget
               // already uses elsewhere, instead.
               <select
+                id={ctrlId}
                 className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
                 value={fieldVal}
                 onChange={e => setField(e.target.value)}
@@ -1607,7 +1613,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
                 ))}
               </select>
             ) : field.type === 'select' || field.type === 'single_select' ? (
-              <div role="radiogroup" className="flex flex-wrap gap-2">
+              <div role="radiogroup" aria-labelledby={labelId} className="flex flex-wrap gap-2">
                 {(field.options || []).map(opt => (
                   <Chip
                     key={opt.value}
@@ -1620,6 +1626,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               </div>
             ) : field.subtype === 'multi_line' ? (
               <textarea
+                id={ctrlId}
                 className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20 resize-none"
                 rows={3}
                 value={fieldVal}
@@ -1630,6 +1637,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
               />
             ) : (
               <input
+                id={ctrlId}
                 className="rounded-xl border border-[#175022]/12 bg-white px-3 py-2 text-sm text-[#175022] outline-none placeholder:text-[#175022]/30 focus:border-[#8BEA99]/50 focus:ring-2 focus:ring-[#8BEA99]/20"
                 type="text"
                 inputMode={field.type === 'numeric' || field.subtype === 'numeric' ? 'decimal' : 'text'}
