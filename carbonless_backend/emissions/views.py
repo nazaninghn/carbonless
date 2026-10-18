@@ -1156,7 +1156,7 @@ def pending_entries_view(request):
     from .serializers import EmissionEntrySerializer
     from .duplicates import find_annual_overlap
     from .inventory import ANNUAL_PREFIX
-    data = EmissionEntrySerializer(entries, many=True).data
+    data = EmissionEntrySerializer(entries, many=True, context={"request": request}).data
     # The author may have been warned that the year's inventory already holds
     # this source as an annual amount, and sent it anyway: the approver has to
     # see the same warning, or one "Onayla" counts the consumption twice.
