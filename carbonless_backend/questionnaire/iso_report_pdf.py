@@ -1049,8 +1049,13 @@ def _sites_pending_connection(report):
     from .step_entries import _value, sites_pending_connection
     if report is None or report.company is None:
         return []
+    from .step_entries import sites_on_superseded_grid
     A = {k: _value(v) for k, v in _answers(report).items()}
-    return sites_pending_connection(A, report.company, report.reporting_year)
+    # Still counted with the earlier single Turkey factor: in the figures,
+    # so not "pending" (disclosed as a method note instead).
+    counted = sites_on_superseded_grid(report.company, report.reporting_year)
+    return [(n, k) for n, k in sites_pending_connection(A, report.company, report.reporting_year)
+            if n not in counted]
 
 
 def _not_calculated_sites_note(D, lang, tr):

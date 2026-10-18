@@ -152,7 +152,8 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
         # The report's own wording when there is one (a disclosure, not an
         # instruction to the user).
         if n.get('kind') == 'method':   # used, only in a separately reported result
-            add(n['step_id'], 'A', f'Yöntem notu — {n["tr"]}', f'Method note — {n["en"]}')
+            add(n['step_id'], 'A', f'Yöntem notu — {n.get("report_tr", n["tr"])}',
+                f'Method note — {n.get("report_en", n["en"])}')
             continue
         add(n['step_id'], 'A', f'Hesaplanmayan cevap — {n.get("report_tr", n["tr"])}',
             f'Not calculated — {n.get("report_en", n["en"])}')

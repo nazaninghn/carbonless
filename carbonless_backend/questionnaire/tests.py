@@ -2518,6 +2518,46 @@ class TurkeyConnectionAndDesnz2025Tests(TestCase):
         self._step('4A-1', {'1': '1000 kWh', '2': '1000 kWh', '3': '500 kWh'})
         self.assertIn(('turkey-grid-distribution', 500.0, 234.5), self._rows('4A-1'))
 
+    def test_connection_chosen_in_settings_recalculates_and_reaches_2a2(self):
+        from companies.models import Facility
+        self._step('2A-2', {'1': {'name': 'Bursa', 'country': 'TR'}})
+        self._step('4A-1', {'1': '500 kWh'})
+        self.assertEqual(self._rows('4A-1'), [])                         # waits
+        bursa = Facility.objects.get(company=self.company, name='Bursa')
+        r = self.client.patch(f'/api/companies/facilities/{bursa.pk}/', {'grid_connection': 'distribution'},
+                              format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        # calculated now, without saving the inventory again
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 500.0, 234.5)])
+        # and the questionnaire shows it (a later 2A-2 save keeps it)
+        answer = self.report.steps.get(step_id='2A-2').answer
+        rows = answer.get('answer', answer)
+        self.assertEqual(rows['1']['grid_connection'], 'distribution')
+
+    def test_entry_saved_with_the_superseded_factor_is_not_reported_as_pending(self):
+        from companies.models import Facility
+        from emissions.models import EmissionEntry, EmissionFactor
+        from .assumptions import derive_assumptions
+        from .iso_report_pdf import _sites_pending_connection
+        from .step_entries import uncalculated_notes
+        self._step('2A-2', {'1': {'name': 'Bursa', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._step('4A-1', {'1': '500 kWh'})
+        # an entry saved before the connection-based factors: the single one
+        old = EmissionFactor.objects.create(slug='turkey-grid', name='Turkey national grid', scope='scope2',
+                                            category='electricity', country='turkey', unit='kwh',
+                                            factor_kg_co2e=0.4199, year=2024, source='generic', is_active=False)
+        EmissionEntry.objects.filter(company=self.company, description__startswith='Questionnaire step 4A-1').update(
+            emission_factor=old)
+        Facility.objects.filter(name='Bursa').update(grid_connection='')
+        # counted with the earlier factor: a method note, not "not included"
+        note = next(n for n in uncalculated_notes(self._answers(), 2025, self.company)
+                    if n['step_id'] == '4A-1' and 'Bursa' in n['tr'])
+        self.assertEqual(note['kind'], 'method')
+        self.assertIn('önceki tek Türkiye şebeke faktörüyle', note['report_tr'])
+        texts = [x['text'] for x in derive_assumptions(self._answers(), 'tr', 2025, self.company)]
+        self.assertFalse(any('Bursa' in t and 'dahil edilmemiştir' in t for t in texts), texts)
+        self.assertEqual(_sites_pending_connection(self.report), [])
+
     def test_electricity_without_a_facility_uses_distribution_as_an_assumption(self):
         from .assumptions import derive_assumptions
         self._step('4A-1', {'1': '1000 kWh'})
@@ -2668,7 +2708,8 @@ class FacilityAttributionTests(StepEntriesTests):
 
     def test_electricity_keyed_to_facility_1_is_attributed_to_facility_1(self):
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
-        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR'}})
+        # a Turkish facility's electricity needs its grid connection (else it waits)
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._step('4A-1', {'1': '1000 kWh'})
         entries = self._entries()
         self.assertEqual(len(entries), 1)

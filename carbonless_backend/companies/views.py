@@ -59,11 +59,18 @@ class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def perform_update(self, serializer):
         old_name = serializer.instance.name
+        old_connection = serializer.instance.grid_connection
         facility = serializer.save()
         if facility.name != old_name:
             # The questionnaire names this facility too (2A-2): keep them in step.
             from questionnaire.facility_sync import rename_in_answers
             rename_in_answers(facility.company, old_name, facility.name)
+        if facility.grid_connection != old_connection:
+            # The Turkish grid factor follows the connection: the inventories
+            # using this facility are recalculated now, not at some later save.
+            from questionnaire.facility_sync import set_connection_in_answers
+            set_connection_in_answers(facility.company, self.request.user, facility.name,
+                                      facility.grid_connection)
 
 
 from .serializers import CompanyMembershipSerializer
