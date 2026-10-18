@@ -1036,6 +1036,21 @@ class OnlyApprovedEntriesCountTests(TestCase):
         self.assertIn('onay bekleyen kayıt', text)
         self.assertIn('dahil değildir', text)
 
+    def test_detailed_records_name_the_facility_and_the_annual_period(self):
+        from io import BytesIO
+        from pypdf import PdfReader
+        from companies.models import Facility
+        fac = Facility.objects.create(company=self.company, name='Fab Gebze', country='TR')
+        # an inventory answer: a yearly amount (stored on month 1), not January's
+        EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=self.factor,
+                                     year=2026, month=1, quantity=7, status='approved', facility=fac,
+                                     description='Questionnaire step 4A-1 · Fab Gebze')
+        res = self.client.get('/api/emissions/report/?year=2026&lang=tr')
+        text = ' '.join(' '.join(p.extract_text() for p in PdfReader(BytesIO(res.content)).pages).split())
+        records = text[text.index('6. Detaylı Kayıtlar', text.index('6. Detaylı Kayıtlar') + 1):]
+        self.assertIn('Fab Gebze', records)
+        self.assertIn('Yıllık', records)
+
     def test_legacy_migration_approves_only_approver_entries(self):
         import importlib
         from django.apps import apps

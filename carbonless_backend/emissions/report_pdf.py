@@ -13,6 +13,7 @@ Enterprise-grade PDF with:
 import io
 import os
 from datetime import datetime
+from xml.sax.saxutils import escape
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -225,6 +226,7 @@ def _styles():
     S['warning'] = ParagraphStyle('warning', fontName=fnb, fontSize=9, textColor=WARN_AMBER, spaceAfter=4, leading=13)
     S['no_data'] = ParagraphStyle('no_data', fontName=fn, fontSize=9, textColor=GRAY_400, spaceAfter=4, leading=13)
     S['small'] = ParagraphStyle('small', fontName=fn, fontSize=7.5, textColor=GRAY_400, spaceAfter=2, leading=10)
+    S['cell'] = ParagraphStyle('cell', fontName=fn, fontSize=8, textColor=GRAY_800, leading=10)
     S['footer'] = ParagraphStyle('footer', fontName=fn, fontSize=7, textColor=GRAY_400, alignment=TA_CENTER)
     S['big_num'] = ParagraphStyle('bn', fontName=fnb, fontSize=48, textColor=BRAND_DARK, alignment=TA_CENTER, leading=54)
     S['big_label'] = ParagraphStyle('bl', fontName=fnb, fontSize=9, textColor=OLIVE_DARK, alignment=TA_CENTER, leading=12)
@@ -282,7 +284,7 @@ def _scope(n, tr):
 # Unit codes as stored (lower-case) -> readable label in the report.
 _UNIT_LABELS = {
     'kwh': 'kWh', 'mwh': 'MWh', 'gj': 'GJ', 'm3': 'm³', 'm2': 'm²', 'kg': 'kg', 'km': 'km',
-    'usd': 'USD', 'tl': 'TL', 'eur': 'EUR',
+    'usd': 'USD', 'tl': 'TL', 'eur': 'EUR', 'kgco2e': 'kg CO\u2082e',
 }
 _UNIT_LABELS_TR = {
     'liters': 'litre', 'tonne': 'ton', 'tonne-km': 'ton-km', 'pkm': 'yolcu-km',
@@ -1034,16 +1036,26 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
                'Miktar' if tr else 'Qty', 'Birim' if tr else 'Unit',
                'Fakt\u00f6r' if tr else 'EF', 'kg CO\u2082e']
         rows = [hdr]
+        from .inventory import is_annual
         for e in entries[:300]:
             ef = e.emission_factor
-            nm = (ef.name_tr if tr and ef.name_tr else ef.name)[:28]
+            # The source wraps in its cell (a cut name ran into the next
+            # column) and names the facility, so rows of the same source can
+            # be told apart.
+            nm = escape(ef.name_tr if tr and ef.name_tr else ef.name)
+            if e.facility_id:
+                nm += f'<br/><font size="7" color="#6b7280">{escape(e.facility.name)}</font>'
+            # The factor the amount was calculated with (frozen at saving).
+            factor = e.factor_value_snapshot if e.factor_value_snapshot is not None else ef.factor_kg_co2e
             rows.append([
-                nm, ef.scope.replace('scope', 'K' if tr else 'S'),
-                months[e.month-1] if 1 <= e.month <= 12 else str(e.month),
+                Paragraph(nm, S['cell']), ef.scope.replace('scope', 'K' if tr else 'S'),
+                # An inventory answer is a yearly amount, not January's.
+                ('Y\u0131ll\u0131k' if tr else 'Annual') if is_annual(e)
+                else (months[e.month-1] if 1 <= e.month <= 12 else str(e.month)),
                 _localize_num(f'{float(e.quantity):,.1f}', tr), _unit(ef.unit, tr),
-                _localize_num(f'{float(ef.factor_kg_co2e):.4f}', tr), _fmt(float(e.calculated_co2e_kg), tr),
+                _localize_num(f'{float(factor):.4f}', tr), _fmt(float(e.calculated_co2e_kg), tr),
             ])
-        dt = Table(rows, colWidths=[42*mm, 10*mm, 10*mm, 20*mm, 13*mm, 18*mm, 28*mm])
+        dt = Table(rows, colWidths=[46*mm, 10*mm, 12*mm, 20*mm, 15*mm, 18*mm, 24*mm], repeatRows=1)
         dt.setStyle(_tbl_style(fn, fnb))
         E.append(dt)
     else:
