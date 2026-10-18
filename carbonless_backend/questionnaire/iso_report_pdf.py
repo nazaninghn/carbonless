@@ -1050,6 +1050,11 @@ def _scope2_market_paragraphs(D, S, lang):
     return out
 
 
+def _country_label(code, lang):
+    from .report_pdf import _country_label as label
+    return label(code, lang)
+
+
 def _sites_pending_connection(report):
     from .step_entries import _value, sites_pending_connection
     if report is None or report.company is None:
@@ -1639,7 +1644,10 @@ def _section1(E, S, D, report, lang, TBL, FIG):
          company.legal_entity_name if company else t('not_declared', lang)),
         ('Registered address' if lang == 'en' else 'Kayıtlı adres',
          getattr(company, 'registered_address', None)
-         or getattr(company, 'country_of_headquarters', None) or t('not_declared', lang)),
+         # no address given: the country it is registered in, by name ("TR" read as an address)
+         or (_country_label(getattr(company, 'country_of_headquarters', ''), lang)
+             if getattr(company, 'country_of_headquarters', None) else None)
+         or t('not_declared', lang)),
         ('Tax office and number' if lang == 'en' else 'Vergi dairesi ve numarası',
          ' — '.join(x for x in (getattr(company, 'tax_office', '') or '',
                                 getattr(company, 'tax_number', '') or '') if x)

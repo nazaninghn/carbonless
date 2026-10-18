@@ -2264,6 +2264,9 @@ class ISOReportSigningStateTests(TestCase):
         ReportStep.objects.create(report=self.report, step_id='7C-2', answer={
             'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'})
 
+
+    def test_registered_address_falls_back_to_the_country_name(self):
+        self.assertIn('Kayıtlı adres Türkiye', self._pdf_text(self.report))
     def test_signed_and_untouched(self):
         from datetime import datetime
         text = self._pdf_text(self.report)
