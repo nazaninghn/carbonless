@@ -3967,6 +3967,10 @@ export function QuestionnaireTab({
           shownCalcNotesRef.current.add(note);
           parts.push(`ℹ️ ${trL ? 'Hesaplanmadı' : 'Not calculated'}: ${note}`);
         }
+        // Q24: a grid connection waiting for an approver, or not known yet.
+        for (const note of fb.connection_notes || []) {
+          parts.push(`⏳ ${note}`);
+        }
         // Used, but only in a separately reported result (market-based Scope 2).
         for (const note of fb.method_notes || []) {
           if (shownCalcNotesRef.current.has(note)) continue;

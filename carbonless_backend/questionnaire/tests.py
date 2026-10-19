@@ -914,25 +914,75 @@ class PendingChangeTests(TestCase):
         self.assertEqual(self._rows(), [('approved', 1200.0)])
         self.assertFalse(EmissionEntry.objects.filter(facility__name='Depo').exists())
 
-    def test_notice_names_the_edited_question_not_the_first_recalculated(self):
-        from accounts.models import Notification
-        step = lambda c, sid, ans: c.patch(f'/api/questionnaire/{self.report.id}/step/',
-                                           {'step': sid, 'data': {'answer': ans}, 'language': 'tr'}, format='json')
-        step(self.c_owner, '2A-2', {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
-                                    '2': {'name': 'Depo', 'country': 'TR'}})
-        self._save(self.c_owner, {'1': '1000 kWh', '2': '500 kWh'})
-        # the clerk chooses Depo's connection in Q24: Q68's rows change
-        step(self.c_clerk, '2A-2', {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
-                                    '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'transmission'}})
-        note = Notification.objects.get(user=self.owner, notification_type='entry_submitted')
-        self.assertIn('bir cevabı değiştirdi (Soru 24; bağlı hesaplamalar: Soru 68', note.message)
-        # approved: the clerk is told the Q24 change was approved, as a yearly amount
+    def _q24(self, client, rows):
+        r = client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                         {'step': '2A-2', 'data': {'answer': rows}, 'language': 'tr'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        return r.data['calc_feedback']
+
+    def _factors(self):
         from emissions.models import EmissionEntry
-        row = EmissionEntry.objects.filter(status='submitted').first()
-        self.c_owner.post(f'/api/emissions/entries/{row.id}/approve/', {'action': 'approve'}, format='json')
-        done = Notification.objects.get(user=self.clerk, notification_type='entry_approved')
-        self.assertEqual((done.title, done.message),
-                         ('Değişikliğiniz onaylandı', '2025 envanterinde Soru 24 değişikliğiniz onaylandı.'))
+        return sorted((e.facility.name, e.emission_factor.slug, e.status)
+                      for e in EmissionEntry.objects.filter(company=self.company).select_related(
+                          'facility', 'emission_factor'))
+
+    def test_clerk_grid_connection_waits_for_an_approver(self):
+        # Owner's decision: a data-entry member's Q24 connection is kept in the
+        # answer only; the facility and the calculation change once approved.
+        from companies.models import Facility
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
+                                 '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._save(self.c_owner, {'1': '1000 kWh', '2': '500 kWh'})
+        fb = self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'},
+                                      '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'transmission'}})
+        self.assertEqual(fb['connection_notes'],
+                         ['Depo: şebeke bağlantısı (İletim) yönetici onaylayınca uygulanır.'])
+        depo = Facility.objects.get(company=self.company, name='Depo')
+        self.assertEqual(depo.grid_connection, 'distribution')
+        self.assertEqual(self._factors(), [('Depo', 'turkey-grid-distribution', 'approved'),
+                                           ('Gebze', 'turkey-grid-distribution', 'approved')])
+        data = self.c_owner.get('/api/companies/facilities/').data
+        listed = {f['name']: f['proposed_grid_connection'] for f in data.get('results', data)}
+        self.assertEqual(listed, {'Gebze': None, 'Depo': {'connection': 'transmission', 'year': 2025}})
+        # only an approver decides
+        url = f'/api/companies/facilities/{depo.id}/connection-decision/'
+        self.assertEqual(self.c_clerk.post(url, {'decision': 'approve'}, format='json').status_code, 403)
+        r = self.c_owner.post(url, {'decision': 'approve'}, format='json')
+        self.assertEqual((r.status_code, r.data['grid_connection'], r.data['proposed_grid_connection']),
+                         (200, 'transmission', None))
+        self.assertEqual(self._factors(), [('Depo', 'turkey-grid-transmission', 'approved'),
+                                           ('Gebze', 'turkey-grid-distribution', 'approved')])
+
+    def test_declined_grid_connection_puts_the_facility_own_back(self):
+        from companies.models import Facility
+        self._q24(self.c_owner, {'1': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._q24(self.c_clerk, {'1': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'transmission'}})
+        depo = Facility.objects.get(company=self.company, name='Depo')
+        r = self.c_owner.post(f'/api/companies/facilities/{depo.id}/connection-decision/',
+                              {'decision': 'reject'}, format='json')
+        self.assertEqual((r.status_code, r.data['grid_connection'], r.data['proposed_grid_connection']),
+                         (200, 'distribution', None))
+        answer = ReportStep.objects.get(report=self.report, step_id='2A-2').answer
+        self.assertEqual(answer.get('answer', answer)['1']['grid_connection'], 'distribution')
+        # nothing left to decide
+        r = self.c_owner.post(f'/api/companies/facilities/{depo.id}/connection-decision/',
+                              {'decision': 'approve'}, format='json')
+        self.assertEqual(r.status_code, 400)
+
+    def test_unknown_grid_connection_keeps_the_electricity_pending(self):
+        from companies.models import Facility
+        fb = self._q24(self.c_owner, {'1': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'unknown'}})
+        self.assertIn('Depo: şebeke bağlantı türü bilinmiyor. Elektrik şirketinden veya tesis sorumlusundan '
+                      'teyit alın', fb['connection_notes'][0])
+        self.assertEqual(Facility.objects.get(company=self.company, name='Depo').grid_connection, '')
+        self._save(self.c_owner, {'1': '500 kWh'})
+        self.assertEqual(self._factors(), [])
+        # known later: chosen by the owner, it is applied and calculated
+        self._q24(self.c_owner, {'1': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self.assertEqual(self._factors(), [('Depo', 'turkey-grid-distribution', 'approved')])
+        # an owner who no longer knows it: back to pending, Q24 shows "I don't know"
+        self._q24(self.c_owner, {'1': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'unknown'}})
+        self.assertEqual(Facility.objects.get(company=self.company, name='Depo').grid_connection, '')
 
     def test_removing_an_approved_answer_is_a_deletion_request(self):
         from emissions.models import EmissionEntry

@@ -45,6 +45,17 @@ class FacilitySerializer(serializers.ModelSerializer):
     def get_entry_count(self, obj):
         return obj.emission_entries.count()
 
+    # A grid connection a data-entry member gave in Q24, waiting for an
+    # approver: {'connection': 'transmission' | 'distribution' | '' (not
+    # known), 'year'}, or None.
+    proposed_grid_connection = serializers.SerializerMethodField()
+
+    def get_proposed_grid_connection(self, obj):
+        if not hasattr(self, '_proposals'):
+            from questionnaire.facility_sync import proposed_connections
+            self._proposals = proposed_connections(obj.company) if obj.company_id else {}
+        return self._proposals.get(obj.pk)
+
     def validate_name(self, value):
         # Two facilities with one name can't be told apart in the entry form,
         # the filters and the reports, and the questionnaire matches its
@@ -71,7 +82,8 @@ class FacilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Facility
         fields = ['id', 'company', 'name', 'address', 'city', 'country',
-                  'facility_type', 'grid_connection', 'is_active', 'created_at', 'entry_count']
+                  'facility_type', 'grid_connection', 'proposed_grid_connection', 'is_active',
+                  'created_at', 'entry_count']
         # 'company' is set server-side from the requester's own membership
         # (see FacilityListCreateView.perform_create) — it must never be
         # settable by the client, or a PATCH could reassign a facility to a

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     CompanyCreateView, CompanyDetailView,
-    FacilityListCreateView, FacilityDetailView,
+    FacilityListCreateView, FacilityDetailView, FacilityConnectionDecisionView,
     CompanyMembershipListView, CompanyMembershipUpdateView,
     invite_member, accept_invite, my_companies, switch_company,
     pending_invites, cancel_invite, invite_info, transfer_ownership,
@@ -12,6 +12,8 @@ urlpatterns = [
     path('detail/', CompanyDetailView.as_view(), name='company_detail'),
     path('facilities/', FacilityListCreateView.as_view(), name='facility_list'),
     path('facilities/<int:pk>/', FacilityDetailView.as_view(), name='facility_detail'),
+    path('facilities/<int:pk>/connection-decision/', FacilityConnectionDecisionView.as_view(),
+         name='facility_connection_decision'),
     path('memberships/', CompanyMembershipListView.as_view(), name='membership_list'),
     path('memberships/<int:pk>/', CompanyMembershipUpdateView.as_view(), name='membership_update'),
     path('invite/', invite_member, name='company_invite'),
