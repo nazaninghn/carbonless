@@ -1051,6 +1051,14 @@ class OnlyApprovedEntriesCountTests(TestCase):
         self.assertIn('Fab Gebze', records)
         self.assertIn('Yıllık', records)
 
+    def test_notice_describes_an_inventory_answer_as_yearly(self):
+        from .notifications import _describe
+        e = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=self.factor,
+                                         year=2026, month=1, quantity=7, status='approved',
+                                         description='Questionnaire step 3A-5')
+        self.assertTrue(_describe(e, 'tr').endswith('· 2026 (yıllık)'))
+        self.assertTrue(_describe(e, 'en').endswith('· 2026 (annual)'))
+
     def test_legacy_migration_approves_only_approver_entries(self):
         import importlib
         from django.apps import apps

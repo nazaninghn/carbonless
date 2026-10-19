@@ -1234,10 +1234,13 @@ def sync_step_entries(user, company, report, step_id, data=None, as_status=None)
         # rows) — updated while it is still unread.
         steps = [c[0] for c in changes]
         main = step_id if step_id in steps else steps[0]
+        # The question that was edited may create no entries itself (Q24's
+        # grid connection recalculates Q68): name it, not the first one recalculated.
         notify_questionnaire_change(
             user, company, year, main,
             [e for c in changes for e in c[1]], [e for c in changes for e in c[2]],
-            also=[s for s in steps if s != main])
+            also=[s for s in steps if s != main],
+            edited=step_id if step_id not in steps else None)
     if deletions:
         from emissions.notifications import notify_delete_requested
         for entry in deletions:
