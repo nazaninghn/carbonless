@@ -1664,6 +1664,8 @@ class NewInventoryYearTests(TestCase):
         data = self.client.get(f'/api/questionnaire/{rid}/previous-profile/').json()
         self.assertEqual(data['current_reporting_year'], 2024)
         self.assertEqual([f['name'] for f in data['previous_facilities']], ['Fabrika', 'Depo', 'Ofis'])
+        # a Turkish facility's grid connection is carried with it (asked once, not every year)
+        self.assertEqual([f['grid_connection'] for f in data['previous_facilities']], ['distribution', 'distribution', ''])
 
         res = self.client.post(f'/api/questionnaire/{rid}/reuse-profile/',
                                {'reporting_year': 2024, 'progress': {'answered': 21, 'total': 131}}, format='json')
