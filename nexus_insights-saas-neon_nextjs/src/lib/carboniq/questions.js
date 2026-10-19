@@ -1216,8 +1216,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Facility N] What is the name and country of this facility?',
     },
     helper: {
-      tr: 'Tesisin tanımlayıcı adını girin ve bulunduğu ülkeyi seçin. Ülke, bu tesisin elektrik şebeke emisyon faktörünü belirler. Türkiye\'deki bir tesis için şebeke bağlantısını (iletim / dağıtım) da seçin: resmi faktör buna göre değişir. Faturanızda veya dağıtım şirketi aboneliğinizde görebilirsiniz.',
-      en: "Enter the facility's identifying name and select the country it is located in. Country determines this site's electricity grid emission factor. For a facility in Turkey also choose the grid connection (transmission / distribution): the official factor depends on it. It is on your bill or distribution-company subscription.",
+      tr: 'Tesisin tanımlayıcı adını girin ve bulunduğu ülkeyi seçin. Ülke, bu tesisin elektrik şebeke emisyon faktörünü belirler. Türkiye\'deki bir tesis için şebeke bağlantısını (iletim / dağıtım) da seçin: resmi faktör buna göre değişir. Bağlantı türü fatura veya sözleşmede açıkça belirtilmemişse "Bilmiyorum"u seçin ve elektrik şirketinden ya da tesis sorumlusundan teyit alın; o zamana kadar bu tesisin elektriği hesaplanmaz, beklemede kalır. Veri girişi rolündeyseniz seçtiğiniz bağlantı yönetici onaylayınca uygulanır.',
+      en: "Enter the facility's identifying name and select the country it is located in. Country determines this site's electricity grid emission factor. For a facility in Turkey also choose the grid connection (transmission / distribution): the official factor depends on it. If the connection type is not clearly stated on the bill or contract, choose \"I don't know\" and confirm it with the electricity company or the person responsible for the facility; until then this facility's electricity is not calculated and stays pending. If you have the data-entry role, the connection you choose is applied once an approver accepts it.",
     },
     fields: [
       {
@@ -1250,6 +1250,9 @@ export const CARBONIQ_QUESTIONS = [
         options: [
           { value: 'distribution', label: { tr: 'Dağıtım şebekesi (çoğu tesis — OG/AG aboneliği)', en: 'Distribution grid (most sites — MV/LV supply)' } },
           { value: 'transmission', label: { tr: 'İletim şebekesi (doğrudan TEİAŞ / YG bağlantısı)', en: 'Transmission grid (direct TEİAŞ / HV connection)' } },
+          // Owner's decision: not knowing it is an answer; the facility's
+          // electricity waits (not calculated) until the connection is known.
+          { value: 'unknown', label: { tr: 'Bilmiyorum (teyit edilecek — elektrik beklemede kalır)', en: "I don't know (to be confirmed — electricity stays pending)" } },
         ],
       },
     ],

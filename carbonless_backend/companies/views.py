@@ -73,6 +73,38 @@ class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
                                       facility.grid_connection)
 
 
+class FacilityConnectionDecisionView(generics.GenericAPIView):
+    """An approver accepts or declines the grid connection a data-entry
+    member gave for this facility in Q24 (POST {"decision": "approve" |
+    "reject"}). Accepting applies it like a change in Settings (the
+    inventories using the facility are recalculated); declining puts the
+    facility's own connection back in the answers."""
+    serializer_class = FacilitySerializer
+    permission_classes = (IsAuthenticated, IsCompanyMember, NotAuditorForWrites, ManagerForWrites)
+
+    def get_queryset(self):
+        company = get_current_company(self.request.user)
+        return Facility.objects.filter(company=company) if company else Facility.objects.none()
+
+    def post(self, request, *args, **kwargs):
+        from rest_framework.response import Response
+        from questionnaire.facility_sync import proposed_connections, set_connection_in_answers
+        facility = self.get_object()
+        decision = request.data.get('decision')
+        proposal = proposed_connections(facility.company).get(facility.pk)
+        if decision not in ('approve', 'reject') or proposal is None:
+            return Response({'detail': 'No grid connection is waiting for approval for this facility.'},
+                            status=400)
+        if decision == 'approve':
+            facility.grid_connection = proposal['connection']
+            facility.save(update_fields=['grid_connection'])
+            set_connection_in_answers(facility.company, request.user, facility.name, facility.grid_connection)
+        else:
+            set_connection_in_answers(facility.company, request.user, facility.name, facility.grid_connection,
+                                      recalculate=False)
+        return Response(self.get_serializer(facility).data)
+
+
 from .serializers import CompanyMembershipSerializer
 
 

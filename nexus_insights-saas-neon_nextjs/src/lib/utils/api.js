@@ -233,6 +233,9 @@ export const api = {
   createFacility: (data) => request('/companies/facilities/', { method: 'POST', body: JSON.stringify(data) }),
   updateFacility: (id, data) => request(`/companies/facilities/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),
   deleteFacility: (id) => request(`/companies/facilities/${id}/`, { method: 'DELETE' }),
+  // An approver accepts ('approve') or declines ('reject') the grid connection
+  // a data-entry member gave for the facility in Q24.
+  decideFacilityConnection: (id, decision) => request(`/companies/facilities/${id}/connection-decision/`, { method: 'POST', body: JSON.stringify({ decision }) }),
 
   getMemberships: () => request('/companies/memberships/'),
   updateMembership: (id, data) => request(`/companies/memberships/${id}/`, { method: 'PATCH', body: JSON.stringify(data) }),

@@ -979,6 +979,26 @@
             "en": "Syria"
           }
         }
+      },
+      "grid_connection": {
+        "label": {
+          "tr": "Elektrik şebeke bağlantısı",
+          "en": "Electricity grid connection"
+        },
+        "options": {
+          "distribution": {
+            "tr": "Dağıtım şebekesi (çoğu tesis — OG/AG aboneliği)",
+            "en": "Distribution grid (most sites — MV/LV supply)"
+          },
+          "transmission": {
+            "tr": "İletim şebekesi (doğrudan TEİAŞ / YG bağlantısı)",
+            "en": "Transmission grid (direct TEİAŞ / HV connection)"
+          },
+          "unknown": {
+            "tr": "Bilmiyorum (teyit edilecek — elektrik beklemede kalır)",
+            "en": "I don't know (to be confirmed — electricity stays pending)"
+          }
+        }
       }
     }
   },

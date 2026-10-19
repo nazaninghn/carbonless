@@ -585,6 +585,8 @@ export default function DashboardOverview({
     f => f.is_active !== false && !f.grid_connection
       && ['tr', 'tur', 'türkiye', 'turkiye', 'turkey'].includes((f.country || '').trim().toLocaleLowerCase('tr-TR')),
   );
+  // A grid connection a data-entry member gave in Q24, waiting for an approver.
+  const proposedConnectionFacilities = (facilityList || []).filter(f => f.proposed_grid_connection);
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -978,6 +980,14 @@ export default function DashboardOverview({
                 tab: 'settings',
                 section: 'facilities',
               },
+              {
+                dot: 'bg-amber-400',
+                done: proposedConnectionFacilities.length === 0 || !canApprove,
+                tr: `${proposedConnectionFacilities.length} tesisin şebeke bağlantısı onayınızı bekliyor (Soru 24)`,
+                en: `Grid connection of ${proposedConnectionFacilities.length} facilit${proposedConnectionFacilities.length === 1 ? 'y' : 'ies'} awaiting your approval (Question 24)`,
+                tab: 'settings',
+                section: 'facilities',
+              },
             ].map((item) => (
               !item.done && (
                 <button
@@ -997,7 +1007,7 @@ export default function DashboardOverview({
               )
             ))}
             {/* All done state */}
-            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0 || !canApprove, facilityList.length > 0 || !canEdit, noConnectionFacilities.length === 0 || !canApprove].every(Boolean) && (
+            {[pendingApprovals === 0, questionnaireProfile?.is_complete, entries.length > 0, targets.length > 0 || !canApprove, facilityList.length > 0 || !canEdit, noConnectionFacilities.length === 0 || !canApprove, proposedConnectionFacilities.length === 0 || !canApprove].every(Boolean) && (
               <div className="flex h-20 flex-col items-center justify-center gap-1.5">
                 <CheckCircle2 className="h-6 w-6 text-[#2ABD41]" />
                 <p className="text-[11px] font-semibold text-[#072C0E]/50">{tr ? 'Tüm aksiyonlar tamamlandı' : 'All actions complete'}</p>

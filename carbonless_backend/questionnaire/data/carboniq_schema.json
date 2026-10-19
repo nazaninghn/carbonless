@@ -845,6 +845,25 @@
           "LB",
           "SY"
         ]
+      },
+      {
+        "id": "grid_connection",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": "country",
+        "conditionalOnValue": [
+          "TR"
+        ],
+        "options": [
+          "distribution",
+          "transmission",
+          "unknown"
+        ]
       }
     ],
     "sumRange": null,

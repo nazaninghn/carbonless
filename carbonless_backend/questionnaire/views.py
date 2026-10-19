@@ -783,8 +783,12 @@ class SubmitStepView(APIView):
         if step == '2A-2':
             # The facility names/countries answered here become the company's
             # real facilities (emissions form, Settings, reports).
-            from .facility_sync import sync_facilities
-            sync_facilities(report.company, data)
+            # A grid connection given here is applied only for a member who
+            # approves data; a data-entry member's waits for an approver.
+            from .facility_sync import sync_facilities, connection_notes
+            approver = bool(report.company) and report.company.memberships.filter(
+                user=request.user, is_active=True, role__in=('owner', 'admin', 'manager')).exists()
+            sync_facilities(report.company, data, user=request.user, apply_connection=approver)
         before_kg = questionnaire_totals(report)[0]
         entries = sync_step_entries(request.user, report.company, report, step, data)
         # What this answer did to the inventory: the CO2e it added or took
@@ -815,6 +819,8 @@ class SubmitStepView(APIView):
                 warnings.append(fac_warning)
         calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
                          'pending': pending, 'notes': notes, 'method_notes': method_notes}
+        if step == '2A-2':
+            calc_feedback['connection_notes'] = connection_notes(report.company, data, approver, lang)
         if step in ('3A-5', '3A-5bio'):
             # Biomass CO2 is biogenic: shown, but not in the inventory total.
             calc_feedback['biogenic_kg'] = round(biogenic_co2_kg(answers), 2)

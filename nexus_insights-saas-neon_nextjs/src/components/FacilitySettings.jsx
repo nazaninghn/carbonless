@@ -52,6 +52,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   const [editingId, setEditingId]     = useState(null);   // null = adding a new facility
   const [confirmDelete, setConfirmDelete] = useState(null); // facility awaiting delete confirmation
   const [deleting, setDeleting]       = useState(false);
+  const [deciding, setDeciding]       = useState(null);   // facility id whose proposed connection is being decided
   const formRef = useRef(null);
   const nameRef = useRef(null);
   // The form opens under the list: on a phone it started below the screen,
@@ -101,6 +102,30 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
     setFormError(''); setConfirmDelete(null);
     setEditingId(f.id); setShowForm(true);
   }, []);
+
+  // A grid connection a data-entry member gave in Q24 waits here for an
+  // approver: accepting applies it (the inventories are recalculated).
+  const decideConnection = useCallback(async (f, decision) => {
+    if (deciding) return;
+    setDeciding(f.id);
+    try {
+      const res = await api.decideFacilityConnection(f.id, decision);
+      if (res.ok) {
+        await fetchFacilities();
+        onChange?.();
+        toast.success(decision === 'approve'
+          ? (tr ? 'Bağlantı onaylandı; envanter yeniden hesaplandı' : 'Connection approved; the inventory was recalculated')
+          : (tr ? 'Bağlantı önerisi reddedildi' : 'Connection proposal declined'));
+      } else {
+        toast.error(tr ? 'İşlem yapılamadı' : 'Could not complete the action');
+        await fetchFacilities();
+      }
+    } catch {
+      toast.error(tr ? 'Bağlantı hatası' : 'Connection error');
+    } finally {
+      setDeciding(null);
+    }
+  }, [deciding, fetchFacilities, onChange, toast, tr]);
 
   const handleDelete = useCallback(async () => {
     if (!confirmDelete || deleting) return;
@@ -256,6 +281,41 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                         : 'Grid connection not chosen — this facility\'s electricity is not calculated (pending).'}
                     </p>
                   )}
+                  {f.proposed_grid_connection && (
+                    <div className="mt-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-xs text-amber-800">
+                      <p className="font-semibold">
+                        {(() => {
+                          const p = f.proposed_grid_connection;
+                          const label = p.connection
+                            ? CONNECTION_LABELS[p.connection]?.[tr ? 'tr' : 'en']
+                            : (tr ? 'Bilmiyorum (bağlantı türü teyit edilecek)' : 'I don\'t know (connection to be confirmed)');
+                          return tr
+                            ? `${p.year} envanteri Soru 24'te önerilen: ${label} — onayınızı bekliyor.`
+                            : `Proposed in Question 24 of the ${p.year} inventory: ${label} — awaiting your approval.`;
+                        })()}
+                      </p>
+                      {!readOnly && (
+                        <div className="mt-1.5 flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => decideConnection(f, 'approve')}
+                            disabled={deciding === f.id}
+                            className="rounded-full bg-[#2ABD41] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[#1A7B2A] disabled:opacity-50"
+                          >
+                            {tr ? 'Onayla' : 'Approve'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => decideConnection(f, 'reject')}
+                            disabled={deciding === f.id}
+                            className="rounded-full border border-amber-300 bg-white px-3 py-1 text-[10px] font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"
+                          >
+                            {tr ? 'Reddet' : 'Decline'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
@@ -406,8 +466,8 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                 </select>
                 <p className="mt-1 text-[11px] text-[#072C0E]/50">
                   {tr
-                    ? 'Resmi Türkiye elektrik faktörü bağlantıya göre değişir (ETKB, 2023 veri yılı: iletim 0,436 · dağıtım 0,469 kg CO₂e/kWh). Seçilmezse tesisin elektriği hesaplanmaz.'
-                    : 'The official Turkish electricity factor depends on the connection (ETKB, data year 2023: transmission 0.436 · distribution 0.469 kg CO₂e/kWh). Without it the facility\'s electricity is not calculated.'}
+                    ? 'Resmi Türkiye elektrik faktörü bağlantıya göre değişir (ETKB, 2023 veri yılı: iletim 0,436 · dağıtım 0,469 kg CO₂e/kWh). Seçilmezse tesisin elektriği hesaplanmaz. Bağlantı türü fatura veya sözleşmede açıkça belirtilmemişse boş bırakın ve elektrik şirketinden ya da tesis sorumlusundan teyit alın.'
+                    : 'The official Turkish electricity factor depends on the connection (ETKB, data year 2023: transmission 0.436 · distribution 0.469 kg CO₂e/kWh). Without it the facility\'s electricity is not calculated. If the connection type is not clearly stated on the bill or contract, leave it empty and confirm it with the electricity company or the person responsible for the facility.'}
                 </p>
               </div>
             )}
