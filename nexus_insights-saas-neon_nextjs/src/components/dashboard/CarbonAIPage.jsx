@@ -3656,13 +3656,19 @@ export function QuestionnaireTab({
     const clean = (n) => { const name = String(n || '').trim(); return /^(tesis|facility)\s*\d+$/i.test(name) ? '' : name; };
     // The earlier inventory's list first (its order), then registered
     // facilities it did not have.
-    const previous = facilitySourcesRef.current.previous.map(f => ({ name: clean(f.name), country: f.country || '' }));
+    const previous = facilitySourcesRef.current.previous.map(f => ({ name: clean(f.name), country: f.country || '', grid_connection: f.grid_connection || '' }));
     const seen = new Set(previous.map(f => f.name.toLocaleLowerCase('tr-TR')).filter(Boolean));
     const extra = registeredFacilitiesRef.current
-      .map(f => ({ name: clean(f.name), country: f.country || '' }))
+      .map(f => ({ name: clean(f.name), country: f.country || '', grid_connection: f.grid_connection || '' }))
       .filter(f => !f.name || !seen.has(f.name.toLocaleLowerCase('tr-TR')));
     const f = [...previous, ...extra][index];
-    return f ? { name: f.name, country: f.country } : undefined;
+    if (!f) return undefined;
+    // A Turkish facility's grid connection, already chosen (Settings or last
+    // year's answer), is carried too — not asked again as a required field.
+    const key = f.name.toLocaleLowerCase('tr-TR');
+    const registered = key && registeredFacilitiesRef.current.find(r => clean(r.name).toLocaleLowerCase('tr-TR') === key);
+    const connection = (registered && registered.grid_connection) || f.grid_connection || '';
+    return connection ? { name: f.name, country: f.country, grid_connection: connection } : { name: f.name, country: f.country };
   };
   useEffect(() => { answersRef.current = answers; }, [answers]);
 

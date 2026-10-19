@@ -53,7 +53,7 @@ def datetime_now_year():
 
 
 def _previous_facilities(source):
-    """[{'name', 'country'}] from the source report's 2A-2, in its order."""
+    """[{'name', 'country', 'grid_connection'}] from the source report's 2A-2, in its order."""
     step = source.steps.filter(step_id='2A-2').first() if source else None
     raw = step.answer if step else None
     if isinstance(raw, dict) and set(raw) == {'answer'}:
@@ -66,7 +66,10 @@ def _previous_facilities(source):
     for k in sorted(raw, key=_key):
         v = raw[k]
         if isinstance(v, dict):
-            out.append({'name': str(v.get('name') or ''), 'country': str(v.get('country') or '')})
+            out.append({'name': str(v.get('name') or ''), 'country': str(v.get('country') or ''),
+                        # Turkey's grid connection: carried with the facility, not asked again
+                        'grid_connection': v.get('grid_connection') if v.get('grid_connection') in (
+                            'transmission', 'distribution') else ''})
     return out
 
 
