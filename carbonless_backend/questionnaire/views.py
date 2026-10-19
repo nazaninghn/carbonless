@@ -207,6 +207,11 @@ def _progress(completed_count, status, client_progress=None):
         # Same numbers the survey's own progress bar shows.
         percent = min(99, round(client['answered'] / client['total'] * 100))
         return {'completed': client['answered'], 'total': client['total'], 'percent': percent}
+    if not completed_count:
+        # Nothing answered and no count from the survey yet: the total is not
+        # known. A fixed 127 here read "0 / 127 questions" in the library
+        # while the survey itself said "~68" for the same new inventory.
+        return {'completed': 0, 'total': None, 'percent': 0}
     total = max(BASELINE_QUESTIONS, completed_count)
     # Branches can push a draft past the baseline; it is still not done, so
     # never show 100% before the report is actually completed.
@@ -453,6 +458,8 @@ class StartReportView(APIView):
         return Response({
             'report_id': report.id,
             'current_step': 'A1',
+            # The dashboard follows the year of the inventory being worked on.
+            'reporting_year': report.reporting_year,
             'resumed': False,
             'company': {
                 'name': company.legal_entity_name,
@@ -570,29 +577,23 @@ class SubmitStepView(APIView):
                     'bot_messages': [f"❌ {first_error}"]
                 }, status=400)
 
-            result = handle_step(report, step, serializer.validated_data)
-
-            if result.get('duplicate'):
-                # A conflict, not a success: the answer was NOT saved. This
-                # used to come back as 200 (so the questionnaire moved on and
-                # the answer was silently lost) and named the other company,
-                # which let anyone look up who is registered under a tax ID.
-                msg = (
-                    'Bu vergi numarası Carbonless\'ta başka bir şirket hesabında kayıtlı. '
-                    'Numarayı kontrol edin; doğruysa bizimle iletişime geçin.'
-                    if request.data.get('language') == 'tr' else
-                    'This tax number is already used by another company account on Carbonless. '
-                    'Please check it; if it is correct, contact us.'
-                )
+            # An answer that would change what the company already declared
+            # (sector, size, subsidiaries …) is not applied until the user
+            # confirms it — it used to overwrite the company record silently.
+            from .company_conflicts import company_conflict
+            conflict = company_conflict(step, serializer.validated_data, report.company, request.data.get('language') or 'en')
+            if conflict and not request.data.get('confirm_company_update'):
                 return Response({
                     'success': False,
                     'step': step,
                     'next_step': step,
-                    'error': msg,
-                    'code': 'duplicate_tax_id',
-                    'bot_messages': [msg],
-                    'warnings': result.get('warnings', []),
+                    'code': 'company_conflict',
+                    'field': conflict['field'],
+                    'error': conflict['message'],
+                    'bot_messages': [conflict['message']],
                 }, status=409)
+
+            result = handle_step(report, step, serializer.validated_data)
 
             before = _saved_answer(report, step)
             _save_report_step(report, step, serializer.validated_data)
@@ -672,7 +673,17 @@ class SubmitStepView(APIView):
                    'Ask one of them to sign once the inventory is ready.')
             return Response({'success': False, 'step': step, 'next_step': step, 'error': msg,
                              'code': 'signature_role', 'bot_messages': [f'❌ {msg}']}, status=403)
-        is_valid, validation_error = validate_generic_step(step, data, lang=lang)
+        # The inventory's other answers: some rules compare with them (EV
+        # commuters ≤ office staff; a supplier factor against the amounts
+        # it applies to).
+        saved_answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
+        is_valid, validation_error = validate_generic_step(step, data, lang=lang, answers=saved_answers)
+        if is_valid and step in ('3A-EF-a', '3B-EF-a', '3C-EF-a', '4A-EF-a', '4B-EF-a'):
+            from .step_entries import supplier_factor_problem
+            doc = data.get('answer') if isinstance(data, dict) and 'answer' in data else data
+            problem = supplier_factor_problem(step, doc, saved_answers, report.reporting_year or 2024, report.company)
+            if problem:
+                is_valid, validation_error = False, problem['tr' if lang == 'tr' else 'en']
         if not is_valid:
             return Response({
                 'success': False,
@@ -681,6 +692,30 @@ class SubmitStepView(APIView):
                 'error': validation_error,
                 'bot_messages': [f'❌ {validation_error}'],
             }, status=400)
+
+        # 2A-1 (the inventory's facility count, pre-filled from B4) differing
+        # from the company's count: asked like a profile change; confirmed, it
+        # updates B4 and the company too, so the two counts cannot drift apart
+        # ("100 facilities were declared but 2 were entered").
+        facility_count_update = None
+        if step == '2A-1':
+            from chat.local_parser import parse_localized_number
+            from .company_conflicts import company_conflict
+            raw = data.get('answer') if isinstance(data, dict) and 'answer' in data else data
+            try:
+                count = parse_localized_number(str(raw))
+            except (ValueError, TypeError):
+                count = None
+            if count is not None and float(count).is_integer() and count >= 1:
+                conflict = company_conflict('2A-1', {'number_of_facilities': int(count)}, report.company, lang)
+                if conflict and not request.data.get('confirm_company_update'):
+                    return Response({
+                        'success': False, 'step': step, 'next_step': step, 'code': 'company_conflict',
+                        'field': conflict['field'], 'error': conflict['message'],
+                        'bot_messages': [conflict['message']],
+                    }, status=409)
+                if conflict:
+                    facility_count_update = int(count)
 
         if step == '2A-2':
             from .facility_sync import duplicate_name, duplicate_message
@@ -702,6 +737,11 @@ class SubmitStepView(APIView):
                 request.user.get_full_name() or request.user.email or request.user.username)}}
         before = _saved_answer(report, step)
         _save_report_step(report, step, data if data else {})
+        if facility_count_update is not None:
+            report.company.number_of_facilities = facility_count_update
+            report.company.save(update_fields=['number_of_facilities'])
+            if ReportStep.objects.filter(report=report, step_id='B4').exists():
+                _save_report_step(report, 'B4', {'number_of_facilities': facility_count_update})
         if step == SIGN_OFF_STEP:
             # A re-signed inventory carries the new signing date.
             ReportStep.objects.filter(report=report, step_id=step).update(completed_at=timezone.now())

@@ -404,7 +404,11 @@ export default function InventoryLibrary({ tr = false }) {
                       <span className="font-semibold text-[#175022]/80">{tr ? 'Raporlama yılı' : 'Reporting year'}: {report.reporting_year}</span>
                     )}
                     <span>{report.progress?.percent || 0}% {tr ? 'tamamlandı' : 'complete'}</span>
-                    <span>{report.progress?.completed || 0} / {report.progress?.total || 120} {tr ? 'soru' : 'questions'}</span>
+                    {/* No total before the first answer: the survey works it
+                        out from the answers (it used to read "0 / 120"). */}
+                    <span>{report.progress?.total
+                      ? `${report.progress?.completed || 0} / ${report.progress.total} ${tr ? 'soru' : 'questions'}`
+                      : (tr ? 'Henüz başlanmadı' : 'Not started yet')}</span>
                     <span>{tr ? 'Güncelleme' : 'Updated'}: {new Date(report.updated_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}</span>
                   </div>
                 </div>

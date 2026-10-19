@@ -29,7 +29,8 @@ const EMPLOYEE_BANDS = [
   { key: '1-50',      tr: '1–50 çalışan',    en: '1–50 employees'  },
   { key: '51-250',    tr: '51–250 çalışan',   en: '51–250 employees'},
   { key: '251-1000',  tr: '251–1000 çalışan', en: '251–1000 employees'},
-  { key: '1001-5000', tr: '1000+ çalışan',    en: '1000+ employees' },
+  { key: '1001-5000', tr: '1001–5000 çalışan', en: '1,001–5,000 employees' },
+  { key: '5000+',     tr: '5000+ çalışan',    en: '5,000+ employees' },
 ];
 
 // ─── KPI card with count-up + staggered entrance ───────────────────────────────
@@ -156,11 +157,16 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
     return () => clearTimeout(t);
   }, []);
 
-  // Derive sector from questionnaire profile nace_code
-  const naceCode   = questionnaireProfile?.nace_code || '';
+  // Sector and size: the finished inventory's answers, else what the company
+  // gave at sign-up (summary.company_profile). An unknown size is shown as
+  // not declared — it used to be assumed to be 1–50 employees.
+  const companyProfile = summary?.company_profile;
+  const naceCode   = questionnaireProfile?.nace_code || companyProfile?.nace_code || '';
   const naceSector = naceCode ? naceCode[0] : '';
   const benchmark  = SECTOR_BENCHMARKS[naceSector] || SECTOR_BENCHMARKS.default;
-  const empBand    = EMPLOYEE_BANDS.find(b => b.key === (questionnaireProfile?.employee_band || '1-50')) || EMPLOYEE_BANDS[0];
+  const bandKey    = questionnaireProfile?.employee_band || companyProfile?.employee_band || '';
+  const empBand    = EMPLOYEE_BANDS.find(b => b.key === bandKey)
+    || { key: '—', tr: 'Belirtilmedi', en: 'Not declared' };
 
   // Nothing entered yet: show dashes, not a "below average ✓" verdict or
   // "−0 tCO₂e" savings worked out from zero.

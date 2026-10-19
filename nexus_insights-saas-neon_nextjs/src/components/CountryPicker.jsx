@@ -13,7 +13,11 @@ import { COUNTRIES } from '@/lib/data/countries';
 export default function CountryPicker({ value, onChange, language = 'tr', multi = false, placeholder, inputId }) {
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
+  // The highlighted row of the open list: ↑/↓ move it, Enter picks it (the
+  // picker could only be used with a mouse — Enter did nothing).
+  const [active, setActive] = useState(0);
   const ref = useRef(null);
+  const listId = `${inputId || 'country'}-listbox`;
 
   // Close on outside click or Escape key
   useEffect(() => {
@@ -66,6 +70,23 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
     }
   }, [multi, selected, onChange]); // lang removed — no longer read inside
 
+  const shown = filtered.slice(0, 15);
+  const onKeyDown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!open) { setOpen(true); setActive(0); return; }
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      setActive(i => (shown.length ? (i + step + shown.length) % shown.length : 0));
+    } else if (e.key === 'Enter') {
+      if (open && shown[active]) {
+        e.preventDefault(); // never submit the form with the list open
+        handleSelect(shown[active]);
+      }
+    } else if (e.key === 'Tab') {
+      setOpen(false);
+    }
+  };
+
   const handleRemove = useCallback((name) => {
     if (multi) {
       onChange(selected.filter(s => s !== name).join(', '));
@@ -80,8 +101,14 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
         id={inputId}
         type="text"
         value={search}
-        onChange={(e) => { setSearch(e.target.value); setOpen(true); }}
+        onChange={(e) => { setSearch(e.target.value); setOpen(true); setActive(0); }}
         onFocus={() => setOpen(true)}
+        onKeyDown={onKeyDown}
+        role="combobox"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-autocomplete="list"
+        aria-activedescendant={open && shown[active] ? `${listId}-${shown[active].code}` : undefined}
         placeholder={placeholder || (language === 'tr' ? 'Ülke ara...' : 'Search country...')}
         className="w-full px-4 py-3 bg-white border border-[#8BEA99]/40 rounded-lg focus:ring-2 focus:ring-[#2ABD41]/30 focus:border-[#2ABD41] outline-none"
       />
@@ -106,16 +133,21 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#8BEA99]/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-          {filtered.slice(0, 15).map(c => {
+        <div id={listId} role="listbox" className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#8BEA99]/30 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {shown.map((c, i) => {
             // Fix 27B: compare against c.code — survives language changes mid-session
             const isSelected = multi ? selected.includes(c.code) : singleVal === c.code;
             return (
               <button
                 key={c.code}
+                id={`${listId}-${c.code}`}
                 type="button"
+                role="option"
+                aria-selected={i === active}
+                tabIndex={-1}
+                onMouseEnter={() => setActive(i)}
                 onClick={() => handleSelect(c)}
-                className={`w-full text-left px-4 py-2 hover:bg-green-50 text-sm border-b border-gray-100 last:border-0 flex items-center gap-2 ${isSelected ? 'bg-green-50' : ''}`}
+                className={`w-full text-left px-4 py-2 hover:bg-green-50 text-sm border-b border-gray-100 last:border-0 flex items-center gap-2 ${isSelected ? 'bg-green-50' : ''} ${i === active ? 'ring-2 ring-inset ring-[#2ABD41]/40' : ''}`}
               >
                 <span>{c.flag}</span>
                 <span className="text-slate">{c[lang]}</span>

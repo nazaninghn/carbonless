@@ -51,6 +51,7 @@ holds for a catalog factor used under another category (LPG burnt in
 vehicles, declared energy of a leased building, waste factors for the end of
 life of sold products).
 """
+import functools
 import logging
 import re
 
@@ -896,6 +897,84 @@ def _supplier_ef(A, step, year):
     return per_unit, value * mult, _bi(lambda lg: f'{source} ({_fmt(value, lang=lg)} {unit})')
 
 
+_DOC_SOURCE = {doc: step for step, (_gate, doc) in _EF_DOCUMENT.items()}
+# How far a document's factor may be from the catalog factor of the same
+# activity (supplied ÷ reference). Fuel and process factors are bound by
+# chemistry, so 100 kg CO2e/m³ for natural gas (≈ 50×) or 0.825 kg for a tonne
+# of clinker (≈ 1/600) is a typo, not a supplier's figure. Electricity and
+# purchased heat may legitimately be near zero (renewable supply): only the
+# upper bound applies to them.
+_EF_PLAUSIBLE_RATIO = {'3A-5': (0.2, 5), '3B-7': (0.2, 5), '3C-2': (0.2, 5), '4A-1': (None, 5), '4B-2': (None, 5)}
+_UNIT_WORDS = {'m3': 'm³', 'kwh': 'kWh', 'liters': 'litre', 'tonnes': 'tonne', 'kg': 'kg', 'km': 'km'}
+
+
+def supplier_factor_problem(doc_step, doc_answer, answers, year, company=None, lang='en'):
+    """Why a supplier / facility-specific factor document (3A/3B/3C/4A/4B-EF-a)
+    cannot be used for the amounts of its step, or None:
+
+    - 'unit': no amount of the step is in the document's unit, so the factor
+      applies to nothing (it used to be dropped without a word, and the
+      generic factor used instead);
+    - 'implausible': the value is outside _EF_PLAUSIBLE_RATIO of the catalog
+      factor of the amount it would replace (a typo such as 100 instead of
+      2.02 made the inventory 50 times larger).
+
+    Returns {'code', 'tr', 'en'}. None while the step has no amount yet."""
+    source = _DOC_SOURCE.get(doc_step)
+    if not source or not isinstance(doc_answer, dict):
+        return None
+    unit, value = doc_answer.get('ef_unit'), _number(doc_answer.get('ef_value'))
+    if unit not in _EF_UNITS or not value:
+        return None  # the field checks report a missing or unknown value
+    per_unit, mult = _EF_UNITS[unit]
+    merged = {**(answers or {}), doc_step: {'answer': doc_answer}}
+    activities = activities_for_report(merged, year, company).get(source) or []
+    facility_of = _facility_lookup(company) if company else None
+    resolved = []
+    for a in activities:
+        if 'report_as' in a or 'reported_kg' in a:
+            continue
+        r = _resolve(a, company, facility_of, year)
+        if r:
+            resolved.append(r[0])
+    if not resolved:
+        return None
+
+    def unit_of(f):
+        return _FACTOR_UNIT_ALIASES.get(f.unit.lower(), f.unit.lower())
+
+    matching = [f for f in resolved if unit_of(f) == per_unit]
+    if not matching:
+        entered = ', '.join(sorted({_UNIT_WORDS.get(unit_of(f), unit_of(f)) for f in resolved}))
+        return {
+            'code': 'unit',
+            'tr': f'Belgenin birimi ({unit}) bu adımdaki miktarların birimiyle ({entered}) uyuşmuyor; '
+                  'bu faktör hiçbir miktara uygulanamaz. Belgedeki birimi kontrol edin.',
+            'en': f'The document\'s unit ({unit}) does not match the unit of the amounts in this step ({entered}), '
+                  'so the factor cannot be applied to any of them. Check the unit on the document.',
+        }
+    low, high = _EF_PLAUSIBLE_RATIO.get(source, (None, None))
+    supplied = float(value) * mult
+    for f in matching:
+        ref = float(f.factor_kg_co2e)
+        if ref <= 0:
+            continue
+        ratio = supplied / ref
+        if (low is not None and ratio < low) or (high is not None and ratio > high):
+            word = _UNIT_WORDS.get(per_unit, per_unit)
+            span = f'{low}–{high}' if low is not None else f'≤ {high}'
+            return {
+                'code': 'implausible',
+                'tr': f'Bu faktör ({_fmt(supplied, 6, "tr")} kg CO2e/{word}) aynı kaynağın referans faktörünün '
+                      f'({f.name}: {_fmt(ref, 6, "tr")} kg CO2e/{word}) {_fmt(ratio, 2, "tr")} katı. Tedarikçi ve '
+                      f'tesise özgü faktörler bu değerin {span} katı aralığında olur; belgedeki değeri ve birimi kontrol edin.',
+                'en': f'This factor ({_fmt(supplied, 6, "en")} kg CO2e/{word}) is {_fmt(ratio, 2, "en")} times the '
+                      f'reference factor of the same source ({f.name}: {_fmt(ref, 6, "en")} kg CO2e/{word}). Supplier '
+                      f'and facility-specific factors stay within {span} times it; check the value and unit on the document.',
+            }
+    return None
+
+
 def _factor_by_slug(slug, year=None):
     """The active catalog factor of `slug` (Turkey row first) for the
     inventory year — see emissions.factor_lookup.pick_factor."""
@@ -990,6 +1069,10 @@ def _entry_specs(step, activities, A, year, company):
     # The electricity supplier's factor is market-based: it never replaces
     # the location-based grid factor of 4A-1 (see scope2_market_based).
     supplier = _supplier_ef(A, step, year) if step in _EF_DOCUMENT and step != '4A-1' else None
+    # An implausible factor (saved before the step refused it) is not
+    # applied; uncalculated_notes says why the generic factor is used.
+    if supplier and supplier_factor_problem(_EF_DOCUMENT[step][1], A.get(_EF_DOCUMENT[step][1]), A, year, company):
+        supplier = None
     targets = []
     if supplier:
         matching = [a for a, (f, _q, _c) in resolved
@@ -1506,6 +1589,60 @@ def supplier_market_code(A, company=None):
         getattr(company, 'country_of_headquarters', '') if company else '')
 
 
+
+# Catalog codes as they appear in an answer ("EQ-3B-22", "SC-01", "TM-99"),
+# with the "#n" of a group of one type ("EQ-3B-22#7").
+_NOTE_CODE_RE = re.compile(r'\b((?:EQ-\d[A-Z]|SC|WT|TM|BT|KV|VA|CG|P)-\d{2})(#\d+)?\b')
+
+
+_NOT_CALCULATED_SUFFIX_RE = re.compile(r'\s+—\s+(?:recorded, not calculated yet|kaydedilir, henüz hesaplanmaz)$')
+
+
+@functools.lru_cache(maxsize=1)
+def _code_words():
+    """{code: {'tr', 'en'}} from the survey's own option labels, without the
+    code prefix ("EQ-3B-22 — Diesel locomotive" → "Diesel locomotive")."""
+    from .answer_text import _labels
+    out = {}
+    for q in _labels().values():
+        option_maps = [q.get('options') or {}] + [f.get('options') or {} for f in (q.get('fields') or {}).values()]
+        for options in option_maps:
+            for code, words in options.items():
+                if _NOTE_CODE_RE.fullmatch(code) and isinstance(words, dict) and code not in out:
+                    # Without the code prefix and the questionnaire's
+                    # "— recorded, not calculated yet" (the note says why).
+                    out[code] = {lg: _NOT_CALCULATED_SUFFIX_RE.sub('', re.sub(
+                        r'^\S+\s+[—–-]\s+', '', words.get(lg) or words.get('en') or code)) for lg in ('tr', 'en')}
+    return out
+
+
+def _readable_notes(notes):
+    """Notes as a reader can use them: a catalog code becomes its name
+    ("Diesel locomotive", not "EQ-3B-22#7"), and one note per group of the
+    same type (twenty "#2 … #20" lines) becomes a single note that says how
+    many groups it covers."""
+    words = _code_words()
+    merged, order = {}, []
+    for n in notes:
+        groups = {m.group(2) for m in _NOTE_CODE_RE.finditer(n['en']) if m.group(2)}
+        key = (n['step_id'], n.get('kind'), _NOTE_CODE_RE.sub(lambda m: m.group(1), n['en']))
+        if key not in merged:
+            out = dict(n)
+            for lg in ('tr', 'en'):
+                out[lg] = _NOTE_CODE_RE.sub(lambda m, lg=lg: words.get(m.group(1), {}).get(lg, m.group(1)), n[lg])
+            merged[key] = {'note': out, 'count': 0}
+            order.append(key)
+        merged[key]['count'] += 1 if groups or merged[key]['count'] == 0 else 0
+    result = []
+    for key in order:
+        note, count = merged[key]['note'], merged[key]['count']
+        if count > 1:
+            note['tr'] += f' ({count} grup)'
+            note['en'] += f' ({count} groups)'
+        result.append(note)
+    return result
+
+
 def uncalculated_notes(answers, year, company=None):
     """[{step_id, tr, en}] for every answered amount that does not reach the
     dashboard and why — shown right after the answer and listed with the
@@ -1710,6 +1847,11 @@ def uncalculated_notes(answers, year, company=None):
             elif ans.get('ef_unit') not in _EF_UNITS:
                 note(doc, f'{what_tr} — tedarikçi faktör belgesinin birimi tanınmadı; genel faktör kullanıldı.',
                      f'{what_en} — the supplier factor document\'s unit is not recognised; the generic factor is used.')
+            elif gate != '4A-EF' and (problem := supplier_factor_problem(doc, ans, A, year, company)):
+                # A factor in no amount's unit, or far outside the reference
+                # factor, is not applied — said, not left for a reader to guess.
+                note(doc, f'{what_tr} — tedarikçi / tesise özgü faktör kullanılmadı, genel faktör kullanıldı: {problem["tr"]}',
+                     f'{what_en} — the supplier / facility-specific factor was not used; the generic factor is used: {problem["en"]}')
             elif gate == '4A-EF':
                 # Not a gap: the answer is used, in the market-based result —
                 # only for the sites in the market the declaration covers.
@@ -1894,4 +2036,4 @@ def uncalculated_notes(answers, year, company=None):
             elif not (_true(row.get('ghg_report_available')) and _number(row.get('company_emissions_tco2e'))):
                 note('K3C15-1', f'{cls}: şirketin raporlanmış emisyonu olmadan hesaplanmıyor.',
                      f'{cls}: not calculated without the company\'s reported emissions.')
-    return out
+    return _readable_notes(out)

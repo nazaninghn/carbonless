@@ -59,9 +59,19 @@ export default function ReviewPage({ tr = false }) {
     setSaving(true);
     try {
       // Save to backend
-      const res = await api.submitReportStep(activeInventoryId, qId, {
-        answer: value
-      });
+      const lang = tr ? 'tr' : 'en';
+      let res = await api.submitReportStep(activeInventoryId, qId, { answer: value }, lang);
+
+      // The edit would change what the company declared (its facility count):
+      // nothing was saved. Ask with the server's own question; resend on yes.
+      if (res.status === 409) {
+        const body = await res.clone().json().catch(() => ({}));
+        if (body?.code === 'company_conflict') {
+          if (!window.confirm(body.error)) return;
+          res = await api.submitReportStep(activeInventoryId, qId, { answer: value }, lang, undefined,
+            { confirm_company_update: true });
+        }
+      }
 
       if (!res.ok) {
         alert(tr ? 'Kaydetme hatası' : 'Error saving');

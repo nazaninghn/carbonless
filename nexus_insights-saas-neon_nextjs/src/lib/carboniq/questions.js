@@ -141,6 +141,41 @@ export const CARBONIQ_STAGES = [
   },
 ];
 
+// 3D-2 / 3D-4: the gases each fugitive source can leak.
+const REFRIGERANT_GASES = ['R410A', 'R32', 'R22', 'R134a', 'R404A', 'R1234yf', 'unknown'];
+const GAS_OPTIONS_BY_EQUIPMENT = {
+  'EQ-3D-01': REFRIGERANT_GASES, 'EQ-3D-02': REFRIGERANT_GASES, 'EQ-3D-03': REFRIGERANT_GASES,
+  'EQ-3D-04': REFRIGERANT_GASES, 'EQ-3D-05': REFRIGERANT_GASES, 'EQ-3D-06': REFRIGERANT_GASES,
+  'EQ-3D-07': REFRIGERANT_GASES, 'EQ-3D-13': REFRIGERANT_GASES,
+  'EQ-3D-08': ['CH4', 'unknown'], 'EQ-3D-09': ['CH4', 'unknown'], 'EQ-3D-10': ['CH4', 'unknown'],
+  'EQ-3D-11': ['SF6', 'unknown'], 'EQ-3D-12': ['SF6', 'unknown'],
+  'EQ-3D-14': ['NF3', 'unknown'],
+};
+
+// 3B-1 vehicle classes. Euro emission standards and engine / tonnage bands
+// exist only for road vehicles; ships, aircraft, locomotives and rail
+// vehicles were offered "Euro 3" and "Car — small".
+export const ROAD_VEHICLES = ['EQ-3B-01', 'EQ-3B-02', 'EQ-3B-03', 'EQ-3B-04', 'EQ-3B-05',
+  'EQ-3B-06', 'EQ-3B-07', 'EQ-3B-08', 'EQ-3B-09', 'EQ-3B-10'];
+const NON_ROAD_VEHICLES = ['EQ-3B-11', 'EQ-3B-12', 'EQ-3B-13', 'EQ-3B-14', 'EQ-3B-15', 'EQ-3B-16',
+  'EQ-3B-17', 'EQ-3B-18', 'EQ-3B-19', 'EQ-3B-20', 'EQ-3B-21', 'EQ-3B-22', 'EQ-3B-23', 'EQ-3B-99'];
+
+// Answers that are recorded and shown in the report but not yet added to the
+// totals (no approved emission factor). Said before the user answers — the
+// "Not calculated" note after the save came too late to decide on.
+// questionnaire/tests.py checks these against step_entries.py.
+const NOT_CALCULATED_SUFFIX = {
+  tr: ' — kaydedilir, henüz hesaplanmaz',
+  en: ' — recorded, not calculated yet',
+};
+function notCalculated(option) {
+  return {
+    ...option,
+    notCalculated: true,
+    label: { tr: option.label.tr + NOT_CALCULATED_SUFFIX.tr, en: option.label.en + NOT_CALCULATED_SUFFIX.en },
+  };
+}
+
 export const CARBONIQ_QUESTIONS = [
   {
     id: 'A1',
@@ -1912,6 +1947,13 @@ export const CARBONIQ_QUESTIONS = [
         required: false,
         label: { tr: 'Farklı grup sayısı — opsiyonel (yakıt veya kapasite farklıysa)', en: 'Number of different groups — optional (if fuel or capacity differs)' },
         placeholder: { tr: 'Hepsi aynıysa boş bırakın', en: 'Leave empty if they are all the same' },
+        // groupedLoopItems asks at most 20 groups; more used to be cut to 20
+        // without a word.
+        maxValue: 20,
+        rangeMessage: {
+          tr: 'En fazla 20 farklı grup girilebilir. Yakıtı ve kullanımı aynı olan birimleri tek grupta toplayın.',
+          en: 'At most 20 different groups can be entered. Put units with the same fuel and use in one group.',
+        },
       },
     ],
     notAbove: [
@@ -2003,8 +2045,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Equipment name] — What fuel types does this equipment use?',
     },
     helper: {
-      tr: 'Ekipmanınızın katalog bilgisinden olası yakıtlar önerildi. Birden fazla yakıt kullanıyorsa hepsini seçin — her biri için ayrı tüketim girişi yapacaksınız.',
-      en: 'Possible fuels were suggested based on the equipment catalog. If using multiple fuels, select all — you will enter separate consumption for each.',
+      tr: 'Ekipman kataloğunun bu ekipman için listelediği yakıtlar başta ve "(önerilen)" olarak gösterilir. Birden fazla yakıt kullanıyorsa hepsini seçin — her biri için ayrı tüketim girişi yapacaksınız.',
+      en: 'The fuels the equipment catalog lists for this equipment are shown first, marked "(suggested)". If using multiple fuels, select all — you will enter separate consumption for each.',
     },
     options: [
       { value: 'natural_gas', label: { tr: 'Doğalgaz', en: 'Natural gas' } },
@@ -2013,7 +2055,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'lpg', label: { tr: 'LPG', en: 'LPG' } },
       { value: 'coal', label: { tr: 'Kömür', en: 'Coal' } },
       { value: 'biomass', label: { tr: 'Biyokütle / Odun pellet', en: 'Biomass / Wood pellet' } },
-      { value: 'other_fossil', label: { tr: 'Diğer fosil yakıt', en: 'Other fossil fuel' } },
+      notCalculated({ value: 'other_fossil', label: { tr: 'Diğer fosil yakıt', en: 'Other fossil fuel' } }),
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen en az bir yakıt türü seçin.', en: 'Please select at least one fuel type.' },
@@ -2338,14 +2380,14 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'EQ-3B-14', label: { tr: 'EQ-3B-14 — Vinç (mobil)', en: 'EQ-3B-14 — Mobile crane' } },
       { value: 'EQ-3B-15', label: { tr: 'EQ-3B-15 — Tarım traktörü / biçerdöver', en: 'EQ-3B-15 — Agricultural tractor / harvester' } },
       { value: 'EQ-3B-16', label: { tr: 'EQ-3B-16 — Beton pompası / mikseri', en: 'EQ-3B-16 — Concrete pump / mixer' } },
-      { value: 'EQ-3B-17', label: { tr: 'EQ-3B-17 — Kıyı / iç hat gemisi', en: 'EQ-3B-17 — Coastal / inland waterway vessel' } },
-      { value: 'EQ-3B-18', label: { tr: 'EQ-3B-18 — Feribot / Ro-Ro', en: 'EQ-3B-18 — Ferry / Ro-Ro' } },
-      { value: 'EQ-3B-19', label: { tr: 'EQ-3B-19 — Küçük tekne / hizmet botu', en: 'EQ-3B-19 — Small boat / service vessel' } },
-      { value: 'EQ-3B-20', label: { tr: 'EQ-3B-20 — Kurumsal uçak (jet)', en: 'EQ-3B-20 — Corporate aircraft (jet)' } },
-      { value: 'EQ-3B-21', label: { tr: 'EQ-3B-21 — Helikopter', en: 'EQ-3B-21 — Helicopter' } },
-      { value: 'EQ-3B-22', label: { tr: 'EQ-3B-22 — Dizel lokomotif', en: 'EQ-3B-22 — Diesel locomotive' } },
-      { value: 'EQ-3B-23', label: { tr: 'EQ-3B-23 — Fabrika içi ray aracı', en: 'EQ-3B-23 — Factory rail vehicle' } },
-      { value: 'EQ-3B-99', label: { tr: 'EQ-3B-99 — Diğer (listede yok)', en: 'EQ-3B-99 — Other (not in list)' } },
+      notCalculated({ value: 'EQ-3B-17', label: { tr: 'EQ-3B-17 — Kıyı / iç hat gemisi', en: 'EQ-3B-17 — Coastal / inland waterway vessel' } }),
+      notCalculated({ value: 'EQ-3B-18', label: { tr: 'EQ-3B-18 — Feribot / Ro-Ro', en: 'EQ-3B-18 — Ferry / Ro-Ro' } }),
+      notCalculated({ value: 'EQ-3B-19', label: { tr: 'EQ-3B-19 — Küçük tekne / hizmet botu', en: 'EQ-3B-19 — Small boat / service vessel' } }),
+      notCalculated({ value: 'EQ-3B-20', label: { tr: 'EQ-3B-20 — Kurumsal uçak (jet)', en: 'EQ-3B-20 — Corporate aircraft (jet)' } }),
+      notCalculated({ value: 'EQ-3B-21', label: { tr: 'EQ-3B-21 — Helikopter', en: 'EQ-3B-21 — Helicopter' } }),
+      notCalculated({ value: 'EQ-3B-22', label: { tr: 'EQ-3B-22 — Dizel lokomotif', en: 'EQ-3B-22 — Diesel locomotive' } }),
+      notCalculated({ value: 'EQ-3B-23', label: { tr: 'EQ-3B-23 — Fabrika içi ray aracı', en: 'EQ-3B-23 — Factory rail vehicle' } }),
+      notCalculated({ value: 'EQ-3B-99', label: { tr: 'EQ-3B-99 — Diğer (listede yok)', en: 'EQ-3B-99 — Other (not in list)' } }),
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen en az bir araç tipi seçin.', en: 'Please select at least one vehicle type.' },
@@ -2459,6 +2501,7 @@ export const CARBONIQ_QUESTIONS = [
         optionsByItem: {
           'EQ-3B-01': ['car_small', 'car_medium', 'car_large', 'unknown'],
           'EQ-3B-02': ['van', 'unknown'],
+          'EQ-3B-03': ['hgv_17', 'hgv_heavy', 'unknown'],
           'EQ-3B-04': ['motorcycle', 'unknown'],
           'EQ-3B-05': ['van', 'unknown'],
           'EQ-3B-06': ['hgv_7_5', 'unknown'],
@@ -2466,6 +2509,8 @@ export const CARBONIQ_QUESTIONS = [
           'EQ-3B-08': ['hgv_heavy', 'unknown'],
           'EQ-3B-09': ['hgv_heavy', 'unknown'],
           'EQ-3B-10': ['hgv_heavy', 'unknown'],
+          // Off-road machines, vessels, aircraft and rail have no road band.
+          ...Object.fromEntries(NON_ROAD_VEHICLES.map(k => [k, ['not_road']])),
         },
         options: [
           { value: 'car_small', label: { tr: 'Binek — küçük (< 1,4 L motor)', en: 'Car — small (< 1.4 L engine)' } },
@@ -2477,6 +2522,7 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'hgv_heavy', label: { tr: 'Kamyon / TIR > 17 t', en: 'Lorry / HGV > 17 t' } },
           { value: 'motorcycle', label: { tr: 'Motosiklet', en: 'Motorcycle' } },
           { value: 'unknown', label: { tr: 'Bilinmiyor', en: 'Unknown' } },
+          { value: 'not_road', label: { tr: 'Karayolu aracı değil — bant yok', en: 'Not a road vehicle — no band' } },
         ],
       },
       {
@@ -2488,6 +2534,13 @@ export const CARBONIQ_QUESTIONS = [
         required: false,
         label: { tr: 'Farklı grup sayısı — opsiyonel (yakıt, model yılı veya kullanım farklıysa)', en: 'Number of different groups — optional (if fuel, model year or use differs)' },
         placeholder: { tr: 'Hepsi aynıysa boş bırakın', en: 'Leave empty if they are all the same' },
+        // groupedLoopItems asks at most 20 groups; more used to be cut to 20
+        // without a word.
+        maxValue: 20,
+        rangeMessage: {
+          tr: 'En fazla 20 farklı grup girilebilir. Yakıtı ve kullanımı aynı olan birimleri tek grupta toplayın.',
+          en: 'At most 20 different groups can be entered. Put units with the same fuel and use in one group.',
+        },
       },
     ],
     notAbove: [
@@ -2521,12 +2574,15 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Euro normu bazı EF tablolarında kullanılır. Bilmiyorsanız atlayın — sistem en güncel Euro normunu varsayılan olarak uygular.',
       en: 'Euro standard is used in some EF tables. If unknown, skip — the system will apply the latest Euro standard as default.',
     },
+    // Euro norms are road-vehicle standards: a locomotive, ship or aircraft
+    // gets only "not applicable" (onlyForItems).
     options: [
-      { value: 'euro_3', label: { tr: 'Euro 3', en: 'Euro 3' } },
-      { value: 'euro_4', label: { tr: 'Euro 4', en: 'Euro 4' } },
-      { value: 'euro_5', label: { tr: 'Euro 5', en: 'Euro 5' } },
-      { value: 'euro_6d', label: { tr: 'Euro 6d', en: 'Euro 6d' } },
-      { value: 'unknown', label: { tr: 'Bilinmiyor — en güncel uygulanacak', en: 'Unknown — latest will be applied' } },
+      { value: 'euro_3', label: { tr: 'Euro 3', en: 'Euro 3' }, onlyForItems: ROAD_VEHICLES },
+      { value: 'euro_4', label: { tr: 'Euro 4', en: 'Euro 4' }, onlyForItems: ROAD_VEHICLES },
+      { value: 'euro_5', label: { tr: 'Euro 5', en: 'Euro 5' }, onlyForItems: ROAD_VEHICLES },
+      { value: 'euro_6d', label: { tr: 'Euro 6d', en: 'Euro 6d' }, onlyForItems: ROAD_VEHICLES },
+      { value: 'unknown', label: { tr: 'Bilinmiyor — en güncel uygulanacak', en: 'Unknown — latest will be applied' }, onlyForItems: ROAD_VEHICLES },
+      { value: 'not_applicable', label: { tr: 'Uygulanmaz — Euro normu yalnızca karayolu araçları için', en: 'Not applicable — Euro standards are for road vehicles only' }, onlyForItems: NON_ROAD_VEHICLES },
     ],
     next: '3B-5',
   },
@@ -2792,17 +2848,17 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'EQ-3C-01', label: { tr: 'EQ-3C-01 — Çimento / klinker fırını (NACE C23)', en: 'EQ-3C-01 — Cement / clinker kiln (NACE C23)' }, nace: 'C23' },
       { value: 'EQ-3C-02', label: { tr: 'EQ-3C-02 — Kireç fırını (NACE C23)', en: 'EQ-3C-02 — Lime kiln (NACE C23)' }, nace: 'C23' },
       { value: 'EQ-3C-03', label: { tr: 'EQ-3C-03 — Cam eritme fırını (NACE C23)', en: 'EQ-3C-03 — Glass melting furnace (NACE C23)' }, nace: 'C23' },
-      { value: 'EQ-3C-04', label: { tr: 'EQ-3C-04 — Seramik / tuğla pişirme (NACE C23)', en: 'EQ-3C-04 — Ceramic / brick firing (NACE C23)' }, nace: 'C23' },
+      notCalculated({ value: 'EQ-3C-04', label: { tr: 'EQ-3C-04 — Seramik / tuğla pişirme (NACE C23)', en: 'EQ-3C-04 — Ceramic / brick firing (NACE C23)' }, nace: 'C23' }),
       { value: 'EQ-3C-05', label: { tr: 'EQ-3C-05 — Yüksek fırın / demir-çelik (NACE C24)', en: 'EQ-3C-05 — Blast furnace / iron-steel (NACE C24)' }, nace: 'C24' },
       { value: 'EQ-3C-06', label: { tr: 'EQ-3C-06 — Elektrik ark ocağı EAF (NACE C24)', en: 'EQ-3C-06 — Electric arc furnace EAF (NACE C24)' }, nace: 'C24' },
       { value: 'EQ-3C-07', label: { tr: 'EQ-3C-07 — Alüminyum eritme (NACE C24)', en: 'EQ-3C-07 — Aluminium smelting (NACE C24)' }, nace: 'C24' },
       { value: 'EQ-3C-08', label: { tr: 'EQ-3C-08 — Amonyak / üre üretimi (NACE C20)', en: 'EQ-3C-08 — Ammonia / urea production (NACE C20)' }, nace: 'C20' },
       { value: 'EQ-3C-09', label: { tr: 'EQ-3C-09 — Nitrik asit üretimi (NACE C20)', en: 'EQ-3C-09 — Nitric acid production (NACE C20)' }, nace: 'C20' },
-      { value: 'EQ-3C-10', label: { tr: 'EQ-3C-10 — Petrokimya / rafine prosesi (NACE C19)', en: 'EQ-3C-10 — Petrochemical / refinery process (NACE C19)' }, nace: 'C19' },
-      { value: 'EQ-3C-11', label: { tr: 'EQ-3C-11 — Endüstriyel atık su arıtma (NACE E)', en: 'EQ-3C-11 — Industrial wastewater treatment (NACE E)' }, nace: 'E' },
-      { value: 'EQ-3C-12', label: { tr: 'EQ-3C-12 — Biyogaz / biyometan sistemi', en: 'EQ-3C-12 — Biogas / biomethane system' } },
-      { value: 'EQ-3C-13', label: { tr: 'EQ-3C-13 — Kompost / organik atık işleme', en: 'EQ-3C-13 — Composting / organic waste processing' } },
-      { value: 'EQ-3C-99', label: { tr: 'EQ-3C-99 — Diğer proses (listede yok)', en: 'EQ-3C-99 — Other process (not in list)' } },
+      notCalculated({ value: 'EQ-3C-10', label: { tr: 'EQ-3C-10 — Petrokimya / rafine prosesi (NACE C19)', en: 'EQ-3C-10 — Petrochemical / refinery process (NACE C19)' }, nace: 'C19' }),
+      notCalculated({ value: 'EQ-3C-11', label: { tr: 'EQ-3C-11 — Endüstriyel atık su arıtma (NACE E)', en: 'EQ-3C-11 — Industrial wastewater treatment (NACE E)' }, nace: 'E' }),
+      notCalculated({ value: 'EQ-3C-12', label: { tr: 'EQ-3C-12 — Biyogaz / biyometan sistemi', en: 'EQ-3C-12 — Biogas / biomethane system' } }),
+      notCalculated({ value: 'EQ-3C-13', label: { tr: 'EQ-3C-13 — Kompost / organik atık işleme', en: 'EQ-3C-13 — Composting / organic waste processing' } }),
+      notCalculated({ value: 'EQ-3C-99', label: { tr: 'EQ-3C-99 — Diğer proses (listede yok)', en: 'EQ-3C-99 — Other process (not in list)' } }),
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen en az bir proses ekipmanı seçin.', en: 'Please select at least one process equipment item.' },
@@ -2971,6 +3027,10 @@ export const CARBONIQ_QUESTIONS = [
     subtype: 'searchable_catalog',
     required: true,
     reportField: 'scope1.fugitive.equipment_list',
+    notCalculated: {
+      tr: 'Kaçak emisyonlar (soğutucu gaz, SF₆, metan) henüz hesaplanmıyor: GWP değerleri AR6 olarak birleştirilene kadar. Cevaplarınız raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
+      en: 'Fugitive emissions (refrigerants, SF₆, methane) are not calculated yet: not until the GWP values are unified to AR6. Your answers are shown in the report and listed as "Not calculated"; they are not added to the totals.',
+    },
     loopType: 'per_fugitive',
     loopNext: '3D-2',
     text: {
@@ -3063,6 +3123,9 @@ export const CARBONIQ_QUESTIONS = [
         type: 'select',
         required: true,
         label: { tr: 'Soğutucu / gaz türü', en: 'Refrigerant / gas type' },
+        // Only the gases this equipment can hold: a gas pipeline offered
+        // refrigerants (R-410A …) and no methane.
+        optionsByItem: GAS_OPTIONS_BY_EQUIPMENT,
         options: [
           { value: 'R410A', label: { tr: 'R-410A (GWP: 2.088)', en: 'R-410A (GWP: 2,088)' }, gwp: 2088 },
           { value: 'R32', label: { tr: 'R-32 (GWP: 675)', en: 'R-32 (GWP: 675)' }, gwp: 675 },
@@ -3071,6 +3134,10 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'R404A', label: { tr: 'R-404A (GWP: 3.922) — yüksek GWP', en: 'R-404A (GWP: 3,922) — high GWP' }, gwp: 3922 },
           { value: 'R1234yf', label: { tr: 'R-1234yf (GWP: 4) — düşük GWP', en: 'R-1234yf (GWP: 4) — low GWP' }, gwp: 4 },
           { value: 'SF6', label: { tr: 'SF₆ (GWP: 23.500) — çok yüksek GWP', en: 'SF₆ (GWP: 23,500) — very high GWP' }, gwp: 23500 },
+          // Not refrigerants: a gas pipeline or LNG tank leaks methane, NF₃
+          // cleaning equipment NF₃ (AR6 GWP-100).
+          { value: 'CH4', label: { tr: 'Metan / doğalgaz (CH₄, GWP: 29,8)', en: 'Methane / natural gas (CH₄, GWP: 29.8)' }, gwp: 29.8 },
+          { value: 'NF3', label: { tr: 'NF₃ (GWP: 17.400) — çok yüksek GWP', en: 'NF₃ (GWP: 17,400) — very high GWP' }, gwp: 17400 },
           { value: 'unknown', label: { tr: 'Bilinmiyor — sistem konservatif değer uygular', en: 'Unknown — system applies conservative value' }, gwp: null },
         ],
       },
@@ -3083,6 +3150,13 @@ export const CARBONIQ_QUESTIONS = [
         required: false,
         label: { tr: 'Farklı grup sayısı — opsiyonel (gaz türü veya dolum farklıysa)', en: 'Number of different groups — optional (if gas type or refill differs)' },
         placeholder: { tr: 'Hepsi aynıysa boş bırakın', en: 'Leave empty if they are all the same' },
+        // groupedLoopItems asks at most 20 groups; more used to be cut to 20
+        // without a word.
+        maxValue: 20,
+        rangeMessage: {
+          tr: 'En fazla 20 farklı grup girilebilir. Yakıtı ve kullanımı aynı olan birimleri tek grupta toplayın.',
+          en: 'At most 20 different groups can be entered. Put units with the same fuel and use in one group.',
+        },
       },
     ],
     notAbove: [
@@ -3151,6 +3225,9 @@ export const CARBONIQ_QUESTIONS = [
         type: 'select',
         required: false,
         groupOnly: true,
+        // Only the gases this equipment can hold: a gas pipeline offered
+        // refrigerants (R-410A …) and no methane.
+        optionsByItem: GAS_OPTIONS_BY_EQUIPMENT,
         label: { tr: 'Bu grubun soğutucu / gaz türü (Soru 61\'dekinden farklıysa)', en: 'This group’s refrigerant / gas type (if different from Question 61)' },
         options: [
           { value: 'R410A', label: { tr: 'R-410A (GWP: 2.088)', en: 'R-410A (GWP: 2,088)' }, gwp: 2088 },
@@ -3160,9 +3237,18 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'R404A', label: { tr: 'R-404A (GWP: 3.922) — yüksek GWP', en: 'R-404A (GWP: 3,922) — high GWP' }, gwp: 3922 },
           { value: 'R1234yf', label: { tr: 'R-1234yf (GWP: 4) — düşük GWP', en: 'R-1234yf (GWP: 4) — low GWP' }, gwp: 4 },
           { value: 'SF6', label: { tr: 'SF₆ (GWP: 23.500) — çok yüksek GWP', en: 'SF₆ (GWP: 23,500) — very high GWP' }, gwp: 23500 },
+          // Not refrigerants: a gas pipeline or LNG tank leaks methane, NF₃
+          // cleaning equipment NF₃ (AR6 GWP-100).
+          { value: 'CH4', label: { tr: 'Metan / doğalgaz (CH₄, GWP: 29,8)', en: 'Methane / natural gas (CH₄, GWP: 29.8)' }, gwp: 29.8 },
+          { value: 'NF3', label: { tr: 'NF₃ (GWP: 17.400) — çok yüksek GWP', en: 'NF₃ (GWP: 17,400) — very high GWP' }, gwp: 17400 },
           { value: 'unknown', label: { tr: 'Bilinmiyor — sistem konservatif değer uygular', en: 'Unknown — system applies conservative value' }, gwp: null },
         ],
       },
+    ],
+    // A refill larger than the whole charge of the system is a typo (50,000
+    // kg into an 8 kg system used to be accepted). Skipped without capacity.
+    notAbove: [
+      { field: 'refill_kg', max: 'capacity_kg', message: { tr: 'Yıllık dolum miktarı sistem kapasitesinden büyük olamaz. Servis faturasındaki kg değerini kontrol edin.', en: 'The annual refill cannot be larger than the system capacity. Check the kg on the service invoice.' } },
     ],
     validate: {
       requiredMessage: { tr: 'Lütfen yıllık dolum miktarını girin.', en: 'Please enter the annual refill quantity.' },
@@ -4569,6 +4655,10 @@ export const CARBONIQ_QUESTIONS = [
     type: 'single_select',
     required: true,
     reportField: 'scope3.cat2.applicable',
+    notCalculated: {
+      tr: 'Sermaye malları henüz hesaplanmıyor: harcama bazlı onaylı bir emisyon faktörü yok. Girdiğiniz bilgiler raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
+      en: 'Capital goods are not calculated yet: there is no approved spend-based emission factor. What you enter is shown in the report and listed as "Not calculated"; it is not added to the totals.',
+    },
     text: {
       tr: 'Bu raporlama yılında herhangi bir sermaye varlığı satın aldınız mı?',
       en: 'Did you purchase any capital goods during this reporting year?',
@@ -5240,6 +5330,10 @@ export const CARBONIQ_QUESTIONS = [
     type: 'single_select',
     required: true,
     reportField: 'scope3.cat7.data_source',
+    notCalculated: {
+      tr: 'Çalışan ulaşımı henüz hesaplanmıyor (gerçek iş günü sayısı ve ev ofisi faktörü belirlenene kadar). Cevaplarınız raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
+      en: 'Employee commuting is not calculated yet (until the real working days and the homeworking factor are set). Your answers are shown in the report and listed as "Not calculated"; they are not added to the totals.',
+    },
     text: {
       tr: 'Çalışanlar işe nasıl geliyor? İşe gidiş-geliş anketi yapıldı mı?',
       en: 'How do employees commute? Has a commute survey been conducted?',
@@ -5312,7 +5406,13 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Ortalama değeri girin. Bu, yıllık ofis günü sayısını hesaplamak için kullanılır.',
       en: 'Enter the average value. This is used to calculate the annual office day count.',
     },
-    validate: { requiredMessage: { tr: 'Lütfen ofis günü sayısını girin.', en: 'Please enter the office day count.' } },
+    // Days in a week: "40" used to be accepted.
+    validate: {
+      requiredMessage: { tr: 'Lütfen ofis günü sayısını girin.', en: 'Please enter the office day count.' },
+      minValue: 0,
+      maxValue: 7,
+      rangeMessage: { tr: 'Haftalık ofis günü 0 ile 7 arasında olmalıdır.', en: 'Office days per week must be between 0 and 7.' },
+    },
     next: 'K3C7-3',
   },
   {
@@ -5401,7 +5501,13 @@ export const CARBONIQ_QUESTIONS = [
       tr: 'Anketiniz varsa ortalama değeri kullanın. Yoksa şehir ortalamasına yakın bir tahmin girin (büyükşehirlerde tipik olarak 12–20 km).',
       en: 'Use the average from your survey if available. Otherwise enter an estimate close to the city average (typically 12–20 km in large cities).',
     },
-    validate: { requiredMessage: { tr: 'Lütfen mesafeyi girin.', en: 'Please enter the distance.' } },
+    // A one-way commute; 15,000 km used to be accepted.
+    validate: {
+      requiredMessage: { tr: 'Lütfen mesafeyi girin.', en: 'Please enter the distance.' },
+      minValue: 0,
+      maxValue: 300,
+      rangeMessage: { tr: 'Tek yön ortalama mesafe 0 ile 300 km arasında olmalıdır.', en: 'The average one-way distance must be between 0 and 300 km.' },
+    },
     next: 'K3C7-5',
   },
   {
@@ -5423,6 +5529,16 @@ export const CARBONIQ_QUESTIONS = [
     helper: {
       tr: 'Elektrikli araç kullananlar için Kapsam 2\'deki şebeke emisyon faktörü uygulanır — fosil yakıtlı araçlardan daha düşük emisyon.',
       en: 'Electric vehicle users get the Scope 2 grid emission factor applied — lower emissions than fossil-fuel vehicles.',
+    },
+    // Remote staff do not commute: at most the office + hybrid staff of
+    // 95a (120,000 EV commuters used to be accepted for a 120-person company).
+    notAboveAnswer: {
+      questionId: 'K3C7-1',
+      fields: ['fulltime_count', 'hybrid_count'],
+      message: {
+        tr: 'Elektrikli araçla gelen çalışan sayısı, ofise gelen çalışan sayısını ({limit}, Soru 95a) aşamaz.',
+        en: 'EV commuters cannot exceed the employees who come to the office ({limit}, Question 95a).',
+      },
     },
     next: 'K3C8-0',
   },
@@ -5623,7 +5739,7 @@ export const CARBONIQ_QUESTIONS = [
     fields: [
       { id: 'product', format: 'name', type: 'text', required: true, maxLength: 200, label: { tr: 'Ara ürün', en: 'Intermediate product' }, placeholder: { tr: 'Örn: Sülfürik asit', en: 'e.g. Sulphuric acid' } },
       { id: 'quantity', type: 'numeric', required: true, label: { tr: 'Satılan miktar', en: 'Quantity sold' } },
-      { id: 'unit', type: 'select', required: true, label: { tr: 'Birim', en: 'Unit' }, options: [{ value: 'tonnes', label: { tr: 'ton', en: 'tonnes' } }, { value: 'kg', label: { tr: 'kg', en: 'kg' } }, { value: 'm3', label: { tr: 'm³', en: 'm³' } }, { value: 'litres', label: { tr: 'litre', en: 'litres' } }, { value: 'units', label: { tr: 'adet', en: 'units' } }] },
+      { id: 'unit', type: 'select', required: true, label: { tr: 'Birim', en: 'Unit' }, options: [{ value: 'tonnes', label: { tr: 'ton', en: 'tonnes' } }, { value: 'kg', label: { tr: 'kg', en: 'kg' } }, notCalculated({ value: 'm3', label: { tr: 'm³', en: 'm³' } }), notCalculated({ value: 'litres', label: { tr: 'litre', en: 'litres' } }), notCalculated({ value: 'units', label: { tr: 'adet', en: 'units' } })] },
       { id: 'processing_type', type: 'select', required: true, label: { tr: 'İşlem türü', en: 'Processing type' }, options: [{ value: 'energy_intensive', label: { tr: 'Enerji yoğun (ergitme, fırınlama…)', en: 'Energy-intensive (melting, firing…)' } }, { value: 'light', label: { tr: 'Hafif (montaj, kesme, paketleme…)', en: 'Light (assembly, cutting, packing…)' } }, { value: 'chemical', label: { tr: 'Kimyasal işlem', en: 'Chemical processing' } }] },
       { id: 'customer_process', type: 'text', required: false, maxLength: 300, label: { tr: 'Müşterideki işlem (opsiyonel)', en: 'Processing at the customer (optional)' }, placeholder: { tr: 'Örn: boya üretiminde hammadde', en: 'e.g. raw material in paint production' } },
     ],
@@ -6140,6 +6256,8 @@ export const CARBONIQ_QUESTIONS = [
     // reason (old Q110) and one share (old Q112) for all of them.
     type: 'compound',
     repeatable: true,
+    // The same excluded source twice would be counted twice in the share.
+    uniqueItems: true,
     required: true,
     reportField: 'exclusions.excluded_sources',
     text: {
@@ -6398,6 +6516,8 @@ export const CARBONIQ_QUESTIONS = [
     type: 'compound',
     // repeatable — 6C-1 offers "birden fazla istisna var".
     repeatable: true,
+    // The same exception twice is one exception listed twice in the report.
+    uniqueItems: true,
     required: true,
     reportField: 'exceptions.detail',
     text: {
@@ -7067,6 +7187,21 @@ export function groupedLoopItems(questionId, items, answers) {
   return out;
 }
 
+// 3A-1's defaultFuels (catalog names) → 3A-4 option values.
+const DEFAULT_FUEL_VALUE = {
+  'Doğalgaz': 'natural_gas', 'Fuel oil': 'fuel_oil', 'Motorin': 'diesel', 'LPG': 'lpg',
+  'Kömür': 'coal', 'Biyokütle / Odun pellet': 'biomass', 'Diğer fosil yakıt': 'other_fossil',
+};
+
+// The fuels the equipment catalog lists for this loop item of 3A-4 (a diesel
+// generator → diesel), so they can be offered first; [] elsewhere. The helper
+// text promised these suggestions, but natural gas always came first.
+export function suggestedOptionValues(question, loopItem) {
+  if (question?.id !== '3A-4' || !loopItem) return [];
+  const equipment = getQuestionById('3A-1')?.options?.find(o => o.value === baseLoopItem(loopItem));
+  return (equipment?.defaultFuels || []).map(n => DEFAULT_FUEL_VALUE[n]).filter(Boolean);
+}
+
 export function getQuestionById(id) {
   const question = CARBONIQ_QUESTIONS.find((q) => q.id === id);
   if (id === 'A2' && question && isForeignCompany()) return foreignTaxIdQuestion(question);
@@ -7137,6 +7272,7 @@ function validateCompoundFields(fields, obj, lang) {
       const flabel = field.label?.[lang] || field.label?.en || field.id;
       return {
         ok: false,
+        field: field.id,
         message: field.validate?.requiredMessage?.[lang]
           || (lang === 'tr'
             ? `"${flabel}" alanı zorunludur.`
@@ -7147,6 +7283,7 @@ function validateCompoundFields(fields, obj, lang) {
       const flabel = field.label?.[lang] || field.label?.en || field.id;
       return {
         ok: false,
+        field: field.id,
         message: lang === 'tr'
           ? `"${flabel}" en fazla ${field.maxLength} karakter olabilir.`
           : `"${flabel}" must be at most ${field.maxLength} characters.`,
@@ -7160,6 +7297,7 @@ function validateCompoundFields(fields, obj, lang) {
       if (Number.isNaN(y) || y < 1990 || y > CURRENT_YEAR) {
         return {
           ok: false,
+        field: field.id,
           message: lang === 'tr'
             ? `"${flabel}" 1990 ile ${CURRENT_YEAR} arasında 4 haneli bir yıl olmalıdır.`
             : `"${flabel}" must be a 4-digit year between 1990 and ${CURRENT_YEAR}.`,
@@ -7172,6 +7310,7 @@ function validateCompoundFields(fields, obj, lang) {
         const flabel = field.label?.[lang] || field.label?.en || field.id;
         return {
           ok: false,
+        field: field.id,
           message: lang === 'tr'
             ? `"${flabel}" 0 ile 100 arasında olmalıdır.`
             : `"${flabel}" must be between 0 and 100.`,
@@ -7185,6 +7324,7 @@ function validateCompoundFields(fields, obj, lang) {
       if (!Number.isNaN(n) && (n <= 0 || n > 100)) {
         return {
           ok: false,
+        field: field.id,
           message: lang === 'tr' ? 'Yıl değil, yıl sayısı girin (1–100).' : 'Enter a number of years (1–100), not a calendar year.',
         };
       }
@@ -7193,6 +7333,7 @@ function validateCompoundFields(fields, obj, lang) {
       const flabel = field.label?.[lang] || field.label?.en || field.id;
       return {
         ok: false,
+        field: field.id,
         message: lang === 'tr'
           ? `"${flabel}" için bir ad yazın; yalnızca rakam veya işaretten oluşamaz.`
           : `For "${flabel}", enter a name; it cannot be only digits or symbols.`,
@@ -7200,8 +7341,10 @@ function validateCompoundFields(fields, obj, lang) {
     }
     // Contact details use the same rules as the server (companies/contact.py),
     // so a bad phone or website is caught here, next to the form.
-    if (field.format === 'phone' && !phoneOk(String(fv))) return { ok: false, message: phoneMessage(lang === 'tr', companyCountry) };
-    if (field.format === 'website' && !websiteOk(String(fv))) return { ok: false, message: websiteMessage(lang === 'tr') };
+    if (field.format === 'phone' && !phoneOk(String(fv))) return { ok: false,
+        field: field.id, message: phoneMessage(lang === 'tr', companyCountry) };
+    if (field.format === 'website' && !websiteOk(String(fv))) return { ok: false,
+        field: field.id, message: websiteMessage(lang === 'tr') };
     // Numeric compound sub-fields (distance, weight, quantity, spend amount,
     // etc.) were only checked for "non-empty" — a user could type "abc" into
     // "Distance (km)" and the Confirm/Done button never blocked it; the
@@ -7217,6 +7360,7 @@ function validateCompoundFields(fields, obj, lang) {
       if (Number.isNaN(n)) {
         return {
           ok: false,
+        field: field.id,
           message: lang === 'tr'
             ? `"${flabel}" için geçerli bir sayı girin.`
             : `Please enter a valid number for "${flabel}".`,
@@ -7225,9 +7369,24 @@ function validateCompoundFields(fields, obj, lang) {
       if (n < 0) {
         return {
           ok: false,
+        field: field.id,
           message: lang === 'tr'
             ? `"${flabel}" negatif olmayan bir sayı olmalıdır.`
             : `"${flabel}" must be a non-negative number.`,
+        };
+      }
+      // A field's own realistic range (3A-2's group count ≤ 20): the same
+      // minValue / maxValue / rangeMessage as a question, checked on the
+      // server too (the schema carries them for fields).
+      if ((field.minValue !== undefined && n < field.minValue) || (field.maxValue !== undefined && n > field.maxValue)) {
+        return {
+          ok: false,
+        field: field.id,
+          message: field.rangeMessage?.[lang] || field.rangeMessage?.en || (field.maxValue === undefined
+            ? (lang === 'tr' ? `"${flabel}" en az ${field.minValue} olmalıdır.` : `"${flabel}" must be at least ${field.minValue}.`)
+            : (lang === 'tr'
+              ? `"${flabel}" ${field.minValue ?? 0} ile ${field.maxValue} arasında olmalıdır.`
+              : `"${flabel}" must be between ${field.minValue ?? 0} and ${field.maxValue}.`)),
         };
       }
     }
@@ -7277,6 +7436,70 @@ export function normalizeCarbonIQNumbers(question, value) {
   return value;
 }
 
+// The index of the first row that repeats an earlier one (same value in
+// every field, ignoring case and surrounding spaces), or -1.
+export function duplicateItemIndex(fields, items) {
+  // I/ı/İ/i compare equal whatever the keyboard ("Invoice" vs "invoice"
+  // under Turkish lower-casing is "ınvoice"); same key as the server's.
+  const fold = (v) => String(v ?? '').trim().toLowerCase().replace(/ı/g, 'i').normalize('NFKD').replace(/̇/g, '');
+  const key = (item) => JSON.stringify((fields || []).map(f => fold(item?.[f.id])));
+  const seen = new Set();
+  for (let i = 0; i < (items || []).length; i += 1) {
+    const k = key(items[i]);
+    if (seen.has(k)) return i;
+    seen.add(k);
+  }
+  return -1;
+}
+
+// Supplier / facility-specific EF form → the step whose amounts it applies to.
+export const EF_SOURCE_STEP = { '3A-EF-a': '3A-5', '3B-EF-a': '3B-7', '3C-EF-a': '3C-2', '4A-EF-a': '4A-1', '4B-EF-a': '4B-2' };
+const EF_UNIT_GROUP = {
+  kwh: 'energy', mwh: 'energy', gj: 'energy',
+  litre: 'liquid', l: 'liquid', lt: 'liquid',
+  kg: 'mass', ton: 'mass', tonne: 'mass', tonnes: 'mass', tonne_product: 'mass',
+  'm³': 'gas', m3: 'gas',
+  km: 'distance', 'ton-km': 'freight',
+};
+
+// The consumption units entered for an EF form's source step (["m³"]) when
+// the chosen "kg CO₂e / <unit>" fits none of them, else null. The server
+// (questionnaire/plausibility.py) refuses such a document: a factor in a
+// unit no amount was entered in can never be applied, and was dropped
+// silently in favour of the generic factor.
+export function efUnitMismatch(questionId, efUnit, answers) {
+  const src = EF_SOURCE_STEP[questionId];
+  const m = /^(?:kg|t)CO2e_(.+)$/.exec(String(efUnit || ''));
+  if (!src || !m) return null;
+  const efGroup = EF_UNIT_GROUP[m[1].toLowerCase()];
+  if (!efGroup) return null;
+  const units = new Set();
+  // 3C-2 production amounts are tonnes of product (the field has no unit).
+  if (src === '3C-2') {
+    const rows = readAnswerValue(answers, src);
+    if (rows && typeof rows === 'object' && Object.keys(rows).length) units.add('tonne');
+  } else {
+    const walk = (v) => {
+      if (typeof v === 'string') {
+        const u = v.trim().match(/[\d.,]+\s*(\S+)$/);
+        if (u) units.add(u[1]);
+      } else if (v && typeof v === 'object') Object.values(v).forEach(walk);
+    };
+    walk(readAnswerValue(answers, src));
+  }
+  const list = [...units];
+  if (!list.length || list.some(u => EF_UNIT_GROUP[u.toLowerCase()] === efGroup)) return null;
+  return list;
+}
+
+function efUnitMismatchMessage(question, value, units, lang) {
+  const opt = (question.fields || []).find(f => f.id === 'ef_unit')?.options?.find(o => o.value === value?.ef_unit);
+  const efLabel = opt ? (opt.label?.[lang] || opt.label?.en) : value?.ef_unit;
+  return lang === 'tr'
+    ? `Seçtiğiniz birim (${efLabel}) tüketimi girdiğiniz birimle (${units.join(', ')}) uyuşmuyor; bu faktör hesaplamada kullanılamaz. Belgedeki birimi kontrol edin.`
+    : `The unit you chose (${efLabel}) does not match the unit you entered the amounts in (${units.join(', ')}), so this factor could not be used in the calculation. Check the unit on the document.`;
+}
+
 export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en') {
   if (!question) return { ok: false, message: 'Question not found.' };
 
@@ -7301,6 +7524,14 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
       const err = validateCompoundFields(question.fields, item || {}, lang);
       if (!err.ok) return err;
     }
+    if (question.uniqueItems && duplicateItemIndex(question.fields, items) !== -1) {
+      return {
+        ok: false,
+        message: lang === 'tr'
+          ? 'Aynı kayıt listede iki kez var. Tekrar edeni kaldırın (×).'
+          : 'The same entry is in the list twice. Remove the repeated one (×).',
+      };
+    }
     return { ok: true };
   }
 
@@ -7309,6 +7540,10 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
     const obj = (value && typeof value === 'object' && !Array.isArray(value)) ? value : {};
     const fieldsErr = validateCompoundFields(question.fields, obj, lang);
     if (!fieldsErr.ok) return fieldsErr;
+    if (EF_SOURCE_STEP[question.id]) {
+      const units = efUnitMismatch(question.id, obj.ef_unit, answers);
+      if (units) return { ok: false, message: efUnitMismatchMessage(question, obj, units, lang) };
+    }
     // One amount that cannot exceed another (4A-2c company m² ≤ building m²,
     // 4A-3a grid sales ≤ production). Skipped while either is empty.
     for (const rule of question.notAbove || []) {
@@ -7480,6 +7715,22 @@ export function validateCarbonIQAnswer(question, value, answers = {}, lang = 'en
           question.validate?.maxValueMessage?.[lang] ||
           (lang === 'tr' ? `Değer en fazla ${maxValue} olmalıdır.` : `Value must be at most ${maxValue}.`),
       };
+    }
+    // notAboveAnswer: at most the sum of fields of an earlier answer
+    // (K3C7-5's EV commuters ≤ the office + hybrid staff of K3C7-1).
+    // Skipped while that answer is missing; same rule on the server.
+    const rule = question.notAboveAnswer;
+    if (rule) {
+      const src = readAnswerValue(answers, rule.questionId);
+      if (src && typeof src === 'object') {
+        const parts = rule.fields.map(f => parseLocalizedNumber(src[f]));
+        if (parts.some(Number.isFinite)) {
+          const limit = parts.filter(Number.isFinite).reduce((s, n) => s + n, 0);
+          if (amountNum > limit) {
+            return { ok: false, message: (rule.message?.[lang] || rule.message?.en || '').replace('{limit}', String(limit)) };
+          }
+        }
+      }
     }
   }
 

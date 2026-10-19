@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
@@ -23,6 +23,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { api } from '@/lib/utils/api';
 import { computeLocalSummaryFromFields } from '@/lib/carboniq/emission-factors';
 import { openChat, OPEN_CHAT_EVENT } from '@/lib/openChat';
+import { rememberedYear, rememberYear, defaultReportingYear, isReportingYear, tokenUserId } from '@/lib/activeYear';
 
 function PreviewBanner({ tr }) {
   return (
@@ -80,7 +81,24 @@ export default function DashboardPage() {
     if (!startupResolved) return;
     try { localStorage.setItem('carbonless_active_tab', activeTab); } catch {}
   }, [activeTab, startupResolved]);
-  const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
+  // The header's reporting year. Every change (the picker, an inventory being
+  // filled, a deep link) is remembered per user; until the startup effect
+  // below resolves it, the calendar year stands in.
+  const [selectedYear, setSelectedYearState] = useState(() => new Date().getFullYear());
+  const yearUserRef = useRef(null);
+  const yearSettledRef = useRef(false);
+  // The data below is loaded once the year is known: loading the calendar
+  // year first and the real one after doubled every request of the page.
+  const [yearReady, setYearReady] = useState(false);
+  const setSelectedYear = useCallback((next) => {
+    yearSettledRef.current = true;
+    setYearReady(true);
+    setSelectedYearState(prev => {
+      const year = typeof next === 'function' ? next(prev) : next;
+      if (typeof window !== 'undefined') rememberYear(yearUserRef.current, year, window.localStorage);
+      return year;
+    });
+  }, []);
 
   // A link from an e-mail or notice ("/dashboard?tab=review",
   // "?tab=emissions&year=2025") opens that page, not whatever tab was open
@@ -109,8 +127,31 @@ export default function DashboardPage() {
     user, summary, entries, factors, targets, customRequests,
     questionnaireProfile, unreadCount, facilityList, loading,
     setUnreadCount, fetchData,
-  } = useDashboardData(selectedYear);
+  } = useDashboardData(yearReady ? selectedYear : null);
   const perms = getPermissions(user);
+
+  // Open on the year the user worked on last, else on their most recently
+  // updated inventory's year — not on the calendar year, which showed a 2025
+  // inventory's user empty 2026 pages after every refresh. The user is read
+  // from the stored session (not the profile request), so the year is known
+  // before the page's data is loaded.
+  useEffect(() => {
+    const userId = tokenUserId(window.localStorage);
+    yearUserRef.current = userId;
+    const deepLink = Number(new URLSearchParams(window.location.search).get('year'));
+    if (yearSettledRef.current || isReportingYear(deepLink)) { setYearReady(true); return; }
+    const remembered = rememberedYear(userId, window.localStorage);
+    if (remembered) { setSelectedYearState(remembered); setYearReady(true); return; }
+    api.listReports()
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (yearSettledRef.current || !data) return;
+        const year = defaultReportingYear(data.reports);
+        if (isReportingYear(year)) setSelectedYearState(year);
+      })
+      .catch(() => {})
+      .finally(() => setYearReady(true));
+  }, []);
 
   // loading = true only on first render; subsequent fetches use `refreshing`
   // so the page never flashes/flickers on refresh
@@ -208,12 +249,19 @@ export default function DashboardPage() {
     window.addEventListener('carbonless:assistant', handleAssistant);
     window.addEventListener('carboniq-navigate', handleNavigate);
     window.addEventListener('carbonless:emissions-updated', handleEmissionsUpdated);
+    // An inventory started or opened: its year becomes the dashboard's.
+    function handleActiveInventory(e) {
+      const year = Number(e.detail?.year);
+      if (year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
+    }
+    window.addEventListener('carbonless:active-inventory', handleActiveInventory);
     return () => {
+      window.removeEventListener('carbonless:active-inventory', handleActiveInventory);
       window.removeEventListener('carbonless:emissions-updated', handleEmissionsUpdated);
       window.removeEventListener('carbonless:assistant', handleAssistant);
       window.removeEventListener('carboniq-navigate', handleNavigate);
     };
-  }, []);
+  }, [setSelectedYear]);
 
   const handleLogout = useCallback(() => {
     api.logout();

@@ -1813,8 +1813,8 @@
         "en": "Biomass / Wood pellet"
       },
       "other_fossil": {
-        "tr": "Diğer fosil yakıt",
-        "en": "Other fossil fuel"
+        "tr": "Diğer fosil yakıt — kaydedilir, henüz hesaplanmaz",
+        "en": "Other fossil fuel — recorded, not calculated yet"
       }
     },
     "fields": null
@@ -2064,36 +2064,36 @@
         "en": "EQ-3B-16 — Concrete pump / mixer"
       },
       "EQ-3B-17": {
-        "tr": "EQ-3B-17 — Kıyı / iç hat gemisi",
-        "en": "EQ-3B-17 — Coastal / inland waterway vessel"
+        "tr": "EQ-3B-17 — Kıyı / iç hat gemisi — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-17 — Coastal / inland waterway vessel — recorded, not calculated yet"
       },
       "EQ-3B-18": {
-        "tr": "EQ-3B-18 — Feribot / Ro-Ro",
-        "en": "EQ-3B-18 — Ferry / Ro-Ro"
+        "tr": "EQ-3B-18 — Feribot / Ro-Ro — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-18 — Ferry / Ro-Ro — recorded, not calculated yet"
       },
       "EQ-3B-19": {
-        "tr": "EQ-3B-19 — Küçük tekne / hizmet botu",
-        "en": "EQ-3B-19 — Small boat / service vessel"
+        "tr": "EQ-3B-19 — Küçük tekne / hizmet botu — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-19 — Small boat / service vessel — recorded, not calculated yet"
       },
       "EQ-3B-20": {
-        "tr": "EQ-3B-20 — Kurumsal uçak (jet)",
-        "en": "EQ-3B-20 — Corporate aircraft (jet)"
+        "tr": "EQ-3B-20 — Kurumsal uçak (jet) — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-20 — Corporate aircraft (jet) — recorded, not calculated yet"
       },
       "EQ-3B-21": {
-        "tr": "EQ-3B-21 — Helikopter",
-        "en": "EQ-3B-21 — Helicopter"
+        "tr": "EQ-3B-21 — Helikopter — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-21 — Helicopter — recorded, not calculated yet"
       },
       "EQ-3B-22": {
-        "tr": "EQ-3B-22 — Dizel lokomotif",
-        "en": "EQ-3B-22 — Diesel locomotive"
+        "tr": "EQ-3B-22 — Dizel lokomotif — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-22 — Diesel locomotive — recorded, not calculated yet"
       },
       "EQ-3B-23": {
-        "tr": "EQ-3B-23 — Fabrika içi ray aracı",
-        "en": "EQ-3B-23 — Factory rail vehicle"
+        "tr": "EQ-3B-23 — Fabrika içi ray aracı — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-23 — Factory rail vehicle — recorded, not calculated yet"
       },
       "EQ-3B-99": {
-        "tr": "EQ-3B-99 — Diğer (listede yok)",
-        "en": "EQ-3B-99 — Other (not in list)"
+        "tr": "EQ-3B-99 — Diğer (listede yok) — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3B-99 — Other (not in list) — recorded, not calculated yet"
       }
     },
     "fields": null
@@ -2191,6 +2191,10 @@
           "unknown": {
             "tr": "Bilinmiyor",
             "en": "Unknown"
+          },
+          "not_road": {
+            "tr": "Karayolu aracı değil — bant yok",
+            "en": "Not a road vehicle — no band"
           }
         }
       },
@@ -2231,6 +2235,10 @@
       "unknown": {
         "tr": "Bilinmiyor — en güncel uygulanacak",
         "en": "Unknown — latest will be applied"
+      },
+      "not_applicable": {
+        "tr": "Uygulanmaz — Euro normu yalnızca karayolu araçları için",
+        "en": "Not applicable — Euro standards are for road vehicles only"
       }
     },
     "fields": null
@@ -2421,8 +2429,8 @@
         "en": "EQ-3C-03 — Glass melting furnace (NACE C23)"
       },
       "EQ-3C-04": {
-        "tr": "EQ-3C-04 — Seramik / tuğla pişirme (NACE C23)",
-        "en": "EQ-3C-04 — Ceramic / brick firing (NACE C23)"
+        "tr": "EQ-3C-04 — Seramik / tuğla pişirme (NACE C23) — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3C-04 — Ceramic / brick firing (NACE C23) — recorded, not calculated yet"
       },
       "EQ-3C-05": {
         "tr": "EQ-3C-05 — Yüksek fırın / demir-çelik (NACE C24)",
@@ -2445,24 +2453,24 @@
         "en": "EQ-3C-09 — Nitric acid production (NACE C20)"
       },
       "EQ-3C-10": {
-        "tr": "EQ-3C-10 — Petrokimya / rafine prosesi (NACE C19)",
-        "en": "EQ-3C-10 — Petrochemical / refinery process (NACE C19)"
+        "tr": "EQ-3C-10 — Petrokimya / rafine prosesi (NACE C19) — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3C-10 — Petrochemical / refinery process (NACE C19) — recorded, not calculated yet"
       },
       "EQ-3C-11": {
-        "tr": "EQ-3C-11 — Endüstriyel atık su arıtma (NACE E)",
-        "en": "EQ-3C-11 — Industrial wastewater treatment (NACE E)"
+        "tr": "EQ-3C-11 — Endüstriyel atık su arıtma (NACE E) — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3C-11 — Industrial wastewater treatment (NACE E) — recorded, not calculated yet"
       },
       "EQ-3C-12": {
-        "tr": "EQ-3C-12 — Biyogaz / biyometan sistemi",
-        "en": "EQ-3C-12 — Biogas / biomethane system"
+        "tr": "EQ-3C-12 — Biyogaz / biyometan sistemi — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3C-12 — Biogas / biomethane system — recorded, not calculated yet"
       },
       "EQ-3C-13": {
-        "tr": "EQ-3C-13 — Kompost / organik atık işleme",
-        "en": "EQ-3C-13 — Composting / organic waste processing"
+        "tr": "EQ-3C-13 — Kompost / organik atık işleme — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3C-13 — Composting / organic waste processing — recorded, not calculated yet"
       },
       "EQ-3C-99": {
-        "tr": "EQ-3C-99 — Diğer proses (listede yok)",
-        "en": "EQ-3C-99 — Other process (not in list)"
+        "tr": "EQ-3C-99 — Diğer proses (listede yok) — kaydedilir, henüz hesaplanmaz",
+        "en": "EQ-3C-99 — Other process (not in list) — recorded, not calculated yet"
       }
     },
     "fields": null
@@ -2721,6 +2729,14 @@
             "tr": "SF₆ (GWP: 23.500) — çok yüksek GWP",
             "en": "SF₆ (GWP: 23,500) — very high GWP"
           },
+          "CH4": {
+            "tr": "Metan / doğalgaz (CH₄, GWP: 29,8)",
+            "en": "Methane / natural gas (CH₄, GWP: 29.8)"
+          },
+          "NF3": {
+            "tr": "NF₃ (GWP: 17.400) — çok yüksek GWP",
+            "en": "NF₃ (GWP: 17,400) — very high GWP"
+          },
           "unknown": {
             "tr": "Bilinmiyor — sistem konservatif değer uygular",
             "en": "Unknown — system applies conservative value"
@@ -2793,6 +2809,14 @@
           "SF6": {
             "tr": "SF₆ (GWP: 23.500) — çok yüksek GWP",
             "en": "SF₆ (GWP: 23,500) — very high GWP"
+          },
+          "CH4": {
+            "tr": "Metan / doğalgaz (CH₄, GWP: 29,8)",
+            "en": "Methane / natural gas (CH₄, GWP: 29.8)"
+          },
+          "NF3": {
+            "tr": "NF₃ (GWP: 17.400) — çok yüksek GWP",
+            "en": "NF₃ (GWP: 17,400) — very high GWP"
           },
           "unknown": {
             "tr": "Bilinmiyor — sistem konservatif değer uygular",
@@ -3188,6 +3212,298 @@
           "en": "Declaration year"
         },
         "options": null
+      },
+      "ef_market": {
+        "label": {
+          "tr": "Beyanın geçerli olduğu pazar (ülke)",
+          "en": "Market (country) the declaration covers"
+        },
+        "options": {
+          "TR": {
+            "tr": "Türkiye",
+            "en": "Turkey"
+          },
+          "DE": {
+            "tr": "Almanya",
+            "en": "Germany"
+          },
+          "US": {
+            "tr": "Amerika Birleşik Devletleri",
+            "en": "United States"
+          },
+          "GB": {
+            "tr": "Birleşik Krallık",
+            "en": "United Kingdom"
+          },
+          "FR": {
+            "tr": "Fransa",
+            "en": "France"
+          },
+          "IT": {
+            "tr": "İtalya",
+            "en": "Italy"
+          },
+          "ES": {
+            "tr": "İspanya",
+            "en": "Spain"
+          },
+          "NL": {
+            "tr": "Hollanda",
+            "en": "Netherlands"
+          },
+          "BE": {
+            "tr": "Belçika",
+            "en": "Belgium"
+          },
+          "AT": {
+            "tr": "Avusturya",
+            "en": "Austria"
+          },
+          "CH": {
+            "tr": "İsviçre",
+            "en": "Switzerland"
+          },
+          "SE": {
+            "tr": "İsveç",
+            "en": "Sweden"
+          },
+          "NO": {
+            "tr": "Norveç",
+            "en": "Norway"
+          },
+          "DK": {
+            "tr": "Danimarka",
+            "en": "Denmark"
+          },
+          "FI": {
+            "tr": "Finlandiya",
+            "en": "Finland"
+          },
+          "PL": {
+            "tr": "Polonya",
+            "en": "Poland"
+          },
+          "CZ": {
+            "tr": "Çekya",
+            "en": "Czech Republic"
+          },
+          "PT": {
+            "tr": "Portekiz",
+            "en": "Portugal"
+          },
+          "GR": {
+            "tr": "Yunanistan",
+            "en": "Greece"
+          },
+          "RO": {
+            "tr": "Romanya",
+            "en": "Romania"
+          },
+          "BG": {
+            "tr": "Bulgaristan",
+            "en": "Bulgaria"
+          },
+          "HU": {
+            "tr": "Macaristan",
+            "en": "Hungary"
+          },
+          "IE": {
+            "tr": "İrlanda",
+            "en": "Ireland"
+          },
+          "HR": {
+            "tr": "Hırvatistan",
+            "en": "Croatia"
+          },
+          "SK": {
+            "tr": "Slovakya",
+            "en": "Slovakia"
+          },
+          "SI": {
+            "tr": "Slovenya",
+            "en": "Slovenia"
+          },
+          "LT": {
+            "tr": "Litvanya",
+            "en": "Lithuania"
+          },
+          "LV": {
+            "tr": "Letonya",
+            "en": "Latvia"
+          },
+          "EE": {
+            "tr": "Estonya",
+            "en": "Estonia"
+          },
+          "RU": {
+            "tr": "Rusya",
+            "en": "Russia"
+          },
+          "UA": {
+            "tr": "Ukrayna",
+            "en": "Ukraine"
+          },
+          "GE": {
+            "tr": "Gürcistan",
+            "en": "Georgia"
+          },
+          "AZ": {
+            "tr": "Azerbaycan",
+            "en": "Azerbaijan"
+          },
+          "KZ": {
+            "tr": "Kazakistan",
+            "en": "Kazakhstan"
+          },
+          "UZ": {
+            "tr": "Özbekistan",
+            "en": "Uzbekistan"
+          },
+          "TM": {
+            "tr": "Türkmenistan",
+            "en": "Turkmenistan"
+          },
+          "CN": {
+            "tr": "Çin",
+            "en": "China"
+          },
+          "JP": {
+            "tr": "Japonya",
+            "en": "Japan"
+          },
+          "KR": {
+            "tr": "Güney Kore",
+            "en": "South Korea"
+          },
+          "IN": {
+            "tr": "Hindistan",
+            "en": "India"
+          },
+          "SA": {
+            "tr": "Suudi Arabistan",
+            "en": "Saudi Arabia"
+          },
+          "AE": {
+            "tr": "Birleşik Arap Emirlikleri",
+            "en": "United Arab Emirates"
+          },
+          "QA": {
+            "tr": "Katar",
+            "en": "Qatar"
+          },
+          "IL": {
+            "tr": "İsrail",
+            "en": "Israel"
+          },
+          "EG": {
+            "tr": "Mısır",
+            "en": "Egypt"
+          },
+          "MA": {
+            "tr": "Fas",
+            "en": "Morocco"
+          },
+          "TN": {
+            "tr": "Tunus",
+            "en": "Tunisia"
+          },
+          "NG": {
+            "tr": "Nijerya",
+            "en": "Nigeria"
+          },
+          "ZA": {
+            "tr": "Güney Afrika",
+            "en": "South Africa"
+          },
+          "KE": {
+            "tr": "Kenya",
+            "en": "Kenya"
+          },
+          "BR": {
+            "tr": "Brezilya",
+            "en": "Brazil"
+          },
+          "MX": {
+            "tr": "Meksika",
+            "en": "Mexico"
+          },
+          "AR": {
+            "tr": "Arjantin",
+            "en": "Argentina"
+          },
+          "CL": {
+            "tr": "Şili",
+            "en": "Chile"
+          },
+          "CO": {
+            "tr": "Kolombiya",
+            "en": "Colombia"
+          },
+          "CA": {
+            "tr": "Kanada",
+            "en": "Canada"
+          },
+          "AU": {
+            "tr": "Avustralya",
+            "en": "Australia"
+          },
+          "NZ": {
+            "tr": "Yeni Zelanda",
+            "en": "New Zealand"
+          },
+          "SG": {
+            "tr": "Singapur",
+            "en": "Singapore"
+          },
+          "MY": {
+            "tr": "Malezya",
+            "en": "Malaysia"
+          },
+          "TH": {
+            "tr": "Tayland",
+            "en": "Thailand"
+          },
+          "ID": {
+            "tr": "Endonezya",
+            "en": "Indonesia"
+          },
+          "VN": {
+            "tr": "Vietnam",
+            "en": "Vietnam"
+          },
+          "PH": {
+            "tr": "Filipinler",
+            "en": "Philippines"
+          },
+          "PK": {
+            "tr": "Pakistan",
+            "en": "Pakistan"
+          },
+          "BD": {
+            "tr": "Bangladeş",
+            "en": "Bangladesh"
+          },
+          "IR": {
+            "tr": "İran",
+            "en": "Iran"
+          },
+          "IQ": {
+            "tr": "Irak",
+            "en": "Iraq"
+          },
+          "JO": {
+            "tr": "Ürdün",
+            "en": "Jordan"
+          },
+          "LB": {
+            "tr": "Lübnan",
+            "en": "Lebanon"
+          },
+          "SY": {
+            "tr": "Suriye",
+            "en": "Syria"
+          }
+        }
       }
     }
   },
@@ -4854,16 +5170,16 @@
             "en": "kg"
           },
           "m3": {
-            "tr": "m³",
-            "en": "m³"
+            "tr": "m³ — kaydedilir, henüz hesaplanmaz",
+            "en": "m³ — recorded, not calculated yet"
           },
           "litres": {
-            "tr": "litre",
-            "en": "litres"
+            "tr": "litre — kaydedilir, henüz hesaplanmaz",
+            "en": "litres — recorded, not calculated yet"
           },
           "units": {
-            "tr": "adet",
-            "en": "units"
+            "tr": "adet — kaydedilir, henüz hesaplanmaz",
+            "en": "units — recorded, not calculated yet"
           }
         }
       },

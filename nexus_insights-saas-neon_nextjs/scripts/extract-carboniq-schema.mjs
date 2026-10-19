@@ -64,6 +64,10 @@ try {
       conditionalOn: f.conditionalOn || null,
       conditionalOnValue: Array.isArray(f.conditionalOnValue) ? f.conditionalOnValue : null,
       options: Array.isArray(f.options) ? f.options.map(o => o.value) : null,
+      // A field's own range (group counts ≤ 20) and its message.
+      minValue: f.minValue ?? null,
+      maxValue: f.maxValue ?? null,
+      rangeMessage: f.rangeMessage || null,
     };
   }
 
@@ -80,6 +84,15 @@ try {
       maxYear: q.maxYear || null,
       minValue: q.validate?.minValue ?? null,
       maxValue: q.validate?.maxValue ?? null,
+      rangeMessage: q.validate?.rangeMessage || null,
+      // At most the sum of fields of an earlier answer (K3C7-5 ≤ K3C7-1).
+      notAboveAnswer: q.notAboveAnswer || null,
+      uniqueItems: !!q.uniqueItems,
+      // Options recorded but not calculated yet (shown as such in the UI;
+      // questionnaire/tests.py checks them against step_entries.py).
+      notCalculatedOptions: Array.isArray(q.options) && q.options.some(o => o.notCalculated)
+        ? q.options.filter(o => o.notCalculated).map(o => o.value) : null,
+      notCalculated: !!q.notCalculated,
       options: Array.isArray(q.options) ? q.options.map(o => o.value) : null,
       units: q.units || null,
       repeatable: !!q.repeatable,

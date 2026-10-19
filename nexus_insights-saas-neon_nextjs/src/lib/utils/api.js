@@ -68,6 +68,7 @@ let _companyId = null;
 /** @param {number | string | null} id */
 export function setCompanyContext(id) {
   _companyId = id ? String(id) : null;
+  _sharedGets?.clear();
 }
 /** @returns {Record<string, string>} */
 export function companyHeader() {
@@ -91,7 +92,45 @@ async function guardCompany(res) {
  * @param {RequestInit} [options]
  * @returns {Promise<Response>}
  */
+// Read-only endpoints that several dashboard components each load when they
+// mount (the sidebar, the library, the assistant, the data hook …): one page
+// load sent /accounts/profile/ five times and /companies/my-companies/ three.
+// Identical GETs within SHARED_GET_MS share one network call; every caller
+// gets its own clone of the response. Any write clears the shared answers,
+// so data changed by the user is never served stale.
+const SHARED_GET_ENDPOINTS = new Set([
+  '/accounts/profile/', '/companies/my-companies/', '/companies/detail/',
+  '/questionnaire/', '/chat/sessions/', '/support/requests/',
+]);
+const SHARED_GET_MS = 2000;
+const _sharedGets = new Map();
+
+export function clearSharedRequests() {
+  _sharedGets.clear();
+}
+
 async function request(endpoint, options = {}) {
+  const method = String(options.method || 'GET').toUpperCase();
+  if (method !== 'GET') {
+    clearSharedRequests();
+    return sendRequest(endpoint, options);
+  }
+  if (!SHARED_GET_ENDPOINTS.has(endpoint) || options.body) return sendRequest(endpoint, options);
+  const key = `${endpoint}|${_companyId || ''}|${getToken() || ''}|${JSON.stringify(options.headers || {})}`;
+  let shared = _sharedGets.get(key);
+  if (!shared) {
+    const promise = sendRequest(endpoint, options);
+    shared = { promise };
+    _sharedGets.set(key, shared);
+    const forget = () => { if (_sharedGets.get(key) === shared) _sharedGets.delete(key); };
+    // A failed answer is not shared beyond the callers already waiting.
+    promise.then(r => (r.ok ? setTimeout(forget, SHARED_GET_MS) : forget()), forget);
+  }
+  const res = await shared.promise;
+  return res.clone();
+}
+
+async function sendRequest(endpoint, options = {}) {
   const token = getToken();
   const headers = {
     'Content-Type': 'application/json',
@@ -334,9 +373,11 @@ export const api = {
   }),
   resetQuestionnaire: () => request('/questionnaire/reset/', { method: 'POST' }),
   restartReport: (reportId) => request(`/questionnaire/${reportId}/restart/`, { method: 'POST' }),
-  submitReportStep: (reportId, step, data, language, progress) => request(`/questionnaire/${reportId}/step/`, {
+  // extra: { confirm_company_update: true } once the user agreed that a
+  // profile answer may change the company record (409 company_conflict).
+  submitReportStep: (reportId, step, data, language, progress, extra = {}) => request(`/questionnaire/${reportId}/step/`, {
     method: 'PATCH',
-    body: JSON.stringify({ step, data, language, progress }),
+    body: JSON.stringify({ step, data, language, progress, ...extra }),
   }),
   saveReportDraft: (reportId, data) => request(`/questionnaire/${reportId}/draft/`, {
     method: 'PATCH',

@@ -430,3 +430,19 @@ class MessageYearTest(SimpleTestCase):
         self.assertEqual(self._periods('2025 Ocak-Mart 2.400 m3 doğalgaz'), [])
         self.assertEqual(ambiguous_month_range('2025 Ocak-Mart 2.400 m3 doğalgaz'), (1, 3))
         self.assertIsNone(ambiguous_month_range('2025 Ocak-Mart her ay 800 m3 doğalgaz'))
+
+
+class ParseLocalizedNumberTest(SimpleTestCase):
+    """A leading 0 is never a thousands group: "0.825" is a decimal
+    emission factor, not 825 (that made supplier factors 1000× larger)."""
+
+    def test_zero_point_three_digits_is_a_decimal(self):
+        from chat.local_parser import parse_localized_number as parse
+        for raw, expected in (('0.825', 0.825), ('0,469', 0.469), ('0.442', 0.442), ('0.020', 0.02)):
+            self.assertAlmostEqual(parse(raw), expected, msg=raw)
+
+    def test_thousands_grouping_still_works(self):
+        from chat.local_parser import parse_localized_number as parse
+        for raw, expected in (('15.000', 15000), ('1,250', 1250), ('1.234.567,89', 1234567.89),
+                              ('2.6824', 2.6824), ('1,5', 1.5)):
+            self.assertAlmostEqual(parse(raw), expected, msg=raw)

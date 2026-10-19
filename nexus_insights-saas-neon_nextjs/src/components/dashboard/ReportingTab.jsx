@@ -110,11 +110,16 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
   // switching the year shouldn't silently discard an explicit selection.
   useEffect(() => {
     if (manualIsoPick) return;
-    const forYear = allReports.filter(r => String(r.reporting_year) === String(selectedYear));
     // Only a COMPLETED inventory may unlock the Profile / ISO / pack reports —
-    // a draft/incomplete inventory must never enable them. No completed match
-    // for the year leaves isoReportId null and the buttons gated.
-    const pick = forYear.find(r => r.status === 'completed') || null;
+    // a draft/incomplete inventory must never enable them. The header year's
+    // completed inventory first; else the latest completed one of any year
+    // (these reports are keyed to an inventory, not to the header year). It
+    // used to stay null then, while the picker below showed that inventory
+    // as chosen — and its downloads were locked.
+    const completed = allReports.filter(r => r.status === 'completed');
+    const pick = completed.find(r => String(r.reporting_year) === String(selectedYear))
+      || [...completed].sort((a, b) => Number(b.reporting_year || 0) - Number(a.reporting_year || 0))[0]
+      || null;
     setIsoReportId(pick ? (pick.report_id ?? pick.id) : null);
   }, [allReports, selectedYear, manualIsoPick]);
 
@@ -284,12 +289,16 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       const u = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = u;
+      // The inventory reports are named after their inventory's year, which
+      // can differ from the header year (a 2025 inventory downloaded while
+      // the header shows 2026 was saved as "…_2026_…").
+      const invYear = isoYear ?? selectedYear;
       a.download = type === 'pack'
-        ? `ghg_reporting_pack_${selectedYear}_${lang}.pdf`
+        ? `ghg_reporting_pack_${invYear}_${lang}.pdf`
         : type === 'iso'
-        ? `iso14064-1_full_report_${selectedYear}_${lang}.pdf`
+        ? `iso14064-1_full_report_${invYear}_${lang}.pdf`
         : type === 'inv'
-        ? `carbon_inventory_profile_${selectedYear}_${lang}.pdf`
+        ? `carbon_inventory_profile_${invYear}_${lang}.pdf`
         : type === 'pdf'
         ? `emissions_report_${selectedYear}_${lang}.pdf`
         : type === 'csv'
@@ -304,7 +313,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
     } finally {
       setPdfLoading('');
     }
-  }, [selectedYear, pdfLoading, tr, isoReportId, inventoryHint, reportsState]); // pdfLoading added — read inside guard
+  }, [selectedYear, pdfLoading, tr, isoReportId, isoYear, inventoryHint, reportsState]); // pdfLoading added — read inside guard
 
   // Touch-tablet simplified view — useLayoutEffect runs before browser paint,
   // so the GPU-heavy complex view is never rendered to screen on Android tablets.
@@ -660,6 +669,9 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                 }}
                 className="w-full rounded-xl border border-[#072C0E]/12 bg-[#F8F8F8] px-3 py-2.5 text-xs font-semibold text-[#072C0E] focus:outline-none focus:ring-2 focus:ring-[#2ABD41]/40"
               >
+                {/* Without an empty option the browser shows the first
+                    inventory as chosen while nothing is. */}
+                {!isoReportId && <option value="">{tr ? '— Envanter seçin —' : '— Choose an inventory —'}</option>}
                 {completedReports.map((r) => {
                   const id = r.report_id ?? r.id;
                   return (

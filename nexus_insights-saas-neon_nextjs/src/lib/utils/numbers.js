@@ -33,7 +33,9 @@ export function parseLocalizedNumber(raw) {
     return parseFloat(s.replace(/[.,]/g, ''));
   }
 
-  if (/^\d{1,3}[.,]\d{3}$/.test(s)) {
+  // The first group never starts with 0: "0.825" / "0,469" are decimals (an
+  // emission factor), not 825 / 469. Same rule in chat/local_parser.py.
+  if (/^[1-9]\d{0,2}[.,]\d{3}$/.test(s)) {
     // A single separator followed by exactly 3 digits and nothing else —
     // "15.000" or "15,000" — is thousands grouping in both conventions; a
     // genuine decimal quantity essentially never has exactly 3 trailing

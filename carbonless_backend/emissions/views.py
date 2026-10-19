@@ -366,6 +366,20 @@ class CustomEmissionRequestViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
+# Sign-up asks 1-10 / 11-50 / … / 1000+; the questionnaire (B3) and the
+# benchmark use 1-50 / 51-250 / 251-1000 / 1001-5000 / 5000+.
+_BENCHMARK_BANDS = {
+    '1-10': '1-50', '11-50': '1-50', '1-50': '1-50', '51-250': '51-250',
+    '251-1000': '251-1000', '1000+': '1001-5000', '1001-5000': '1001-5000', '5000+': '5000+',
+}
+
+
+def benchmark_employee_band(value):
+    """The benchmark's employee band for a sign-up or B3 answer; '' when
+    unknown (shown as "not declared", never guessed)."""
+    return _BENCHMARK_BANDS.get(str(value or '').strip().replace('_', '-').replace('5000-plus', '5000+'), '')
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def emission_summary(request):
@@ -435,7 +449,7 @@ def emission_summary(request):
                 # Sector and size for the benchmark: the inventory's answers,
                 # else what the company gave at sign-up.
                 'nace_code': str(b1.get('nace_code') or company.nace_code or '').replace('NACE_', ''),
-                'employee_band': (b3.get('employee_band') or company.number_of_employees or ''),
+                'employee_band': benchmark_employee_band(b3.get('employee_band') or company.number_of_employees),
             }
 
     # This year's inventory still being filled: its answers are already in
@@ -540,6 +554,13 @@ def emission_summary(request):
             'pending_count': custom_pending,
         },
         'questionnaire_profile': questionnaire_profile,
+        # Sector and size as the company gave them at sign-up / in Settings,
+        # for pages (the benchmark) that need them before any inventory is
+        # finished — they used to assume "1–50 employees, general sector".
+        'company_profile': ({
+            'nace_code': str(company.nace_code or '').replace('NACE_', ''),
+            'employee_band': benchmark_employee_band(company.number_of_employees),
+        } if company else None),
         'inventory_in_progress': inventory_in_progress,
         # Lets the dashboard tell "no data for this year" apart from "no data yet".
         'years_with_data': sorted(

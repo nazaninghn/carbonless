@@ -58,6 +58,9 @@ export function useDashboardData(selectedYear) {
   );
 
   const fetchData = useCallback(async () => {
+    // No year yet (the dashboard is still choosing it): load nothing rather
+    // than a year that is about to be replaced.
+    if (selectedYear === null || selectedYear === undefined) return;
     const thisGen = ++fetchGen.current;
     dispatch({ type: 'LOADING' });
     try {

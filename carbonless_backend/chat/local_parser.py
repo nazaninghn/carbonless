@@ -170,7 +170,10 @@ def normalise_unit(unit: str) -> str:
     return UNIT_SYNONYMS.get(unit, unit)
 
 
-_THOUSANDS_GROUP_RE = re.compile(r'^\d{1,3}[.,]\d{3}$')
+# The first group of a grouped number never starts with 0: "0.825" / "0,469"
+# are decimals (an emission factor), not 825 / 469 — read as thousands they
+# made a supplier factor 1000 times larger. Same rule in numbers.js.
+_THOUSANDS_GROUP_RE = re.compile(r'^[1-9]\d{0,2}[.,]\d{3}$')
 
 
 def parse_localized_number(raw: str) -> float:

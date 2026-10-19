@@ -3,6 +3,7 @@ Step handlers for CarbonIQ questionnaire.
 Each handler saves data to report/company and returns next_step + bot_messages.
 """
 import datetime
+import logging
 
 STEP_FLOW = {
     'A1': 'A2', 'A2': 'A3', 'A3': 'A4',
@@ -41,6 +42,8 @@ NACE_CLUSTER = {
     'S': 'service', 'T': 'service', 'U': 'service',
 }
 
+logger = logging.getLogger(__name__)
+
 
 def handle_step(report, step, data):
     handler = HANDLERS.get(step)
@@ -69,21 +72,38 @@ def handle_A1(report, data):
     }
 
 
+def _flag_shared_tax_number(company, holder, tax_id):
+    """Tell staff (not the user) that a company gave a tax number another
+    company already holds."""
+    from django.contrib.auth.models import User
+    from accounts.models import Notification
+    logger.warning('Tax ID %s given by company %s is also held by company %s.', tax_id, company.id, holder.id)
+    Notification.objects.bulk_create([
+        Notification(user=staff, notification_type='system',
+                     title='Shared tax number to check',
+                     message=f'Company #{company.id} ({company.legal_entity_name}) entered tax number {tax_id}, '
+                             f'which company #{holder.id} ({holder.legal_entity_name}) also holds. '
+                             'Check which company it belongs to.')
+        for staff in User.objects.filter(is_staff=True, is_active=True)
+    ])
+
+
 def handle_A2(report, data):
     from companies.models import Company
     tax_id = data['tax_id']
-    existing = Company.objects.filter(tax_number=tax_id).exclude(id=report.company.id).first()
-    if existing:
-        # Never name the other company here (the view turns this into a
-        # conflict response the user sees).
-        return {
-            'next_step': 'A2',
-            'message': 'Duplicate tax ID.',
-            'warnings': ['duplicate_tax_id'],
-            'duplicate': True,
-        }
-    report.company.tax_number = tax_id
-    report.company.save(update_fields=['tax_number'])
+    # A number another company already holds is handled exactly like any
+    # other: saved, with the same reply. A refusal ("already used by another
+    # company") revealed whether a company is registered under a tax ID, and
+    # so did keeping the number off this company's record (Settings and the
+    # questionnaire's pre-fill then showed the old value). Uniqueness is not
+    # a rule of the record anyway — sign-up and Settings accept any number —
+    # so staff check a shared number privately instead.
+    if report.company.tax_number != tax_id:
+        existing = Company.objects.filter(tax_number=tax_id).exclude(id=report.company.id).first()
+        report.company.tax_number = tax_id
+        report.company.save(update_fields=['tax_number'])
+        if existing:
+            _flag_shared_tax_number(report.company, existing, tax_id)
     return {
         'next_step': 'A3',
         'message': 'Tax ID saved.',
@@ -285,8 +305,12 @@ def handle_A7b(report, data):
 def handle_B1(report, data):
     nace_code = data['nace_code']
     nace_label = data.get('nace_label', '')
-    report.company.nace_code = nace_code
-    report.company.save(update_fields=['nace_code'])
+    # The same section as the company's own, more detailed code (sign-up's
+    # "C10.1"): keep that code — the questionnaire only asks for the letter.
+    current = str(report.company.nace_code or '').strip().upper().replace('NACE_', '')
+    if not (current[:1] and current[:1] == str(nace_code)[:1].upper() and len(current) > len(str(nace_code))):
+        report.company.nace_code = nace_code
+        report.company.save(update_fields=['nace_code'])
     # nace_code arrives as a single letter ('A', 'C', 'SU', …) — the frontend
     # strips the 'NACE_' prefix before sending so nace_code[0] is the actual letter.
     nace_letter = nace_code[0].upper() if nace_code else 'G'
@@ -394,8 +418,11 @@ def handle_B5(report, data):
 
 def handle_B6(report, data):
     band = data['revenue_band']
-    report.company.annual_turnover_range = band
-    report.company.save(update_fields=['annual_turnover_range'])
+    # "Skip" gives no turnover: the declared one stays (it used to be
+    # replaced by the word "skip").
+    if band != 'skip':
+        report.company.annual_turnover_range = band
+        report.company.save(update_fields=['annual_turnover_range'])
     bot_messages = []
     if band == 'skip':
         bot_messages.append(
@@ -418,7 +445,8 @@ def handle_B6(report, data):
 def handle_C1(report, data):
     has_sub = data['has_subsidiaries']
     report.has_subsidiaries = has_sub
-    report.company.number_of_subsidiaries = 1 if has_sub else 0
+    # "Yes" keeps a count already declared (sign-up's 3); it used to become 1.
+    report.company.number_of_subsidiaries = max(report.company.number_of_subsidiaries or 0, 1) if has_sub else 0
     report.company.save(update_fields=['number_of_subsidiaries'])
     report.save()
     bot_messages = []

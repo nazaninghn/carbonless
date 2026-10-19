@@ -150,6 +150,10 @@ _MESSAGES = {
         'en': '{prefix}Field {fid!r} is required.',
         'tr': '{prefix}{fid!r} alanı zorunludur.',
     },
+    'duplicate_item': {
+        'en': 'The same entry is in the list twice. Remove the repeated one.',
+        'tr': 'Aynı kayıt listede iki kez var. Tekrar edeni kaldırın.',
+    },
     'expected_entries_list': {
         'en': 'Expected a list of entries.',
         'tr': 'Bir kayıt listesi bekleniyor.',
@@ -299,10 +303,16 @@ def _validate_text_value(value, q, errors_prefix='', lang='en'):
         # request that skipped the browser entirely had nothing enforcing them.
         min_v, max_v = q.get('minValue'), q.get('maxValue')
         amount_num = float(amount)
+        # The question's own wording for its range ("Office days per week
+        # must be between 0 and 7."), the same text the questionnaire shows.
+        range_msg = (q.get('rangeMessage') or {})
+        range_text = range_msg.get(lang) or range_msg.get('en')
         if min_v is not None and amount_num < min_v:
-            return _msg(lang, 'below_min_value', prefix=errors_prefix, n=min_v, value=value)
+            return (errors_prefix + range_text) if range_text else _msg(
+                lang, 'below_min_value', prefix=errors_prefix, n=min_v, value=value)
         if max_v is not None and amount_num > max_v:
-            return _msg(lang, 'above_max_value', prefix=errors_prefix, n=max_v, value=value)
+            return (errors_prefix + range_text) if range_text else _msg(
+                lang, 'above_max_value', prefix=errors_prefix, n=max_v, value=value)
         # Overflow guard: an amount at or above _MAX_AMOUNT can overflow the
         # EmissionEntry DecimalFields on save (HTTP 500). Reject it here with a
         # clean bilingual 400 before any entry is written. This one choke point
@@ -466,12 +476,75 @@ def _validate_compound(value, q, lang='en'):
             err = _validate_compound_item(item, fields, f'Item {i}: ', enforce_required, lang)
             if err:
                 return err
+            # notAbove holds for every row / loop item too (3A-2's group
+            # count ≤ unit count, 3D-4's refill ≤ capacity); it used to be
+            # checked only for a one-shot compound.
+            err = _validate_not_above(item, q, lang)
+            if err:
+                return err
+        if q.get('uniqueItems') and _duplicate_item(items, fields):
+            return _msg(lang, 'duplicate_item')
         return None
 
     err = _validate_compound_item(value, fields, enforce_required=True, lang=lang)
     if err:
         return err
     return _validate_sum_range(value, q, lang) or _validate_not_above(value, q, lang)
+
+
+def _duplicate_item(items, fields):
+    """True when a row repeats an earlier one in every field (case and
+    surrounding spaces ignored) — duplicateItemIndex in questions.js."""
+    import unicodedata
+
+    def fold(v):
+        text = str(v if v is not None else '').strip().lower().replace('ı', 'i')
+        return unicodedata.normalize('NFKD', text).replace('̇', '')
+
+    seen = set()
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        key = tuple(fold(item.get(fid)) for fid in fields)
+        if key in seen:
+            return True
+        seen.add(key)
+    return False
+
+
+def _validate_not_above_answer(value, q, answers, lang):
+    """`notAboveAnswer` (mirrors validateCarbonIQAnswer): the amount is at
+    most the sum of some fields of an earlier answer — K3C7-5's EV commuters
+    ≤ K3C7-1's office + hybrid staff. Skipped while that answer is missing."""
+    rule = q.get('notAboveAnswer')
+    if not rule or answers is None:
+        return None
+    from chat.local_parser import parse_localized_number
+    src = answers.get(rule['questionId'])
+    if isinstance(src, dict) and 'answer' in src:
+        src = src['answer']
+    if not isinstance(src, dict):
+        return None
+    parts = []
+    for fid in rule.get('fields', []):
+        try:
+            n = parse_localized_number(str(src.get(fid)))
+        except (ValueError, TypeError):
+            n = None
+        if n is not None:
+            parts.append(n)
+    if not parts:
+        return None
+    try:
+        amount = parse_localized_number(str(value).strip().split(' ')[0])
+    except (ValueError, TypeError):
+        return None
+    limit = sum(parts)
+    if amount is not None and amount > limit:
+        msg = rule.get('message') or {}
+        shown = int(limit) if float(limit).is_integer() else limit
+        return (msg.get(lang) or msg.get('en') or 'Invalid value.').replace('{limit}', str(shown))
+    return None
 
 
 def _validate_not_above(value, q, lang):
@@ -527,7 +600,7 @@ def _validate_loop_aggregate(value, q, lang='en'):
     return _validate_scalar_against_question(value, q, lang=lang)
 
 
-def validate_generic_step(step_id, data, lang='en'):
+def validate_generic_step(step_id, data, lang='en', answers=None):
     """Validates a generic (non-STRICT_STEPS) step answer.
 
     `lang` ('en' or 'tr') controls the language of the returned error
@@ -538,6 +611,9 @@ def validate_generic_step(step_id, data, lang='en'):
     (unknown steps pass through rather than hard-failing — this validator's
     job is to catch garbage in *known* question types, not to become a second
     source of truth for which step ids exist).
+
+    `answers` ({step_id: stored answer} of the same inventory), when given,
+    enables the rules that compare with an earlier answer (notAboveAnswer).
 
     Returns (False, error_message) otherwise.
     """
@@ -565,6 +641,8 @@ def validate_generic_step(step_id, data, lang='en'):
         err = _validate_loop_aggregate(value, q, lang)
     else:
         err = _validate_scalar_against_question(value, q, lang=lang)
+        if not err:
+            err = _validate_not_above_answer(value, q, answers, lang)
 
     if err:
         return False, err

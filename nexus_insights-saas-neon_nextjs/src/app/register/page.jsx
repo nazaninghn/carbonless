@@ -246,7 +246,9 @@ export default function RegisterPage() {
     { id: 2, icon: Factory, title: language === 'tr' ? 'Ölçek' : 'Scale', subtitle: language === 'tr' ? 'Operasyon ve sertifikalar' : 'Operations and certificates' },
     { id: 3, icon: ClipboardCheck, title: language === 'tr' ? 'Amaç' : 'Purpose', subtitle: language === 'tr' ? 'Denetim ve raporlama' : 'Audit and reporting' },
   ];
-  const progress = Math.round(((currentSection - 1) / 2) * 100);
+  // Steps completed out of three: 0 % on step 1, 33 % on step 2, 67 % on
+  // step 3. It used to divide by 2, reading 100 % before Submit was pressed.
+  const progress = Math.round(((currentSection - 1) / 3) * 100);
 
   return (
     <main className="relative min-h-screen bg-[#F9FFF4] text-[#072C0E]">

@@ -56,6 +56,10 @@ import {
   groupedLoopItems,
   baseLoopItem,
   loopItemGroup,
+  suggestedOptionValues,
+  duplicateItemIndex,
+  EF_SOURCE_STEP,
+  efUnitMismatch,
 } from '@/lib/carboniq/questions';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
@@ -339,37 +343,6 @@ function computeSurveyProgress(answersMap, completed = false) {
   const byStage = {};
   done.forEach(q => { if (q.stage) byStage[q.stage] = (byStage[q.stage] || 0) + 1; });
   return { answered, total, percent, byStage };
-}
-
-// Supplier EF form → the step whose consumption amounts it applies to.
-const EF_SOURCE_STEP = { '3A-EF-a': '3A-5', '3B-EF-a': '3B-7', '4A-EF-a': '4A-1', '4B-EF-a': '4B-2' };
-const UNIT_GROUP = {
-  kwh: 'energy', mwh: 'energy', gj: 'energy',
-  litre: 'liquid', l: 'liquid', lt: 'liquid',
-  kg: 'mass', ton: 'mass', tonne: 'mass', tonnes: 'mass',
-  'm³': 'gas', m3: 'gas',
-  km: 'distance', 'ton-km': 'freight',
-};
-// The consumption units entered for an EF form's source step (["m³"]), and
-// whether the chosen "kg CO₂e / <unit>" fits none of them. Only a hint for
-// the user to re-check the document — nothing is converted or recalculated.
-function efUnitMismatch(questionId, efUnit, answers) {
-  const src = EF_SOURCE_STEP[questionId];
-  const m = /^kgCO2e_(.+)$/.exec(String(efUnit || ''));
-  if (!src || !m) return null;
-  const efGroup = UNIT_GROUP[m[1].toLowerCase()];
-  if (!efGroup) return null;
-  const units = new Set();
-  const walk = (v) => {
-    if (typeof v === 'string') {
-      const u = v.trim().match(/[\d.,]+\s*(\S+)$/);
-      if (u) units.add(u[1]);
-    } else if (v && typeof v === 'object') Object.values(v).forEach(walk);
-  };
-  walk(readAnswerValue(answers, src));
-  const list = [...units];
-  if (!list.length || list.some(u => UNIT_GROUP[u.toLowerCase()] === efGroup)) return null;
-  return list;
 }
 
 // 109a rows pre-filled from Stage 2: the sites put outside operational
@@ -1574,7 +1547,7 @@ function CompoundInput({ fields = [], value, onChange, lang, disabled }) {
         const ctrlId = `${uid}-${field.id}`;
         const labelId = `${ctrlId}-label`;
         return (
-          <div key={field.id} className="flex flex-col gap-1">
+          <div key={field.id} data-field-id={field.id} className="flex flex-col gap-1">
             <label id={labelId} htmlFor={ctrlId} className="text-xs font-semibold text-[#175022]/70">
               {/* labelByValue: the label follows another field's choice
                   (K3C6-2's quantity says "Gece sayısı" for a hotel). */}
@@ -2202,6 +2175,12 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     // Support exclusive options (e.g. value='none'): selecting one clears all others;
     // selecting any other option removes the exclusive one automatically.
     const exclusiveValues = new Set((options || []).filter(o => o.exclusive || o.value === 'none').map(o => o.value));
+    // 3A-4: the fuels the equipment catalog lists for this item come first.
+    const suggested = suggestedOptionValues(question, currentLoopItem);
+    const orderedOptions = [
+      ...(options || []).filter(o => suggested.includes(o.value)),
+      ...(options || []).filter(o => !suggested.includes(o.value)),
+    ];
     const toggle = (v) => {
       if (exclusiveValues.has(v)) {
         // Toggle exclusive option — selecting it clears all other selections
@@ -2216,10 +2195,11 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     return (
       <div className="flex flex-col gap-3 w-full">
         <div role="group" aria-label={tr ? 'Seçenekler' : 'Options'} className="flex flex-wrap gap-2">
-          {(options || []).map(opt => (
+          {orderedOptions.map(opt => (
             <Chip
               key={opt.value}
-              label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)}
+              label={stripOptionCode(opt.label?.[lang] || opt.label?.en || opt.value)
+                + (suggested.includes(opt.value) ? (tr ? ' (önerilen)' : ' (suggested)') : '')}
               selected={vals.includes(opt.value)}
               onClick={() => toggle(opt.value)}
               // Every other answer type forwards `disabled`; this one dropped it,
@@ -2305,6 +2285,10 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
     const draftIsEmpty = Object.values(draft).every(v => v === '' || v === undefined || v === null);
     const canFinish = (draftIsEmpty || draftFilled) && (items.length > 0 || draftFilled);
     const draftMissing = draftIsEmpty ? [] : missingRequiredLabels(requiredFields, draft, lang);
+    // uniqueItems (6A-1a, 6C-2): a form that repeats a row already listed is
+    // not added again — coming back to the question and filling the empty
+    // form with the same exception used to list it twice.
+    const draftRepeats = !!question.uniqueItems && draftFilled && duplicateItemIndex(fields, [...items, draft]) !== -1;
     const summarize = (item) => fields
       .filter(f => item[f.id] !== undefined && item[f.id] !== '' && item[f.id] !== null)
       .map(f => `${f.label?.[lang] || f.label?.en || f.id}: ${fieldValueText(f, item[f.id], lang)}`)
@@ -2338,20 +2322,27 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <div className="flex gap-2">
           <button
             onClick={() => onChange({ items: [...items, draft], draft: {} })}
-            disabled={disabled || !draftFilled}
+            disabled={disabled || !draftFilled || draftRepeats}
             className="self-start rounded-full border border-[#175022]/20 px-5 py-2.5 text-sm font-bold text-[#175022] transition hover:bg-[#175022]/5 disabled:opacity-40"
           >
             {tr ? '+ Başka Ekle' : '+ Add Another'}
           </button>
           <button
             onClick={() => onSubmit({ items: draftFilled ? [...items, draft] : items })}
-            disabled={disabled || !canFinish}
+            disabled={disabled || !canFinish || draftRepeats}
             className="self-start rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
           >
             {tr ? 'Tamamla →' : 'Done →'}
           </button>
         </div>
         {!draftFilled && <MissingFieldsHint labels={draftMissing} tr={tr} />}
+        {draftRepeats && (
+          <p className="text-xs font-semibold text-red-600">
+            {tr
+              ? 'Bu kayıt listede zaten var. Formu temizleyin veya farklı bir kayıt girin; listedekiyle bitirmek için formu boşaltıp "Tamamla"ya basın.'
+              : 'This entry is already in the list. Clear the form or enter a different one; to finish with the list as it is, empty the form and press "Done".'}
+          </p>
+        )}
       </div>
     );
   }
@@ -3059,8 +3050,22 @@ export function QuestionnaireTab({
   // phone it was off-screen, and the button seemed to do nothing.
   const [validationTick, setValidationTick] = useState(0);
   const validationErrorRef = useRef(null);
+  // The compound field the last error is about (A7b's telephone), if any.
+  const validationFieldRef = useRef(null);
   useEffect(() => {
-    if (validationTick) validationErrorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (!validationTick) return;
+    // A field-level error brings that field into view and puts the cursor
+    // in it — scrolling to the message under a long form (Q8) left the wrong
+    // field out of sight. Other errors bring the message into view.
+    const fieldId = validationFieldRef.current;
+    const box = fieldId && typeof document !== 'undefined'
+      ? document.querySelector(`[data-field-id="${CSS.escape(fieldId)}"]`) : null;
+    if (box) {
+      box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      box.querySelector('input, textarea, select, button')?.focus({ preventScroll: true });
+    } else {
+      validationErrorRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
   }, [validationTick]);
   // loopState: { questionId, items, itemLabels, currentIndex, collected }
   const [loopState, setLoopState] = useState(null);
@@ -3102,6 +3107,9 @@ export function QuestionnaireTab({
     return () => { cancelled = true; };
   }, [reportId, currentId]);
   const askSoft = useCallback((message, kind) => new Promise(resolve => setSoftAsk({ message, kind, resolve })), []);
+  // The question whose soft check the user just confirmed (saveStepToBackend
+  // sends that agreement with the save instead of asking again).
+  const softConfirmedRef = useRef(null);
   const answerSoft = useCallback((ok) => setSoftAsk(prev => { prev?.resolve(ok); return null; }), []);
   const companyEmployeesRef = useRef('');
   const [reuseLoading, setReuseLoading] = useState(false);
@@ -3862,19 +3870,34 @@ export function QuestionnaireTab({
   }, [language]); // only language — not currentId/loopState, those use their own effects
 
   // ── saveStepToBackend ──────────────────────────────────────────────────────
-  const saveStepToBackend = useCallback(async (questionId, value, rid) => {
+  const saveStepToBackend = useCallback(async (questionId, value, rid, confirmed = false) => {
     const rid_ = rid || reportId;
     if (!rid_) return { success: true, data: {} };
     try {
       const backendData = mapAnswerForBackend(questionId, value);
       const { answered, total, byStage } = computeSurveyProgress({ ...answersRef.current, [questionId]: value });
-      const res = await api.submitReportStep(rid_, questionId, backendData, lang, { answered, total, by_stage: byStage });
+      // The user already agreed to this change in the soft check (B3's
+      // "Is this answer right?"): do not ask a second time.
+      const agreed = confirmed || softConfirmedRef.current === questionId;
+      softConfirmedRef.current = null;
+      const res = await api.submitReportStep(rid_, questionId, backendData, lang, { answered, total, by_stage: byStage },
+        agreed ? { confirm_company_update: true } : {});
 
       // Guard: component may have unmounted while the save request was in-flight
       if (!isMounted.current) return { success: false, data: {} };
 
       // ✅ Parse JSON ONCE
       const respData = await res.json().catch(() => ({}));
+
+      // The answer would change what the company declared at sign-up (sector,
+      // employees, facilities …): nothing was saved. Ask, and resend only
+      // with the user's yes — the company record is never changed silently.
+      if (res.status === 409 && respData?.code === 'company_conflict' && !agreed) {
+        if (await askSoft(respData.error, questionId)) {
+          return saveStepToBackend(questionId, value, rid, true);
+        }
+        return { success: false, data: {} };
+      }
 
       // `success: false` means the answer was NOT stored, whatever the HTTP
       // status (a 200 used to carry it for a duplicate tax ID, and the
@@ -4013,7 +4036,8 @@ export function QuestionnaireTab({
       }
       return { success: false, data: {} };
     }
-  }, [reportId, lang, inventoryCompleted]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportId, lang, inventoryCompleted, askSoft]);
 
   // ── advanceToQuestion ──────────────────────────────────────────────────────
   // Shared helper: navigate to nextId and post its question bubble.
@@ -4147,6 +4171,7 @@ export function QuestionnaireTab({
         // who have already fixed their answer (e.g. country_city after filling both fields).
         setValidationError(err.message || (lang === 'tr' ? 'Geçersiz yanıt.' : 'Invalid answer.'));
         setShowValidationError(true);
+        validationFieldRef.current = err.field || null;
         setValidationTick(t => t + 1);
         return;
       }
@@ -4161,6 +4186,7 @@ export function QuestionnaireTab({
       reportYear: reportYearRef.current,
     });
     if (softMessage && !(await askSoft(softMessage, q.id))) return;
+    if (softMessage) softConfirmedRef.current = q.id;
     if (!softMessage) {
       const hintIdx = loopState && loopState.questionId === currentId ? loopState.currentIndex : 0;
       const yoy = yearOverYearMessage(amountHint(q, hintIdx), value, lang, facilitySourcesRef.current.previousYear);
@@ -5068,6 +5094,13 @@ export function QuestionnaireTab({
                     </p>
                   );
                 })()}
+                {/* A category that is recorded but not added to the totals yet:
+                    said before answering, not only after the save. */}
+                {currentQuestion?.notCalculated && (
+                  <p role="note" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                    ⚠️ {currentQuestion.notCalculated[lang] || currentQuestion.notCalculated.en}
+                  </p>
+                )}
                 {/* Supplier EF forms: the unit does not fit the consumption entered. */}
                 {EF_SOURCE_STEP[currentId] && (() => {
                   const units = efUnitMismatch(currentId, answerValue?.ef_unit, answers);

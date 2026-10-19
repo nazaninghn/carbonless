@@ -209,7 +209,10 @@ class ReportListProgressTests(TestCase):
 
     def test_draft_uses_baseline_and_caps_below_100(self):
         from .views import _progress, BASELINE_QUESTIONS
-        self.assertEqual(_progress(0, CarbonReport.Status.IN_PROGRESS)['total'], BASELINE_QUESTIONS)
+        # Not started and no count from the survey: no total is invented (a
+        # fixed 127 contradicted the survey's own "~68").
+        self.assertEqual(_progress(0, CarbonReport.Status.IN_PROGRESS), {'completed': 0, 'total': None, 'percent': 0})
+        self.assertEqual(_progress(5, CarbonReport.Status.IN_PROGRESS)['total'], BASELINE_QUESTIONS)
         # Branches can push a draft past the baseline — still not "done".
         long_draft = _progress(BASELINE_QUESTIONS + 5, CarbonReport.Status.IN_PROGRESS)
         self.assertEqual(long_draft['percent'], 99)
@@ -406,12 +409,12 @@ class InventoryCalculationTests(StepEntriesTests):
         self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
         self._step('4A-1', {'1': '1000 kWh'})
         self._step('4A-EF', 'yes')
-        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2024'})
+        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2024', 'ef_market': 'TR'})
         answers = lambda: dict(self.report.steps.values_list('step_id', 'answer'))
         # other year: no instrument, market-based falls back to the grid
         m = scope2_market_based(answers(), 2025, self.company)
         self.assertEqual((m['total_kg'], m['rows'][0]['basis'], m['has_instrument']), (400.0, 'location_fallback', False))
-        self._step('4A-EF-a', {'ef_value': '300', 'ef_unit': 'kgCO2e_MWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
+        self._step('4A-EF-a', {'ef_value': '300', 'ef_unit': 'kgCO2e_MWh', 'ef_source': 'XYZ', 'ef_year': '2025', 'ef_market': 'TR'})
         # the inventory stays location-based (grid) …
         self.assertEqual(self._by_step()['4A-1'], [('turkey-grid-distribution', 1000.0, 400.0)])
         # … and the supplier factor is the separate market-based result
@@ -432,7 +435,7 @@ class InventoryCalculationTests(StepEntriesTests):
         self.assertEqual(Facility.objects.get(name='Gebze Fabrika').pk, gebze.pk)
         # a supplier factor is market-based: the grid entries stay as they are
         self._step('4A-EF', 'yes')
-        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
+        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025', 'ef_market': 'TR'})
         self.assertEqual(sorted(self._by_step()['4A-1']),
                          [('turkey-grid-distribution', 500.0, 200.0), ('turkey-grid-distribution', 1000.0, 400.0)])
 
@@ -611,7 +614,8 @@ class InventoryCalculationTests(StepEntriesTests):
         fb = r.data['calc_feedback']
         self.assertEqual((fb['delta_kg'], fb['total_kg']), (2500.0, 2500.0))
         self.assertEqual(len(fb['notes']), 1)
-        self.assertIn('EQ-3B-05: km is only calculated for passenger cars', fb['notes'][0])
+        # Named, not coded ("EQ-3B-05" used to reach the user and the report).
+        self.assertIn('Light commercial vehicle / pickup (≤3.5t): km is only calculated for passenger cars', fb['notes'][0])
         # and the inventory's assumptions list it as a data gap
         from .assumptions import report_assumptions
         gaps = [a for a in report_assumptions(self.report, 'tr') if a['text'].startswith('Hesaplanmayan cevap')]
@@ -619,7 +623,7 @@ class InventoryCalculationTests(StepEntriesTests):
 
     def test_supplier_document_of_another_year_is_reported(self):
         self._step('4A-EF', 'yes')
-        r = self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2023'})
+        r = self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2023', 'ef_market': 'TR'})
         self.assertIn('is not the reporting year (2025)', r.data['calc_feedback']['notes'][0])
 
     def test_biomass_by_type_and_biogenic_co2_apart(self):
@@ -1209,7 +1213,8 @@ class PendingAdvisorAnswerTests(TestCase):
 class TaxIdStepTests(TestCase):
     """Question 2 (tax ID): VKN/TCKN for a Turkish company, the local tax /
     VAT number for one based elsewhere; a number another company already
-    uses is refused without naming that company."""
+    uses is handled like any other — same reply, saved to the company — so
+    nothing reveals that it is taken; staff are told privately."""
 
     def _company(self, name, country, tax=''):
         return Company.objects.create(
@@ -1249,16 +1254,57 @@ class TaxIdStepTests(TestCase):
         self.assertEqual(self._send(client, report, '123456789').status_code, 400)
         self.assertEqual(self._send(client, report, '1234567891').status_code, 200)
 
-    def test_duplicate_is_a_conflict_and_does_not_name_the_other_company(self):
-        self._company('Gizli Tekstil A.Ş.', 'TR', tax='5555555555')
-        client, report, _ = self._setup('TR')
-        res = self._send(client, report, '5555555555', lang='tr')
-        self.assertEqual(res.status_code, 409)
-        body = res.content.decode()
-        self.assertNotIn('Gizli', body)
-        self.assertEqual(res.json()['code'], 'duplicate_tax_id')
-        self.assertIn('başka bir şirket', res.json()['error'])
-        self.assertFalse(ReportStep.objects.filter(report=report, step_id='A2').exists())
+    def _owner(self, name):
+        from rest_framework.test import APIClient
+        user = User.objects.create_user(name, f'{name}@test.com', 'pass12345')
+        company = self._company(f'{name} Co', 'TR')
+        CompanyMembership.objects.create(user=user, company=company, role='owner')
+        report = CarbonReport.objects.create(company=company, created_by=user, reporting_year=2026)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client, report, company
+
+    def _observed(self, client, report, _company, tax_id):
+        """Everything the user can see after answering Question 2 with
+        tax_id — the reply and the pages that show the company's number —
+        with the number itself replaced, so a taken and a free number can be
+        compared."""
+        reply = self._send(client, report, tax_id, lang='tr')
+        seen = {
+            'status': reply.status_code,
+            'reply': {k: v for k, v in reply.json().items() if k != 'step'},
+            'settings': client.get('/api/companies/detail/').json().get('tax_number'),
+            'prefill': client.get(f'/api/questionnaire/{report.id}/previous-profile/').json().get('answers', {}).get('A2'),
+            'inventory': client.get(f'/api/questionnaire/{report.id}/').json().get('answers', {}).get('A2'),
+            'notices': client.get('/api/accounts/notifications/unread-count/').json(),
+        }
+        return json.loads(json.dumps(seen, default=str).replace(tax_id, '<TAX>'))
+
+    def test_a_taken_number_is_indistinguishable_from_a_free_one(self):
+        # "Already used by another company" told anyone whether a company is
+        # registered under a tax ID; so did leaving the number off the
+        # prober's own company record (Settings and the pre-fill kept the
+        # old value). Neither the reply nor any of those pages may differ.
+        from accounts.models import Notification
+        staff = User.objects.create_user('staff', 'staff@test.com', 'pass12345', is_staff=True)
+        holder = self._company('Gizli Tekstil A.Ş.', 'TR', tax='5555555555')
+        prober = self._owner('prober')
+        control = self._owner('control')
+        taken = self._observed(*prober, '5555555555')
+        free = self._observed(*control, '1234567891')
+        self.assertEqual(taken['status'], 200)
+        self.assertEqual(taken, free)
+        self.assertEqual(taken['settings'], '<TAX>')
+        self.assertNotIn('Gizli', json.dumps(taken, ensure_ascii=False))
+        # The holder keeps its number; staff (only) are told, once.
+        holder.refresh_from_db()
+        self.assertEqual(holder.tax_number, '5555555555')
+        self.assertEqual(Notification.objects.filter(user=staff).count(), 1)
+        self.assertIn('5555555555', Notification.objects.get(user=staff).message)
+        self.assertFalse(Notification.objects.exclude(user=staff).exists())
+        # Answering again with the same number does not alert staff again.
+        self._observed(*prober, '5555555555')
+        self.assertEqual(Notification.objects.filter(user=staff).count(), 1)
 
     def test_foreign_registration_tax_number_is_prefilled(self):
         client, report, company = self._setup('DE')
@@ -1399,7 +1445,12 @@ class SupplierEFDocumentTests(TestCase):
 
     def test_scope2_and_cat1_declaration_forms(self):
         from .carboniq_validation import validate_generic_step
-        elec = {'answer': {'ef_value': '0.41', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ Elektrik', 'ef_year': '2024'}}
+        elec = {'answer': {'ef_value': '0.41', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ Elektrik', 'ef_year': '2024',
+                           'ef_market': 'TR'}}
+        # The market is required (the form has asked it since the supplier
+        # declaration became market-specific); the server now checks it too.
+        self.assertFalse(validate_generic_step('4A-EF-a', {'answer': {
+            k: v for k, v in elec['answer'].items() if k != 'ef_market'}}, lang='tr')[0])
         self.assertEqual(validate_generic_step('4A-EF-a', elec, lang='tr'), (True, None))
         self.assertFalse(validate_generic_step('4B-EF-a', {'answer': {**elec['answer'], 'ef_year': '24'}}, lang='tr')[0])
         pcf = {'answer': {'items': [{'category': 'SC-02', 'supplier': 'XYZ Ambalaj', 'value': '1.25', 'unit': 'kgCO2e_kg', 'year': '2024'}]}}
@@ -2119,19 +2170,31 @@ class AmountAfterScopeNoNoteTests(_StepPatchTestCase):
 
 
 class FacilityCountReconcileTests(_StepPatchTestCase):
-    """Fix 4: a 2A-1 facility count that contradicts B4 is flagged (not
-    rejected); a matching count or an absent B4 produces no warning."""
+    """A 2A-1 facility count that differs from the company's (and B4's) is
+    asked first (409 company_conflict, nothing saved); confirmed, it updates
+    B4 and the company too, so the two counts no longer drift apart. A
+    matching count saves without asking or warning."""
+
+    def _confirmed(self, step, data):
+        return self.c.patch(f'/api/questionnaire/{self.report.id}/step/', {
+            'step': step, 'data': data, 'language': 'en', 'confirm_company_update': True}, format='json')
 
     def _set_b4(self, n):
-        res = self._patch('B4', {'number_of_facilities': n})
+        res = self._confirmed('B4', {'number_of_facilities': n})
         self.assertEqual(res.status_code, 200, res.content)
 
-    def test_mismatch_warns_and_still_saves(self):
+    def test_mismatch_asks_then_updates_b4(self):
         self._set_b4(2)
         res = self._patch('2A-1', {'answer': '10'})
+        self.assertEqual(res.status_code, 409, res.content)
+        self.assertEqual(res.data['code'], 'company_conflict')
+        self.assertFalse(ReportStep.objects.filter(report=self.report, step_id='2A-1').exists())
+        res = self._confirmed('2A-1', {'answer': '10'})
         self.assertEqual(res.status_code, 200, res.content)
-        self.assertTrue(res.data['warnings'])
-        self.assertTrue(ReportStep.objects.filter(report=self.report, step_id='2A-1').exists())
+        self.assertFalse(res.data['warnings'])
+        self.assertEqual(ReportStep.objects.get(report=self.report, step_id='B4').answer['number_of_facilities'], 10)
+        self.company.refresh_from_db()
+        self.assertEqual(self.company.number_of_facilities, 10)
 
     def test_matching_count_no_warning(self):
         self._set_b4(2)
@@ -2140,7 +2203,7 @@ class FacilityCountReconcileTests(_StepPatchTestCase):
         self.assertFalse(res.data['warnings'])
 
     def test_no_b4_no_warning(self):
-        res = self._patch('2A-1', {'answer': '10'})
+        res = self._confirmed('2A-1', {'answer': '10'})
         self.assertEqual(res.status_code, 200, res.content)
         self.assertFalse(res.data['warnings'])
 
@@ -2525,7 +2588,7 @@ class ElectricityFactorDecisionTests(TestCase):
         from chat.local_answers import local_data_answer
         from .assumptions import derive_assumptions
         self._step('4A-EF', 'yes')
-        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025'})
+        self._step('4A-EF-a', {'ef_value': '0.3', 'ef_unit': 'kgCO2e_kWh', 'ef_source': 'XYZ', 'ef_year': '2025', 'ef_market': 'TR'})
         market = local_data_answer(self.user, '2025 piyasa bazlı kapsam 2 ne kadar?', 'tr')
         # 1.000 kWh × 0,3 — the declaration covers the company's market (TR), not Linz (AT)
         self.assertIn('piyasa bazlı Kapsam 2 sonucunuz **0,30 tCO₂e**', market)
@@ -2800,8 +2863,9 @@ class StepB4SerializerTests(TestCase):
         self.assertEqual(self.company.number_of_facilities, 1)
 
     def test_valid_patch_advances(self):
+        # 2 replaces the company's 1: applied once the user confirmed it.
         r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
-            'step': 'B4', 'data': {'number_of_facilities': 2}}, format='json')
+            'step': 'B4', 'data': {'number_of_facilities': 2}, 'confirm_company_update': True}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
         self.company.refresh_from_db()
         self.assertEqual(self.company.number_of_facilities, 2)

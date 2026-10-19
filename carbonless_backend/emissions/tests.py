@@ -941,7 +941,11 @@ class ProofDocumentTests(EntryChangeRulesTests):
         res = self.client.post(f'/api/emissions/entries/{eid}/proof/', {'proof_document': self._pdf()}, format='multipart')
         self.assertEqual(res.status_code, 200, res.content)
         self.assertTrue(res.json()['proof_available'])
-        self.assertEqual(self.client.get(f'/api/emissions/entries/{eid}/proof/').status_code, 200)
+        download = self.client.get(f'/api/emissions/entries/{eid}/proof/')
+        self.assertEqual(download.status_code, 200)
+        # A FileResponse keeps the file open until closed; on Windows the
+        # replacement below then could not delete it (WinError 32).
+        download.close()
         res = self.client.post(f'/api/emissions/entries/{eid}/proof/', {'proof_document': self._pdf('yeni.pdf')}, format='multipart')
         self.assertIn('yeni', res.json()['proof_document'])
         self.assertEqual(self.client.delete(f'/api/emissions/entries/{eid}/proof/').status_code, 204)
