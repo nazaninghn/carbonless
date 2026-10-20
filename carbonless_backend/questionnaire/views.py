@@ -446,14 +446,33 @@ class StartReportView(APIView):
         if year is not None and not 1990 <= year <= datetime_now_year():
             return Response({'error': 'Invalid reporting year', 'code': 'invalid_year'}, status=400)
 
-        report = CarbonReport.objects.create(
-            company=company,
-            created_by=request.user,
-            title=title,
-            reporting_year=year,
-            status=CarbonReport.Status.IN_PROGRESS,
-            current_step='A1'
-        )
+        # One inventory per company and year: entries belong to the company and year, so a
+        # second one would replace the first one's values (signed ones included).
+        from django.db import transaction
+        from . import year_guard
+        lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        if year is not None:
+            others = year_guard.other_inventories_for_year(company.pk, year)
+            if others:
+                year_guard.log_blocked(request.user, company.pk, others, year, 'start a second inventory', request)
+                return Response(year_guard.conflict_payload(others, year, lang), status=409)
+        try:
+            with transaction.atomic():
+                report = CarbonReport.objects.create(
+                    company=company,
+                    created_by=request.user,
+                    title=title,
+                    reporting_year=year,
+                    status=CarbonReport.Status.IN_PROGRESS,
+                    current_step='A1'
+                )
+        except IntegrityError:
+            # Two requests passed the check above at the same time: the database stopped the second.
+            others = year_guard.other_inventories_for_year(company.pk, year) if year is not None else []
+            if not others:
+                raise
+            year_guard.log_blocked(request.user, company.pk, others, year, 'start a second inventory', request)
+            return Response(year_guard.conflict_payload(others, year, lang), status=409)
 
         return Response({
             'report_id': report.id,
@@ -562,6 +581,27 @@ class SubmitStepView(APIView):
             'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
         }
 
+        # One inventory per company and year (year_guard.py): nothing is saved into an inventory
+        # whose year is shared with another one, or that has no year yet (outside the profile steps).
+        from . import year_guard
+        lang_ = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        blocked = year_guard.write_block(report, step, STRICT_STEPS, lang_)
+        if blocked:
+            status_code, payload, others = blocked
+            if others:
+                year_guard.log_blocked(request.user, report.company_id, others, report.reporting_year, 'save an answer', request)
+            return Response(payload, status=status_code)
+        if step == 'A4':
+            try:
+                new_year = int((data or {}).get('reporting_year'))
+            except (TypeError, ValueError):
+                new_year = None
+            if new_year and new_year != report.reporting_year:
+                others = year_guard.other_inventories_for_year(report.company_id, new_year, exclude_pk=report.pk)
+                if others:
+                    year_guard.log_blocked(request.user, report.company_id, others, new_year, 'move an inventory onto that year', request)
+                    return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
+
         if step in STRICT_STEPS and step in STEP_SERIALIZERS:
             serializer = STEP_SERIALIZERS[step](data=data, context={
                 'company': report.company, 'lang': request.data.get('language') or 'en'})
@@ -593,7 +633,15 @@ class SubmitStepView(APIView):
                     'bot_messages': [conflict['message']],
                 }, status=409)
 
-            result = handle_step(report, step, serializer.validated_data)
+            try:
+                result = handle_step(report, step, serializer.validated_data)
+            except IntegrityError:
+                # Moving onto a year another request just took: the database refused it.
+                new_year = serializer.validated_data.get('reporting_year') if step == 'A4' else None
+                others = year_guard.other_inventories_for_year(report.company_id, new_year, exclude_pk=report.pk) if new_year else []
+                if not others:
+                    raise
+                return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
 
             before = _saved_answer(report, step)
             _save_report_step(report, step, serializer.validated_data)
@@ -830,7 +878,10 @@ class SubmitStepView(APIView):
                 user=request.user, is_active=True, role__in=('owner', 'admin', 'manager')).exists()
             sync_facilities(report.company, data, user=request.user, apply_connection=approver, report=report)
         before_kg = questionnaire_totals(report)[0]
-        entries = sync_step_entries(request.user, report.company, report, step, data)
+        try:
+            entries = sync_step_entries(request.user, report.company, report, step, data)
+        except year_guard.InventoryYearConflict as conflict:
+            return Response(year_guard.conflict_payload(conflict.others, conflict.year, lang_, step=step), status=409)
         # What this answer did to the inventory: the CO2e it added or took
         # away, and why an amount it gave is not calculated — so a missing
         # number is never taken for zero.
@@ -1434,6 +1485,14 @@ class RestartReportView(APIView):
             return Response({'error': 'Report not found'}, status=404)
         if report.status == CarbonReport.Status.COMPLETED:
             return Response({'error': 'A completed inventory cannot be restarted.'}, status=400)
+        # Restarting deletes the entries of this company and year: never while another inventory
+        # (a signed one, say) shares them.
+        from . import year_guard
+        others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
+        if others:
+            lang_ = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+            year_guard.log_blocked(request.user, report.company_id, others, report.reporting_year, 'restart an inventory', request)
+            return Response(year_guard.conflict_payload(others, report.reporting_year, lang_), status=409)
 
         with transaction.atomic():
             answered = set(ReportStep.objects.filter(report=report).values_list('step_id', flat=True))

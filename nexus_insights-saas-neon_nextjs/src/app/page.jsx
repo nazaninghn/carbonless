@@ -163,26 +163,50 @@ function ConnectionLinesMobile() {
    IntersectionObserver and is disabled for prefers-reduced-motion. */
 function LaptopUnfold({ children, className = '' }) {
   const ref = useRef(null);
+  // `open` drives the final resting state (laptop facing the viewer).
+  // `reduced` means the user asked for reduced motion — we still SHOW the
+  // laptop, we just skip the 3D rotation and only do a soft fade so nothing
+  // ever gets stuck invisible, on any device or browser.
   const [open, setOpen] = useState(false);
+  const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReduced) {
+      setReduced(true);
+      setOpen(true); // visible immediately, no rotation
+      return;
+    }
+
+    const el = ref.current;
+
+    // Browsers without IntersectionObserver (old Safari etc.): open now.
+    if (!el || typeof IntersectionObserver === 'undefined') {
       setOpen(true);
       return;
     }
-    const el = ref.current;
-    if (!el) return;
+
+    // Safety net: if the observer never fires (element already on screen on
+    // load, layout quirk on mobile, etc.) open anyway after a short delay so
+    // the laptop can never get stuck folded/invisible.
+    const fallback = setTimeout(() => setOpen(true), 1200);
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
+          clearTimeout(fallback);
           setOpen(true);
           observer.disconnect();
         }
       },
-      { threshold: 0.35, rootMargin: '0px 0px -10% 0px' }
+      { threshold: 0.1, rootMargin: '0px 0px -5% 0px' }
     );
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => { clearTimeout(fallback); observer.disconnect(); };
   }, []);
 
   return (
@@ -191,8 +215,11 @@ function LaptopUnfold({ children, className = '' }) {
         className="transition-all duration-[2000ms] will-change-transform"
         style={{
           transformOrigin: 'bottom center',
+          transformStyle: 'preserve-3d',
+          backfaceVisibility: 'hidden',
           transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
-          transform: open ? 'rotateX(0deg)' : 'rotateX(-70deg)',
+          // Reduced-motion: no rotation, just make sure it's shown.
+          transform: reduced ? 'none' : (open ? 'rotateX(0deg)' : 'rotateX(-72deg)'),
           opacity: open ? 1 : 0,
         }}
       >

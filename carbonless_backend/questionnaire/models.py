@@ -96,9 +96,24 @@ class CarbonReport(models.Model):
     # NOT NULL column with no database default would make that insert fail.
     # None and {} mean the same.
     applied_grid_connections = models.JSONField(default=dict, blank=True, null=True)
+    # One inventory per company and year (see year_guard.py). Set by migration
+    # 0012 on the members of a duplicate group that already existed — nothing else
+    # about them changes — which exempts them from the constraint below; none of
+    # them can write until the duplicate is resolved. db_default: instances still
+    # running the code from before this column insert reports without it.
+    legacy_duplicate_year = models.BooleanField(default=False, db_default=False)
 
     class Meta:
         ordering = ['-created_at']
+        constraints = [
+            # Entries are stored per company and year: two inventories of one year share
+            # (and overwrite) one set of numbers. Rows flagged legacy_duplicate_year are the
+            # members of duplicate groups from before this rule; they are left as they are.
+            models.UniqueConstraint(
+                fields=['company', 'reporting_year'],
+                condition=models.Q(reporting_year__isnull=False, legacy_duplicate_year=False),
+                name='uniq_inventory_per_company_year'),
+        ]
 
     def __str__(self):
         return f"{self.company.legal_entity_name} — {self.reporting_year or 'Draft'}"

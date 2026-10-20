@@ -61,6 +61,7 @@ import {
   EF_SOURCE_STEP,
   efUnitMismatch,
 } from '@/lib/carboniq/questions';
+import { calcFeedbackLine } from '@/lib/carboniq/calcFeedback';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
 
@@ -3959,19 +3960,10 @@ export function QuestionnaireTab({
             : `${Math.abs(kg).toLocaleString(trL ? 'tr-TR' : 'en-US', { maximumFractionDigits: 1 })} kg CO₂e`;
         };
         const parts = [];
-        const delta = Number(fb.delta_kg) || 0;
-        if (Math.abs(delta) >= 0.05) {
-          const sign = delta > 0 ? '+' : '−';
-          // A data-entry member's change waits for approval: it is not in the
-          // totals yet, and the total shown is the approved one.
-          parts.push(fb.pending
-            ? (trL
-              ? `⏳ Onaya gönderildi: **${sign}${tonnes(delta)}** — onaylanınca envantere eklenir (onaylı toplam ${tonnes(Number(fb.total_kg) || 0)}).`
-              : `⏳ Sent for approval: **${sign}${tonnes(delta)}** — added to the inventory once approved (approved total ${tonnes(Number(fb.total_kg) || 0)}).`)
-            : (trL
-              ? `✓ Envantere yansıdı: **${sign}${tonnes(delta)}** (bu envanterin toplamı ${tonnes(Number(fb.total_kg) || 0)}).`
-              : `✓ Added to the inventory: **${sign}${tonnes(delta)}** (inventory total ${tonnes(Number(fb.total_kg) || 0)}).`));
-        }
+        // The questionnaire's own total is a partial total (no monthly entries, no custom requests):
+        // calcFeedbackLine names it as such and adds the Dashboard-equivalent year total when it differs.
+        const line = calcFeedbackLine(fb, { tr: trL, year: respData?.reporting_year ?? null });
+        if (line) parts.push(line);
         if (Number(fb.biogenic_kg) > 0) {
           parts.push(trL
             ? `🌱 Biyojenik CO₂: ${tonnes(Number(fb.biogenic_kg))} — kapsam toplamlarına eklenmez, raporda ayrıca gösterilir.`

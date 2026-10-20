@@ -643,7 +643,7 @@ export default function InventoryLibrary({ tr = false }) {
               value={surveyName}
               onChange={(e) => setSurveyName(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleStartNew();
+                if (e.key === 'Enter' && !sameYearReport) handleStartNew();
                 if (e.key === 'Escape') setShowNamingDialog(false);
               }}
               placeholder={tr ? 'Örnek: 2024 Emisyon Denetimi' : 'e.g., 2024 Emissions Audit'}
@@ -671,12 +671,12 @@ export default function InventoryLibrary({ tr = false }) {
               ))}
             </select>
             {sameYearReport ? (
-              // The year already has an inventory: a second one shares its
-              // emission entries and replaces its values — open that one instead.
+              // The year already has an inventory: a company has one inventory per year
+              // (the server refuses a second one) — open that one instead.
               <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 {tr
-                  ? `${surveyYear} yılı için zaten bir envanteriniz var: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'tamamlandı' : 'devam ediyor'}). Aynı yıl için ikinci bir envanter, o envanterle aynı emisyon kayıtlarını kullanır ve değerlerinin yerine geçer. Değişiklik için mevcut envanteri açın.`
-                  : `There is already an inventory for ${surveyYear}: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'completed' : 'in progress'}). A second inventory for the same year uses the same emission entries and replaces their values. To change something, open the existing one.`}
+                  ? `${surveyYear} yılı için zaten bir envanteriniz var: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'tamamlandı' : 'devam ediyor'}). Bir şirket için her yıla en fazla bir envanter olabilir (emisyon kayıtları şirkete ve yıla bağlıdır). Değişiklik için mevcut envanteri açın.`
+                  : `There is already an inventory for ${surveyYear}: “${sameYearReport.title || surveyYear}” (${sameYearReport.status === 'completed' ? 'completed' : 'in progress'}). A company can have one inventory per year (emission entries belong to the company and year). To change something, open the existing one.`}
               </p>
             ) : nameYearMismatch ? (
               <p role="alert" className="mb-4 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -701,26 +701,17 @@ export default function InventoryLibrary({ tr = false }) {
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               {sameYearReport ? (
-                <>
-                  <button
-                    onClick={handleStartNew}
-                    disabled={loading}
-                    className="flex-1 px-4 py-2.5 border border-[#175022]/20 rounded-lg font-semibold text-[#175022] transition-all duration-200 hover:bg-[#175022]/5 hover:border-[#175022]/40 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50"
-                  >
-                    {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Yine de yeni başlat' : 'Start a new one anyway')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowNamingDialog(false);
-                      setSurveyName('');
-                      if (sameYearReport.status === 'completed') handleEditCompleted(sameYearReport.report_id);
-                      else handleContinue(sameYearReport.report_id);
-                    }}
-                    className="flex-1 px-4 py-2.5 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
-                  >
-                    {tr ? 'Mevcut envanteri aç' : 'Open the existing one'}
-                  </button>
-                </>
+                <button
+                  onClick={() => {
+                    setShowNamingDialog(false);
+                    setSurveyName('');
+                    if (sameYearReport.status === 'completed') handleEditCompleted(sameYearReport.report_id);
+                    else handleContinue(sameYearReport.report_id);
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                >
+                  {tr ? 'Mevcut envanteri aç' : 'Open the existing one'}
+                </button>
               ) : (
                 <button
                   onClick={handleStartNew}

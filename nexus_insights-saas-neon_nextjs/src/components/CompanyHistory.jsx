@@ -15,6 +15,7 @@ const ACTIONS = {
   questionnaire_changed: { tr: 'Anket cevabı değişti', en: 'Inventory answer changed', cls: 'bg-amber-50 text-amber-700' },
   inventory_completed:   { tr: 'Envanter tamamlandı',  en: 'Inventory completed',      cls: 'bg-[#2ABD41]/10 text-[#175022]' },
   inventory_renamed:     { tr: 'Envanter adı değişti', en: 'Inventory renamed',        cls: 'bg-amber-50 text-amber-700' },
+  inventory_duplicate_blocked: { tr: 'İkinci envanter engellendi', en: 'Second inventory blocked', cls: 'bg-amber-50 text-amber-700' },
   facility_connection_kept: { tr: 'İmzalı envanter korundu', en: 'Signed inventory kept', cls: 'bg-amber-50 text-amber-700' },
   entry_delete_requested: { tr: 'Silme talebi', en: 'Deletion requested', cls: 'bg-amber-50 text-amber-700' },
   entry_delete_withdrawn: { tr: 'Silme talebi geri alındı', en: 'Deletion request withdrawn', cls: 'bg-slate-50 text-slate-600' },

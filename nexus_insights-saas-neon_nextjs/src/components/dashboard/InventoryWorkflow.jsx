@@ -75,7 +75,7 @@ export function InventoryProvider({ children }) {
       if (!res.ok) {
         setError(res.status === 403
           ? noPermissionMessage(tr)
-          : (data.error || (tr ? 'Envanter başlatılamadı' : 'Could not start inventory')));
+          : ((tr ? data.error_tr : data.error_en) || data.error || (tr ? 'Envanter başlatılamadı' : 'Could not start inventory')));
         return false;
       }
 

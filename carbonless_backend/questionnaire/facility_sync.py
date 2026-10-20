@@ -299,8 +299,12 @@ def set_connection_in_answers(company, user, name, connection, recalculate=True)
             step.save(update_fields=['answer'])
             reports.append(step.report_id)
     if recalculate:
+        from .year_guard import InventoryYearConflict
         for report in CarbonReport.objects.filter(id__in=reports):
-            sync_step_entries(user, company, report, '4A-1')
+            try:
+                sync_step_entries(user, company, report, '4A-1')
+            except InventoryYearConflict:
+                continue      # a legacy duplicate of its year: left as it is until the duplicate is resolved
         _log_kept_inventories(user, company, name, connection, kept)
     return len(reports)
 

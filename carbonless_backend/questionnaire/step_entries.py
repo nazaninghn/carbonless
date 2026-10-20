@@ -1241,7 +1241,12 @@ def resync_inventory(company, year, user):
         return []
     locked = report_is_locked(report)
     before = questionnaire_totals(report)[1] if locked else 0.0
-    created = sync_step_entries(user, company, report, '4A-1', as_status='approved')
+    from .year_guard import InventoryYearConflict
+    try:
+        created = sync_step_entries(user, company, report, '4A-1', as_status='approved')
+    except InventoryYearConflict:
+        logger.warning('resync of %s skipped: more than one inventory covers it', year)
+        return []
     if locked and abs(questionnaire_totals(report)[1] - before) > 1e-6:
         # An approved factor moved a signed / completed inventory: that is a
         # change after signing, so it is flagged and named in the history.
@@ -1262,6 +1267,13 @@ def sync_step_entries(user, company, report, step_id, data=None, as_status=None)
     """Recalculate an inventory's entries (see _sync_step_entries); a signed or
     completed inventory keeps the grid connections it was applied with
     (CarbonReport.applied_grid_connections), not the facilities' current ones."""
+    from .year_guard import InventoryYearConflict, other_inventories_for_year
+    year = report.reporting_year
+    if not year:
+        return []        # no year, no entries: they used to land in 2024, in another inventory's numbers
+    others = other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
+    if others:
+        raise InventoryYearConflict(others, year)
     with recorded_connections(report):
         return _sync_step_entries(user, company, report, step_id, data, as_status)
 
