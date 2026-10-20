@@ -173,6 +173,21 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
             f'values of these emission factors are used; they are estimates: '
             + ', '.join(n[1] for n in names) + '.')
 
+    # Recycling credits (negative factors: avoided virgin production) lower the
+    # total. Their source and treatment are awaiting the methodology owner's
+    # decision, so the report states the amount instead of folding it in silently.
+    from .step_entries import _fmt, avoided_emission_credit_kg
+    credit = avoided_emission_credit_kg(company, reporting_year)
+    if credit < 0:
+        t_tr, t_en = _fmt(abs(credit) / 1000, 3, 'tr'), _fmt(abs(credit) / 1000, 3, 'en')
+        add('EF-CREDIT', 'B',
+            f'Envanter toplamı, geri dönüşümün kaçınılan birincil üretim emisyonu olarak sayıldığı negatif emisyon '
+            f'faktörlerinden kaynaklanan {t_tr} tCO₂e tutarında kredi içerir; bu kredi toplamı azaltır. Bu '
+            f'faktörlerin kaynağı doğrulanmamıştır ve yöntem kararı beklemektedir.',
+            f'The inventory total includes {t_en} tCO2e of credit from negative emission factors that count '
+            f'recycling as avoided primary production; the credit lowers the total. The source of these factors '
+            f'is not verified and the methodology decision is pending.')
+
     if A.get('6A-1') == 'yes':
         names = [str(r.get('source')) for r in _items(A.get('6A-1a')) if r.get('source')]
         if names:
@@ -183,5 +198,7 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
 
 
 def report_assumptions(report, lang='tr'):
+    from .step_entries import recorded_connections
     answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
-    return derive_assumptions(answers, lang, report.reporting_year, report.company)
+    with recorded_connections(report):
+        return derive_assumptions(answers, lang, report.reporting_year, report.company)

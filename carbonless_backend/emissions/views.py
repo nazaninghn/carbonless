@@ -13,6 +13,7 @@ from .serializers import (
 )
 from .calculator import calculate_emissions, get_available_countries
 from .inventory import is_annual
+from .periods import year_from_query
 try:
     from .scope3_categories import SCOPE3_CATEGORIES, SCOPE3_GHG_NUMBER
 except ImportError:
@@ -100,7 +101,7 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             EmissionEntry.objects.select_related('emission_factor', 'company', 'facility', 'user'),
             self.request.user
         )
-        year = self.request.query_params.get('year')
+        year = year_from_query(self.request, 'year')
         scope = self.request.query_params.get('scope')
         if year:
             qs = qs.filter(year=year)
@@ -380,6 +381,16 @@ def benchmark_employee_band(value):
     return _BENCHMARK_BANDS.get(str(value or '').strip().replace('_', '-').replace('5000-plus', '5000+'), '')
 
 
+def _avoided_credit_payload(entries):
+    """The recycling credit in these approved entries with its note in both
+    languages, or None (see inventory.avoided_credit)."""
+    from .inventory import avoided_credit, avoided_credit_note
+    info = avoided_credit(entries)
+    if not info:
+        return None
+    return {**info, 'note': {'tr': avoided_credit_note(info, True), 'en': avoided_credit_note(info, False)}}
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def emission_summary(request):
@@ -525,6 +536,7 @@ def emission_summary(request):
         'previous_year_change': previous_year_change(company, year, total),
         # Pending / rejected entries of the year: not in any total above,
         # shown to the client separately as information.
+        'avoided_credit': _avoided_credit_payload(entries),
         'not_counted': (not_counted(EmissionEntry.objects.filter(company=company, year=year))
                         if company else not_counted(EmissionEntry.objects.none())),
         'scope1_kg': float(scope1),
@@ -631,7 +643,7 @@ def generate_report_view(request):
     # Subscription gate temporarily disabled — all users can generate reports
     # TODO: Re-enable when Stripe billing is connected
 
-    year = int(request.query_params.get('year', datetime.now().year))
+    year = year_from_query(request, 'year', datetime.now().year)
     lang = request.query_params.get('lang', 'tr')
 
     try:
@@ -640,7 +652,7 @@ def generate_report_view(request):
     except Exception as e:
         import traceback, logging
         logging.getLogger(__name__).error('PDF generation failed: %s\n%s', e, traceback.format_exc())
-        return Response({'error': f'PDF generation failed: {e}'}, status=500)
+        return Response({'error': 'PDF generation failed. Please try again or contact support.'}, status=500)
 
     response = HttpResponse(pdf_bytes, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="carbonless_report_{year}_{lang}.pdf"'
@@ -716,8 +728,8 @@ def comparison_view(request):
     """Compare emissions between two years."""
     # Fix #63: use dynamic current year instead of hardcoded 2026
     _cur = datetime.now().year
-    year1 = int(request.query_params.get('year1', _cur - 1))
-    year2 = int(request.query_params.get('year2', _cur))
+    year1 = year_from_query(request, 'year1', _cur - 1)
+    year2 = year_from_query(request, 'year2', _cur)
 
     # Fix #37: Resolve company once — the old closure called get_current_company()
     # on every get_year_data() invocation (twice per request = 2 membership queries).
@@ -829,7 +841,7 @@ def _csv_number(value, tr):
 @permission_classes([IsAuthenticated])
 def export_csv_view(request):
     """Export emission entries as CSV"""
-    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
+    year = year_from_query(request, 'year', datetime.now().year)
     company = get_current_company(request.user)
     # Fix #56: Added 'facility' to select_related \u2014 the old query only joined
     # emission_factor.  Writing e.facility in the loop (a ForeignKey) triggered
@@ -1146,7 +1158,7 @@ def by_facility_view(request):
     if not company:
         return Response([])
 
-    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
+    year = year_from_query(request, 'year', datetime.now().year)
     data = (
         EmissionEntry.objects
         .filter(company=company, year=year, facility__isnull=False, status='approved')
@@ -1226,7 +1238,7 @@ def scope3_categories_view(request):
 def export_excel_view(request):
     """Export emission entries as Excel (xlsx)"""
     from openpyxl import Workbook
-    year = int(request.query_params.get('year', datetime.now().year))  # Fix #63
+    year = year_from_query(request, 'year', datetime.now().year)
     company = get_current_company(request.user)
     # Fix #59: Added 'facility' to select_related — same N+1 pattern as Bug #56
     # (export_csv_view). Only emission_factor was pre-fetched; accessing e.facility
@@ -1248,6 +1260,12 @@ def export_excel_view(request):
     ws.append(header)
     for row in rows:
         ws.append(row)
+    # A total that contains an unverified recycling credit says so, under the data.
+    from .inventory import avoided_credit, avoided_credit_note
+    _credit = avoided_credit_note(avoided_credit(entries.filter(status='approved')), lang == 'tr')
+    if _credit:
+        ws.append([])
+        ws.append([_credit])
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="emissions_{year}.xlsx"'

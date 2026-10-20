@@ -802,6 +802,14 @@ export default function DashboardOverview({
         </p>
       )}
 
+      {/* The total contains a recycling credit (negative factors) whose source is unverified */}
+      {summary?.avoided_credit?.note && (
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2 text-[11px] leading-5 text-amber-800">
+          <span className="font-bold">{tr ? 'Uyarı: ' : 'Note: '}</span>
+          {summary.avoided_credit.note[tr ? 'tr' : 'en']}
+        </p>
+      )}
+
       {/* ── INVENTORY IN PROGRESS ────────────────────────────────────── */}
       {/* This year's inventory is being filled: its answers already count in
           the totals above, so say they are not final and where to go on. */}

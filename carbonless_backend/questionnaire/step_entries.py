@@ -51,6 +51,9 @@ holds for a catalog factor used under another category (LPG burnt in
 vehicles, declared energy of a leased building, waste factors for the end of
 life of sold products).
 """
+import contextlib
+import contextvars
+import copy
 import functools
 import logging
 import re
@@ -647,16 +650,87 @@ def _energy_activity(kwh, carrier, report_as, label):
     return None
 
 
-def _leased_upstream(A):
+def _scope12_sites(A):
+    """Facilities (lower-case names, as answered in 2A-2) whose energy the
+    Scope 1/2 steps already count in this inventory: the evidence that a leased
+    asset linked to one of them is not Category 8's to count."""
+    own = lambda step: activities_for_step(step, {'answer': A.get(step)})
+    sources = (('4A-1', lambda: _named_sites(own('4A-1'), A.get('2A-2'))),
+               ('3A-5', lambda: _collapse_fuel_site(own('3A-5'), A.get('3A-2'))))
+    sites = set()
+    for step, activities in sources:
+        gate = _GATES.get(step)
+        if gate and A.get(gate) not in (None, '', 'yes'):
+            continue
+        sites.update(str(a['facility_name']).strip().lower() for a in activities() if a.get('facility_name'))
+    return sites
+
+
+def _leased_already_counted(row, scope12_sites):
+    """Why a K3C8-1 asset is not counted in Category 8, or None:
+    'declared'  - the answer says its energy is already in Scope 1/2;
+    'facility'  - the asset is one of the company's registered sites (chosen
+                  from the facility list, not typed) and that site's energy is
+                  in Scope 1/2 of this same inventory, whatever the answer says.
+    The facility is the identity; the Scope 1/2 entries are the evidence."""
+    if row.get('in_scope12') == 'included':
+        return 'declared'
+    linked = str(row.get('facility') or '').strip().lower()
+    if linked and linked in scope12_sites:
+        return 'facility'
+    return None
+
+
+_LEASED_BUILDINGS = ('KV-01', 'KV-02', 'KV-03', 'KV-05')   # KV-04 is equipment: it has no site to overlap
+
+
+def _has_scope12_energy(A):
+    """Whether the inventory reports any Scope 1/2 energy of its own (stationary
+    fuel or purchased electricity), whether or not it is tied to a facility."""
+    own = lambda step: activities_for_step(step, {'answer': A.get(step)})
+    for step in ('4A-1', '3A-5'):
+        gate = _GATES.get(step)
+        if gate and A.get(gate) not in (None, '', 'yes'):
+            continue
+        if own(step):
+            return True
+    return False
+
+
+def is_operational_control(A):
+    """Whether the inventory's organisational boundary is Operational Control."""
+    d3 = A.get('D3')
+    return isinstance(d3, dict) and d3.get('boundary_approach') == 'operational_control'
+
+
+def leased_review_reasons(row, operational, scope12_energy):
+    """Why a K3C8-1 row needs a person's review for a possible overlap with Scope
+    1/2 — never a reason to leave it out. Only a row saved before the question
+    asked "already in Scope 1/2?" (no answer) and tied to no facility qualifies,
+    and only a building (equipment has no site):
+      'operational_control' — under Operational Control a building the company
+                              uses is normally one of its sites;
+      'scope12_energy'      — the inventory reports Scope 1/2 energy, and nothing
+                              says this asset is not part of it."""
+    if 'in_scope12' in row or str(row.get('facility') or '').strip():
+        return []
+    if str(row.get('asset_type') or '') not in _LEASED_BUILDINGS:
+        return []
+    return [r for r, on in (('operational_control', operational), ('scope12_energy', scope12_energy)) if on]
+
+
+def _leased_upstream(A, scope12_sites=None):
     """K3C8-1: declared energy of the leased asset, else area for office and
     warehouse (the only types with an area factor)."""
     out = []
+    if scope12_sites is None:
+        scope12_sites = _scope12_sites(A)
     for row in _rows(A.get('K3C8-1')):
         # Already reported in Scope 1/2 (one of the company's own sites):
         # Category 8 would count it twice. A row saved before the question
         # asked this keeps its earlier calculation; uncalculated_notes flags
         # it under Operational Control.
-        if row.get('in_scope12') == 'included':
+        if _leased_already_counted(row, scope12_sites):
             continue
         kv = str(row.get('asset_type') or '')
         kwh = _number(row.get('declaration_kwh')) if _true(row.get('owner_declaration')) else None
@@ -1165,10 +1239,34 @@ def resync_inventory(company, year, user):
               .order_by('-updated_at').first())
     if report is None:
         return []
-    return sync_step_entries(user, company, report, '4A-1', as_status='approved')
+    locked = report_is_locked(report)
+    before = questionnaire_totals(report)[1] if locked else 0.0
+    created = sync_step_entries(user, company, report, '4A-1', as_status='approved')
+    if locked and abs(questionnaire_totals(report)[1] - before) > 1e-6:
+        # An approved factor moved a signed / completed inventory: that is a
+        # change after signing, so it is flagged and named in the history.
+        if report.signed_at:
+            CarbonReport.objects.filter(pk=report.pk).update(edited_after_signing_at=timezone.now())
+        from emissions.audit import log_company_activity
+        log_company_activity(
+            user, company.pk, 'inventory_recalculated',
+            f'{year} envanteri ({report.title or year}) onaylanan bir faktör nedeniyle yeniden hesaplandı '
+            f'(imzalı/tamamlanmış envanter; "imzadan sonra düzenlendi" olarak işaretlendi).',
+            f'The {year} inventory ({report.title or year}) was recalculated because a factor was approved '
+            f'(signed/completed inventory; marked as edited after signing).',
+            target_type='CarbonReport', target_id=report.pk, reporting_year=year)
+    return created
 
 
 def sync_step_entries(user, company, report, step_id, data=None, as_status=None):
+    """Recalculate an inventory's entries (see _sync_step_entries); a signed or
+    completed inventory keeps the grid connections it was applied with
+    (CarbonReport.applied_grid_connections), not the facilities' current ones."""
+    with recorded_connections(report):
+        return _sync_step_entries(user, company, report, step_id, data, as_status)
+
+
+def _sync_step_entries(user, company, report, step_id, data=None, as_status=None):
     """
     Recalculate the entries of the whole inventory from its saved answers —
     an answer can change another step's entries (the fuel type of 3B-5 and
@@ -1363,6 +1461,11 @@ def refresh_entry_text(report):
     """Give the entries of `report`'s answers their current label and
     calc_detail where the answers still report the same factor, amount and
     facility (text only; nothing is rebuilt, approvals stay)."""
+    with recorded_connections(report):
+        _refresh_entry_text(report)
+
+
+def _refresh_entry_text(report):
     from .models import ReportStep
     company, year = report.company, report.reporting_year
     if not company or not year:
@@ -1378,11 +1481,64 @@ def refresh_entry_text(report):
             _backfill_detail(entries, rows)
 
 
+# {facility id (str): grid connection} an inventory was calculated with, for the
+# signed / completed inventory being calculated or reported, else None.
+_APPLIED_CONNECTIONS = contextvars.ContextVar('applied_grid_connections', default=None)
+
+
+def report_is_locked(report):
+    """A signed or completed inventory: its figures are history, and a change
+    made elsewhere (Settings) must not move them."""
+    from .models import CarbonReport
+    return bool(report.signed_at) or report.status == CarbonReport.Status.COMPLETED
+
+
+@contextlib.contextmanager
+def recorded_connections(report):
+    """Calculate or report a signed / completed inventory with the grid
+    connection it was *applied* with (CarbonReport.applied_grid_connections),
+    not the facility's current one. The Turkish grid factor follows the
+    connection, and Settings changes it for the facility as a whole: without
+    this, any later recalculation of last year's signed inventory would quietly
+    use this year's connection.
+
+    The snapshot holds applied values only — what an approver set — never what a
+    data-entry member proposed in Q24 and nobody has accepted, so a proposal
+    cannot move an approved calculation. Does nothing for a draft, or for a
+    facility whose connection has not changed since the inventory was locked
+    (no key: its current connection is the applied one)."""
+    from .models import CarbonReport
+    applied = None
+    if report is not None and getattr(report, 'pk', None):
+        # Read fresh: the object in hand may predate a snapshot taken a moment ago.
+        row = CarbonReport.objects.filter(pk=report.pk).values('signed_at', 'status', 'applied_grid_connections').first()
+        if row and (row['signed_at'] or row['status'] == CarbonReport.Status.COMPLETED):
+            applied = {str(k): v for k, v in (row['applied_grid_connections'] or {}).items()}
+    token = _APPLIED_CONNECTIONS.set(applied)
+    try:
+        yield
+    finally:
+        _APPLIED_CONNECTIONS.reset(token)
+
+
 def _facility_lookup(company):
     """facility name (2A-2 answer) -> the company's Facility of that name, or None."""
     from companies.models import Facility
     by_name = {f.name.strip().lower(): f for f in Facility.objects.filter(company=company)}
-    return lambda name: by_name.get(str(name).strip().lower()) if name else None
+
+    def find(name):
+        if not name:
+            return None
+        key = str(name).strip().lower()
+        facility = by_name.get(key)
+        applied = _APPLIED_CONNECTIONS.get()
+        if facility is not None and applied is not None:
+            connection = applied.get(str(facility.pk))
+            if connection is not None and connection != facility.grid_connection:
+                facility = copy.copy(facility)   # same pk; only this calculation sees the applied connection
+                facility.grid_connection = connection
+        return facility
+    return find
 
 
 def _row_key(row):
@@ -1561,6 +1717,20 @@ def scope2_market_based(answers, year, company=None):
             'has_instrument': any(r['basis'] != 'location_fallback' for r in rows),
             'supplier_market': supplier_market, 'outside_market': outside,
             'pending_connection': [site for site, _k in missing if str(site).strip().lower() in waiting]}
+
+
+def avoided_emission_credit_kg(company, year):
+    """kg CO2e (negative) that the approved entries of the company's inventory
+    year take off the total through factors with a negative value — recycling
+    credits for avoided virgin production. 0 when there are none."""
+    from django.db.models import Sum
+    from emissions.models import EmissionEntry
+    if company is None or not year:
+        return 0.0
+    total = (EmissionEntry.objects.filter(company=company, year=year, status='approved',
+                                          emission_factor__factor_kg_co2e__lt=0)
+             .aggregate(t=Sum('calculated_co2e_kg'))['t'])
+    return float(total or 0)
 
 
 def factor_reference_years(company, year):
@@ -2027,17 +2197,43 @@ def uncalculated_notes(answers, year, company=None):
     if open_('K3C8-1'):
         operational = (A.get('D3') or {}).get('boundary_approach') == 'operational_control' \
             if isinstance(A.get('D3'), dict) else False
+        scope12_sites = _scope12_sites(A)
+        scope12_energy = _has_scope12_energy(A)
+        site_of = _facility_lookup(company) if company else (lambda _n: None)
         for row in _rows(A.get('K3C8-1')):
             kv = str(row.get('asset_type') or '')
             has_kwh = _true(row.get('owner_declaration')) and _number(row.get('declaration_kwh'))
-            if row.get('in_scope12') == 'included':
+            counted = _leased_already_counted(row, scope12_sites)
+            if counted == 'facility':
+                # The answer said "not in Scope 1/2", but the facility it names is:
+                # the inventory's own entries decide, so it is not counted twice.
+                site = str(row.get('facility')).strip()
+                note('K3C8-1', f'{kv} ({site}): {site} tesisinin enerjisi Kapsam 1/2\'de zaten raporlandığı için '
+                               'Kategori 8\'de tekrar sayılmadı (cevaptaki "Hayır" yerine envanterdeki kayıtlar '
+                               'esas alındı).',
+                     f'{kv} ({site}): not counted again in Category 8 — the energy of {site} is already '
+                     'reported in Scope 1/2 (the inventory\'s own entries were used instead of the "No" answer).',
+                     kind='method')
+                continue
+            if counted == 'declared':
                 # Not a gap: its emissions are in the inventory, in Scope 1/2.
                 note('K3C8-1', f'{kv}: enerjisi Kapsam 1/2\'de (tesis olarak) raporlandığı için Kategori 8\'de '
                                'tekrar sayılmadı.',
                      f'{kv}: not counted again in Category 8 — its energy is already reported in Scope 1/2 '
                      'as one of the sites.', kind='method')
                 continue
-            if operational and 'in_scope12' not in row:
+            linked = str(row.get('facility') or '').strip()
+            if linked and operational and site_of(linked) is not None:
+                # A registered site whose energy is not in Scope 1/2 (yet): counted here
+                # so nothing is lost, and the answer is told where it belongs.
+                note('K3C8-1', f'{kv} ({linked}): kayıtlı tesisinizdir; İşletme Kontrolü yaklaşımında enerjisi '
+                               'Kapsam 1/2\'dedir. Elektriğini Soru 68\'e girin; girildiğinde burada otomatik '
+                               'olarak tekrar sayılmaz.',
+                     f'{kv} ({linked}): a registered site; under Operational Control its energy belongs in '
+                     'Scope 1/2. Enter its electricity in Question 68 — it is then excluded here automatically.',
+                     kind='method')
+            reasons = leased_review_reasons(row, operational, scope12_energy)
+            if 'operational_control' in reasons:
                 # Saved before the question asked it: still counted, but under
                 # Operational Control a leased building the company uses is
                 # normally one of its sites — say so instead of guessing.
@@ -2047,6 +2243,14 @@ def uncalculated_notes(answers, year, company=None):
                      f'{kv}: under Operational Control a leased building you use is normally one of your sites '
                      'with its energy in Scope 2. State in Question 97 whether this asset is already reported in '
                      'Scope 1/2; otherwise it may be counted twice.', kind='method')
+            elif 'scope12_energy' in reasons:
+                note('K3C8-1', f'{kv}: envanteriniz Kapsam 1/2 enerjisi bildiriyor; bu kiralık varlık bir tesise '
+                               'bağlı değil ve Soru 97 yanıtlanmamış. Burada sayılıyor ancak Kapsam 1/2 ile çakışabilir: '
+                               'varlığı kayıtlı bir tesise bağlayın veya Kapsam 1/2\'de olup olmadığını belirtin.',
+                     f'{kv}: your inventory reports Scope 1/2 energy; this leased asset is not linked to a facility '
+                     'and Question 97 was not answered. It is counted here but may overlap with Scope 1/2 — link it '
+                     'to a registered facility or state whether it is already in Scope 1/2 (it may be counted twice).',
+                     kind='method')
             if has_kwh and row.get('declaration_energy') not in ('electricity', 'natural_gas'):
                 note('K3C8-1', f'{kv}: beyan edilen kWh\'nin enerji türü seçilmediği için hesaplanmadı.',
                      f'{kv}: not calculated — the energy type of the declared kWh is missing.')
@@ -2100,6 +2304,15 @@ def uncalculated_notes(answers, year, company=None):
                         'bulunmadığı için hesaplanmadı. Kategori geçerlidir; emisyonu bilinmiyor.',
              f'Franchises ({count} outlets{area_en}): not calculated — the franchisees have no emission data and '
              'there is no approved per-area factor. The category applies; its emissions are not known.')
+    if A.get('K3C14-0') == 'yes':
+        ans = A.get('K3C14-1')
+        given = ans.get('total_tco2e') if isinstance(ans, dict) else None
+        if str(given if given is not None else '').strip() == '':
+            # Franchises are declared, their emissions are not: unknown, not none.
+            note('K3C14-1', 'Franchise işletmeleri beyan edildi ancak toplam emisyon (tCO₂e) girilmedi; '
+                            'hesaplanmadı. Kategori geçerlidir; emisyonu bilinmiyor.',
+                 'Franchises are declared but their total emissions (tCO2e) were not given — not calculated. '
+                 'The category applies; its emissions are not known.')
     if open_('K3C15-1'):
         for row in _rows(A.get('K3C15-1')):
             cls = str(row.get('asset_class') or '')

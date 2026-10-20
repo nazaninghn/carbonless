@@ -748,6 +748,11 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     _note = not_counted_note(not_counted(EmissionEntry.objects.filter(company=company, year=year)), tr) if company else ''
     if _note:
         E.append(Paragraph(_note, S['body_sm']))
+    from .inventory import avoided_credit, avoided_credit_note
+    _credit = (avoided_credit_note(avoided_credit(
+        EmissionEntry.objects.filter(company=company, year=year, status='approved')), tr) if company else '')
+    if _credit:
+        E.append(Paragraph(_credit, S['body_sm']))
     E.append(Spacer(1, 8*mm))
 
     # Total KPI - large centered

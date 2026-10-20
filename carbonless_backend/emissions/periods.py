@@ -51,3 +51,28 @@ def is_invalid_year(year):
 
 def invalid_year_message(lang):
     return INVALID_YEAR_MESSAGE['tr' if lang == 'tr' else 'en']
+
+
+LATEST_QUERY_YEAR = 2100   # a sanity ceiling for a year in a URL, not a business rule
+QUERY_YEAR_MESSAGE = {
+    'en': f'"{{name}}" must be a whole year between {EARLIEST_YEAR} and {LATEST_QUERY_YEAR}.',
+    'tr': f'"{{name}}" {EARLIEST_YEAR} ile {LATEST_QUERY_YEAR} arasında tam bir yıl olmalıdır.',
+}
+
+
+def year_from_query(request, name='year', default=None):
+    """A year given in the query string (?year=2025): `default` when absent, the
+    int when valid, else a 400 (DRF ParseError). Used to reach int() / the ORM
+    unchecked, so ?year=abc or ?year=99999999999 ended in a 500."""
+    from rest_framework.exceptions import ParseError
+    raw = request.query_params.get(name)
+    if raw is None or str(raw).strip() == '':
+        return default
+    try:
+        year = int(str(raw).strip())
+    except (TypeError, ValueError):
+        year = None
+    if year is None or not EARLIEST_YEAR <= year <= LATEST_QUERY_YEAR:
+        lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
+        raise ParseError(QUERY_YEAR_MESSAGE[lang].format(name=name), code=INVALID_YEAR_CODE)
+    return year

@@ -828,7 +828,7 @@ class SubmitStepView(APIView):
             from .facility_sync import sync_facilities, connection_notes
             approver = bool(report.company) and report.company.memberships.filter(
                 user=request.user, is_active=True, role__in=('owner', 'admin', 'manager')).exists()
-            sync_facilities(report.company, data, user=request.user, apply_connection=approver)
+            sync_facilities(report.company, data, user=request.user, apply_connection=approver, report=report)
         before_kg = questionnaire_totals(report)[0]
         entries = sync_step_entries(request.user, report.company, report, step, data)
         # What this answer did to the inventory: the CO2e it added or took
@@ -838,12 +838,20 @@ class SubmitStepView(APIView):
         answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
         # A note also belongs to the answer that decides it (a facility's
         # grid connection, Q24, decides whether its electricity is calculated).
-        step_notes = [n for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
-                      if n['step_id'] == step or step in n.get('related_steps', ())]
+        from .step_entries import recorded_connections
+        with recorded_connections(report):
+            step_notes = [n for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
+                          if n['step_id'] == step or step in n.get('related_steps', ())]
         # A method note (the answer is used, in a separately reported result)
         # is not an uncalculated amount: told apart so it is not shown as one.
         notes = [n['tr' if lang == 'tr' else 'en'] for n in step_notes if n.get('kind') != 'method']
         method_notes = [n['tr' if lang == 'tr' else 'en'] for n in step_notes if n.get('kind') == 'method']
+        # An answer calculated with a negative (recycling credit) factor: say what it does and that
+        # the factor's source is unverified, right where the number appears.
+        if any(float(e.emission_factor.factor_kg_co2e) < 0 for e in entries):
+            from emissions.inventory import avoided_credit_note
+            credit_kg = sum(float(e.calculated_co2e_kg) for e in entries if float(e.emission_factor.factor_kg_co2e) < 0)
+            method_notes.append(avoided_credit_note({'total_kg': credit_kg, 'entries': 1}, lang == 'tr'))
         # A data-entry member's change waits for approval: say so, and give
         # the approved total — the one the dashboard and the reports show.
         pending = any(e.status == 'submitted' for e in entries)
@@ -1312,7 +1320,7 @@ class QuestionnairePDFView(APIView):
             pdf_bytes = generate_questionnaire_report(report, lang, draft=draft)
         except Exception as e:
             logger.error(f'Questionnaire PDF generation failed for report {report_id}: {e}', exc_info=True)
-            return Response({'error': f'PDF generation failed: {e}'}, status=500)
+            return Response({'error': 'PDF generation failed. Please try again or contact support.'}, status=500)
 
         from django.http import HttpResponse
         response = HttpResponse(pdf_bytes, content_type='application/pdf')

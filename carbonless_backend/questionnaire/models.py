@@ -85,6 +85,17 @@ class CarbonReport(models.Model):
     # as if signed again.
     signed_at = models.DateTimeField(null=True, blank=True)
     edited_after_signing_at = models.DateTimeField(null=True, blank=True)
+    # {facility id: grid connection} this inventory was calculated with, kept
+    # for a signed / completed inventory so a later change of the facility's
+    # connection (Settings, admin) cannot move its figures. Filled the moment
+    # a facility's connection is about to change, and when an approver sets it
+    # in this inventory's own Q24. '' = "I don't know". A facility with no key
+    # here has not changed since, so its current connection is the applied one.
+    # Nullable on purpose: instances still running the code from before this
+    # column existed insert reports without it during a rolling deploy, and a
+    # NOT NULL column with no database default would make that insert fail.
+    # None and {} mean the same.
+    applied_grid_connections = models.JSONField(default=dict, blank=True, null=True)
 
     class Meta:
         ordering = ['-created_at']

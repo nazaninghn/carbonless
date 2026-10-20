@@ -5107,8 +5107,8 @@ export const CARBONIQ_QUESTIONS = [
     ],
     systemMessages: {
       selected: {
-        tr: 'Metal geri dönüşümü negatif emisyon üretir (alüminyum: -9.100 kg CO₂e/ton). Bu değer toplam Kapsam 3 emisyonunuzu azaltır.',
-        en: 'Metal recycling produces negative emissions (aluminium: -9,100 kg CO₂e/tonne). This value reduces your total Scope 3 emissions.',
+        tr: 'Metal geri dönüşümü negatif emisyon üretir (alüminyum: -9.100 kg CO₂e/ton). Bu değer toplam Kapsam 3 emisyonunuzu azaltır. Bu faktörlerin kaynağı doğrulanmamıştır; yöntem kararı beklemektedir.',
+        en: 'Metal recycling produces negative emissions (aluminium: -9,100 kg CO₂e/tonne). This value reduces your total Scope 3 emissions. The source of these factors is not verified; the methodology decision is pending.',
       },
     },
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
@@ -5607,6 +5607,12 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'KV-05', label: { tr: 'KV-05 — Kiralık veri merkezi/co-location', en: 'KV-05 — Leased data centre/co-location' } },
         ],
       },
+      // Which of the company's registered sites this asset is, when it is one.
+      // The facility is the asset's identity: if that site's energy is already
+      // in Scope 1/2 of the inventory, Category 8 does not count it again,
+      // whatever the answer below says. Optional: leave empty for an asset
+      // that is not one of your sites (e.g. the landlord operates it).
+      { id: 'facility', type: 'text', optionsFrom: 'facilities', required: false, label: { tr: 'Bu varlık kayıtlı tesislerinizden biri mi? (Tesis)', en: 'Is this one of your registered sites? (Facility)' } },
       // Buildings only — leased equipment (KV-04) has no floor area.
       { id: 'area_m2', type: 'numeric', required: true, conditionalOn: 'asset_type', conditionalOnValue: ['KV-01', 'KV-02', 'KV-03', 'KV-05'], label: { tr: 'Alan (m²)', en: 'Area (m²)' } },
       { id: 'owner_declaration', type: 'boolean', required: true, label: { tr: 'Bina sahibi enerji beyanı var mı?', en: 'Building owner energy declaration available?' } },

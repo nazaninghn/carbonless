@@ -1603,3 +1603,87 @@ class CustomRequestReviewTests(ApprovalNotificationAndDuplicateTests):
         self.assertEqual(res.data['facility'], own.id)
         res = self.client.post('/api/emissions/custom-requests/', {**data, 'facility': other.id}, format='json')
         self.assertEqual(res.status_code, 400)
+
+
+class NegativeFactorReviewTests(TestCase):
+    """Guard, not a methodology decision. Three waste "recycling" factors are
+    negative (avoided production credited against the inventory). Their
+    provenance is unresolved — labelled `defra_2024`, but their reference cites
+    an internal catalogue that is not in the repository — and netting
+    avoided-emissions credits against an inventory is contested practice. Until
+    the owner decides, no further negative factor may enter the catalogue
+    unreviewed, and each existing one must say in its reference that it is
+    negative."""
+
+    REVIEWED = {'wt-01-recycling', 'wt-03-recycling', 'wt-04-recycling'}
+
+    def test_only_the_reviewed_factors_are_negative_and_each_says_so(self):
+        from .seed_data import EMISSION_FACTORS
+        negative = {f['slug']: f for f in EMISSION_FACTORS if f['factor_kg_co2e'] < 0}
+        self.assertEqual(set(negative), self.REVIEWED,
+                         'A negative emission factor needs a methodology review before it is added.')
+        for slug, f in negative.items():
+            self.assertIn('negative', f['reference'].lower(), slug)
+
+
+class YearQueryParameterTests(TestCase):
+    """?year=abc (or 99999999999) reached int() / the ORM unchecked and ended
+    in a 500; every endpoint that takes a year now answers 400 with a message,
+    and a valid or absent year behaves as before."""
+
+    ENDPOINTS = [
+        ('/api/emissions/entries/', 'year'),
+        ('/api/emissions/report/', 'year'),
+        ('/api/emissions/export-csv/', 'year'),
+        ('/api/emissions/export-excel/', 'year'),
+        ('/api/emissions/by-facility/', 'year'),
+        ('/api/emissions/comparison/', 'year1'),
+        ('/api/emissions/comparison/', 'year2'),
+    ]
+
+    def setUp(self):
+        self.user = User.objects.create_user('yearuser', 'year@test.com', 'testpass123')
+        from companies.models import Company, CompanyMembership
+        company = Company.objects.create(
+            legal_entity_name='Year Co', tax_number='321',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            main_activity_description='Test', number_of_employees='1-10',
+            annual_turnover_range='<1M', number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(company=company, user=self.user, role='owner')
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+    def test_a_bad_year_is_a_400_with_a_message_not_a_500(self):
+        for url, name in self.ENDPOINTS:
+            for bad in ('abc', '2025.5', '99999999999', '1800', '-1'):
+                res = self.client.get(f'{url}?{name}={bad}')
+                self.assertEqual(res.status_code, 400, f'{url}?{name}={bad} -> {res.status_code}')
+                self.assertIn(name, str(res.data['detail']), f'{url}?{name}={bad}')
+
+    def test_the_message_follows_the_language(self):
+        res = self.client.get('/api/emissions/export-csv/?year=abc&lang=tr')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('tam bir yıl', str(res.data['detail']))
+
+    def test_a_valid_or_absent_year_still_works(self):
+        for url, name in self.ENDPOINTS:
+            if url.endswith('/report/'):
+                continue            # builds a PDF; covered by the report tests
+            self.assertEqual(self.client.get(url).status_code, 200, url)
+            self.assertEqual(self.client.get(f'{url}?{name}=2025').status_code, 200, f'{url}?{name}=2025')
+
+    def test_the_pdf_endpoint_does_not_leak_the_exception_text(self):
+        from unittest import mock
+        with mock.patch('emissions.report_pdf.generate_report', side_effect=RuntimeError('secret internals')):
+            res = self.client.get('/api/emissions/report/?year=2025')
+        self.assertEqual(res.status_code, 500)
+        self.assertNotIn('secret internals', str(res.data))
+
+    def test_no_root_level_script_is_collected_as_a_test(self):
+        """`manage.py test` imports every test*.py under the project root. A
+        script there ran against the real dev database and the network at
+        import time (it wrote a token row); manual scripts must not match."""
+        from pathlib import Path
+        from django.conf import settings
+        self.assertEqual(sorted(p.name for p in Path(settings.BASE_DIR).glob('test*.py')), [])

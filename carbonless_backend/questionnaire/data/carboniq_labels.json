@@ -4982,6 +4982,13 @@
           }
         }
       },
+      "facility": {
+        "label": {
+          "tr": "Bu varlık kayıtlı tesislerinizden biri mi? (Tesis)",
+          "en": "Is this one of your registered sites? (Facility)"
+        },
+        "options": null
+      },
       "area_m2": {
         "label": {
           "tr": "Alan (m²)",

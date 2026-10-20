@@ -78,7 +78,7 @@ class Command(BaseCommand):
         from questionnaire.models import CarbonReport, ReportStep
         from questionnaire.step_entries import (
             ENTRY_STEPS, activities_for_report, _entry_specs, _step_entries, _backfill_detail,
-            _value, _q4, _step_rows, _facility_lookup, _row_key, _entry_key)
+            _value, _q4, _step_rows, _facility_lookup, _row_key, _entry_key, recorded_connections)
         checked = split = 0
         seen = set()
         for report in CarbonReport.objects.exclude(company=None).exclude(reporting_year=None).order_by('-updated_at'):
@@ -89,10 +89,14 @@ class Command(BaseCommand):
             answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
             A = {k: _value(v) for k, v in answers.items()}
             year, company = report.reporting_year, report.company
-            groups = activities_for_report(answers, year, company)
-            facility_of = _facility_lookup(company)
+            # A signed / completed inventory is split with the connections it was applied with.
+            with recorded_connections(report):
+                groups = activities_for_report(answers, year, company)
+                facility_of = _facility_lookup(company)
+                step_rows = {step: _step_rows(step, _entry_specs(step, groups.get(step, []), A, year, company),
+                                              facility_of) for step in ENTRY_STEPS}
             for step in ENTRY_STEPS:
-                rows = _step_rows(step, _entry_specs(step, groups.get(step, []), A, year, company), facility_of)
+                rows = step_rows[step]
                 entries = list(_step_entries(company, year, step))
                 if not entries:
                     continue

@@ -62,6 +62,33 @@ class Company(models.Model):
         verbose_name_plural = "Companies"
 
 
+class FacilityQuerySet(models.QuerySet):
+    """`save()` is covered by a pre_save receiver (questionnaire.signals), but
+    QuerySet.update() / bulk_update() skip signals. A facility's grid connection
+    decides the Turkish electricity factor of every inventory that uses it, and
+    signed / completed inventories keep the connection they were applied with
+    (CarbonReport.applied_grid_connections) — so a bulk write must record the
+    connection in force first, exactly as save() does."""
+
+    def update(self, **kwargs):
+        if 'grid_connection' in kwargs:
+            self._freeze_locked_inventories(lambda facility_pk, old: kwargs['grid_connection'])
+        return super().update(**kwargs)
+
+    def bulk_update(self, objs, fields, batch_size=None):
+        objs = list(objs)
+        if 'grid_connection' in fields:
+            wanted = {o.pk: o.grid_connection for o in objs if o.pk}
+            self.model.objects.filter(pk__in=wanted)._freeze_locked_inventories(lambda facility_pk, old: wanted[facility_pk])
+        return super().bulk_update(objs, fields, batch_size)
+
+    def _freeze_locked_inventories(self, new_value_of):
+        from questionnaire.signals import freeze_applied_connection
+        for pk, company_id, old in list(self.values_list('pk', 'company_id', 'grid_connection')):
+            if old != new_value_of(pk, old):
+                freeze_applied_connection(company_id, pk, old)
+
+
 class Facility(models.Model):
     """Individual facility/site belonging to a company"""
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='facilities')
@@ -81,6 +108,8 @@ class Facility(models.Model):
     grid_connection = models.CharField(max_length=20, choices=GRID_CONNECTION_CHOICES, blank=True, default='')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = FacilityQuerySet.as_manager()
 
     def __str__(self):
         return f"{self.name} ({self.company.legal_entity_name})"

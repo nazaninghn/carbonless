@@ -23,6 +23,7 @@ inventory report is an assurance document, so a blank has to read as a blank.
 """
 import io
 import os
+import re
 from datetime import datetime
 from html import escape
 
@@ -385,6 +386,70 @@ def iso_category_for(scope, category):
     if scope == 'scope2':
         return CAT_II
     return ISO_CATEGORY_OF.get(('scope3', category), CAT_VI)
+
+
+# The ISO category a questionnaire step's answer reports under, for the answers
+# that are kept but not calculated: Scope 1 steps are I, Scope 2 steps II, and
+# each GHG Protocol Scope 3 category (K3C<n>-…) its ISO category as above.
+_ISO_CATEGORY_OF_K3C = {1: CAT_IV, 2: CAT_IV, 3: CAT_VI, 4: CAT_III, 5: CAT_IV, 6: CAT_III, 7: CAT_III,
+                        8: CAT_IV, 9: CAT_III, 10: CAT_V, 11: CAT_V, 12: CAT_V, 13: CAT_VI, 14: CAT_VI,
+                        15: CAT_VI}
+_ISO_CATEGORY_OF_STEP = {'K3C7-1': CAT_IV}   # the waste-per-employee estimate, not commuting
+
+
+def iso_category_of_step(step_id):
+    """The ISO 14064-1 category (1-6) a questionnaire step reports under, or None."""
+    step_id = str(step_id or '')
+    if step_id in _ISO_CATEGORY_OF_STEP:
+        return _ISO_CATEGORY_OF_STEP[step_id]
+    if step_id.startswith('3'):
+        return CAT_I
+    if step_id.startswith('4'):
+        return CAT_II
+    m = re.match(r'K3C(\d+)-', step_id)
+    return _ISO_CATEGORY_OF_K3C.get(int(m.group(1))) if m else None
+
+
+def declared_zero_categories(report, by_category):
+    """ISO categories with nothing quantified because the organisation declared a
+    source in them and reported its emissions as exactly zero (a franchise
+    network that reports 0 tCO2e). That is a result, not an absence: the report
+    says the source exists and its emissions are zero."""
+    from chat.local_parser import parse_localized_number
+    from .step_entries import _value
+    if report is None:
+        return set()
+    A = {k: _value(v) for k, v in _answers(report).items()}
+    total = A.get('K3C14-1')
+    if A.get('K3C14-0') != 'yes' or not isinstance(total, dict) or by_category.get(CAT_VI):
+        return set()
+    raw = total.get('total_tco2e')
+    try:
+        is_zero = raw is not None and str(raw).strip() != '' and parse_localized_number(str(raw).strip()) == 0
+    except (ValueError, TypeError):
+        is_zero = False
+    return {CAT_VI} if is_zero else set()
+
+
+def declared_unquantified_categories(report, by_category):
+    """ISO categories with nothing quantified although the inventory declares a
+    source in them that could not be calculated (an outlet count with no
+    emission data, a use phase without an LCA value, …). Such a category is
+    not empty: its emissions are unknown, and the report must say so rather
+    than that no source was identified."""
+    from .step_entries import recorded_connections, uncalculated_notes
+    if report is None or report.company is None:
+        return set()
+    with recorded_connections(report):
+        notes = uncalculated_notes(_answers(report), report.reporting_year or datetime.now().year, report.company)
+    cats = set()
+    for n in notes:
+        if n.get('kind') == 'method':     # used, in a separately reported result: not a gap
+            continue
+        cat = iso_category_of_step(n.get('step_id'))
+        if cat and not by_category.get(cat):
+            cats.add(cat)
+    return cats
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -985,6 +1050,10 @@ def _gather(report, lang):
         # Market-based Scope 2: reported next to the location-based Category
         # II figure, never added to it.
         'scope2_market': _scope2_market(report),
+        # Categories with nothing quantified although a source was declared in
+        # them: reported as "emissions unknown", not as "no source identified".
+        'declared_unquantified': declared_unquantified_categories(report, by_category),
+        'declared_zero': declared_zero_categories(report, by_category),
     }
 
 
@@ -997,10 +1066,11 @@ def _sites_without_grid(report):
 
 
 def _scope2_market(report):
-    from .step_entries import scope2_market_based
+    from .step_entries import recorded_connections, scope2_market_based
     if report is None or report.company is None or not report.reporting_year:
         return None
-    return scope2_market_based(_answers(report), report.reporting_year, report.company)
+    with recorded_connections(report):
+        return scope2_market_based(_answers(report), report.reporting_year, report.company)
 
 
 _MARKET_BASIS = {
@@ -1059,7 +1129,7 @@ def _country_label(code, lang):
 
 
 def _sites_pending_connection(report):
-    from .step_entries import _value, sites_pending_connection
+    from .step_entries import _value, recorded_connections, sites_pending_connection
     if report is None or report.company is None:
         return []
     from .step_entries import sites_on_superseded_grid
@@ -1067,8 +1137,9 @@ def _sites_pending_connection(report):
     # Still counted with the earlier single Turkey factor: in the figures,
     # so not "pending" (disclosed as a method note instead).
     counted = sites_on_superseded_grid(report.company, report.reporting_year)
-    return [(n, k) for n, k in sites_pending_connection(A, report.company, report.reporting_year)
-            if n not in counted]
+    with recorded_connections(report):
+        pending = sites_pending_connection(A, report.company, report.reporting_year)
+    return [(n, k) for n, k in pending if n not in counted]
 
 
 def _not_calculated_sites_note(D, lang, tr):
@@ -2644,7 +2715,38 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     # scope — a verifier has to be told it was considered and found to have
     # no identified sources, which is a fact about this inventory and can be
     # read straight off it.
-    empty = [c for c in range(1, 7) if not D['by_category'].get(c)]
+    declared = D.get('declared_unquantified', set())
+    zero = D.get('declared_zero', set())
+    empty = [c for c in range(1, 7) if not D['by_category'].get(c) and c not in declared and c not in zero]
+    # Declared and reported as exactly zero: a result, not an absence.
+    zeros = [c for c in range(1, 7) if c in zero]
+    if zeros:
+        names = ', '.join(f'{ROMAN[c]} ({ISO_CATEGORY_NAMES[c][lang]})' for c in zeros)
+        plural = len(zeros) > 1
+        E.append(Spacer(1, 2*mm))
+        E.append(Paragraph(
+            (f'Sources were declared under {"Categories" if plural else "Category"} {names} and their '
+             f'emissions were reported as zero for this reporting period.')
+            if lang == 'en' else
+            (f'{names} kategorisinde/kategorilerinde kaynaklar beyan edilmiş ve bu raporlama dönemi için '
+             f'emisyonları sıfır olarak bildirilmiştir.'), S['body']))
+    # Declared but not quantified: not "no source" — the emissions are unknown.
+    unknown = [c for c in range(1, 7) if c in declared]
+    if unknown:
+        names = ', '.join(f'{ROMAN[c]} ({ISO_CATEGORY_NAMES[c][lang]})' for c in unknown)
+        plural = len(unknown) > 1
+        E.append(Spacer(1, 2*mm))
+        E.append(Paragraph(
+            (f'Sources were declared under {"Categories" if plural else "Category"} {names}, but their '
+             f'emissions could not be quantified in this reporting period (see the assumptions and '
+             f'limitations). {"These categories apply" if plural else "This category applies"}; '
+             f'{"their emissions are" if plural else "its emissions are"} unknown and '
+             f'{"are" if plural else "is"} not reported as zero.')
+            if lang == 'en' else
+            (f'{names} kategorisinde/kategorilerinde kaynaklar beyan edilmiştir, ancak bu raporlama '
+             f'döneminde emisyonları nicelendirilememiştir (bkz. varsayımlar ve sınırlamalar). '
+             f'Kategori geçerlidir; emisyonu bilinmemektedir ve sıfır olarak raporlanmamıştır.'),
+            S['body']))
     if empty:
         names = ', '.join(f'{ROMAN[c]} ({ISO_CATEGORY_NAMES[c][lang]})' for c in empty)
         E.append(Spacer(1, 2*mm))
@@ -2754,8 +2856,11 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     # Assumptions the answers themselves imply (estimates, defaults) — the
     # questions told the user these would be documented here.
     from .assumptions import derive_assumptions
+    from .step_entries import recorded_connections
     # (the exclusions are already listed in 3.4)
-    recorded = [x for x in derive_assumptions(A, lang, report.reporting_year, report.company) if x['step_id'] != '6A-1a']
+    with recorded_connections(report):
+        recorded = [x for x in derive_assumptions(A, lang, report.reporting_year, report.company)
+                    if x['step_id'] != '6A-1a']
     if recorded:
         E.append(Paragraph(
             'Assumptions recorded while the inventory was compiled:' if lang == 'en'

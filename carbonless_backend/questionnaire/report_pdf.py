@@ -117,9 +117,10 @@ def _scope2_method_text(report, lang):
     text = (_label(SCOPE2_METHOD_LABELS, report.scope2_method, lang)
             or (report.scope2_method or '').replace('_', ' ').title() or '—')
     try:
-        from .step_entries import scope2_market_based
+        from .step_entries import recorded_connections, scope2_market_based
         answers = dict(report.steps.values_list('step_id', 'answer'))
-        m = scope2_market_based(answers, report.reporting_year, report.company) if report.company_id else None
+        with recorded_connections(report):
+            m = scope2_market_based(answers, report.reporting_year, report.company) if report.company_id else None
     except Exception:
         logger.exception('market-based Scope 2 for the report failed')
         m = None

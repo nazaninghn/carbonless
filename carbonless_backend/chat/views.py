@@ -324,6 +324,11 @@ def _get_emission_data_context(user):
             f'  Scope 3 (Other Indirect):  {s3/1000:.3f} tCO2e  ({s3/total_kg*100:.1f}%)',
             f'  Total entries logged: {entry_count}',
         ]
+        from emissions.inventory import avoided_credit
+        credit = avoided_credit(entries)
+        if credit:
+            lines.append(f'NOTE: the total includes {credit["total_kg"]/1000:.3f} tCO2e of recycling credit from negative '
+                         f'factors whose source is unverified (methodology decision pending); say so when giving this total.')
         if cat_lines:
             lines += ['', 'TOP CATEGORIES:'] + cat_lines
         if monthly:

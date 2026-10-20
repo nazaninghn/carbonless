@@ -2938,3 +2938,701 @@ class FacilityAttributionTests(StepEntriesTests):
         self.assertEqual(len(entries), 1)
         self.assertIsNone(entries[0].facility)
         self.assertAlmostEqual(float(entries[0].calculated_co2e_kg), 400.0, places=3)
+
+
+class LockedInventoryGridConnectionTests(TestCase):
+    """A facility's grid connection is changed in Settings: a draft inventory
+    follows (as before), a signed / completed one is history — it keeps its
+    figures, the change is named in the company history, and its numbers move
+    only when someone edits Q24 in that inventory (flagged as edited after
+    signing)."""
+
+    _factor, _step, _entries = StepEntriesTests._factor, StepEntriesTests._step, StepEntriesTests._entries
+    SIGN = {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'}
+    DISTRIBUTION = {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}}
+    TRANSMISSION = {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}}
+
+    def setUp(self):
+        StepEntriesTests.setUp(self)          # Turkish company, inventory 2025
+        self._step('2A-2', self.DISTRIBUTION)
+        self._step('4A-1', {'1': '1000 kWh'})
+
+    def _rows(self):
+        return sorted((e.emission_factor.slug, round(float(e.quantity), 3), round(float(e.calculated_co2e_kg), 3))
+                      for e in self._entries() if e.description.startswith('Questionnaire step 4A-1'))
+
+    def _sign(self):
+        self._step('7C-2', self.SIGN)
+        CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED)
+        self.report.refresh_from_db()
+
+    def _settings(self, connection):
+        from companies.models import Facility
+        gebze = Facility.objects.get(company=self.company, name='Gebze')
+        r = self.client.patch(f'/api/companies/facilities/{gebze.pk}/', {'grid_connection': connection},
+                              format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+
+    def _kept_rows(self):
+        from accounts.models import ActivityLog
+        return list(ActivityLog.objects.filter(action='facility_connection_kept'))
+
+    def _recorded(self):
+        answer = self.report.steps.get(step_id='2A-2').answer
+        return answer.get('answer', answer)['1']['grid_connection']
+
+    def test_settings_change_does_not_recalculate_a_signed_inventory(self):
+        from companies.models import Facility
+        self._sign()
+        before = self._rows()
+        self.assertEqual(before, [('turkey-grid-distribution', 1000.0, 469.0)])
+        self._settings('transmission')
+        self.assertEqual(Facility.objects.get(company=self.company, name='Gebze').grid_connection, 'transmission')
+        self.assertEqual(self._rows(), before)                    # figures untouched
+        self.assertEqual(self._recorded(), 'distribution')        # answer untouched
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.signed_at)
+        self.assertIsNone(self.report.edited_after_signing_at)    # nothing in it changed
+
+    def test_the_kept_inventory_is_named_in_the_company_history(self):
+        self._sign()
+        self._settings('transmission')
+        [row] = self._kept_rows()
+        self.assertEqual((row.target_type, row.target_id), ('CarbonReport', str(self.report.pk)))
+        self.assertEqual(row.metadata['company_id'], self.company.pk)
+        self.assertEqual((row.metadata['facility'], row.metadata['new_connection'], row.metadata['reporting_year']),
+                         ('Gebze', 'transmission', 2025))
+        self.assertIn('kept its recorded connection', row.metadata['detail_en'])
+        self.assertIn('korudu', row.metadata['detail_tr'])
+        res = self.client.get('/api/accounts/history/?lang=en')
+        self.assertEqual(res.status_code, 200)
+        shown = [r for r in res.data if r['action'] == 'facility_connection_kept']
+        self.assertEqual(len(shown), 1)
+        self.assertIn('kept its recorded connection', shown[0]['detail'])
+
+    def test_a_draft_inventory_still_follows_settings(self):
+        self._settings('transmission')
+        self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
+        self.assertEqual(self._recorded(), 'transmission')
+        self.assertEqual(self._kept_rows(), [])
+
+    def test_a_signed_inventory_of_another_year_is_kept_while_the_draft_follows(self):
+        from django.utils import timezone
+        old = CarbonReport.objects.create(
+            company=self.company, created_by=self.user, reporting_year=2024,
+            status=CarbonReport.Status.COMPLETED, signed_at=timezone.now())
+        ReportStep.objects.create(report=old, step_id='2A-2', answer={'answer': self.DISTRIBUTION})
+        self._settings('transmission')
+        # the 2025 draft follows Settings ...
+        self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
+        # ... the signed 2024 inventory keeps what it recorded, and is named in the history
+        self.assertEqual(old.steps.get(step_id='2A-2').answer['answer']['1']['grid_connection'], 'distribution')
+        [row] = self._kept_rows()
+        self.assertEqual((row.target_id, row.metadata['reporting_year']), (str(old.pk), 2024))
+
+    def test_later_edit_of_another_answer_keeps_the_recorded_connection_and_is_flagged(self):
+        self._sign()
+        self._settings('transmission')
+        self._step('4A-1', {'1': '2000 kWh'})
+        self.assertEqual(self._rows(), [('turkey-grid-distribution', 2000.0, 938.0)])   # not 872 (transmission)
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.edited_after_signing_at)
+
+    def test_editing_q24_in_the_signed_inventory_applies_the_new_connection_and_flags_it(self):
+        self._sign()
+        self._settings('transmission')
+        self._step('2A-2', self.TRANSMISSION)
+        self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.edited_after_signing_at)
+
+    def test_the_market_based_result_of_a_signed_inventory_uses_its_recorded_connection(self):
+        from .iso_report_pdf import _scope2_market
+        self._sign()
+        self._settings('transmission')
+        [row] = _scope2_market(self.report)['rows']
+        self.assertEqual(round(row['factor'], 3), 0.469)          # the recorded distribution, not 0.436
+
+
+class ISOReportDeclaredButUncalculatedCategoryTests(TestCase):
+    """A category whose declared sources could not be calculated is not
+    "empty": the ISO report must say its emissions are unknown, not that no
+    source was identified (which it said whenever the category's total was 0)."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user('isogap', 'isogap@test.com', 'pass12345')
+        self.company = Company.objects.create(
+            legal_entity_name='Gap Co', tax_number='77',
+            country_of_headquarters='TR', countries_of_operation='TR',
+            nace_code='', main_activity_description='x',
+            number_of_employees='1-10', annual_turnover_range='x',
+            number_of_facilities=1,
+        )
+        CompanyMembership.objects.create(user=self.owner, company=self.company, role='owner')
+        self.report = CarbonReport.objects.create(
+            company=self.company, created_by=self.owner, reporting_year=2025,
+            title='Gap', status=CarbonReport.Status.COMPLETED)
+
+    def _text(self, lang='en'):
+        import io
+        from pypdf import PdfReader
+        from .iso_report_pdf import generate_iso_report
+        pdf = generate_iso_report(self.report, lang=lang)
+        return ' '.join(' '.join(p.extract_text() for p in PdfReader(io.BytesIO(pdf)).pages).split())
+
+    def _declare_franchises(self):
+        ReportStep.objects.create(report=self.report, step_id='K3C14-0', answer={'answer': 'no'})
+        ReportStep.objects.create(report=self.report, step_id='K3C14-2',
+                                  answer={'answer': {'franchise_count': '12', 'total_area_m2': '900'}})
+
+    def _no_source_sentence(self, text):
+        import re
+        m = re.search(r'No greenhouse gas sources were identified or declared under (?:Category|Categories) (.*?), so no',
+                      text)
+        return m.group(1) if m else ''
+
+    def test_declared_franchises_are_not_reported_as_no_source(self):
+        self._declare_franchises()
+        text = self._text('en')
+        self.assertIn('Sources were declared under Category VI', text)
+        self.assertIn('not reported as zero', text)
+        listed = self._no_source_sentence(text)
+        self.assertIn('I (', listed)            # the genuinely empty categories are still listed
+        self.assertNotIn('VI (', listed)        # ... but not Category VI
+
+    def test_declared_franchises_in_turkish(self):
+        self._declare_franchises()
+        text = self._text('tr')
+        self.assertIn('kaynaklar beyan edilmiştir', text)
+        self.assertIn('sıfır olarak raporlanmamıştır', text)
+
+    def test_a_category_with_nothing_declared_is_still_reported_as_having_no_source(self):
+        text = self._text('en')
+        self.assertNotIn('Sources were declared under', text)
+        self.assertIn('VI (', self._no_source_sentence(text))
+
+    def test_declared_unquantified_categories(self):
+        from .iso_report_pdf import CAT_VI, declared_unquantified_categories
+        self.assertEqual(declared_unquantified_categories(self.report, {}), set())
+        self._declare_franchises()
+        self.assertEqual(declared_unquantified_categories(self.report, {}), {CAT_VI})
+        # once something is quantified in the category it is no longer "unknown"
+        self.assertEqual(declared_unquantified_categories(self.report, {CAT_VI: 5.0}), set())
+
+    def test_step_to_iso_category(self):
+        from .iso_report_pdf import CAT_I, CAT_II, CAT_III, CAT_IV, CAT_V, CAT_VI, iso_category_of_step
+        got = {s: iso_category_of_step(s) for s in
+               ('3A-5', '3B-7', '4A-1', 'K3C4-2', 'K3C6-2', 'K3C1-2', 'K3C5-2', 'K3C7-1', 'K3C10-1',
+                'K3C11-1', 'K3C12-1', 'K3C14-2', 'K3C15-1', '7C-2', '')}
+        self.assertEqual(got, {'3A-5': CAT_I, '3B-7': CAT_I, '4A-1': CAT_II, 'K3C4-2': CAT_III,
+                               'K3C6-2': CAT_III, 'K3C1-2': CAT_IV, 'K3C5-2': CAT_IV, 'K3C7-1': CAT_IV,
+                               'K3C10-1': CAT_V, 'K3C11-1': CAT_V, 'K3C12-1': CAT_V, 'K3C14-2': CAT_VI,
+                               'K3C15-1': CAT_VI, '7C-2': None, '': None})
+
+
+    # The three states of a category with nothing quantified -----------------
+    # absent (nothing declared), unknown (declared, not calculated), zero (declared, reported as 0).
+
+    def _declare_franchises_yes(self, **total):
+        ReportStep.objects.create(report=self.report, step_id='K3C14-0', answer={'answer': 'yes'})
+        if total:
+            ReportStep.objects.create(report=self.report, step_id='K3C14-1', answer={'answer': total})
+
+    def test_zero_reported_franchises_are_a_result_not_an_absence_in_english(self):
+        self._declare_franchises_yes(total_tco2e='0', franchise_count='5', reporting_count='5')
+        text = self._text('en')
+        self.assertIn('Sources were declared under Category VI', text)
+        self.assertIn('reported as zero', text)
+        self.assertNotIn('not reported as zero', text)               # that is the "unknown" sentence
+        self.assertNotIn('VI (', self._no_source_sentence(text))     # not listed as having no source
+        self.assertIn('I (', self._no_source_sentence(text))         # the genuinely absent ones still are
+
+    def test_zero_reported_franchises_are_a_result_not_an_absence_in_turkish(self):
+        self._declare_franchises_yes(total_tco2e='0', franchise_count='5', reporting_count='5')
+        text = self._text('tr')
+        self.assertIn('emisyonları sıfır olarak bildirilmiştir', text)
+        self.assertNotIn('sıfır olarak raporlanmamıştır', text)       # not the "unknown" sentence
+        self.assertNotIn('VI (', self._tr_no_source_names(text))
+
+    def test_declared_franchises_without_a_total_are_unknown_in_both_languages(self):
+        self._declare_franchises_yes()                                # "yes", and no total given
+        en, tr = self._text('en'), self._text('tr')
+        self.assertIn('Sources were declared under Category VI', en)
+        self.assertIn('not reported as zero', en)
+        self.assertIn('sıfır olarak raporlanmamıştır', tr)
+        self.assertNotIn('VI (', self._no_source_sentence(en))
+
+    def test_a_reported_non_zero_total_is_quantified_not_described_as_unknown_or_absent(self):
+        self._declare_franchises_yes(total_tco2e='12', franchise_count='5', reporting_count='5')
+        from .iso_report_pdf import declared_unquantified_categories, declared_zero_categories
+        self.assertEqual(declared_zero_categories(self.report, {}), set())
+        self.assertEqual(declared_unquantified_categories(self.report, {}), set())
+
+    def test_genuinely_absent_sources_in_turkish(self):
+        text = self._text('tr')
+        self.assertNotIn('kaynaklar beyan edilmiştir', text)
+        self.assertNotIn('sıfır olarak bildirilmiştir', text)
+        self.assertIn('herhangi bir sera gazı kaynağı belirlenmemiş veya beyan edilmemiştir', text)
+        self.assertIn('VI (', self._tr_no_source_names(text))
+
+    def _tr_no_source_names(self, text):
+        """The categories listed in the "no source was identified" sentence."""
+        idx = text.find(' kategorisinde/kategorilerinde herhangi bir sera gazı kaynağı')
+        if idx < 0:
+            return ''
+        before = text[:idx]
+        return before[before.rfind('. ') + 2:]
+
+    def test_zero_wording_only_when_the_total_is_exactly_zero(self):
+        from .iso_report_pdf import CAT_VI, declared_zero_categories
+        self._declare_franchises_yes(total_tco2e='0')
+        self.assertEqual(declared_zero_categories(self.report, {}), {CAT_VI})
+        self.assertEqual(declared_zero_categories(self.report, {CAT_VI: 3.0}), set())   # quantified elsewhere
+
+
+class LockedInventoryProposalAndLegacyTests(TestCase):
+    """The two edge cases of a signed / completed inventory:
+    1. a data-entry member's grid-connection proposal (nobody has accepted it)
+       never reaches an approved calculation, a report or a market-based result;
+    2. an inventory from before connections were recorded (no connection in
+       its answers, an unknown one, no snapshot yet) keeps its figures when
+       the facility's connection is changed — by Settings, an approver or
+       code — and says so in the change history."""
+
+    # PendingChangeTests' company, owner, data-entry member, clients and helpers.
+    setUp = PendingChangeTests.setUp
+    _save, _q24, _factors = PendingChangeTests._save, PendingChangeTests._q24, PendingChangeTests._factors
+    SIGN = {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'}
+
+    def _distinct_factors(self):
+        from emissions.models import EmissionFactor
+        EmissionFactor.objects.filter(slug='turkey-grid-distribution').update(factor_kg_co2e=0.469)
+        EmissionFactor.objects.filter(slug='turkey-grid-transmission').update(factor_kg_co2e=0.436)
+
+    def _sign(self):
+        r = self.c_owner.patch(f'/api/questionnaire/{self.report.id}/step/',
+                               {'step': '7C-2', 'data': {'answer': self.SIGN}, 'language': 'en'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED)
+
+    def _gebze(self):
+        from companies.models import Facility
+        return Facility.objects.get(company=self.company, name='Gebze')
+
+    def _signed_inventory(self, connection='distribution'):
+        row = {'name': 'Gebze', 'country': 'TR'}
+        if connection is not None:
+            row['grid_connection'] = connection
+        self._q24(self.c_owner, {'1': row})
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        self._sign()
+
+    def _market_factor(self):
+        from .iso_report_pdf import _scope2_market
+        self.report.refresh_from_db()
+        [row] = _scope2_market(self.report)['rows']
+        return round(row['factor'], 3)
+
+    def _applied(self):
+        self.report.refresh_from_db()
+        return self.report.applied_grid_connections
+
+    def _history(self, action):
+        from accounts.models import ActivityLog
+        return list(ActivityLog.objects.filter(action=action))
+
+    # 1 — proposals ---------------------------------------------------------
+
+    def test_a_proposal_in_a_signed_inventory_changes_no_approved_calculation_or_report(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        self.assertEqual(self._gebze().grid_connection, 'distribution')              # not applied
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])   # nothing waiting
+        self.assertEqual(self._market_factor(), 0.469)                               # reports read the applied one
+        self.assertEqual(self._history('facility_connection_kept'), [])
+
+    def test_a_proposal_survives_a_settings_change_without_moving_the_inventory(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        # an approver sets a different value than the one proposed
+        r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': ''}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        self.assertEqual(self._market_factor(), 0.469)
+        self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})
+
+    def test_an_accepted_proposal_is_applied_to_the_inventory_it_was_made_in(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        gebze = self._gebze()
+        r = self.c_owner.post(f'/api/companies/facilities/{gebze.pk}/connection-decision/',
+                              {'decision': 'approve'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-transmission', 'approved')])
+        self.assertEqual(self._market_factor(), 0.436)
+        self.assertEqual(self._applied(), {str(gebze.pk): 'transmission'})
+        self.assertIsNotNone(self.report.edited_after_signing_at)                    # flagged by the edit itself
+
+    def test_a_declined_proposal_is_put_back_to_what_was_applied(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        gebze = self._gebze()
+        r = self.c_owner.post(f'/api/companies/facilities/{gebze.pk}/connection-decision/',
+                              {'decision': 'reject'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        answer = ReportStep.objects.get(report=self.report, step_id='2A-2').answer
+        self.assertEqual(answer.get('answer', answer)['1']['grid_connection'], 'distribution')
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        data = self.c_owner.get('/api/companies/facilities/').data
+        self.assertEqual({f['name']: f['proposed_grid_connection'] for f in data.get('results', data)},
+                         {'Gebze': None})                                            # does not come back
+
+    def test_an_approvers_own_edit_in_the_signed_inventory_is_applied_even_if_settings_already_match(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': 'transmission'},
+                               format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])   # kept
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-transmission', 'approved')])   # the explicit edit
+        self.assertEqual(self._applied(), {str(self._gebze().pk): 'transmission'})
+
+    # 2 — legacy inventories ------------------------------------------------
+
+    def test_a_legacy_inventory_calculated_with_the_old_connection_is_not_moved_by_settings(self):
+        """The facility was on 'distribution' when the inventory was signed (the
+        answer says nothing); Settings changes it afterwards."""
+        self._distinct_factors()
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        # an inventory from before connections were recorded: the row says nothing
+        step = ReportStep.objects.get(report=self.report, step_id='2A-2')
+        answer = step.answer.get('answer', step.answer)
+        answer['1'].pop('grid_connection')
+        step.save(update_fields=['answer'])
+        self._sign()
+        self.assertEqual(self._applied(), {})              # no snapshot yet: nothing has changed
+        before = self._factors()
+        r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': 'transmission'},
+                               format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._factors(), before)
+        self.assertEqual(self._market_factor(), 0.469)
+        self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})   # the one in force before
+        [row] = self._history('facility_connection_kept')
+        self.assertEqual(row.metadata['new_connection'], 'transmission')
+
+    def test_an_unknown_connection_stays_pending_in_a_signed_inventory_until_it_is_edited_there(self):
+        self._distinct_factors()
+        self._signed_inventory('unknown')                  # electricity waits: no factor
+        self.assertEqual(self._factors(), [])
+        r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': 'distribution'},
+                               format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._factors(), [])              # still pending: history is not filled in silently
+        self.assertEqual(self._applied(), {str(self._gebze().pk): ''})
+        self.assertEqual(len(self._history('facility_connection_kept')), 1)
+        # an approver states it in that inventory: now it is calculated, and flagged
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.edited_after_signing_at)
+
+    def test_a_null_snapshot_from_older_code_is_the_same_as_an_empty_one(self):
+        """The column is nullable so instances running the code from before it
+        existed can still create reports during a rolling deploy; such a row
+        holds NULL, and must behave exactly like {}."""
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        CarbonReport.objects.filter(pk=self.report.pk).update(applied_grid_connections=None)
+        self.assertEqual(self._market_factor(), 0.469)                      # reading a NULL snapshot works
+        r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': 'transmission'},
+                               format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})   # frozen from NULL
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        self.assertEqual(self._market_factor(), 0.469)
+
+    def test_any_change_of_the_connection_freezes_signed_inventories_not_only_the_settings_page(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        gebze = self._gebze()
+        gebze.grid_connection = 'transmission'
+        gebze.save()                                       # the admin / a script
+        self.assertEqual(self._applied(), {str(gebze.pk): 'distribution'})
+        self.assertEqual(self._market_factor(), 0.469)
+
+    def test_a_draft_inventory_is_never_frozen(self):
+        self._distinct_factors()
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        gebze = self._gebze()
+        gebze.grid_connection = 'transmission'
+        gebze.save()
+        self.assertEqual(self._applied(), {})
+
+    def test_renaming_a_facility_keeps_the_applied_connection(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        gebze = self._gebze()
+        gebze.grid_connection = 'transmission'
+        gebze.save()
+        r = self.c_owner.patch(f'/api/companies/facilities/{gebze.pk}/', {'name': 'Gebze Fabrika'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._applied(), {str(gebze.pk): 'distribution'})            # keyed by id, not name
+        self.assertEqual(self._market_factor(), 0.469)
+
+
+class LockedInventoryRecalculationFromAFactorTests(TestCase):
+    """An approved facility factor (Özel Talep) recalculates the year's
+    inventory; for a signed one that is a change after signing."""
+
+    # ElectricityFactorDecisionTests' company, inventory and helpers, without re-running its tests.
+    setUp = ElectricityFactorDecisionTests.setUp
+    _factor, _step, _entries = StepEntriesTests._factor, StepEntriesTests._step, StepEntriesTests._entries
+    _rows, _request = ElectricityFactorDecisionTests._rows, ElectricityFactorDecisionTests._request
+    _save_in_admin = ElectricityFactorDecisionTests._save_in_admin
+
+    def test_approving_a_facility_factor_flags_and_names_a_signed_inventory(self):
+        from accounts.models import ActivityLog
+        self._step('7C-2', {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür',
+                            'declaration_accepted': 'accepted'})
+        CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED)
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])    # Linz is pending
+        self._save_in_admin(self._request())
+        self.assertEqual(len(self._rows('4A-1')), 2)                                           # Linz now calculated
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.edited_after_signing_at)
+        [row] = ActivityLog.objects.filter(action='inventory_recalculated')
+        self.assertEqual((row.target_type, row.target_id), ('CarbonReport', str(self.report.pk)))
+
+    def test_a_draft_inventory_is_recalculated_without_a_flag(self):
+        from accounts.models import ActivityLog
+        self._save_in_admin(self._request())
+        self.assertEqual(len(self._rows('4A-1')), 2)
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.edited_after_signing_at)
+        self.assertFalse(ActivityLog.objects.filter(action='inventory_recalculated').exists())
+
+
+class RecyclingCreditDisclosureTests(TestCase):
+    """The recycling factors that are negative (avoided virgin production) stay
+    exactly as they are — their source and treatment await the methodology
+    owner — but the inventory states the credit instead of folding it in
+    silently."""
+
+    _factor, _step, _entries = StepEntriesTests._factor, StepEntriesTests._step, StepEntriesTests._entries
+    setUp = StepEntriesTests.setUp
+
+    def _texts(self, lang):
+        from .assumptions import derive_assumptions
+        answers = dict(self.report.steps.values_list('step_id', 'answer'))
+        return [x['text'] for x in derive_assumptions(answers, lang, 2025, self.company) if x['step_id'] == 'EF-CREDIT']
+
+    def test_a_credit_is_stated_and_the_figures_are_unchanged(self):
+        self._factor('wt-01-recycling', 'kg', -0.125)
+        self._factor('wt-05-landfill', 'kg', 0.5)
+        self._step('K3C5-2', {'items': [{'waste_type': 'WT-01', 'quantity_kg': '400', 'disposal_method': 'recycling'}]})
+        self.assertEqual([round(float(e.calculated_co2e_kg), 3) for e in self._entries()], [-50.0])   # as before
+        [en] = self._texts('en')
+        self.assertIn('0.05 tCO2e of credit', en)
+        self.assertIn('lowers the total', en)
+        self.assertIn('not verified', en)
+        [tr] = self._texts('tr')
+        self.assertIn('0,05 tCO₂e', tr)
+        self.assertIn('doğrulanmamıştır', tr)
+
+    def test_nothing_is_said_when_no_credit_is_in_the_inventory(self):
+        self._factor('natural-gas-m3', 'm3', 2, scope='scope1')
+        self._step('3A-5', {'natural_gas': '10 m³'})
+        self.assertEqual(self._texts('en'), [])
+        self.assertEqual(self._texts('tr'), [])
+
+
+class FacilityConnectionEnforcementTests(TestCase):
+    """Every way of changing Facility.grid_connection must leave signed /
+    completed inventories on the connection they were applied with: save()
+    (pre_save receiver), QuerySet.update(), related-manager update() and
+    bulk_update() (FacilityQuerySet). A static check keeps new writers from
+    appearing unnoticed."""
+
+    # LockedInventoryProposalAndLegacyTests' company, clients and helpers.
+    setUp = LockedInventoryProposalAndLegacyTests.setUp
+    _save, _q24, _factors = PendingChangeTests._save, PendingChangeTests._q24, PendingChangeTests._factors
+    _distinct_factors = LockedInventoryProposalAndLegacyTests._distinct_factors
+    _sign = LockedInventoryProposalAndLegacyTests._sign
+    _gebze = LockedInventoryProposalAndLegacyTests._gebze
+    _signed_inventory = LockedInventoryProposalAndLegacyTests._signed_inventory
+    _market_factor = LockedInventoryProposalAndLegacyTests._market_factor
+    _applied = LockedInventoryProposalAndLegacyTests._applied
+    SIGN = LockedInventoryProposalAndLegacyTests.SIGN
+
+    def _assert_frozen(self):
+        gebze = self._gebze()
+        self.assertEqual(self._applied(), {str(gebze.pk): 'distribution'})
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])   # approved value kept
+        self.assertEqual(self._market_factor(), 0.469)                                          # reports read the applied one
+
+    def test_queryset_update_freezes_signed_inventories(self):
+        from companies.models import Facility
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        Facility.objects.filter(company=self.company, name='Gebze').update(grid_connection='transmission')
+        self.assertEqual(self._gebze().grid_connection, 'transmission')
+        self._assert_frozen()
+
+    def test_related_manager_update_freezes_signed_inventories(self):
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        self.company.facilities.update(grid_connection='transmission')
+        self._assert_frozen()
+
+    def test_bulk_update_freezes_signed_inventories(self):
+        from companies.models import Facility
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        gebze = self._gebze()
+        gebze.grid_connection = 'transmission'
+        Facility.objects.bulk_update([gebze], ['grid_connection'])
+        self.assertEqual(self._gebze().grid_connection, 'transmission')
+        self._assert_frozen()
+
+    def test_an_update_that_changes_nothing_about_the_connection_freezes_nothing(self):
+        from companies.models import Facility
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        Facility.objects.filter(pk=self._gebze().pk).update(is_active=True)                 # another field
+        Facility.objects.filter(pk=self._gebze().pk).update(grid_connection='distribution')  # same value
+        self.assertEqual(self._applied(), {})
+
+    def test_a_draft_inventory_is_not_frozen_by_a_bulk_update(self):
+        from companies.models import Facility
+        self._distinct_factors()
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        Facility.objects.filter(name='Gebze').update(grid_connection='transmission')
+        self.assertEqual(self._applied(), {})
+
+    def test_static_check_no_unregistered_writer_of_the_connection(self):
+        """Documented enforcement check. Writers of Facility.grid_connection in
+        application code are listed here; each goes through save() or the
+        FacilityQuerySet. A new file that writes it, raw SQL on the facility
+        table, or a data migration that rewrites it fails this test — add it to
+        the list only after making sure it freezes locked inventories."""
+        import re
+        from pathlib import Path
+        from django.conf import settings
+        root = Path(settings.BASE_DIR)
+        files = [p for p in root.rglob('*.py')
+                 if not any(part in ('venv', '.venv', 'node_modules', '.agents', '__pycache__') for part in p.parts)]
+        assign = re.compile(r"\.grid_connection\s*=[^=]|update\(\s*[^)]*grid_connection\s*=|bulk_update\([^)]*grid_connection")
+        allowed = {'companies/views.py', 'questionnaire/facility_sync.py', 'questionnaire/step_entries.py',
+                   'companies/models.py'}
+        writers, raw, migrations = set(), [], []
+        for p in files:
+            rel = p.relative_to(root).as_posix()
+            text = p.read_text(encoding='utf-8', errors='ignore')
+            is_test = '/tests' in rel or rel.rsplit('/', 1)[-1].startswith(('test_', 'tests')) or rel.startswith(('qa_', 'demo_', 'create_test'))
+            if '/migrations/' in rel:
+                if re.search(r'(?<!applied_)grid_connection', text) and not rel.endswith('companies/migrations/0010_facility_grid_connection.py'):
+                    migrations.append(rel)
+                continue
+            if is_test:
+                continue
+            if assign.search(text):
+                writers.add(rel)
+            if re.search(r'companies_facility', text) and re.search(r'RunSQL|cursor\(\)|\.raw\(', text):
+                raw.append(rel)
+        self.assertEqual(sorted(writers - allowed), [], 'a new writer of Facility.grid_connection: make it freeze locked inventories')
+        self.assertEqual(raw, [], 'raw SQL on the facility table bypasses the freeze')
+        self.assertEqual(migrations, [], 'a data migration touching grid_connection bypasses the freeze')
+
+
+class UnverifiedCreditVisibilityTests(TestCase):
+    """A total that contains a recycling credit (negative factor, source not
+    verified) says so wherever it is presented: the summary API behind the
+    dashboard, the Excel export, the emissions PDF, the answer's own feedback,
+    the ISO report's assumptions and the AI assistant's data context. The
+    factor values themselves are untouched."""
+
+    _factor, _step, _entries = StepEntriesTests._factor, StepEntriesTests._step, StepEntriesTests._entries
+    setUp = StepEntriesTests.setUp
+    WASTE = {'items': [{'waste_type': 'WT-01', 'quantity_kg': '400', 'disposal_method': 'recycling'}]}
+
+    def _with_credit(self):
+        self._factor('wt-01-recycling', 'kg', -0.125)
+        return self._step('K3C5-2', self.WASTE)
+
+    def _without_credit(self):
+        self._factor('natural-gas-m3', 'm3', 2, scope='scope1')
+        self._step('3A-5', {'natural_gas': '10 m³'})
+
+    def test_the_summary_api_carries_the_credit_and_its_note_in_both_languages(self):
+        self._with_credit()
+        data = self.client.get('/api/emissions/summary/?year=2025').data
+        credit = data['avoided_credit']
+        self.assertEqual((credit['total_kg'], credit['entries']), (-50.0, 1))
+        self.assertIn('not verified', credit['note']['en'])
+        self.assertIn('0.05 tCO2e', credit['note']['en'])
+        self.assertIn('doğrulanmamıştır', credit['note']['tr'])
+        self.assertAlmostEqual(float(data['total_kg']) if 'total_kg' in data else data['total_tonne'] * 1000, -50.0, places=1)  # value unchanged
+
+    def test_no_credit_no_note(self):
+        self._without_credit()
+        self.assertIsNone(self.client.get('/api/emissions/summary/?year=2025').data['avoided_credit'])
+
+    def test_excel_export_states_it_under_the_data(self):
+        import io
+        from openpyxl import load_workbook
+        self._with_credit()
+        res = self.client.get('/api/emissions/export-excel/?year=2025&lang=en')
+        self.assertEqual(res.status_code, 200)
+        ws = load_workbook(io.BytesIO(res.content)).active
+        cells = [c.value for row in ws.iter_rows() for c in row if c.value]
+        self.assertTrue(any('not verified' in str(v) for v in cells), cells[-3:])
+        res_tr = self.client.get('/api/emissions/export-excel/?year=2025&lang=tr')
+        self.assertTrue(any('doğrulanmamıştır' in str(c.value) for row in load_workbook(io.BytesIO(res_tr.content)).active.iter_rows() for c in row if c.value))
+
+    def test_excel_export_has_no_note_without_a_credit(self):
+        import io
+        from openpyxl import load_workbook
+        self._without_credit()
+        ws = load_workbook(io.BytesIO(self.client.get('/api/emissions/export-excel/?year=2025&lang=en').content)).active
+        self.assertFalse(any('not verified' in str(c.value) for row in ws.iter_rows() for c in row if c.value))
+
+    def test_the_emissions_pdf_states_it(self):
+        import io
+        from pypdf import PdfReader
+        self._with_credit()
+        res = self.client.get('/api/emissions/report/?year=2025&lang=en')
+        self.assertEqual(res.status_code, 200)
+        text = ' '.join(' '.join(p.extract_text() for p in PdfReader(io.BytesIO(res.content)).pages).split())
+        self.assertIn('of credit from negative factors', text)
+        self.assertIn('not verified', text)
+
+    def test_the_answers_own_feedback_states_it(self):
+        r = self._with_credit()
+        notes = r.data['calc_feedback']['method_notes']
+        self.assertTrue(any('not verified' in n and '0.05 tCO2e' in n for n in notes), notes)
+
+    def test_the_answers_own_feedback_is_quiet_without_a_credit(self):
+        self._factor('natural-gas-m3', 'm3', 2, scope='scope1')
+        r = self._step('3A-5', {'natural_gas': '10 m³'})
+        self.assertFalse(any('not verified' in n for n in r.data['calc_feedback']['method_notes']))
+
+    def test_the_ai_assistants_data_context_states_it(self):
+        from chat.views import _get_emission_data_context
+        self._with_credit()
+        self.assertIn('recycling credit', _get_emission_data_context(self.user))
+        self.assertIn('unverified', _get_emission_data_context(self.user))
+
+    def test_the_factor_values_are_unchanged(self):
+        from emissions.models import EmissionFactor
+        self._with_credit()
+        self.assertEqual(float(EmissionFactor.objects.get(slug='wt-01-recycling').factor_kg_co2e), -0.125)
+        self.assertEqual([round(float(e.calculated_co2e_kg), 3) for e in self._entries()], [-50.0])

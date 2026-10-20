@@ -6243,6 +6243,22 @@
         "rangeMessage": null
       },
       {
+        "id": "facility",
+        "type": "text",
+        "subtype": null,
+        "required": false,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": null,
+        "minValue": null,
+        "maxValue": null,
+        "rangeMessage": null
+      },
+      {
         "id": "area_m2",
         "type": "numeric",
         "subtype": null,

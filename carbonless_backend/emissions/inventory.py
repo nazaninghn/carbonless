@@ -146,3 +146,33 @@ def previous_year_change(company, year, current_kg, today=None):
         'previous_year': year - 1, 'previous_kg': prev_kg, 'current_kg': cur_kg,
         'change_pct': round((cur_kg - prev_kg) / prev_kg * 100, 1), 'months': months,
     }
+
+
+def avoided_credit(entries):
+    """The recycling credit inside an approved-entries queryset: {'total_kg'
+    (negative), 'entries'} for the entries calculated with a negative factor
+    (avoided virgin production), or None. Their source is unverified and the
+    methodology decision is pending (emissions/NEGATIVE_FACTORS_REVIEW.md), so
+    every place that presents a total says so."""
+    from django.db.models import Count
+    agg = entries.filter(emission_factor__factor_kg_co2e__lt=0).aggregate(
+        t=Sum('calculated_co2e_kg'), n=Count('id'))
+    if not (agg['n'] or 0):
+        return None
+    return {'total_kg': float(agg['t'] or 0), 'entries': agg['n']}
+
+
+def avoided_credit_note(info, tr=False):
+    """One sentence for a total that contains a recycling credit, or ''."""
+    if not info:
+        return ''
+    from questionnaire.step_entries import _fmt
+    t = _fmt(abs(info['total_kg']) / 1000, 3, 'tr' if tr else 'en')
+    if tr:
+        return (f'Bu toplam, geri dönüşümün kaçınılan üretim emisyonu olarak sayıldığı negatif faktörlerden '
+                f'kaynaklanan {t} tCO₂e kredi içerir ve toplamı azaltır. Bu faktörlerin kaynağı doğrulanmamıştır; '
+                f'yöntem kararı beklemektedir.')
+    return (f'This total includes {t} tCO2e of credit from negative factors that count recycling as avoided '
+            f'production, and it lowers the total. The source of these factors is not verified; the '
+            f'methodology decision is pending.')
+

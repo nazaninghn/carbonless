@@ -152,6 +152,56 @@ function ConnectionLinesMobile() {
   );
 }
 
+/* -- Laptop unfold — a 3D "opening" effect for the AI-section MacBook photo.
+   The image starts folded back (rotateX near-flat, tipped away from the
+   viewer and faded out) and, once it scrolls into view, swings up on a
+   bottom hinge to face the user — reading like a laptop lid being opened.
+   Because the asset is a single flat photo of an already-open MacBook, the
+   whole image rotates as one piece (true screen/body separation would need
+   two layered images). perspective on the wrapper gives the rotation real
+   depth; transform-origin at the bottom is the hinge. Fires once via
+   IntersectionObserver and is disabled for prefers-reduced-motion. */
+function LaptopUnfold({ children, className = '' }) {
+  const ref = useRef(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setOpen(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setOpen(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.35, rootMargin: '0px 0px -10% 0px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={ref} className={className} style={{ perspective: '1600px' }}>
+      <div
+        className="transition-all duration-[2000ms] will-change-transform"
+        style={{
+          transformOrigin: 'bottom center',
+          transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          transform: open ? 'rotateX(0deg)' : 'rotateX(-70deg)',
+          opacity: open ? 1 : 0,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 /* -- Scroll reveal — wraps a section's content so it fades + slides up into
    view as the user scrolls to it, instead of just appearing instantly. Fires
    once (doesn't re-hide scrolling back up, which reads as jittery) and skips
@@ -455,14 +505,17 @@ export default function Home() {
             <div className="relative flex items-center justify-center">
               <div className="relative w-full max-w-[560px]">
                 <div className="absolute inset-8 rounded-full bg-[#2ABD41]/10 blur-3xl" />
-                <Image
-                  src="/ai-laptop.png"
-                  alt={lang === 'tr' ? 'Carbonless AI sohbet ekranı — MacBook üzerinde' : 'Carbonless AI chat on a MacBook'}
-                  width={1402}
-                  height={1122}
-                  className="relative w-full h-auto object-contain drop-shadow-2xl transition-transform duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1"
-                  priority={false}
-                />
+                {/* Unfolds on scroll into view (3D lid-open effect) */}
+                <LaptopUnfold className="relative">
+                  <Image
+                    src="/ai-laptop.png"
+                    alt={lang === 'tr' ? 'Carbonless AI sohbet ekranı — MacBook üzerinde' : 'Carbonless AI chat on a MacBook'}
+                    width={1402}
+                    height={1122}
+                    className="relative w-full h-auto object-contain drop-shadow-2xl transition-transform duration-500 ease-out hover:scale-[1.03] hover:-translate-y-1"
+                    priority={false}
+                  />
+                </LaptopUnfold>
               </div>
             </div>
           </div>

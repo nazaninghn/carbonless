@@ -195,12 +195,13 @@ def _market_result(company, year):
     """The market-based Scope 2 of the company's inventory of `year` (the
     figure the ISO report states next to Category II), or None."""
     from questionnaire.models import CarbonReport
-    from questionnaire.step_entries import scope2_market_based
+    from questionnaire.step_entries import recorded_connections, scope2_market_based
     report = (CarbonReport.objects.filter(company=company, reporting_year=year)
               .order_by('-updated_at').first())
     if report is None:
         return None
-    return scope2_market_based(dict(report.steps.values_list('step_id', 'answer')), year, company)
+    with recorded_connections(report):
+        return scope2_market_based(dict(report.steps.values_list('step_id', 'answer')), year, company)
 
 
 def _market_answer(company, year, lang):
