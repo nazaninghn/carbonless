@@ -11,3 +11,7 @@ db.sqlite3
 .claude/
 carbonless_backend/staticfiles/
 carbonless_backend/media/
+
+# Agent working files and local dev helpers
+.agents/
+_runserver.bat

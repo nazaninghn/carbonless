@@ -779,7 +779,7 @@ def _export_rows(entries, lang):
     # approved figure it would replace.
     from .inventory import ANNUAL_PREFIX
     from .notifications import _qty
-    from questionnaire.step_entries import entry_group
+    from questionnaire.step_entries import entry_group, readable_text
     entries = list(entries.select_related('replaces_entry__emission_factor'))
     approved_groups = {(e.year, entry_group(e.description)) for e in entries
                        if e.status == 'approved' and (e.description or '').startswith(ANNUAL_PREFIX)}
@@ -809,7 +809,7 @@ def _export_rows(entries, lang):
             float(e.quantity), _unit(ef.unit, lang),
             float(ef.factor_kg_co2e), float(e.calculated_co2e_kg), float(e.calculated_co2e_kg) / 1000,
             # A calculated entry's factor is its own calculation, not a catalog reference.
-            (('Hesaplama: ' if tr else 'Calculated: ') + (e.calc_detail or {}).get(lang, '')
+            (('Hesaplama: ' if tr else 'Calculated: ') + readable_text((e.calc_detail or {}).get(lang, ''), lang)
              if ef.slug.startswith('calculated-') and e.calc_detail else ef.reference or ''),
             e.facility.name if e.facility_id else '', display_description(e.description, lang, e.calc_detail),
             status_label(e),

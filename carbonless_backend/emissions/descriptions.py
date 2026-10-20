@@ -29,7 +29,9 @@ def display_description(desc, lang, calc_detail=None):
         if not detail and ' · ' in desc:
             detail = desc.split(' · ', 1)[1]  # an entry from before calc_detail
         if detail:
-            parts.append(detail)
+            # Names, not catalog codes ("KV-01" → "Leased office building").
+            from questionnaire.step_entries import readable_text
+            parts.append(readable_text(detail, lang))
         return f"{pick(_LABELS['questionnaire'])} — {' · '.join(parts)}"
     if desc.startswith('Workspace '):
         tag = desc[len('Workspace '):].split(' ')[0]

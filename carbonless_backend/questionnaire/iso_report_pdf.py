@@ -857,6 +857,9 @@ def _gather(report, lang):
                 parts = (e.description or '').split(' · ', 1)
                 how = parts[1] if len(parts) == 2 else None
             if how:
+                # Names, not catalog codes or factor slugs.
+                from .step_entries import readable_text
+                how = readable_text(how, lang)
                 row.setdefault('details', []).append(how)
                 row['reference'] = ('Hesaplama: ' if lang == 'tr' else 'Calculated: ') + '; '.join(row['details'])
         # Shares rather than the per-gas factors themselves: the stored CO₂e is

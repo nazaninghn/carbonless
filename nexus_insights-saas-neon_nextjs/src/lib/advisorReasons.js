@@ -33,6 +33,12 @@ const REASONS = {
     tr: 'Bir Kapsam 3 kategorisi "uygulanamaz" olarak işaretlendi.',
     en: 'A Scope 3 category was marked as not applicable.',
   },
+  // Q104 "No — no emission data": the category applies, it is just not
+  // calculated (it was shown as "not applicable").
+  k3_category_no_data: {
+    tr: 'Bir Kapsam 3 kategorisi geçerli ancak emisyon verisi olmadığı için hesaplanmadı.',
+    en: 'A Scope 3 category applies but was not calculated: there is no emission data.',
+  },
   rfi_applied: {
     tr: 'Uçuş kaydında RFI işaretlendi; kabin sınıfı faktörleri RFI\'yı zaten içerdiği için ×1,9 ayrıca uygulanmadı.',
     en: 'RFI was ticked on a flight; the cabin-class factors already include RFI, so ×1.9 was not applied again.',
@@ -118,9 +124,21 @@ function params(item) {
 
 // { text, question } for one flag: the reason in the UI language, and the
 // question it came from ("Soru 101 — <question text>") when it is known.
+// Q104 (franchises) has its own "Not applicable" option; a flag the earlier
+// code filed for its "No — no emission data" answer was "k3_category_no"
+// although the category applies. Such a flag (any without the
+// "Not applicable" note the current code writes) reads as "no data".
+function reasonCode(item) {
+  if (item.reason_code === 'k3_category_no' && item.question_id === 'K3C14-0'
+      && !String(item.description || '').includes('"Not applicable"')) {
+    return 'k3_category_no_data';
+  }
+  return item.reason_code;
+}
+
 export function advisorReasonText(item, tr) {
   const lang = tr ? 'tr' : 'en';
-  const entry = REASONS[item.reason_code];
+  const entry = REASONS[reasonCode(item)];
   let text;
   if (entry) {
     const t = entry[lang];

@@ -53,11 +53,18 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     # How a questionnaire entry was calculated, {"tr", "en"}; the question's
     # number ("68" -> "Soru 68"); and, for a change waiting for review, the
     # approved value it would replace.
-    calc_detail = serializers.JSONField(read_only=True)
+    # Shown with names, not catalog codes ("KV-01", "(turkey-grid-
+    # distribution)"); the stored text keeps them (questionnaire.step_entries
+    # .readable_text).
+    calc_detail = serializers.SerializerMethodField()
     question_number = serializers.SerializerMethodField()
     replaces = serializers.SerializerMethodField()
     removed_by_change = serializers.SerializerMethodField()
     change_question = serializers.SerializerMethodField()
+
+    def get_calc_detail(self, obj):
+        from questionnaire.step_entries import readable_calc_detail
+        return readable_calc_detail(obj.calc_detail)
 
     def get_question_number(self, obj):
         from questionnaire.step_entries import entry_group

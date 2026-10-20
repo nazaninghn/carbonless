@@ -150,6 +150,36 @@ try {
     assert.equal(Y.tokenUserId(storage), '3');
   });
 
+  test('a leased asset says whether it is already in Scope 1/2', () => {
+    const row = { asset_type: 'KV-01', area_m2: '2500', owner_declaration: false };
+    assert.equal(check('K3C8-1', { items: [row] }).ok, false, 'the in_scope12 answer is required');
+    assert.equal(check('K3C8-1', { items: [{ ...row, in_scope12: 'included' }] }).ok, true);
+    const field = q('K3C8-1').fields.find(f => f.id === 'in_scope12');
+    assert.deepEqual(field.options.map(o => o.value), ['included', 'not_included']);
+  });
+
+  test('the franchise "no data" answer promises no estimate', () => {
+    const no = q('K3C14-0').options.find(o => o.value === 'no');
+    assert.doesNotMatch(no.label.en, /estimate/i);
+    assert.doesNotMatch(no.label.tr, /tahmin/i);
+    assert.doesNotMatch(q('K3C14-2').helper.en, /The estimate uses/);
+    assert.ok(q('K3C14-2').notCalculated?.en);
+  });
+
+  writeFileSync(join(scratch, 'advisorReasons.mjs'), readFileSync(join(repoRoot, 'src/lib/advisorReasons.js'), 'utf-8')
+    .replace("'@/lib/carboniq/questions'", "'./questions.mjs'"));
+  const R = await import(pathToFileURL(join(scratch, 'advisorReasons.mjs')));
+  test('Review page: a franchise "no data" answer is not "not applicable"', () => {
+    const flag = (reason, description) => R.advisorReasonText({ question_id: 'K3C14-0', reason_code: reason, description }, false).text;
+    // A flag the earlier code filed for "No — no emission data".
+    assert.match(flag('k3_category_no', 'K3C14-0: Scope 3 category marked not applicable ("No").'), /applies but was not calculated/);
+    assert.match(flag('k3_category_no_data', 'x'), /applies but was not calculated/);
+    // The current code's flag for the real "Not applicable" answer.
+    assert.match(flag('k3_category_no', 'K3C14-0: Scope 3 category marked not applicable ("Not applicable").'), /marked as not applicable/);
+    // Other categories' "No" is unchanged.
+    assert.match(R.advisorReasonText({ question_id: 'K3C15-0', reason_code: 'k3_category_no', description: '' }, false).text, /marked as not applicable/);
+  });
+
   test('options without a factor say so', () => {
     const loco = q('3B-1').options.find(o => o.value === 'EQ-3B-22');
     assert.equal(loco.notCalculated, true);

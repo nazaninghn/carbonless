@@ -6313,6 +6313,25 @@
         "minValue": null,
         "maxValue": null,
         "rangeMessage": null
+      },
+      {
+        "id": "in_scope12",
+        "type": "select",
+        "subtype": null,
+        "required": true,
+        "numericOnly": false,
+        "exactLength": null,
+        "maxLength": null,
+        "format": null,
+        "conditionalOn": null,
+        "conditionalOnValue": null,
+        "options": [
+          "included",
+          "not_included"
+        ],
+        "minValue": null,
+        "maxValue": null,
+        "rangeMessage": null
       }
     ],
     "sumRange": null,
@@ -7175,7 +7194,7 @@
     "notAboveAnswer": null,
     "uniqueItems": false,
     "notCalculatedOptions": null,
-    "notCalculated": false,
+    "notCalculated": true,
     "options": null,
     "units": null,
     "repeatable": false,

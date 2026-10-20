@@ -652,6 +652,12 @@ def _leased_upstream(A):
     warehouse (the only types with an area factor)."""
     out = []
     for row in _rows(A.get('K3C8-1')):
+        # Already reported in Scope 1/2 (one of the company's own sites):
+        # Category 8 would count it twice. A row saved before the question
+        # asked this keeps its earlier calculation; uncalculated_notes flags
+        # it under Operational Control.
+        if row.get('in_scope12') == 'included':
+            continue
         kv = str(row.get('asset_type') or '')
         kwh = _number(row.get('declaration_kwh')) if _true(row.get('owner_declaration')) else None
         if kwh:
@@ -1616,6 +1622,47 @@ def _code_words():
     return out
 
 
+# A factor named by its slug in a calculation text: "× 0.469 (turkey-grid-distribution)".
+_FACTOR_SLUG_RE = re.compile(r'\(([a-z0-9]+(?:-[a-z0-9]+)+)\)')
+
+
+@functools.lru_cache(maxsize=512)
+def _factor_names(slug):
+    from emissions.models import EmissionFactor
+    f = EmissionFactor.objects.filter(slug=slug).only('name', 'name_tr').first()
+    return {'en': f.name, 'tr': f.name_tr or f.name} if f else None
+
+
+def readable_text(text, lang):
+    """A calculation text as people read it: catalog codes become their names
+    ("KV-01" → "Leased office building", "EQ-3B-05#2" → "… (group 2)") and a
+    factor slug in brackets becomes the factor's name. Applied where the text
+    is shown — the stored description and calc_detail keep the codes, which
+    the questionnaire uses to find its entries (technical traceability)."""
+    if not text or not isinstance(text, str):
+        return text
+    words = _code_words()
+
+    def code(m):
+        name = words.get(m.group(1), {}).get(lang, m.group(1))
+        if m.group(2):
+            name += f' ({"grup" if lang == "tr" else "group"} {m.group(2)[1:]})'
+        return name
+
+    def slug(m):
+        names = _factor_names(m.group(1))
+        return f'({names[lang]})' if names else m.group(0)
+
+    return _FACTOR_SLUG_RE.sub(slug, _NOTE_CODE_RE.sub(code, text))
+
+
+def readable_calc_detail(detail):
+    """calc_detail ({'tr', 'en'}) with readable_text in each language."""
+    if not isinstance(detail, dict):
+        return detail
+    return {lg: readable_text(v, lg) for lg, v in detail.items()}
+
+
 def _readable_notes(notes):
     """Notes as a reader can use them: a catalog code becomes its name
     ("Diesel locomotive", not "EQ-3B-22#7"), and one note per group of the
@@ -1978,9 +2025,28 @@ def uncalculated_notes(answers, year, company=None):
              'Employee commuting: not calculated until the real working days and the homeworking factor are set.')
 
     if open_('K3C8-1'):
+        operational = (A.get('D3') or {}).get('boundary_approach') == 'operational_control' \
+            if isinstance(A.get('D3'), dict) else False
         for row in _rows(A.get('K3C8-1')):
             kv = str(row.get('asset_type') or '')
             has_kwh = _true(row.get('owner_declaration')) and _number(row.get('declaration_kwh'))
+            if row.get('in_scope12') == 'included':
+                # Not a gap: its emissions are in the inventory, in Scope 1/2.
+                note('K3C8-1', f'{kv}: enerjisi Kapsam 1/2\'de (tesis olarak) raporlandığı için Kategori 8\'de '
+                               'tekrar sayılmadı.',
+                     f'{kv}: not counted again in Category 8 — its energy is already reported in Scope 1/2 '
+                     'as one of the sites.', kind='method')
+                continue
+            if operational and 'in_scope12' not in row:
+                # Saved before the question asked it: still counted, but under
+                # Operational Control a leased building the company uses is
+                # normally one of its sites — say so instead of guessing.
+                note('K3C8-1', f'{kv}: İşletme Kontrolü yaklaşımında kiralık ve işlettiğiniz bir bina genellikle '
+                               'tesisleriniz arasındadır ve enerjisi Kapsam 2\'dedir. Soru 97\'de bu varlığın '
+                               'Kapsam 1/2\'de raporlanıp raporlanmadığını belirtin; aksi halde iki kez sayılabilir.',
+                     f'{kv}: under Operational Control a leased building you use is normally one of your sites '
+                     'with its energy in Scope 2. State in Question 97 whether this asset is already reported in '
+                     'Scope 1/2; otherwise it may be counted twice.', kind='method')
             if has_kwh and row.get('declaration_energy') not in ('electricity', 'natural_gas'):
                 note('K3C8-1', f'{kv}: beyan edilen kWh\'nin enerji türü seçilmediği için hesaplanmadı.',
                      f'{kv}: not calculated — the energy type of the declared kWh is missing.')
@@ -2023,8 +2089,17 @@ def uncalculated_notes(answers, year, company=None):
                 note('K3C13-1', f'{str(row.get("asset_description") or "").strip()}: kWh\'nin enerji türü seçilmediği için hesaplanmadı.',
                      f'{str(row.get("asset_description") or "").strip()}: not calculated — the energy type of the kWh is missing.')
     if A.get('K3C14-0') == 'no' and isinstance(A.get('K3C14-2'), dict) and _number(A['K3C14-2'].get('franchise_count')):
-        note('K3C14-2', 'Franchise işletmeleri: raporlanmış emisyon olmadan tahmin yapılmıyor.',
-             'Franchises: no estimate is made without reported emissions.')
+        # What was recorded, and why it is not in the totals — the category
+        # is applicable, its emissions are just not known.
+        count = _fmt(_number(A['K3C14-2'].get('franchise_count')), 0, 'en')
+        area = _number(A['K3C14-2'].get('total_area_m2'))
+        area_en = f', {_fmt(area, 0, "en")} m²' if area else ''
+        area_tr = f', {_fmt(area, 0, "tr")} m²' if area else ''
+        note('K3C14-2', f'Franchise işletmeleri ({_fmt(_number(A["K3C14-2"].get("franchise_count")), 0, "tr")} işletme'
+                        f'{area_tr}): işletmelerin emisyon verisi olmadığı ve onaylı alan bazlı bir faktör '
+                        'bulunmadığı için hesaplanmadı. Kategori geçerlidir; emisyonu bilinmiyor.',
+             f'Franchises ({count} outlets{area_en}): not calculated — the franchisees have no emission data and '
+             'there is no approved per-area factor. The category applies; its emissions are not known.')
     if open_('K3C15-1'):
         for row in _rows(A.get('K3C15-1')):
             cls = str(row.get('asset_class') or '')

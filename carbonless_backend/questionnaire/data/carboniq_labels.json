@@ -5018,6 +5018,22 @@
             "en": "Natural gas"
           }
         }
+      },
+      "in_scope12": {
+        "label": {
+          "tr": "Bu varlığın enerjisi Kapsam 1/2'de zaten raporlandı mı?",
+          "en": "Is this asset's energy already reported in Scope 1/2?"
+        },
+        "options": {
+          "included": {
+            "tr": "Evet — tesislerimizden biri; enerjisi Soru 68'de (Kapsam 1/2) → burada tekrar sayılmaz",
+            "en": "Yes — it is one of our sites; its energy is in Question 68 (Scope 1/2) → not counted again here"
+          },
+          "not_included": {
+            "tr": "Hayır — Kapsam 1/2'de yok (örn. bina sahibi işletiyor) → Kategori 8'de sayılır",
+            "en": "No — not in Scope 1/2 (e.g. the landlord operates it) → counted in Category 8"
+          }
+        }
       }
     }
   },
@@ -5559,8 +5575,8 @@
         "en": "Yes — franchise GHG reports available (Level 1)"
       },
       "no": {
-        "tr": "Hayır — tahmin kullanacağız",
-        "en": "No — we will use an estimate"
+        "tr": "Hayır — emisyon verisi yok (kaydedilir, henüz hesaplanmaz)",
+        "en": "No — no emission data (recorded, not calculated yet)"
       },
       "na": {
         "tr": "Uygulanamaz — franchise modelimiz yok",

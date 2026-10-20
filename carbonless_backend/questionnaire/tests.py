@@ -1484,21 +1484,25 @@ class SupplierEFDocumentTests(TestCase):
     def test_conditional_fields_and_cat10_form(self):
         from .carboniq_validation import validate_generic_step
         office = {'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': True, 'declaration_kwh': '12000',
-                  'declaration_energy': 'electricity'}
+                  'declaration_energy': 'electricity', 'in_scope12': 'not_included'}
         self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office]}}, lang='tr'), (True, None))
+        # Each row says whether the asset is already in Scope 1/2 (Category 8
+        # would count it twice otherwise).
+        self.assertFalse(validate_generic_step('K3C8-1', {'answer': {'items': [
+            {k: v for k, v in office.items() if k != 'in_scope12'}]}}, lang='tr')[0])
         # "Evet" on the owner declaration now needs the kWh
         self.assertFalse(validate_generic_step('K3C8-1', {'answer': {'items': [{**office, 'declaration_kwh': ''}]}}, lang='tr')[0])
         # …and which energy the kWh are (the factor depends on it)
         self.assertFalse(validate_generic_step('K3C8-1', {'answer': {'items': [{**office, 'declaration_energy': ''}]}}, lang='tr')[0])
         # no declaration: the hidden kWh field is not required
-        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': False}]}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-01', 'area_m2': '250', 'owner_declaration': False, 'in_scope12': 'not_included'}]}}, lang='tr'), (True, None))
         # leased equipment has no floor area
-        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-04', 'owner_declaration': False}]}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [{'asset_type': 'KV-04', 'owner_declaration': False, 'in_scope12': 'included'}]}}, lang='tr'), (True, None))
         prod = {'product': 'Sülfürik asit', 'quantity': '120', 'unit': 'tonnes', 'processing_type': 'chemical'}
         self.assertFalse(validate_generic_step('K3C10-1', {'answer': {'items': [{**prod, 'processing_type': ''}]}}, lang='tr')[0])
         self.assertEqual(validate_generic_step('K3C10-1', {'answer': {'items': [prod, {**prod, 'product': 'Kostik'}]}}, lang='tr'), (True, None))
         # several leased assets / sold products, one row each
-        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office, {'asset_type': 'KV-03', 'area_m2': '900', 'owner_declaration': False}]}}, lang='tr'), (True, None))
+        self.assertEqual(validate_generic_step('K3C8-1', {'answer': {'items': [office, {'asset_type': 'KV-03', 'area_m2': '900', 'owner_declaration': False, 'in_scope12': 'not_included'}]}}, lang='tr'), (True, None))
         sold = {'product_type': 'P-01', 'sales_volume': '500', 'sales_unit': 'units', 'use_lifetime_years': '10'}
         self.assertEqual(validate_generic_step('K3C11-1', {'answer': {'items': [sold]}}, lang='tr'), (True, None))
         # a lifetime of "2026" is a calendar year typed by mistake

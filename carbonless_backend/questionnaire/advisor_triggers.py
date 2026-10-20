@@ -344,6 +344,23 @@ for _q in K3_GATE_QUESTIONS:
     FIELD_RULES[_q] = _match_k3_category_no
 
 
+def _match_franchise_answer(qid, answer, report):
+    """K3C14-0 has its own "not applicable" option; its "no" means the
+    franchisees have no emission data — the category applies but is not
+    calculated. It used to be filed as "marked not applicable"."""
+    value = _answer_value(answer)
+    if value == 'na':
+        return {'reason_code': 'k3_category_no', 'category': 'Kapsam', 'risk': 'medium_high',
+                'description': f'{qid}: Scope 3 category marked not applicable ("Not applicable").'}
+    if value == 'no':
+        return {'reason_code': 'k3_category_no_data', 'category': 'Kapsam', 'risk': 'medium_high',
+                'description': f'{qid}: Scope 3 category applies but is not calculated (no emission data).'}
+    return None
+
+
+FIELD_RULES['K3C14-0'] = _match_franchise_answer
+
+
 # Cross-question checks: (questions whose save re-runs it, the question the
 # flag is filed under, its reason code, the check).
 CROSS_CHECKS = [

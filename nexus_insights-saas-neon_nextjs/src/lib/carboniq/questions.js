@@ -5613,6 +5613,20 @@ export const CARBONIQ_QUESTIONS = [
       // Required once the owner declaration is answered "Evet" (hidden otherwise).
       { id: 'declaration_kwh', type: 'numeric', required: true, conditionalOn: 'owner_declaration', label: { tr: 'Beyan edilen tüketim (kWh)', en: 'Declared consumption (kWh)' } },
       { id: 'declaration_energy', type: 'select', required: true, conditionalOn: 'owner_declaration', label: { tr: 'Bu kWh hangi enerji?', en: 'Which energy are these kWh?' }, options: ENERGY_CARRIER_OPTIONS },
+      // Category 8 is only for leased assets whose emissions are NOT already
+      // in Scope 1/2 (GHG Protocol Scope 3 Standard, Cat. 8): a leased office
+      // the company operates is one of its sites, its electricity is in
+      // Question 68, and counting it here again doubled it.
+      {
+        id: 'in_scope12',
+        type: 'select',
+        required: true,
+        label: { tr: 'Bu varlığın enerjisi Kapsam 1/2\'de zaten raporlandı mı?', en: 'Is this asset\'s energy already reported in Scope 1/2?' },
+        options: [
+          { value: 'included', label: { tr: 'Evet — tesislerimizden biri; enerjisi Soru 68\'de (Kapsam 1/2) → burada tekrar sayılmaz', en: 'Yes — it is one of our sites; its energy is in Question 68 (Scope 1/2) → not counted again here' } },
+          { value: 'not_included', label: { tr: 'Hayır — Kapsam 1/2\'de yok (örn. bina sahibi işletiyor) → Kategori 8\'de sayılır', en: 'No — not in Scope 1/2 (e.g. the landlord operates it) → counted in Category 8' } },
+        ],
+      },
     ],
     validate: { requiredMessage: { tr: 'Lütfen tüm zorunlu alanları doldurun.', en: 'Please fill in all required fields.' } },
     next: 'K3C9-0',
@@ -5956,12 +5970,14 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Does your franchise network have emission data?',
     },
     helper: {
-      tr: 'Franchise veren şirket olarak franchise işletmelerinin emisyonlarını raporlamalısınız. GHG raporu olan işletmelerde Seviye 1, yoksa sektörel ortalama uygulanır. Franchise modeliniz yoksa \'Uygulanamaz\'ı seçin.',
-      en: 'As a franchisor you must report emissions from franchise operations. Level 1 for franchisees with GHG reports, otherwise sector average. If you have no franchise model, select Not applicable.',
+      tr: 'Franchise veren şirket olarak franchise işletmelerinin emisyonlarını raporlamalısınız. GHG raporu olan işletmelerin raporladığı toplam kullanılır (Seviye 1). Raporu olmayan işletmeler için onaylı bir alan bazlı faktör olmadığından emisyon henüz hesaplanmaz; işletme sayısı ve alan kaydedilir. Franchise modeliniz yoksa \'Uygulanamaz\'ı seçin.',
+      en: 'As a franchisor you must report emissions from franchise operations. The total reported by franchisees with GHG reports is used (Level 1). For franchisees without reports there is no approved per-area factor yet, so their emissions are not calculated; the outlet count and area are recorded. If you have no franchise model, select Not applicable.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet — franchise GHG raporları var (Seviye 1)', en: 'Yes — franchise GHG reports available (Level 1)' } },
-      { value: 'no', label: { tr: 'Hayır — tahmin kullanacağız', en: 'No — we will use an estimate' } },
+      // Value kept ("no") so earlier answers stay valid; the label no longer
+      // promises an estimate the calculation never made.
+      { value: 'no', label: { tr: 'Hayır — emisyon verisi yok (kaydedilir, henüz hesaplanmaz)', en: 'No — no emission data (recorded, not calculated yet)' } },
       { value: 'na', label: { tr: 'Uygulanamaz — franchise modelimiz yok', en: 'Not applicable — we have no franchise model' } },
     ],
     nextByValue: { yes: 'K3C14-1', no: 'K3C14-2', na: 'K3C15-0' },
@@ -6004,13 +6020,17 @@ export const CARBONIQ_QUESTIONS = [
     type: 'compound',
     required: true,
     reportField: 'scope3.cat14.estimate_inputs',
+    notCalculated: {
+      tr: 'Franchise işletmeleri raporlanmış emisyon olmadan henüz hesaplanmıyor: onaylı alan bazlı bir faktör yok. İşletme sayısı ve alan raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
+      en: 'Franchise outlets are not calculated yet without reported emissions: there is no approved per-area factor. The outlet count and area are shown in the report and listed as "Not calculated"; they are not added to the totals.',
+    },
     text: {
       tr: 'Franchise işletmelerinizin sayısı ve toplam alanı nedir?',
       en: 'How many franchise outlets do you have and what is their total area?',
     },
     helper: {
-      tr: 'Tahmin için işletme sayısı ve yaklaşık toplam kapalı alan kullanılır. Kesin bilmiyorsanız yaklaşık değer girebilirsiniz.',
-      en: 'The estimate uses the outlet count and approximate total floor area. Approximate values are fine.',
+      tr: 'İşletme sayısı ve yaklaşık toplam kapalı alan raporda kaydedilir; ileride onaylı bir faktörle hesaplanabilmesi için girin. Kesin bilmiyorsanız yaklaşık değer girebilirsiniz.',
+      en: 'The outlet count and approximate total floor area are recorded in the report, so they can be calculated once an approved factor exists. Approximate values are fine.',
     },
     fields: [
       { id: 'franchise_count', type: 'numeric', required: true, label: { tr: 'Franchise işletme sayısı', en: 'Number of franchise outlets' } },
