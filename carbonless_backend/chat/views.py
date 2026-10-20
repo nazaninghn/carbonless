@@ -55,7 +55,8 @@ CRITICAL RULES:
 15. STAY ON TOPIC. You only discuss carbon accounting, emissions, sustainability, ISO 14064-1, climate reporting, and this platform's own features. If asked something unrelated (relationships, general trivia, coding help, politics, etc.), politely decline in 1 sentence and redirect back to carbon accounting — do not answer the off-topic question itself, even briefly.
 16. After answering a conceptual/educational question (not a data-entry acknowledgment), end with a brief, friendly follow-up in the user's language — e.g. "Do you have any other questions?" — so the conversation feels like a helpful guide, not a one-shot lookup.
 17. NEVER ask the user which scope (1, 2, or 3) or which GHG Protocol category their activity belongs to, and never mention "scope" or "category" at all in a clarifying question — that classification is entirely your job, using the SCOPE KNOWLEDGE reference and ownership/control, purchased-energy, or value-chain reasoning. If details are missing, ask ONLY about the activity itself in plain terms — what it is, how much, what it was for — the same way a helpful colleague would, with zero GHG Protocol vocabulary in the question. Wrong: "Can you tell me more about the activity so I can figure out which scope and category it fits into?" Right: "What kind of activity was this — was it something your company bought, energy you used, or travel/transport?" The user should never have to know GHG Protocol classification to use this platform.
-18. KNOW WHEN TO HAND OVER. Some questions need a person from the support team, not you: the user's account or login, billing/subscription, something in the app that is broken or shows an error, data that disappeared, integrations (API, ERP), legal/contract or accreditation questions, or anything about this company's specific situation that you cannot answer reliably from the information you have. In those cases do not guess: say in one short sentence that this needs the support team, and end your reply with the exact token [[DESTEK]] — the system then forwards the question to the team. Never use the token for ordinary carbon-accounting or how-to questions you can answer."""
+18. KNOW WHEN TO HAND OVER. Some questions need a person from the support team, not you: the user's account or login, billing/subscription, something in the app that is broken or shows an error, data that disappeared, integrations (API, ERP), legal/contract or accreditation questions, or anything about this company's specific situation that you cannot answer reliably from the information you have. In those cases do not guess: say in one short sentence that this needs the support team, and end your reply with the exact token [[DESTEK]] — the system then forwards the question to the team. Never use the token for ordinary carbon-accounting or how-to questions you can answer.
+19. KNOW THE PLATFORM AND THE USER'S INVENTORY. Answer any question about the Carbon Inventory ("inventory", "envanter", the questionnaire) from PLATFORM KNOWLEDGE and INVENTORY CONTEXT below — what it is, how to start, continue, edit, sign and report it, and the state of the user's own inventories. Never reply to such a question by asking for an activity, quantity or unit, and never say you don't know about the inventory. A bare message like "Carbon Inventory" or "how do I work with the inventory" is a how-to question, not an activity: explain it. The chat cannot fill in the questionnaire or save its answers — point the user to the Carbon Inventory page for that."""
 
 
 _SUPPORT_TOKEN = '[[DESTEK]]'
@@ -111,6 +112,67 @@ Scope 3 — All other indirect emissions across the value chain, split into 15 G
   Categories 1-8 are "upstream" (getting the company's inputs ready), 9-15 are "downstream" (what happens after the product/service leaves).
 Scope 3 is usually the largest share of a company's footprint but the hardest to measure — if a user asks "why is Scope 3 so big/complicated," that's normal and expected, not a mistake in their data.
 If a user describes an activity and asks which scope it belongs to, reason from ownership/control (Scope 1), purchased energy (Scope 2), or value-chain relationship (Scope 3) — don't guess at random, use the category descriptions above."""
+
+
+def _build_platform_knowledge_prompt():
+    """
+    What the platform's own features are and how they work — above all the
+    Carbon Inventory, the thing users ask about most. Without this block the AI
+    is told to discuss "this platform's own features" but has nothing to say
+    about them, so "how do I work with the inventory" got treated as an
+    activity to record. Kept short: the prompt shares Groq's per-minute token
+    budget with the scope and factor blocks (see _build_scope3_category_prompt).
+    """
+    return """
+
+PLATFORM KNOWLEDGE (Carbonless — explain in plain words, in the user's language):
+CARBON INVENTORY = the step-by-step questionnaire that builds the company's annual ISO 14064-1 greenhouse-gas inventory. It is the main way to produce the annual figures and the audit-ready report.
+- Start: Carbon Inventory page > "Start" (or "Create your first inventory"), choose the reporting year. Several inventories can exist, one per year.
+- Seven stages: 1 Company Profile, 2 Organizational Boundary, 3 Scope 1, 4 Scope 2, 5 Scope 3, 6 Exclusions and Assumptions, 7 Report Generation (review and sign-off by an authorized person).
+- The user only describes their company and activities (fuel, vehicles, electricity, purchases, travel, waste...); the platform picks the emission factors and calculates. Estimates are accepted when exact data is missing.
+- Progress is saved automatically as a draft ("Draft Inventories"); use "Continue" to resume. A signed inventory moves to "Completed Inventories"; "Edit" changes any answer later and the numbers recalculate ("Sign again" re-signs after edits).
+- Answers that need a second look (custom factor, sector average, materiality threshold...) become advisor approvals; managers approve or reject them in the Review tab. Data-entry members' changes count after approval.
+- When complete: Reports tab > download the ISO 14064-1 PDF. Delete removes the inventory's emission records but not chat/form entries.
+OTHER PLACES: Dashboard (totals, trend, targets) · AI Chat (this chat: write monthly bills in plain words, they become monthly entries in Emissions; it does NOT fill the inventory questionnaire) · Emissions (view/add/edit entries) · Targets (reduction goals) · Reports · Benchmark (sample data for now) · Review (approvals) · Settings (company, team, facilities).
+Only approved entries count in totals. Inventory amounts are annual figures; chat/form entries are monthly."""
+
+
+def _get_inventory_context(company):
+    """The company's carbon inventories (questionnaires) for the AI prompt, so it
+    can say what exists, how far along each is, and what to do next."""
+    try:
+        from questionnaire.models import CarbonReport, AdvisorApproval
+        from questionnaire.views import _progress
+
+        reports = list(
+            CarbonReport.objects.filter(company=company)
+            .prefetch_related('steps', 'advisor_approvals').order_by('-updated_at')[:8]
+        )
+        if not reports:
+            return (
+                '\n\n--- INVENTORY CONTEXT ---\n'
+                'The company has no carbon inventory yet. If asked, explain how to create the first one '
+                '(Carbon Inventory page > Start) and what the seven stages involve.\n'
+                '--- END INVENTORY CONTEXT ---'
+            )
+        lines = ['', '', '--- INVENTORY CONTEXT (the company\'s carbon inventories; use to answer questions about them) ---']
+        for r in reports:
+            prog = _progress(r.steps.count(), r.status, r.client_progress)
+            pending = sum(1 for a in r.advisor_approvals.all() if a.status == AdvisorApproval.Status.PENDING)
+            status = 'completed' if r.status == CarbonReport.Status.COMPLETED else 'in progress (draft)'
+            line = f'- {r.title or "Inventory"} | year {r.reporting_year or "not set"} | {status} | {prog["percent"]}% answered'
+            if r.status != CarbonReport.Status.COMPLETED:
+                line += f' | stopped at question {r.current_step}'
+            if r.signed_at:
+                line += ' | signed' + (' (edited since, not re-signed)' if r.edited_after_signing_at else '')
+            if pending:
+                line += f' | {pending} advisor approval(s) pending'
+            lines.append(line)
+        lines.append('--- END INVENTORY CONTEXT ---')
+        return '\n'.join(lines)
+    except Exception:
+        logger.warning('Could not build inventory context', exc_info=True)
+        return ''
 
 
 # The activity→slug map, unit resolution, and factor lookup are shared with the
@@ -172,6 +234,17 @@ def _build_scope3_category_prompt():
 
 
 def _get_user_emission_context(user):
+    """Everything the AI knows about this user's company: emission data plus inventories."""
+    context = _get_emission_data_context(user)
+    try:
+        from companies.utils import get_current_company
+        company = get_current_company(user)
+    except Exception:
+        company = None
+    return context + (_get_inventory_context(company) if company else '')
+
+
+def _get_emission_data_context(user):
     """Fetch the user's real emission data to inject into the AI system prompt."""
     try:
         from django.db.models import Sum
@@ -887,8 +960,8 @@ def _call_groq(messages_history, user_context='', ui_language=None):
         language_directive = ''
 
     system_prompt = (
-        BASE_SYSTEM_PROMPT + language_directive + _build_scope_knowledge_prompt()
-        + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
+        BASE_SYSTEM_PROMPT + language_directive + _build_platform_knowledge_prompt()
+        + _build_scope_knowledge_prompt() + _build_scope3_category_prompt() + _get_emission_factor_reference() + user_context
     )
 
     groq_messages = [{'role': 'system', 'content': system_prompt}]
