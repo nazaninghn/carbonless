@@ -1,0 +1,24 @@
+id,change_type,item,proposed_decision,impact_existing_data,signed_inventories,release
+DR-01,NEW-ROW+METHOD,truck-freight,"Keep existing row; add truck-freight-tkm (0.09695746711/0.09752/0.10163 for 2023/24/25) and truck-freight-vkm (0.8231341248/0.82657/0.83751); route by unit; no conversion between them",0 kg existing; new 1000 tkm 823 -> 97.5 kg,untouched,N
+DR-02,NUMERIC+LABEL,refrigerant GWPs,"Declare AR6 basis; new year rows R134a 1530 R32 771 R22 1960 R410A 2255.5 HFC-227ea 3600; per 100 kg leaked +10.0/+9.6/+15.0/+16.8 t",0 kg existing,untouched,N
+DR-02a,LABEL (or NEW-ROW),SF6,"Keep 25200 (AR6 7.SM.7); 2024 file 23500 is AR5; GHG Protocol AR6 column 24300 conflicts with primary; owner picks keep vs add 2024 AR5 row",0,untouched,L
+DR-02b,LABEL,R404A,"Keep stored 3922 (IPCC AR4 blend); label states that the owner 2023 document uses the DEFRA 2023 blend 3943 and AR6 components compute ~4728; no documented 2024+ value",0,untouched,L
+DR-03,NUMERIC,off-road/on-road diesel per litre,"New year rows off-road 2.93742 (2023) 2.92742 (2024); on-road 2.69569/2.68651; old 3.17939 kept for earlier years",0 existing; 1000 L 3179 -> 2927 kg (-7.9%),untouched,N
+DR-04,NUMERIC,LPG per litre,"1.58652 for 2023-method inventories only; evidence request for 2024+",+7.2 kg (1 entry),untouched,N
+DR-05,LABEL then METHOD,natural gas per m3,"Step 1 relabel 2.02 as fixed adopted value (DEFRA 2020 rounded) not DEFRA 2024; Step 2 only if approved add parameter rows 2.14288 (2023) and 1.91242 (2024) and amend 20200 guard",step1 0; step2 +7619 kg (+6.1%) or -6670 kg (-5.3%) on 125240 kg,untouched,L (step1) / N (step2)
+DR-06,METHOD+LABEL,Turkish electricity,"No numeric change; keep 0.4199 for 2023 method and ETKB for 2024 method; T&D unchanged 0.02; add method text; evidence request on T&D inclusion",0 (reference: 15% T&D would be +33098 kg),untouched,L
+DR-07,METHOD,negative recycling credits,"No change; Option A with disclosure until owner decides A-E",0,untouched,-
+DR-08,LABEL,cement clinker 525,"Relabel as cement protocol default; IPCC 2006 Eq 2.4 = 520; keep value",0 (if 520: -250000 kg),untouched,L
+DR-09,METHOD,flights RF,"No value change; owner decides without-RF/both/RFI 1.9; label 2.9 multiplier unsourced",0,untouched,-
+DR-10,LABEL,spend-based factors,"Relabel unsourced estimate; request USD Emission Factors table",0,untouched,L
+DR-11,NUMERIC(gas columns)+METHOD,gas-split GWP and tier,"CH4 29.8 -> 27.9, N2O 273; tier by declared sector only if approved; totals unchanged; run full before/after in Stage 6",CH4 column -6.4%; ~0.06 t on Stage 3 inventory (estimate),untouched,N
+DR-12,BOUNDARY,biodiesel/bioethanol/pellets,"Hold; relabel as differs from cited row; owner states boundary first",0,untouched,L
+DR-13,LABEL+NUMERIC,landfill,"State category per factor; wt-01-landfill -> 1.16439; hold general-landfill and landfill until category declared",-0.6 kg (wt-01); general -146 or -99 kg if later aligned,untouched,L/N
+DR-15,LABEL,fuel/vehicle generic labels,"State what the value matches instead of GHG Protocol/generic",0,untouched,L
+DR-16,LABEL,on-road-petrol-desnz,"No value change; label does not equal the row it names (-2.0%)",0,untouched,L
+DR-17,LABEL,diesel-kwh,"No value change; label does not equal the row it names (-3.0%)",0,untouched,L
+DR-18,LABEL,ferry-travel,"Label as foot-passenger value 0.01871",0,untouched,L
+DR-19,CODE,factor version control,"New rows only; guard against editing referenced factors; locked-inventory rebuild keeps recorded factor; audit rows; before/after report",probe: new same-year row re-prices signed entry 20200 -> 21428.80 on unrelated edit,protects,C
+DR-20,METHOD,method-year rule,"Add method tag; select by tag when set else by year",0,untouched,C
+DR-21,POLICY,waiver of hard rule 1 and guards per item,"Owner approves each numeric item by ID; amend CLAUDE.md guards only for approved items",-,-,-
+DR-22,OWNER DOC,propane in 2023 document uses natural-gas parameters,"Not a catalog change; owner confirms filed figure",-,-,-

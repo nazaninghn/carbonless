@@ -371,12 +371,14 @@ class CompanyContactValidationTests(TestCase):
         self.assertEqual(res.status_code, 400)
         self.assertIn('internet sitesi', str(res.data['website']))
 
-    def test_tax_number_can_be_cleared(self):
-        # Optional at sign-up, so Settings must accept removing it too (it
-        # used to be required here, and sign-up stored '—' instead).
+    def test_tax_number_cannot_be_cleared(self):
+        # Tax number is now required (exactly 10 digits), so clearing it is
+        # rejected with the bilingual message (this profile is Turkish).
         res = self._patch(tax_number='')
-        self.assertEqual(res.status_code, 200)
-        self.assertEqual(res.data['tax_number'], '')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('10 haneli', str(res.data['tax_number']))
+        # An unrelated partial PATCH that does not touch tax_number still works.
+        self.assertEqual(self._patch(telephone='+90 212 555 01 23').status_code, 200)
 
     def test_questionnaire_step_uses_the_same_check(self):
         from questionnaire.serializers import StepA7bSerializer

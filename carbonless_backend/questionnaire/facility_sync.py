@@ -193,14 +193,44 @@ def connection_notes(company, data, applied, lang='tr'):
     return notes
 
 
-def rename_in_answers(company, old_name, new_name):
+def log_unlinked_from_locked(facility, user):
+    """A facility is about to be deleted: its entries are kept but lose the link. For each signed /
+    completed inventory whose approved entries point at it, one row in the company's history
+    (the totals do not move; the per-facility breakdown does)."""
+    from emissions.audit import log_company_activity
+    from emissions.models import EmissionEntry
+    from .models import CarbonReport
+    from .step_entries import report_is_locked
+    years = (EmissionEntry.objects.filter(facility=facility, status='approved')
+             .values_list('year', flat=True).distinct())
+    for year in sorted(set(years)):
+        n = EmissionEntry.objects.filter(facility=facility, year=year, status='approved').count()
+        for report in CarbonReport.objects.filter(company_id=facility.company_id, reporting_year=year):
+            if not report_is_locked(report):
+                continue
+            title = report.title or year
+            log_company_activity(
+                user, facility.company_id, 'facility_unlinked_from_locked_inventory',
+                f'{facility.name} tesisi silindi; {year} envanterinin ({title}) {n} onaylı kaydı tesisten ayrıldı '
+                f'(kayıtlar ve toplamlar korundu, tesis kırılımı "atanmamış" oldu).',
+                f'The facility {facility.name} was deleted; {n} approved entr{"y" if n == 1 else "ies"} of the {year} '
+                f'inventory ({title}) lost their facility link (entries and totals kept; the facility breakdown now '
+                f'shows them as unassigned).',
+                target_type='CarbonReport', target_id=report.pk, facility=facility.name,
+                entries=n, reporting_year=year)
+
+
+def rename_in_answers(company, old_name, new_name, user=None):
     """A facility renamed in Settings: rename it in the 2A-2 answers too, and
     refresh the text of the entries that name it. The questionnaire links each
     facility's entries by its 2A-2 name, so a name left behind there would read
     as another facility at the next save (a change waiting for approval that
-    nobody made). Amounts, links and approvals are not touched."""
+    nobody made). Amounts, links and approvals are not touched. The stored
+    answer of a signed / completed inventory is rewritten by this, so each one
+    is named in the company's history (a label changed, no figure: not a
+    change "after signing")."""
     from .models import CarbonReport, ReportStep
-    from .step_entries import refresh_entry_text
+    from .step_entries import refresh_entry_text, report_is_locked
     old_key = (old_name or '').strip().lower()
     if not old_key or old_key == (new_name or '').strip().lower():
         return 0
@@ -233,8 +263,19 @@ def rename_in_answers(company, old_name, new_name):
         if hit:
             step.save(update_fields=['answer'])
             changed_reports.append(step.report_id)
+    from emissions.audit import log_company_activity
     for report in CarbonReport.objects.filter(id__in=set(changed_reports)):
         refresh_entry_text(report)
+        if report_is_locked(report):
+            title = report.title or report.reporting_year
+            log_company_activity(
+                user, company.pk, 'inventory_facility_renamed',
+                f'{old_name} tesisi {new_name} olarak yeniden adlandırıldı; {report.reporting_year} envanterinin '
+                f'({title}) kayıtlı cevaplarındaki ad güncellendi (rakamlar değişmedi).',
+                f'The facility {old_name} was renamed {new_name}; the name in the stored answers of the '
+                f'{report.reporting_year} inventory ({title}) was updated (no figure changed).',
+                target_type='CarbonReport', target_id=report.pk, old_name=old_name, new_name=new_name,
+                reporting_year=report.reporting_year)
     return len(set(changed_reports))
 
 

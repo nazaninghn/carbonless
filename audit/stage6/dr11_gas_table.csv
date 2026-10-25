@@ -1,0 +1,6 @@
+﻿scenario,total_kg (must not change),CO2_t,CH4_t,N2O_t,CO2_delta_kg,CH4_delta_kg,N2O_delta_kg,total_delta_kg
+"S0 current (CH4 29.8, stored tiers)",396315.3,396.2354,0.0642,0.0157,0.0,0.0,0.0,0.0
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),396315.3,396.2395,0.0601,0.0157,4.079,-4.08,0.001,0.0
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),396315.3,396.2414,0.0582,0.0157,6.011,-6.013,0.002,0.0
+S3 CH4 27.9 + manufacturing tier,396315.3,396.2865,0.0131,0.0157,51.098,-51.134,0.036,0.0
+S4 CH4 27.0 + manufacturing tier,396315.3,396.2869,0.0126,0.0157,51.524,-51.561,0.037,0.0

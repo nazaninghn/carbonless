@@ -106,11 +106,14 @@ export default function CompanySettings({ language, readOnly = false }) {
       setError(tr ? 'Şirket adı zorunludur' : 'Company name is required');
       return;
     }
+    // Required for every country: exactly 10 numeric digits — the same rule as
+    // sign-up and the server's CompanySerializer.
+    if (!taxNumberOk(form.tax_number, form.country_of_headquarters)) { setError(taxNumberMessage(tr, form.country_of_headquarters)); return; }
     setSaving(true);
     try {
       const res = await api.createCompany({
         legal_entity_name: form.legal_entity_name?.trim(),
-        tax_number: form.tax_number?.trim() || '',
+        tax_number: normalizeTaxNumber(form.tax_number, form.country_of_headquarters),
         country_of_headquarters: form.country_of_headquarters?.trim() || '',
         nace_code: form.nace_code?.trim() || '',
       });
@@ -151,8 +154,8 @@ export default function CompanySettings({ language, readOnly = false }) {
     }
     // Printed as stated in the ISO report: must look like a phone / website.
     if (!phoneOk(form.telephone)) { setError(phoneMessage(tr, form.country_of_headquarters)); return; }
-    // VKN/TCKN for a company based in Turkey, the local tax / VAT number
-    // elsewhere — the same rule as sign-up and the inventory's Question 2.
+    // Required for every country: exactly 10 numeric digits — the same rule as
+    // sign-up and the server's CompanySerializer.
     if (!taxNumberOk(form.tax_number, form.country_of_headquarters)) { setError(taxNumberMessage(tr, form.country_of_headquarters)); return; }
     if (!websiteOk(form.website)) { setError(websiteMessage(tr)); return; }
     setSaving(true);
@@ -256,8 +259,8 @@ export default function CompanySettings({ language, readOnly = false }) {
         </FormField>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField label={tr ? 'Vergi No' : 'Tax Number'}>
-            <input type="text" value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+          <FormField label={`${tr ? 'Vergi No' : 'Tax Number'} *`}>
+            <input type="text" inputMode="numeric" maxLength={10} placeholder={taxNumberPlaceholder(tr)} value={field('tax_number')} onChange={e => setForm(p => ({ ...p, tax_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
           </FormField>
           <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
             <CountrySelect value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} tr={tr} />
@@ -330,8 +333,8 @@ export default function CompanySettings({ language, readOnly = false }) {
         <FormField label={`${tr ? 'Şirket Adı' : 'Company Name'} *`} full>
           <input type="text" value={field('legal_entity_name')} onChange={set('legal_entity_name')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
-        <FormField label={tr ? 'Vergi No' : 'Tax Number'}>
-          <input type="text" maxLength={30} placeholder={taxNumberPlaceholder(tr, field('country_of_headquarters'))} value={field('tax_number')} onChange={set('tax_number')} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
+        <FormField label={`${tr ? 'Vergi No' : 'Tax Number'} *`}>
+          <input type="text" inputMode="numeric" maxLength={10} placeholder={taxNumberPlaceholder(tr)} value={field('tax_number')} onChange={e => setForm(p => ({ ...p, tax_number: e.target.value.replace(/\D/g, '').slice(0, 10) }))} className="w-full rounded-xl border border-[#072C0E]/15 bg-[#F8F8F8] px-3 py-2.5 text-sm focus:border-[#2ABD41] focus:bg-white focus:outline-none" />
         </FormField>
         <FormField label={tr ? 'Merkez Ülkesi' : 'Country of HQ'}>
           <CountrySelect value={field('country_of_headquarters')} onChange={set('country_of_headquarters')} tr={tr} />

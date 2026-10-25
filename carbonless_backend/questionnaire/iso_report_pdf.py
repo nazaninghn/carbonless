@@ -3463,6 +3463,15 @@ def _section4(E, S, D, report, lang, TBL, FIG):
         'Kaynak: IPCC Altıncı Değerlendirme Raporu (AR6, 2021), 100 yıllık değerler. '
         'Bu envanterde uygulanan tüm emisyon faktörleri, bu potansiyeller kullanılarak '
         'CO₂ eşdeğeri cinsinden ifade edilmiştir.', S['small']))
+    # The refrigerant factors in the catalog are not all AR6 values; say so rather than let the table above imply it.
+    E.append(Paragraph(
+        'Note: the refrigerant emission factors applied in this inventory carry the following GWP-100 values, which differ from the '
+        'AR6 values listed above: R-134a 1,430, R-32 675, R-22 1,810, R-410A 2,088 and R-404A 3,922 (IPCC AR4); HFC-227ea 3,350 (IPCC AR5). '
+        'SF₆ (25,200) is the AR6 value. The basis of R-407C and R-432A has not been verified.'
+        if lang == 'en' else
+        'Not: bu envanterde uygulanan soğutucu akışkan emisyon faktörleri, yukarıda listelenen AR6 değerlerinden farklı olan şu KIP-100 '
+        'değerlerini taşır: R-134a 1.430, R-32 675, R-22 1.810, R-410A 2.088 ve R-404A 3.922 (IPCC AR4); HFC-227ea 3.350 (IPCC AR5). '
+        'SF₆ (25.200) AR6 değeridir. R-407C ve R-432A için esas alınan KIP kaynağı doğrulanmamıştır.', S['small']))
     E.append(PageBreak())
 
     # 4.1.1.3 — what the direct emissions actually are.

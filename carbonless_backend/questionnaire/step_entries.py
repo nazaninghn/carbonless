@@ -1464,8 +1464,11 @@ def _step_rows(step, specs, facility_of):
     rows = []
     for factor, qty, label, site in specs:
         shown = bool(label['tr']) and (many or factor.slug.startswith('calculated-'))
+        facility = facility_of(site)
+        if facility is not None and facility.pk is None:
+            facility = None      # a facility rebuilt from a signed inventory's record (deleted since): no link
         rows.append((factor, _q4(qty), f'{base} · {label["tr"]}' if shown else base,
-                     label if label['tr'] else None, facility_of(site)))
+                     label if label['tr'] else None, facility))
     return rows
 
 
@@ -1520,17 +1523,45 @@ def recorded_connections(report):
     facility whose connection has not changed since the inventory was locked
     (no key: its current connection is the applied one)."""
     from .models import CarbonReport
-    applied = None
+    applied, countries = None, {}
     if report is not None and getattr(report, 'pk', None):
         # Read fresh: the object in hand may predate a snapshot taken a moment ago.
         row = CarbonReport.objects.filter(pk=report.pk).values('signed_at', 'status', 'applied_grid_connections').first()
         if row and (row['signed_at'] or row['status'] == CarbonReport.Status.COMPLETED):
             applied = {str(k): v for k, v in (row['applied_grid_connections'] or {}).items()}
+            countries = _stated_facilities(report)
     token = _APPLIED_CONNECTIONS.set(applied)
+    country_token = _APPLIED_COUNTRIES.set(countries)
     try:
         yield
     finally:
+        _APPLIED_COUNTRIES.reset(country_token)
         _APPLIED_CONNECTIONS.reset(token)
+
+
+# {facility name (lower): country} the signed / completed inventory states in its own 2A-2 answer.
+# The grid factor follows the facility's country as well as its connection; a country changed later in
+# Settings (or by another inventory's 2A-2) must not move this inventory's next recalculation — it
+# would otherwise drop or re-price approved electricity. A country changed in this inventory's own
+# 2A-2 is stated there, so it follows (flagged as edited then).
+_APPLIED_COUNTRIES = contextvars.ContextVar('applied_facility_countries', default={})
+
+
+def _stated_facilities(report):
+    """{facility name (lower): {'name', 'country', 'connection'}} as the inventory's own 2A-2 answer
+    records them ('connection' '' when not stated / "I don't know")."""
+    from .models import ReportStep
+    from .facility_sync import CONNECTIONS
+    stored = ReportStep.objects.filter(report_id=report.pk, step_id='2A-2').values_list('answer', flat=True).first()
+    answer = stored.get('answer', stored) if isinstance(stored, dict) else None
+    out = {}
+    for row in answer.values() if isinstance(answer, dict) else ():
+        if isinstance(row, dict) and str(row.get('name') or '').strip():
+            conn = row.get('grid_connection')
+            out[str(row['name']).strip().lower()] = {
+                'name': str(row['name']).strip()[:255], 'country': str(row.get('country') or '').strip()[:100],
+                'connection': conn if conn in CONNECTIONS else ''}
+    return out
 
 
 def _facility_lookup(company):
@@ -1549,6 +1580,18 @@ def _facility_lookup(company):
             if connection is not None and connection != facility.grid_connection:
                 facility = copy.copy(facility)   # same pk; only this calculation sees the applied connection
                 facility.grid_connection = connection
+            country = (_APPLIED_COUNTRIES.get().get(key) or {}).get('country')
+            if country and country != facility.country:
+                facility = copy.copy(facility)   # likewise the country this inventory was calculated with
+                facility.country = country
+        elif facility is None and applied is not None and key in _APPLIED_COUNTRIES.get():
+            # The facility was deleted after this inventory was signed. Its figures are history: they are
+            # recalculated with the facility as the inventory's own 2A-2 recorded it (country, grid
+            # connection), never with the company default. Unsaved, so no entry is linked to it.
+            from companies.models import Facility
+            stated = _APPLIED_COUNTRIES.get()[key]
+            facility = Facility(company=company, name=stated['name'], country=stated['country'],
+                                grid_connection=stated['connection'])
         return facility
     return find
 

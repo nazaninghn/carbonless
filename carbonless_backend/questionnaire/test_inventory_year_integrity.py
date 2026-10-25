@@ -496,3 +496,65 @@ class EngineLevelGuardTests(_Year):
         gebze = Facility.objects.get(company=self.company, name='Gebze')
         r = self.client.patch(f'/api/companies/facilities/{gebze.pk}/', {'grid_connection': 'transmission'}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
+
+
+class WorkspaceWritePathTests(_Year):
+    """The Workspace (report-fields bulk-upsert / suggestion confirm) turns its fields into
+    emission entries of the report's company and year. It meets the same rule as the questionnaire:
+    no entries for an inventory without a year or whose year is shared, and a change to a signed /
+    completed inventory is flagged and on record."""
+
+    WS = {'fields': [{'field_id': 'rf.4a.consumption_kwh', 'value': 1000}]}
+
+    def _upsert(self, report):
+        return self.client.post('/api/questionnaire/report-fields/bulk-upsert/', {'report': report.id, **self.WS}, format='json')
+
+    def _workspace_rows(self):
+        return list(EmissionEntry.objects.filter(company=self.company, description__startswith='Workspace '))
+
+    def test_a_workspace_save_creates_its_entries_for_a_plain_inventory(self):
+        """Control: the path works at all, so the refusals below are the guard and not a broken fixture."""
+        r = self._upsert(self.report)
+        self.assertEqual(r.status_code, 200, r.content)
+        [row] = self._workspace_rows()
+        self.assertEqual((row.year, round(float(row.calculated_co2e_kg), 4)), (2025, 469.0))   # 1000 kWh x Turkey grid, distribution
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.edited_after_signing_at)                     # not signed: nothing to flag
+
+    def test_a_workspace_save_into_a_signed_inventory_is_flagged_and_logged(self):
+        self._lock()
+        self.assertEqual(self._upsert(self.report).status_code, 200)
+        self.assertEqual(len(self._workspace_rows()), 1)
+        self.report.refresh_from_db()
+        self.assertIsNotNone(self.report.edited_after_signing_at)
+        [row] = self._history('inventory_recalculated')
+        self.assertEqual((row.target_type, row.target_id), ('CarbonReport', str(self.report.pk)))
+
+    def test_saving_the_same_workspace_values_again_does_not_flag_a_signed_inventory(self):
+        self._upsert(self.report)
+        self._lock()
+        self.assertEqual(self._upsert(self.report).status_code, 200)                # nothing changed
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.edited_after_signing_at)
+        self.assertEqual(self._history('inventory_recalculated'), [])
+
+    def test_a_workspace_save_creates_no_entries_for_an_inventory_without_a_year(self):
+        report = CarbonReport.objects.create(company=self.company, created_by=self.user, title='no year')
+        self.assertEqual(self._upsert(report).status_code, 200)                     # the field itself is kept
+        self.assertEqual(self._workspace_rows(), [])                                # but no entry in "this year"
+        self.assertFalse(EmissionEntry.objects.filter(company=self.company, year=timezone.now().year).exists())
+
+    def test_a_workspace_save_creates_no_entries_in_a_year_two_inventories_share(self):
+        if not LEGACY:
+            self.skipTest('legacy flag not present')
+        dup = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2025,
+                                          title='old duplicate', **LEGACY)
+        CarbonReport.objects.filter(pk=self.report.pk).update(**LEGACY)
+        self._lock()
+        before = self._figures()
+        r = self._upsert(dup)                                                       # a member of a duplicate group takes no write
+        self.assertEqual((r.status_code, r.data['code']), (409, 'inventory_exists_for_year'))
+        self.assertEqual(self._figures(), before)                                   # the signed inventory's year is untouched
+        self.assertEqual(self._workspace_rows(), [])
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.edited_after_signing_at)

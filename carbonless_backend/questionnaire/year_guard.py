@@ -85,6 +85,47 @@ def year_required_payload(step, lang='en'):
             'step': step, 'next_step': step}
 
 
+def year_change_blocked(report, new_year, lang='en', step=None):
+    """409 body when `report` already has entries and `new_year` is a different year, else None.
+
+    Entries are stored by company and year. Moving an inventory's year would leave its entries behind in the
+    old year (counted by the Dashboard, the exports and the reports, belonging to no inventory) while the new
+    year had none until the next save recreated them. Moving or deleting them for the user would change approved
+    numbers (and let a data-entry member remove them), so the change is refused instead; an inventory that has
+    no entries yet - the normal flow - is free to choose its year."""
+    old = report.reporting_year
+    if not old or not report.company_id or new_year == old:
+        return None
+    from emissions.models import EmissionEntry
+    n = EmissionEntry.objects.filter(company_id=report.company_id, year=old,
+                                     description__startswith='Questionnaire step ').count()
+    if not n:
+        return None
+    en = (f'The reporting year cannot be changed to {new_year}: this inventory already has {n} calculated '
+          f'entr{"y" if n == 1 else "ies"} for {old}, and entries belong to their year. Start a new inventory for '
+          f'{new_year}, or restart this one (a draft) to choose another year.')
+    tr = (f'Raporlama yılı {new_year} olarak değiştirilemez: bu envanterin {old} yılı için {n} hesaplanmış kaydı var '
+          f've kayıtlar yıllarına bağlıdır. {new_year} için yeni bir envanter başlatın veya başka bir yıl seçmek için '
+          f'bu envanteri (taslaksa) sıfırlayın.')
+    msg = tr if lang == 'tr' else en
+    body = {'success': False, 'code': 'year_has_entries', 'error': msg, 'bot_messages': [msg],
+            'error_en': en, 'error_tr': tr, 'entries': n, 'reporting_year': old}
+    if step:
+        body.update({'step': step, 'next_step': step})
+    return body
+
+
+def locked_payload(report, what, lang='en'):
+    """409 body for an action that would reopen or rewrite a signed / completed inventory."""
+    en = (f'This inventory ({report.title or report.reporting_year}) is signed/completed, so it cannot {what}. '
+          f'Edit its answers one by one instead; every change is flagged as edited after signing.')
+    tr = (f'Bu envanter ({report.title or report.reporting_year}) imzalı/tamamlanmış; bu işlem yapılamaz. '
+          f'Cevaplarını tek tek düzenleyin; her değişiklik "imzadan sonra düzenlendi" olarak işaretlenir.')
+    msg = tr if lang == 'tr' else en
+    return {'success': False, 'code': 'inventory_locked', 'error': msg, 'bot_messages': [msg],
+            'error_en': en, 'error_tr': tr, 'report_id': report.pk}
+
+
 def log_blocked(user, company_id, others, year, what, request=None):
     """Put a refused attempt on a signed / completed inventory in the company's history —
     nothing in it changed, but somebody tried."""

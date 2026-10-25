@@ -90,21 +90,89 @@ class RegistrationCompanyTests(TestCase):
         self.assertEqual(company.nace_code, 'C13')
         self.assertTrue(company.has_iso_14001)
 
-    def test_optional_blank_fields_fall_back_to_placeholders(self):
-        # Tax number is optional on the form; a blank one must not reject the rest.
+    def test_blank_tax_number_is_rejected_and_falls_back_to_placeholder(self):
+        # Tax number is now required (exactly 10 digits), so a blank one makes
+        # the company details fail validation: the row falls back to the
+        # placeholder company instead of saving the submitted (invalid) details.
         data, company = self._register('blanktax', {
             'legal_entity_name': 'Blank Tax Ltd', 'tax_number': '',
         })
-        self.assertTrue(data['company_saved'])
-        self.assertEqual(company.legal_entity_name, 'Blank Tax Ltd')
-        # Stored empty (not as a '—' placeholder that then showed up in the
-        # Settings edit field and the ISO report).
-        self.assertEqual(company.tax_number, '')
+        self.assertFalse(data['company_saved'])
+        # The submitted name was NOT stored — the placeholder company is used.
+        self.assertEqual(company.legal_entity_name, "blanktax's Company")
+        self.assertEqual(company.tax_number, '0000000000')
 
     def test_without_company_details_a_placeholder_is_created(self):
         data, company = self._register('nocompany')
         self.assertFalse(data['company_saved'])
         self.assertEqual(company.legal_entity_name, "nocompany's Company")
+
+
+class TaxNumberRuleTests(TestCase):
+    """Tax number is required and exactly 10 numeric digits for every country.
+
+    The register endpoint never hard-fails on bad company details (it falls
+    back to a placeholder and returns company_saved=False), so the hard
+    rejection + bilingual message is asserted directly against the shared
+    CompanySerializer / the /api/companies/create/ endpoint, and the register
+    endpoint is used to confirm company_saved is True only for a valid value.
+    """
+
+    BASE = {
+        'legal_entity_name': 'Vergi A.Ş.',
+        'country_of_headquarters': 'TR', 'countries_of_operation': 'TR',
+        'nace_code': 'C13', 'main_activity_description': 'x',
+        'number_of_employees': '1-10', 'annual_turnover_range': '<1M',
+        'number_of_facilities': 1,
+    }
+
+    def _create_client(self, username, language='en'):
+        from accounts.models import UserProfile
+        user = User.objects.create_user(username, f'{username}@test.com', 'StrongPass123')
+        UserProfile.objects.create(user=user, language_preference=language)
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
+
+    def _register(self, username, tax_number):
+        res = APIClient().post('/api/accounts/register/', {
+            'username': username, 'email': f'{username}@test.com',
+            'password': 'StrongPass123', 'password2': 'StrongPass123',
+            'company': {**self.BASE, 'tax_number': tax_number},
+        }, format='json')
+        self.assertEqual(res.status_code, 201)
+        return res.json()
+
+    def test_company_create_rejects_bad_tax_numbers(self):
+        for bad in ('', '123456789', '12345678901', '12345ABCDE'):
+            client = self._create_client(f'bad{len(bad)}{bad[:3]}', language='en')
+            res = client.post('/api/companies/create/', {**self.BASE, 'tax_number': bad}, format='json')
+            self.assertEqual(res.status_code, 400, f'{bad!r} should be rejected')
+            self.assertIn('exactly 10 digits', str(res.data['tax_number']))
+
+    def test_company_create_accepts_exactly_10_digits(self):
+        client = self._create_client('good10', language='en')
+        res = client.post('/api/companies/create/', {**self.BASE, 'tax_number': '1234567890'}, format='json')
+        self.assertEqual(res.status_code, 201, res.content)
+
+    def test_bilingual_message_in_turkish(self):
+        client = self._create_client('turkce', language='tr')
+        res = client.post('/api/companies/create/', {**self.BASE, 'tax_number': '123'}, format='json')
+        self.assertEqual(res.status_code, 400)
+        self.assertIn('tam olarak 10 haneli', str(res.data['tax_number']))
+
+    def test_spaces_and_dashes_are_normalised_then_stored(self):
+        client = self._create_client('normalise', language='en')
+        res = client.post('/api/companies/create/', {**self.BASE, 'tax_number': '1234 567-890'}, format='json')
+        self.assertEqual(res.status_code, 201, res.content)
+        self.assertEqual(res.data['tax_number'], '1234567890')
+
+    def test_registration_saves_company_only_for_valid_10_digit_tax(self):
+        self.assertTrue(self._register('reg_good', '1234567890')['company_saved'])
+        # 9 digits, 11 digits and letters all fall back to the placeholder.
+        self.assertFalse(self._register('reg_short', '123456789')['company_saved'])
+        self.assertFalse(self._register('reg_long', '12345678901')['company_saved'])
+        self.assertFalse(self._register('reg_alpha', '12345ABCDE')['company_saved'])
 
 
 class AuthErrorCodeTests(TestCase):
@@ -328,8 +396,8 @@ class FullBackupTests(TestCase):
         from io import BytesIO
         from openpyxl import load_workbook
         wb = load_workbook(BytesIO(b''.join(r.streaming_content) if r.streaming else r.content))
-        self.assertEqual(wb.sheetnames, ['Şirket', 'Tesisler', 'Emisyon Kayıtları', 'Hedefler',
-                                         'Envanterler', 'Anket Cevapları'])
+        self.assertEqual(wb.sheetnames, ['Şirket', 'Tesisler', 'Emisyon Kayıtları', 'Özel Talepler',
+                                         'Hedefler', 'Envanterler', 'Anket Cevapları'])
         # The question in words, not its step id.
         self.assertEqual(wb['Anket Cevapları']['C2'].value, 'Soru 68 — Yıllık elektrik tüketimi nedir?')
         # Readable for people: the answer as text, labels and statuses in Turkish.

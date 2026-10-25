@@ -20,6 +20,29 @@ def is_annual(entry):
     return (entry.description or '').startswith(ANNUAL_PREFIX)
 
 
+def counted_custom_requests(company, year):
+    """The approved custom requests the dashboard adds to its totals next to the approved
+    entries: approved, an amount calculated, and not a facility electricity factor (that one
+    replaces the factor of the facility's kWh instead of adding an amount of its own).
+    The CSV / Excel exports list exactly these, so they add up to the dashboard."""
+    from .models import CustomEmissionRequest
+    if not company:
+        return CustomEmissionRequest.objects.none()
+    return CustomEmissionRequest.objects.filter(
+        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False, electricity_method='')
+
+
+def approved_year_total_kg(company, year):
+    """Everything approved for the year, as the dashboard's total adds it up: the approved
+    entries (questionnaire, form, chat, Workspace) plus the counted custom requests."""
+    from .models import EmissionEntry
+    if not company:
+        return 0.0
+    entries = EmissionEntry.objects.filter(company=company, year=year, status='approved')
+    return float((entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+                 + (counted_custom_requests(company, year).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0))
+
+
 def monthly_split(queryset):
     """([kg for months 1..12] of the monthly entries, kg of the annual ones)."""
     monthly_qs = (queryset.exclude(description__startswith=ANNUAL_PREFIX)

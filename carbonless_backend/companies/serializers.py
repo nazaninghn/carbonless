@@ -1,9 +1,18 @@
+import re
+
 from rest_framework import serializers
 from .contact import message, phone_ok, website_ok
 from .models import Company, Facility, CompanyMembership
 
 
 class CompanySerializer(serializers.ModelSerializer):
+    # Required for every country and exactly 10 numeric digits. Declared
+    # explicitly so a full create (registration / company create) must supply
+    # it, while a partial PATCH that omits it stays untouched. `allow_blank` is
+    # True so that an empty value reaches validate_tax_number and gets the same
+    # bilingual "exactly 10 digits" message instead of DRF's generic blank one.
+    tax_number = serializers.CharField(required=True, allow_blank=True)
+
     class Meta:
         model = Company
         fields = [
@@ -36,6 +45,18 @@ class CompanySerializer(serializers.ModelSerializer):
         if not website_ok(value):
             raise serializers.ValidationError(message('invalid_website', self._lang()), code='invalid_website')
         return (value or '').strip()
+
+    def validate_tax_number(self, value):
+        # Universal rule: required, exactly 10 numeric digits (0-9). Spaces,
+        # dashes and letters are stripped first, then the result must be
+        # exactly 10 digits. The stored value is always the normalised digits.
+        digits = re.sub(r'\D', '', value or '')
+        if not re.fullmatch(r'\d{10}', digits):
+            tr = self._lang() == 'tr'
+            raise serializers.ValidationError(
+                'Vergi numarası tam olarak 10 haneli olmalıdır' if tr
+                else 'Tax number must be exactly 10 digits', code='invalid_tax_number')
+        return digits
 
 
 class FacilitySerializer(serializers.ModelSerializer):

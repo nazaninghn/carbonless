@@ -1,0 +1,222 @@
+--- page 7
+Final Government Distribution 7.SM IPCC AR6 WGI 
+Do Not Cite, Quote or Distribute 7SM-4 Total pages: 52 
+𝑐2 = −2.4357 × 10−4 W m–2 ppb–1 
+𝑑2 = 0.12173 W m-2 ppb–1/2 
+𝑁0 = 273.87 ppb 
+CH4 SARFCH4 = (𝑎3√𝑀 + 𝑏3√𝑁 + 𝑑3) ⋅ (√𝑀 − √𝑀0) 𝑎3 = −8.9603 × 10−5 W m–2 ppb–1 𝑏3 = −1.2462 × 10−4 W m–2 ppb–1 
+𝑑3 = 0.045194 W m–2 ppb–1/2 
+𝑀0 = 731.41 ppb 
+Halogenated 
+compounds 
+and other 
+minor 
+GHGs 
+SARF𝑋 = 𝑒𝑋(𝑋 − 𝑋0) 𝑋 and 𝑋0 in ppb 
+𝑒𝑋 is radiative efficiency (W m–2 ppb–1) 
+(Table 7.SM.7) 
+ 1 
+[END TABLE 7.SM.1 HERE] 2 
+ 3 
+ 4 
+7.SM.1.2 Effective radiative forcing from a doubling of CO2 5 
+ 6 
+In Section 7.3.2.1, the ERF from a doubling of CO2 (𝐹2×CO2 = 3.93 W m–2) is defined relative to 1750 CE 7 
+concentrations of CO2 assessed in Chapter 2 (C0 = 278.3 ppm) and N2O (N0 = 270.1 ppb) using the 8 
+Meinshausen et al. (2020) fits (Table 7.SM.1) to calculate SARF of 3.75 W m–2 and then adding an 9 
+additional 5% for tropospheric adjustments (Section 7.3.2.1; Table 7.3). Using the Etminan et al. (2016) fits 10 
+with the same baseline concentrations (C0 = 278.3 ppm, N0 = 270.1 ppb) results in a SARF of 3.80 W m–2 11 
+and an ERF of 3.99 W m-2 (Table 7.SM.2). The simplified expressions are used as no specific line-by-line 12 
+experiment was performed for a doubling of CO2 from about 1750 concentrations in Etminan et al. (2016). 13 
+ 14 
+Alongside the choice of simplified expression, the baseline CO2 and N2O concentrations also has an impact 15 
+on the SARF and ERF from a doubling of CO2 (Table 7.SM.2). Using 1850 CE baselines results in ERF 16 
+values that are close, but not exactly the same, as using 1750 CE baselines (Table 7.SM.2). Using a present-17 
+day baseline results in estimates of SARF and ERF from a doubling of CO2 that are about 1% greater than 18 
+the 1750 or 1850 values (Table 7.SM.2). The 1850 baseline is significant as it the reference pre-industrial 19 
+state for CMIP6 experiments, including the abrupt4xCO2 and 1pctCO2 experiments used to estimate ECS 20 
+and TCR from climate models. It should be noted that the 1pctCO2 experiment design relies on a logarithmic 21 
+increase in CO2 SARF with concentration to estimate TCR (Gregory et al., 2015), and both the Etminan et al. 22 
+(2016) and Meinshausen et al. (2020) SARF formulas are super-logarithmic with increasing CO2 23 
+concentrations. 24 
+ 25 
+ 26 
+[START TABLE 7.SM.2 HERE] 27 
+ 28 
+Table 7.SM.2: Computed values of the SARF of a doubling of CO2 using the relationships in Etminan et al. (2016) 29 
+and Meinshausen et al. (2020), and the ERF from a doubling of CO2 (assessed to be SARF + 5% in 30 
+Section 7.3.2.1), from different baseline concentrations of CO2 and N2O, and compared to SARF in 31 
+AR5. 32 
+ 33 
+CO2 
+concentration 
+(ppm) 
+N2O 
+concentration 
+(ppb) 
+SARF 
+2×CO2 
+AR5 
+(Myhre et 
+al., 2013b) 
+SARF 
+2×CO2 
+(Etminan 
+et al., 
+2016) 
+ERF 
+2×CO2 
+(Etminan 
+et al., 
+2016) 
+SARF 2×CO2 
+(Meinshausen 
+et al., 2020) 
+ERF 2×CO2 
+(Meinshausen 
+et al., 2020) 
+Baseline year 
+for GHG 
+concentrations 
+278.3 270.1 3.71 3.802 3.992 3.747 3.934 1750 (Chapter 
+2 assessment) 
+277.15 273.87 3.801 3.991 3.746 3.933 1750 
+(Meinshausen 
+et al., 2020)  
+284.32 273.02 3.804 3.994 3.749 3.937 1850 used in 
+CMIP6 model 
+integrations 
+(Meinshausen 
+ACCEPTED VERSION 
+SUBJECT TO FINAL EDITING
+--- page 8
+Final Government Distribution 7.SM IPCC AR6 WGI 
+Do Not Cite, Quote or Distribute 7SM-5 Total pages: 52 
+et al., 2017) 
+389 323 3.837 4.029 3.790 3.980 2011 (Etminan 
+et al., 2016) 
+409.85 332.09 3.844 4.036 3.798 3.988 2019 (Chapter 
+2 assessment) 
+ 1 
+[END TABLE 7.SM.2 HERE] 2 
+ 3 
+ 4 
+7.SM.1.3 Historical (1750-2019) effective radiative forcing time series 5 
+ 6 
+7.SM.1.3.1 Best estimate historical time series 7 
+ 8 
+The historical ERF time series describes how the best estimates of changes in climate drivers translates to 9 
+ERF for 1750 to 2019. The time-evolution of ERF is reported separately for CO2, CH4, N2O, other well-10 
+mixed greenhouse gases (WMGHGs), ozone, stratospheric water vapour from methane oxidation, contrails 11 
+and aviation-induced cirrus, aerosol-radiation interactions, aerosol-cloud interactions, light-absorbing 12 
+particles on snow and ice, land-use change, volcanic, and solar. The contributions from 49 halogenated 13 
+GHGs comprising the “other well-mixed greenhouse gases” category are further reported individually. Data 14 
+is published in Annex III. 15 
+ 16 
+For CO2, CH4 and N2O, the SARFs are calculated using time-dependent best-estimate concentrations of 17 
+these gases from Chapter 2 using the formulae in Table 7.SM.1 and using concentrations from Chapter 2 in 18 
+1750 CE as baselines (C0 = 278.3 ppm, N0 = 270.1 ppb, M0 = 729.2 ppb). Tropospheric adjustments of +5% 19 
+for CO2, –14% for CH4 and +7 % are then added to these SARF values to produce ERF (Section 7.3.2). For 20 
+49 halogenated greenhouse gases, concentration changes since 1750 are used combined with radiative 21 
+efficiencies detailed in Table 7.SM.7 to derive SARF (Table 7.SM.1). Accounting for tropospheric 22 
+adjustments adds +13% and +12% to CFC-11 and CFC-12 respectively when moving from SARF to ERF. 23 
+No tropospheric adjustments are assumed for other halogenated species (Section 7.3.2.4). 24 
+ 25 
+For historical ozone forcing, the time series from 1750 to 2020 from Skeie et al. (2020) is adopted, using the 26 
+multi-model mean ERF from six independent Earth System and chemistry-climate models (BCC-ESM1, 27 
+CESM2-WACCM6, GFDL-ESM4, GISS-E2-1-H, MRI-ESM2-0 and Oslo-CTM3) that used CMIP6 28 
+precursor emissions and interactively calculated ozone burdens using full stratospheric and tropospheric 29 
+chemistry schemes. From the original 12 models reporting results in Skeie et al. (2020), CNRM-CM6, 30 
+CNRM-ESM2-1 and E3SM1-0 were excluded as they do not include full stratospheric and tropospheric 31 
+chemistry, only the first out of the similar models CESM2-WACCM6 and CESM2-CAM6 were used, the 32 
+input4MIPs forcing estimate (Checa-Garcia et al., 2018) was excluded as it did not use CMIP6 precursor 33 
+emissions, and UKESM-1-0-LL was excluded for having implausible time evolutions of stratospheric ozone 34 
+that resulted in negative total ozone ERF estimates for 2010 relative to 1850. The extrapolations for the 35 
+1750–1850 and 2010–2020 periods (run beyond 2014 using SSP2-4.5) came from a single model (Oslo-36 
+CTM3) and results were used up to and including 2019. Stratospheric water vapour from methane oxidation 37 
+is treated a linear scaling of the methane ERF and scaled to the 1750–2019 assessment of 0.05 W m–2 38 
+(Section 7.3.2.6). 39 
+ 40 
+Several forcing categories (contrails, aviation-induced cirrus aerosols, and black carbon on snow) are derived 41 
+from global annual emissions totals of short-lived climate forcers. For the best estimate of historical 42 
+emissions from 1750 to 2019, the 11 September 2020 version of the Community Emissions Data System 43 
+(CEDS) is used (Hoesly et al., 2018), obtained from https://doi.org/10.5281/zenodo.4025316. CEDS 44 
+provides emissions of black carbon (BC), organic carbon (OC), sulphur dioxide (SO2), ammonia (NH3), 45 
+nitrogen oxides (NOx), carbon monoxide (CO) and non-methane volatile organic compounds (NMVOC) 46 
+from the fossil fuel, industrial and agricultural sectors. Biomass burning emissions are used from the 47 
+BB4CMIP dataset (also used for CMIP6 model integrations, from Van Marle et al. (2017)), aggregated into 48 
+global annual totals. The SSP2-4.5 scenario projection from BB4CMIP is used for 2015-2019. 49 
+ 50 
+ERF from contrails and aviation-induced cirrus uses global aviation NOx emissions as a predictor of aviation 51 
+ACCEPTED VERSION 
+SUBJECT TO FINAL EDITING
+--- page 27
+Final Government Distribution 7.SM IPCC AR6 WGI 
+Do Not Cite, Quote or Distribute 7SM-24 Total pages: 52 
+7.SM.6 Tables of greenhouse gas lifetimes, radiative efficiencies and metrics 1 
+ 2 
+[START TABLE 7.SM.7 HERE] 3 
+ 4 
+Table 7.SM.7: Greenhouse gas lifetimes, radiative efficiencies, Global Warming Potentials (GWPs), Global Temperature Potentials (GTPs) and  Cumulative Global Temperature 5 
+Potentials (CGTPs). GWPs given for 20-year, 100-year and 500-year time horizons. GTPs and CGTPs given for 50-year and 100-year time horizons. Note CGTP 6 
+has units of years and is applied to a change in emission rate rather tha n a change in emission amount.  Also shown are absolute values of GWPs and GTPs 7 
+(AGWPs and AGTPs), in units of picowatt years per square metre per kilogram (1 pW = 10–12 W). Radiative efficiencies for CH4 and N2O given in this table do not 8 
+include chemical adjustments (values including chemical adjustments are given in Table 7.15). 9 
+ 10 
+Name Formula 
+Lifetime 
+(yr) 
+Radiative 
+efficiency 
+(W m-2 
+ppb-1) 
+AGWP 
+20  
+(pW m-2 
+yr kg-1) 
+GWP 
+20 
+AGWP 
+100 (pW 
+m-2 yr  
+kg-1) 
+GWP 
+100 
+AGWP 
+500 (pW 
+m-2 yr  
+kg-1) 
+GWP 
+500 
+AGTP 
+50 (pW m-
+2 yr  
+kg-1) 
+GTP 
+50 
+AGTP 
+100 (pW 
+m-2 yr  
+kg-1) 
+GTP 
+100 
+CGTP 
+50 (yr) 
+CGTP 
+100 (yr) 
+Major Greenhouse Gases 
+Carbon dioxide CO2   1.33×10–5 0.0243 1 0.0895 1 0.314 1 0.000428 1 0.000395 1   
+Methane CH4 11.8 0.000388 1.98 81.2 2.49 27.9 2.5 7.95 0.00473 11 0.00212 5.38 2730 3320 
+Nitrous oxide N2O 109 0.0032 6.65 273 24.5 273 40.7 130 0.124 290 0.0919 233   
+Chlorofluorocarbons 
+CFC-11 CCl3F 52 0.259 181 7430 497 5560 586 1870 2.43 5670 1.25 3160     
+CFC-12 CCl2F2 102 0.32 277 11400 998 11200 1600 5100 5.06 11800 3.66 9270     
+CFC-13 CClF3 640 0.278 301 12400 1450 16200 5500 17500 7.26 17000 7.4 18800     
+CFC-112 CCl2FCCl2F 63.6 0.282 137 5620 413 4620 525 1670 2.06 4810 1.19 3020     
+CFC-112a CCl3CClF2 52 0.246 115 4740 317 3550 374 1190 1.55 3620 0.795 2010     
+CFC-113 CCl2FCClF2 93 0.301 167 6860 583 6520 890 2830 2.96 6910 2.06 5210     
+CFC-113a CCl3CF3 55 0.241 124 5110 351 3930 422 1350 1.73 4030 0.917 2320     
+CFC-114 CClF2CClF2 189 0.314 201 8260 844 9430 1930 6150 4.28 9990 3.71 9410     
+CFC-114a CCl2FCF3 105 0.297 183 7510 664 7420 1080 3450 3.37 7880 2.46 6240     
+ACCEPTED VERSION 
+SUBJECT TO FINAL EDITING

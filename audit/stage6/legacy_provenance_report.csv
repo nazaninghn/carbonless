@@ -1,0 +1,6 @@
+﻿report_id,company_id,year,status,signed,frozen_at,pins,approved_entries,approved_kg,calculated_entries,steps_exposed_without_pins,steps_unprotected_with_pins,unprotected_stored_kg,unprotected_now_kg,steps_without_answers,entries_value_drift,entries_qty_x_snapshot_mismatch,entries_on_withdrawn_factor,verdict
+6,1,2024,completed,True,,0,0,0,0,0,0,0,0,0,0,0,0,no_entries
+8,1,2024,completed,True,,0,0,0,0,0,0,0,0,0,0,0,0,no_entries
+15,1,2024,completed,True,,0,0,0,0,11,11,0,258690.91,0,0,0,0,ENTRIES_MISSING_REVIEW
+28,3,2025,completed,True,,0,19,26856253.81,11,0,0,0,0,0,0,0,0,provable
+31,4,2025,completed,True,,0,16,388669.34,6,0,0,0,0,0,0,0,0,provable

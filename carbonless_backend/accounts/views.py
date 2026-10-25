@@ -114,6 +114,10 @@ class RegisterView(generics.CreateAPIView):
                 return
         placeholder = {
             'legal_entity_name': f"{user.username}'s Company",
+            # Left blank on purpose as the serializer-merge base: tax number is
+            # now required (exactly 10 digits), so a signup that omits or blanks
+            # it fails validation and falls back to the placeholder company
+            # below (company_saved stays False) instead of saving junk.
             'tax_number': '',
             'country_of_headquarters': 'Not set',
             'countries_of_operation': 'Not set',
@@ -136,7 +140,10 @@ class RegisterView(generics.CreateAPIView):
             else:
                 logger.warning('Registration company details rejected: %s', company_serializer.errors)
         if company is None:
-            company = Company.objects.create(**placeholder)
+            # The fallback company bypasses the serializer, so give it a valid
+            # 10-digit placeholder tax number to match the other placeholder
+            # companies (create_admin / ensure_user_companies).
+            company = Company.objects.create(**{**placeholder, 'tax_number': '0000000000'})
         CompanyMembership.objects.create(user=user, company=company, role='owner')
         self._create_signup_facilities(company)
 
@@ -244,7 +251,7 @@ class RateLimitedLoginView(TokenObtainPairView):
                 if not CompanyMembership.objects.filter(user=user).exists():
                     company = Company.objects.create(
                         legal_entity_name=f"{user.username}'s Company",
-                        tax_number='', country_of_headquarters='Not set',
+                        tax_number='0000000000', country_of_headquarters='Not set',
                         countries_of_operation='Not set', nace_code='',
                         main_activity_description='Not set',
                         number_of_employees='1-10', annual_turnover_range='Not set',
@@ -327,7 +334,7 @@ class GoogleLoginView(generics.GenericAPIView):
             if not CompanyMembership.objects.filter(user=user).exists():
                 company = Company.objects.create(
                     legal_entity_name=f"{user.username}'s Company",
-                    tax_number='',
+                    tax_number='0000000000',
                     country_of_headquarters='Not set',
                     countries_of_operation='Not set',
                     nace_code='',

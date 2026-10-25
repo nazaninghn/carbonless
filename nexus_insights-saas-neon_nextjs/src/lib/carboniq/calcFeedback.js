@@ -32,8 +32,8 @@ export function calcFeedbackLine(fb, { tr = false, year = null } = {}) {
   const other = hasYear && Math.abs(yearTotal - questionnaire) >= 0.05;
   const yearPart = other
     ? (tr
-      ? `; ${year ? `${year} yılının ` : ''}tüm onaylı emisyonları (aylık kayıtlar dahil): ${tonnes(yearTotal, tr)}`
-      : `; all approved emissions${year ? ` for ${year}` : ''} (monthly entries included): ${tonnes(yearTotal, tr)}`)
+      ? `; ${year ? `${year} yılının ` : ''}tüm onaylı emisyonları (aylık kayıtlar ve onaylı özel talepler dahil): ${tonnes(yearTotal, tr)}`
+      : `; all approved emissions${year ? ` for ${year}` : ''} (monthly entries and approved custom requests included): ${tonnes(yearTotal, tr)}`)
     : '';
   if (fb.pending) {
     // A data-entry member's change waits for approval: it is not in any total yet.

@@ -47,38 +47,28 @@ export const phoneMessage = (tr, country) => (tr
   ? `Geçerli bir telefon numarası girin (örn. ${phoneExample(country, tr)}).`
   : `Enter a valid phone number (e.g. ${phoneExample(country, tr)}).`);
 
-// Tax number at sign-up / in Settings. A Turkish company has a VKN (10 digits)
-// or TCKN (11); anywhere else it is the local tax / VAT registration number,
-// which has no single format. Same rules as StepA2Serializer on the server.
-export function normalizeTaxNumber(value, country) {
-  const v = String(value || '').trim();
-  if (!v) return '';
-  if (isTurkeyCountry(country)) return v.replace(/[\s-]/g, '');
-  return v.split(/\s+/).join(' ').toUpperCase();
+// Tax number at sign-up / in Settings. Universal rule for every country:
+// required and exactly 10 numeric digits (0-9). Spaces/dashes/letters are not
+// allowed — they are stripped first, then the value must be exactly 10 digits.
+// The `country` parameter is kept in every signature for call-site
+// compatibility, but it no longer affects the result or the message.
+// Same rule as CompanySerializer.validate_tax_number on the server.
+export function normalizeTaxNumber(value, country) {  // eslint-disable-line no-unused-vars
+  return String(value || '').replace(/\D/g, '');
 }
 
 export function taxNumberOk(value, country) {
   const v = normalizeTaxNumber(value, country);
-  if (!v) return true;
-  if (isTurkeyCountry(country)) return /^\d{10,11}$/.test(v);
-  return /^[A-Z0-9][A-Z0-9 ./-]{3,29}$/.test(v) && /\d/.test(v);
+  return /^\d{10}$/.test(v);
 }
 
-export const taxNumberMessage = (tr, country) => {
-  if (isTurkeyCountry(country)) {
-    return tr ? 'Vergi numarası 10 haneli (VKN) veya 11 haneli (TCKN) olmalıdır'
-      : 'Tax number must be 10 digits (VKN) or 11 digits (TCKN)';
-  }
-  return tr ? 'Vergi / KDV (VAT) numaranızı girin: harf ve rakam, 4-30 karakter'
-    : 'Enter your tax / VAT number: letters and digits, 4-30 characters';
-};
+export const taxNumberMessage = (tr, country) => (tr  // eslint-disable-line no-unused-vars
+  ? 'Vergi numarası tam olarak 10 haneli olmalıdır'
+  : 'Tax number must be exactly 10 digits');
 
-export const taxNumberPlaceholder = (tr, country) => {
-  const c = String(country || '').trim();
-  if (!c) return tr ? 'Opsiyonel — Türkiye\'de VKN/TCKN, diğer ülkelerde KDV (VAT) no' : 'Optional — VKN/TCKN in Turkey, VAT number elsewhere';
-  if (isTurkeyCountry(c)) return tr ? 'Opsiyonel — VKN (10) veya TCKN (11)' : 'Optional — VKN (10) or TCKN (11 digits)';
-  return tr ? 'Opsiyonel — vergi veya KDV (VAT) kayıt numaranız' : 'Optional — your tax or VAT registration number';
-};
+export const taxNumberPlaceholder = (tr, country) => (tr  // eslint-disable-line no-unused-vars
+  ? '10 haneli vergi numarası'
+  : '10-digit tax number');
 
 export const websiteMessage = (tr) => (tr
   ? 'Geçerli bir internet sitesi adresi girin (örn. www.sirketiniz.com.tr).'

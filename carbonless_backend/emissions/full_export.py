@@ -192,6 +192,35 @@ def backup_workbook_response(data, tr):
             'Facility', 'Description', 'Status', 'Rejection reason', 'Entered by'],
            [entry_row(e) for e in data['entries']])
 
+    # Every custom request of the company, whatever its status; "counted" says whether the
+    # dashboard adds it to the year's total (inventory.counted_custom_requests).
+    facility_names = {f.get('id'): f.get('name', '') for f in data['facilities']}
+    _REQUEST_STATUS = {'pending': ('Beklemede', 'Pending'), 'approved': ('Onaylı', 'Approved'),
+                       'rejected': ('Reddedildi', 'Rejected')}
+
+    def request_row(r):
+        scope_num = (r.get('scope') or '').replace('scope', '')
+        month = r.get('month')
+        kg = _number(r.get('calculated_co2e_kg'))
+        counted = (r.get('status') == 'approved' and r.get('calculated_co2e_kg') is not None
+                   and not r.get('electricity_method'))
+        return [
+            r.get('year'), _MONTHS[tr][month - 1] if isinstance(month, int) and 1 <= month <= 12 else month,
+            r.get('source_name', ''), (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
+            r.get('category_name', ''), _number(r.get('quantity')), r.get('unit', ''),
+            _number(r.get('approved_factor_kg_co2e')), kg, kg / 1000 if isinstance(kg, float) else '',
+            facility_names.get(r.get('facility'), ''), r.get('description', ''),
+            pick(_REQUEST_STATUS.get(r.get('status'), (r.get('status'), r.get('status')))),
+            ('Evet' if counted else 'Hayır') if tr else ('Yes' if counted else 'No'),
+            r.get('username') or '',
+        ]
+    _sheet(wb, 'Özel Talepler' if tr else 'Custom Requests',
+           ['Yıl', 'Ay', 'Kaynak', 'Kapsam', 'Kategori', 'Miktar', 'Birim', 'Faktör (kg CO2e/birim)', 'kg CO2e', 'tCO2e',
+            'Tesis', 'Açıklama', 'Durum', 'Toplamlara dahil', 'Giren'] if tr else
+           ['Year', 'Month', 'Source', 'Scope', 'Category', 'Quantity', 'Unit', 'Factor (kg CO2e/unit)', 'kg CO2e', 'tCO2e',
+            'Facility', 'Description', 'Status', 'Counted in totals', 'Entered by'],
+           [request_row(r) for r in data['custom_requests']])
+
     _sheet(wb, 'Hedefler' if tr else 'Targets',
            ['Başlık', 'Baz yıl', 'Hedef yıl', 'Baz emisyon (kg CO2e)', 'Azaltma (%)'] if tr else
            ['Title', 'Base year', 'Target year', 'Base emissions (kg CO2e)', 'Reduction (%)'],

@@ -47,7 +47,62 @@ def _map_shipment_mode_to_activity(mode):
     return None
 
 
+def _shared_year_block(request, report):
+    """409 when another inventory covers this one's year (a legacy duplicate group: none of its
+    members can be written until the duplicate is resolved, see year_guard.py), else None."""
+    from . import year_guard
+    others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
+    if not others:
+        return None
+    lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+    year_guard.log_blocked(request.user, report.company_id, others, report.reporting_year, 'save Workspace figures', request)
+    return Response(year_guard.conflict_payload(others, report.reporting_year, lang), status=409)
+
+
+def _workspace_entry_figures(report):
+    """The (description, quantity, kg CO2e) of the entries this report's Workspace wrote."""
+    return sorted(
+        (e.description, float(e.quantity), float(e.calculated_co2e_kg))
+        for e in EmissionEntry.objects.filter(
+            company=report.company, description__startswith='Workspace ',
+            description__endswith=f'(report {report.id})'))
+
+
 def _sync_workspace_to_emission_entries(report, user):
+    """
+    Same rule as the questionnaire (year_guard.py): entries belong to the company and
+    year, so nothing is written for an inventory without a year (they used to land in
+    the current year) or whose year another inventory also covers. A change to a signed /
+    completed inventory's figures marks it edited after signing and goes on the company's
+    history. Returns None when synced, else the code of the reason it was skipped.
+    """
+    from .year_guard import other_inventories_for_year, log_blocked
+    from .step_entries import report_is_locked
+    year = report.reporting_year
+    if not year:
+        return 'reporting_year_required'
+    others = other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
+    if others:
+        log_blocked(user, report.company_id, others, year, 'save Workspace figures')
+        return 'inventory_exists_for_year'
+
+    before = _workspace_entry_figures(report)
+    _write_workspace_entries(report, user)
+    if report_is_locked(report) and _workspace_entry_figures(report) != before:
+        if report.signed_at:
+            CarbonReport.objects.filter(pk=report.pk).update(edited_after_signing_at=timezone.now())
+        from emissions.audit import log_company_activity
+        log_company_activity(
+            user, report.company_id, 'inventory_recalculated',
+            f'{year} envanterinin ({report.title or year}) Çalışma Alanı değerleri değişti '
+            f'(imzalı/tamamlanmış envanter; "imzadan sonra düzenlendi" olarak işaretlendi).',
+            f'The Workspace figures of the {year} inventory ({report.title or year}) changed '
+            f'(signed/completed inventory; marked as edited after signing).',
+            target_type='CarbonReport', target_id=report.pk, reporting_year=year)
+    return None
+
+
+def _write_workspace_entries(report, user):
     """
     Bridges the Workspace's ReportField data (rf.3a.*, rf.4a.*, rf.k4.*, rf.k5.*)
     into real EmissionEntry rows using the same shared, backend-validated factor
@@ -61,7 +116,7 @@ def _sync_workspace_to_emission_entries(report, user):
     """
     values, _ = _fields_map(report)
     company = report.company
-    year = report.reporting_year or timezone.now().year
+    year = report.reporting_year
     month = 1  # Workspace fields represent annual/period totals, not a specific month
     tag_prefix = f'(report {report.id})'
 
@@ -419,6 +474,9 @@ class ReportFieldBulkUpsertView(APIView):
             return Response({'error': 'Not found'}, status=404)
         if not isinstance(fields, list) or not fields:
             return Response({'error': 'fields must be a non-empty list'}, status=400)
+        blocked = _shared_year_block(request, report)
+        if blocked:
+            return blocked
 
         updated = []
         for f in fields:
@@ -438,12 +496,16 @@ class ReportFieldBulkUpsertView(APIView):
             )
             updated.append(obj.field_id)
 
+        skipped = None
         try:
-            _sync_workspace_to_emission_entries(report, request.user)
+            skipped = _sync_workspace_to_emission_entries(report, request.user)
         except Exception:
             logger.error('Workspace->EmissionEntry sync failed for report %s', report.id, exc_info=True)
 
-        return Response({'updated': updated, 'count': len(updated)})
+        body = {'updated': updated, 'count': len(updated)}
+        if skipped:
+            body['emissions_not_counted'] = skipped
+        return Response(body)
 
 
 @method_decorator(ratelimit(key='user', rate='20/m', method='POST', block=True), name='post')
@@ -546,6 +608,9 @@ class SuggestionConfirmView(APIView):
             )
         except PendingSuggestion.DoesNotExist:
             return Response({'error': 'Suggestion not found or already resolved'}, status=404)
+        blocked = _shared_year_block(request, suggestion.report)
+        if blocked:
+            return blocked
 
         # Allow caller to override field values (Edit flow)
         edited_fields = request.data.get('fields')
@@ -590,16 +655,20 @@ class SuggestionConfirmView(APIView):
             )
             saved.append(fid)
 
+        skipped = None
         try:
-            _sync_workspace_to_emission_entries(suggestion.report, request.user)
+            skipped = _sync_workspace_to_emission_entries(suggestion.report, request.user)
         except Exception:
             logger.error('Workspace->EmissionEntry sync failed for report %s', suggestion.report.id, exc_info=True)
 
-        return Response({
+        body = {
             'status': suggestion.status,
             'saved_fields': saved,
             'suggestion': _serialize_suggestion(suggestion),
-        })
+        }
+        if skipped:
+            body['emissions_not_counted'] = skipped
+        return Response(body)
 
 
 class SuggestionRejectView(APIView):

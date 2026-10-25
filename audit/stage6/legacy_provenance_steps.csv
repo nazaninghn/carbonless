@@ -1,0 +1,12 @@
+﻿report_id,step,entries,stored_kg,recomputed_kg_now,delta_kg,calculated_entry,no_answer_behind_entries
+15,3A-5,0,0,2020.0,2020.0,False,False
+15,3B-7,0,0,8088.0,8088.0,False,False
+15,3C-2,0,0,180000.0,180000.0,False,False
+15,4A-1,0,0,5628.0,5628.0,False,False
+15,4B-2,0,0,32222.2222,32222.2222,False,False
+15,K3C1-2,0,0,6500.0,6500.0,False,False
+15,K3C1-3a,0,0,20025.69,20025.69,False,False
+15,K3C3-INFO,0,0,2340.0,2340.0,False,False
+15,K3C4-2,0,0,62.0,62.0,False,False
+15,K3C5-2,0,0,645.0,645.0,False,False
+15,K3C6-2,0,0,1160.0,1160.0,False,False

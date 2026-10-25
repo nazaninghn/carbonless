@@ -601,6 +601,9 @@ class SubmitStepView(APIView):
                 if others:
                     year_guard.log_blocked(request.user, report.company_id, others, new_year, 'move an inventory onto that year', request)
                     return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
+                held = year_guard.year_change_blocked(report, new_year, lang_, step=step)
+                if held:
+                    return Response(held, status=409)
 
         if step in STRICT_STEPS and step in STEP_SERIALIZERS:
             serializer = STEP_SERIALIZERS[step](data=data, context={
@@ -916,7 +919,12 @@ class SubmitStepView(APIView):
             fac_warning = _facility_count_warning(report, data, lang)
             if fac_warning:
                 warnings.append(fac_warning)
+        # total_kg is the questionnaire's own entries only (a partial total: monthly form / chat entries
+        # and custom requests are not in it); year_total_kg is everything approved for the year, the
+        # Dashboard's total. The Wizard names the first as the questionnaire total and shows both.
+        from emissions.inventory import approved_year_total_kg
         calc_feedback = {'delta_kg': round(after_kg - before_kg, 2), 'total_kg': round(approved_kg, 2),
+                         'year_total_kg': round(approved_year_total_kg(report.company, report.reporting_year), 2),
                          'pending': pending, 'notes': notes, 'method_notes': method_notes}
         if step == '2A-2':
             calc_feedback['connection_notes'] = connection_notes(report.company, data, approver, lang)
@@ -1309,6 +1317,24 @@ class ReuseCompanyProfileView(APIView):
         if not 1990 <= year <= timezone.now().year:
             return Response({'error': 'Invalid reporting year', 'code': 'invalid_year'}, status=400)
 
+        # One inventory per company and year (year_guard.py): this endpoint sets the year, resets the
+        # status and overwrites the Phase 1 answers, so it meets the same rules as a step save — never
+        # a signed / completed inventory, never a year another inventory covers (the one it already
+        # has included when that is shared).
+        from . import year_guard
+        from django.db import IntegrityError, transaction
+        lang_ = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        if report.signed_at or report.status == CarbonReport.Status.COMPLETED:
+            return Response(year_guard.locked_payload(report, 'reuse a company profile', lang_), status=409)
+        for target in {report.reporting_year, year} - {None}:
+            others = year_guard.other_inventories_for_year(report.company_id, target, exclude_pk=report.pk)
+            if others:
+                year_guard.log_blocked(request.user, report.company_id, others, target, 'reuse a company profile', request)
+                return Response(year_guard.conflict_payload(others, target, lang_, moving=target == year), status=409)
+        held = year_guard.year_change_blocked(report, year, lang_)
+        if held:
+            return Response(held, status=409)
+
         for field in PHASE1_REPORT_FIELDS:
             if field != 'reporting_year':
                 setattr(report, field, getattr(source, field))
@@ -1323,7 +1349,15 @@ class ReuseCompanyProfileView(APIView):
         client_progress = _client_progress_from(request.data.get('progress'))
         if client_progress:
             report.client_progress = client_progress
-        report.save()
+        try:
+            with transaction.atomic():
+                report.save()
+        except IntegrityError:
+            # Another request took the year between the check above and the save: the database refused it.
+            others = year_guard.other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
+            if not others:
+                raise
+            return Response(year_guard.conflict_payload(others, year, lang_, moving=True), status=409)
 
         answers = {}
         for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS).exclude(step_id='A4'):

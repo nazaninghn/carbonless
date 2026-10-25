@@ -1,0 +1,27 @@
+﻿REPORT 15: company 1 year 2024 completed signed 2026-10-13 19:57:05.740227+00:00 legacy_duplicate_year True saved steps 166
+other inventories of company 1 / 2024: 21 ( 2 completed )
+approved entries on record for company 1 / 2024: 0
+
+[A] a save of report 15 with the CURRENT code (siblings present):
+   REFUSED by the one-inventory-per-year guard: inventory already exists for 2024
+   rolled back, unchanged: True
+
+[B] the same save if no other inventory covered 2024 (siblings removed INSIDE a rolled-back transaction):
+   would create 14 entries in 11 steps = 258690.91 kg
+      3A-5 2020.0
+      3B-7 8088.0
+      3C-2 180000.0
+      4A-1 5628.0
+      4B-2 32222.22
+      K3C1-2 6500.0
+      K3C1-3a 20025.69
+      K3C3-INFO 2340.0
+      K3C4-2 62.0
+      K3C5-2 645.0
+      K3C6-2 1160.0
+   report would be flagged edited-after-signing by the caller: resync flags it
+   rolled back, unchanged: True
+
+[C] the same as [B] with the DR-19 hold set first:
+   entries created = 0 ; rebuild_held history rows = 1
+   rolled back, unchanged: True

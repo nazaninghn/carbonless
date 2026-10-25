@@ -824,7 +824,11 @@ class CompanyInventoryAccessTests(TestCase):
     def test_delete_keeps_entries_shared_with_another_inventory(self):
         from emissions.models import EmissionEntry
         self._entry('Questionnaire step 4A-1')
-        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024, title='Second')
+        # A year two inventories share can only exist as a duplicate group from before the
+        # one-inventory-per-year rule (migration 0012 flags its members; see year_guard.py).
+        CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
+        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024, title='Second',
+                                    legacy_duplicate_year=True)
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 0})
         self.assertEqual(EmissionEntry.objects.count(), 1)
@@ -1920,11 +1924,13 @@ class PreviousProfileSourceTests(TestCase):
             number_of_employees='1-10', annual_turnover_range='x',
             number_of_facilities=1,
         )
-        mk = lambda year, status: CarbonReport.objects.create(
-            company=company, created_by=owner, reporting_year=year, title=str(year), status=status)
-        r2025 = mk(2025, CarbonReport.Status.COMPLETED)
+        # Two 2025 inventories can only be a duplicate group from before the one-per-year rule
+        # (legacy_duplicate_year, set by migration 0012); the lookup must still pick sensibly among them.
+        mk = lambda year, status, **extra: CarbonReport.objects.create(
+            company=company, created_by=owner, reporting_year=year, title=str(year), status=status, **extra)
+        r2025 = mk(2025, CarbonReport.Status.COMPLETED, legacy_duplicate_year=True)
         r2024 = mk(2024, CarbonReport.Status.COMPLETED)
-        draft2025 = mk(2025, CarbonReport.Status.IN_PROGRESS)
+        draft2025 = mk(2025, CarbonReport.Status.IN_PROGRESS, legacy_duplicate_year=True)
         for r in (r2025, r2024, draft2025):
             ReportStep.objects.create(report=r, step_id='A1', answer={'legal_name': 'Src Co'})
         r2024.title = 'edited'; r2024.save()  # touched last
@@ -3539,7 +3545,9 @@ class FacilityConnectionEnforcementTests(TestCase):
             text = p.read_text(encoding='utf-8', errors='ignore')
             is_test = '/tests' in rel or rel.rsplit('/', 1)[-1].startswith(('test_', 'tests')) or rel.startswith(('qa_', 'demo_', 'create_test'))
             if '/migrations/' in rel:
-                if re.search(r'(?<!applied_)grid_connection', text) and not rel.endswith('companies/migrations/0010_facility_grid_connection.py'):
+                # naming that migration as a dependency is not writing the field
+                if re.search(r'(?<!applied_)grid_connection', text.replace('0010_facility_grid_connection', '')) \
+                        and not rel.endswith('companies/migrations/0010_facility_grid_connection.py'):
                     migrations.append(rel)
                 continue
             if is_test:

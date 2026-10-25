@@ -77,8 +77,8 @@ export default function RegisterPage() {
     if (!formData.password) missing.push(tr ? 'Şifre' : 'Password');
     if (!formData.password2) missing.push(tr ? 'Şifre Tekrar' : 'Confirm Password');
     if (!formData.legalEntityName.trim()) missing.push(tr ? 'Yasal Kuruluş Adı' : 'Legal Entity Name');
-    // VKN/TCKN only for a company based in Turkey; elsewhere the local tax /
-    // VAT number (DE123456789…), as the inventory's Question 2 accepts.
+    // Required for every country: exactly 10 numeric digits. Empty, short,
+    // long, or non-digit input is rejected here (and again on the server).
     if (!taxNumberOk(formData.taxNumber, formData.countryOfHeadquarters)) { setError(taxNumberMessage(tr, formData.countryOfHeadquarters)); return false; }
     // Checked here, not only by the server — otherwise a typo surfaced at the
     // end of step 3, in English, with nothing pointing back to step 1.
@@ -320,7 +320,7 @@ export default function RegisterPage() {
                 <Panel title={language === 'tr' ? 'Temel Kurumsal Bilgiler' : 'Corporate Information'} icon={Building2}>
                   <div className="grid gap-3 md:grid-cols-2">
                     <TextField label={language === 'tr' ? 'Yasal Kuruluş Adı' : 'Legal Entity Name'} required value={formData.legalEntityName} onChange={e => handleInputChange('legalEntityName', e.target.value)} icon={Building2} placeholder={language === 'tr' ? 'örn: ABC Teknoloji A.Ş.' : 'e.g. ABC Technology Inc.'} />
-                    <div><Label htmlFor="reg-tax">{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input id="reg-tax" type="text" inputMode={formData.countryOfHeadquarters && isTurkeyCountry(formData.countryOfHeadquarters) ? 'numeric' : 'text'} autoCapitalize="characters" maxLength={30} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.slice(0, 30))} className="field-premium" placeholder={taxNumberPlaceholder(language === 'tr', formData.countryOfHeadquarters)} /></div>
+                    <div><Label required htmlFor="reg-tax">{language === 'tr' ? 'Vergi Numarası' : 'Tax Number'}</Label><input id="reg-tax" type="text" inputMode="numeric" maxLength={10} value={formData.taxNumber} onChange={e => handleInputChange('taxNumber', e.target.value.replace(/\D/g, '').slice(0, 10))} className="field-premium" placeholder={taxNumberPlaceholder(language === 'tr')} /></div>
                   </div>
                   <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <div><Label required htmlFor="reg-hq">{language === 'tr' ? 'Merkez Ülkesi' : 'Country of HQ'}</Label><CountryPicker inputId="reg-hq" value={formData.countryOfHeadquarters} onChange={val => {

@@ -441,8 +441,9 @@ def emission_summary(request):
         # The inventory of the year asked for; another year's only when that
         # year has none (the newest one).
         completed = CarbonReport.objects.filter(company=company, status=CarbonReport.Status.COMPLETED)
-        completed_report = (completed.filter(reporting_year=year).order_by('-updated_at').first()
-                            or completed.order_by('-updated_at').first())
+        # '-id' breaks a tie between inventories saved in the same instant, so the pick is stable.
+        completed_report = (completed.filter(reporting_year=year).order_by('-updated_at', '-id').first()
+                            or completed.order_by('-updated_at', '-id').first())
         if completed_report:
             from questionnaire.models import ReportStep
             steps = dict(ReportStep.objects.filter(report=completed_report, step_id__in=('B1', 'B3'))
@@ -762,11 +763,13 @@ def comparison_view(request):
 
 import csv
 
-def _export_rows(entries, lang):
+def _export_rows(entries, lang, custom_requests=()):
     """Header and rows for the emissions CSV/Excel export, in the UI language:
     headers, factor names, scopes, categories, months and status (a rejected
     entry is listed but marked, so a column sum can leave it out). Numbers
-    stay numbers; the CSV writer formats them."""
+    stay numbers; the CSV writer formats them. `custom_requests` (the approved
+    ones the dashboard counts, see inventory.counted_custom_requests) follow the
+    entries, one row each, in the same columns."""
     from .descriptions import display_description
     from .notifications import _unit
     from .report_pdf import _CAT
@@ -827,6 +830,18 @@ def _export_rows(entries, lang):
             status_label(e),
             e.rejected_reason if e.status == 'draft' else '',
         ])
+    for cr in custom_requests:
+        scope_num = (cr.scope or '').replace('scope', '')
+        rows.append([
+            cr.source_name, (f'Kapsam {scope_num}' if tr else f'Scope {scope_num}') if scope_num else '',
+            cr.category_name, months[cr.month - 1] if cr.month and 1 <= cr.month <= 12 else cr.month,
+            float(cr.quantity), cr.unit,
+            float(cr.approved_factor_kg_co2e or 0), float(cr.calculated_co2e_kg), float(cr.calculated_co2e_kg) / 1000,
+            f'Özel Talep #{cr.pk}' if tr else f'Custom Request #{cr.pk}',
+            cr.facility.name if cr.facility_id else '', cr.description,
+            'Onaylı · Özel Talep' if tr else 'Approved · Custom Request',
+            '',
+        ])
     return header, rows
 
 
@@ -860,7 +875,9 @@ def export_csv_view(request):
     # a comma-separated file with "1250.5" opened as one column or as dates.
     lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
     tr = lang == 'tr'
-    header, rows = _export_rows(entries.order_by('month', 'id'), lang)
+    from .inventory import counted_custom_requests
+    header, rows = _export_rows(entries.order_by('month', 'id'), lang,
+                                counted_custom_requests(company, year).select_related('facility').order_by('month', 'id'))
 
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = (f'attachment; filename="emisyonlar_{year}.csv"' if tr
@@ -1253,7 +1270,9 @@ def export_excel_view(request):
     )
 
     lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
-    header, rows = _export_rows(entries.order_by('month', 'id'), lang)
+    from .inventory import counted_custom_requests
+    header, rows = _export_rows(entries.order_by('month', 'id'), lang,
+                                counted_custom_requests(company, year).select_related('facility').order_by('month', 'id'))
     wb = Workbook()
     ws = wb.active
     ws.title = f'Emisyonlar {year}' if lang == 'tr' else f'Emissions {year}'

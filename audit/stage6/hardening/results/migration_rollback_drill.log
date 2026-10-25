@@ -1,0 +1,25 @@
+﻿=== B. forward / freeze / rollback / forward drill on a fresh copy of the dev DB
+  Applying questionnaire.0011_report_applied_grid_connections... OK
+  Applying questionnaire.0012_one_inventory_per_year...
+  Applying questionnaire.0013_report_applied_factors... OK
+--- after forward migration (0011-0013)
+STATE entries=55 approved_kg=27621670.0512000 entries_hash=4cec5c43a6fa68e9 reports=32 steps=1256 locked=5 maps=0 held=[]
+5 locked inventories have no frozen factor map. To freeze: [6, 8, 28, 31]. To put on hold (not frozen, not rebuilt): [(15, 'ENTRIES_MISSING_REVIEW')]
+frozen: 4; held: 1
+--- after freeze --apply (frozen: provable; held: report 15)
+STATE entries=55 approved_kg=27621670.0512000 entries_hash=4cec5c43a6fa68e9 reports=32 steps=1256 locked=5 maps=5 held=[15]
+5 signed / completed inventories: {'no_entries': 2, 'ENTRIES_MISSING_REVIEW': 1, 'provable': 2}
+  REVIEW report 15 company 1 2024: ENTRIES_MISSING_REVIEW unprotected steps=11 stored kg=0 now kg=258690.91 drift=0 mismatch=0
+--- rollback to 0012
+  Unapplying questionnaire.0013_report_applied_factors... OK
+--- after rollback (column dropped; every entry and total unchanged)
+STATE entries=55 approved_kg=27621670.0512000 entries_hash=4cec5c43a6fa68e9 reports=32 steps=1256 locked=5 maps=column absent held=column absent
+--- forward again, then re-run freeze
+  Applying questionnaire.0013_report_applied_factors... OK
+--- after re-applying 0013 (maps empty again)
+STATE entries=55 approved_kg=27621670.0512000 entries_hash=4cec5c43a6fa68e9 reports=32 steps=1256 locked=5 maps=0 held=[]
+5 locked inventories have no frozen factor map. To freeze: [6, 8, 28, 31]. To put on hold (not frozen, not rebuilt): [(15, 'ENTRIES_MISSING_REVIEW')]
+frozen: 4; held: 1
+--- after freeze --apply again (maps and the hold restored)
+STATE entries=55 approved_kg=27621670.0512000 entries_hash=4cec5c43a6fa68e9 reports=32 steps=1256 locked=5 maps=5 held=[15]
+original dev DB untouched: True

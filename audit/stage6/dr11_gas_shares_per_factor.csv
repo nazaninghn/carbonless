@@ -1,0 +1,201 @@
+﻿scenario,slug,country,factor_kg_co2e,CO2_share,CH4_share,N2O_share
+"S0 current (CH4 29.8, stored tiers)",car-diesel,turkey,0.156,0.984314,0.001545,0.014141
+"S0 current (CH4 29.8, stored tiers)",car-gasoline,turkey,0.172,0.976483,0.001593,0.021924
+"S0 current (CH4 29.8, stored tiers)",car-lpg,turkey,0.163,0.970736,0.028423,0.000840
+"S0 current (CH4 29.8, stored tiers)",cng,global,1.93,0.940319,0.045953,0.013727
+"S0 current (CH4 29.8, stored tiers)",coal,global,2.42,0.992576,0.003127,0.004297
+"S0 current (CH4 29.8, stored tiers)",coal,turkey,2.45,0.992577,0.003127,0.004297
+"S0 current (CH4 29.8, stored tiers)",coal-industrial,global,2.40739,0.992577,0.003127,0.004297
+"S0 current (CH4 29.8, stored tiers)",coal-industrial,turkey,2.40739,0.992577,0.003127,0.004297
+"S0 current (CH4 29.8, stored tiers)",diesel,global,2.68,0.993806,0.003997,0.002197
+"S0 current (CH4 29.8, stored tiers)",diesel,turkey,2.68,0.993806,0.003997,0.002197
+"S0 current (CH4 29.8, stored tiers)",diesel-generic,global,2.68,0.984313,0.001544,0.014143
+"S0 current (CH4 29.8, stored tiers)",diesel-kwh,global,0.24882,0.993807,0.003995,0.002198
+"S0 current (CH4 29.8, stored tiers)",fuel-oil,global,3.18,0.996739,0.001151,0.002109
+"S0 current (CH4 29.8, stored tiers)",fuel-oil,turkey,3.18,0.996739,0.001151,0.002109
+"S0 current (CH4 29.8, stored tiers)",gas-diesel-oil-energy,global,74.1,0.993806,0.003997,0.002197
+"S0 current (CH4 29.8, stored tiers)",gas-diesel-oil-energy,turkey,74.1,0.993806,0.003997,0.002197
+"S0 current (CH4 29.8, stored tiers)",gasoline-generic,global,2.31,0.976478,0.001596,0.021926
+"S0 current (CH4 29.8, stored tiers)",lpg,global,1.51468,0.997214,0.002355,0.000431
+"S0 current (CH4 29.8, stored tiers)",lpg,turkey,1.51468,0.997214,0.002355,0.000431
+"S0 current (CH4 29.8, stored tiers)",motor-gasoline,global,69.55587,0.976478,0.001596,0.021926
+"S0 current (CH4 29.8, stored tiers)",motor-gasoline,turkey,69.55587,0.976478,0.001596,0.021926
+"S0 current (CH4 29.8, stored tiers)",motorin-mobile,turkey,2.696,0.984313,0.001544,0.014143
+"S0 current (CH4 29.8, stored tiers)",natural-gas,global,56.211,0.996867,0.002648,0.000485
+"S0 current (CH4 29.8, stored tiers)",natural-gas,turkey,56.211,0.996867,0.002648,0.000485
+"S0 current (CH4 29.8, stored tiers)",natural-gas-kwh,global,0.18316,0.996866,0.002648,0.000486
+"S0 current (CH4 29.8, stored tiers)",natural-gas-kwh,turkey,0.18316,0.996866,0.002648,0.000486
+"S0 current (CH4 29.8, stored tiers)",natural-gas-m3,global,2.02,0.996867,0.002648,0.000485
+"S0 current (CH4 29.8, stored tiers)",natural-gas-m3,turkey,2.02,0.996867,0.002648,0.000485
+"S0 current (CH4 29.8, stored tiers)",off-road-diesel-desnz,global,3.17939,0.903312,0.001508,0.095181
+"S0 current (CH4 29.8, stored tiers)",off-road-gasoline-desnz,global,2.30233,0.959435,0.033006,0.007559
+"S0 current (CH4 29.8, stored tiers)",off-road-ipcc,global,74.39892,0.903312,0.001508,0.095181
+"S0 current (CH4 29.8, stored tiers)",on-road-diesel,global,74.39892,0.984313,0.001544,0.014143
+"S0 current (CH4 29.8, stored tiers)",on-road-diesel-desnz,global,3.17939,0.984313,0.001544,0.014143
+"S0 current (CH4 29.8, stored tiers)",on-road-gasoline,global,69.55587,0.976478,0.001596,0.021926
+"S0 current (CH4 29.8, stored tiers)",on-road-lpg,global,63.1,0.970736,0.028424,0.000840
+"S0 current (CH4 29.8, stored tiers)",on-road-natural-gas,global,56.211,0.940319,0.045953,0.013728
+"S0 current (CH4 29.8, stored tiers)",on-road-petrol-desnz,global,2.30233,0.976478,0.001596,0.021926
+"S0 current (CH4 29.8, stored tiers)",propane,global,2.997632,0.997214,0.002355,0.000431
+"S0 current (CH4 29.8, stored tiers)",propane,turkey,2.997632,0.997214,0.002355,0.000431
+"S0 current (CH4 29.8, stored tiers)",vehicle-km,global,0.171,0.976480,0.001596,0.021924
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),car-diesel,turkey,0.156,0.984404,0.001449,0.014147
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),car-gasoline,turkey,0.172,0.976576,0.001494,0.021930
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),car-lpg,turkey,0.163,0.972497,0.026663,0.000840
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),cng,global,1.93,0.943082,0.043150,0.013768
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),coal,global,2.42,0.992774,0.002928,0.004298
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),coal,turkey,2.45,0.992775,0.002928,0.004298
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),coal-industrial,global,2.40739,0.992774,0.002928,0.004298
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),coal-industrial,turkey,2.40739,0.992774,0.002928,0.004298
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),diesel,global,2.68,0.994060,0.003743,0.002197
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),diesel,turkey,2.68,0.994060,0.003743,0.002197
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),diesel-generic,global,2.68,0.984410,0.001446,0.014144
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),diesel-kwh,global,0.24882,0.994060,0.003742,0.002198
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),fuel-oil,global,3.18,0.996813,0.001078,0.002109
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),fuel-oil,turkey,3.18,0.996813,0.001078,0.002109
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),gas-diesel-oil-energy,global,74.1,0.994060,0.003743,0.002197
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),gas-diesel-oil-energy,turkey,74.1,0.994060,0.003743,0.002197
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),gasoline-generic,global,2.31,0.976577,0.001494,0.021929
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),lpg,global,1.51468,0.997363,0.002205,0.000432
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),lpg,turkey,1.51468,0.997363,0.002205,0.000432
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),motor-gasoline,global,69.55587,0.976577,0.001494,0.021929
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),motor-gasoline,turkey,69.55587,0.976577,0.001494,0.021929
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),motorin-mobile,turkey,2.696,0.984410,0.001445,0.014144
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),natural-gas,global,56.211,0.997036,0.002479,0.000485
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),natural-gas,turkey,56.211,0.997036,0.002479,0.000485
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),natural-gas-kwh,global,0.18316,0.997035,0.002479,0.000486
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),natural-gas-kwh,turkey,0.18316,0.997035,0.002479,0.000486
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),natural-gas-m3,global,2.02,0.997036,0.002479,0.000485
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),natural-gas-m3,turkey,2.02,0.997036,0.002479,0.000485
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),off-road-diesel-desnz,global,3.17939,0.903399,0.001412,0.095190
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),off-road-gasoline-desnz,global,2.30233,0.961459,0.030966,0.007575
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),off-road-ipcc,global,74.39892,0.903399,0.001412,0.095190
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),on-road-diesel,global,74.39892,0.984410,0.001446,0.014144
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),on-road-diesel-desnz,global,3.17939,0.984410,0.001446,0.014145
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),on-road-gasoline,global,69.55587,0.976577,0.001494,0.021929
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),on-road-lpg,global,63.1,0.972499,0.026660,0.000841
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),on-road-natural-gas,global,56.211,0.943082,0.043150,0.013768
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),on-road-petrol-desnz,global,2.30233,0.976577,0.001494,0.021929
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),propane,global,2.997632,0.997364,0.002205,0.000431
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),propane,turkey,2.997632,0.997364,0.002205,0.000431
+S1 CH4 27.9 (AR6 7.SM.7; owner documents),vehicle-km,global,0.171,0.976579,0.001491,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),car-diesel,turkey,0.156,0.984455,0.001397,0.014147
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),car-gasoline,turkey,0.172,0.976622,0.001448,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),car-lpg,turkey,0.163,0.973337,0.025822,0.000840
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),cng,global,1.93,0.944397,0.041816,0.013787
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),coal,global,2.42,0.992868,0.002834,0.004298
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),coal,turkey,2.45,0.992868,0.002834,0.004298
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),coal-industrial,global,2.40739,0.992868,0.002834,0.004298
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),coal-industrial,turkey,2.40739,0.992868,0.002834,0.004298
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),diesel,global,2.68,0.994180,0.003622,0.002198
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),diesel,turkey,2.68,0.994180,0.003622,0.002198
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),diesel-generic,global,2.68,0.984456,0.001399,0.014145
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),diesel-kwh,global,0.24882,0.994181,0.003621,0.002198
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),fuel-oil,global,3.18,0.996847,0.001043,0.002110
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),fuel-oil,turkey,3.18,0.996847,0.001043,0.002110
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),gas-diesel-oil-energy,global,74.1,0.994180,0.003623,0.002198
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),gas-diesel-oil-energy,turkey,74.1,0.994180,0.003623,0.002198
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),gasoline-generic,global,2.31,0.976624,0.001446,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),lpg,global,1.51468,0.997434,0.002134,0.000432
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),lpg,turkey,1.51468,0.997434,0.002134,0.000432
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),motor-gasoline,global,69.55587,0.976624,0.001446,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),motor-gasoline,turkey,69.55587,0.976624,0.001446,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),motorin-mobile,turkey,2.696,0.984456,0.001399,0.014145
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),natural-gas,global,56.211,0.997115,0.002399,0.000485
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),natural-gas,turkey,56.211,0.997115,0.002399,0.000485
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),natural-gas-kwh,global,0.18316,0.997117,0.002397,0.000486
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),natural-gas-kwh,turkey,0.18316,0.997117,0.002397,0.000486
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),natural-gas-m3,global,2.02,0.997115,0.002400,0.000485
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),natural-gas-m3,turkey,2.02,0.997115,0.002400,0.000485
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),off-road-diesel-desnz,global,3.17939,0.903440,0.001366,0.095194
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),off-road-gasoline-desnz,global,2.30233,0.962420,0.029997,0.007583
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),off-road-ipcc,global,74.39892,0.903440,0.001366,0.095194
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),on-road-diesel,global,74.39892,0.984456,0.001399,0.014145
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),on-road-diesel-desnz,global,3.17939,0.984456,0.001399,0.014145
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),on-road-gasoline,global,69.55587,0.976624,0.001446,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),on-road-lpg,global,63.1,0.973336,0.025822,0.000842
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),on-road-natural-gas,global,56.211,0.944397,0.041816,0.013787
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),on-road-petrol-desnz,global,2.30233,0.976625,0.001446,0.021930
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),propane,global,2.997632,0.997434,0.002134,0.000432
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),propane,turkey,2.997632,0.997434,0.002134,0.000432
+S2 CH4 27.0 (GHG Protocol: non-fossil value for combustion),vehicle-km,global,0.171,0.976626,0.001444,0.021930
+S3 CH4 27.9 + manufacturing tier,car-diesel,turkey,0.156,0.984404,0.001449,0.014147
+S3 CH4 27.9 + manufacturing tier,car-gasoline,turkey,0.172,0.976576,0.001494,0.021930
+S3 CH4 27.9 + manufacturing tier,car-lpg,turkey,0.163,0.972497,0.026663,0.000840
+S3 CH4 27.9 + manufacturing tier,cng,global,1.93,0.943082,0.043150,0.013768
+S3 CH4 27.9 + manufacturing tier,coal,global,2.42,0.992774,0.002928,0.004298
+S3 CH4 27.9 + manufacturing tier,coal,turkey,2.45,0.992775,0.002928,0.004298
+S3 CH4 27.9 + manufacturing tier,coal-industrial,global,2.40739,0.992774,0.002928,0.004298
+S3 CH4 27.9 + manufacturing tier,coal-industrial,turkey,2.40739,0.992774,0.002928,0.004298
+S3 CH4 27.9 + manufacturing tier,diesel,global,2.68,0.996671,0.001126,0.002203
+S3 CH4 27.9 + manufacturing tier,diesel,turkey,2.68,0.996671,0.001126,0.002203
+S3 CH4 27.9 + manufacturing tier,diesel-generic,global,2.68,0.984410,0.001446,0.014144
+S3 CH4 27.9 + manufacturing tier,diesel-kwh,global,0.24882,0.996672,0.001125,0.002202
+S3 CH4 27.9 + manufacturing tier,fuel-oil,global,3.18,0.996813,0.001078,0.002109
+S3 CH4 27.9 + manufacturing tier,fuel-oil,turkey,3.18,0.996813,0.001078,0.002109
+S3 CH4 27.9 + manufacturing tier,gas-diesel-oil-energy,global,74.1,0.996671,0.001126,0.002203
+S3 CH4 27.9 + manufacturing tier,gas-diesel-oil-energy,turkey,74.1,0.996671,0.001126,0.002203
+S3 CH4 27.9 + manufacturing tier,gasoline-generic,global,2.31,0.976577,0.001494,0.021929
+S3 CH4 27.9 + manufacturing tier,lpg,global,1.51468,0.999126,0.000442,0.000432
+S3 CH4 27.9 + manufacturing tier,lpg,turkey,1.51468,0.999126,0.000442,0.000432
+S3 CH4 27.9 + manufacturing tier,motor-gasoline,global,69.55587,0.976577,0.001494,0.021929
+S3 CH4 27.9 + manufacturing tier,motor-gasoline,turkey,69.55587,0.976577,0.001494,0.021929
+S3 CH4 27.9 + manufacturing tier,motorin-mobile,turkey,2.696,0.984410,0.001445,0.014144
+S3 CH4 27.9 + manufacturing tier,natural-gas,global,56.211,0.999017,0.000497,0.000486
+S3 CH4 27.9 + manufacturing tier,natural-gas,turkey,56.211,0.999017,0.000497,0.000486
+S3 CH4 27.9 + manufacturing tier,natural-gas-kwh,global,0.18316,0.999017,0.000497,0.000486
+S3 CH4 27.9 + manufacturing tier,natural-gas-kwh,turkey,0.18316,0.999017,0.000497,0.000486
+S3 CH4 27.9 + manufacturing tier,natural-gas-m3,global,2.02,0.999017,0.000497,0.000486
+S3 CH4 27.9 + manufacturing tier,natural-gas-m3,turkey,2.02,0.999017,0.000497,0.000486
+S3 CH4 27.9 + manufacturing tier,off-road-diesel-desnz,global,3.17939,0.903399,0.001412,0.095190
+S3 CH4 27.9 + manufacturing tier,off-road-gasoline-desnz,global,2.30233,0.961459,0.030966,0.007575
+S3 CH4 27.9 + manufacturing tier,off-road-ipcc,global,74.39892,0.903399,0.001412,0.095190
+S3 CH4 27.9 + manufacturing tier,on-road-diesel,global,74.39892,0.984410,0.001446,0.014144
+S3 CH4 27.9 + manufacturing tier,on-road-diesel-desnz,global,3.17939,0.984410,0.001446,0.014145
+S3 CH4 27.9 + manufacturing tier,on-road-gasoline,global,69.55587,0.976577,0.001494,0.021929
+S3 CH4 27.9 + manufacturing tier,on-road-lpg,global,63.1,0.972499,0.026660,0.000841
+S3 CH4 27.9 + manufacturing tier,on-road-natural-gas,global,56.211,0.943082,0.043150,0.013768
+S3 CH4 27.9 + manufacturing tier,on-road-petrol-desnz,global,2.30233,0.976577,0.001494,0.021929
+S3 CH4 27.9 + manufacturing tier,propane,global,2.997632,0.999126,0.000442,0.000432
+S3 CH4 27.9 + manufacturing tier,propane,turkey,2.997632,0.999126,0.000442,0.000432
+S3 CH4 27.9 + manufacturing tier,vehicle-km,global,0.171,0.976579,0.001491,0.021930
+S4 CH4 27.0 + manufacturing tier,car-diesel,turkey,0.156,0.984455,0.001397,0.014147
+S4 CH4 27.0 + manufacturing tier,car-gasoline,turkey,0.172,0.976622,0.001448,0.021930
+S4 CH4 27.0 + manufacturing tier,car-lpg,turkey,0.163,0.973337,0.025822,0.000840
+S4 CH4 27.0 + manufacturing tier,cng,global,1.93,0.944397,0.041816,0.013787
+S4 CH4 27.0 + manufacturing tier,coal,global,2.42,0.992868,0.002834,0.004298
+S4 CH4 27.0 + manufacturing tier,coal,turkey,2.45,0.992868,0.002834,0.004298
+S4 CH4 27.0 + manufacturing tier,coal-industrial,global,2.40739,0.992868,0.002834,0.004298
+S4 CH4 27.0 + manufacturing tier,coal-industrial,turkey,2.40739,0.992868,0.002834,0.004298
+S4 CH4 27.0 + manufacturing tier,diesel,global,2.68,0.996707,0.001090,0.002203
+S4 CH4 27.0 + manufacturing tier,diesel,turkey,2.68,0.996707,0.001090,0.002203
+S4 CH4 27.0 + manufacturing tier,diesel-generic,global,2.68,0.984456,0.001399,0.014145
+S4 CH4 27.0 + manufacturing tier,diesel-kwh,global,0.24882,0.996708,0.001089,0.002202
+S4 CH4 27.0 + manufacturing tier,fuel-oil,global,3.18,0.996847,0.001043,0.002110
+S4 CH4 27.0 + manufacturing tier,fuel-oil,turkey,3.18,0.996847,0.001043,0.002110
+S4 CH4 27.0 + manufacturing tier,gas-diesel-oil-energy,global,74.1,0.996707,0.001090,0.002203
+S4 CH4 27.0 + manufacturing tier,gas-diesel-oil-energy,turkey,74.1,0.996707,0.001090,0.002203
+S4 CH4 27.0 + manufacturing tier,gasoline-generic,global,2.31,0.976624,0.001446,0.021930
+S4 CH4 27.0 + manufacturing tier,lpg,global,1.51468,0.999140,0.000428,0.000432
+S4 CH4 27.0 + manufacturing tier,lpg,turkey,1.51468,0.999140,0.000428,0.000432
+S4 CH4 27.0 + manufacturing tier,motor-gasoline,global,69.55587,0.976624,0.001446,0.021930
+S4 CH4 27.0 + manufacturing tier,motor-gasoline,turkey,69.55587,0.976624,0.001446,0.021930
+S4 CH4 27.0 + manufacturing tier,motorin-mobile,turkey,2.696,0.984456,0.001399,0.014145
+S4 CH4 27.0 + manufacturing tier,natural-gas,global,56.211,0.999033,0.000481,0.000486
+S4 CH4 27.0 + manufacturing tier,natural-gas,turkey,56.211,0.999033,0.000481,0.000486
+S4 CH4 27.0 + manufacturing tier,natural-gas-kwh,global,0.18316,0.999034,0.000480,0.000486
+S4 CH4 27.0 + manufacturing tier,natural-gas-kwh,turkey,0.18316,0.999034,0.000480,0.000486
+S4 CH4 27.0 + manufacturing tier,natural-gas-m3,global,2.02,0.999033,0.000481,0.000486
+S4 CH4 27.0 + manufacturing tier,natural-gas-m3,turkey,2.02,0.999033,0.000481,0.000486
+S4 CH4 27.0 + manufacturing tier,off-road-diesel-desnz,global,3.17939,0.903440,0.001366,0.095194
+S4 CH4 27.0 + manufacturing tier,off-road-gasoline-desnz,global,2.30233,0.962420,0.029997,0.007583
+S4 CH4 27.0 + manufacturing tier,off-road-ipcc,global,74.39892,0.903440,0.001366,0.095194
+S4 CH4 27.0 + manufacturing tier,on-road-diesel,global,74.39892,0.984456,0.001399,0.014145
+S4 CH4 27.0 + manufacturing tier,on-road-diesel-desnz,global,3.17939,0.984456,0.001399,0.014145
+S4 CH4 27.0 + manufacturing tier,on-road-gasoline,global,69.55587,0.976624,0.001446,0.021930
+S4 CH4 27.0 + manufacturing tier,on-road-lpg,global,63.1,0.973336,0.025822,0.000842
+S4 CH4 27.0 + manufacturing tier,on-road-natural-gas,global,56.211,0.944397,0.041816,0.013787
+S4 CH4 27.0 + manufacturing tier,on-road-petrol-desnz,global,2.30233,0.976625,0.001446,0.021930
+S4 CH4 27.0 + manufacturing tier,propane,global,2.997632,0.999140,0.000428,0.000432
+S4 CH4 27.0 + manufacturing tier,propane,turkey,2.997632,0.999140,0.000428,0.000432
+S4 CH4 27.0 + manufacturing tier,vehicle-km,global,0.171,0.976626,0.001444,0.021930
