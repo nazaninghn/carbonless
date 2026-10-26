@@ -97,9 +97,10 @@ class UnitValidationPerItemTests(_Base):
         # No unit list for the key: unchanged (any offered unit), never a new 500.
         self.assertTrue(self._valid('3A-5', {'mystery': '5 kg'})[0])
 
-    def test_bare_number_and_chip_only_values_are_still_accepted(self):
-        self.assertTrue(self._valid('3A-5', {'diesel': '100'})[0])
+    def test_chip_only_and_empty_values_are_still_accepted(self):
+        # A unit chip picked with no amount typed yet is a normal mid-form state, not an answer.
         self.assertTrue(self._valid('3A-5', {'diesel': ' litre'})[0])
+        self.assertTrue(self._valid('3A-5', {'diesel': ''})[0])
 
 
 class MultiWordUnitTests(_Base):
@@ -201,12 +202,68 @@ class LpgFuelOilKgTests(_Base):
         self.assertEqual(len(notes), 3, notes)
         self.assertTrue(all(n['tr'] and n['en'] and n['kind'] == 'not_calculated' for n in notes))
 
-    def test_a_bare_number_has_no_unit_and_is_said_so(self):
-        r = self._save('3A-5', {'lpg': '500'})
-        self.assertEqual(self._step_entries('3A-5'), [])
-        notes = r.data['calc_feedback']['notes']
+    def test_a_unitless_amount_already_saved_is_still_said_not_to_be_calculated(self):
+        ReportStep.objects.create(report=self.report, step_id='3A-5', answer={'answer': {'lpg': '500'}})
+        notes = self._notes('3A-5')
         self.assertEqual(len(notes), 1, notes)
-        self.assertIn('no unit', notes[0])
+        self.assertIn('no unit', notes[0]['en'])
+        self.assertIn('birimi girilmedi', notes[0]['tr'])
+
+
+class UnitRequiredTests(_Base):
+    """New 3A-5 / 4B-2 amounts need a unit (the engine has none to assume). A value saved before this rule is
+    never reinterpreted and never makes the loop impossible to re-save."""
+
+    def test_new_unitless_amounts_are_refused_in_both_languages_and_nothing_is_saved(self):
+        for step, item in (('3A-5', 'lpg'), ('3A-5', 'diesel'), ('3A-5', 'natural_gas'), ('3A-5', 'coal'),
+                           ('4B-2', 'heat'), ('4B-2', 'steam'), ('4B-2', 'cooling'), ('4B-2', 'compressed_air')):
+            r = self._patch(step, {item: '500'})
+            self.assertEqual(r.status_code, 400, (step, item))
+            self.assertIn(item, r.data['error'])
+            self.assertIn('unit', r.data['error'])
+            tr = self._patch(step, {item: '500'}, lang='tr')
+            self.assertEqual(tr.status_code, 400)
+            self.assertIn('birimi de girin', tr.data['error'])
+            self.assertFalse(ReportStep.objects.filter(report=self.report, step_id=step).exists(), (step, item))
+
+    def test_a_garbage_amount_still_gets_the_number_error_first(self):
+        r = self._patch('3A-5', {'diesel': 'abc'})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn('Expected a number', r.data['error'])
+
+    def test_legacy_unitless_value_is_kept_and_the_loop_can_still_be_saved(self):
+        ReportStep.objects.create(report=self.report, step_id='3A-5', answer={'answer': {'lpg': '500', 'diesel': '90 litre'}})
+        # The wizard re-posts the whole loop at every step: the same legacy value passes, untouched.
+        r = self._save('3A-5', {'lpg': '500', 'diesel': '90 litre', 'natural_gas': '10000 m³'})
+        stored = ReportStep.objects.get(report=self.report, step_id='3A-5').answer
+        stored = stored['answer'] if 'answer' in stored else stored
+        self.assertEqual(stored['lpg'], '500')                                 # not reinterpreted
+        self.assertTrue(any('no unit' in n for n in r.data['calc_feedback']['notes']))   # and said, not forgotten
+        self.assertEqual({e.emission_factor.slug for e in self._step_entries('3A-5')}, {'natural-gas-m3', 'diesel'})
+        gas = next(e for e in self._step_entries('3A-5') if e.emission_factor.slug == 'natural-gas-m3')
+        self.assertEqual(gas.calculated_co2e_kg, D('20200.0000'))                # the unit-less LPG adds nothing
+
+    def test_changing_a_legacy_value_requires_the_unit(self):
+        ReportStep.objects.create(report=self.report, step_id='3A-5', answer={'answer': {'lpg': '500'}})
+        self.assertEqual(self._patch('3A-5', {'lpg': '600'}).status_code, 400)
+        self.assertEqual(self._patch('3A-5', {'lpg': '600 litre'}).status_code, 200)
+
+    def test_a_legacy_value_is_only_let_through_for_its_own_item(self):
+        ReportStep.objects.create(report=self.report, step_id='3A-5', answer={'answer': {'lpg': '500'}})
+        self.assertEqual(self._patch('3A-5', {'diesel': '500'}).status_code, 400)
+
+    def test_4a_1_bare_number_still_means_kwh(self):
+        from .step_entries import _electricity
+        self.assertTrue(validate_generic_step('4A-1', {'answer': {'1': '1000'}})[0])
+        self.assertTrue(validate_generic_step('4A-1', {'answer': '1000'})[0])
+        self.assertEqual([(a['quantity'], a['unit']) for a in _electricity({'1': '1000'})], [(1000.0, 'kwh')])
+
+    def test_other_question_types_are_unaffected(self):
+        for step, answer in (('3A-3', {'EQ-3A-01': '500'}), ('3B-7', {'EQ-3B-01': '100'}),
+                             ('K3C1-3a', {'SC-01': '100'}), ('K3C1-2', {'SC-07': '100'}), ('4A-2b', '500'),
+                             ('3A-5', {'mystery': '5'})):                      # no list of its own: previous behaviour
+            ok, err = validate_generic_step(step, {'answer': answer})
+            self.assertTrue(ok, (step, err))
 
 
 class CompressedAirTests(_Base):
@@ -232,3 +289,70 @@ class CompressedAirTests(_Base):
         stored = ReportStep.objects.get(report=self.report, step_id='4B-2').answer
         stored = stored['answer'] if 'answer' in stored else stored
         self.assertEqual(stored, {'compressed_air': '100 m³'})
+
+
+class IsoReportShowsTheNotesTests(_Base):
+    """The same notes end up in the ISO 14064-1 report, in the report's language. A sample PDF is written to
+    $UNIT_AUDIT_PDF_DIR when that is set, so a person can read it."""
+
+    def _pdf_text(self, lang):
+        import io
+        import os
+        from pypdf import PdfReader
+        r = self.client.get(f'/api/questionnaire/{self.report.id}/iso-report/?lang={lang}')
+        self.assertEqual(r.status_code, 200, getattr(r, 'content', b'')[:300])
+        self.assertEqual(r['Content-Type'], 'application/pdf')
+        out_dir = os.environ.get('UNIT_AUDIT_PDF_DIR')
+        if out_dir:
+            with open(os.path.join(out_dir, f'iso_report_unit_notes_{lang}.pdf'), 'wb') as fh:
+                fh.write(r.content)
+        text = ' '.join(page.extract_text() or '' for page in PdfReader(io.BytesIO(r.content)).pages)
+        return ' '.join(text.split())
+
+    def test_report_lists_the_kg_and_compressed_air_notes_in_both_languages(self):
+        self._save('3A-5', {'natural_gas': '10000 m³', 'lpg': '500 kg', 'fuel_oil': '700 kg'})
+        self._save('4B-2', {'compressed_air': '100 m³', 'heat': '100 GJ'})
+        en = self._pdf_text('en')
+        # The report puts "Not calculated —" in front of each note: the note itself must not say it a second time.
+        for fragment in ('Not calculated — LPG: the amount entered in kg (500 kg) has no matching emission factor',
+                         'Not calculated — Fuel oil: the amount entered in kg (700 kg) has no matching emission factor',
+                         'no density conversion is applied',
+                         'enter litres to have it calculated',
+                         'Not calculated — Compressed air: there is no emission factor for compressed air in any unit'):
+            self.assertIn(fragment, en)
+        self.assertNotIn('was not calculated', en)
+        self.assertNotIn('Compressed air: not calculated', en)
+        tr = self._pdf_text('tr')
+        for fragment in ('Hesaplanmayan cevap — LPG: kg cinsinden girilen miktar (500 kg) için eşleşen bir emisyon faktörü yok',
+                         'yoğunluk dönüşümü yapılmaz',
+                         'hesaplanması için litre cinsinden girin',
+                         'Hesaplanmayan cevap — Basınçlı hava: basınçlı hava için hiçbir birimde'):
+            self.assertIn(fragment, tr)
+        self.assertNotIn('hesaplanmadı — bu yakıtın', tr)
+        self.assertNotIn('Basınçlı hava: hiçbir birimde (GJ, m³) emisyon faktörü yok — hesaplanmadı', tr)
+
+
+class ReportWordingTests(_Base):
+    """The in-app note says it was not calculated; the report's own wording (prefixed "Not calculated —" by the
+    assumptions list) must not repeat it, and must keep the same facts."""
+
+    def test_each_affected_note_has_a_report_wording_without_the_repeated_phrase(self):
+        ReportStep.objects.create(report=self.report, step_id='3A-5', answer={'answer': {
+            'lpg': '500 kg', 'fuel_oil': '700', 'diesel': '90 kg', 'coal': '10 m³'}})
+        ReportStep.objects.create(report=self.report, step_id='4B-2', answer={'answer': {
+            'compressed_air': '100 m³', 'heat': '100', 'steam': '5 tonnes'}})
+        answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
+        notes = [n for n in uncalculated_notes(answers, 2025, self.company) if n['step_id'] in ('3A-5', '4B-2')]
+        self.assertEqual(len(notes), 7, [n['en'] for n in notes])
+        for n in notes:
+            if 'report_en' in n:                                                # steam in tonnes keeps its existing wording
+                self.assertIn('not calculated', n['en'].lower(), n['en'])       # in-app: still says it in full
+                self.assertIn('hesaplanmadı', n['tr'], n['tr'])
+                self.assertNotIn('not calculated', n['report_en'].lower(), n['report_en'])
+                self.assertNotIn('hesaplanmadı', n['report_tr'], n['report_tr'])
+        with_report = [n for n in notes if 'report_en' in n]
+        self.assertEqual(len(with_report), 6, [n['en'] for n in notes])
+        # same facts: the amount, the unit and the way out are still in the report wording
+        lpg = next(n for n in with_report if n['en'].startswith('LPG'))
+        self.assertIn('500 kg', lpg['report_en']); self.assertIn('litre', lpg['report_en'])
+        self.assertIn('500 kg', lpg['report_tr']); self.assertIn('litre', lpg['report_tr'])

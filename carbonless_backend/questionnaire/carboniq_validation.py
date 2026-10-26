@@ -94,6 +94,10 @@ _MESSAGES = {
         'en': '{prefix}Unit {unit!r} is not valid for {item} — expected: {units}.',
         'tr': '{prefix}{item} için {unit!r} birimi geçerli değil — beklenen: {units}.',
     },
+    'unit_required_for_item': {
+        'en': '{prefix}Please give the unit with the amount for {item} — expected: {units}.',
+        'tr': '{prefix}{item} için miktarla birlikte birimi de girin — beklenen: {units}.',
+    },
     'exceeds_max_length': {
         'en': '{prefix}Text exceeds max length of {n} characters.',
         'tr': '{prefix}Metin en fazla {n} karakter olabilir.',
@@ -596,7 +600,14 @@ def _validate_sum_range(value, q, lang):
     return None
 
 
-def _validate_loop_aggregate(value, q, lang='en'):
+def _stored_item(stored, item_key):
+    """The value an earlier save of this step kept for one loop item, or None."""
+    if isinstance(stored, dict) and 'answer' in stored:
+        stored = stored['answer']
+    return stored.get(item_key) if isinstance(stored, dict) else None
+
+
+def _validate_loop_aggregate(value, q, lang='en', stored=None):
     """Answers for any loopSource question (equipment_loop/fuel_loop, or a
     plain single_select/multi_select/text asked once per loop item) arrive as
     a per-item dict — see saveStepToBackend, which posts the full `collected`
@@ -615,6 +626,14 @@ def _validate_loop_aggregate(value, q, lang='en'):
             err = _validate_scalar_against_question(item_val, q_item, f'Item {item_key!r}: ', lang)
             if err:
                 return err
+            if q_item is not q and not _is_empty(item_val):
+                # A new amount for a fuel / energy type needs its unit: the engine has none to assume and drops a
+                # unit-less amount. A value identical to the one already saved (saved before this rule, and re-posted
+                # with the rest of the loop) is let through unchanged, never reinterpreted.
+                _amount, unit = _split_amount_unit(str(item_val), _flatten_units(q_item['units']))
+                if _amount and unit is None and str(_stored_item(stored, item_key)).strip() != str(item_val).strip():
+                    return _msg(lang, 'unit_required_for_item', prefix=f'Item {item_key!r}: ',
+                                item=q_item['_unit_item'], units=', '.join(sorted(q_item['units'])))
         return None
     return _validate_scalar_against_question(value, q, lang=lang)
 
@@ -657,7 +676,7 @@ def validate_generic_step(step_id, data, lang='en', answers=None):
     if qtype == 'compound':
         err = _validate_compound(value, q, lang)
     elif qtype in ('equipment_loop', 'fuel_loop') or q.get('loopSource'):
-        err = _validate_loop_aggregate(value, q, lang)
+        err = _validate_loop_aggregate(value, q, lang, stored=(answers or {}).get(step_id))
     else:
         err = _validate_scalar_against_question(value, q, lang=lang)
         if not err:

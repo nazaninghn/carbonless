@@ -2023,8 +2023,8 @@ export const CARBONIQ_QUESTIONS = [
     },
     placeholder: { tr: 'Örn: 500 kW', en: 'Example: 500 kW' },
     helper: {
-      tr: 'Nameplate (etiket) kapasitesi veya teknik belgeden alınan değer. Girilmesi azaltım analizi için değerli olacak. Bilmiyorsanız atlayabilirsiniz.',
-      en: 'Nameplate capacity or value from technical documentation. Entering this enables reduction analysis. You may skip if unknown.',
+      tr: 'Nameplate (etiket) kapasitesi veya teknik belgeden alınan değer. Yanıtlarınızla birlikte yalnızca belgeleme amacıyla kaydedilir; emisyon hesaplamasında veya azaltım analizinde kullanılmaz. Bilmiyorsanız atlayabilirsiniz.',
+      en: 'Nameplate capacity or value from technical documentation. It is saved with your answers for documentation only — it is not used in the emissions calculation or in any reduction analysis. You may skip if unknown.',
     },
     units: ['kW', 'kcal/h', 'kg buhar/h', 'MJ/h', 'hp'],
     next: '3A-4',

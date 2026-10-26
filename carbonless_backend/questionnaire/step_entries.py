@@ -1926,8 +1926,10 @@ def uncalculated_notes(answers, year, company=None):
     A = {k: _value(v) for k, v in (answers or {}).items()}
     out = []
 
-    def note(step, tr, en, kind='not_calculated'):
+    def note(step, tr, en, kind='not_calculated', report_tr=None, report_en=None):
         out.append({'step_id': step, 'tr': tr, 'en': en, 'kind': kind})
+        if report_tr and report_en:       # the report prefixes "Not calculated —": its wording must not repeat it
+            out[-1].update(report_tr=report_tr, report_en=report_en)
 
     def open_(step):
         gate = _GATES.get(step)
@@ -2084,19 +2086,31 @@ def uncalculated_notes(answers, year, company=None):
             supported = ', '.join(_UNIT_DISPLAY.get(u, u) for u in sorted({u for a, u in ACTIVITY_TO_SLUG if a == fuel}))
             if not unit:
                 note('3A-5', f'{name["tr"]}: miktarın birimi girilmedi — hesaplanmadı. Miktarı birimiyle girin ({supported}).',
-                     f'{name["en"]}: no unit was given with the amount — not calculated. Enter the amount with a unit ({supported}).')
+                     f'{name["en"]}: no unit was given with the amount — not calculated. Enter the amount with a unit ({supported}).',
+                     report_tr=f'{name["tr"]}: miktarın birimi girilmedi. Miktarı birimiyle girin ({supported}).',
+                     report_en=f'{name["en"]}: no unit was given with the amount. Enter the amount with a unit ({supported}).')
             elif unit == 'kg' and fuel in ('lpg', 'fuel_oil'):
                 note('3A-5', f'{name["tr"]}: kg cinsinden girilen miktar ({amount.strip()} kg) hesaplanmadı — bu yakıtın emisyon '
                              f'faktörü litre başınadır ve yoğunluk dönüşümü yapılmaz. Girilen değer değiştirilmedi; '
                              f'hesaplanması için litre cinsinden girin.',
                      f'{name["en"]}: the amount entered in kg ({amount.strip()} kg) was not calculated — the emission factor '
                      f'for this fuel is per litre and no density conversion is applied. The entered value is unchanged; '
-                     f'enter litres to have it calculated.')
+                     f'enter litres to have it calculated.',
+                     report_tr=f'{name["tr"]}: kg cinsinden girilen miktar ({amount.strip()} kg) için eşleşen bir emisyon faktörü yok — '
+                               f'bu yakıtın faktörü litre başınadır ve yoğunluk dönüşümü yapılmaz. Girilen değer değiştirilmedi; '
+                               f'hesaplanması için litre cinsinden girin.',
+                     report_en=f'{name["en"]}: the amount entered in kg ({amount.strip()} kg) has no matching emission factor — '
+                               f'the factor for this fuel is per litre and no density conversion is applied. The entered value is '
+                               f'unchanged; enter litres to have it calculated.')
             else:
                 note('3A-5', f'{name["tr"]}: "{entered}" bu yakıt için desteklenen bir birim değil — hesaplanmadı. '
                              f'Hesaplanan birimler: {supported}.',
                      f'{name["en"]}: "{entered}" is not a supported unit for this fuel — not calculated. '
-                     f'Calculated units: {supported}.')
+                     f'Calculated units: {supported}.',
+                     report_tr=f'{name["tr"]}: "{entered}" bu yakıt için desteklenen bir birim değil. '
+                               f'Hesaplanan birimler: {supported}.',
+                     report_en=f'{name["en"]}: "{entered}" is not a supported unit for this fuel. '
+                               f'Calculated units: {supported}.')
 
     if open_('3B-7') and isinstance(A.get('3B-7'), dict):
         fuels = A.get('3B-5') if isinstance(A.get('3B-5'), dict) else {}
@@ -2141,10 +2155,16 @@ def uncalculated_notes(answers, year, company=None):
                     note('4B-2', 'Basınçlı hava: hiçbir birimde (GJ, m³) emisyon faktörü yok — hesaplanmadı. '
                                  'Girilen değer değiştirilmedi.',
                          'Compressed air: not calculated — there is no emission factor for compressed air in any unit '
-                         '(GJ, m³). The entered value is unchanged.')
+                         '(GJ, m³). The entered value is unchanged.',
+                         report_tr='Basınçlı hava: basınçlı hava için hiçbir birimde (GJ, m³) emisyon faktörü yok. '
+                                   'Girilen değer değiştirilmedi.',
+                         report_en='Compressed air: there is no emission factor for compressed air in any unit '
+                                   '(GJ, m³). The entered value is unchanged.')
                 elif not entered:
                     note('4B-2', f'{label}: miktarın birimi girilmedi — hesaplanmadı. GJ veya MWh olarak girin.',
-                         f'{label}: no unit was given with the amount — not calculated. Enter GJ or MWh.')
+                         f'{label}: no unit was given with the amount — not calculated. Enter GJ or MWh.',
+                         report_tr=f'{label}: miktarın birimi girilmedi. GJ veya MWh olarak girin.',
+                         report_en=f'{label}: no unit was given with the amount. Enter GJ or MWh.')
                 else:
                     note('4B-2', f'{label}: bu birim / enerji türü için emisyon faktörü yok — GJ veya MWh girin.',
                          f'{label}: no emission factor for this unit / energy type — enter GJ or MWh.')

@@ -62,6 +62,7 @@ import {
   efUnitMismatch,
 } from '@/lib/carboniq/questions';
 import { calcFeedbackLine } from '@/lib/carboniq/calcFeedback';
+import { splitStoredAmount, unitWarning } from '@/lib/carboniq/unitInput';
 import { fixed, num } from '@/lib/formatNumber';
 import { isFutureMonth, futurePeriodMessage } from '@/lib/periods';
 
@@ -2017,12 +2018,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
 
   // Parse stored "amount unit" string back into parts when value has a space-separated unit.
   const parseStored = (v) => {
-    if (!v || typeof v !== 'string') return { amount: v || '', unit: '' };
-    // The unit is the longest listed unit that ends the string: some hold a space ('kg buhar/h').
-    for (const u of [...unitList].sort((a, b) => b.length - a.length)) {
-      if (v.endsWith(` ${u}`)) return { amount: v.slice(0, -(u.length + 1)).trim(), unit: u };
-    }
-    return { amount: v, unit: '' };
+    return splitStoredAmount(v, unitList);
   };
 
   const initialParsed = parseStored(value);
@@ -2525,6 +2521,12 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
             </button>
           ))}
         </div>
+      )}
+      {unitWarning(question.id, baseLoopItem(currentLoopItem), selectedUnit, lang) && (
+        // The chosen unit is stored but not calculated (LPG / fuel oil in kg): said before saving, not only after.
+        <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold leading-snug text-amber-800">
+          ⚠️ {unitWarning(question.id, baseLoopItem(currentLoopItem), selectedUnit, lang)}
+        </p>
       )}
       {maxLen && (
         <span className="text-right text-[10px] text-[#175022]/35 pr-12">{charCount}/{maxLen}</span>
