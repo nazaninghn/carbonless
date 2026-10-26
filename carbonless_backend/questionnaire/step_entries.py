@@ -1915,6 +1915,10 @@ def _readable_notes(notes):
     return result
 
 
+# Registered factor units as a user reads them in a note (display only; no stored token or map is touched).
+_UNIT_DISPLAY = {'m3': 'm³', 'kwh': 'kWh', 'liters': 'litre', 'kg': 'kg', 'gj': 'GJ'}
+
+
 def uncalculated_notes(answers, year, company=None):
     """[{step_id, tr, en}] for every answered amount that does not reach the
     dashboard and why — shown right after the answer and listed with the
@@ -2064,6 +2068,35 @@ def uncalculated_notes(answers, year, company=None):
         if 'other_fossil' in given:
             note('3A-5', 'Diğer fosil yakıt: yakıt türü ve fosil payı belirtilmediği için hesaplanmadı.',
                  'Other fossil fuel: not calculated — the fuel and its fossil share are not given.')
+        # A fuel amount in a unit its factor is not registered in (LPG / fuel oil in kg: the factors are per
+        # litre and no density conversion exists) never becomes an entry: say so, and leave the value as entered.
+        from emissions.factor_lookup import ACTIVITY_TO_SLUG, _resolve_unit_and_multiplier
+        for fuel, raw in A['3A-5'].items():
+            if fuel not in _STATIONARY_FUELS:
+                continue
+            amount, entered = _split_amount_unit(raw)
+            if not _number(amount):
+                continue
+            unit = _UNIT_ALIASES.get(entered.lower(), entered.lower())    # as _stationary_fuels reads it
+            if unit and _resolve_unit_and_multiplier(fuel, unit.replace(' ', ''))[0]:
+                continue
+            name = _FUEL_NAMES[fuel]
+            supported = ', '.join(_UNIT_DISPLAY.get(u, u) for u in sorted({u for a, u in ACTIVITY_TO_SLUG if a == fuel}))
+            if not unit:
+                note('3A-5', f'{name["tr"]}: miktarın birimi girilmedi — hesaplanmadı. Miktarı birimiyle girin ({supported}).',
+                     f'{name["en"]}: no unit was given with the amount — not calculated. Enter the amount with a unit ({supported}).')
+            elif unit == 'kg' and fuel in ('lpg', 'fuel_oil'):
+                note('3A-5', f'{name["tr"]}: kg cinsinden girilen miktar ({amount.strip()} kg) hesaplanmadı — bu yakıtın emisyon '
+                             f'faktörü litre başınadır ve yoğunluk dönüşümü yapılmaz. Girilen değer değiştirilmedi; '
+                             f'hesaplanması için litre cinsinden girin.',
+                     f'{name["en"]}: the amount entered in kg ({amount.strip()} kg) was not calculated — the emission factor '
+                     f'for this fuel is per litre and no density conversion is applied. The entered value is unchanged; '
+                     f'enter litres to have it calculated.')
+            else:
+                note('3A-5', f'{name["tr"]}: "{entered}" bu yakıt için desteklenen bir birim değil — hesaplanmadı. '
+                             f'Hesaplanan birimler: {supported}.',
+                     f'{name["en"]}: "{entered}" is not a supported unit for this fuel — not calculated. '
+                     f'Calculated units: {supported}.')
 
     if open_('3B-7') and isinstance(A.get('3B-7'), dict):
         fuels = A.get('3B-5') if isinstance(A.get('3B-5'), dict) else {}
@@ -2100,10 +2133,21 @@ def uncalculated_notes(answers, year, company=None):
 
     if open_('4B-2') and isinstance(A.get('4B-2'), dict):
         for kind, raw in A['4B-2'].items():
-            if _number(_split_amount_unit(raw)[0]) and not (kind in _PURCHASED_ENERGY_SLUG and _energy_kwh(raw)):
+            amount, entered = _split_amount_unit(raw)
+            if _number(amount) and not (kind in _PURCHASED_ENERGY_SLUG and _energy_kwh(raw)):
                 label = {'steam': 'Buhar (ton)', 'compressed_air': 'Basınçlı hava'}.get(kind, kind)
-                note('4B-2', f'{label}: bu birim / enerji türü için emisyon faktörü yok — GJ veya MWh girin.',
-                     f'{label}: no emission factor for this unit / energy type — enter GJ or MWh.')
+                if kind == 'compressed_air':
+                    # No factor exists for compressed air in any unit: GJ / MWh would not help.
+                    note('4B-2', 'Basınçlı hava: hiçbir birimde (GJ, m³) emisyon faktörü yok — hesaplanmadı. '
+                                 'Girilen değer değiştirilmedi.',
+                         'Compressed air: not calculated — there is no emission factor for compressed air in any unit '
+                         '(GJ, m³). The entered value is unchanged.')
+                elif not entered:
+                    note('4B-2', f'{label}: miktarın birimi girilmedi — hesaplanmadı. GJ veya MWh olarak girin.',
+                         f'{label}: no unit was given with the amount — not calculated. Enter GJ or MWh.')
+                else:
+                    note('4B-2', f'{label}: bu birim / enerji türü için emisyon faktörü yok — GJ veya MWh girin.',
+                         f'{label}: no emission factor for this unit / energy type — enter GJ or MWh.')
 
     for gate, doc, what_tr, what_en in (
             ('3A-EF', '3A-EF-a', 'Sabit yanma', 'Stationary combustion'),

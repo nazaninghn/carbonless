@@ -2018,12 +2018,9 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
   // Parse stored "amount unit" string back into parts when value has a space-separated unit.
   const parseStored = (v) => {
     if (!v || typeof v !== 'string') return { amount: v || '', unit: '' };
-    const parts = v.split(' ');
-    if (parts.length >= 2) {
-      const potentialUnit = parts[parts.length - 1];
-      if (unitList.includes(potentialUnit)) {
-        return { amount: parts.slice(0, -1).join(' '), unit: potentialUnit };
-      }
+    // The unit is the longest listed unit that ends the string: some hold a space ('kg buhar/h').
+    for (const u of [...unitList].sort((a, b) => b.length - a.length)) {
+      if (v.endsWith(` ${u}`)) return { amount: v.slice(0, -(u.length + 1)).trim(), unit: u };
     }
     return { amount: v, unit: '' };
   };

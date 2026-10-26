@@ -90,6 +90,10 @@ _MESSAGES = {
         'en': '{prefix}Unrecognized unit {unit!r} — expected one of {units}.',
         'tr': '{prefix}Tanınmayan birim {unit!r} — beklenen: {units}.',
     },
+    'unit_not_valid_for_item': {
+        'en': '{prefix}Unit {unit!r} is not valid for {item} — expected: {units}.',
+        'tr': '{prefix}{item} için {unit!r} birimi geçerli değil — beklenen: {units}.',
+    },
     'exceeds_max_length': {
         'en': '{prefix}Text exceeds max length of {n} characters.',
         'tr': '{prefix}Metin en fazla {n} karakter olabilir.',
@@ -237,6 +241,10 @@ def _split_amount_unit(raw, allowed_units):
     s = str(raw).strip()
     if allowed_units and s in allowed_units:
         return '', s
+    # A unit can hold a space ('kg buhar/h'): the amount is what stands before it, not "500 kg".
+    for unit in sorted((u for u in (allowed_units or ()) if ' ' in u), key=len, reverse=True):
+        if s.endswith(' ' + unit):
+            return s[:-len(unit) - 1].strip(), unit
     parts = s.rsplit(' ', 1)
     if len(parts) == 2:
         return parts[0].strip(), parts[1]
@@ -321,6 +329,9 @@ def _validate_text_value(value, q, errors_prefix='', lang='en'):
         if amount_num >= _MAX_AMOUNT:
             return _msg(lang, 'amount_too_large', prefix=errors_prefix)
         if units and unit is not None and unit not in units:
+            if q.get('_unit_item'):
+                return _msg(lang, 'unit_not_valid_for_item', prefix=errors_prefix, unit=unit,
+                            item=q['_unit_item'], units=', '.join(sorted(units)))
             return _msg(lang, 'unrecognized_unit', prefix=errors_prefix, unit=unit, units=sorted(units))
         return None
 
@@ -592,8 +603,16 @@ def _validate_loop_aggregate(value, q, lang='en'):
     object at every step of a loop. Validate each present item's value;
     empty items (not yet reached in the loop) are fine."""
     if isinstance(value, dict):
+        units = q.get('units')
         for item_key, item_val in value.items():
-            err = _validate_scalar_against_question(item_val, q, f'Item {item_key!r}: ', lang)
+            q_item = q
+            if isinstance(units, dict):
+                # A unit must belong to the selected fuel / energy type (diesel + kg is refused), not merely
+                # to some item of the question. An item with no list of its own keeps the previous check.
+                base = str(item_key).split('#')[0]
+                if isinstance(units.get(base), list):
+                    q_item = {**q, 'units': units[base], '_unit_item': base}
+            err = _validate_scalar_against_question(item_val, q_item, f'Item {item_key!r}: ', lang)
             if err:
                 return err
         return None
