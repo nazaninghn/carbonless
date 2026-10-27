@@ -79,7 +79,7 @@ export default function PasswordChange({ language }) {
       </div>
       {error && <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{error}</p>}
       {msg && <p className="text-sm text-green-600 bg-green-50 p-2 rounded">{msg}</p>}
-      <button type="submit" disabled={loading} className="px-4 py-2 bg-[#175022] text-white rounded-xl text-sm hover:bg-[#175022] disabled:opacity-60">
+      <button type="submit" disabled={loading} className="px-4 py-2 btn-dark rounded-xl text-sm">
         {loading ? (tr ? 'Değiştiriliyor…' : 'Changing…') : (tr ? 'Şifreyi Değiştir' : 'Change Password')}
       </button>
     </form>

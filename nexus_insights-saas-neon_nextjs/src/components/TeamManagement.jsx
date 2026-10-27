@@ -6,19 +6,19 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { Users, UserPlus, Shield, Crown, Pencil, Database, Eye, Info, Mail, X } from 'lucide-react';
 
 const ROLES = [
-  { value: 'owner', icon: Crown, color: 'bg-amber-100 text-amber-700 border-amber-300',
+  { value: 'owner', icon: Crown, color: 'bg-amber-100 text-amber-800 border-amber-300',
     label: { tr: 'Sahip', en: 'Owner' },
     desc: { tr: 'Tam yetki — şirket ayarları, üye yönetimi, veri silme', en: 'Full access — company settings, member management, data deletion' } },
-  { value: 'admin', icon: Shield, color: 'bg-purple-100 text-purple-700 border-purple-300',
+  { value: 'admin', icon: Shield, color: 'bg-green-200 text-green-900 border-green-400',
     label: { tr: 'Yönetici', en: 'Admin' },
     desc: { tr: 'Üye yönetimi, onay/red, rapor oluşturma', en: 'Member management, approve/reject, report generation' } },
-  { value: 'manager', icon: Pencil, color: 'bg-blue-100 text-blue-700 border-blue-300',
+  { value: 'manager', icon: Pencil, color: 'bg-green-100 text-green-800 border-green-300',
     label: { tr: 'Müdür', en: 'Manager' },
     desc: { tr: 'Veri girişi, onay/red, rapor görüntüleme', en: 'Data entry, approve/reject, view reports' } },
-  { value: 'data_entry', icon: Database, color: 'bg-green-100 text-green-700 border-green-300',
+  { value: 'data_entry', icon: Database, color: 'bg-green-50 text-green-800 border-green-200',
     label: { tr: 'Veri Girişi', en: 'Data Entry' },
     desc: { tr: 'Sadece emisyon verisi girişi', en: 'Emission data entry only' } },
-  { value: 'auditor', icon: Eye, color: 'bg-[#F8F8F8] text-[#072C0E] border-[#072C0E]/10',
+  { value: 'auditor', icon: Eye, color: 'bg-smoke text-[#072C0E] border-[#072C0E]/10',
     label: { tr: 'Denetçi', en: 'Auditor' },
     desc: { tr: 'Sadece görüntüleme — veri değiştiremez', en: 'View only — cannot modify data' } },
 ];
@@ -228,7 +228,7 @@ export default function TeamManagement({ language }) {
 
       {/* Role descriptions panel */}
       {showRoles && (
-        <div className="bg-[#F8F8F8] rounded-2xl p-4 border border-[#072C0E]/10">
+        <div className="bg-smoke rounded-2xl p-4 border border-[#072C0E]/10">
           <h4 className="text-sm font-semibold text-[#072C0E] mb-3">{tr ? 'Rol Açıklamaları' : 'Role Descriptions'}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ROLES.map(r => {
@@ -267,7 +267,7 @@ export default function TeamManagement({ language }) {
               // ran off the right edge (the button cut to "Dev / Dı / Bır"):
               // there the controls go on a second line.
               <div key={m.id} className={`flex flex-col gap-2.5 p-3 rounded-2xl border transition-all sm:flex-row sm:items-center sm:justify-between ${
-                !m.is_active ? 'bg-[#F8F8F8] border-[#072C0E]/10 opacity-60' : 'bg-white border-[#072C0E]/10 hover:border-[#2ABD41]/30 hover:shadow-sm'
+                !m.is_active ? 'bg-smoke border-[#072C0E]/10 opacity-60' : 'bg-white border-[#072C0E]/10 hover:border-[#2ABD41]/30 hover:shadow-sm'
               }`}>
                 <div className="flex min-w-0 items-center gap-3">
                   {/* Avatar */}
@@ -374,7 +374,7 @@ export default function TeamManagement({ language }) {
           <button
             onClick={handleInvite}
             disabled={inviting || !inviteEmail}
-            className="px-5 py-2 bg-[#175022] text-white rounded-xl text-sm font-medium hover:bg-[#175022] transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="px-5 py-2 btn-dark rounded-xl text-sm font-medium transition-colors flex items-center gap-1"
           >
             <UserPlus className="w-4 h-4" />
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}
@@ -401,7 +401,7 @@ export default function TeamManagement({ language }) {
               const role = getRoleInfo(inv.role);
               const until = inv.expires_at ? new Date(inv.expires_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB') : null;
               return (
-                <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F8F8F8] px-3 py-2.5">
+                <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-smoke px-3 py-2.5">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-[#072C0E]">{inv.email}</p>
                     <p className="text-[11px] text-[#072C0E]/50">
@@ -415,7 +415,7 @@ export default function TeamManagement({ language }) {
                   <button
                     type="button"
                     onClick={() => setConfirmCancel(inv)}
-                    className="inline-flex items-center gap-1 rounded-full border border-[#072C0E]/10 px-3 py-1 text-xs font-semibold text-[#072C0E]/60 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                    className="inline-flex items-center gap-1 rounded-full btn-secondary px-3 py-1 text-xs font-semibold transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                   >
                     <X className="h-3 w-3" /> {tr ? 'Daveti iptal et' : 'Cancel invite'}
                   </button>
@@ -477,7 +477,7 @@ export default function TeamManagement({ language }) {
             />
             {transferError && <p role="alert" className="mt-2 text-xs font-semibold text-red-600">{transferError}</p>}
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={closeTransfer} className="rounded-full border border-[#072C0E]/10 px-4 py-2 text-xs font-bold">{tr ? 'İptal' : 'Cancel'}</button>
+              <button onClick={closeTransfer} className="rounded-full btn-secondary px-4 py-2 text-xs font-bold">{tr ? 'İptal' : 'Cancel'}</button>
               <button
                 onClick={handleTransfer}
                 disabled={transferring || !transferPassword}

@@ -18,10 +18,10 @@ const ACTIONS = {
   inventory_duplicate_blocked: { tr: 'İkinci envanter engellendi', en: 'Second inventory blocked', cls: 'bg-amber-50 text-amber-700' },
   facility_connection_kept: { tr: 'İmzalı envanter korundu', en: 'Signed inventory kept', cls: 'bg-amber-50 text-amber-700' },
   inventory_recalculated: { tr: 'Envanter yeniden hesaplandı', en: 'Inventory recalculated', cls: 'bg-amber-50 text-amber-700' },
-  inventory_facility_renamed: { tr: 'Envanterde tesis adı değişti', en: 'Facility renamed in inventory', cls: 'bg-slate-50 text-slate-600' },
+  inventory_facility_renamed: { tr: 'Envanterde tesis adı değişti', en: 'Facility renamed in inventory', cls: 'bg-smoke text-graphite' },
   facility_unlinked_from_locked_inventory: { tr: 'Tesis bağlantısı kalktı', en: 'Facility link removed', cls: 'bg-amber-50 text-amber-700' },
   entry_delete_requested: { tr: 'Silme talebi', en: 'Deletion requested', cls: 'bg-amber-50 text-amber-700' },
-  entry_delete_withdrawn: { tr: 'Silme talebi geri alındı', en: 'Deletion request withdrawn', cls: 'bg-slate-50 text-slate-600' },
+  entry_delete_withdrawn: { tr: 'Silme talebi geri alındı', en: 'Deletion request withdrawn', cls: 'bg-smoke text-graphite' },
   entry_delete_refused:  { tr: 'Silme talebi reddedildi', en: 'Deletion refused', cls: 'bg-amber-50 text-amber-700' },
   ownership_transferred: { tr: 'Sahiplik devredildi', en: 'Ownership transferred', cls: 'bg-amber-50 text-amber-700' },
   advisor_approved: { tr: 'Danışman onayı verildi', en: 'Advisor approval given',    cls: 'bg-[#2ABD41]/10 text-[#175022]' },
@@ -77,7 +77,7 @@ export default function CompanyHistory({ language }) {
         {tr ? 'Son 300 değişiklik, en yenisi üstte.' : 'Last 300 changes, newest first.'}
       </p>
       {rows.map((r) => {
-        const a = ACTIONS[r.action] || { tr: r.action, en: r.action, cls: 'bg-[#F8F8F8] text-[#072C0E]/70' };
+        const a = ACTIONS[r.action] || { tr: r.action, en: r.action, cls: 'bg-smoke text-[#072C0E]/70' };
         return (
           <div key={r.id} className="rounded-xl border border-[#072C0E]/8 bg-white px-3 py-2.5">
             <div className="flex flex-wrap items-center gap-2 text-[11px]">

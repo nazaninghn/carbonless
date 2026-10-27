@@ -172,7 +172,7 @@ function VerifyContent() {
                 <Loader2 className="mx-auto mt-6 h-6 w-6 animate-spin text-[#2ABD41]" aria-hidden />
               ) : (
                 <Link href="/login"
-                  className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+                  className="mt-6 inline-flex items-center gap-2 rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition">
                   {tr ? 'Girişe Devam Et' : 'Continue to Login'}
                 </Link>
               )}
@@ -243,7 +243,7 @@ function VerifyContent() {
                 <button
                   type="submit"
                   disabled={code.length !== CODE_LENGTH || status === 'verifying'}
-                  className="mt-5 w-full rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white transition hover:bg-[#1D9C31] disabled:opacity-40"
+                  className="mt-5 w-full rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition"
                 >
                   {tr ? 'Doğrula' : 'Verify'}
                 </button>

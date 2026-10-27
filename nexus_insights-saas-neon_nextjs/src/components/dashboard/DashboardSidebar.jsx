@@ -93,10 +93,10 @@ export default function DashboardSidebar({
           group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200
           ${isActive
             ? isAI
-              ? 'bg-[#2ABD41] text-white shadow-md shadow-[#2ABD41]/20'
+              ? 'btn-primary'
               : isQuestionnaire
-                ? 'bg-[#175022] text-white shadow-md shadow-[#175022]/20'
-                : 'bg-[#072C0E] text-white shadow-md shadow-black/10'
+                ? 'btn-dark'
+                : 'btn-dark'
             : 'text-[#072C0E]/60 hover:bg-[#F1FCF2] hover:text-[#072C0E]'}
         `}
       >
@@ -106,7 +106,7 @@ export default function DashboardSidebar({
             : isAI ? 'bg-[#2ABD41]/10' : isQuestionnaire ? 'bg-[#175022]/10' : 'bg-[#072C0E]/5'
         }`}>
           <Icon className={`h-[16px] w-[16px] ${
-            isActive ? 'text-white' : isAI ? 'text-[#2ABD41]' : isQuestionnaire ? 'text-[#175022]' : 'text-[#072C0E]/50'
+            isActive ? (isAI ? 'text-[#072C0E]' : 'text-white') : isAI ? 'text-[#2ABD41]' : isQuestionnaire ? 'text-[#175022]' : 'text-[#072C0E]/50'
           }`} />
         </div>
         <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
@@ -154,7 +154,7 @@ export default function DashboardSidebar({
             </button>
             <button aria-label={tr ? 'Menüyü kapat' : 'Close menu'}
               onClick={closeSidebar}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#072C0E]/40 hover:bg-[#F1FCF2] lg:hidden"
+              className="btn-icon btn-sm lg:hidden"
             >
               <X className="h-4 w-4" />
             </button>
@@ -320,7 +320,7 @@ export default function DashboardSidebar({
                 >
                   <Icon
                     className={`h-4 w-4 transition-all ${
-                      isAI && isActive ? 'text-white'
+                      isAI && isActive ? 'text-[#072C0E]'
                       : isAI ? 'text-[#2ABD41]'
                       : isActive ? 'text-[#072C0E]'
                       : 'text-[#072C0E]/40'

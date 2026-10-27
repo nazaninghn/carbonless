@@ -109,7 +109,8 @@ function ShipmentRow({ s, index, lang, onRemove }) {
       )}
       <button
         onClick={() => onRemove(index)}
-        className="shrink-0 flex h-6 w-6 items-center justify-center rounded-lg text-[#072C0E]/25 hover:bg-red-50 hover:text-red-400 transition"
+        aria-label={tr ? 'Sevkiyatı kaldır' : 'Remove shipment'}
+        className="btn-icon btn-icon-danger btn-sm shrink-0"
       >
         <Trash2 className="h-3 w-3" />
       </button>
@@ -234,8 +235,8 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
 
       {/* Header */}
       <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50">
-          <Truck className="h-4.5 w-4.5 text-sky-500" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-smoke">
+          <Truck className="h-4.5 w-4.5 text-green-600" />
         </div>
         <div>
           <p className="text-[13px] font-bold text-[#072C0E]">
@@ -455,7 +456,7 @@ export function UpstreamTransportPanel({ reportId, fieldValues = {}, lang = 'en'
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
             ? 'bg-[#2ABD41]/15 border border-[#2ABD41]/30 text-[#1A7B2A]'
-            : 'bg-[#175022] text-white hover:bg-[#175022] disabled:opacity-35'
+            : 'btn-dark'
         }`}
       >
         {saving ? (

@@ -54,7 +54,7 @@ export default function NotificationPreferences({ language, user }) {
       <button
         onClick={handleSave}
         disabled={saving}
-        className="px-4 py-2 bg-[#175022] text-white rounded-xl text-sm hover:bg-[#175022] disabled:opacity-60"
+        className="px-4 py-2 btn-dark rounded-xl text-sm"
       >
         {saving ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save')}
       </button>

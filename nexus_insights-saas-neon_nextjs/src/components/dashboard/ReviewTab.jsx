@@ -17,11 +17,11 @@ const num = (v, tr, digits = 2) =>
 
 const RISK_STYLES = {
   low:          'bg-[#8BEA99]/18 text-[#175022]',
-  medium:       'bg-amber-100 text-amber-700',
-  medium_high:  'bg-orange-100 text-orange-700',
-  high:         'bg-orange-100 text-orange-700',
+  medium:       'bg-amber-100 text-amber-800',
+  medium_high:  'bg-amber-200 text-amber-900',
+  high:         'bg-amber-200 text-amber-900',
   critical:     'bg-red-100 text-red-600',
-  warning:      'bg-amber-100 text-amber-700',
+  warning:      'bg-amber-100 text-amber-800',
   positive:     'bg-[#2ABD41]/15 text-[#175022]',
 };
 
@@ -408,7 +408,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
       ? `${sign}${num(Math.abs(delta), tr, 1)} kg CO₂e`
       : `${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e`;
     return (
-      <div key={`batch-${batch}`} className="rounded-[1.25rem] border border-[#2ABD41]/30 bg-[#F8FDF9] p-3.5 shadow-sm">
+      <div key={`batch-${batch}`} className="rounded-[1.25rem] border border-[#2ABD41]/30 bg-green-50 p-3.5 shadow-sm">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#175022]/55">
@@ -485,7 +485,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
       </div>
 
       {!canApprove && (
-        <p className="rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3 py-2 text-[11px] font-semibold text-[#072C0E]/55">
+        <p className="rounded-xl border border-[#072C0E]/10 bg-smoke px-3 py-2 text-[11px] font-semibold text-[#072C0E]/55">
           {tr
             ? 'Kayıtları yalnızca şirket sahibi, yönetici veya müdür onaylayabilir. Buradan durumlarını takip edebilirsiniz.'
             : 'Only the company owner, admins and managers can approve entries. You can follow their status here.'}
@@ -515,7 +515,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                 {tr ? `Kayıtlar (${pending.length})` : `Entries (${pending.length})`}
               </button>
               <button type="button" onClick={() => jumpTo('review-advisor')}
-                className="rounded-full border border-[#072C0E]/12 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E]/70 hover:bg-[#F8F8F8]">
+                className="rounded-full border border-[#072C0E]/12 bg-white px-3 py-1.5 text-[11px] font-bold text-[#072C0E]/70 hover:bg-smoke">
                 {tr ? `Danışman onayı (${advisorPending.length})` : `Advisor approval (${advisorPending.length})`}
               </button>
             </div>
@@ -673,12 +673,12 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               placeholder={tr ? 'Neden reddedildi...' : 'Why is this rejected...'}
-              className="mt-3 w-full rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-xs text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:ring-4 focus:ring-[#2ABD41]/15"
+              className="mt-3 w-full rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 text-xs text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:ring-4 focus:ring-[#2ABD41]/15"
               rows={3}
             />
             <div className="mt-4 flex gap-2">
-              <button onClick={handleReject} className="flex-1 rounded-full bg-red-500 py-2.5 text-xs font-bold text-white transition hover:bg-red-600">{tr ? 'Reddet' : 'Reject'}</button>
-              <button onClick={() => { setRejectTarget(null); setRejectReason(''); }} className="flex-1 rounded-full border border-[#072C0E]/10 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
+              <button onClick={handleReject} className="flex-1 rounded-full btn-danger py-2.5 text-xs font-bold transition">{tr ? 'Reddet' : 'Reject'}</button>
+              <button onClick={() => { setRejectTarget(null); setRejectReason(''); }} className="flex-1 rounded-full btn-secondary py-2.5 text-xs font-bold transition">{tr ? 'İptal' : 'Cancel'}</button>
             </div>
           </div>
         </div>

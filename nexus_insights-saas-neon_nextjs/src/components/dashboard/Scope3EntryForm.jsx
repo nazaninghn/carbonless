@@ -199,7 +199,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
+                  className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                 >
                   <option value="">
                     {tr ? '— Kategori seçin —' : '— Select category —'}
@@ -225,7 +225,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
                   <select
                     value={selectedSubtype}
                     onChange={(e) => setSelectedSubtype(e.target.value)}
-                    className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
+                    className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                   >
                     <option value="">
                       {tr ? '— Alt tip seçin —' : '— Select sub-type —'}
@@ -255,7 +255,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
                     value={quantity}
                     onChange={(e) => setQuantity(e.target.value)}
                     placeholder={tr ? 'Miktar girin...' : 'Enter quantity...'}
-                    className="w-full rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-16 text-sm text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
+                    className="w-full rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 pr-16 text-sm text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                   />
                   <span className="absolute right-3.5 top-1/2 -translate-y-1/2 rounded-md bg-[#2ABD41]/12 px-2 py-0.5 text-[10px] font-bold text-[#175022]">
                     {unitLabel}
@@ -275,7 +275,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
                     <select
                       value={year}
                       onChange={(e) => setYear(Number(e.target.value))}
-                      className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
+                      className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                     >
                       {yearOptions.map((y) => (
                         <option key={y} value={y}>{y}</option>
@@ -292,7 +292,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
                     <select
                       value={month}
                       onChange={(e) => setMonth(Number(e.target.value))}
-                      className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
+                      className="w-full appearance-none rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 pr-10 text-sm text-[#072C0E] outline-none transition focus:border-[#2ABD41]/40 focus:ring-4 focus:ring-[#2ABD41]/10"
                     >
                       {months.map((label, i) => (
                         <option key={i + 1} value={i + 1}>{label}</option>
@@ -309,7 +309,7 @@ export default function Scope3EntryForm({ language, fetchData }) {
               <button
                 type="submit"
                 disabled={submitting || !quantity}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#1A7B2A] disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-full btn-dark px-5 py-3 text-sm font-bold transition disabled:cursor-not-allowed"
               >
                 {submitting ? (
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

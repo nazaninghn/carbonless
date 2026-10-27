@@ -70,7 +70,7 @@ export default function AboutPage() {
                 href="https://www.carbonless.network/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#072C0E] text-white text-[14px] font-bold rounded-full hover:bg-[#175022] transition-all hover:-translate-y-0.5 shadow-lg"
+                className="inline-flex items-center gap-2 px-8 py-3.5 btn-dark text-[14px] font-bold rounded-full transition-all"
               >
                 carbonless.network
                 <ArrowRight className="w-4 h-4" />

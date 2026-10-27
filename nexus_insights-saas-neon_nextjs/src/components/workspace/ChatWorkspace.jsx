@@ -1240,15 +1240,15 @@ export function ChatWorkspace({
 
   // ── Quick-start chips (free mode) ────────────────────────────────────────────
   const CHIPS = tr ? [
-    { emoji: '🔥', title: 'Sabit Yanma',  hint: 'Doğalgaz, dizel, LPG…', cat: 'stationary',  scope: 'Kapsam 1', dot: 'bg-orange-400' },
-    { emoji: '⚡', title: 'Elektrik',      hint: 'kWh veya MWh tutarı',   cat: 'electricity', scope: 'Kapsam 2', dot: 'bg-yellow-400' },
-    { emoji: '✈️', title: 'İş Seyahati', hint: 'Uçuş, tren, araç…',      cat: 'travel',      scope: 'Kapsam 3', dot: 'bg-violet-400' },
-    { emoji: '🚛', title: 'Nakliye',       hint: 'Ton × km veya tkm',      cat: 'freight',     scope: 'Kapsam 3', dot: 'bg-sky-400'    },
+    { emoji: '🔥', title: 'Sabit Yanma',  hint: 'Doğalgaz, dizel, LPG…', cat: 'stationary',  scope: 'Kapsam 1', dot: 'bg-green-900' },
+    { emoji: '⚡', title: 'Elektrik',      hint: 'kWh veya MWh tutarı',   cat: 'electricity', scope: 'Kapsam 2', dot: 'bg-green-700' },
+    { emoji: '✈️', title: 'İş Seyahati', hint: 'Uçuş, tren, araç…',      cat: 'travel',      scope: 'Kapsam 3', dot: 'bg-green-500' },
+    { emoji: '🚛', title: 'Nakliye',       hint: 'Ton × km veya tkm',      cat: 'freight',     scope: 'Kapsam 3', dot: 'bg-green-300'    },
   ] : [
-    { emoji: '🔥', title: 'Combustion',    hint: 'Gas, diesel, LPG…',     cat: 'stationary',  scope: 'Scope 1', dot: 'bg-orange-400' },
-    { emoji: '⚡', title: 'Electricity',   hint: 'kWh or MWh',            cat: 'electricity', scope: 'Scope 2', dot: 'bg-yellow-400' },
-    { emoji: '✈️', title: 'Business Travel',hint: 'Flights, rail, car…', cat: 'travel',      scope: 'Scope 3', dot: 'bg-violet-400' },
-    { emoji: '🚛', title: 'Freight',        hint: 'Tonnes × km',          cat: 'freight',     scope: 'Scope 3', dot: 'bg-sky-400'    },
+    { emoji: '🔥', title: 'Combustion',    hint: 'Gas, diesel, LPG…',     cat: 'stationary',  scope: 'Scope 1', dot: 'bg-green-900' },
+    { emoji: '⚡', title: 'Electricity',   hint: 'kWh or MWh',            cat: 'electricity', scope: 'Scope 2', dot: 'bg-green-700' },
+    { emoji: '✈️', title: 'Business Travel',hint: 'Flights, rail, car…', cat: 'travel',      scope: 'Scope 3', dot: 'bg-green-500' },
+    { emoji: '🚛', title: 'Freight',        hint: 'Tonnes × km',          cat: 'freight',     scope: 'Scope 3', dot: 'bg-green-300'    },
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1259,7 +1259,7 @@ export function ChatWorkspace({
       <div className="shrink-0 flex items-center gap-2.5 px-4 py-2 border-b border-[#072C0E]/8 bg-white">
         {/* Icon */}
         <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#175022] shrink-0">
-          <Sparkles className="h-3 w-3 text-white/80" />
+          <Sparkles className="h-3 w-3 text-[#072C0E]/80" />
         </div>
         {/* Title + online dot */}
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
@@ -1514,7 +1514,7 @@ export function ChatWorkspace({
             {/* INFO → Continue button */}
             {currentQuestion.type === 'info' && (
               <button onClick={handleInfoContinue}
-                className="w-full rounded-full bg-[#175022] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#175022] active:scale-[0.98] transition">
+                className="w-full rounded-full btn-dark py-2.5 text-[13px] font-bold active:scale-[0.98] transition">
                 {tr ? '→ Devam' : '→ Continue'}
               </button>
             )}
@@ -1555,7 +1555,7 @@ export function ChatWorkspace({
                 <button
                   onClick={() => submitGuidedAnswer(selectedOpts)}
                   disabled={selectedOpts.length === 0 && currentQuestion.required}
-                  className="w-full rounded-full bg-[#175022] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#175022] disabled:opacity-40 active:scale-[0.98] transition mt-0.5">
+                  className="w-full rounded-full btn-dark py-2.5 text-[13px] font-bold active:scale-[0.98] transition mt-0.5">
                   {tr
                     ? `Onayla${selectedOpts.length > 0 ? ` (${selectedOpts.length})` : ''}`
                     : `Confirm${selectedOpts.length > 0 ? ` (${selectedOpts.length})` : ''}`}
@@ -1588,7 +1588,7 @@ export function ChatWorkspace({
                 <button
                   onClick={() => submitGuidedAnswer(countryCityVal)}
                   disabled={!countryCityVal.country || !countryCityVal.city}
-                  className="w-full rounded-full bg-[#175022] text-white py-2.5 text-[13px] font-bold shadow-sm hover:bg-[#175022] disabled:opacity-40 active:scale-[0.98] transition">
+                  className="w-full rounded-full btn-dark py-2.5 text-[13px] font-bold active:scale-[0.98] transition">
                   {tr ? '→ Onayla' : '→ Confirm'}
                 </button>
               </div>
@@ -1626,7 +1626,7 @@ export function ChatWorkspace({
                   }}
                   disabled={!pendingAnswer.trim() && currentQuestion.required}
                   aria-label={tr ? 'Gönder' : 'Send'}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full btn-dark transition disabled:cursor-not-allowed active:scale-95">
                   <Send className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -1682,7 +1682,7 @@ export function ChatWorkspace({
               />
               <button onClick={send} disabled={!input.trim() || sending}
                 aria-label={tr ? 'Gönder' : 'Send'}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-35 disabled:cursor-not-allowed active:scale-95">
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full btn-dark transition disabled:cursor-not-allowed active:scale-95">
                 {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
               </button>
             </div>

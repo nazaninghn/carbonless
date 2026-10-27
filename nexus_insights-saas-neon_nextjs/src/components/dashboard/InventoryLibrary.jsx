@@ -207,7 +207,7 @@ export default function InventoryLibrary({ tr = false }) {
               aria-label={tr ? 'Envanter adı' : 'Inventory name'}
               className="min-w-0 flex-1 rounded-lg border border-[#175022]/20 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#8BEA99]"
             />
-            <button onClick={() => saveRename(report.report_id)} className="rounded-full bg-[#175022] px-3 py-1.5 text-xs font-bold text-white transition-all duration-200 hover:bg-[#0f3a18] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1">
+            <button onClick={() => saveRename(report.report_id)} className="rounded-full btn-dark px-3 py-1.5 text-xs font-bold transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1">
               {tr ? 'Kaydet' : 'Save'}
             </button>
             <button onClick={() => setRenamingId(null)} className="rounded-full border border-[#175022]/15 px-3 py-1.5 text-xs font-bold text-[#175022]/60 transition-all duration-200 hover:bg-[#175022]/5 hover:text-[#175022] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1">
@@ -322,7 +322,7 @@ export default function InventoryLibrary({ tr = false }) {
           <button
             type="button"
             onClick={loadInventories}
-            className="mt-3 rounded-lg bg-[#175022] px-4 py-2 text-xs font-semibold text-white hover:bg-[#072C0E]"
+            className="mt-3 rounded-lg btn-dark px-4 py-2 text-xs font-semibold"
           >
             {tr ? 'Tekrar dene' : 'Try again'}
           </button>
@@ -369,7 +369,7 @@ export default function InventoryLibrary({ tr = false }) {
           <button
             onClick={openNewDialog}
             disabled={loading}
-            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 text-sm bg-[#175022] text-white font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-sm shrink-0"
+            className="flex w-full sm:w-auto items-center justify-center gap-2 px-4 py-2 text-sm btn-dark font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:hover:translate-y-0 disabled:hover:shadow-sm shrink-0"
           >
             <Plus className="w-4 h-4" />
             {tr ? 'Başla' : 'Start'}
@@ -421,7 +421,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => handleDelete(report.report_id)}
                         disabled={deletingId === report.report_id}
-                        className="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-full transition-all duration-200 hover:bg-red-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="px-3 py-2 btn-danger text-xs font-bold rounded-full transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1"
                       >
                         {tr ? 'Evet' : 'Yes'}
                       </button>
@@ -436,7 +436,7 @@ export default function InventoryLibrary({ tr = false }) {
                     canEdit && <>
                       <button
                         onClick={() => handleContinue(report.report_id)}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                        className="flex items-center justify-center gap-2 px-4 py-2 btn-dark text-sm font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
                       >
                         <Play className="w-4 h-4" />
                         {tr ? 'Devam Et' : 'Continue'}
@@ -445,7 +445,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
-                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-red-600 hover:bg-red-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+                        className="btn-icon btn-icon-danger btn-sm shrink-0 active:scale-95"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -524,7 +524,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => handleDelete(report.report_id)}
                         disabled={deletingId === report.report_id}
-                        className="px-3 py-2 bg-red-500 text-white text-xs font-bold rounded-full transition-all duration-200 hover:bg-red-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="px-3 py-2 btn-danger text-xs font-bold rounded-full transition-all duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-1"
                       >
                         {tr ? 'Evet' : 'Yes'}
                       </button>
@@ -540,9 +540,11 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => handleDownloadPdf(report.report_id, 'pack')}
                         disabled={!!pdfDownloadingId}
+                        aria-busy={pdfDownloadingId === `${report.report_id}:pack` ? 'true' : undefined}
+                        aria-label={tr ? 'Tam rapor paketi indir (3 rapor)' : 'Download full report pack (3 reports)'}
                         title={tr ? 'Tam rapor paketi indir (3 rapor)'
                                   : 'Download full report pack (3 reports)'}
-                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#2ABD41] rounded-full transition-all duration-200 hover:text-[#175022] hover:bg-[#2ABD41]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="btn-icon btn-sm shrink-0 rounded-full"
                       >
                         {pdfDownloadingId === `${report.report_id}:pack`
                           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -551,9 +553,11 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => handleDownloadPdf(report.report_id, 'iso')}
                         disabled={!!pdfDownloadingId}
+                        aria-busy={pdfDownloadingId === `${report.report_id}:iso` ? 'true' : undefined}
+                        aria-label={tr ? 'ISO 14064-1 Envanter Raporu İndir' : 'Download ISO 14064-1 inventory report'}
                         title={tr ? 'ISO 14064-1 Envanter Raporu İndir'
                                   : 'Download ISO 14064-1 inventory report'}
-                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/60 rounded-full transition-all duration-200 hover:text-[#175022] hover:bg-[#175022]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="btn-icon btn-sm shrink-0 rounded-full"
                       >
                         {pdfDownloadingId === `${report.report_id}:iso`
                           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -562,9 +566,11 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => handleDownloadPdf(report.report_id, 'profile')}
                         disabled={!!pdfDownloadingId}
+                        aria-busy={pdfDownloadingId === `${report.report_id}:profile` ? 'true' : undefined}
+                        aria-label={tr ? 'Envanter profili (özet) indir' : 'Download inventory profile (summary)'}
                         title={tr ? 'Envanter profili (özet) indir'
                                   : 'Download inventory profile (summary)'}
-                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-[#1A7B2A] hover:bg-[#1A7B2A]/10 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1 disabled:opacity-50"
+                        className="btn-icon btn-sm shrink-0 rounded-full"
                       >
                         {pdfDownloadingId === `${report.report_id}:profile`
                           ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -582,7 +588,7 @@ export default function InventoryLibrary({ tr = false }) {
                       )}
                       <button
                         onClick={() => handleViewReport(report.report_id, report.reporting_year)}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-[#175022] text-white text-sm font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                        className="flex items-center justify-center gap-2 px-4 py-2 btn-dark text-sm font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
                       >
                         <Eye className="w-4 h-4" />
                         {tr ? 'Görüntüle' : 'View'}
@@ -593,7 +599,7 @@ export default function InventoryLibrary({ tr = false }) {
                       <button
                         onClick={() => setConfirmDeleteId(report.report_id)}
                         title={tr ? 'Sil' : 'Delete'}
-                        className="flex items-center justify-center h-8 w-8 shrink-0 text-[#175022]/40 rounded-full transition-all duration-200 hover:text-red-600 hover:bg-red-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-1"
+                        className="btn-icon btn-icon-danger btn-sm shrink-0 active:scale-95"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -617,7 +623,7 @@ export default function InventoryLibrary({ tr = false }) {
           {canEdit && (
             <button
               onClick={openNewDialog}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm bg-[#175022] text-white font-semibold rounded-full shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm btn-dark font-semibold rounded-full transition-all duration-200 active:translate-y-0 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
             >
               <Plus className="w-4 h-4" />
               {tr ? 'İlk envanterinizi oluşturun' : 'Create your first inventory'}
@@ -708,7 +714,7 @@ export default function InventoryLibrary({ tr = false }) {
                     if (sameYearReport.status === 'completed') handleEditCompleted(sameYearReport.report_id);
                     else handleContinue(sameYearReport.report_id);
                   }}
-                  className="flex-1 px-4 py-2.5 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
+                  className="flex-1 px-4 py-2.5 btn-dark rounded-lg font-semibold transition-all duration-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
                 >
                   {tr ? 'Mevcut envanteri aç' : 'Open the existing one'}
                 </button>
@@ -716,7 +722,7 @@ export default function InventoryLibrary({ tr = false }) {
                 <button
                   onClick={handleStartNew}
                   disabled={loading}
-                  className="flex-1 px-4 py-2.5 bg-[#175022] rounded-lg font-semibold text-white shadow-sm transition-all duration-200 hover:bg-[#0f3a18] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2 disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 btn-dark rounded-lg font-semibold transition-all duration-200 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#8BEA99] focus-visible:ring-offset-2"
                 >
                   {loading ? (tr ? 'Başlatılıyor...' : 'Starting...') : (tr ? 'Başla' : 'Start')}
                 </button>

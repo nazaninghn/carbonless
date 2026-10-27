@@ -7,150 +7,7 @@ import { Globe2, Leaf, Brain, Sparkles, BarChart3, Zap, TreePine, Factory, Cloud
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-
-/* -- Copy -- */
-const copy = {
-  en: {
-    nav: { home: 'Home', about: 'About', features: 'Features', ai: 'AI', login: 'Login' },
-    hero: {
-      kicker: 'Carbon Accounting, Made Simple.',
-      line1: "Measure your company's",
-      highlight: 'carbon footprint.',
-      line2: 'Simply.',
-      desc: '',
-      cta: 'Get Started Free',
-      demo: 'Request Demo',
-    },
-  },
-  tr: {
-    nav: { home: 'Ana Sayfa', about: 'Hakkında', features: 'Özellikler', ai: 'AI', login: 'Giriş' },
-    hero: {
-      kicker: 'Karbon Muhasebesi, Basitleştirildi.',
-      line1: 'Şirketinizin',
-      highlight: 'karbon ayak izini',
-      line2: 'kolayca ölçün.',
-      desc: '',
-      cta: 'Ücretsiz Başlayın',
-      demo: 'Demo Talep Et',
-    },
-  },
-};
-
-/* -- Hero hands — each hangs from the header and reveals a one-line benefit
-   tip on click/tap (no hover-only interaction, since touch devices have no
-   hover). Kept as short, punchy claims tied to the product, not literal
-   captions of the stock photos, since the icons themselves are generic. */
-const HAND_TIPS = [
-  { key: 'recycle', src: '/hand-recycle.png', alt: { en: 'Recycling', tr: 'Geri dönüşüm' }, tip: { en: 'Cut your carbon footprint', tr: 'Karbon ayak izinizi azaltın' } },
-  { key: 'globe', src: '/hand-globe.png', alt: { en: 'Global impact', tr: 'Küresel etki' }, tip: { en: 'ISO 14064-1 compliant reporting', tr: 'ISO 14064-1 uyumlu raporlama' } },
-  { key: 'plant', src: '/hand-plant.png', alt: { en: 'Nature', tr: 'Doğa' }, tip: { en: 'Nature-based emission tracking', tr: 'Doğa temelli emisyon takibi' } },
-  { key: 'bulb', src: '/hand-bulb.png', alt: { en: 'Idea', tr: 'Fikir' }, tip: { en: 'AI-powered insights', tr: 'Yapay zeka destekli içgörüler' } },
-];
-
-/* -- Hero pixel-mosaic backdrop (light Droneland-style, brand greens) --
-   Tile colors/pulses are generated with a seeded PRNG at module scope so the
-   server and client render identical markup (no hydration mismatch). */
-const MOSAIC_COLS = 24;
-const MOSAIC_ROWS = 9;
-const mosaicTiles = (() => {
-  let s = 42;
-  const rand = () => { s = (s * 1664525 + 1013904223) % 4294967296; return s / 4294967296; };
-  // Light greens on the hero cream — duplicates of the base color act as gaps
-  const palette = ['#F9FFF4', '#F9FFF4', '#F2FAE8', '#E9F5D9', '#DEF0C6', '#D1E9B2', '#C3E19E'];
-  return Array.from({ length: MOSAIC_COLS * MOSAIC_ROWS }, () => ({
-    color: palette[Math.floor(rand() * palette.length)],
-    pulse: rand() < 0.2,
-    delay: +(rand() * 6).toFixed(2),
-    duration: +(4 + rand() * 5).toFixed(2),
-  }));
-})();
-
-/* -- Floating node component --
-   Interactive hero icons (Dinnect-style floating cards): squircle gradient
-   tile, hover = lift + green glow + label fills green; labelled nodes are
-   clickable links, unlabelled ones stay purely decorative. */
-function FloatingNode({ icon: Icon, label, className, delay = 0, color = 'text-[#1A7B2A]', href = null }) {
-  const inner = (
-    <>
-      <div className="relative transition-transform duration-300 ease-out group-hover:scale-110 group-hover:-translate-y-1.5">
-        {/* soft glow behind the tile, only visible on hover */}
-        <div className="absolute -inset-2 rounded-3xl bg-[#2ABD41]/0 blur-xl transition-colors duration-300 group-hover:bg-[#2ABD41]/25" />
-        <div className="relative flex h-11 w-11 sm:h-16 sm:w-16 items-center justify-center rounded-2xl border border-[#DEFAE1] bg-gradient-to-br from-white to-[#F1FCF2] shadow-lg shadow-[#072C0E]/8 transition-all duration-300 group-hover:border-[#8BEA99] group-hover:shadow-xl group-hover:shadow-[#2ABD41]/25">
-          <Icon className={`h-5 w-5 sm:h-7 sm:w-7 ${color} transition-transform duration-300 group-hover:scale-110`} strokeWidth={1.8} />
-        </div>
-        <div className="absolute -top-1 -right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 rounded-full bg-[#2ABD41] border-2 border-white transition-transform duration-300 group-hover:scale-125" />
-      </div>
-      {label && (
-        <span className="block rounded-full border border-[#DEFAE1] bg-white/90 px-2 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-semibold text-[#1A7B2A] shadow-sm backdrop-blur-sm transition-all duration-300 group-hover:border-[#2ABD41] group-hover:bg-[#2ABD41] group-hover:text-white">
-          {label}
-        </span>
-      )}
-    </>
-  );
-  return (
-    <div className={`absolute ${className} animate-float`} style={{ animationDelay: `${delay}s` }}>
-      {href ? (
-        <Link href={href} aria-label={label} className="group flex cursor-pointer flex-col items-center gap-1.5">
-          {inner}
-        </Link>
-      ) : (
-        <div className="group flex flex-col items-center gap-1.5">{inner}</div>
-      )}
-    </div>
-  );
-}
-
-/* -- Connection lines SVG (desktop/tablet) -- */
-function ConnectionLines() {
-  return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.12]" viewBox="0 0 1200 700">
-      {/* Lines connecting nodes */}
-      <line x1="150" y1="120" x2="350" y2="250" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="150" y1="350" x2="350" y2="300" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="100" y1="500" x2="300" y2="400" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="850" y1="100" x2="700" y2="250" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="1050" y1="200" x2="850" y2="300" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="1000" y1="400" x2="800" y2="350" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="1100" y1="500" x2="900" y2="420" stroke="#2ABD41" strokeWidth="1" />
-      <line x1="200" y1="200" x2="180" y2="400" stroke="#2ABD41" strokeWidth="0.8" />
-      <line x1="950" y1="150" x2="1050" y2="350" stroke="#2ABD41" strokeWidth="0.8" />
-      {/* Diagonal cross lines */}
-      <line x1="300" y1="150" x2="500" y2="320" stroke="#2ABD41" strokeWidth="0.6" />
-      <line x1="700" y1="150" x2="900" y2="300" stroke="#2ABD41" strokeWidth="0.6" />
-    </svg>
-  );
-}
-
-/* -- Connection lines SVG (phone) --
-   The desktop version above is hand-placed for a 1200x700 landscape
-   viewBox matching the 12-node desktop layout — on a narrow portrait
-   phone that box gets letterboxed and the lines land nowhere near the
-   actual mobile nodes (different count, different positions entirely).
-   This uses a 0-100 percentage viewBox with preserveAspectRatio="none"
-   so coordinates stretch exactly the same way the Tailwind top/left/
-   right percentage classes position the nodes themselves — endpoints
-   line up with the real node centers at any phone width/height.
-   vector-effect="non-scaling-stroke" keeps the line weight consistent
-   despite the non-uniform (x != y) scaling that requires. */
-function ConnectionLinesMobile() {
-  const S = { stroke: '#2ABD41', vectorEffect: 'non-scaling-stroke' };
-  return (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.14]" viewBox="0 0 100 100" preserveAspectRatio="none">
-      {/* top band: Scope 1 -> Scope 2 (left chain), AI Engine -> Smart Report (right chain) */}
-      <line x1="11" y1="10" x2="16" y2="22" strokeWidth="1" {...S} />
-      <line x1="89" y1="10" x2="84" y2="22" strokeWidth="1" {...S} />
-      {/* bottom band: Scope 3 -> Net Zero (left chain), ISO 14064 -> ESG (right chain) */}
-      <line x1="16" y1="78" x2="11" y2="90" strokeWidth="1" {...S} />
-      <line x1="84" y1="78" x2="89" y2="90" strokeWidth="1" {...S} />
-      {/* long verticals threading each side's 4 nodes into one visible chain */}
-      <line x1="16" y1="22" x2="16" y2="78" strokeWidth="0.6" {...S} />
-      <line x1="84" y1="22" x2="84" y2="78" strokeWidth="0.6" {...S} />
-      {/* cross-diagonals for the same "network" feel as the desktop version */}
-      <line x1="11" y1="10" x2="84" y2="78" strokeWidth="0.4" {...S} />
-      <line x1="89" y1="10" x2="16" y2="78" strokeWidth="0.4" {...S} />
-    </svg>
-  );
-}
+import HeroSection from '@/components/hero/HeroSection';
 
 /* -- Laptop unfold — a 3D "opening" effect for the AI-section MacBook photo.
    The image starts folded back (rotateX near-flat, tipped away from the
@@ -273,19 +130,6 @@ function Reveal({ children, className = '', delay = 0 }) {
 export default function Home() {
   const { language: lang } = useLanguage();
 
-  const t = copy[lang] ?? copy['en'];
-
-  // Hero hand tooltips — click/tap toggles the benefit tip; clicking
-  // elsewhere closes it, same pattern as the header's mobile dropdown.
-  const [activeHand, setActiveHand] = useState(null);
-  const handsRowRef = useRef(null);
-  useEffect(() => {
-    if (activeHand === null) return;
-    const onDown = e => { if (handsRowRef.current && !handsRowRef.current.contains(e.target)) setActiveHand(null); };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
-  }, [activeHand]);
-
   return (
     <main className="min-h-screen bg-white relative overflow-hidden">
 
@@ -301,118 +145,14 @@ export default function Home() {
         .animate-float:hover {
           animation-play-state: paused;
         }
-        @keyframes mosaicPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.25; }
-        }
-        .animate-mosaic {
-          animation: mosaicPulse 6s ease-in-out infinite;
-        }
-        @keyframes handDrop {
-          0% { transform: translateY(-36px); opacity: 0; }
-          100% { transform: translateY(0); opacity: 1; }
-        }
-        .animate-hand-drop {
-          animation: handDrop 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        @keyframes tipIn {
-          0% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        .animate-tip-in {
-          /* opacity-only: a transform here would fight the -translate-x-1/2
-             utility already positioning this element, wiping out centering */
-          animation: tipIn 0.15s ease-out forwards;
-        }
         @media (prefers-reduced-motion: reduce) {
-          .animate-mosaic, .animate-float, .animate-hand-drop, .animate-tip-in { animation: none; opacity: 1; }
+          .animate-float { animation: none; opacity: 1; }
         }
       `}} />
 
       <Header wide />
 
-      {/* -- Hero Section — 4 hands hang from the header, text sits below -- */}
-      <section className="relative pt-0 pb-10 sm:pb-16 bg-white">
-        {/* Hands — attached flush to the header above. Capped by max-HEIGHT
-            (not width) so the row's total vertical footprint is predictable
-            regardless of each photo's own aspect ratio — the bulb hand is a
-            much taller crop than the others, and letting it drive height off
-            a width cap was pushing the headline below the fold on shorter
-            viewports. Height-capped, they still keep their natural ratio and
-            silhouette variety, just without one column blowing up the row. */}
-        <div ref={handsRowRef} className="relative z-10 mx-auto max-w-5xl px-6 sm:px-10">
-          <div className="flex items-start justify-center gap-4 sm:gap-10">
-            {HAND_TIPS.map((hand, i) => (
-              <div
-                key={hand.key}
-                className="relative flex flex-1 justify-center opacity-0 animate-hand-drop"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setActiveHand(v => (v === hand.key ? null : hand.key))}
-                  aria-expanded={activeHand === hand.key}
-                  className="relative cursor-pointer"
-                >
-                  <img
-                    src={hand.src}
-                    alt={hand.alt[lang] ?? hand.alt.en}
-                    className="w-auto h-auto max-h-[110px] sm:max-h-[150px] lg:max-h-[170px] object-contain object-top drop-shadow-xl transition-transform duration-300 hover:scale-105 active:scale-95"
-                  />
-
-                  {/* Overlaid on the image's own bottom edge — not appended
-                      below it — so it never needs extra vertical space and
-                      can't collide with the kicker/headline that sits right
-                      underneath at the tight mobile spacing. */}
-                  {activeHand === hand.key && (
-                    <div className="absolute inset-x-0.5 bottom-1 z-30 rounded-lg bg-[#072C0E]/95 px-1.5 py-1.5 text-center shadow-xl animate-tip-in">
-                      <p className="text-[9px] sm:text-[11px] font-bold leading-tight text-[#2ABD41]">
-                        {hand.tip[lang] ?? hand.tip.en}
-                      </p>
-                    </div>
-                  )}
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Center content — pulled up snug under the hands. Every piece here
-            (kicker/headline/subtext/buttons) scales together at the same
-            breakpoints so the block reads as one coherent, proportioned
-            unit at any size — not just the headline growing on its own. */}
-        <div className="relative z-10 mx-auto max-w-4xl px-4 sm:px-8 text-center mt-2 sm:mt-4">
-          <p className="mb-1.5 sm:mb-2 text-[10px] sm:text-[12px] xl:text-[13px] font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
-            {t.hero.kicker}
-          </p>
-          <h1 className="text-[26px] sm:text-[38px] lg:text-[50px] xl:text-[62px] uppercase leading-[1.15] sm:leading-[1.1] tracking-[-0.01em] text-center" style={{ fontFamily: "'General Sans', sans-serif", fontWeight: 700 }}>
-            <span className="block text-[#1a1a1a]">
-              {t.hero.line1}
-            </span>
-            <span className="block text-[#2ABD41]">
-              {t.hero.highlight}
-            </span>
-            <span className="block text-[#1a1a1a]">
-              {t.hero.line2}
-            </span>
-          </h1>
-          <p className="mt-2.5 sm:mt-3 xl:mt-4 text-[13px] sm:text-[15px] xl:text-[16px] leading-[1.7] text-[#072C0E]/60 max-w-2xl mx-auto">
-            {lang === 'tr'
-              ? 'Carbonless, şirketinizin faaliyet verilerini —elektrik, yakıt, seyahat ve satın alımlar gibi— Kapsam 1, 2 ve 3 genelinde net bir karbon ayak izine dönüştürür.'
-              : "Carbonless turns your company's activity data—like electricity, fuel, travel, and purchases—into a clear carbon footprint across Scope 1, 2 & 3."}
-          </p>
-          <div className="mt-4 sm:mt-5 xl:mt-7 flex flex-col sm:flex-row items-center justify-center gap-2.5 sm:gap-3">
-            <Link href="/register"
-              className="flex items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-8 xl:px-9 py-3.5 xl:py-4 text-[14px] xl:text-[15px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 hover:bg-[#1D9C31] transition hover:-translate-y-0.5">
-              {lang === 'tr' ? 'Karbon Ayak İzinizi Hesaplayın' : 'Calculate Your Carbon Footprint'}
-            </Link>
-            <a href="#ai"
-              className="flex items-center justify-center gap-2 rounded-full bg-[#072C0E] px-8 xl:px-9 py-3.5 xl:py-4 text-[14px] xl:text-[15px] font-bold text-white shadow-lg shadow-black/15 hover:bg-[#175022] transition hover:-translate-y-0.5">
-              {lang === 'tr' ? 'Nasıl Çalışır?' : 'See How It Works'}
-            </a>
-          </div>
-        </div>
-      </section>
+      <HeroSection />
 
 
       <section id="about" className="relative z-10 py-12 sm:py-20 bg-white">
@@ -440,7 +180,7 @@ export default function Home() {
 
               {/* CTA — links to full About page */}
               <Link href="/about"
-                className="mt-8 sm:mt-10 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg hover:bg-[#175022] transition hover:-translate-y-0.5">
+                className="mt-8 sm:mt-10 inline-flex items-center gap-2 rounded-full btn-dark px-8 py-3.5 text-[14px] font-bold transition">
                 {lang === 'tr' ? 'Daha Fazla' : 'Learn More'}
               </Link>
             </div>
@@ -520,7 +260,7 @@ export default function Home() {
 
               {/* CTA — link to AI page */}
               <Link href="/ai"
-                className="mt-8 sm:mt-10 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-8 py-3.5 text-[14px] font-bold text-white shadow-lg hover:bg-[#175022] transition hover:-translate-y-0.5">
+                className="mt-8 sm:mt-10 inline-flex items-center gap-2 rounded-full btn-dark px-8 py-3.5 text-[14px] font-bold transition">
                 {lang === 'tr' ? 'Daha Fazla' : 'Learn More'}
               </Link>
             </div>
@@ -572,7 +312,7 @@ export default function Home() {
               says so instead of showing prices and limits that don't apply. */}
           <div className="max-w-xl mx-auto">
             <div className="relative rounded-2xl border-2 border-[#2ABD41] bg-white p-5 sm:p-7 shadow-lg shadow-[#2ABD41]/5">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#2ABD41] px-4 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#2ABD41] px-4 py-1 text-[10px] font-bold text-[#072C0E] uppercase tracking-wide">
                 Beta
               </div>
               <div className="mb-5 sm:mb-6">
@@ -610,7 +350,7 @@ export default function Home() {
                 ))}
               </div>
               <Link href="/register"
-                className="block w-full rounded-full bg-[#2ABD41] py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold text-white shadow-sm hover:bg-[#1D9C31] transition">
+                className="block w-full rounded-full btn-primary py-2.5 sm:py-3 text-center text-[12px] sm:text-[13px] font-bold transition">
                 {lang === 'tr' ? 'Ücretsiz Başla' : 'Get Started Free'}
               </Link>
             </div>
@@ -648,7 +388,7 @@ export default function Home() {
               { q: 'Do I have to pay?', a: 'No. Carbonless is in beta and every feature is free. If a paid plan starts, you will be told in advance; you can delete your account at any time.' },
               { q: 'Is my data secure?', a: 'All data is encrypted and accessible only to your company. We never share your data with third parties.' },
             ]).map((item, i) => (
-              <details key={i} className="group rounded-2xl border border-[#DEFAE1] bg-[#F9FFF4] px-5 sm:px-6 open:bg-white open:shadow-md transition-colors">
+              <details key={i} className="group rounded-2xl border border-[#DEFAE1] bg-green-50 px-5 sm:px-6 open:bg-white open:shadow-md transition-colors">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-[14px] sm:text-[15px] font-bold text-[#072C0E] [&::-webkit-details-marker]:hidden">
                   {item.q}
                   <svg className="h-4 w-4 shrink-0 text-[#2ABD41] transition-transform duration-300 group-open:rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -667,7 +407,7 @@ export default function Home() {
       {/* white → dark-green blend before the Footer — the biggest color jump
           on the page, so it gets more height + more eased stops than the
           other transitions to avoid a visible seam. */}
-      <div aria-hidden className="h-px bg-[#e5e5e5]" />
+      <div aria-hidden className="h-px bg-green-100" />
 
       <Footer />
     </main>

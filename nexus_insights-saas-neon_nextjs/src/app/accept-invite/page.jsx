@@ -86,7 +86,7 @@ function AcceptInviteContent() {
               </div>
               <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Ekibe hoş geldiniz!' : 'Welcome to the team!'}</h1>
               <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
-              <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+              <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition">
                 {tr ? "Panele Git" : 'Go to Dashboard'}
               </Link>
             </>
@@ -125,10 +125,10 @@ function AcceptInviteContent() {
                   : `Have an account? Log in with ${info?.email || 'the address the invite was sent to'}. Otherwise "Sign Up" creates just your account — no company details needed — and you join the team right away.`}
               </p>
               <div className="mt-6 flex justify-center gap-3">
-                <Link href="/login" className="inline-flex items-center rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+                <Link href="/login" className="inline-flex items-center rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition">
                   {tr ? 'Giriş Yap' : 'Log In'}
                 </Link>
-                <Link href={`/join?token=${encodeURIComponent(token)}`} className="inline-flex items-center rounded-full border border-[#072C0E]/15 px-6 py-3 text-[14px] font-bold text-[#072C0E] hover:bg-[#F1FCF2] transition">
+                <Link href={`/join?token=${encodeURIComponent(token)}`} className="inline-flex items-center rounded-full btn-secondary px-6 py-3 text-[14px] font-bold transition">
                   {tr ? 'Kayıt Ol' : 'Sign Up'}
                 </Link>
               </div>

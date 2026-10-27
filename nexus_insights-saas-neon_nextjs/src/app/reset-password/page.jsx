@@ -73,7 +73,7 @@ function ResetContent() {
             <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Bu bağlantı artık geçerli değil' : 'This link is no longer valid'}</h1>
             <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
             <Link href="/forgot-password"
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+              className="mt-6 inline-flex items-center gap-2 rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition">
               {tr ? 'Yeni bağlantı iste' : 'Request a new link'}
             </Link>
             <div className="mt-3">
@@ -131,7 +131,7 @@ function ResetContent() {
               <h1 className="text-[20px] font-bold text-[#072C0E]">{tr ? 'Şifre Sıfırlandı!' : 'Password Reset!'}</h1>
               <p className="mt-2 text-[14px] text-[#072C0E]/50">{message}</p>
               <Link href="/login"
-                className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+                className="mt-6 inline-flex items-center gap-2 rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition">
                 {tr ? 'Yeni Şifreyle Giriş Yap' : 'Login with New Password'}
               </Link>
             </div>
@@ -190,7 +190,7 @@ function ResetContent() {
                 <button
                   type="submit"
                   disabled={status === 'loading'}
-                  className="w-full rounded-full bg-[#072C0E] py-3 text-[14px] font-bold text-white hover:bg-[#175022] transition disabled:opacity-50"
+                  className="w-full rounded-full btn-dark py-3 text-[14px] font-bold transition"
                 >
                   {status === 'loading' ? (tr ? 'Sıfırlanıyor...' : 'Resetting...') : (tr ? 'Şifreyi Sıfırla' : 'Reset Password')}
                 </button>

@@ -235,8 +235,8 @@ export default function CompletionReportCard({
 
       {/* Assumptions */}
       {assumptions.length > 0 && (
-        <div className="mb-6 p-5 bg-blue-50 rounded-xl border border-blue-200">
-          <h4 className="flex items-center gap-2 text-sm font-bold text-blue-900 mb-3">
+        <div className="mb-6 p-5 bg-smoke rounded-xl border border-graphite/25">
+          <h4 className="flex items-center gap-2 text-sm font-bold text-slate mb-3">
             <AlertTriangle className="w-4 h-4" />
             {tr ? `ISO 14064-1 Varsayımları (${assumptions.length})` : `ISO 14064-1 Assumptions (${assumptions.length})`}
           </h4>
@@ -246,10 +246,10 @@ export default function CompletionReportCard({
               const text = typeof a === 'object'
                 ? (typeof a.text === 'object' ? (a.text?.[tr ? 'tr' : 'en'] || a.text?.en) : a.text)
                 : a;
-              return <li key={key} className="text-xs text-blue-800">• {text}</li>;
+              return <li key={key} className="text-xs text-slate">• {text}</li>;
             })}
             {assumptions.length > 8 && (
-              <li className="text-xs text-blue-800/60 italic">
+              <li className="text-xs text-slate/60 italic">
                 {tr ? `+ ${assumptions.length - 8} tane daha` : `+ ${assumptions.length - 8} more`}
               </li>
             )}
@@ -269,7 +269,7 @@ export default function CompletionReportCard({
       <button
         onClick={() => download('pack')}
         disabled={!!downloading}
-        className="flex items-center justify-center gap-2 w-full px-6 py-3 mb-3 bg-[#2ABD41] text-white font-semibold rounded-full hover:bg-[#25a839] transition disabled:opacity-50"
+        className="flex items-center justify-center gap-2 w-full px-6 py-3 mb-3 btn-primary font-semibold rounded-full transition"
       >
         {downloading === 'pack'
           ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -282,7 +282,7 @@ export default function CompletionReportCard({
       <button
         onClick={() => download('iso')}
         disabled={!!downloading}
-        className="flex items-center justify-center gap-2 w-full px-6 py-3 mb-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#0F3A18] transition disabled:opacity-50"
+        className="flex items-center justify-center gap-2 w-full px-6 py-3 mb-3 btn-dark font-semibold rounded-full transition"
       >
         {downloading === 'iso'
           ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -306,7 +306,7 @@ export default function CompletionReportCard({
         </button>
         <button
           onClick={onStartNew}
-          className="flex items-center justify-center gap-2 px-6 py-3 bg-[#175022] text-white font-semibold rounded-full hover:bg-[#175022] transition flex-1"
+          className="flex items-center justify-center gap-2 px-6 py-3 btn-dark font-semibold rounded-full transition flex-1"
         >
           <RotateCcw className="w-4 h-4" />
           {tr ? 'Envanter Listesine Dön' : 'Back to Inventory List'}

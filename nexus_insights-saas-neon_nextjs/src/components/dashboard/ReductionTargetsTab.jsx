@@ -221,7 +221,7 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
             <button
               onClick={() => onEdit(tgt)}
               title={tr ? 'Düzenle' : 'Edit'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-[#2ABD41]/10 hover:text-[#2ABD41]"
+              className="btn-icon btn-sm"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -230,7 +230,7 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
             <button
               onClick={() => onDelete(tgt.id)}
               title={tr ? 'Sil' : 'Delete'}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-red-50 hover:text-red-500"
+              className="btn-icon btn-icon-danger btn-sm"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -285,11 +285,11 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
 
       {/* Key metrics row */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-[#F8F8F8] px-2.5 py-2 text-center">
+        <div className="rounded-xl bg-smoke px-2.5 py-2 text-center">
           <p className="text-[9px] font-bold uppercase text-[#072C0E]/30">{tr ? 'Baz' : 'Base'}</p>
           <p className="mt-0.5 text-xs font-bold text-[#072C0E]">{fmt(baseKg / 1000)} t</p>
         </div>
-        <div className="rounded-xl bg-[#F8F8F8] px-2.5 py-2 text-center">
+        <div className="rounded-xl bg-smoke px-2.5 py-2 text-center">
           <p className="text-[9px] font-bold uppercase text-[#072C0E]/30">
             {tr ? 'Şimdi' : 'Now'}{currentLabelYear ? ` · ${currentLabelYear}` : ''}
           </p>
@@ -314,7 +314,7 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
       </div>
 
       {/* Bottom stats */}
-      <div className="flex items-center justify-between gap-2 rounded-xl bg-[#F8F8F8]/80 px-3.5 py-2.5">
+      <div className="flex items-center justify-between gap-2 rounded-xl bg-smoke/80 px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-[#072C0E]/30" />
           <span className="text-[11px] font-semibold text-[#072C0E]/50">
@@ -632,7 +632,7 @@ export default function ReductionTargetsTab({
           </div>
           {canEdit && <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 self-start rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] sm:self-auto"
+            className="inline-flex items-center gap-1.5 self-start rounded-full btn-dark px-5 py-2.5 text-xs font-bold transition-colors sm:self-auto"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'Hedef Ekle' : 'Add Target'}
@@ -701,7 +701,7 @@ export default function ReductionTargetsTab({
           </div>
           {canEdit && <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-6 py-3 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
+            className="inline-flex items-center gap-2 rounded-full btn-dark px-6 py-3 text-xs font-bold transition-colors"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Hedefinizi Ekleyin' : 'Add Your First Target'}
@@ -721,7 +721,7 @@ export default function ReductionTargetsTab({
           {onYearChange && (
             <button
               onClick={() => onYearChange(latestInventoryYear)}
-              className="shrink-0 rounded-full bg-[#072C0E] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0b3d14]"
+              className="shrink-0 rounded-full btn-dark px-3.5 py-1.5 text-[11px] font-bold transition"
             >
               {tr ? `${latestInventoryYear} yılına geç` : `Switch to ${latestInventoryYear}`}
             </button>
@@ -797,7 +797,7 @@ export default function ReductionTargetsTab({
               </div>
               <button aria-label={tr ? 'Kapat' : 'Close'}
                 onClick={() => setEditTarget(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 transition hover:bg-[#072C0E]/5"
+                className="btn-icon btn-sm"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -883,17 +883,17 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-smoke/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button
                 type="button"
                 onClick={() => setEditTarget(null)}
-                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
+                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 type="submit" form="edit-target-form" disabled={editSaving}
-                className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60"
+                className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors"
               >
                 {editSaving ? '…' : (tr ? 'Kaydet' : 'Save Changes')}
               </button>
@@ -921,7 +921,7 @@ export default function ReductionTargetsTab({
               </div>
               <button aria-label={tr ? 'Kapat' : 'Close'}
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 transition hover:bg-[#072C0E]/5"
+                className="btn-icon btn-sm"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -1038,17 +1038,17 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Footer */}
-            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-smoke/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
               <button
                 type="button"
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]"
+                className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <button
                 type="submit" form="target-form" disabled={saving}
-                className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60"
+                className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors"
               >
                 {saving ? '…' : (tr ? 'Hedefi Kaydet' : 'Save Target')}
               </button>

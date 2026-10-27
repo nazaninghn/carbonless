@@ -70,14 +70,14 @@ export default function QuestionnairePageTab({ language }) {
       {/* One line on a phone, so the inventory keeps the screen. */}
       <div className="mb-1.5 flex flex-row items-center justify-between gap-3 sm:mb-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
-          <div className="hidden h-8 w-8 items-center justify-center rounded-lg bg-[#2ABD41]/10 sm:flex">
-            <ClipboardList className="h-4 w-4 text-[#2ABD41]" />
+          <div className="hidden h-10 w-10 items-center justify-center rounded-xl bg-[#DEFAE1]/70 sm:flex">
+            <ClipboardList className="h-5 w-5 text-primary" />
           </div>
           <div className="leading-tight">
-            <h1 className="truncate text-[16px] sm:text-[18px] font-bold text-[#072C0E] tracking-tight">
+            <h1 className="truncate text-[17px] sm:text-[20px] font-bold text-[#072C0E] tracking-tight">
               {tr ? 'Karbon Envanteri' : 'Carbon Inventory'}
             </h1>
-            <p className="hidden text-[11px] text-[#072C0E]/50 sm:block">
+            <p className="hidden text-[12px] text-[#072C0E]/55 sm:block">
               {tr
                 ? 'Şirketinizin karbon ayak izini adım adım hesaplayın'
                 : 'Calculate your company\'s carbon footprint step by step'}
@@ -85,7 +85,7 @@ export default function QuestionnairePageTab({ language }) {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <div className="hidden items-center gap-1.5 rounded-full bg-[#F1FCF2] border sm:flex border-[#DEFAE1] px-3 py-1.5">
+          <div className="hidden items-center gap-1.5 rounded-full bg-white/70 border sm:flex border-[#DEFAE1] px-3.5 py-2 shadow-sm">
             <HelpCircle className="h-3.5 w-3.5 text-[#2ABD41]" />
             <span className="text-[11px] font-medium text-[#175022]/60">
               {tr ? 'ISO 14064-1 uyumlu' : 'ISO 14064-1 compliant'}
@@ -95,7 +95,7 @@ export default function QuestionnairePageTab({ language }) {
       </div>
 
       {/* Main content area */}
-      <div className="flex flex-1 min-h-0 flex-col rounded-2xl border border-[#DEFAE1] bg-white overflow-hidden shadow-sm">
+      <div className="flex flex-1 min-h-0 flex-col rounded-3xl border border-white/80 bg-white/75 overflow-hidden shadow-[0_18px_50px_-24px_rgba(7,44,14,0.25)] backdrop-blur-xl">
         <InventoryProvider>
           <QuestionnaireContent language={language} />
         </InventoryProvider>

@@ -22,7 +22,7 @@ function getPasswordStrength(password) {
   const passed = Object.values(checks).filter(Boolean).length;
 
   let level = 'none';
-  let color = 'bg-[#F8F8F8]';
+  let color = 'bg-smoke';
   let textColor = 'text-[#072C0E]/40';
 
   if (password.length === 0) {
@@ -33,16 +33,16 @@ function getPasswordStrength(password) {
     textColor = 'text-red-600';
   } else if (passed <= 3) {
     level = 'medium';
-    color = 'bg-yellow-500';
-    textColor = 'text-yellow-600';
+    color = 'bg-amber-500';
+    textColor = 'text-amber-700';
   } else if (passed === 4) {
     level = 'good';
-    color = 'bg-blue-500';
-    textColor = 'text-blue-600';
+    color = 'bg-green-400';
+    textColor = 'text-graphite';
   } else {
     level = 'strong';
-    color = 'bg-green-500';
-    textColor = 'text-green-600';
+    color = 'bg-green-600';
+    textColor = 'text-green-700';
   }
 
   return { checks, passed, level, color, textColor };
@@ -100,7 +100,7 @@ export default function PasswordStrengthIndicator({ password, language = 'tr' })
             <div
               key={i}
               className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                i <= passed ? color : 'bg-[#F8F8F8]'
+                i <= passed ? color : 'bg-smoke'
               }`}
             />
           ))}

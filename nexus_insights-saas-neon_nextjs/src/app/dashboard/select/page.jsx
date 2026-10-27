@@ -77,7 +77,7 @@ export default function SelectModePage() {
               key={l}
               onClick={() => changeLanguage(l)}
               className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition ${
-                language === l ? 'bg-[#072C0E] text-white' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
+                language === l ? 'btn-dark' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
               }`}
             >
               {l === 'en' ? 'EN' : 'TR'}
@@ -112,7 +112,7 @@ export default function SelectModePage() {
           onMouseLeave={() => setHovered(null)}
           className="group relative flex flex-col items-start gap-5 rounded-2xl border-2 p-7 text-left transition-all duration-200 hover:scale-[1.02] active:scale-[0.99]"
           style={{
-            borderColor: hovered === 'ai' ? '#2ABD41' : '#e0e0e0',
+            borderColor: hovered === 'ai' ? '#2ABD41' : '#DEFAE1',
             background: hovered === 'ai' ? 'linear-gradient(135deg, #F1FCF2, #F1FCF2)' : 'white',
             boxShadow: hovered === 'ai' ? '0 8px 32px rgba(42, 189, 65,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
           }}
@@ -155,7 +155,7 @@ export default function SelectModePage() {
           onMouseLeave={() => setHovered(null)}
           className="group relative flex flex-col items-start gap-5 rounded-2xl border-2 p-7 text-left transition-all duration-200 hover:scale-[1.02] active:scale-[0.99]"
           style={{
-            borderColor: hovered === 'dashboard' ? '#51D766' : '#e0e0e0',
+            borderColor: hovered === 'dashboard' ? '#51D766' : '#DEFAE1',
             background: hovered === 'dashboard' ? 'linear-gradient(135deg, #F1FCF2, #F1FCF2)' : 'white',
             boxShadow: hovered === 'dashboard' ? '0 8px 32px rgba(81, 215, 102,0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
           }}

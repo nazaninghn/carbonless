@@ -7,37 +7,37 @@ import { parseLocalizedNumber } from '@/lib/utils/numbers';
 const CAT_META = {
   '3A': {
     icon: Flame,
-    color: 'text-orange-500',
-    bg: 'bg-orange-50',
-    border: 'border-orange-200/60',
-    accent: '#f97316',
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+    border: 'border-green-200/60',
+    accent: '#175022',
     label: { tr: 'Kapsam 1 — Sabit Yanma', en: 'Scope 1 — Stationary Combustion' },
     scope: { tr: 'Kapsam 1', en: 'Scope 1' },
   },
   '4A': {
     icon: Zap,
-    color: 'text-yellow-500',
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200/60',
-    accent: '#eab308',
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+    border: 'border-green-200/60',
+    accent: '#2ABD41',
     label: { tr: 'Kapsam 2 — Elektrik', en: 'Scope 2 — Electricity' },
     scope: { tr: 'Kapsam 2', en: 'Scope 2' },
   },
   'K4': {
     icon: Truck,
-    color: 'text-sky-500',
-    bg: 'bg-sky-50',
-    border: 'border-sky-200/60',
-    accent: '#0ea5e9',
+    color: 'text-green-600',
+    bg: 'bg-smoke',
+    border: 'border-graphite/25/60',
+    accent: '#51D766',
     label: { tr: 'Kapsam 3 — Taşımacılık', en: 'Scope 3 — Transport' },
     scope: { tr: 'Kapsam 3', en: 'Scope 3' },
   },
   'K5': {
     icon: Briefcase,
-    color: 'text-violet-500',
-    bg: 'bg-violet-50',
-    border: 'border-violet-200/60',
-    accent: '#8b5cf6',
+    color: 'text-green-600',
+    bg: 'bg-green-50',
+    border: 'border-green-200/60',
+    accent: '#1D9C31',
     label: { tr: 'Kapsam 3 — İş Seyahati', en: 'Scope 3 — Business Travel' },
     scope: { tr: 'Kapsam 3', en: 'Scope 3' },
   },
@@ -300,7 +300,7 @@ export function SuggestionReviewCard({ suggestion, onConfirm, onReject, lang = '
         <button
           onClick={handleConfirm}
           disabled={loading}
-          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#072C0E] px-4 py-2.5 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#175022] active:scale-[0.98] disabled:opacity-40"
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl btn-dark px-4 py-2.5 text-[12px] font-bold transition active:scale-[0.98]"
         >
           <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
           {tr ? 'Rapora Kaydet' : 'Save to Report'}

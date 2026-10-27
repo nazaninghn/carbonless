@@ -603,7 +603,7 @@ export default function DashboardOverview({
             </p>
             {roleHint && <p className="mt-0.5">{tr ? roleHint.tr : roleHint.en}</p>}
           </div>
-          <button onClick={dismissWelcome} className="shrink-0 rounded-full bg-[#2ABD41] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[#1A7B2A]">
+          <button onClick={dismissWelcome} className="shrink-0 rounded-full btn-primary px-3 py-1 text-[10px] font-bold transition">
             {tr ? 'Anladım' : 'Got it'}
           </button>
         </div>
@@ -622,7 +622,7 @@ export default function DashboardOverview({
               try { sessionStorage.setItem('carbonless_settings_section', 'facilities'); } catch { /* opens on Profile */ }
               setActiveTab('settings');
             }}
-            className="shrink-0 rounded-full bg-[#2ABD41] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[#1A7B2A]"
+            className="shrink-0 rounded-full btn-primary px-3 py-1 text-[10px] font-bold transition"
           >
             {tr ? 'Düzenle' : 'Edit'}
           </button>
@@ -693,7 +693,7 @@ export default function DashboardOverview({
                 onClick={() => setActiveTab('ai_carbon')}
                 className="flex-1 flex items-center justify-center gap-2 rounded-full border border-[#2ABD41] bg-[#F1FCF2] px-5 py-3 text-[13px] font-semibold text-[#175022] hover:bg-[#DEFAE1] transition"
               >
-                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#2ABD41] text-white">
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#2ABD41] text-[#072C0E]">
                   <Sparkles className="h-3 w-3" />
                 </span>
                 {tr ? 'AI ile Başla' : 'Start with AI'}
@@ -756,7 +756,7 @@ export default function DashboardOverview({
           {canEdit && (
             <button
               onClick={() => { setActiveTab('emissions'); setShowAddForm(true); }}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#2ABD41] px-3.5 py-1.5 text-[12px] font-bold text-white transition hover:bg-[#1D9C31]"
+              className="inline-flex items-center gap-1.5 rounded-lg btn-primary px-3.5 py-1.5 text-[12px] font-bold transition"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Veri Ekle' : 'Add Data'}
@@ -826,7 +826,7 @@ export default function DashboardOverview({
               try { sessionStorage.setItem('carbonless_continue_inventory', String(summary.inventory_in_progress.report_id)); } catch { /* opens the library */ }
               setActiveTab('questionnaire');
             }}
-            className="shrink-0 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold text-white transition hover:bg-amber-600"
+            className="shrink-0 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-bold text-[#072C0E] transition hover:bg-amber-600"
           >
             {tr ? 'Devam et' : 'Continue'}
           </button>
@@ -849,7 +849,7 @@ export default function DashboardOverview({
           title={tr ? 'Aylık Emisyon Trendi' : 'Monthly Emission Trend'}
           subtitle={String(selectedYear)}
           icon={TrendingDown}
-          iconBg="bg-[#2ABD41] text-white"
+          iconBg="bg-[#2ABD41] text-[#072C0E]"
           delay={240}
         >
           <MonthlyChart monthly={monthly} annualKg={summary?.annual_kg ?? 0} selectedYear={selectedYear} tr={tr} />

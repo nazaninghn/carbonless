@@ -131,7 +131,7 @@ function LoginContent() {
   }, [email, password, tr, completeLogin]);
 
   return (
-    <main className="relative min-h-screen bg-[#F9FFF4]">
+    <main className="relative min-h-screen bg-green-50">
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes loginCaptionFloat {
           0%, 100% { transform: translateY(0); }
@@ -152,7 +152,7 @@ function LoginContent() {
             key={l}
             onClick={() => changeLanguage(l)}
             className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition ${
-              language === l ? 'bg-[#2ABD41] text-white' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
+              language === l ? 'btn-primary' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
             }`}
           >
             {l}
@@ -229,7 +229,7 @@ function LoginContent() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#2ABD41] px-5 py-4 text-[14px] font-bold text-white shadow-lg shadow-[#2ABD41]/25 transition hover:bg-[#1D9C31] hover:-translate-y-0.5 disabled:opacity-50 disabled:hover:translate-y-0">
+              <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full btn-primary px-5 py-4 text-[14px] font-bold transition disabled:hover:translate-y-0">
                 {loading ? (tr ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                 {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>

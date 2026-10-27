@@ -59,7 +59,7 @@ function FieldRow({ label, hint, required, children }) {
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-semibold text-[#072C0E]/55">
         {label}
-        {required && <span className="ml-0.5 text-orange-400">*</span>}
+        {required && <span className="ml-0.5 text-red-600">*</span>}
         {hint && <span className="ml-1 font-normal text-[#072C0E]/30">({hint})</span>}
       </label>
       {children}
@@ -136,8 +136,8 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50">
-          <Flame className="h-4.5 w-4.5 text-orange-500" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50">
+          <Flame className="h-4.5 w-4.5 text-green-600" />
         </div>
         <div>
           <p className="text-[13px] font-bold text-[#072C0E]">
@@ -267,7 +267,7 @@ export function StationaryCombustionPanel({ reportId, fieldValues = {}, lang = '
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
             ? 'bg-[#2ABD41]/15 border border-[#2ABD41]/30 text-[#1A7B2A]'
-            : 'bg-[#175022] text-white hover:bg-[#175022] disabled:opacity-35'
+            : 'btn-dark'
         }`}
       >
         {saving ? (

@@ -179,7 +179,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
   }, [reportsState, isoReportId, completedReports, allReports.length, selectedYear, tr]);
 
   const inventoryNotice = reportsState === 'loading' ? (
-    <div role="status" className="flex items-center gap-2 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] px-4 py-3 text-xs font-semibold text-[#072C0E]/60">
+    <div role="status" className="flex items-center gap-2 rounded-2xl border border-[#072C0E]/10 bg-smoke px-4 py-3 text-xs font-semibold text-[#072C0E]/60">
       <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-[#175022]/20 border-t-[#175022]" />
       {tr ? 'Envanterleriniz yükleniyor…' : 'Loading your inventories…'}
     </div>
@@ -190,7 +190,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       {inventoryHint.error && (
         <button
           onClick={() => setReportsLoadKey(k => k + 1)}
-          className="shrink-0 rounded-full bg-[#072C0E] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0b3d14]"
+          className="shrink-0 rounded-full btn-dark px-3.5 py-1.5 text-[11px] font-bold transition"
         >
           {tr ? 'Tekrar dene' : 'Try again'}
         </button>
@@ -198,7 +198,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       {inventoryHint.year && onYearChange && (
         <button
           onClick={() => onYearChange(Number(inventoryHint.year))}
-          className="shrink-0 rounded-full bg-[#072C0E] px-3.5 py-1.5 text-[11px] font-bold text-white transition hover:bg-[#0b3d14]"
+          className="shrink-0 rounded-full btn-dark px-3.5 py-1.5 text-[11px] font-bold transition"
         >
           {tr ? `${inventoryHint.year} yılına geç` : `Switch to ${inventoryHint.year}`}
         </button>
@@ -391,7 +391,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       {dlError && (
         <div className="flex items-center justify-between gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-xs font-semibold text-red-600">
           <span>{dlError}</span>
-          <button onClick={() => setDlError('')} className="shrink-0 text-red-400 hover:text-red-600">✕</button>
+          <button onClick={() => setDlError('')} aria-label={tr ? 'Hatayı kapat' : 'Dismiss error'} className="shrink-0 text-red-600 hover:text-red-700">✕</button>
         </div>
       )}
       {/* ─── HERO ─── */}
@@ -412,16 +412,16 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               each is in the export centre below. The pack is set apart because
               it is the same three reports in one file, not a fourth type. */}
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-smoke disabled:opacity-60">
               <FileText className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('pdf') ? '...' : (tr ? 'Emisyon Raporu' : 'Emissions Report')}
             </button>
-            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60">
+            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-smoke disabled:opacity-60">
               <ClipboardList className="h-3.5 w-3.5" />
               {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile')}
             </button>
             <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className={isoReportId
-              ? 'inline-flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#2ABD41]/20 transition-colors hover:bg-[#25a839] disabled:opacity-60'
+              ? 'inline-flex items-center gap-1.5 rounded-full btn-primary px-4 py-2.5 text-xs font-bold transition-colors'
               // Locked (no completed inventory): not the strongest button on
               // the page while the Emissions Report next to it is the one that works.
               : 'inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] disabled:opacity-60'}>
@@ -459,7 +459,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           <div className="space-y-2">
             {checks.map((c) => (
               <div key={c.label} className="flex items-center gap-2.5">
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] ${c.done ? 'bg-[#2ABD41] text-[#072C0E]' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
                 <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]/80' : 'text-[#072C0E]/55'}`}>
@@ -527,7 +527,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                   </div>
                 </div>
               ))}
-              <div className="mt-3 rounded-xl bg-[#F8F8F8] px-3 py-2.5 text-center">
+              <div className="mt-3 rounded-xl bg-smoke px-3 py-2.5 text-center">
                 <p className="text-[10px] font-bold uppercase text-[#072C0E]/35">{tr ? 'Toplam' : 'Total'}</p>
                 <p className="text-lg font-bold text-[#072C0E]">{fixed(totalTonne, 2)} <span className="text-xs font-semibold text-[#072C0E]/40">tCO₂e</span></p>
               </div>
@@ -540,7 +540,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
         {/* Monthly Trend */}
         <ReportCard delay={260}>
           <div className="mb-4 flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41] text-white transition-transform duration-300 group-hover:scale-110">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2ABD41] text-[#072C0E] transition-transform duration-300 group-hover:scale-110">
               <TrendingDown className="h-4 w-4" />
             </div>
             <div>
@@ -667,7 +667,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
                   setManualIsoPick(true);
                   setIsoReportId(e.target.value || null);
                 }}
-                className="w-full rounded-xl border border-[#072C0E]/12 bg-[#F8F8F8] px-3 py-2.5 text-xs font-semibold text-[#072C0E] focus:outline-none focus:ring-2 focus:ring-[#2ABD41]/40"
+                className="w-full rounded-xl border border-[#072C0E]/12 bg-smoke px-3 py-2.5 text-xs font-semibold text-[#072C0E] focus:outline-none focus:ring-2 focus:ring-[#2ABD41]/40"
               >
                 {/* Without an empty option the browser shows the first
                     inventory as chosen while nothing is. */}
@@ -741,7 +741,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
 
           {/* Not a fourth report type — the same three bound into one file,
               so it is offered after them rather than alongside them. */}
-          <div className="mt-3 rounded-2xl border border-dashed border-[#072C0E]/15 bg-[#FAFCFA] p-3">
+          <div className="mt-3 rounded-2xl border border-dashed border-[#072C0E]/15 bg-smoke p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Package className="h-3.5 w-3.5 text-[#072C0E]/50" />
@@ -811,8 +811,8 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               { done: counted.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Kanıt eklendi' : 'Evidence attached' },
               { done: readiness === 100 && counted.some(e => e.proof_document && e.proof_available !== false), label: tr ? 'Denetim hazır' : 'Audit ready' },
             ].map((c) => (
-              <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-[#F8F8F8] px-3 py-2.5 transition-colors duration-300 hover:bg-[#DEFAE1]/60">
-                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-white' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
+              <div key={c.label} className="flex items-center gap-2.5 rounded-lg bg-smoke px-3 py-2.5 transition-colors duration-300 hover:bg-[#DEFAE1]/60">
+                <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${c.done ? 'bg-[#2ABD41] text-[#072C0E]' : 'bg-[#072C0E]/8 text-[#072C0E]/30'}`}>
                   {c.done ? '✓' : ''}
                 </span>
                 <span className={`text-xs font-semibold ${c.done ? 'text-[#072C0E]' : 'text-[#072C0E]/45'}`}>{c.label}</span>
@@ -890,11 +890,11 @@ function ReportType({ icon: Icon, title, scope, desc, onDownload, loading, prefi
     <div className={`rounded-2xl border p-3.5 transition-colors ${
       highlight
         ? 'border-[#2ABD41]/35 bg-[#F1FCF2]'
-        : 'border-[#072C0E]/8 bg-[#F8F8F8]'
+        : 'border-[#072C0E]/8 bg-smoke'
     } ${disabled ? 'opacity-60' : ''}`}>
       <div className="flex items-start gap-2.5">
         <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
-          highlight ? 'bg-[#2ABD41] text-white' : 'bg-white text-[#2ABD41]'
+          highlight ? 'bg-[#2ABD41] text-[#072C0E]' : 'bg-white text-[#2ABD41]'
         }`}>
           <Icon className="h-4 w-4" />
         </div>
@@ -929,7 +929,7 @@ function ReportType({ icon: Icon, title, scope, desc, onDownload, loading, prefi
 
 function ExportBtn({ icon: Icon, label, loading, disabled, onClick }) {
   return (
-    <button onClick={onClick} disabled={loading || disabled} className="flex items-center gap-2 rounded-xl border border-[#072C0E]/8 bg-[#F8F8F8] px-3.5 py-3 text-xs font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:opacity-50">
+    <button onClick={onClick} disabled={loading || disabled} className="flex items-center gap-2 rounded-xl border border-[#072C0E]/8 bg-smoke px-3.5 py-3 text-xs font-bold text-[#072C0E] transition hover:bg-[#DEFAE1] disabled:opacity-50">
       <Icon className="h-4 w-4 text-[#2ABD41]" />
       {loading ? '...' : label}
     </button>
@@ -938,7 +938,7 @@ function ExportBtn({ icon: Icon, label, loading, disabled, onClick }) {
 
 function ConfigItem({ label, value }) {
   return (
-    <div className="rounded-xl bg-[#F8F8F8] px-3 py-2.5">
+    <div className="rounded-xl bg-smoke px-3 py-2.5">
       <p className="text-[10px] font-bold uppercase text-[#072C0E]/35">{label}</p>
       <p className="mt-0.5 text-xs font-bold text-[#072C0E]">{value}</p>
     </div>

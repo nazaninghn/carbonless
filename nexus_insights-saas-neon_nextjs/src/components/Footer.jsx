@@ -46,7 +46,7 @@ export default function Footer() {
               </p>
               <div className="mt-6 flex gap-3">
                 <a href="https://www.linkedin.com/company/carbonless-network" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 border border-white/80 text-[#072C0E]/60 shadow-sm transition hover:bg-[#2ABD41] hover:border-[#2ABD41] hover:text-white">
+                  className="flex h-10 w-10 items-center justify-center rounded-full btn-glass">
                   <Linkedin className="h-[18px] w-[18px]" strokeWidth={1.8} />
                 </a>
               </div>

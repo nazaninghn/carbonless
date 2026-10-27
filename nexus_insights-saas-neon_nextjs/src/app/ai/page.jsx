@@ -75,7 +75,7 @@ export default function AiPage() {
           </div>
         </section>
         {/* How it Works */}
-        <section className="py-12 sm:py-16 lg:py-24 bg-[#F9FFF4]">
+        <section className="py-12 sm:py-16 lg:py-24 bg-green-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
             <div className="text-center mb-8 sm:mb-14">
               <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">

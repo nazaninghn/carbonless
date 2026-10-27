@@ -33,6 +33,10 @@ const CHAT_ANIM_STYLES = `
 .cb-ring    { animation: cbRing    9s   linear     infinite; }
 .cb-ring-r  { animation: cbRing    14s  linear     infinite reverse; }
 .cb-fadeup  { animation: cbFadeUp  0.55s ease-out  both; }
+@media (prefers-reduced-motion: reduce) {
+  .cb-float, .cb-glow, .cb-ring, .cb-ring-r, .cb-fadeup { animation: none; }
+  .cb-glow { opacity: 0.8; }
+}
 `;
 import {
   CARBONIQ_STAGES,
@@ -926,7 +930,7 @@ function AnswerFeedback({ msg, question, sessionId, tr, onReferred }) {
               {tr ? 'Geri bildirimi gönder' : 'Send feedback'}
             </button>
             <button type="button" disabled={state === 'asking'} onClick={ask}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#175022] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#175022]/90 disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 rounded-full btn-dark px-3 py-1.5 text-[11px] font-bold">
               {state === 'asking' ? <Loader2 className="h-3 w-3 animate-spin" /> : <LifeBuoy className="h-3.5 w-3.5" />}
               {tr ? 'Destek ekibine sor' : 'Ask the support team'}
             </button>
@@ -989,7 +993,7 @@ function SupportReply({ requestId, tr, onSent }) {
         className="w-full resize-none rounded-xl border border-[#175022]/10 px-3 py-2 text-[12px] text-[#175022] outline-none focus:border-[#2ABD41]/50" />
       <div className="mt-2 flex items-center gap-2">
         <button type="button" disabled={text.trim().length < 2 || state === 'sending'} onClick={send}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#175022] px-3 py-1.5 text-[11px] font-bold text-white disabled:opacity-50">
+          className="inline-flex items-center gap-1.5 rounded-full btn-dark px-3 py-1.5 text-[11px] font-bold">
           {state === 'sending' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
           {tr ? 'Gönder' : 'Send'}
         </button>
@@ -1236,7 +1240,7 @@ function EmptyState({ onNew, tr }) {
                 <button
                   onClick={() => setShowGuide(false)}
                   aria-label={tr ? 'Kapat' : 'Close'}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#072C0E]/35 transition hover:bg-[#072C0E]/6 hover:text-[#072C0E]"
+                  className="btn-icon btn-sm shrink-0"
                 >
                   <X className="h-4 w-4" strokeWidth={2.25} />
                 </button>
@@ -1266,7 +1270,7 @@ function EmptyState({ onNew, tr }) {
                 ]).map(({ icon: Icon, text }, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 rounded-xl bg-[#F9FFF4] px-3 py-2.5 transition-colors hover:bg-[#F1FCF2]"
+                    className="flex items-center gap-3 rounded-xl bg-green-50 px-3 py-2.5 transition-colors hover:bg-[#F1FCF2]"
                   >
                     <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#2ABD41]/12 text-[#2ABD41]">
                       <Icon className="h-3.5 w-3.5" strokeWidth={2.25} />
@@ -1413,7 +1417,7 @@ function Chip({ label, selected, onClick, multi, disabled }) {
       disabled={disabled}
       className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
         selected
-          ? 'border-[#2ABD41] bg-[#2ABD41] text-white shadow-sm'
+          ? 'btn-primary'
           : 'border-[#175022]/12 bg-white text-[#175022]/70 hover:border-[#8BEA99]/50 hover:bg-[#8BEA99]/8 hover:text-[#175022]'
       }`}
     >
@@ -2063,7 +2067,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
       <button
         onClick={() => onSubmit()}
         disabled={disabled}
-        className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+        className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
       >
         {tr ? 'Devam Et →' : 'Continue →'}
       </button>
@@ -2100,7 +2104,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit({ ...value, city: canonicalCity(value?.country, value?.city) })}
           disabled={disabled || !value?.country || cityRequired}
-          className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+          className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -2217,7 +2221,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           <button
             onClick={() => onSubmit()}
             disabled={disabled || vals.length === 0}
-            className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+            className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
           >
             {tr ? 'Onayla' : 'Confirm'}{vals.length > 0 ? ` (${vals.length})` : ''} →
           </button>
@@ -2331,7 +2335,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           <button
             onClick={() => onSubmit({ items: draftFilled ? [...items, draft] : items })}
             disabled={disabled || !canFinish || draftRepeats}
-            className="self-start rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+            className="self-start rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
           >
             {tr ? 'Tamamla →' : 'Done →'}
           </button>
@@ -2396,7 +2400,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
           <button
             onClick={() => onSubmit()}
             disabled={disabled || !allRequiredFilled}
-            className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+            className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
           >
             {tr ? 'Onayla →' : 'Confirm →'}
           </button>
@@ -2442,7 +2446,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button
           onClick={() => onSubmit()}
           disabled={disabled || (mlRequired && mlEmpty)}
-          className="self-start rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+          className="self-start rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
         >
           {tr ? 'Onayla →' : 'Confirm →'}
         </button>
@@ -2497,7 +2501,7 @@ function AnswerInput({ question, value, onChange, onSubmit, lang, disabled, curr
         <button aria-label={tr ? 'Gönder' : 'Send'}
           onClick={() => onSubmit(buildSubmitValue())}
           disabled={disabled || (isRequired && isEmpty)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full btn-dark transition"
         >
           <Send className="h-3.5 w-3.5" />
         </button>
@@ -2816,7 +2820,7 @@ function BlockSummaryTable({ blockId, stageId, questions, answers, lang, onEdit,
       <div className="flex justify-end">
         <button
           onClick={onContinue}
-          className="rounded-full bg-[#175022] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#175022]"
+          className="rounded-full btn-dark px-6 py-2.5 text-sm font-bold transition"
         >
           {tr ? 'Devam Et →' : 'Continue →'}
         </button>
@@ -2867,9 +2871,9 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
 
   return (
     <aside
-      className={`flex shrink-0 flex-col border-r border-[#175022]/6 bg-[#F1FCF2] transition-all duration-300 ${
+      className={`flex shrink-0 flex-col border-l border-[#DEFAE1] bg-green-50/95 backdrop-blur-md transition-all duration-300 ${
         open
-          ? 'absolute inset-y-0 left-0 z-30 w-[220px] lg:relative lg:inset-auto lg:z-auto'
+          ? 'absolute inset-y-0 right-0 z-30 w-[260px] shadow-xl lg:relative lg:inset-auto lg:z-auto lg:w-[280px] lg:shadow-none'
           : 'w-0 overflow-hidden'
       }`}
     >
@@ -2879,9 +2883,9 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
         </span>
         <button aria-label={tr ? 'İlerleme panelini aç/kapat' : 'Toggle progress panel'}
           onClick={onToggle}
-          className="flex h-6 w-6 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
+          className="btn-icon btn-sm"
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
+          <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
         </button>
       </div>
 
@@ -2924,8 +2928,8 @@ function ProgressSidebar({ answers, currentId, lang, open, onToggle, completed =
               key={stage.id}
               className={`rounded-xl px-3 py-2 transition ${
                 isCurrent
-                  ? 'bg-[#8BEA99]/15 border border-[#8BEA99]/30'
-                  : 'hover:bg-[#175022]/4'
+                  ? 'bg-white/80 border border-[#2ABD41]/25 shadow-sm'
+                  : 'border border-transparent hover:bg-white/60'
               }`}
             >
               <div className="flex items-center gap-1.5 mb-0.5">
@@ -4805,7 +4809,7 @@ export function QuestionnaireTab({
   }
 
   return (
-    <div ref={flowRootRef} className="flex flex-1 min-h-0 overflow-hidden relative">
+    <div ref={flowRootRef} className="flex flex-1 min-h-0 flex-row-reverse overflow-hidden relative">
       {/* Mobile backdrop for progress sidebar */}
       {sidebarOpen && (
         <div
@@ -4833,11 +4837,11 @@ export function QuestionnaireTab({
           the conversation grows past the visible area. */}
       <div className="flex flex-1 min-w-0 min-h-0 flex-col">
         {/* Sub-header */}
-        <div className="flex shrink-0 items-center gap-2 border-b border-[#175022]/6 px-4 py-2">
+        <div className="flex shrink-0 items-center gap-2 border-b border-[#DEFAE1] bg-white/60 px-4 py-2.5">
           {!sidebarOpen && (
             <button aria-label={tr ? 'İlerleme panelini aç' : 'Open progress panel'}
               onClick={() => setSidebarOpen(true)}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
+              className="btn-icon btn-sm"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -4860,7 +4864,7 @@ export function QuestionnaireTab({
             {inventoryCompleted && !completed && (currentQuestion?.stage ?? 7) < 7 && (
               <button
                 onClick={finishEditing}
-                className="flex h-7 items-center gap-1 rounded-full bg-[#175022] px-2.5 text-[11px] font-bold text-white hover:bg-[#1A7B2A] transition"
+                className="flex h-7 items-center gap-1 rounded-full btn-dark px-2.5 text-[11px] font-bold transition"
               >
                 <CheckCircle2 className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{tr ? 'Düzenlemeyi bitir' : 'Finish editing'}</span>
@@ -4882,7 +4886,7 @@ export function QuestionnaireTab({
                 <span className="text-[10px] font-bold text-red-500">{tr ? 'Emin misiniz?' : 'Sure?'}</span>
                 <button
                   onClick={() => { setResetConfirm(false); resetFlow(); }}
-                  className="rounded-full bg-red-500 px-2 py-1 text-[10px] font-bold text-white transition hover:bg-red-600"
+                  className="rounded-full btn-danger px-2 py-1 text-[10px] font-bold transition"
                 >
                   {tr ? 'Evet' : 'Yes'}
                 </button>
@@ -4898,7 +4902,7 @@ export function QuestionnaireTab({
                 onClick={() => setResetConfirm(true)}
                 title={tr ? 'Sıfırla' : 'Reset'}
                 aria-label={tr ? 'Envanteri sıfırla' : 'Reset inventory'}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40 hover:bg-[#175022]/6 hover:text-[#175022] transition"
+                className="btn-icon btn-sm"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
@@ -4954,8 +4958,8 @@ export function QuestionnaireTab({
               </div>
             )}
             {assumptions.length > 0 && (
-              <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-blue-600">
+              <div className="rounded-2xl border border-graphite/25 bg-smoke px-4 py-3">
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-graphite">
                   {tr ? 'ISO 14064-1 Varsayımları' : 'ISO 14064-1 Assumptions'}
                 </p>
                 <ul className="flex flex-col gap-1">
@@ -4968,7 +4972,7 @@ export function QuestionnaireTab({
                     const text = typeof a === 'object'
                       ? (typeof a.text === 'object' ? (a.text?.[lang] || a.text?.en) : a.text)
                       : a;
-                    return <li key={key} className="text-xs text-blue-800">• {text}</li>;
+                    return <li key={key} className="text-xs text-slate">• {text}</li>;
                   })}
                 </ul>
               </div>
@@ -5079,7 +5083,7 @@ export function QuestionnaireTab({
                   const vq = getQuestionById('3B-1');
                   const names = evs.map(k => loopItemLabel(vq, k, Object.keys(fuels), lang));
                   return (
-                    <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800">
+                    <p className="rounded-xl border border-graphite/25 bg-smoke px-3 py-2 text-xs font-semibold text-slate">
                       {tr
                         ? `Hatırlatma: Soru 53'te elektrikli / hibrit araç belirttiniz (${names.join(', ')}). Tesislerinizde şarj ediliyorsa bu şarj elektriğinin burada girdiğiniz tüketime dahil olduğundan emin olun.`
                         : `Reminder: in Question 53 you listed electric / hybrid vehicles (${names.join(', ')}). If they are charged at your facilities, make sure that charging electricity is included in the consumption you enter here.`}
@@ -5123,7 +5127,7 @@ export function QuestionnaireTab({
                   </p>
                 )}
                 {currentId === '6B-OV' && recordedAssumptions?.length > 0 && (
-                  <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-800">
+                  <div className="rounded-xl border border-graphite/25 bg-smoke px-3 py-2 text-xs text-slate">
                     <p className="font-semibold">
                       {tr
                         ? 'Cevaplarınızdan raporun "Kabuller" bölümüne kendiliğinden eklenecek kabuller:'
@@ -5866,7 +5870,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
           <button
             type="button"
             onClick={() => answerSamePeriod('add')}
-            className="mt-4 w-full rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-sm font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
+            className="mt-4 w-full rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-sm font-bold text-[#072C0E] transition hover:bg-smoke"
           >
             {tr ? 'Ayrı kayıt olarak ekle' : 'Add separately'}
           </button>
@@ -5939,7 +5943,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
         <header className="hidden sm:flex shrink-0 items-center gap-2 border-b border-[#175022]/6 bg-white px-3 sm:px-4 py-2 sm:py-2.5">
           <button
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-xl text-[#175022]/35 transition hover:bg-[#175022]/5 hover:text-[#175022]"
+            className="btn-icon btn-sm"
             title={sidebarOpen ? (tr ? 'Geçmişi gizle' : 'Hide history') : (tr ? 'Geçmişi göster' : 'Show history')}
           >
             <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -5970,7 +5974,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
         <div className="flex sm:hidden shrink-0 items-center justify-between border-b border-[#175022]/6 bg-white px-3 py-1.5">
           <button aria-label={tr ? 'Sohbet listesini aç/kapat' : 'Toggle chat list'}
             onClick={() => setSidebarOpen(v => !v)}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#175022]/40"
+            className="btn-icon btn-sm"
           >
             <Menu className="h-3.5 w-3.5" />
           </button>
@@ -5991,7 +5995,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
           <div role="status" className="shrink-0 mx-4 mt-3 flex items-center gap-3 rounded-xl border border-[#2ABD41]/30 bg-[#F1FCF2] px-4 py-2.5 text-xs font-semibold text-[#175022]">
             <LifeBuoy className="h-4 w-4 shrink-0" />
             <span className="flex-1">{tr ? `Destek ekibi yanıtladı (talep #${supportNotice.id}).` : `The support team answered (request #${supportNotice.id}).`}</span>
-            <button type="button" className="shrink-0 rounded-full bg-[#175022] px-3 py-1 text-[11px] font-bold text-white"
+            <button type="button" className="shrink-0 rounded-full btn-dark px-3 py-1 text-[11px] font-bold"
               onClick={() => {
                 const found = sessions.find(x => String(x.id) === String(supportNotice.session_id));
                 if (found && found.id !== activeId) { setActiveId(found.id); setSupportNotice(null); }
@@ -6103,7 +6107,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                   )}
                   {/* Referred to / answered by the support team */}
                   {msg.role === 'assistant' && msg.ui?.support_request_id && (
-                    <div className="ml-9 mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#175022]/15 bg-[#F6F8F6] px-3 py-1.5 text-[11px] font-semibold text-[#175022]/70">
+                    <div className="ml-9 mt-2 inline-flex items-center gap-1.5 rounded-full border border-[#175022]/15 bg-smoke px-3 py-1.5 text-[11px] font-semibold text-[#175022]/70">
                       <LifeBuoy className="h-3.5 w-3.5" />
                       {msg.ui.referred
                         ? (tr ? `Destek talebi #${msg.ui.support_request_id} · yanıt bekleniyor` : `Support request #${msg.ui.support_request_id} · waiting for an answer`)
@@ -6184,7 +6188,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                                   ));
                                   sendMessage(value, null, label);
                                 }}
-                                className="flex items-center gap-1.5 rounded-full bg-[#2ABD41] px-5 py-2 text-[12px] font-bold text-white shadow-sm transition hover:bg-[#1D9C31]"
+                                className="flex items-center gap-1.5 rounded-full btn-primary px-5 py-2 text-[12px] font-bold transition"
                               >
                                 <CheckCircle2 className="h-3.5 w-3.5" />
                                 {tr ? 'Onayla' : 'Confirm'}
@@ -6442,7 +6446,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                             }
                           }}
                           disabled={savingMessageId === msg.id}
-                          className="flex items-center gap-2 rounded-full bg-[#2ABD41] px-5 py-2.5 text-[12px] font-bold text-white shadow-sm hover:bg-[#1D9C31] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="flex items-center gap-2 rounded-full btn-primary px-5 py-2.5 text-[12px] font-bold transition disabled:cursor-not-allowed"
                         >
                           <CheckCircle2 className="h-4 w-4" />
                           {savingMessageId === msg.id ? (tr ? 'Kaydediliyor...' : 'Saving...') : (tr ? 'Evet, Kaydet' : 'Yes, Save')}
@@ -6541,7 +6545,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
                     }}
                     disabled={!input.trim() || sending || creatingSession || charOver}
                     aria-label={tr ? 'Gönder' : 'Send'}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#175022] text-white shadow-sm transition hover:bg-[#175022] disabled:opacity-30 disabled:cursor-not-allowed"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full btn-dark transition disabled:cursor-not-allowed"
                   >
                     {(sending || creatingSession)
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -6572,10 +6576,39 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 // calculations with save cards) in a side panel beside the Carbon Inventory.
 // It replaced both the full-screen "AI Sohbet" page and the inventory's
 // separate "AI Yardımı" drawer, so there is one assistant everywhere.
-export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false }) {
+export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false, floating = false }) {
   const tr = language === 'tr';
   const panelRef = useRef(null);
   const openerRef = useRef(null);
+  // Below 1280px the floating panel is a full-screen sheet (see its classes).
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    if (!floating || typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia('(max-width: 1279.98px)');
+    const sync = () => setNarrow(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [floating]);
+  // As a full-screen sheet it behaves as a modal: Tab / Shift+Tab stay inside it
+  // instead of walking onto the questionnaire controls hidden behind it.
+  useEffect(() => {
+    if (!open || !floating || !narrow) return undefined;
+    const onTab = (e) => {
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      const nodes = [...panelRef.current.querySelectorAll('a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter(n => n.getClientRects().length > 0);
+      if (!nodes.length) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const a = document.activeElement;
+      const inside = panelRef.current.contains(a);
+      if (e.shiftKey && (a === first || !inside)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (a === last || !inside)) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener('keydown', onTab);
+    return () => document.removeEventListener('keydown', onTab);
+  }, [open, floating, narrow]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
@@ -6606,7 +6639,13 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
       <style>{CHAT_ANIM_STYLES}</style>
       {/* Kept mounted while closed so the conversation is not lost. */}
       <div
-        className={docked
+        className={floating
+          // Floating launcher panel: a glass card in the corner from 1280px up (the
+          // page makes room beside it); below that a full-screen sheet, so the chat
+          // never half-covers the questionnaire. Hidden (not unmounted) while
+          // closed, so the conversation survives.
+          ? `${open ? 'flex' : 'hidden'} fixed inset-0 z-[110] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] xl:inset-auto xl:bottom-6 xl:right-6 xl:h-[min(680px,calc(100dvh-3rem))] xl:w-[460px] xl:rounded-3xl xl:border xl:border-white/70 xl:bg-white/90 xl:p-0 xl:shadow-[0_24px_70px_-20px_rgba(7,44,14,0.35)] xl:backdrop-blur-xl`
+          : docked
           // AI mode: a column beside the inventory on wide screens, full
           // screen over it on a phone.
           ? `${open ? 'flex' : 'hidden'} fixed inset-0 z-[95] flex-col bg-white lg:static lg:z-auto lg:w-[480px] lg:shrink-0 lg:border-l lg:border-[#DEFAE1] xl:w-[540px]`
@@ -6619,11 +6658,12 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
         // of the Tab order too, not only away from screen readers.
         inert={!open}
         role="dialog"
+        aria-modal={floating && narrow && open ? 'true' : undefined}
         aria-label={tr ? 'AI Asistan' : 'AI Assistant'}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#DEFAE1] bg-[#F1FCF2] px-4 py-2.5">
+        <div className="flex shrink-0 items-center justify-between border-b border-[#DEFAE1] bg-[#F1FCF2]/80 px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <Image src="/chatbot.png" alt="" width={28} height={28} className="h-7 w-7 object-contain" />
+            <Image src={floating ? '/carbonless.png' : '/chatbot.png'} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
             <div>
               <p className="text-[13px] font-bold text-[#175022]">{tr ? 'Carbonless AI Asistan' : 'Carbonless AI Assistant'}</p>
               <p className="text-[10px] text-[#2ABD41]">
@@ -6633,7 +6673,7 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
           </div>
           <button
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#175022]/10 bg-white text-[#175022]/50 transition hover:text-[#175022]"
+            className="btn-icon"
             aria-label={tr ? 'Kapat' : 'Close'}
           >
             <X className="h-4 w-4" />

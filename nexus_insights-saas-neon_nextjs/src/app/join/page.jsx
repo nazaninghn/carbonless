@@ -18,7 +18,7 @@ import PasswordStrengthIndicator, { isPasswordStrong } from '@/components/Passwo
 import { api, markSessionActive } from '@/lib/utils/api';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-const FIELD = 'w-full rounded-xl border border-[#072C0E]/12 bg-[#F8F8F8] px-3 py-2.5 text-sm text-[#072C0E] focus:border-[#2ABD41] focus:bg-white focus:outline-none';
+const FIELD = 'w-full rounded-xl border border-[#072C0E]/12 bg-smoke px-3 py-2.5 text-sm text-[#072C0E] focus:border-[#2ABD41] focus:bg-white focus:outline-none';
 
 function JoinContent() {
   const token = useSearchParams().get('token');
@@ -118,7 +118,7 @@ function JoinContent() {
             <div className="text-center">
               <XCircle className="mx-auto mb-4 h-12 w-12 text-red-400" />
               <p className="text-[14px] text-[#072C0E]/70">{loadError}</p>
-              <Link href="/login" className="mt-6 inline-flex items-center rounded-full bg-[#2ABD41] px-6 py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition">
+              <Link href="/login" className="mt-6 inline-flex items-center rounded-full btn-primary px-6 py-3 text-[14px] font-bold transition">
                 {tr ? 'Giriş Yap' : 'Log In'}
               </Link>
             </div>
@@ -162,7 +162,7 @@ function JoinContent() {
               </div>
               {error && <p className="rounded-xl bg-red-50 px-3 py-2 text-[13px] text-red-600">{error}</p>}
               <button type="submit" disabled={saving}
-                className="w-full rounded-full bg-[#2ABD41] py-3 text-[14px] font-bold text-white hover:bg-[#1D9C31] transition disabled:opacity-60">
+                className="w-full rounded-full btn-primary py-3 text-[14px] font-bold transition">
                 {saving ? '…' : (tr ? 'Hesap Oluştur ve Katıl' : 'Create Account and Join')}
               </button>
               <p className="text-center text-[12px] text-[#072C0E]/50">

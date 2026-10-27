@@ -80,7 +80,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
                   : 'AI chatbot guides you with questions step by step.'}
               </p>
             </div>
-            <span className="w-fit rounded-full bg-[#F5C842]/20 px-2.5 py-0.5 text-[10.5px] font-bold text-[#1A7B2A]">
+            <span className="w-fit rounded-full bg-green-100 px-2.5 py-0.5 text-[10.5px] font-bold text-[#1A7B2A]">
               {tr ? 'Pro özelliği' : 'Pro feature'}
             </span>
           </button>
@@ -131,7 +131,7 @@ export default function ModeSelectionModal({ language, onComplete }) {
         {/* CTA */}
         <button
           onClick={finish}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-[#072C0E] py-3.5 text-[14px] font-bold text-white shadow-sm transition hover:bg-[#175022] active:scale-[0.97]"
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-full btn-dark py-3.5 text-[14px] font-bold transition active:scale-[0.97]"
         >
           {tr ? 'Devam' : 'Continue'}
           <ArrowRight className="h-4 w-4" />

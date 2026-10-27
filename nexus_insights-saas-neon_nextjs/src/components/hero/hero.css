@@ -1,0 +1,262 @@
+/* -- Landing hero motion (Phase 2) --
+   Imported by HeroSection only. Everything animates `transform` / `opacity`
+   (or an SVG dash offset), so it never changes layout and stays on the GPU.
+
+   State comes from two attributes on the hero <section>:
+     data-hero-motion = "on" | "paused" | "reduced"   (see useHeroMotion)
+     data-reacting    = "true" while the Earth interaction plays
+   `prefers-reduced-motion` is also handled here in CSS, so the static look is
+   correct before any JS runs and follows the OS setting live.
+
+   The artwork is a rendered still (not a 3D model), so it is never spun: it
+   floats gently, leans in a slow clockwise circle, carries a light that travels
+   round the globe the same way and, on activation, tilts/scales like a physical
+   object being nudged. */
+
+/* ---- Earth: ambient float (outer) + reaction tilt (inner) ---- */
+@keyframes hero-earth-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -1.1%, 0); }
+}
+.hero-earth-float {
+  animation: hero-earth-float 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Ambient "alive" motion — a slow, continuous CLOCKWISE turntable wobble.
+   Direction (viewer facing the screen): the point the globe leans toward travels
+   top -> right -> bottom -> left, one full circle per 20s. That is a conical
+   precession: rotateY = A*sin(a), rotateX = A*cos(a), A = 7deg, with a growing
+   clockwise from 0 (the lean vector on screen is (sin a, -cos a)). Because the
+   tilt is always moving at a constant angular speed there is no reversal and no
+   stop-start, and the last keyframe equals the first, so the loop never snaps.
+   The artwork is a still, so it is never turned past 7deg: this is a wobble, not a
+   spin. The 16 keyframes were generated from the formula above (linear timing
+   between them follows the sine closely and stays on the compositor, unlike an
+   @property-driven trig animation).
+   Float / rock / click tilt each live on their own nested element, so their
+   transforms multiply instead of overwriting each other. */
+@keyframes hero-earth-rock {
+  0%     { transform: perspective(900px) rotateY(0.00deg) rotateX(7.00deg); }
+  6.25%  { transform: perspective(900px) rotateY(2.68deg) rotateX(6.47deg); }
+  12.5%  { transform: perspective(900px) rotateY(4.95deg) rotateX(4.95deg); }
+  18.75% { transform: perspective(900px) rotateY(6.47deg) rotateX(2.68deg); }
+  25%    { transform: perspective(900px) rotateY(7.00deg) rotateX(0.00deg); }
+  31.25% { transform: perspective(900px) rotateY(6.47deg) rotateX(-2.68deg); }
+  37.5%  { transform: perspective(900px) rotateY(4.95deg) rotateX(-4.95deg); }
+  43.75% { transform: perspective(900px) rotateY(2.68deg) rotateX(-6.47deg); }
+  50%    { transform: perspective(900px) rotateY(0.00deg) rotateX(-7.00deg); }
+  56.25% { transform: perspective(900px) rotateY(-2.68deg) rotateX(-6.47deg); }
+  62.5%  { transform: perspective(900px) rotateY(-4.95deg) rotateX(-4.95deg); }
+  68.75% { transform: perspective(900px) rotateY(-6.47deg) rotateX(-2.68deg); }
+  75%    { transform: perspective(900px) rotateY(-7.00deg) rotateX(0.00deg); }
+  81.25% { transform: perspective(900px) rotateY(-6.47deg) rotateX(2.68deg); }
+  87.5%  { transform: perspective(900px) rotateY(-4.95deg) rotateX(4.95deg); }
+  93.75% { transform: perspective(900px) rotateY(-2.68deg) rotateX(6.47deg); }
+  100%   { transform: perspective(900px) rotateY(0.00deg) rotateX(7.00deg); }
+}
+.hero-earth-rock {
+  transform-origin: 49% 52.9%; /* planet centre inside the artwork */
+  animation: hero-earth-rock 20s linear infinite;
+  will-change: transform;
+}
+
+/* light and shade that travel clockwise round the globe, in step with the lean
+   above (same 20s period, starting at the top where the lean starts). The
+   wrapper (.hero-sheen) is a circle just inside the planet that clips the
+   layer; the layer only turns (compositor-only transform) and carries a soft
+   highlight near its top edge and a faint shade opposite it, so the globe reads
+   as turning under a fixed sun without moving any of the picture's pixels. */
+@keyframes hero-sheen-spin { to { transform: rotate(360deg); } }
+.hero-sheen-spin {
+  background:
+    radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 36%),
+    radial-gradient(circle at 50% 100%, rgba(7, 44, 14, 0.18), rgba(7, 44, 14, 0) 48%);
+  will-change: transform;
+  animation: hero-sheen-spin 20s linear infinite;
+}
+
+/* the background glow breathes on its own rhythm */
+@keyframes hero-glow {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+.hero-glow { will-change: opacity; animation: hero-glow 9s ease-in-out infinite; }
+
+/* a small pulsing point on the globe: a gentle "touch here" cue that reads as a
+   map marker rather than a button (the whole sphere is the real control) */
+.hero-hotspot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  opacity: 0;
+  animation: hero-hotspot 3.4s ease-out 1.2s infinite;
+}
+@keyframes hero-hotspot {
+  0%   { transform: scale(1);   opacity: 0.75; }
+  70%, 100% { transform: scale(3.4); opacity: 0; }
+}
+
+.hero-tilt {
+  transform-origin: 49% 52.9%; /* planet centre inside the artwork */
+}
+@keyframes hero-earth-react {
+  0%   { transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1); }
+  32%  { transform: perspective(1000px) rotateX(var(--hero-rx, 2deg)) rotateY(var(--hero-ry, -7deg)) scale(1.035); }
+  66%  { transform: perspective(1000px) rotateX(calc(var(--hero-rx, 2deg) * -0.3)) rotateY(calc(var(--hero-ry, -7deg) * -0.3)) scale(1.014); }
+  100% { transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1); }
+}
+[data-reacting="true"] .hero-tilt {
+  animation: hero-earth-react 1.1s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+}
+
+/* glow ring that radiates from the sphere on activation */
+.hero-burst { opacity: 0; }
+@keyframes hero-burst {
+  0%   { opacity: 0;    transform: scale(0.94); }
+  18%  { opacity: 0.55; }
+  100% { opacity: 0;    transform: scale(1.22); }
+}
+@keyframes hero-burst-soft { /* reduced motion: opacity only, no movement */
+  0%   { opacity: 0; }
+  25%  { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+[data-reacting="true"] .hero-burst {
+  animation: hero-burst 1s ease-out both;
+}
+
+/* ---- Orbit nodes: soft ping ring, and a quick pop on activation ---- */
+.hero-node::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--hero-ping, #2ABD41);
+  opacity: 0;
+  animation: hero-node-ping 5.6s ease-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.9s);
+}
+@keyframes hero-node-ping {
+  0%       { transform: scale(1);    opacity: 0; }
+  8%       { opacity: 0.4; }
+  40%, 100% { transform: scale(1.55); opacity: 0; }
+}
+@keyframes hero-node-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+[data-reacting="true"] .hero-node {
+  animation: hero-node-pop 0.7s ease-out both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ---- Orbit arcs / connectors: dashes drift along the path. steps(44) =
+   half-pixel jumps ~5x/s: reads as a smooth slow drift but repaints the big
+   SVG far less than a per-frame linear animation. ---- */
+@keyframes hero-dash   { to { stroke-dashoffset: -22; } } /* 2 x (5 + 6) px */
+@keyframes hero-dash-m { to { stroke-dashoffset: -6;  } } /* 2 x (1.3 + 1.7) units */
+@keyframes hero-dash-rev { to { stroke-dashoffset: 22; } } /* left-hand arcs: upward = clockwise */
+@keyframes hero-arc-glow { /* back to each path's own resting opacity */
+  0%, 100% { opacity: var(--hero-arc-op, 0.5); }
+  40%      { opacity: 0.95; }
+}
+.hero-dash   { animation: hero-dash 9s steps(44) infinite; }
+.hero-dash-m { animation: hero-dash-m 9s steps(44) infinite; }
+.hero-dash-rev { animation: hero-dash-rev 9s steps(44) infinite; }
+[data-reacting="true"] .hero-dash   { animation: hero-dash 9s steps(44) infinite, hero-arc-glow 0.9s ease-out; }
+[data-reacting="true"] .hero-dash-m { animation: hero-dash-m 9s steps(44) infinite, hero-arc-glow 0.9s ease-out; }
+[data-reacting="true"] .hero-dash-rev { animation: hero-dash-rev 9s steps(44) infinite, hero-arc-glow 0.9s ease-out; }
+
+/* ---- Metric card bars: stagger-rise on load, then a barely-there breathe.
+   Resting height is always scaleY(1); the breathe only dips to 0.92. ---- */
+.hero-bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: hero-bar-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+/* only the tallest bar of each card keeps breathing (6 elements, not 30) */
+.hero-bar-live {
+  animation: hero-bar-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards,
+             hero-bar-breathe 6.5s ease-in-out infinite;
+  animation-delay: calc(var(--d, 0) * 1ms), calc(1500ms + var(--d, 0) * 3ms);
+}
+@keyframes hero-bar-rise    { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes hero-bar-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
+
+/* ---- Pause everything while the hero is off-screen or the tab is hidden.
+   (paused, not removed, so nothing jumps when it resumes) ---- */
+[data-hero-motion="paused"] *,
+[data-hero-motion="paused"] *::after {
+  animation-play-state: paused !important;
+}
+
+/* ---- Reduced motion: static, complete appearance ---- */
+@media (prefers-reduced-motion: reduce) {
+  .hero-earth-float,
+  .hero-earth-rock,
+  .hero-sheen-spin,
+  .hero-glow,
+  .hero-hotspot::after,
+  .hero-bar,
+  .hero-bar-live,
+  .hero-dash,
+  .hero-dash-m,
+  .hero-dash-rev,
+  .hero-node::after,
+  [data-reacting="true"] .hero-tilt,
+  [data-reacting="true"] .hero-node,
+  [data-reacting="true"] .hero-dash,
+  [data-reacting="true"] .hero-dash-rev,
+  [data-reacting="true"] .hero-dash-m {
+    animation: none !important;
+  }
+  /* feedback without movement: a soft glow only */
+  [data-reacting="true"] .hero-burst {
+    animation: hero-burst-soft 0.9s ease-out both !important;
+    transform: none;
+  }
+}
+
+/* ---- Desktop first-screen fit (lg+) --------------------------------------
+   The hero must read as one finished composition in the first viewport, so on
+   desktop its vertical rhythm and its stage are sized from the viewport HEIGHT
+   as well as the width (like the design reference, where headline, CTAs, cards
+   and Earth all sit in one screen). Every vertical piece is a variable;
+   --hero-rest is their sum, and the stage is allowed to be exactly as wide as
+   the space left under the text block lets its aspect ratio be (the stage is
+   1860 x 678 design units, i.e. height = 0.3645 x width, and it contains the
+   WHOLE Earth incl. the turbines above it). svh = the small viewport, so
+   browser UI can't push it off screen; vh is the fallback. Below lg nothing
+   here applies (the phone/tablet layout is stacked and flows normally). */
+@media (min-width: 1024px) {
+  .hero-root {
+    --hero-pt: clamp(10px, 2vh, 36px);
+    --hero-fs: clamp(34px, min(4.4vw, 6.6vh), 64px);
+    --hero-m1: clamp(5px, 0.9vh, 12px);
+    --hero-fd: clamp(13px, 2vh, 16px);
+    --hero-m2: clamp(5px, 1.1vh, 14px);
+    --hero-m3: clamp(10px, 1.9vh, 24px);
+    --hero-cta: clamp(40px, 6vh, 56px);
+    /* 16px = the eyebrow line; 2.16 = two headline lines at line-height 1.08; 1.6 = one description line */
+    --hero-rest: calc(var(--hero-pt) + 16px + var(--hero-m1) + 2.16 * var(--hero-fs) + var(--hero-m2) + 1.6 * var(--hero-fd) + var(--hero-m3) + var(--hero-cta));
+    padding-top: var(--hero-pt);
+  }
+  .hero-root .hero-h1   { font-size: var(--hero-fs); margin-top: var(--hero-m1); }
+  .hero-root .hero-desc { font-size: var(--hero-fd); margin-top: var(--hero-m2); }
+  .hero-root .hero-ctas { margin-top: var(--hero-m3); }
+  .hero-root .hero-cta  { min-height: var(--hero-cta); padding-top: 0; padding-bottom: 0; }
+  /* 90px = 72 header + 12 air above the turbines (the stage's top margin) + 6 under the stage */
+  .hero-root .hero-stage {
+    max-width: max(820px, min(1720px, calc((100vh - 90px - var(--hero-rest)) / 0.3645)));
+  }
+  @supports (height: 100svh) {
+    .hero-root .hero-stage {
+      max-width: max(820px, min(1720px, calc((100svh - 90px - var(--hero-rest)) / 0.3645)));
+    }
+  }
+}

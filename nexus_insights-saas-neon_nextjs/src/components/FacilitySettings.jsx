@@ -266,7 +266,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
       {facilities.length > 0 ? (
         <div className="space-y-2">
           {facilities.map(f => (
-            <div key={f.id} className="rounded-xl bg-[#F8F8F8] p-3">
+            <div key={f.id} className="rounded-xl bg-smoke p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-[#072C0E]">{f.name}</p>
@@ -300,7 +300,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                             type="button"
                             onClick={() => decideConnection(f, 'approve')}
                             disabled={deciding === f.id}
-                            className="rounded-full bg-[#2ABD41] px-3 py-1 text-[10px] font-bold text-white transition hover:bg-[#1A7B2A] disabled:opacity-50"
+                            className="rounded-full btn-primary px-3 py-1 text-[10px] font-bold transition"
                           >
                             {tr ? 'Onayla' : 'Approve'}
                           </button>
@@ -321,7 +321,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                   <span className={`px-2 py-0.5 rounded-lg text-xs font-medium ${
                     f.is_active
                       ? 'bg-[#2ABD41]/12 text-[#175022]'
-                      : 'bg-[#F0F0F0] text-[#072C0E]/50'
+                      : 'bg-smoke text-[#072C0E]/50'
                   }`}>
                     {f.is_active
                       ? (tr ? 'Aktif' : 'Active')
@@ -334,7 +334,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                         onClick={() => startEdit(f)}
                         aria-label={tr ? `${f.name} tesisini düzenle` : `Edit ${f.name}`}
                         title={tr ? 'Düzenle' : 'Edit'}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/40 transition hover:bg-[#2ABD41]/10 hover:text-[#2ABD41]"
+                        className="btn-icon btn-sm"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
@@ -343,7 +343,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                         onClick={() => { setConfirmDelete(f); setShowForm(false); }}
                         aria-label={tr ? `${f.name} tesisini sil` : `Delete ${f.name}`}
                         title={tr ? 'Sil' : 'Delete'}
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/40 transition hover:bg-red-50 hover:text-red-500"
+                        className="btn-icon btn-icon-danger btn-sm"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -366,7 +366,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
                       type="button"
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="rounded-lg bg-red-500 px-3 py-1.5 font-bold text-white hover:bg-red-600 disabled:opacity-60"
+                      className="rounded-lg btn-danger px-3 py-1.5 font-bold"
                     >
                       {deleting ? (tr ? 'Siliniyor…' : 'Deleting…') : (tr ? 'Sil' : 'Delete')}
                     </button>
@@ -392,7 +392,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
 
       {/* Form */}
       {showForm ? (
-        <form ref={formRef} onSubmit={handleAdd} noValidate className="scroll-mt-4 space-y-3 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] p-4">
+        <form ref={formRef} onSubmit={handleAdd} noValidate className="scroll-mt-4 space-y-3 rounded-2xl border border-[#072C0E]/10 bg-smoke p-4">
           <p className="text-xs font-bold text-[#072C0E]/60 uppercase tracking-wide">
             {editingId !== null ? (tr ? 'Tesisi Düzenle' : 'Edit Facility') : (tr ? 'Yeni Tesis' : 'New Facility')}
           </p>
@@ -485,7 +485,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl bg-[#072C0E] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#175022] disabled:opacity-60"
+              className="flex items-center gap-2 rounded-xl btn-dark px-5 py-2.5 text-sm font-bold"
             >
               {saving ? (
                 <>

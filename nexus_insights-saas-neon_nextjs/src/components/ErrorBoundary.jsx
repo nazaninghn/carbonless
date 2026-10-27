@@ -59,7 +59,7 @@ export default class ErrorBoundary extends Component {
           <div className="flex items-center gap-2">
             <button
               onClick={() => this.setState({ hasError: false, error: null })}
-              className="rounded-full bg-red-600 px-5 py-2 text-xs font-bold text-white shadow-md transition hover:bg-red-700"
+              className="rounded-full btn-danger px-5 py-2 text-xs font-bold transition"
             >
               {this.props.language === 'tr' ? 'Tekrar Dene' : 'Try Again'}
             </button>

@@ -23,7 +23,8 @@ export default function SimpleHeader() {
           {/* Language Toggle */}
           <button 
             onClick={() => changeLanguage(language === 'tr' ? 'en' : 'tr')} 
-            className="flex items-center gap-2 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2 text-sm font-semibold text-[#072C0E]/60 shadow-sm transition hover:border-[#2ABD41]/40 hover:text-[#175022]"
+            aria-label={language === 'tr' ? 'Switch to English' : 'Türkçeye geç'}
+            className="btn-secondary flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
           >
             <Globe className="w-4 h-4" />
             {language === 'tr' ? 'EN' : 'TR'}

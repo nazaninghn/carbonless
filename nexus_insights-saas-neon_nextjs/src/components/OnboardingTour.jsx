@@ -173,7 +173,7 @@ export default function OnboardingTour({ language, onComplete }) {
             <span className="rounded-full bg-[#2ABD41]/12 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#175022]">
               {step + 1} / {steps.length}
             </span>
-            <button aria-label={tr ? 'Kapat' : 'Close'} onClick={handleClose} className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-[#072C0E]/5 hover:text-[#072C0E]">
+            <button aria-label={tr ? 'Kapat' : 'Close'} onClick={handleClose} className="btn-icon btn-sm">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -207,7 +207,7 @@ export default function OnboardingTour({ language, onComplete }) {
               {!isFirst && (
                 <button
                   onClick={handlePrev}
-                  className="flex items-center gap-1 rounded-full border border-[#072C0E]/10 px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
+                  className="flex items-center gap-1 rounded-full btn-secondary px-4 py-2.5 text-xs font-bold transition"
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
                   {tr ? 'Geri' : 'Back'}
@@ -215,7 +215,7 @@ export default function OnboardingTour({ language, onComplete }) {
               )}
               <button
                 onClick={handleNext}
-                className="flex items-center gap-1 rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
+                className="flex items-center gap-1 rounded-full btn-dark px-5 py-2.5 text-xs font-bold transition-colors"
               >
                 {isLast ? (tr ? 'Başla!' : 'Get Started!') : (tr ? 'İleri' : 'Next')}
                 {!isLast && <ChevronRight className="h-3.5 w-3.5" />}

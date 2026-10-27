@@ -13,6 +13,7 @@ import SettingsTab from '@/components/dashboard/SettingsTab';
 import Image from 'next/image';
 import { InventoryAssistant } from '@/components/dashboard/CarbonAIPage';
 import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
+import CarbonAILauncher from '@/components/dashboard/CarbonAILauncher';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import { getPermissions } from '@/lib/permissions';
@@ -41,7 +42,7 @@ function PreviewBanner({ tr }) {
       </div>
       <a
         href="/dashboard/workspace"
-        className="shrink-0 rounded-lg bg-[#072C0E] px-3 py-1.5 text-[11px] font-bold text-white hover:bg-[#1A7B2A] transition whitespace-nowrap"
+        className="shrink-0 rounded-lg btn-dark px-3 py-1.5 text-[11px] font-bold transition whitespace-nowrap"
       >
         {tr ? 'Çalışma Alanı →' : 'Workspace →'}
       </a>
@@ -208,13 +209,12 @@ export default function DashboardPage() {
   // same assistant as a drawer.
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState(null);
+  const onInventoryPage = activeTab === 'questionnaire' || activeTab === 'ai_carbon';
   useEffect(() => {
-    // Open on entry: beside the inventory on a wide screen, over it on a
-    // phone. On a phone "AI" in the bottom bar is how people look for the
-    // chat — it used to land on the inventory list with the chat closed
-    // behind an unlabelled round button. Closing it shows the inventory.
-    if (activeTab === 'ai_carbon') setAssistantOpen(true);
-    else if (activeTab !== 'questionnaire') setAssistantOpen(false);
+    // Closed by default: the chat opens from the floating Carbon AI button (or
+    // from a link/event that asks for it), so it never takes space from the
+    // inventory on its own. Leaving the inventory pages closes it.
+    if (activeTab !== 'questionnaire' && activeTab !== 'ai_carbon') setAssistantOpen(false);
   }, [activeTab]);
   // A link to one chat (the support team's answer) opens the assistant.
   useEffect(() => {
@@ -290,7 +290,7 @@ export default function DashboardPage() {
               : "Your company's admin has deactivated your account in the team, so you can't see or enter data right now. Contact your company owner or admin to get access again."}
           </p>
           <p className="mt-2 text-xs text-[#072C0E]/45">{user.email}</p>
-          <button onClick={handleLogout} className="mt-6 rounded-full bg-[#072C0E] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#175022]">
+          <button onClick={handleLogout} className="mt-6 rounded-full btn-dark px-6 py-2.5 text-sm font-bold">
             {tr ? 'Çıkış yap' : 'Sign out'}
           </button>
         </div>
@@ -336,7 +336,9 @@ export default function DashboardPage() {
         />
 
         <main id="main-content" tabIndex={-1} className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden outline-none ${
-          'p-3 pb-24 sm:p-4 sm:pb-24 lg:p-5 lg:pb-5'
+          `p-3 sm:p-4 lg:p-5 lg:pb-5 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40' : 'pb-24 sm:pb-24'} ${
+            // Wide screens: the open Carbon AI panel sits beside the inventory, not over its controls.
+            activeTab === 'questionnaire' && assistantOpen ? 'xl:pr-[492px]' : ''} transition-[padding] duration-200 motion-reduce:transition-none`
         }`}>
           {/* Slim top bar  -  only on very first load, no layout shift */}
           {loading && (
@@ -469,36 +471,36 @@ export default function DashboardPage() {
         </main>
       </div>
 
-      {/* ===== AI MODE  -  inventory + docked assistant, full screen ===== */}
+      {/* ===== AI MODE  -  the inventory, full screen; Carbon AI is the floating button ===== */}
       {activeTab === 'ai_carbon' && (
-        <div className="fixed inset-0 z-[85] flex flex-col bg-[#F1FCF2]">
-          <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-[#DEFAE1] bg-white px-3 sm:px-4">
-            <div className="flex min-w-0 items-center gap-2">
-              <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-8 w-8 object-contain" />
-              <span className="hidden text-[14px] font-bold text-[#175022] sm:inline">Carbonless AI</span>
+        <div className="fixed inset-0 z-[85] flex flex-col bg-green-50">
+          <div className="flex h-[68px] shrink-0 items-center justify-between gap-2 border-b border-white/70 bg-white/75 px-3 shadow-[0_1px_0_rgba(7,44,14,0.04)] backdrop-blur-xl sm:px-6">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-9 w-9 object-contain" />
+              <span className="hidden text-[15px] font-bold text-[#175022] sm:inline">Carbonless AI</span>
             </div>
-            <div className="flex items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-[#F5F5F5] p-0.5 sm:p-1">
-              <span className="rounded-full bg-[#2ABD41] px-3 py-1 text-[11px] font-semibold text-white sm:px-4 sm:py-1.5 sm:text-[12px]">
+            <div className="flex items-center gap-0.5 rounded-full border border-white/80 bg-smoke/80 p-1">
+              <span className="rounded-full bg-primary px-3.5 py-1.5 text-[12px] font-semibold text-[#072C0E] shadow-sm sm:px-6 sm:text-[13px]">
                 {language === 'tr' ? 'AI Hesaplayıcı' : 'AI Analyzer'}
               </span>
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className="rounded-full px-3 py-1 text-[11px] font-semibold text-[#072C0E]/50 transition hover:bg-white/70 hover:text-[#072C0E] sm:px-4 sm:py-1.5 sm:text-[12px]"
+                className="rounded-full px-3.5 py-1.5 text-[12px] font-semibold text-[#072C0E]/50 transition hover:bg-white/80 hover:text-[#072C0E] sm:px-6 sm:text-[13px]"
               >
                 {language === 'tr' ? 'Kontrol Paneli' : 'Dashboard'}
               </button>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               {/* Language toggle — top-right, so you don't have to switch to the
                   Dashboard tab to change the language. Uses the shared context. */}
-              <div className="flex items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-[#F5F5F5] p-0.5">
+              <div className="flex items-center gap-0.5 rounded-full border border-white/80 bg-smoke/80 p-0.5">
                 {['tr', 'en'].map(l => (
                   <button
                     key={l}
                     type="button"
                     onClick={() => changeLanguage(l)}
                     aria-pressed={language === l}
-                    className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide transition sm:px-2.5 sm:py-1 ${
+                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition sm:px-3 sm:py-1.5 ${
                       language === l ? 'bg-white text-[#175022] shadow-sm' : 'text-[#072C0E]/40 hover:text-[#072C0E]'
                     }`}
                   >
@@ -506,56 +508,52 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-              <button
-                onClick={() => setAssistantOpen(v => !v)}
-                aria-label={language === 'tr' ? 'AI Asistan' : 'AI Assistant'}
-                aria-expanded={assistantOpen}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition sm:text-[12px] ${
-                  assistantOpen ? 'bg-[#DEFAE1] text-[#175022]' : 'bg-[#2ABD41] text-white hover:bg-[#1A7B2A]'
-                }`}
-              >
-                <Image src="/chatbot.png" alt="" width={20} height={20} className="h-5 w-5 object-contain" />
-                <span className="hidden sm:inline">{language === 'tr' ? 'AI Asistan' : 'AI Assistant'}</span>
-              </button>
+              {user && (
+                <div className="hidden items-center gap-2 sm:flex">
+                  <span aria-hidden="true" className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-[12px] font-bold text-[#072C0E]">
+                    {(`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || user.email || '?')
+                      .split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                  </span>
+                  <span className="hidden max-w-[140px] truncate text-[13px] font-medium text-[#072C0E]/70 lg:inline">
+                    {`${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex min-h-0 flex-1">
-            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-3 pt-2.5 sm:px-4 sm:pb-4 lg:px-5 lg:pb-5">
+            <div className={`flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-[84px] pt-3 transition-[padding] duration-200 motion-reduce:transition-none sm:px-6 sm:pb-6 sm:pt-5 ${assistantOpen ? 'xl:pr-[492px]' : ''}`}>
               <ErrorBoundary language={language}>
                 <QuestionnairePageTab language={language} />
               </ErrorBoundary>
             </div>
-            <ErrorBoundary language={language}>
-              <InventoryAssistant
-                docked
-                open={assistantOpen}
-                onClose={() => setAssistantOpen(false)}
-                prefill={assistantPrefill}
-                language={language}
-                summary={effectiveSummary}
-                entries={entries}
-                targets={targets}
-                fetchData={fetchData}
-              />
-            </ErrorBoundary>
           </div>
         </div>
       )}
 
-      {/* ===== AI ASSISTANT  -  drawer on the dashboard's Karbon Envanteri tab ===== */}
-      {activeTab !== 'ai_carbon' && (
-        <ErrorBoundary language={language}>
-          <InventoryAssistant
-            open={assistantOpen}
-            onClose={() => setAssistantOpen(false)}
-            prefill={assistantPrefill}
-            language={language}
-            summary={effectiveSummary}
-            entries={entries}
-            targets={targets}
-            fetchData={fetchData}
-          />
-        </ErrorBoundary>
+      {/* ===== CARBON AI  -  one assistant: a floating panel on the inventory pages
+          (opened from the round button), the side drawer everywhere else.
+          Kept mounted while closed so the conversation is not lost. ===== */}
+      <ErrorBoundary language={language}>
+        <InventoryAssistant
+          floating={onInventoryPage}
+          open={assistantOpen}
+          onClose={() => setAssistantOpen(false)}
+          prefill={assistantPrefill}
+          language={language}
+          summary={effectiveSummary}
+          entries={entries}
+          targets={targets}
+          fetchData={fetchData}
+        />
+      </ErrorBoundary>
+      {onInventoryPage && (
+        <CarbonAILauncher
+          open={assistantOpen}
+          onToggle={() => setAssistantOpen(v => !v)}
+          language={language}
+          className={activeTab === 'ai_carbon' ? 'bottom-5' : 'bottom-20 lg:bottom-5'}
+        />
       )}
 
       {/* Command Palette ⌘K */}

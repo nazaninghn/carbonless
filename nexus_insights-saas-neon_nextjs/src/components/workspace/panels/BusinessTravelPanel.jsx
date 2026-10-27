@@ -72,7 +72,7 @@ function FieldRow({ label, hint, required, children }) {
     <div className="flex flex-col gap-1.5">
       <label className="text-[11px] font-semibold text-[#072C0E]/55">
         {label}
-        {required && <span className="ml-0.5 text-orange-400">*</span>}
+        {required && <span className="ml-0.5 text-red-600">*</span>}
         {hint && <span className="ml-1 font-normal text-[#072C0E]/30">({hint})</span>}
       </label>
       {children}
@@ -155,8 +155,8 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center gap-2.5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50">
-          <Briefcase className="h-4 w-4 text-violet-500" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-50">
+          <Briefcase className="h-4 w-4 text-green-500" />
         </div>
         <div>
           <p className="text-[13px] font-bold text-[#072C0E]">
@@ -270,8 +270,8 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
 
       {/* Live total */}
       {hasData && (
-        <div className="rounded-xl bg-gradient-to-br from-violet-50/80 to-violet-50/30 border border-violet-200/40 px-4 py-3">
-          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-violet-600/70 mb-1">
+        <div className="rounded-xl bg-gradient-to-br from-green-50/80 to-green-50/30 border border-green-200/40 px-4 py-3">
+          <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-green-600/70 mb-1">
             {tr ? 'Tahmini Toplam Emisyon' : 'Estimated Total Emission'}
           </p>
           <div className="flex items-baseline gap-1.5 mb-2">
@@ -280,7 +280,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
                 ? (totalKg / 1000).toLocaleString('tr-TR', { maximumFractionDigits: 2 })
                 : totalKg.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
             </span>
-            <span className="text-xs font-semibold text-violet-600">
+            <span className="text-xs font-semibold text-green-600">
               {totalKg >= 1000 ? 'tCO₂e' : 'kgCO₂e'}
             </span>
           </div>
@@ -289,13 +289,13 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
             {breakdown.map((b, i) => (
               <div key={i} className="flex items-center gap-2">
                 <span className="text-[10px] text-[#072C0E]/50 w-[130px] truncate">{b.label}</span>
-                <div className="flex-1 h-1 rounded-full bg-violet-200/40 overflow-hidden">
+                <div className="flex-1 h-1 rounded-full bg-green-200/40 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-violet-400/60"
+                    className="h-full rounded-full bg-green-400/60"
                     style={{ width: `${totalKg > 0 ? Math.round((b.km * b.ef / totalKg) * 100) : 0}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-semibold text-violet-600 w-16 text-right shrink-0">
+                <span className="text-[10px] font-semibold text-green-600 w-16 text-right shrink-0">
                   {(() => {
                     const kg = b.km * b.ef;
                     return kg >= 1000
@@ -321,7 +321,7 @@ export function BusinessTravelPanel({ reportId, fieldValues = {}, lang = 'en', o
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold shadow-sm transition ${
           saved
             ? 'bg-[#2ABD41]/15 border border-[#2ABD41]/30 text-[#1A7B2A]'
-            : 'bg-[#175022] text-white hover:bg-[#175022] disabled:opacity-35'
+            : 'btn-dark'
         }`}
       >
         {saving ? (

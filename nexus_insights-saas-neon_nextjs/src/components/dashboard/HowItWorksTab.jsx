@@ -253,7 +253,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
         </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-3">
           {SCOPES.map((scope) => (
-            <div key={scope.num} className="rounded-xl border border-[#F1FCF2] bg-[#F9FFF4] p-4">
+            <div key={scope.num} className="rounded-xl border border-[#F1FCF2] bg-green-50 p-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-[#2ABD41]/20 shadow-sm">
                 <scope.icon className="h-[18px] w-[18px] text-[#2ABD41]" strokeWidth={1.8} />
               </div>
@@ -307,7 +307,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
         </h2>
         <div className="mt-4 space-y-2.5">
           {FAQS.map((item, i) => (
-            <details key={i} className="group rounded-xl border border-[#DEFAE1] bg-[#F9FFF4] px-4 open:bg-white open:shadow-sm transition-colors">
+            <details key={i} className="group rounded-xl border border-[#DEFAE1] bg-green-50 px-4 open:bg-white open:shadow-sm transition-colors">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-3 text-[13px] font-bold text-[#072C0E] [&::-webkit-details-marker]:hidden">
                 {item.q[language] || item.q.en}
                 <svg className="h-3.5 w-3.5 shrink-0 text-[#2ABD41] transition-transform duration-300 group-open:rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -334,7 +334,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
         </div>
         <button
           onClick={() => setActiveTab?.('ai_carbon')}
-          className="flex shrink-0 items-center gap-2 rounded-full bg-[#2ABD41] px-5 py-2.5 text-[13px] font-bold text-white shadow-sm transition hover:bg-[#1D9C31]"
+          className="flex shrink-0 items-center gap-2 rounded-full btn-primary px-5 py-2.5 text-[13px] font-bold transition"
         >
           <MessageCircle className="h-4 w-4" />
           {tr ? "AI ile Başla" : 'Start with AI'}

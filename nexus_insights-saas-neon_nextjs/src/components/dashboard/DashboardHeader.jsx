@@ -177,7 +177,7 @@ export default function DashboardHeader({
         <div className="flex min-w-0 items-center gap-2.5">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#072C0E]/50 hover:bg-[#F1FCF2] lg:hidden"
+            className="btn-icon shrink-0 lg:hidden"
             aria-label={tr ? 'Kenar çubuğunu aç' : 'Open sidebar'}
           >
             <Menu className="h-4 w-4" />
@@ -192,7 +192,7 @@ export default function DashboardHeader({
             onClick={() => setActiveTab('ai_carbon')}
             className={`flex items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 py-1 sm:py-1.5 text-[10px] sm:text-[12px] font-semibold transition-all duration-200 ${
               activeTab === 'ai_carbon'
-                ? 'bg-[#2ABD41] text-white shadow-sm'
+                ? 'btn-primary'
                 : 'text-[#072C0E]/50 hover:text-[#072C0E] hover:bg-white/70'
             }`}
           >

@@ -209,14 +209,14 @@ function EntryCard({ entry, months, language, maxKg, onEdit, onDelete, onCancelD
           <button
             onClick={() => onEdit(entry)}
             aria-label={language === 'tr' ? 'Kaydı düzenle' : 'Edit entry'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-[#2ABD41]/10 hover:text-[#2ABD41]"
+            className="btn-icon btn-sm"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => onDelete(entry.id)}
             aria-label={language === 'tr' ? 'Kaydı sil' : 'Delete entry'}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/30 transition hover:bg-red-50 hover:text-red-500"
+            className="btn-icon btn-icon-danger btn-sm"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -949,7 +949,7 @@ export default function EmissionsTab({
           <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#072C0E] px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022]"
+              className="inline-flex items-center gap-1.5 rounded-full btn-dark px-4 py-2.5 text-xs font-bold transition-colors"
             >
               <Plus className="h-3.5 w-3.5" />
               {tr ? 'Yeni Kayıt' : 'New Entry'}
@@ -963,7 +963,7 @@ export default function EmissionsTab({
             </button>
           </div>
           ) : (
-            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-[#072C0E]/10 bg-[#F8F8F8] px-4 py-2 text-xs font-bold text-[#072C0E]/55 sm:shrink-0">
+            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-[#072C0E]/10 bg-smoke px-4 py-2 text-xs font-bold text-[#072C0E]/55 sm:shrink-0">
               {tr ? 'Salt okunur erişim' : 'Read-only access'}
             </span>
           )}
@@ -1024,7 +1024,7 @@ export default function EmissionsTab({
               onClick={() => setFilterScope(p.val)}
               className={`rounded-full px-3 py-2 text-[11px] font-bold transition ${
                 filterScope === p.val
-                  ? 'bg-[#175022] text-white'
+                  ? 'btn-dark'
                   : 'border border-[#072C0E]/10 bg-white text-[#072C0E]/60 hover:bg-[#072C0E]/5'
               }`}
             >
@@ -1042,7 +1042,7 @@ export default function EmissionsTab({
             onClick={() => setFilterMonth(0)}
             className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
               filterMonth === 0
-                ? 'bg-[#175022] text-white'
+                ? 'btn-dark'
                 : 'border border-[#072C0E]/10 bg-white text-[#072C0E]/60 hover:bg-[#072C0E]/5'
             }`}
           >
@@ -1058,7 +1058,7 @@ export default function EmissionsTab({
                 onClick={() => setFilterMonth(filterMonth === mo ? 0 : mo)}
                 className={`shrink-0 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition ${
                   filterMonth === mo
-                    ? 'bg-[#175022] text-white'
+                    ? 'btn-dark'
                     : 'border border-[#072C0E]/10 bg-white text-[#072C0E]/60 hover:bg-[#072C0E]/5'
                 }`}
               >
@@ -1129,7 +1129,7 @@ export default function EmissionsTab({
           )}
           <div className="space-y-2">
             {customRequests.map(cr => (
-              <div key={cr.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#072C0E]/6 bg-[#F8F8F8]/60 px-4 py-2.5">
+              <div key={cr.id} className="flex items-center justify-between gap-3 rounded-xl border border-[#072C0E]/6 bg-smoke/60 px-4 py-2.5">
                 <div className="min-w-0">
                   <p className="truncate text-xs font-semibold text-[#072C0E]">{cr.source_name}</p>
                   <p className="text-[10px] text-[#072C0E]/45">{cr.category_name} · {fmt(cr.quantity, 4)} {cr.unit} · {months[(cr.month || 1) - 1]} {cr.year}</p>
@@ -1162,7 +1162,7 @@ export default function EmissionsTab({
                   <button
                     type="button"
                     onClick={() => setWithdrawing(cr)}
-                    className="rounded-full border border-[#072C0E]/10 px-2.5 py-1 text-[10px] font-bold text-[#072C0E]/60 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                    className="rounded-full btn-secondary px-2.5 py-1 text-[10px] font-bold transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                   >
                     {tr ? 'Geri çek' : 'Withdraw'}
                   </button>
@@ -1204,7 +1204,7 @@ export default function EmissionsTab({
           )}
           {canEdit && <button
             onClick={() => setShowAddForm(true)}
-            className="mt-1 inline-flex items-center gap-2 rounded-full bg-[#072C0E] px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition hover:bg-[#175022]"
+            className="mt-1 inline-flex items-center gap-2 rounded-full btn-dark px-5 py-2.5 text-xs font-bold transition"
           >
             <Plus className="h-3.5 w-3.5" />
             {tr ? 'İlk Kaydı Ekle' : 'Add First Entry'}
@@ -1217,7 +1217,7 @@ export default function EmissionsTab({
         <div className="hidden overflow-hidden rounded-[1.5rem] border border-[#072C0E]/8 bg-white shadow-[0_4px_20px_rgba(7, 44, 14,0.04)] md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
-              <thead className="border-b border-[#072C0E]/6 bg-[#F8F8F8]/80">
+              <thead className="border-b border-[#072C0E]/6 bg-smoke/80">
                 <tr>
                   {[
                     tr ? 'Kaynak' : 'Source',
@@ -1329,14 +1329,14 @@ export default function EmissionsTab({
                           <button
                             onClick={() => openEdit(entry)}
                             aria-label={tr ? 'Kaydı düzenle' : 'Edit entry'}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-[#2ABD41]/12 hover:text-[#2ABD41]"
+                            className="btn-icon btn-sm"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(entry.id)}
                             aria-label={tr ? 'Kaydı sil' : 'Delete entry'}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-[#072C0E]/35 transition hover:bg-red-50 hover:text-red-500"
+                            className="btn-icon btn-icon-danger btn-sm"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -1347,7 +1347,7 @@ export default function EmissionsTab({
                 })}
               </tbody>
               {/* Totals footer */}
-              <tfoot className="border-t-2 border-[#072C0E]/8 bg-[#F8F8F8]/60">
+              <tfoot className="border-t-2 border-[#072C0E]/8 bg-smoke/60">
                 <tr>
                   <td colSpan={4} className="px-4 py-3 text-xs font-bold text-[#072C0E]/50">
                     {filtered.length} {tr ? 'kayıt' : 'entries'}
@@ -1419,7 +1419,7 @@ export default function EmissionsTab({
                 <h2 id="add-entry-title" className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
                 <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
               </div>
-              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => { setShowAddForm(false); resetAddForm(); }} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
+              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => { setShowAddForm(false); resetAddForm(); }} className="btn-icon btn-sm"><X className="h-4 w-4" /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
@@ -1660,8 +1660,8 @@ export default function EmissionsTab({
                 <AlertCircle className="h-4 w-4 shrink-0" />{formError}
               </div>
             )}
-            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
-              <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-smoke/80 px-4 py-3 backdrop-blur-sm sm:px-6 sm:py-4">
+              <button type="button" onClick={() => { setShowAddForm(false); resetAddForm(); }} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke">
                 {tr ? 'İptal' : 'Cancel'}
               </button>
               <div className="flex items-center gap-2">
@@ -1671,12 +1671,12 @@ export default function EmissionsTab({
                     disabled={submitting}
                     onClick={() => { saveNextRef.current = true; document.getElementById('add-entry-form')?.requestSubmit(); }}
                     title={tr ? 'Kaynak ve tesis aynı kalır; form bir sonraki aya geçer.' : 'Source and facility stay; the form moves to the next month.'}
-                    className="rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60"
+                    className="rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-smoke disabled:opacity-60"
                   >
                     {tr ? `Kaydet ve ${fullMonths[parseInt(month)]} →` : `Save & ${fullMonths[parseInt(month)]} →`}
                   </button>
                 )}
-                <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/15 transition-colors hover:bg-[#175022] disabled:opacity-60">
+                <button type="submit" form="add-entry-form" disabled={submitting} className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors">
                   {submitting ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save Entry')}
                 </button>
               </div>
@@ -1691,7 +1691,7 @@ export default function EmissionsTab({
           <div className={`${MODAL} max-w-md`} role="dialog" aria-modal="true" aria-labelledby="edit-entry-title">
             <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
               <h2 id="edit-entry-title" className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
-              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setEditing(null)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
+              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setEditing(null)} className="btn-icon btn-sm"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <p className="mb-4 text-sm font-semibold text-[#072C0E]/60">
@@ -1748,7 +1748,7 @@ export default function EmissionsTab({
               )}
               {/* Proof document — saved at once, separately from the form
                   (it doesn't change the amount or its approval). */}
-              <div className="mt-4 rounded-2xl border border-[#072C0E]/10 bg-[#F8F8F8] px-4 py-3">
+              <div className="mt-4 rounded-2xl border border-[#072C0E]/10 bg-smoke px-4 py-3">
                 <p className={LABEL}>{tr ? 'Kanıt belgesi (fatura, sayaç okuması…)' : 'Proof document (invoice, meter reading…)'}</p>
                 {editing.proof_document ? (
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
@@ -1783,11 +1783,11 @@ export default function EmissionsTab({
               </div>
             </div>
             <div className="flex shrink-0 gap-2 border-t border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
-              <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8] disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
+              <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-smoke disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
               {editing.questionnaire_source ? (
-                <button type="button" onClick={() => fixInQuestionnaire(editing.questionnaire_source)} className="flex-1 rounded-full bg-[#072C0E] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/12 transition hover:bg-[#175022]">{tr ? 'Ankette düzelt' : 'Fix in questionnaire'}</button>
+                <button type="button" onClick={() => fixInQuestionnaire(editing.questionnaire_source)} className="flex-1 rounded-full btn-dark py-2.5 text-xs font-bold transition">{tr ? 'Ankette düzelt' : 'Fix in questionnaire'}</button>
               ) : (
-              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full bg-[#072C0E] py-2.5 text-xs font-bold text-white shadow-lg shadow-[#072C0E]/12 transition hover:bg-[#175022] disabled:opacity-60">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
+              <button type="submit" form="edit-form" disabled={editSaving} className="flex-1 rounded-full btn-dark py-2.5 text-xs font-bold transition">{editSaving ? '…' : (tr ? 'Kaydet' : 'Save')}</button>
               )}
             </div>
           </div>
@@ -1863,7 +1863,7 @@ export default function EmissionsTab({
                   ? 'Listede olmayan kaynak mı? Talebi Carbonless ekibi inceler; uygun emisyon faktörü belirlenince kayıt olarak eklenir.'
                   : 'Source not in the list? The Carbonless team reviews the request; once a suitable emission factor is set, it is added as an entry.'}</p>
               </div>
-              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setShowCustom(false)} className="flex h-8 w-8 items-center justify-center rounded-xl text-[#072C0E]/40 hover:bg-[#072C0E]/5"><X className="h-4 w-4" /></button>
+              <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setShowCustom(false)} className="btn-icon btn-sm"><X className="h-4 w-4" /></button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               <form id="custom-form" onSubmit={handleCustom} className="space-y-4">
@@ -1958,9 +1958,9 @@ export default function EmissionsTab({
                 <p className="-mt-2 text-[11px] text-[#072C0E]/45">{yearHint}</p>
               </form>
             </div>
-            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-[#F8F8F8]/80 px-4 py-3 sm:px-6 sm:py-4">
-              <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-[#F8F8F8]">{tr ? 'İptal' : 'Cancel'}</button>
-              <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full bg-[#072C0E] px-6 py-2.5 text-xs font-bold text-white shadow-lg transition-colors hover:bg-[#175022] disabled:opacity-60">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-smoke/80 px-4 py-3 sm:px-6 sm:py-4">
+              <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke">{tr ? 'İptal' : 'Cancel'}</button>
+              <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors">
                 {cSaving ? '…' : (tr ? 'Talep Gönder' : 'Submit Request')}
               </button>
             </div>

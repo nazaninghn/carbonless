@@ -127,7 +127,7 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
       {!multi && singleVal && (
         <div className="mt-1 px-3 py-1.5 bg-[#8BEA99]/15 border border-[#8BEA99]/35 rounded-lg text-sm text-[#175022] flex items-center justify-between">
           <span>{getLabel(singleVal)}</span>
-          <button type="button" onClick={() => handleRemove(singleVal)} className="text-[#2ABD41] hover:text-red-500 ml-2 text-xs">✕</button>
+          <button type="button" onClick={() => handleRemove(singleVal)} aria-label={lang === 'tr' ? 'Ülkeyi kaldır' : 'Remove country'} className="text-[#1A7B2A] hover:text-red-500 ml-2 text-xs">✕</button>
         </div>
       )}
 
@@ -147,7 +147,7 @@ export default function CountryPicker({ value, onChange, language = 'tr', multi 
                 tabIndex={-1}
                 onMouseEnter={() => setActive(i)}
                 onClick={() => handleSelect(c)}
-                className={`w-full text-left px-4 py-2 hover:bg-green-50 text-sm border-b border-gray-100 last:border-0 flex items-center gap-2 ${isSelected ? 'bg-green-50' : ''} ${i === active ? 'ring-2 ring-inset ring-[#2ABD41]/40' : ''}`}
+                className={`w-full text-left px-4 py-2 hover:bg-green-50 text-sm border-b border-green-100 last:border-0 flex items-center gap-2 ${isSelected ? 'bg-green-50' : ''} ${i === active ? 'ring-2 ring-inset ring-[#2ABD41]/40' : ''}`}
               >
                 <span>{c.flag}</span>
                 <span className="text-slate">{c[lang]}</span>

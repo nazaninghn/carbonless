@@ -234,7 +234,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                           className={`rounded-2xl border px-3 py-3 text-center text-xs font-bold ${
                             allowed
                               ? 'border-[#8BEA99]/30 bg-[#8BEA99]/12 text-[#072C0E]'
-                              : 'border-[#072C0E]/10 bg-[#F8F8F8] text-[#072C0E]/45'
+                              : 'border-[#072C0E]/10 bg-smoke text-[#072C0E]/45'
                           }`}
                         >
                           {allowed ? '✓' : '—'} {tr ? p.tr : p.en}
@@ -254,13 +254,13 @@ export default function SettingsTab({ language, user, fetchData }) {
                       the CarbonAIPage questionnaire state on every language switch. */}
                   <button
                     onClick={() => changeLanguage('en')}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#2ABD41]/40 bg-[#2ABD41]/12 text-[#175022]' : 'border-[#072C0E]/10 bg-[#F8F8F8] text-[#072C0E]/60 hover:bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'en' ? 'border-[#2ABD41]/40 bg-[#2ABD41]/12 text-[#175022]' : 'border-[#072C0E]/10 bg-smoke text-[#072C0E]/60 hover:bg-white'}`}
                   >
                     🇬🇧 English
                   </button>
                   <button
                     onClick={() => changeLanguage('tr')}
-                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#2ABD41]/40 bg-[#2ABD41]/12 text-[#175022]' : 'border-[#072C0E]/10 bg-[#F8F8F8] text-[#072C0E]/60 hover:bg-white'}`}
+                    className={`flex-1 rounded-xl border px-3 py-2.5 text-center text-xs font-bold transition ${language === 'tr' ? 'border-[#2ABD41]/40 bg-[#2ABD41]/12 text-[#175022]' : 'border-[#072C0E]/10 bg-smoke text-[#072C0E]/60 hover:bg-white'}`}
                   >
                     🇹🇷 Türkçe
                   </button>
@@ -360,7 +360,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                   <button
                     onClick={() => handleExport('json')}
                     disabled={!!exporting}
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#072C0E]/15 bg-white px-5 py-3 text-sm font-bold text-[#072C0E] transition hover:bg-[#F8F8F8] disabled:opacity-60 sm:w-auto"
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#072C0E]/15 bg-white px-5 py-3 text-sm font-bold text-[#072C0E] transition hover:bg-smoke disabled:opacity-60 sm:w-auto"
                   >
                     {exporting === 'json' ? '...' : tr ? 'JSON yedek' : 'JSON backup'}
                   </button>
@@ -382,7 +382,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   onClick={openDeleteModal}
                   disabled={deleting}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-60 sm:w-auto"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full btn-danger px-5 py-3 text-sm font-bold transition sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4" />
                   {tr ? 'Hesabı Kalıcı Olarak Sil' : 'Permanently Delete Account'}
@@ -416,7 +416,7 @@ export default function SettingsTab({ language, user, fetchData }) {
               onChange={(e) => setDeletePassword(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleDelete()}
               placeholder={tr ? 'Şifreniz' : 'Your password'}
-              className="mt-4 w-full rounded-xl border border-[#072C0E]/10 bg-[#F8F8F8] px-3.5 py-2.5 text-sm font-semibold text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:border-red-300 focus:ring-4 focus:ring-red-100"
+              className="mt-4 w-full rounded-xl border border-[#072C0E]/10 bg-smoke px-3.5 py-2.5 text-sm font-semibold text-[#072C0E] outline-none placeholder:text-[#072C0E]/30 focus:border-red-300 focus:ring-4 focus:ring-red-100"
             />
             {deleteError && (
               <p className="mt-2 text-xs font-semibold text-red-600">{deleteError}</p>
@@ -425,14 +425,14 @@ export default function SettingsTab({ language, user, fetchData }) {
               <button
                 onClick={handleDelete}
                 disabled={deleting || !deletePassword}
-                className="flex-1 rounded-full bg-red-600 py-2.5 text-xs font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 rounded-full btn-danger py-2.5 text-xs font-bold transition"
               >
                 {deleting ? '...' : tr ? 'Sil' : 'Delete'}
               </button>
               <button
                 onClick={() => setShowDeleteModal(false)}
                 disabled={deleting}
-                className="flex-1 rounded-full border border-[#072C0E]/10 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-[#F8F8F8]"
+                className="flex-1 rounded-full btn-secondary py-2.5 text-xs font-bold transition"
               >
                 {tr ? 'İptal' : 'Cancel'}
               </button>
@@ -467,7 +467,7 @@ function PanelTitle({ icon: Icon, title }) {
 
 function InfoCard({ label, value }) {
   return (
-    <div className="flex items-center justify-between rounded-xl border border-[#072C0E]/8 bg-[#F8F8F8] px-3 py-2 sm:block sm:rounded-xl">
+    <div className="flex items-center justify-between rounded-xl border border-[#072C0E]/8 bg-smoke px-3 py-2 sm:block sm:rounded-xl">
       <p className="text-[10px] font-bold text-[#072C0E]/40">{label}</p>
       <p className="text-xs font-bold text-[#072C0E] sm:mt-0.5">{value}</p>
     </div>

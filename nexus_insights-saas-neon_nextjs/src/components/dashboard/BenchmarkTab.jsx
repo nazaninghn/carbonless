@@ -127,7 +127,7 @@ function OpportunityRow({ rank, title, desc, saving, locked, tr }) {
   return (
     <div className={`flex items-start gap-3 rounded-xl border p-3 transition-all duration-300 ${locked ? 'border-[#072C0E]/6 bg-[#072C0E]/2 opacity-60' : 'border-[#072C0E]/10 bg-white hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(7,44,14,0.08)] hover:border-[#2ABD41]/25'}`}>
       <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-        rank === 1 ? 'bg-[#2ABD41] text-white' :
+        rank === 1 ? 'bg-[#2ABD41] text-[#072C0E]' :
         rank === 2 ? 'bg-[#8BEA99] text-white' :
         'bg-[#072C0E]/8 text-[#072C0E]/50'
       }`}>

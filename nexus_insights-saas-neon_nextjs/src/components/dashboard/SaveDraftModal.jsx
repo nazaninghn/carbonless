@@ -1,5 +1,6 @@
 'use client';
 
+import Button from '@/components/Button';
 import { useInventory } from './InventoryWorkflow';
 
 export default function SaveDraftModal({ tr = false }) {
@@ -23,29 +24,32 @@ export default function SaveDraftModal({ tr = false }) {
         </p>
 
         <div className="flex flex-col gap-3">
-          <button
+          <Button
+            variant="dark"
+            size="lg"
+            loading={loading}
             onClick={() => handleSaveModalResponse(true)}
-            disabled={loading}
-            className="rounded-full bg-[#175022] px-5 py-3 text-sm font-bold text-white hover:bg-[#175022] transition disabled:opacity-50"
           >
             {loading ? (tr ? 'Kaydediliyor...' : 'Saving...') : (tr ? 'Evet, kaydet' : 'Yes, save changes')}
-          </button>
+          </Button>
 
-          <button
-            onClick={() => handleSaveModalResponse(false)}
+          <Button
+            variant="secondary"
+            size="lg"
             disabled={loading}
-            className="rounded-full border border-[#175022]/15 px-5 py-3 text-sm font-semibold text-[#175022]/70 hover:bg-[#175022]/5 transition disabled:opacity-50"
+            onClick={() => handleSaveModalResponse(false)}
           >
             {tr ? 'Hayır, değişiklikleri at' : 'No, discard changes'}
-          </button>
+          </Button>
 
-          <button
-            onClick={() => handleSaveModalResponse(null)}
+          <Button
+            variant="tertiary"
+            size="lg"
             disabled={loading}
-            className="rounded-full px-5 py-3 text-sm font-semibold text-[#175022]/40 hover:bg-[#175022]/5 transition disabled:opacity-50"
+            onClick={() => handleSaveModalResponse(null)}
           >
             {tr ? 'İptal' : 'Cancel'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

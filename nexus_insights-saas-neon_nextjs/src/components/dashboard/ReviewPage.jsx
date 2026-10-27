@@ -172,7 +172,7 @@ export default function ReviewPage({ tr = false }) {
                       <button
                         onClick={() => handleSaveEdit(item.qId)}
                         disabled={saving}
-                        className="flex items-center gap-1 px-3 py-2 bg-[#175022] text-white text-xs font-bold rounded-full hover:bg-[#175022] transition disabled:opacity-50"
+                        className="flex items-center gap-1 px-3 py-2 btn-dark text-xs font-bold rounded-full transition"
                       >
                         <Save className="w-3 h-3" />
                         {tr ? 'Kaydet' : 'Save'}
