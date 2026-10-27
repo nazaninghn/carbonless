@@ -155,13 +155,13 @@ export default function Home() {
       <HeroSection />
 
 
-      <section id="about" className="relative z-10 py-12 sm:py-20 bg-white">
+      <section id="about" className="relative z-10 py-10 sm:py-14 bg-white">
         <Reveal className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
             {/* Left: heading + short teaser */}
             <div>
-              <h2 className="text-[34px] sm:text-[56px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#072C0E]">
+              <h2 className="text-[26px] sm:text-[34px] font-extrabold leading-[1.05] tracking-[-0.03em] text-[#072C0E]">
                 {lang === 'tr' ? <>Biz <span className="text-[#2ABD41]">Kimiz?</span></> : <>About <span className="text-[#2ABD41]">Us</span></>}
               </h2>
 
@@ -222,11 +222,11 @@ export default function Home() {
                     phone's lower half, constrained left so the green line
                     stays on white (never green-on-green over the stripe) */}
                 <div className="relative z-10 -mt-24 sm:-mt-40 max-w-[58%]">
-                  <p className="text-[30px] sm:text-[44px] font-extrabold leading-none tracking-tight text-[#072C0E]/30">Hey!</p>
-                  <p className="mt-1 text-[22px] sm:text-[30px] font-bold leading-tight tracking-tight text-[#072C0E]/45">
+                  <p className="text-[22px] sm:text-[30px] font-extrabold leading-none tracking-tight text-[#072C0E]/30">Hey!</p>
+                  <p className="mt-1 text-[18px] sm:text-[22px] font-bold leading-tight tracking-tight text-[#072C0E]/45">
                     {lang === 'tr' ? 'Bugünkü' : "What's your"}
                   </p>
-                  <p className="text-[30px] sm:text-[42px] font-extrabold leading-tight tracking-[-0.02em] text-[#2ABD41]">
+                  <p className="text-[22px] sm:text-[30px] font-extrabold leading-tight tracking-[-0.02em] text-[#2ABD41]">
                     {lang === 'tr' ? 'ayak izin ne?' : 'footprint today?'}
                   </p>
                 </div>
@@ -243,13 +243,13 @@ export default function Home() {
 
 
       {/* -- AI Section (like Dinnect AI) -- */}
-      <section id="ai" className="relative z-10 pt-12 sm:pt-20 pb-0 bg-white">
+      <section id="ai" className="relative z-10 pt-10 sm:pt-14 pb-0 bg-white">
         <Reveal className="mx-auto max-w-6xl px-4 sm:px-8">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
 
             {/* Left: Text */}
             <div>
-              <h2 className="text-[28px] sm:text-[48px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
+              <h2 className="text-[26px] sm:text-[34px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
                 Carbonless <span className="text-[#2ABD41]">AI</span>
               </h2>
               <p className="mt-4 sm:mt-5 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/55 max-w-md">
@@ -294,11 +294,11 @@ export default function Home() {
 
       {/* -- Pricing Section — fades in from the white AI section above
              (gradient over the top padding) instead of a hard border cut -- */}
-      <section id="pricing" className="relative z-10 py-12 sm:py-20 bg-gradient-to-b from-white via-[#F1FCF2] to-[#F1FCF2]">
+      <section id="pricing" className="relative z-10 py-10 sm:py-14 bg-gradient-to-b from-white via-[#F1FCF2] to-[#F1FCF2]">
         <Reveal className="mx-auto max-w-4xl px-4 sm:px-8">
           {/* Header */}
           <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+            <h2 className="text-[24px] sm:text-[30px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
               {lang === 'tr' ? 'Fiyatlandırma' : 'Pricing'}
             </h2>
             <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">
@@ -363,10 +363,10 @@ export default function Home() {
 
       {/* -- FAQ — native <details>/<summary> so the accordion needs no JS
           state and stays accessible/keyboard-friendly for free. -- */}
-      <section id="faq" className="relative z-10 py-12 sm:py-20 bg-white">
+      <section id="faq" className="relative z-10 py-10 sm:py-14 bg-white">
         <Reveal className="mx-auto max-w-3xl px-4 sm:px-8">
           <div className="text-center mb-10 sm:mb-14">
-            <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+            <h2 className="text-[24px] sm:text-[30px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
               {lang === 'tr' ? 'Sıkça sorulan sorular' : 'Frequently asked questions'}
             </h2>
             <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">

@@ -13,7 +13,7 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative z-10 overflow-hidden bg-gradient-to-b from-[#F1FCF2] to-white py-10 sm:py-16">
+    <footer className="relative z-10 overflow-hidden bg-gradient-to-b from-[#F1FCF2] to-white py-10 sm:py-14">
       {/* Green "halo" blobs — this is what the glass card actually blurs.
           Without something behind it, backdrop-blur has nothing to do. */}
       <div className="pointer-events-none absolute -top-24 -left-20 h-72 w-72 rounded-full bg-[#2ABD41]/25 blur-[90px]" />
@@ -37,7 +37,7 @@ export default function Footer() {
             <div className="col-span-2">
               <Link href="/" className="flex items-center gap-2.5">
                 <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-8 w-8 object-contain" />
-                <span className="text-[20px] font-extrabold tracking-tight text-[#072C0E]">Carbonless</span>
+                <span className="text-[18px] font-extrabold tracking-tight text-[#072C0E]">Carbonless</span>
               </Link>
               <p className="mt-5 max-w-xs text-[13px] sm:text-[14px] leading-[1.8] text-[#072C0E]/60">
                 {lang === 'tr'
