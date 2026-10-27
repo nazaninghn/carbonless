@@ -219,9 +219,9 @@ export default function Home() {
                 </div>
 
                 {/* playful mixed-tone typography — pulled up beside the
-                    phone's lower half, constrained left so the green line
-                    stays on white (never green-on-green over the stripe) */}
-                <div className="relative z-10 -mt-24 sm:-mt-40 max-w-[58%]">
+                    phone's lower half, constrained left so it stays on white
+                    and never overlaps the phone image on the right */}
+                <div className="relative z-10 -mt-10 sm:-mt-20 max-w-[52%] sm:max-w-[48%]">
                   <p className="text-[22px] sm:text-[30px] font-extrabold leading-none tracking-tight text-[#072C0E]/30">Hey!</p>
                   <p className="mt-1 text-[18px] sm:text-[22px] font-bold leading-tight tracking-tight text-[#072C0E]/45">
                     {lang === 'tr' ? 'Bugünkü' : "What's your"}
