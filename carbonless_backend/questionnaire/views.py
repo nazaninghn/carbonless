@@ -257,6 +257,8 @@ def _save_report_step(report, step_id, answer, is_skipped=False):
                     defaults={'answer': answer, 'is_skipped': is_skipped},
                 )
             _track_signature(report, step_id, before, result[0].answer)
+            if not is_skipped:
+                _clear_pending(report, step_id)
             if before is not None and before != result[0].answer:
                 from .advisor_triggers import reopen_rejected
                 reopen_rejected(report, step_id)
@@ -265,6 +267,21 @@ def _save_report_step(report, step_id, answer, is_skipped=False):
             last_exc = exc
             time.sleep(0.05 * (attempt + 1))
     raise last_exc
+
+
+def _pending_ids(report):
+    """The question ids marked "I don't know — answer later" (None counts as none)."""
+    return [s for s in (report.pending_questions or []) if isinstance(s, str)]
+
+
+def _clear_pending(report, step_id):
+    """A saved answer resolves the question: drop it from the pending list. A plain UPDATE, so
+    nothing else of the report (status, updated_at, other fields) is touched."""
+    pending = _pending_ids(report)
+    if step_id in pending:
+        left = [s for s in pending if s != step_id]
+        CarbonReport.objects.filter(pk=report.pk).update(pending_questions=left)
+        report.pending_questions = left
 
 
 SIGN_OFF_STEP = '7C-2'
@@ -809,6 +826,19 @@ class SubmitStepView(APIView):
         )
 
         if is_final_step:
+            # A question left for later is unresolved: the inventory cannot be finished around it.
+            pending = [s for s in _pending_ids(report) if not ReportStep.objects.filter(report=report, step_id=s).exists()]
+            if pending:
+                msg_en = (f'This inventory cannot be marked complete yet — {len(pending)} question'
+                          f'{"s are" if len(pending) != 1 else " is"} still marked "I don\'t know — answer later".')
+                msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(pending)} soru hâlâ "Bilmiyorum — sonra yanıtla" '
+                          f'olarak işaretli.')
+                msg = msg_tr if lang == 'tr' else msg_en
+                return Response({
+                    'success': False, 'step': step, 'next_step': step, 'code': 'pending_questions',
+                    'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
+                    'pending_questions': pending, 'bot_messages': [f'❌ {msg}'],
+                }, status=400)
             # Completion used to be gated purely on "was 7B-INFO answered
             # 'done'", with no check that anything came before it. Verified
             # live: PATCHing a brand-new report (nothing saved but the
@@ -1002,6 +1032,8 @@ class ReportStatusView(APIView):
                 'boundary_approach': report.boundary_approach,
                 'scope3_approach': report.scope3_approach,
                 'completed_steps': completed_steps,
+                # "I don't know — answer later": unanswered on purpose, not in answers/completed_steps.
+                'pending_questions': [s for s in _pending_ids(report) if s not in answers],
                 # Who started this inventory, when it wasn't the requester —
                 # the questionnaire says "baris started it" instead of
                 # "welcome back" to a team mate opening it the first time.
@@ -1065,6 +1097,65 @@ class ReportStatusView(APIView):
 
             report.delete()
         return Response({'deleted_entries': deleted_entries}, status=200)
+
+
+class PendingQuestionView(APIView):
+    """POST /api/questionnaire/<report_id>/pending/ {step, pending: true|false, language}
+
+    "I don't know — answer later": marks a question as unanswered-on-purpose. It saves NO answer
+    (no ReportStep, no emission entry, no zero): progress, the completion gate, the reports and the
+    calculations all keep seeing the question as missing. Saving a valid answer for the step later
+    clears the mark (_save_report_step); `pending: false` clears it directly."""
+    permission_classes = [IsAuthenticated, NotAuditorForWrites]
+    MAX_PENDING = 500
+
+    def post(self, request, report_id):
+        try:
+            report = _company_reports(request.user).get(id=report_id)
+        except CarbonReport.DoesNotExist:
+            return Response({'error': 'Not found'}, status=404)
+
+        lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
+        step = request.data.get('step')
+        pending = request.data.get('pending', True)
+        if not isinstance(step, str) or not step.strip() or not isinstance(pending, bool):
+            msg = ('Bir soru ve "pending" değeri gerekli.' if lang == 'tr'
+                   else 'A question and a "pending" value are required.')
+            return Response({'error': msg, 'code': 'invalid_request'}, status=400)
+        step = step.strip()
+
+        from .carboniq_validation import is_known_step
+        if not is_known_step(step):
+            msg = ('Bu, tanınan bir anket adımı değil.' if lang == 'tr'
+                   else 'This is not a recognised questionnaire step.')
+            return Response({'error': msg, 'code': 'unknown_step', 'step': step}, status=400)
+
+        current = _pending_ids(report)
+        if pending:
+            from . import year_guard
+            # Same rules as saving an answer: no change to a signed / completed inventory, nor to
+            # one whose year another inventory also covers.
+            if year_guard._is_locked(report):
+                return Response(year_guard.locked_payload(report, 'take a new pending question', lang), status=409)
+            if report.reporting_year:
+                others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
+                if others:
+                    return Response(year_guard.conflict_payload(others, report.reporting_year, lang), status=409)
+            # An answer is never replaced by "I don't know".
+            if ReportStep.objects.filter(report=report, step_id=step).exists():
+                msg = ('Bu soru zaten yanıtlandı; yanıtı değiştirmek için soruyu düzenleyin.' if lang == 'tr'
+                       else 'This question is already answered; edit the question to change its answer.')
+                return Response({'error': msg, 'code': 'already_answered', 'step': step}, status=409)
+            if step not in current:
+                if len(current) >= self.MAX_PENDING:
+                    msg = ('Çok fazla bekleyen soru var.' if lang == 'tr' else 'There are too many pending questions.')
+                    return Response({'error': msg, 'code': 'too_many_pending'}, status=400)
+                current = current + [step]
+        else:
+            current = [s for s in current if s != step]
+
+        CarbonReport.objects.filter(pk=report.pk).update(pending_questions=current)
+        return Response({'report_id': report.id, 'step': step, 'pending': pending, 'pending_questions': current})
 
 
 # ── Company Profile reuse ─────────────────────────────────────────────────────

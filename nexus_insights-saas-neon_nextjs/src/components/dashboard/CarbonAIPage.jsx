@@ -11,6 +11,7 @@ import {
   ThumbsUp, ThumbsDown, LifeBuoy,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
+import { pendingCopy, visiblePending, canAnswerLater } from '@/lib/carboniq/pending';
 import { OPEN_CHAT_EVENT, pendingChatToOpen, clearChatToOpen } from '@/lib/openChat';
 import { COUNTRIES } from '@/lib/data/countries';
 import CompletionReportCard from './CompletionReportCard';
@@ -3101,12 +3102,28 @@ export function QuestionnaireTab({
   // (shown at their question with the reason) and how many still wait
   // (shown at sign-off). Both were recorded and shown nowhere here.
   const [advisorInfo, setAdvisorInfo] = useState({ rejected: [], pending: 0 });
+  // "I don't know — answer later": the question ids left unanswered on purpose. The server keeps
+  // them (so they survive a refresh or a new login); this is its latest answer, re-read whenever
+  // the question changes, like advisorInfo.
+  const [pendingIds, setPendingIds] = useState([]);
+  const [pendingOpen, setPendingOpen] = useState(false);
+  const [laterBusy, setLaterBusy] = useState(false);
+  const [laterNotice, setLaterNotice] = useState('');
+  useEffect(() => {
+    if (!laterNotice) return undefined;
+    const t = setTimeout(() => setLaterNotice(''), 6000);
+    return () => clearTimeout(t);
+  }, [laterNotice]);
   useEffect(() => {
     if (!reportId) return undefined;
     let cancelled = false;
     api.getReportStatus(reportId)
       .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (!cancelled && d) setAdvisorInfo({ rejected: d.advisor_rejected || [], pending: d.advisor_pending || 0 }); })
+      .then(d => {
+        if (cancelled || !d) return;
+        setAdvisorInfo({ rejected: d.advisor_rejected || [], pending: d.advisor_pending || 0 });
+        setPendingIds(Array.isArray(d.pending_questions) ? d.pending_questions : []);
+      })
       .catch(() => {});
     return () => { cancelled = true; };
   }, [reportId, currentId]);
@@ -4743,6 +4760,63 @@ export function QuestionnaireTab({
     }, TYPING_DELAY_MS);
   }, [blockSummaryState, answers, initLoopOrAdvance]);
 
+  // ── "I don't know — answer later" ──────────────────────────────────────────
+  // Marks the question on screen as unanswered on purpose and moves on along its default route.
+  // Nothing is saved as an answer (no value, not even 0): the server only keeps the question id.
+  const markAnswerLater = useCallback(async () => {
+    const q = getQuestionById(currentId);
+    const c = pendingCopy(tr);
+    if (!q || !reportId || laterBusy || isTyping || isSubmittingRef.current) return;
+    setLaterBusy(true);
+    setSaveError('');
+    setLaterNotice('');
+    try {
+      const res = await api.setPendingQuestion(reportId, currentId, true, lang);
+      const data = await res.json().catch(() => null);
+      if (!res.ok) { setSaveError(data?.error || c.failed); return; }
+      setPendingIds(Array.isArray(data?.pending_questions) ? data.pending_questions : []);
+      // The route a question takes with no answer, skipping questions the answers hide.
+      let nextId = getNextQuestionId(q, undefined);
+      while (nextId) {
+        const cand = getQuestionById(nextId);
+        if (!cand?.conditionalShow || conditionalShowMatches(cand.conditionalShow, answers)) break;
+        nextId = cand.next || cand.loopNext || null;
+      }
+      if (!nextId) { setLaterNotice(c.noNext); return; }
+      setLaterNotice(c.marked);
+      setHistory(prev => [...prev, { id: currentId, msgLen: questionMsgLenRef.current }]);
+      setEditingQuestionId(null);
+      setValidationError('');
+      setShowValidationError(false);
+      initLoopOrAdvance(nextId, answers);
+    } catch (e) {
+      console.warn('Could not mark the question as pending:', e);
+      setSaveError(c.failed);
+    } finally {
+      setLaterBusy(false);
+    }
+  }, [currentId, reportId, laterBusy, isTyping, lang, tr, answers, initLoopOrAdvance]);
+
+  // Back to a pending question from the list: the original question, with the answers already saved
+  // untouched, exactly as if it had come up next.
+  const returnToPending = useCallback((qId) => {
+    if (!getQuestionById(qId)) return;
+    if (typingTimerRef.current) { clearTimeout(typingTimerRef.current); typingTimerRef.current = null; }
+    markSubmitting(false);
+    setIsTyping(false);
+    setBlockSummaryState(null);
+    setLoopState(null);
+    setEditingQuestionId(null);
+    setValidationError('');
+    setShowValidationError(false);
+    setSaveError('');
+    setLaterNotice('');
+    setPendingOpen(false);
+    if (qId === currentId) return;
+    setHistory(prev => [...prev, { id: currentId, msgLen: questionMsgLenRef.current }]);
+    advanceToQuestion(qId);
+  }, [currentId, advanceToQuestion, markSubmitting]);
+
   // ── resetFlow ──────────────────────────────────────────────────────────────
   const resetFlow = useCallback(async () => {
     // Cancel any in-flight typing animation so it can't post stale bubbles
@@ -5008,6 +5082,56 @@ export function QuestionnaireTab({
           )}
         </div>
 
+        {/* Pending questions: left unanswered on purpose ("I don't know — answer later").
+            Each one returns to its original question. */}
+        {!completed && (() => {
+          const pend = visiblePending(pendingIds, answers);
+          if (!pend.length) return null;
+          const c = pendingCopy(tr);
+          const listId = 'pending-questions-list';
+          return (
+            <div data-testid="pending-questions-panel" role="region" aria-label={c.title}
+              className="shrink-0 border-t border-amber-200 bg-amber-50 px-4 py-2 sm:px-6">
+              <div className="mx-auto w-full max-w-2xl">
+                <button type="button" data-testid="pending-questions-toggle"
+                  aria-expanded={pendingOpen} aria-controls={listId}
+                  aria-label={pendingOpen ? c.toggleClose : c.toggleOpen}
+                  onClick={() => setPendingOpen(o => !o)}
+                  className="flex w-full items-center justify-between gap-3 text-left text-xs font-semibold text-amber-800">
+                  <span className="flex items-center gap-2">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" strokeWidth={2.25} aria-hidden="true" />
+                    <span>{c.banner} <span className="font-bold">{c.title}: {c.count(pend.length)}</span></span>
+                  </span>
+                  <span aria-hidden="true">{pendingOpen ? '−' : '+'}</span>
+                </button>
+                {pendingOpen && (
+                  <ul id={listId} data-testid="pending-questions-list" className="mt-2 flex max-h-48 flex-col gap-1.5 overflow-y-auto">
+                    {pend.map(id => {
+                      const pq = getQuestionById(id);
+                      const text = stripDocLabels(pq?.text?.[lang] || pq?.text?.en || id);
+                      return (
+                        <li key={id} data-testid={`pending-question-${id}`}
+                          className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2">
+                          <span className="min-w-0 text-xs text-[#072C0E]">
+                            <span className="font-bold">{c.question} {pq?.number ?? id}</span>
+                            <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">{c.badge}</span>
+                            <span className="mt-0.5 block truncate text-[#175022]/70">{text}</span>
+                          </span>
+                          <button type="button" onClick={() => returnToPending(id)}
+                            aria-label={`${c.returnTo}: ${c.question} ${pq?.number ?? id}`}
+                            className="shrink-0 rounded-lg border border-amber-300 px-2.5 py-1 text-xs font-semibold text-amber-900 hover:bg-amber-100">
+                            {c.returnTo}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Input bar — shown if no block summary OR in edit mode (editingQuestionId set) */}
         {/* Scrolls once it outgrows the space left for it. This used to be a
             plain shrink-0 block with no height cap and no overflow, which is
@@ -5052,6 +5176,26 @@ export function QuestionnaireTab({
                       : undefined
                   }
                 />
+                {/* "I don't know — answer later": leaves the question unanswered (nothing is
+                    saved, not even a 0) and lists it under Pending questions. */}
+                {canAnswerLater(currentQuestion, {
+                  answered: currentId in answers, locked: inventoryCompleted || completed,
+                  hasReport: Boolean(reportId), editing: Boolean(editingQuestionId),
+                }) && !isTyping && (
+                  <button type="button" data-testid="answer-later-button"
+                    onClick={markAnswerLater}
+                    disabled={laterBusy || submitting || answerForId !== currentId}
+                    title={pendingCopy(tr).buttonHint}
+                    aria-label={`${pendingCopy(tr).button}. ${pendingCopy(tr).buttonHint}`}
+                    className="self-start rounded-xl border border-amber-300 bg-white px-3 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-50 disabled:opacity-50">
+                    {laterBusy ? pendingCopy(tr).saving : pendingCopy(tr).button}
+                  </button>
+                )}
+                {laterNotice && (
+                  <p role="status" aria-live="polite" data-testid="answer-later-notice" className="text-xs font-semibold text-amber-800">
+                    {laterNotice}
+                  </p>
+                )}
                 {/* The facilities registered today are only a reference for B4:
                     an inventory for an earlier year may have had a different
                     number, so the count is shown, never filled in. */}

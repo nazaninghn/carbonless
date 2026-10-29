@@ -102,6 +102,14 @@ class CarbonReport(models.Model):
     # them can write until the duplicate is resolved. db_default: instances still
     # running the code from before this column insert reports without it.
     legacy_duplicate_year = models.BooleanField(default=False, db_default=False)
+    # Question ids (step ids) the user marked "I don't know — answer later".
+    # A pending question has NO ReportStep and no emission entry: it is simply
+    # not answered yet, so progress, completion, reports and calculations treat
+    # it as missing, never as an empty answer or zero. Saving a valid answer for
+    # the step removes it from here (see views._save_report_step). Nullable for
+    # the same rolling-deploy reason as applied_grid_connections; None and []
+    # mean the same.
+    pending_questions = models.JSONField(default=list, blank=True, null=True)
 
     class Meta:
         ordering = ['-created_at']

@@ -392,6 +392,11 @@ export const api = {
   getReportAssumptions: (reportId, lang) => request(`/questionnaire/${reportId}/assumptions/?lang=${lang === 'en' ? 'en' : 'tr'}`),
   getPreviousCompanyProfile: (reportId) => request(`/questionnaire/${reportId}/previous-profile/`),
   reuseCompanyProfile: (reportId, reportingYear, progress = null) => request(`/questionnaire/${reportId}/reuse-profile/`, { method: 'POST', body: JSON.stringify({ reporting_year: reportingYear, ...(progress ? { progress } : {}) }) }),
+  // "I don't know — answer later": mark (pending=true) or unmark a question; saves no answer.
+  setPendingQuestion: (reportId, step, pending, language) => request(`/questionnaire/${reportId}/pending/`, {
+    method: 'POST',
+    body: JSON.stringify({ step, pending, language }),
+  }),
   deleteReport: (reportId) => request(`/questionnaire/${reportId}/`, { method: 'DELETE' }),
   downloadQuestionnairePdf: (reportId, lang = 'en') => request(`/questionnaire/${reportId}/pdf/?lang=${lang}`),
   // The full ISO 14064-1:2018 inventory report (six categories, boundaries,
