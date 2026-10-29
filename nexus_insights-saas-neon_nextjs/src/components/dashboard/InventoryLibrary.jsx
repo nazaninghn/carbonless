@@ -143,6 +143,12 @@ export default function InventoryLibrary({ tr = false }) {
         return;
       }
       setReports(prev => prev.filter(r => r.report_id !== reportId));
+      // The deleted inventory's emission entries are gone: the dashboard keeps
+      // its own copy of the totals, so tell it to reload. Not 'inventory' —
+      // that source moves the dashboard to the inventory's year.
+      window.dispatchEvent(new CustomEvent('carbonless:emissions-updated', {
+        detail: { source: 'inventory-deleted' },
+      }));
     } catch (e) {
       console.error('Failed to delete inventory:', e);
     } finally {
