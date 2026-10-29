@@ -1047,17 +1047,23 @@ class ReportStatusView(APIView):
         # with it — unless another inventory covers the same year, since
         # entries are kept per company and year and are shared with it. Chat
         # and form entries are never touched.
+        # One transaction: a failure of either delete leaves both untouched.
         deleted_entries = 0
         year = report.reporting_year
-        if year and not CarbonReport.objects.filter(
-                company=report.company, reporting_year=year).exclude(id=report.id).exists():
-            from emissions.models import EmissionEntry
-            deleted_entries, _ = EmissionEntry.objects.filter(
-                company=report.company, year=year,
-                description__startswith='Questionnaire step ',
-            ).delete()
+        with transaction.atomic():
+            if year and not CarbonReport.objects.filter(
+                    company=report.company, reporting_year=year).exclude(id=report.id).exists():
+                from django.db.models import Q
+                from emissions.models import EmissionEntry
+                # Workspace entries are named "Workspace <tag> (report <id>)": the closing
+                # parenthesis keeps report 14 from matching report 140.
+                deleted_entries, _ = EmissionEntry.objects.filter(
+                    Q(description__startswith='Questionnaire step ')
+                    | Q(description__startswith='Workspace ', description__endswith=f'(report {report.id})'),
+                    company=report.company, year=year,
+                ).delete()
 
-        report.delete()
+            report.delete()
         return Response({'deleted_entries': deleted_entries}, status=200)
 
 

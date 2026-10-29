@@ -770,7 +770,7 @@ class CompanyInventoryAccessTests(TestCase):
         c.force_authenticate(user=user)
         return c
 
-    def _entry(self, description, year=2024):
+    def _entry(self, description, year=2024, quantity=10):
         from emissions.models import EmissionEntry, EmissionFactor
         f, _ = EmissionFactor.objects.get_or_create(
             slug='t-grid', country='turkey', year=2024,
@@ -778,7 +778,7 @@ class CompanyInventoryAccessTests(TestCase):
                           factor_kg_co2e=0.4, source='test'))
         return EmissionEntry.objects.create(
             company=self.company, user=self.owner, emission_factor=f, year=year, month=1,
-            quantity=10, calculated_co2e_kg=4, description=description, status='approved')
+            quantity=quantity, calculated_co2e_kg=4, description=description, status='approved')
 
     def test_teammate_lists_and_opens_the_inventory(self):
         c = self._client(self.admin)
@@ -832,6 +832,132 @@ class CompanyInventoryAccessTests(TestCase):
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 0})
         self.assertEqual(EmissionEntry.objects.count(), 1)
+
+    # ── the dashboard summary after a delete ──────────────────────────────────
+    # The factor is 0.4 kg/kWh: 1000 kWh = 400 kg, 500 kWh = 200 kg, 2000 kWh = 800 kg.
+
+    def _summary(self, year):
+        r = self._client(self.owner).get(f'/api/emissions/summary/?year={year}')
+        self.assertEqual(r.status_code, 200)
+        return r.data
+
+    def test_summary_drops_the_deleted_years_questionnaire_entries_only(self):
+        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2023,
+                                    title='Earlier inventory', status=CarbonReport.Status.COMPLETED)
+        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
+        self._entry('Chat: electricity', year=2024, quantity=500)
+        self._entry('Questionnaire step 4A-1', year=2023, quantity=2000)
+        self.assertEqual(self._summary(2024)['total_kg'], 600)
+        self.assertEqual(self._summary(2023)['total_kg'], 800)
+
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.data, {'deleted_entries': 1})
+
+        # 2024 keeps only what the questionnaire did not create; 2023 is untouched.
+        self.assertEqual(self._summary(2024)['total_kg'], 200)
+        after_2023 = self._summary(2023)
+        self.assertEqual(after_2023['total_kg'], 800)
+        self.assertEqual(after_2023['scope2_kg'], 800)
+
+    def test_summary_of_a_year_with_only_questionnaire_entries_is_empty_after_delete(self):
+        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
+        self.assertEqual(self._summary(2024)['total_kg'], 400)
+        self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        summary = self._summary(2024)
+        self.assertEqual(summary['total_kg'], 0)
+        self.assertNotIn(2024, summary['years_with_data'])
+
+    def test_summary_keeps_entries_shared_with_another_inventory(self):
+        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
+        CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
+        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
+                                    title='Second', legacy_duplicate_year=True)
+        self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(self._summary(2024)['total_kg'], 400)
+
+    # ── all or nothing ────────────────────────────────────────────────────────
+
+    def test_a_failing_report_delete_rolls_back_the_entry_delete(self):
+        from unittest import mock
+        from emissions.models import EmissionEntry
+        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
+        chat = self._entry('Chat: electricity', year=2024, quantity=500)
+        entry_ids = set(EmissionEntry.objects.values_list('id', flat=True))
+
+        # The entries are deleted first; the report delete then fails.
+        with mock.patch.object(CarbonReport, 'delete', side_effect=RuntimeError('boom')):
+            with self.assertRaises(RuntimeError):
+                self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+
+        self.assertTrue(CarbonReport.objects.filter(id=self.report.id).exists())
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), entry_ids)
+        self.assertIn(chat.id, entry_ids)
+        self.assertEqual(self._summary(2024)['total_kg'], 600)
+
+    # ── Workspace entries ("Workspace <tag> (report <id>)") go with their inventory ──
+
+    def test_delete_removes_its_workspace_entries_and_the_summary_drops_them(self):
+        from emissions.models import EmissionEntry
+        self._entry(f'Workspace 3A (report {self.report.id})', quantity=1000)
+        self._entry('Questionnaire step 4A-1', quantity=500)
+        chat = self._entry('Chat: electricity', quantity=250)
+        self.assertEqual(self._summary(2024)['total_kg'], 700)
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.data, {'deleted_entries': 2})
+        self.assertEqual(list(EmissionEntry.objects.values_list('id', flat=True)), [chat.id])
+        self.assertEqual(self._summary(2024)['total_kg'], 100)
+
+    def test_delete_keeps_chat_and_form_entries_of_the_year(self):
+        from emissions.models import EmissionEntry
+        self._entry(f'Workspace 4A (report {self.report.id})')
+        keep = {self._entry('Chat: electricity').id, self._entry('Manual form entry').id,
+                self._entry(f'Workspace 4A (report {self.report.id})', year=2023).id}
+        self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), keep)
+
+    def test_delete_keeps_workspace_entries_of_other_reports(self):
+        from companies.models import Company
+        from emissions.models import EmissionEntry
+        rid = self.report.id
+        other = CarbonReport.objects.create(company=self.company, created_by=self.owner,
+                                            reporting_year=2023, title='Other')
+        # Another report, and ids that merely contain or end like the deleted one (14 vs 140 / 914).
+        keep = {self._entry(f'Workspace 3A (report {other.id})').id,
+                self._entry(f'Workspace 3A (report {rid}0)').id,
+                self._entry(f'Workspace 3A (report 9{rid})').id}
+        # The same description in another company.
+        foreign = self._entry(f'Workspace 3A (report {rid})')
+        EmissionEntry.objects.filter(id=foreign.id).update(company=Company.objects.exclude(id=self.company.id).get())
+        keep.add(foreign.id)
+        mine = self._entry(f'Workspace 3A (report {rid})')
+
+        r = self._client(self.owner).delete(f'/api/questionnaire/{rid}/')
+        self.assertEqual(r.data, {'deleted_entries': 1})
+        self.assertFalse(EmissionEntry.objects.filter(id=mine.id).exists())
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), keep)
+
+    def test_delete_keeps_workspace_entries_shared_with_another_inventory(self):
+        from emissions.models import EmissionEntry
+        self._entry(f'Workspace 3A (report {self.report.id})')
+        CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
+        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
+                                    title='Second', legacy_duplicate_year=True)
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.data, {'deleted_entries': 0})
+        self.assertEqual(EmissionEntry.objects.count(), 1)
+
+    def test_a_failing_report_delete_restores_workspace_and_questionnaire_entries(self):
+        from unittest import mock
+        from emissions.models import EmissionEntry
+        self._entry(f'Workspace 3A (report {self.report.id})', quantity=1000)
+        self._entry('Questionnaire step 4A-1', quantity=500)
+        entry_ids = set(EmissionEntry.objects.values_list('id', flat=True))
+        with mock.patch.object(CarbonReport, 'delete', side_effect=RuntimeError('boom')):
+            with self.assertRaises(RuntimeError):
+                self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertTrue(CarbonReport.objects.filter(id=self.report.id).exists())
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), entry_ids)
+        self.assertEqual(self._summary(2024)['total_kg'], 600)
 
 
 class PendingChangeTests(TestCase):
