@@ -209,13 +209,9 @@ export default function DashboardPage() {
   // same assistant as a drawer.
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assistantPrefill, setAssistantPrefill] = useState(null);
-  const onInventoryPage = activeTab === 'questionnaire' || activeTab === 'ai_carbon';
-  useEffect(() => {
-    // Closed by default: the chat opens from the floating Carbon AI button (or
-    // from a link/event that asks for it), so it never takes space from the
-    // inventory on its own. Leaving the inventory pages closes it.
-    if (activeTab !== 'questionnaire' && activeTab !== 'ai_carbon') setAssistantOpen(false);
-  }, [activeTab]);
+  // Closed by default: the chat opens from the floating Carbon AI button (or from
+  // a link/event that asks for it). It floats over every dashboard section and
+  // stays open (and keeps its conversation) while the user moves between them.
   // A link to one chat (the support team's answer) opens the assistant.
   useEffect(() => {
     const open = () => { setActiveTab('ai_carbon'); setTimeout(() => setAssistantOpen(true), 0); };
@@ -336,9 +332,7 @@ export default function DashboardPage() {
         />
 
         <main id="main-content" tabIndex={-1} className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden outline-none ${
-          `p-3 sm:p-4 lg:p-5 lg:pb-5 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40' : 'pb-24 sm:pb-24'} ${
-            // Wide screens: the open Carbon AI panel sits beside the inventory, not over its controls.
-            activeTab === 'questionnaire' && assistantOpen ? 'xl:pr-[492px]' : ''} transition-[padding] duration-200 motion-reduce:transition-none`
+          `p-3 sm:p-4 lg:p-5 lg:pb-5 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40' : 'pb-24 sm:pb-24'}`
         }`}>
           {/* Slim top bar  -  only on very first load, no layout shift */}
           {loading && (
@@ -522,7 +516,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="flex min-h-0 flex-1">
-            <div className={`flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-[84px] pt-3 transition-[padding] duration-200 motion-reduce:transition-none sm:px-6 sm:pb-6 sm:pt-5 ${assistantOpen ? 'xl:pr-[492px]' : ''}`}>
+            <div className="flex min-w-0 flex-1 flex-col overflow-y-auto px-3 pb-[84px] pt-3 sm:px-6 sm:pb-6 sm:pt-5">
               <ErrorBoundary language={language}>
                 <QuestionnairePageTab language={language} />
               </ErrorBoundary>
@@ -531,12 +525,12 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ===== CARBON AI  -  one assistant: a floating panel on the inventory pages
-          (opened from the round button), the side drawer everywhere else.
-          Kept mounted while closed so the conversation is not lost. ===== */}
+      {/* ===== CARBON AI  -  one assistant: a floating panel over every dashboard
+          section, opened from the round button. Kept mounted while closed so the
+          conversation is not lost. ===== */}
       <ErrorBoundary language={language}>
         <InventoryAssistant
-          floating={onInventoryPage}
+          floating
           open={assistantOpen}
           onClose={() => setAssistantOpen(false)}
           prefill={assistantPrefill}
@@ -547,14 +541,12 @@ export default function DashboardPage() {
           fetchData={fetchData}
         />
       </ErrorBoundary>
-      {onInventoryPage && (
-        <CarbonAILauncher
-          open={assistantOpen}
-          onToggle={() => setAssistantOpen(v => !v)}
-          language={language}
-          className={activeTab === 'ai_carbon' ? 'bottom-5' : 'bottom-20 lg:bottom-5'}
-        />
-      )}
+      <CarbonAILauncher
+        open={assistantOpen}
+        onToggle={() => setAssistantOpen(v => !v)}
+        language={language}
+        className={activeTab === 'ai_carbon' ? 'bottom-5' : 'bottom-20 lg:bottom-5'}
+      />
 
       {/* Command Palette ⌘K */}
       <CommandPalette

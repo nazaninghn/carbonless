@@ -8,7 +8,7 @@ import {
   ClipboardList, RotateCcw, X, FileText, Download,
   HelpCircle, CheckCircle2, Menu, BarChart3, BookOpen,
   Zap, Fuel, Car, Plane, Flame, Droplets, Truck, Calendar, Save, AlertCircle, Pencil, Check,
-  ThumbsUp, ThumbsDown, LifeBuoy,
+  ThumbsUp, ThumbsDown, LifeBuoy, Maximize2, Minimize2, Minus, GripHorizontal,
 } from 'lucide-react';
 import { api } from '@/lib/utils/api';
 import { pendingCopy, visiblePending, canAnswerLater } from '@/lib/carboniq/pending';
@@ -6032,7 +6032,7 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
       <aside className={`flex shrink-0 flex-col border-r border-[#175022]/6 bg-[#F1FCF2] transition-all duration-300 ${
         sidebarOpen
           ? `absolute inset-y-0 left-0 z-30 w-[220px] ${compact ? '' : 'lg:relative lg:inset-auto lg:z-auto'}`
-          : 'w-0 overflow-hidden'
+          : 'w-0 overflow-hidden border-r-0'
       }`}>
         {/* New chat */}
         <div className="shrink-0 px-3 pt-4 pb-2">
@@ -6716,27 +6716,176 @@ function FreeChatTab({ language, summary, entries, targets, fetchData, compact =
 // Main export: CarbonAIPage (dual-tab)
 // ─────────────────────────────────────────────────────────────────────────────
 // The site's AI assistant: the full chat (history, file uploads, emission
-// calculations with save cards) in a side panel beside the Carbon Inventory.
-// It replaced both the full-screen "AI Sohbet" page and the inventory's
-// separate "AI Yardımı" drawer, so there is one assistant everywhere.
+// calculations with save cards). It replaced both the full-screen "AI Sohbet"
+// page and the inventory's separate "AI Yardımı" drawer, so there is one
+// assistant everywhere.
+//
+// floating: a panel over the dashboard, opened from the round Carbon AI button,
+// in three sizes the user can switch between at any time (see ASSISTANT_PANEL_STYLES):
+//   floating   - a compact card in the bottom-right corner (near full width on a phone)
+//   expanded   - a larger card that still leaves part of the dashboard visible
+//   fullscreen - the whole viewport (inside the safe areas)
+// The chat stays mounted in every mode and while closed, so switching sizes or
+// closing never loses the conversation or interrupts a reply that is on its way.
+const ASSISTANT_MODES = ['floating', 'expanded', 'fullscreen'];
+const ASSISTANT_PANEL_STYLES = `
+.cai-panel {
+  position: fixed; z-index: 88; display: flex; flex-direction: column; overflow: hidden;
+  background: #fff; border: 1px solid #DEFAE1; border-radius: 22px;
+  box-shadow: 0 24px 70px -20px rgba(7,44,14,0.35), 0 2px 10px rgba(7,44,14,0.06);
+  /* Size (--cai-w / --cai-h) and default corner (--cai-x0 / --cai-y0: distance from the right / bottom) per size and
+     screen, below. phones: near full width with small margins, clear of the notch and the home indicator; the top of the
+     page stays visible. Sizes are % of the visible area (a fixed box's 100%), which leaves out the page's reserved
+     scrollbar gutter, not 100vw. */
+  --cai-w: calc(100% - 20px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  --cai-h: min(600px, calc(100dvh - 84px - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  --cai-x0: calc(10px + env(safe-area-inset-right)); --cai-y0: calc(10px + env(safe-area-inset-bottom));
+  /* Dragged, the panel sits where the user left it (--cai-x / --cai-y, set inline). clamp() keeps all of it on screen
+     whatever the size and however the window changes: at least 8px from every edge, outside the safe areas. */
+  --cai-ml: calc(8px + env(safe-area-inset-left)); --cai-mr: calc(8px + env(safe-area-inset-right));
+  --cai-mt: calc(8px + env(safe-area-inset-top)); --cai-mb: calc(8px + env(safe-area-inset-bottom));
+  width: var(--cai-w); height: var(--cai-h);
+  right: clamp(var(--cai-mr), var(--cai-x, var(--cai-x0)), calc(100% - var(--cai-w) - var(--cai-ml)));
+  bottom: clamp(var(--cai-mb), var(--cai-y, var(--cai-y0)), calc(100dvh - var(--cai-h) - var(--cai-mt)));
+  transform-origin: bottom right;
+  transition: opacity .2s ease, transform .26s cubic-bezier(.2,.8,.2,1), width .32s cubic-bezier(.2,.8,.2,1), height .32s cubic-bezier(.2,.8,.2,1),
+    right .32s cubic-bezier(.2,.8,.2,1), bottom .32s cubic-bezier(.2,.8,.2,1), border-radius .32s ease, visibility 0s;
+}
+/* closed: fades and sinks toward the round button, then hides (it stays mounted) */
+.cai-panel[data-open="false"] {
+  opacity: 0; transform: translateY(14px) scale(.97); visibility: hidden; pointer-events: none;
+  transition: opacity .18s ease, transform .2s ease, visibility 0s linear .2s;
+}
+/* from 640px: a card in the corner, lined up with the round button it replaces */
+@media (min-width: 640px) {
+  .cai-panel { --cai-x0: 24px; --cai-y0: 24px; --cai-w: min(400px, calc(100% - 48px)); --cai-h: min(600px, calc(100dvh - 48px)); }
+}
+.cai-panel[data-mode="expanded"] {
+  --cai-h: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  .cai-panel[data-mode="expanded"] { --cai-w: min(760px, calc(100% - 48px)); --cai-h: min(880px, calc(100dvh - 48px)); }
+}
+@media (min-width: 1280px) {
+  .cai-panel[data-mode="expanded"] { --cai-w: min(820px, calc(100% - 48px)); }
+}
+.cai-panel[data-mode="fullscreen"] {
+  right: 0; bottom: 0; width: 100%; height: 100dvh; border-radius: 0; border-width: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+/* the header is the handle: grab cursor, and a touch on it moves the panel instead of scrolling the page (the messages
+   below scroll as usual). While it moves, it follows the pointer directly (no easing). Not in full screen. */
+.cai-panel:not([data-mode="fullscreen"]) .cai-drag { cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.cai-panel[data-dragging="true"] { transition: opacity .2s ease, visibility 0s; }
+.cai-panel[data-dragging="true"] .cai-drag { cursor: grabbing; }
+.cai-panel[data-dragging="true"] .cai-drag-grip { color: #1A7B2A; background: rgba(42,189,65,0.12); }
+@media (prefers-reduced-motion: reduce) {
+  .cai-panel, .cai-panel[data-open="false"] { transition: none; transform: none; }
+}
+`;
+
 export function InventoryAssistant({ open, onClose, prefill, language = 'en', summary, entries, targets, fetchData, docked = false, floating = false }) {
   const tr = language === 'tr';
   const panelRef = useRef(null);
   const openerRef = useRef(null);
-  // Below 1280px the floating panel is a full-screen sheet (see its classes).
-  const [narrow, setNarrow] = useState(false);
+  // The floating panel's size, and the sizes it came from (so Restore goes back one step).
+  const [size, setSize] = useState({ mode: 'floating', history: [] });
+  const mode = size.mode;
+  const expand = useCallback(() => setSize(({ mode: m, history }) => {
+    const next = ASSISTANT_MODES[Math.min(ASSISTANT_MODES.indexOf(m) + 1, ASSISTANT_MODES.length - 1)];
+    return next === m ? { mode: m, history } : { mode: next, history: [...history, m] };
+  }), []);
+  const restore = useCallback(() => setSize(({ history }) => (
+    { mode: history[history.length - 1] || 'floating', history: history.slice(0, -1) }
+  )), []);
+  // Minimise keeps the size for next time; Close puts the panel back to the compact card.
+  const minimize = useCallback(() => onClose?.(), [onClose]);
+  const close = useCallback(() => { onClose?.(); setSize({ mode: 'floating', history: [] }); }, [onClose]);
+  // Where the user has dragged the panel: its distance from the right and bottom of
+  // the screen, in px (null = the default corner). Kept while it is minimised or
+  // closed and across sizes; full screen ignores it, and Restore comes back to it.
+  // The CSS clamps it so the whole panel stays on screen in every size.
+  const [pos, setPos] = useState(null);
+  const posRef = useRef(null);   // the latest place, also mid-drag (state is only set when a move ends)
+  const dragRef = useRef(null);
+  const canDrag = floating && mode !== 'fullscreen';
+  const DRAG_MARGIN = 8;
+  const clampPos = (v, max) => Math.min(Math.max(v, DRAG_MARGIN), max);
+  const placeAt = useCallback((x, y) => {
+    posRef.current = { x, y };
+    panelRef.current?.style.setProperty('--cai-x', `${x}px`);
+    panelRef.current?.style.setProperty('--cai-y', `${y}px`);
+  }, []);
+  // Where the panel is (its right / bottom offsets) and how far it can go. Worked out from
+  // the target place and size, not from the panel's box, which may be mid-glide.
+  const dragBounds = useCallback(() => {
+    const el = panelRef.current;
+    // the visible area as a fixed box sees it (without the page's reserved scrollbar gutter)
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;inset:0;visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    const view = probe.getBoundingClientRect();
+    probe.remove();
+    const maxX = Math.max(DRAG_MARGIN, view.width - el.offsetWidth - DRAG_MARGIN);
+    const maxY = Math.max(DRAG_MARGIN, view.height - el.offsetHeight - DRAG_MARGIN);
+    const cs = getComputedStyle(el);
+    const cur = posRef.current || { x: parseFloat(cs.right) || 0, y: parseFloat(cs.bottom) || 0 };
+    return { x: clampPos(cur.x, maxX), y: clampPos(cur.y, maxY), maxX, maxY };
+  }, []);
+  const onDragStart = useCallback((e) => {
+    // Not from the header's buttons (the grip is the exception: it is the handle).
+    if (!canDrag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if (e.target.closest('button:not([data-drag-handle]), a, input, textarea, select')) return;
+    const b = dragBounds();
+    dragRef.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, x0: b.x, y0: b.y, x: b.x, y: b.y, maxX: b.maxX, maxY: b.maxY, moved: false };
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    e.preventDefault();   // no text selection while dragging
+  }, [canDrag, dragBounds]);
+  const onDragMove = useCallback((e) => {
+    const d = dragRef.current;
+    if (!d || d.id !== e.pointerId) return;
+    const dx = e.clientX - d.sx, dy = e.clientY - d.sy;
+    if (!d.moved) {
+      if (Math.abs(dx) + Math.abs(dy) < 3) return;   // a tap is not a drag
+      d.moved = true;
+      panelRef.current.dataset.dragging = 'true';
+    }
+    d.x = clampPos(d.x0 - dx, d.maxX);
+    d.y = clampPos(d.y0 - dy, d.maxY);
+    placeAt(d.x, d.y);
+  }, [placeAt]);
+  const onDragEnd = useCallback((e) => {
+    const d = dragRef.current;
+    if (!d || d.id !== e.pointerId) return;
+    dragRef.current = null;
+    if (panelRef.current) delete panelRef.current.dataset.dragging;
+    if (d.moved) setPos({ x: d.x, y: d.y });
+  }, []);
+  // Keyboard: the grip moves the panel with the arrow keys (Shift = bigger steps); Home puts it back in the corner.
+  const onGripKey = useCallback((e) => {
+    if (!canDrag) return;
+    if (e.key === 'Home') {
+      e.preventDefault();
+      setPos(null);
+      posRef.current = null;
+      panelRef.current?.style.removeProperty('--cai-x');
+      panelRef.current?.style.removeProperty('--cai-y');
+      return;
+    }
+    const step = e.shiftKey ? 64 : 16;
+    const move = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[e.key];
+    if (!move) return;
+    e.preventDefault();
+    const b = dragBounds();
+    const next = { x: clampPos(b.x + move[0], b.maxX), y: clampPos(b.y + move[1], b.maxY) };
+    placeAt(next.x, next.y);
+    setPos(next);
+  }, [canDrag, dragBounds, placeAt]);
+  // Full screen covers the dashboard, so there it behaves as a modal: Tab / Shift+Tab
+  // stay inside it. The compact and expanded cards leave the dashboard usable.
+  const modal = floating && open && mode === 'fullscreen';
   useEffect(() => {
-    if (!floating || typeof window === 'undefined' || !window.matchMedia) return undefined;
-    const mq = window.matchMedia('(max-width: 1279.98px)');
-    const sync = () => setNarrow(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, [floating]);
-  // As a full-screen sheet it behaves as a modal: Tab / Shift+Tab stay inside it
-  // instead of walking onto the questionnaire controls hidden behind it.
-  useEffect(() => {
-    if (!open || !floating || !narrow) return undefined;
+    if (!modal) return undefined;
     const onTab = (e) => {
       if (e.key !== 'Tab' || !panelRef.current) return;
       const nodes = [...panelRef.current.querySelectorAll('a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
@@ -6751,13 +6900,13 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
     };
     document.addEventListener('keydown', onTab);
     return () => document.removeEventListener('keydown', onTab);
-  }, [open, floating, narrow]);
+  }, [modal]);
   useEffect(() => {
     if (!open) return;
-    const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, [open, close]);
   // Opening moves the keyboard focus to the message box (it stayed on the
   // button that opened it, so what a keyboard user typed next went nowhere);
   // closing puts it back on that button.
@@ -6780,14 +6929,12 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
   return (
     <>
       <style>{CHAT_ANIM_STYLES}</style>
+      {floating && <style>{ASSISTANT_PANEL_STYLES}</style>}
       {/* Kept mounted while closed so the conversation is not lost. */}
       <div
         className={floating
-          // Floating launcher panel: a glass card in the corner from 1280px up (the
-          // page makes room beside it); below that a full-screen sheet, so the chat
-          // never half-covers the questionnaire. Hidden (not unmounted) while
-          // closed, so the conversation survives.
-          ? `${open ? 'flex' : 'hidden'} fixed inset-0 z-[110] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] xl:inset-auto xl:bottom-6 xl:right-6 xl:h-[min(680px,calc(100dvh-3rem))] xl:w-[460px] xl:rounded-3xl xl:border xl:border-white/70 xl:bg-white/90 xl:p-0 xl:shadow-[0_24px_70px_-20px_rgba(7,44,14,0.35)] xl:backdrop-blur-xl`
+          // Floating panel over the dashboard (sizes in ASSISTANT_PANEL_STYLES).
+          ? 'cai-panel'
           : docked
           // AI mode: a column beside the inventory on wide screens, full
           // screen over it on a phone.
@@ -6796,31 +6943,77 @@ export function InventoryAssistant({ open, onClose, prefill, language = 'en', su
             open ? 'translate-x-0' : 'pointer-events-none translate-x-full'
           }`}
         ref={panelRef}
+        data-testid={floating ? 'ai-assistant-panel' : undefined}
+        data-open={floating ? String(!!open) : undefined}
+        data-mode={floating ? mode : undefined}
+        style={floating && pos ? { '--cai-x': `${pos.x}px`, '--cai-y': `${pos.y}px` } : undefined}
         aria-hidden={!open}
         // Closed, it stays mounted off-screen: inert keeps its buttons out
         // of the Tab order too, not only away from screen readers.
         inert={!open}
         role="dialog"
-        aria-modal={floating && narrow && open ? 'true' : undefined}
+        aria-modal={modal ? 'true' : undefined}
         aria-label={tr ? 'AI Asistan' : 'AI Assistant'}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[#DEFAE1] bg-[#F1FCF2]/80 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <Image src={floating ? '/carbonless.png' : '/chatbot.png'} alt="" width={28} height={28} className="h-7 w-7 object-contain" />
-            <div>
-              <p className="text-[13px] font-bold text-[#175022]">{tr ? 'Carbonless AI Asistan' : 'Carbonless AI Assistant'}</p>
-              <p className="text-[10px] text-[#2ABD41]">
+        <div
+          className={`flex shrink-0 items-center justify-between border-b border-[#DEFAE1] bg-[#F1FCF2]/80 px-4 py-2.5 ${floating ? 'cai-drag' : ''}`}
+          data-testid={floating ? 'ai-assistant-header' : undefined}
+          onPointerDown={floating ? onDragStart : undefined}
+          onPointerMove={floating ? onDragMove : undefined}
+          onPointerUp={floating ? onDragEnd : undefined}
+          onPointerCancel={floating ? onDragEnd : undefined}
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <Image src={floating ? '/carbonless.png' : '/chatbot.png'} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-bold text-[#175022]">{tr ? 'Carbonless AI Asistan' : 'Carbonless AI Assistant'}</p>
+              <p className="truncate text-[10px] text-[#2ABD41]">
                 {tr ? 'Sorularınızı yanıtlar, emisyon hesaplar' : 'Answers your questions, calculates emissions'}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="btn-icon"
-            aria-label={tr ? 'Kapat' : 'Close'}
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {floating ? (
+            <div className="flex shrink-0 items-center gap-0.5">
+              {canDrag && (
+                // The visible sign that the panel moves, and its keyboard handle (arrow keys).
+                <button type="button" data-drag-handle onKeyDown={onGripKey} data-testid="ai-assistant-move"
+                  className="btn-icon cai-drag-grip text-[#175022]/40"
+                  aria-label={tr ? 'Paneli taşı (ok tuşları; Home: köşeye geri)' : 'Move the panel (arrow keys; Home: back to the corner)'}
+                  title={tr ? 'Sürükleyerek taşıyın' : 'Drag to move'}>
+                  <GripHorizontal className="h-4 w-4" />
+                </button>
+              )}
+              {mode !== 'floating' && (
+                <button type="button" onClick={restore} className="btn-icon" data-testid="ai-assistant-restore"
+                  aria-label={tr ? 'Önceki boyuta dön' : 'Restore previous size'} title={tr ? 'Önceki boyuta dön' : 'Restore previous size'}>
+                  <Minimize2 className="h-4 w-4" />
+                </button>
+              )}
+              {mode !== 'fullscreen' && (
+                <button type="button" onClick={expand} className="btn-icon" data-testid="ai-assistant-expand"
+                  aria-label={mode === 'floating' ? (tr ? 'Büyüt' : 'Expand') : (tr ? 'Tam ekran' : 'Full screen')}
+                  title={mode === 'floating' ? (tr ? 'Büyüt' : 'Expand') : (tr ? 'Tam ekran' : 'Full screen')}>
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+              )}
+              <button type="button" onClick={minimize} className="btn-icon" data-testid="ai-assistant-minimize"
+                aria-label={tr ? 'Simge durumuna küçült' : 'Minimize to the button'} title={tr ? 'Simge durumuna küçült' : 'Minimize to the button'}>
+                <Minus className="h-4 w-4" />
+              </button>
+              <button type="button" onClick={close} className="btn-icon" data-testid="ai-assistant-close"
+                aria-label={tr ? 'Kapat' : 'Close'} title={tr ? 'Kapat' : 'Close'}>
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onClose}
+              className="btn-icon"
+              aria-label={tr ? 'Kapat' : 'Close'}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
         <div className="flex min-h-0 flex-1 flex-col">
           <FreeChatTab

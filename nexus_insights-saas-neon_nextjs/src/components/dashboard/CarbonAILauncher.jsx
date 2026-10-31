@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
-// Floating round Carbon AI button. The chat itself is InventoryAssistant
-// (floating mode); this only opens/closes it. The tooltip shows on hover and
+// Floating round Carbon AI button, on every dashboard section. The chat itself
+// is InventoryAssistant (floating mode); this only opens it (the panel's own
+// buttons minimise and close it). The tooltip shows on hover and
 // keyboard focus, and once for a few seconds per browser session so the button
 // is discoverable without staying in the way.
 //
@@ -50,7 +51,7 @@ export default function CarbonAILauncher({ open, onToggle, language, className =
   const label = tr ? 'Yardıma mı ihtiyacınız var? Carbon AI\'ya sorun' : 'Need help? Ask Carbon AI';
 
   return (
-    <div className={`group fixed right-4 z-[100] sm:right-6 ${open ? 'hidden' : ''} ${className}`}>
+    <div className={`group fixed right-4 z-[88] sm:right-6 ${open ? 'hidden' : ''} ${className}`}>
       {!open && (
         <span
           role="tooltip"
