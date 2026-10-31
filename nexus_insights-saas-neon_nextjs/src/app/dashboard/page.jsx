@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { InventoryAssistant } from '@/components/dashboard/CarbonAIPage';
 import QuestionnairePageTab from '@/components/dashboard/QuestionnairePageTab';
 import CarbonAILauncher from '@/components/dashboard/CarbonAILauncher';
+import LeaveWorkspaceGuard from '@/components/dashboard/LeaveWorkspaceGuard';
 import ReportingTab from '@/components/dashboard/ReportingTab';
 import EmissionsTab from '@/components/dashboard/EmissionsTab';
 import { getPermissions } from '@/lib/permissions';
@@ -119,7 +120,8 @@ export default function DashboardPage() {
       try { sessionStorage.setItem('carbonless_settings_section', params.get('section')); } catch { /* opens on Profile */ }
     }
     if (year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
-    window.history.replaceState(null, '', window.location.pathname);
+    // Keep the entry's state (the router's, and the leave-guard's mark): only the query goes.
+    window.history.replaceState(window.history.state, '', window.location.pathname);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startupResolved]);
 
@@ -262,6 +264,8 @@ export default function DashboardPage() {
   const handleLogout = useCallback(() => {
     api.logout();
   }, []);
+  // The leave dialog's Log Out: if the logout request fails, the user stays signed in and is told so.
+  const handleLeaveLogout = useCallback(() => api.logout({ strict: true }), []);
 
   // Don't render anything until startup mode is resolved (prevents flash)
   if (!startupResolved) {
@@ -547,6 +551,9 @@ export default function DashboardPage() {
         language={language}
         className={activeTab === 'ai_carbon' ? 'bottom-5' : 'bottom-20 lg:bottom-5'}
       />
+
+      {/* Browser Back on the Dashboard or the AI Analyzer asks "Do you want to leave?" (Stay / Log Out). */}
+      <LeaveWorkspaceGuard language={language} onLogout={handleLeaveLogout} />
 
       {/* Command Palette ⌘K */}
       <CommandPalette

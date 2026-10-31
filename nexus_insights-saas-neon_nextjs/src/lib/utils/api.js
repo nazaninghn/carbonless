@@ -241,19 +241,26 @@ export const api = {
     return res;
   },
 
-  logout: async () => {
+  // strict (opt-in): if the logout request fails or is refused, nothing is cleared,
+  // there is no redirect, and { ok: false } comes back so the caller can say so (the
+  // user is still signed in). Without it — every existing caller — a failed request
+  // still signs the browser out, as before.
+  logout: async ({ strict = false } = {}) => {
     const token = getToken();
     try {
       // fetchWithTimeout ensures a hung logout endpoint cannot prevent
       // setToken(null) / clearSessionCookie() / the redirect from running.
       // Fix #60: credentials:'include' sends the HttpOnly refresh_token cookie so
       // the backend blacklists it (Fix #55).  Without it the blacklist never fires.
-      await fetchWithTimeout('/api/auth/logout', {
+      const res = await fetchWithTimeout('/api/auth/logout', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: 'include',
       });
-    } catch {}
+      if (strict && !res.ok) return { ok: false };
+    } catch {
+      if (strict) return { ok: false };
+    }
     setToken(null);
     clearSessionCookie();
     if (typeof window !== 'undefined') window.location.href = '/login';
