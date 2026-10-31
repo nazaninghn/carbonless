@@ -5,13 +5,14 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import EcoVisual from '@/components/EcoVisual';
 
 export default function AiPage() {
   const { language } = useLanguage();
   const tr = language === 'tr';
 
   return (
-    <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
+    <div className="page-type bg-white text-[#072C0E] antialiased overflow-x-clip">
       <Header wide />
       <main>
         {/* Hero — two columns: text left, image right */}
@@ -20,10 +21,10 @@ export default function AiPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               {/* Left: Text */}
               <div>
-                <h1 className="text-[28px] sm:text-[40px] lg:text-[52px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E]">
+                <h1 className="lp-display">
                   Carbonless <span className="text-[#2ABD41]">AI</span>
                 </h1>
-                <div className="mt-6 sm:mt-8 space-y-4 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/65 max-w-lg">
+                <div className="mt-6 sm:mt-8 space-y-4 lp-text-block max-w-lg">
                   <p>
                     {tr
                       ? 'Carbonless AI, karbon hesaplama sürecini tamamen dönüştürür. Verilerinizi doğal dilde anlatın — AI emisyonlarınızı sınıflandırır, hesaplar ve raporlar.'
@@ -53,23 +54,27 @@ export default function AiPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
-                      <span className="text-[14px] text-[#072C0E]/70 font-medium">{item}</span>
+                      <span className="lp-body font-medium">{item}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* CTA */}
                 <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
-                  <NextLink href="/register" className="inline-flex items-center justify-center gap-2 bg-[#072C0E] text-white text-[14px] font-bold px-8 py-3.5 rounded-full hover:bg-[#175022] transition-all hover:-translate-y-0.5 shadow-lg">
+                  <NextLink href="/register" className="btn btn-lg bg-[#072C0E] text-white hover:bg-[#175022] transition-all hover:-translate-y-0.5 shadow-lg">
                     {tr ? 'Ücretsiz Dene' : 'Try Free'}
                     <ArrowRight size={16} />
                   </NextLink>
                 </div>
               </div>
 
-              {/* Right: Image */}
-              <div className="group flex items-center justify-center">
-                <img src="/ai-img.png" alt="Carbonless AI" className="w-[280px] sm:w-[340px] lg:w-[420px] h-auto transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:-translate-y-2 animate-[float_4s_ease-in-out_infinite]" />
+              {/* Right: public/eco.png (replaces the earlier head picture, ai-img.png, which stays in the project): it faces the text,
+                  fades in and rises once when it first scrolls into view, then floats gently (see EcoVisual) */}
+              <div className="flex items-center justify-center">
+                <EcoVisual
+                  className="max-w-[560px] lg:max-w-none"
+                  alt={tr ? 'Yapraklardan, ağaçlardan ve devre hatlarından oluşan bir insan profili' : 'A human profile made of leaves, trees and circuit lines'}
+                />
               </div>
             </div>
           </div>
@@ -78,10 +83,10 @@ export default function AiPage() {
         <section className="py-12 sm:py-16 lg:py-24 bg-green-50">
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
             <div className="text-center mb-8 sm:mb-14">
-              <h2 className="text-[26px] sm:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+              <h2 className="lp-h2">
                 {tr ? 'Nasıl çalışır?' : 'How it works'}
               </h2>
-              <p className="mt-2 sm:mt-3 text-[13px] sm:text-[15px] text-[#072C0E]/50">
+              <p className="lp-lead mx-auto">
                 {tr ? 'Dört adımda, dakikalar içinde denetime hazır raporunuz.' : 'Four steps to an audit-ready report, in minutes.'}
               </p>
             </div>
@@ -98,10 +103,10 @@ export default function AiPage() {
                     <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white border-2 border-[#2ABD41] text-[15px] font-bold text-[#2ABD41] shadow-sm transition-all duration-300 group-hover:bg-[#2ABD41] group-hover:text-white group-hover:scale-110 group-hover:shadow-lg group-hover:shadow-[#2ABD41]/25">
                       {step.num}
                     </div>
-                    <h3 className="mt-3 text-[15px] sm:text-[16px] font-bold text-[#072C0E] transition-colors group-hover:text-[#2ABD41]">{step.title}</h3>
-                    <p className="mt-2 text-[13px] leading-[1.7] text-[#072C0E]/55 max-w-[220px]">{step.desc}</p>
+                    <h3 className="mt-3 lp-h3 transition-colors group-hover:text-[#2ABD41]">{step.title}</h3>
+                    <p className="mt-2 lp-body max-w-[240px]">{step.desc}</p>
                     <div data-detail className="max-h-0 opacity-0 mt-0 overflow-hidden transition-all duration-500 ease-in-out">
-                      <div className="bg-[#F1FCF2] border border-[#DEFAE1] rounded-xl px-4 py-3 text-[12px] text-[#072C0E]/70 leading-[1.6]">
+                      <div className="bg-[#F1FCF2] border border-[#DEFAE1] rounded-xl px-4 py-3 lp-small">
                         {step.num === '1' && (tr ? '💬 AI sohbet ekranına girin ve verilerinizi paylaşın' : '💬 Open AI chat and share your data naturally')}
                         {step.num === '2' && (tr ? '⚡ Emisyon faktörüyle otomatik eşleştirme' : '⚡ Automatic emission factor matching')}
                         {step.num === '3' && (tr ? '📄 PDF raporu saniyeler içinde hazır' : '📄 PDF report ready in seconds')}

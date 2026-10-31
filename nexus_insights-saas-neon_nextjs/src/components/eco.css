@@ -1,0 +1,47 @@
+/* EcoVisual (public/eco.png) — imported by EcoVisual.jsx, so it works on every page that uses it */
+/* ---- eco.png (EcoVisual.jsx) ---- */
+.eco { position: relative; width: 100%; }
+.eco-glow {
+  position: absolute;
+  inset: 4% 0 6% 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(42, 189, 65, 0.16), rgba(42, 189, 65, 0.06) 55%, rgba(42, 189, 65, 0) 100%);
+  animation: eco-breathe 9s ease-in-out infinite alternate;
+}
+.eco-in { position: absolute; inset: 0; opacity: 0; transform: translateY(22px); }
+.eco-in[data-shown="true"] { opacity: 1; transform: none; transition: opacity 1.1s ease-out, transform 1.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.eco-float { position: absolute; inset: 0; animation: eco-float 11s ease-in-out infinite alternate; will-change: transform; }
+/* the art is cut off by the canvas on its right, top and bottom edges: fade those three edges so there is no hard line */
+.eco-mask {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 7%, #000 76%, transparent 100%), linear-gradient(to right, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 7%, #000 76%, transparent 100%), linear-gradient(to right, #000 86%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.eco-img { position: absolute; top: 0; height: auto; max-width: none; }
+
+.eco[data-ambient="paused"] .eco-float,
+.eco[data-ambient="paused"] .eco-glow { animation-play-state: paused; }
+
+@keyframes eco-float {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-9px) scale(1.012); }
+}
+@keyframes eco-breathe { from { opacity: 0.65; } to { opacity: 1; } }
+
+/* reduced motion: shown at once in its final place, nothing moves */
+@media (prefers-reduced-motion: reduce) {
+  .eco-in, .eco-in[data-shown="true"] { opacity: 1; transform: none; transition: none; }
+  .eco-float, .eco-glow { animation: none; will-change: auto; }
+}
+
+/* the Our Mission picture (aboutNEW.png) only touches its canvas at the bottom: a short fade there, nothing at the sides */
+.eco-mask--mission {
+  -webkit-mask-image: linear-gradient(to bottom, #000 93%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 93%, transparent 100%);
+  -webkit-mask-composite: source-over;
+  mask-composite: add;
+}

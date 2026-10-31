@@ -51,7 +51,7 @@ export default function RootLayout({ children }) {
         {/* Trying General Sans for the hero headline — Fontshare CDN */}
         <link href="https://api.fontshare.com/v2/css?f[]=general-sans@700&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-inter antialiased min-h-screen overflow-x-hidden">
+      <body className="font-inter antialiased min-h-screen overflow-x-clip">
         <LanguageProvider>
           <PageTitle />
           {children}

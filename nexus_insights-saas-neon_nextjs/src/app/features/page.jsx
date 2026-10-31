@@ -29,7 +29,7 @@ export default function FeaturesPage() {
   ];
 
   return (
-    <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
+    <div className="bg-white text-[#072C0E] antialiased overflow-x-clip">
       <Header />
       <main>
         <section className="pt-8 lg:pt-16 pb-16 lg:pb-28 bg-gradient-to-b from-[#DEFAE1]/40 to-white">

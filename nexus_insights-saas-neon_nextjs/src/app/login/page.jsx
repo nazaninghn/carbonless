@@ -7,6 +7,7 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { authErrorMessage } from '@/lib/authErrors';
 import NextLink from 'next/link';
 import Image from 'next/image';
+import { Cormorant_Garamond } from 'next/font/google';
 import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react';
 import { api, markSessionActive } from '@/lib/utils/api';
 
@@ -28,6 +29,44 @@ const KNOWN_BACKEND_ERRORS_TR = {
 function translateBackendError(detail, tr) {
   if (!tr || !detail) return detail;
   return KNOWN_BACKEND_ERRORS_TR[detail] || detail;
+}
+
+/* The brand tagline's face: Cormorant Garamond italic, a refined serif that sets the sentence apart from the interface's sans (Inter / General Sans).
+   Loaded here, so only the Login page pays for it. latin-ext covers the Turkish letters. */
+const taglineFont = Cormorant_Garamond({ subsets: ['latin', 'latin-ext'], weight: ['500', '600'], style: ['italic'], display: 'swap' });
+
+/* The Login picture (public/loginnew.png, 1122 x 1402, transparent) with the brand tagline directly under it.
+   The art spans x 187-974, y 225-1237 of the canvas, so the picture is drawn in a 820 x 1050 box that starts at (170, 210): the empty
+   margins are cropped away (nothing visible is lost), its proportions are kept, and the box has a fixed aspect ratio so nothing shifts
+   while it loads. `widthClass` sets how wide the box may be. */
+function LoginArt({ tr, widthClass }) {
+  return (
+    <figure data-testid="login-art" className="m-0 flex w-full flex-col items-center text-center">
+      <div data-testid="login-art-box" className={`relative ${widthClass}`} style={{ aspectRatio: '820 / 1050' }}>
+        <Image
+          data-testid="login-art-img"
+          src="/loginnew.png"
+          alt={tr ? 'Ormandan bir ayak izi ve karbon simgeleri olan kapı askısı' : 'A door hanger with a footprint made of forest and carbon icons'}
+          width={1122}
+          height={1402}
+          sizes="(min-width: 1024px) 416px, 70vw"
+          className="absolute h-auto max-w-none select-none"
+          style={{ width: '136.83%', left: '-20.73%', top: '-20%' }}
+        />
+      </div>
+      {/* from 1024px up the rule and the tagline sit a little to the left of the picture's centre line, toward the form, so the sentence reads as part of the page's left side; on phones they stay centred */}
+      <figcaption className="mt-1 flex flex-col items-center lg:-translate-x-10 xl:-translate-x-14">
+        <span aria-hidden="true" className="mb-4 block h-px w-14 bg-gradient-to-r from-transparent via-[#2ABD41] to-transparent" />
+        <p
+          data-testid="login-tagline"
+          className={`${taglineFont.className} max-w-[20em] px-2 text-[clamp(1.375rem,1.1rem+0.9vw,1.875rem)] font-semibold italic leading-[1.3] tracking-[0.012em] text-[#175022]`}
+          style={{ textWrap: 'balance' }}
+        >
+          {tr ? 'Ölçtüğümüz her ayak izi, daha yeşil bir yarına atılmış bir adımdır.' : 'Every footprint we measure is a step toward a greener tomorrow.'}
+        </p>
+      </figcaption>
+    </figure>
+  );
 }
 
 function LoginContent() {
@@ -264,28 +303,20 @@ function LoginContent() {
           </div>
         </div>
 
+        <div className="lg:hidden pb-6 pt-2">
+          <LoginArt tr={tr} widthClass="w-[min(62%,15rem)]" />
+        </div>
+
         <p className="text-[11px] text-[#072C0E]/30">&copy; {new Date().getFullYear()} Carbonless</p>
       </div>
 
-      {/* Right — Illustration shown at its natural 5:4 ratio, no background card
-          behind it, sized up to fill the column better without stretching/cropping. */}
+      {/* Right — the Login illustration (loginnew.png) with the brand tagline under it, then the glass caption; no background card behind it. */}
       <div className="hidden lg:flex flex-1 items-center justify-center p-8 xl:p-10">
-        <div className="w-full max-w-xl">
-          {/* login-bg.png is a flat opaque PNG (no alpha channel) with a solid
-              white backdrop baked in, which showed up as a hard rectangle against
-              the page's cream background. mix-blend-multiply drops white to
-              transparent against the page color and leaves the illustration
-              itself untouched, so the seam disappears without editing the asset. */}
-          <Image
-            src="/login-bg.png"
-            alt="Carbonless"
-            width={1402}
-            height={1122}
-            className="h-auto w-full mix-blend-multiply"
-            priority
-          />
+        <div className="flex w-full max-w-xl flex-col items-center">
+          {/* loginnew.png has a real alpha channel, so it sits straight on the page with no blend trick (the earlier login-bg.png needed one) */}
+          <LoginArt tr={tr} widthClass="w-[min(100%,26rem,calc((100svh-17rem)*0.78))]" />
           {/* Glass caption — attached under the illustration, gentle drift so it feels alive */}
-          <div className="login-caption-float relative -mt-4 mx-6 rounded-2xl border border-white/60 bg-white/85 p-5 shadow-lg shadow-[#072C0E]/5 backdrop-blur-md">
+          <div className="login-caption-float relative mt-8 mx-6 w-full max-w-md rounded-2xl border border-white/60 bg-white/85 p-5 shadow-lg shadow-[#072C0E]/5 backdrop-blur-md">
             <p className="text-[15px] font-bold text-[#072C0E]">
               {tr ? 'Scope 1 · 2 · 3 emisyonlarınızı AI ile ölçün' : 'Measure your Scope 1 · 2 · 3 emissions with AI'}
             </p>

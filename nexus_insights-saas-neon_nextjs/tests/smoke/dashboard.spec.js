@@ -6,8 +6,9 @@
  * mockDjangoApi() so no real server is required.
  *
  * Auth state is seeded with seedAuth() which sets:
- *   • `carbonless_auth=1` cookie  (middleware gate)
- *   • `_ca` localStorage item     (api.js Bearer token)
+ *   • `carbonless_auth=1` cookie         (middleware gate)
+ *   • `carbonless_mode_chosen=1` cookie (middleware: skip /dashboard/select)
+ *   • `_ca` localStorage item           (api.js Bearer token)
  */
 import { test, expect } from '@playwright/test';
 import { mockDjangoApi, seedAuth } from '../helpers/mock-api.js';
@@ -40,12 +41,11 @@ test.describe('Dashboard shell', () => {
 
   test('sidebar is visible with navigation items', async ({ page }) => {
     await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard$/); // the dashboard, not /dashboard/select
 
-    // DashboardSidebar renders nav items — at least the "Emissions" tab link
-    // should appear regardless of the active language.
+    // DashboardSidebar renders the "Emissions" tab as a button (EN / TR label)
     await expect(
-      page.getByRole('button', { name: /emission|Emisyon/i }).first()
-        .or(page.getByText(/emission|Emisyon/i).first())
+      page.getByRole('button', { name: /^(Emissions|Emisyon Yönetimi)$/ })
     ).toBeVisible({ timeout: 10_000 });
   });
 
@@ -67,35 +67,25 @@ test.describe('Dashboard navigation', () => {
   test('clicking Emissions tab shows emission management heading', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/dashboard$/);
 
-    // Find the Emissions tab in the sidebar and click it
-    const emissionsTab = page
-      .getByRole('button', { name: /^emission|^Emisyon/i }).first()
-      .or(page.locator('[data-tab="emissions"]').first());
-
-    if (await emissionsTab.isVisible()) {
-      await emissionsTab.click();
-      // EmissionsTab renders "Emission Management" or "Emisyon Yönetimi"
-      await expect(
-        page.getByText(/Emission Management|Emisyon Yönetimi/i)
-      ).toBeVisible({ timeout: 8_000 });
-    }
+    await page.getByRole('button', { name: /^(Emissions|Emisyon Yönetimi)$/ }).click();
+    // EmissionsTab renders "Emission Management · <year>" / "Emisyon Yönetimi · <year>"
+    await expect(
+      page.getByRole('heading', { name: /Emission Management|Emisyon Yönetimi/ })
+    ).toBeVisible({ timeout: 8_000 });
   });
 
   test('clicking Targets tab shows reduction targets heading', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/dashboard$/);
 
-    const targetsTab = page
-      .getByRole('button', { name: /target|Hedef/i }).first()
-      .or(page.locator('[data-tab="targets"]').first());
-
-    if (await targetsTab.isVisible()) {
-      await targetsTab.click();
-      await expect(
-        page.getByText(/Reduction Targets|Azaltma Hedefleri/i)
-      ).toBeVisible({ timeout: 8_000 });
-    }
+    await page.getByRole('button', { name: /^(Targets|Azaltma Hedefleri)$/ }).click();
+    // ReductionTargetsTab renders "Reduction Targets" / "Azaltma Hedefleri" as its heading
+    await expect(
+      page.getByRole('heading', { name: /^(Reduction Targets|Azaltma Hedefleri)$/ })
+    ).toBeVisible({ timeout: 8_000 });
   });
 
 });
@@ -107,18 +97,15 @@ test.describe('Dashboard — empty states', () => {
     // should be visible once the data loads.
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
+    await expect(page).toHaveURL(/\/dashboard$/); // the dashboard, not /dashboard/select
 
     // Navigate to Emissions tab to trigger the empty-state UI
-    const emissionsTab = page
-      .getByRole('button', { name: /^emission|^Emisyon/i }).first();
+    await page.getByRole('button', { name: /^(Emissions|Emisyon Yönetimi)$/ }).click();
 
-    if (await emissionsTab.isVisible()) {
-      await emissionsTab.click();
-      // The empty state message in EmissionsTab (any language)
-      await expect(
-        page.getByText(/no entries|kayıt bulunamadı|henüz/i)
-      ).toBeVisible({ timeout: 8_000 });
-    }
+    // The empty-state message in EmissionsTab (EmissionsTab.jsx: "No emission data yet" / "Henüz veri yok")
+    await expect(
+      page.getByText(/No emission data yet|Henüz veri yok/)
+    ).toBeVisible({ timeout: 8_000 });
   });
 
 });

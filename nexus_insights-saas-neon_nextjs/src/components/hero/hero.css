@@ -1,262 +1,533 @@
-/* -- Landing hero motion (Phase 2) --
-   Imported by HeroSection only. Everything animates `transform` / `opacity`
-   (or an SVG dash offset), so it never changes layout and stays on the GPU.
+/* -- Landing hero: the Earth, its orbital rings and the three Scope cards --
+   Imported by HeroSection only. Everything that moves animates `transform` or `opacity`; nothing animates layout,
+   filters or blur, so it stays on the GPU. The Earth turns very slowly (the picture only, about its own centre).
 
-   State comes from two attributes on the hero <section>:
-     data-hero-motion = "on" | "paused" | "reduced"   (see useHeroMotion)
-     data-reacting    = "true" while the Earth interaction plays
-   `prefers-reduced-motion` is also handled here in CSS, so the static look is
-   correct before any JS runs and follows the OS setting live.
+   THE STAGE
+   A 1200 x 640 unit box centred on the globe (600, 320). --u is one unit in px; every decoration below is placed with
+   calc(<units> * var(--u)), so rings, ticks, anchors, cards and the Earth stay aligned at every size.
+     Earth  public/globalnew-hero.webp is 1254 x 1254 (public/globalnew.png with its painted checkerboard cut to real
+            transparency). Its round body (the ring of trees) is centred on (629.5, 640.5), radius 604.5; smoke and
+            turbine tips stand above it. Drawn at k = 0.38 with the body's centre on the stage centre: image
+            476.52 units wide, left 360.79, top 76.61. It turns about that centre, and the farthest opaque pixel
+            from it is 656 art-px = 249 units. A click enlarges it in place by 12% (.hero-earth[data-zoomed]).
+     rings  ticks r258 (253-263, clear of the turning art); orbit rings r272 / r292 / r308 (the stage is 320 units to its edge).
 
-   The artwork is a rendered still (not a 3D model), so it is never spun: it
-   floats gently, leans in a slow clockwise circle, carries a light that travels
-   round the globe the same way and, on activation, tilts/scales like a physical
-   object being nudged. */
+   THE LAYOUT
+     1024+     the stage is the whole 1200 x 640 box (--x0 = 0) and the cards stand beside the globe, tied to anchor
+               nodes on the ring by a thin line; its width follows both the window's width and its height, so the
+               hero stays close to one screen
+     < 1024    the stage shows only the middle 600 units (--x0 = 300: the rings are 616 units across, the cards
+               are not in it); the cards follow the globe, in a row (600-1023) or a short column (phones)
+   Stacking: concentric halos, clouds, rings, Earth, leaves; cards and connector lines above. */
 
-/* ---- Earth: ambient float (outer) + reaction tilt (inner) ---- */
-@keyframes hero-earth-float {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50%      { transform: translate3d(0, -1.1%, 0); }
-}
-.hero-earth-float {
-  animation: hero-earth-float 8s ease-in-out infinite;
-  will-change: transform;
-}
-
-/* Ambient "alive" motion — a slow, continuous CLOCKWISE turntable wobble.
-   Direction (viewer facing the screen): the point the globe leans toward travels
-   top -> right -> bottom -> left, one full circle per 20s. That is a conical
-   precession: rotateY = A*sin(a), rotateX = A*cos(a), A = 7deg, with a growing
-   clockwise from 0 (the lean vector on screen is (sin a, -cos a)). Because the
-   tilt is always moving at a constant angular speed there is no reversal and no
-   stop-start, and the last keyframe equals the first, so the loop never snaps.
-   The artwork is a still, so it is never turned past 7deg: this is a wobble, not a
-   spin. The 16 keyframes were generated from the formula above (linear timing
-   between them follows the sine closely and stays on the compositor, unlike an
-   @property-driven trig animation).
-   Float / rock / click tilt each live on their own nested element, so their
-   transforms multiply instead of overwriting each other. */
-@keyframes hero-earth-rock {
-  0%     { transform: perspective(900px) rotateY(0.00deg) rotateX(7.00deg); }
-  6.25%  { transform: perspective(900px) rotateY(2.68deg) rotateX(6.47deg); }
-  12.5%  { transform: perspective(900px) rotateY(4.95deg) rotateX(4.95deg); }
-  18.75% { transform: perspective(900px) rotateY(6.47deg) rotateX(2.68deg); }
-  25%    { transform: perspective(900px) rotateY(7.00deg) rotateX(0.00deg); }
-  31.25% { transform: perspective(900px) rotateY(6.47deg) rotateX(-2.68deg); }
-  37.5%  { transform: perspective(900px) rotateY(4.95deg) rotateX(-4.95deg); }
-  43.75% { transform: perspective(900px) rotateY(2.68deg) rotateX(-6.47deg); }
-  50%    { transform: perspective(900px) rotateY(0.00deg) rotateX(-7.00deg); }
-  56.25% { transform: perspective(900px) rotateY(-2.68deg) rotateX(-6.47deg); }
-  62.5%  { transform: perspective(900px) rotateY(-4.95deg) rotateX(-4.95deg); }
-  68.75% { transform: perspective(900px) rotateY(-6.47deg) rotateX(-2.68deg); }
-  75%    { transform: perspective(900px) rotateY(-7.00deg) rotateX(0.00deg); }
-  81.25% { transform: perspective(900px) rotateY(-6.47deg) rotateX(2.68deg); }
-  87.5%  { transform: perspective(900px) rotateY(-4.95deg) rotateX(4.95deg); }
-  93.75% { transform: perspective(900px) rotateY(-2.68deg) rotateX(6.47deg); }
-  100%   { transform: perspective(900px) rotateY(0.00deg) rotateX(7.00deg); }
-}
-.hero-earth-rock {
-  transform-origin: 49% 52.9%; /* planet centre inside the artwork */
-  animation: hero-earth-rock 20s linear infinite;
-  will-change: transform;
+.hero-root {
+  --hero-ink: #072c0e;
+  --hero-green: #119a2e;
+  position: relative;
+  container-type: inline-size;
+  overflow: clip;
+  background: #f8fbf8;
 }
 
-/* light and shade that travel clockwise round the globe, in step with the lean
-   above (same 20s period, starting at the top where the lean starts). The
-   wrapper (.hero-sheen) is a circle just inside the planet that clips the
-   layer; the layer only turns (compositor-only transform) and carries a soft
-   highlight near its top edge and a faint shade opposite it, so the globe reads
-   as turning under a fixed sun without moving any of the picture's pixels. */
-@keyframes hero-sheen-spin { to { transform: rotate(360deg); } }
-.hero-sheen-spin {
-  background:
-    radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 36%),
-    radial-gradient(circle at 50% 100%, rgba(7, 44, 14, 0.18), rgba(7, 44, 14, 0) 48%);
-  will-change: transform;
-  animation: hero-sheen-spin 20s linear infinite;
-}
-
-/* the background glow breathes on its own rhythm */
-@keyframes hero-glow {
-  0%, 100% { opacity: 0.75; }
-  50%      { opacity: 1; }
-}
-.hero-glow { will-change: opacity; animation: hero-glow 9s ease-in-out infinite; }
-
-/* a small pulsing point on the globe: a gentle "touch here" cue that reads as a
-   map marker rather than a button (the whole sphere is the real control) */
-.hero-hotspot::after {
-  content: "";
+/* pale mint and pale blue pools on an off-white base, melting into the white section below */
+.hero-bg {
   position: absolute;
   inset: 0;
-  border-radius: 9999px;
-  border: 2px solid rgba(255, 255, 255, 0.9);
-  opacity: 0;
-  animation: hero-hotspot 3.4s ease-out 1.2s infinite;
-}
-@keyframes hero-hotspot {
-  0%   { transform: scale(1);   opacity: 0.75; }
-  70%, 100% { transform: scale(3.4); opacity: 0; }
+  z-index: -1;
+  background:
+    radial-gradient(60cqw 42cqw at 8% 36%, rgba(206, 232, 244, 0.7) 0%, rgba(206, 232, 244, 0) 70%),
+    radial-gradient(60cqw 46cqw at 94% 24%, rgba(214, 245, 220, 0.75) 0%, rgba(214, 245, 220, 0) 70%),
+    radial-gradient(70cqw 40cqw at 50% 36%, #ffffff 0%, rgba(255, 255, 255, 0) 80%),
+    linear-gradient(180deg, #f6fbf8 0%, #f7fbf7 62%, #ffffff 100%);
 }
 
-.hero-tilt {
-  transform-origin: 49% 52.9%; /* planet centre inside the artwork */
+.hero-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 12px 36px;
+  /* < 1024: the visible stage is 600 units wide */
+  --x0: 300;
+  --sw: clamp(280px, min(calc(100cqw - 24px), 480px), 480px);
+  --u: calc(var(--sw) / 600);
 }
-@keyframes hero-earth-react {
-  0%   { transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1); }
-  32%  { transform: perspective(1000px) rotateX(var(--hero-rx, 2deg)) rotateY(var(--hero-ry, -7deg)) scale(1.035); }
-  66%  { transform: perspective(1000px) rotateX(calc(var(--hero-rx, 2deg) * -0.3)) rotateY(calc(var(--hero-ry, -7deg) * -0.3)) scale(1.014); }
-  100% { transform: perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1); }
-}
-[data-reacting="true"] .hero-tilt {
-  animation: hero-earth-react 1.1s cubic-bezier(0.22, 0.9, 0.3, 1) both;
-}
-
-/* glow ring that radiates from the sphere on activation */
-.hero-burst { opacity: 0; }
-@keyframes hero-burst {
-  0%   { opacity: 0;    transform: scale(0.94); }
-  18%  { opacity: 0.55; }
-  100% { opacity: 0;    transform: scale(1.22); }
-}
-@keyframes hero-burst-soft { /* reduced motion: opacity only, no movement */
-  0%   { opacity: 0; }
-  25%  { opacity: 0.5; }
-  100% { opacity: 0; }
-}
-[data-reacting="true"] .hero-burst {
-  animation: hero-burst 1s ease-out both;
-}
-
-/* ---- Orbit nodes: soft ping ring, and a quick pop on activation ---- */
-.hero-node::after {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: 9999px;
-  border: 1.5px solid var(--hero-ping, #2ABD41);
-  opacity: 0;
-  animation: hero-node-ping 5.6s ease-out infinite;
-  animation-delay: calc(var(--i, 0) * 0.9s);
-}
-@keyframes hero-node-ping {
-  0%       { transform: scale(1);    opacity: 0; }
-  8%       { opacity: 0.4; }
-  40%, 100% { transform: scale(1.55); opacity: 0; }
-}
-@keyframes hero-node-pop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.2); }
-  100% { transform: scale(1); }
-}
-[data-reacting="true"] .hero-node {
-  animation: hero-node-pop 0.7s ease-out both;
-  animation-delay: calc(var(--i, 0) * 70ms);
-}
-
-/* ---- Orbit arcs / connectors: dashes drift along the path. steps(44) =
-   half-pixel jumps ~5x/s: reads as a smooth slow drift but repaints the big
-   SVG far less than a per-frame linear animation. ---- */
-@keyframes hero-dash   { to { stroke-dashoffset: -22; } } /* 2 x (5 + 6) px */
-@keyframes hero-dash-m { to { stroke-dashoffset: -6;  } } /* 2 x (1.3 + 1.7) units */
-@keyframes hero-dash-rev { to { stroke-dashoffset: 22; } } /* left-hand arcs: upward = clockwise */
-@keyframes hero-arc-glow { /* back to each path's own resting opacity */
-  0%, 100% { opacity: var(--hero-arc-op, 0.5); }
-  40%      { opacity: 0.95; }
-}
-.hero-dash   { animation: hero-dash 9s steps(44) infinite; }
-.hero-dash-m { animation: hero-dash-m 9s steps(44) infinite; }
-.hero-dash-rev { animation: hero-dash-rev 9s steps(44) infinite; }
-[data-reacting="true"] .hero-dash   { animation: hero-dash 9s steps(44) infinite, hero-arc-glow 0.9s ease-out; }
-[data-reacting="true"] .hero-dash-m { animation: hero-dash-m 9s steps(44) infinite, hero-arc-glow 0.9s ease-out; }
-[data-reacting="true"] .hero-dash-rev { animation: hero-dash-rev 9s steps(44) infinite, hero-arc-glow 0.9s ease-out; }
-
-/* ---- Metric card bars: stagger-rise on load, then a barely-there breathe.
-   Resting height is always scaleY(1); the breathe only dips to 0.92. ---- */
-.hero-bar {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: hero-bar-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  animation-delay: calc(var(--d, 0) * 1ms);
-}
-/* only the tallest bar of each card keeps breathing (6 elements, not 30) */
-.hero-bar-live {
-  animation: hero-bar-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) backwards,
-             hero-bar-breathe 6.5s ease-in-out infinite;
-  animation-delay: calc(var(--d, 0) * 1ms), calc(1500ms + var(--d, 0) * 3ms);
-}
-@keyframes hero-bar-rise    { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes hero-bar-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.92); } }
-
-/* ---- Pause everything while the hero is off-screen or the tab is hidden.
-   (paused, not removed, so nothing jumps when it resumes) ---- */
-[data-hero-motion="paused"] *,
-[data-hero-motion="paused"] *::after {
-  animation-play-state: paused !important;
-}
-
-/* ---- Reduced motion: static, complete appearance ---- */
-@media (prefers-reduced-motion: reduce) {
-  .hero-earth-float,
-  .hero-earth-rock,
-  .hero-sheen-spin,
-  .hero-glow,
-  .hero-hotspot::after,
-  .hero-bar,
-  .hero-bar-live,
-  .hero-dash,
-  .hero-dash-m,
-  .hero-dash-rev,
-  .hero-node::after,
-  [data-reacting="true"] .hero-tilt,
-  [data-reacting="true"] .hero-node,
-  [data-reacting="true"] .hero-dash,
-  [data-reacting="true"] .hero-dash-rev,
-  [data-reacting="true"] .hero-dash-m {
-    animation: none !important;
-  }
-  /* feedback without movement: a soft glow only */
-  [data-reacting="true"] .hero-burst {
-    animation: hero-burst-soft 0.9s ease-out both !important;
-    transform: none;
-  }
-}
-
-/* ---- Desktop first-screen fit (lg+) --------------------------------------
-   The hero must read as one finished composition in the first viewport, so on
-   desktop its vertical rhythm and its stage are sized from the viewport HEIGHT
-   as well as the width (like the design reference, where headline, CTAs, cards
-   and Earth all sit in one screen). Every vertical piece is a variable;
-   --hero-rest is their sum, and the stage is allowed to be exactly as wide as
-   the space left under the text block lets its aspect ratio be (the stage is
-   1860 x 678 design units, i.e. height = 0.3645 x width, and it contains the
-   WHOLE Earth incl. the turbines above it). svh = the small viewport, so
-   browser UI can't push it off screen; vh is the fallback. Below lg nothing
-   here applies (the phone/tablet layout is stacked and flows normally). */
 @media (min-width: 1024px) {
-  .hero-root {
-    --hero-pt: clamp(10px, 2vh, 36px);
-    --hero-fs: clamp(34px, min(4.4vw, 6.6vh), 64px);
-    --hero-m1: clamp(5px, 0.9vh, 12px);
-    --hero-fd: clamp(13px, 2vh, 16px);
-    --hero-m2: clamp(5px, 1.1vh, 14px);
-    --hero-m3: clamp(10px, 1.9vh, 24px);
-    --hero-cta: clamp(40px, 6vh, 56px);
-    /* 16px = the eyebrow line; 2.16 = two headline lines at line-height 1.08; 1.6 = one description line */
-    --hero-rest: calc(var(--hero-pt) + 16px + var(--hero-m1) + 2.16 * var(--hero-fs) + var(--hero-m2) + 1.6 * var(--hero-fd) + var(--hero-m3) + var(--hero-cta));
-    padding-top: var(--hero-pt);
+  .hero-inner {
+    --x0: 0;
+    /* as wide as the window allows, but short enough that the copy and the scroll cue fit under it on one screen */
+    --sw: clamp(640px, min(1200px, calc(1.9 * (100svh - 395px)), calc(100cqw - 32px)), 1200px);
+    --u: calc(var(--sw) / 1200);
+    padding-bottom: 58px;
   }
-  .hero-root .hero-h1   { font-size: var(--hero-fs); margin-top: var(--hero-m1); }
-  .hero-root .hero-desc { font-size: var(--hero-fd); margin-top: var(--hero-m2); }
-  .hero-root .hero-ctas { margin-top: var(--hero-m3); }
-  .hero-root .hero-cta  { min-height: var(--hero-cta); padding-top: 0; padding-bottom: 0; }
-  /* 90px = 72 header + 12 air above the turbines (the stage's top margin) + 6 under the stage */
-  .hero-root .hero-stage {
-    max-width: max(820px, min(1720px, calc((100vh - 90px - var(--hero-rest)) / 0.3645)));
-  }
-  @supports (height: 100svh) {
-    .hero-root .hero-stage {
-      max-width: max(820px, min(1720px, calc((100svh - 90px - var(--hero-rest)) / 0.3645)));
-    }
-  }
+}
+
+/* ---------------------------------------------------------------- visual */
+.hero-visual {
+  position: relative;
+  /* (no z-index: the stage stays under the headline block, while the Scope popover, z-index 6, floats above it) */
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .hero-visual { display: block; width: var(--sw); height: calc(640 * var(--u)); }
+}
+
+.hero-stage {
+  position: relative;
+  width: var(--sw);
+  height: calc(640 * var(--u));
+  pointer-events: none;
+}
+@media (min-width: 1024px) {
+  .hero-stage { position: absolute; inset: 0; width: auto; height: auto; }
+}
+
+/* concentric rings spreading from the globe: bands of pale mint / blue with a hairline at each edge */
+.hero-halos {
+  position: absolute;
+  left: calc((600 - var(--x0)) * var(--u));
+  top: calc(320 * var(--u));
+  width: calc(2200 * var(--u));
+  height: calc(2200 * var(--u));
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side,
+    rgba(255, 255, 255, 0.7) 0, rgba(255, 255, 255, 0.55) calc(350 * var(--u)),
+    rgba(42, 189, 65, 0.16) calc(350 * var(--u)), rgba(42, 189, 65, 0.16) calc(350 * var(--u) + 1px),
+    rgba(222, 250, 225, 0.4) calc(350 * var(--u) + 1px), rgba(222, 250, 225, 0.4) calc(530 * var(--u)),
+    rgba(42, 189, 65, 0.1) calc(530 * var(--u)), rgba(42, 189, 65, 0.1) calc(530 * var(--u) + 1px),
+    rgba(218, 238, 246, 0.32) calc(530 * var(--u) + 1px), rgba(218, 238, 246, 0.32) calc(760 * var(--u)),
+    rgba(42, 189, 65, 0.08) calc(760 * var(--u)), rgba(42, 189, 65, 0.08) calc(760 * var(--u) + 1px),
+    rgba(226, 246, 230, 0.3) calc(760 * var(--u) + 1px), rgba(226, 246, 230, 0.3) calc(1000 * var(--u)),
+    rgba(42, 189, 65, 0.06) calc(1000 * var(--u)), rgba(42, 189, 65, 0.06) calc(1000 * var(--u) + 1px),
+    rgba(255, 255, 255, 0) calc(1000 * var(--u) + 1px));
+}
+
+/* ---- clouds ---- */
+.hero-cloud {
+  position: absolute;
+  left: calc((var(--cx) - var(--x0)) * var(--u));
+  top: calc(var(--cy) * var(--u));
+  width: calc(var(--cw) * var(--u));
+  height: calc(var(--ch) * var(--u));
+  opacity: 0.85;
+  background:
+    radial-gradient(ellipse 34% 46% at 24% 64%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(ellipse 30% 56% at 46% 42%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(ellipse 36% 50% at 70% 58%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(ellipse 26% 40% at 88% 68%, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0) 72%),
+    radial-gradient(ellipse 80% 34% at 50% 84%, rgba(190, 220, 232, 0.32), rgba(190, 220, 232, 0) 75%);
+  animation: hero-drift var(--cd) ease-in-out var(--dl) infinite alternate;
+}
+
+/* ---- the Earth: placed by the round body of globalnew-hero.webp (see the header) ---- */
+.hero-earth {
+  position: absolute;
+  left: calc((360.79 - var(--x0)) * var(--u));
+  top: calc(76.61 * var(--u));
+  width: calc(476.52 * var(--u));
+  pointer-events: none;
+  /* the click enlargement: about the globe's own centre, so it grows in place; 12%, gently */
+  transform-origin: calc(629.5 / 1254 * 100%) calc(640.5 / 1254 * 100%);
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-earth[data-zoomed="true"] { transform: scale(1.12); }
+/* the picture turns clockwise about the centre of its round body: one lap in 105s, linear, so it reads as drift */
+.hero-earth-spin {
+  position: relative;
+  z-index: 1;
+  transform-origin: calc(629.5 / 1254 * 100%) calc(640.5 / 1254 * 100%);
+  animation: hero-earth-spin 105s linear infinite;
+  will-change: transform;
+}
+/* a round hit area on the globe's round body (1209 of the image's 1254 wide, centred on (629.5, 640.5)) */
+.hero-earth-btn {
+  position: absolute;
+  z-index: 2;
+  left: calc(629.5 / 1254 * 100%);
+  top: calc(640.5 / 1254 * 100%);
+  width: calc(1209 / 1254 * 100%);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: zoom-in;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  transition: box-shadow 0.25s;
+}
+.hero-earth-btn:hover { box-shadow: 0 0 0 6px rgba(42, 189, 65, 0.16); }
+.hero-earth[data-zoomed="true"] .hero-earth-btn { cursor: zoom-out; }
+.hero-earth-btn:focus-visible { outline: 3px solid var(--hero-green); outline-offset: 5px; }
+/* a soft pool of light under the globe, so the art lifts off the page */
+.hero-earth::before {
+  content: '';
+  position: absolute;
+  left: calc((629.5 / 1254) * 100%);
+  top: calc((640.5 / 1254) * 100%);
+  width: 118%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle closest-side, rgba(255, 255, 255, 0.92) 0, rgba(255, 255, 255, 0.6) 62%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* ---- rings, ticks and anchor nodes (one SVG in stage units) ---- */
+.hero-orbits,
+.hero-links {
+  position: absolute;
+  left: calc(-1 * var(--x0) * var(--u));
+  top: 0;
+  width: calc(1200 * var(--u));
+  height: calc(640 * var(--u));
+  overflow: visible;
+  pointer-events: none;
+}
+.hero-links { display: none; }
+
+.hero-spin {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: hero-spin var(--T) linear infinite;
+  animation-direction: var(--dir);
+}
+.hero-tick-minor { fill: none; stroke: rgba(24, 110, 44, 0.42); stroke-width: 6; stroke-dasharray: 0.3 2.7; }
+.hero-tick-major { fill: none; stroke: rgba(17, 120, 40, 0.7); stroke-width: 10; stroke-dasharray: 0.5 14.5; }
+
+.hero-ring-line { vector-effect: non-scaling-stroke; stroke-width: 1; stroke: rgba(29, 156, 49, 0.2); }
+.hero-ring-a .hero-ring-line { stroke: rgba(29, 156, 49, 0.55); stroke-dasharray: 1.5 9; stroke-linecap: round; }
+.hero-ring-b .hero-ring-line { stroke: rgba(29, 156, 49, 0.14); }
+.hero-ring-arc { fill: none; stroke: rgba(29, 156, 49, 0.62); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 100 260; stroke-dashoffset: -284; }
+.hero-ring-c .hero-ring-line { stroke: rgba(29, 156, 49, 0.38); stroke-width: 2; stroke-dasharray: 0.1 8; stroke-linecap: round; }
+
+.hero-node-core { fill: #1fb53a; stroke: #fff; stroke-width: 2.2; }
+.hero-anchor-glow { animation: hero-pulse 4.6s ease-in-out var(--dl) infinite; }
+
+.hero-link { fill: none; stroke: rgba(29, 156, 49, 0.45); stroke-width: 1; vector-effect: non-scaling-stroke; }
+@media (min-width: 1024px) { .hero-links { display: block; } }
+
+/* ---- leaves ---- */
+.hero-leaf {
+  position: absolute;
+  left: calc((var(--lx) - var(--x0)) * var(--u));
+  top: calc(var(--ly) * var(--u));
+  width: max(14px, calc(var(--ls) * var(--u)));
+  aspect-ratio: 1;
+  margin: -0.5em 0 0 -0.5em;
+  opacity: 0.85;
+  transform: rotate(var(--lr));
+  animation: hero-leaf var(--ld) ease-in-out var(--dl) infinite alternate;
+}
+.hero-leaf svg { display: block; width: 100%; height: 100%; }
+@media (max-width: 767px) { .hero-leaf-2, .hero-leaf-3 { display: none; } }
+
+/* ---------------------------------------------------------------- scope cards */
+.hero-cards {
+  position: relative;
+  z-index: 2;
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  width: min(100%, 640px);
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+.hero-card-slot { display: block; }
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  padding: 8px 13px 8px 10px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.74));
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18px 38px -20px rgba(17, 100, 40, 0.3), 0 2px 8px rgba(17, 100, 40, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: hero-float 7.5s ease-in-out var(--dl) infinite;
+  transition: box-shadow 0.25s, border-color 0.25s;
+}
+.hero-card:hover { border-color: rgba(42, 189, 65, 0.45); box-shadow: 0 20px 40px -18px rgba(17, 100, 40, 0.42), 0 2px 8px rgba(17, 100, 40, 0.08); }
+.hero-card:focus-visible { outline: 3px solid var(--hero-green); outline-offset: 3px; }
+.hero-card-icon { flex: none; display: flex; width: 27px; height: 27px; color: var(--hero-green); }
+.hero-card-icon svg { width: 100%; height: 100%; }
+.hero-card-text { min-width: 0; display: block; }
+.hero-card-title { display: block; font-size: 13.5px; font-weight: 700; line-height: 1.2; color: var(--hero-ink); }
+.hero-card-sub { display: block; margin-top: 1px; font-size: 11px; line-height: 1.3; color: #4b5a51; }
+
+@media (min-width: 600px) {
+  .hero-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 4px; width: min(100%, 720px); }
+  .hero-card { align-items: flex-start; height: 100%; padding: 11px 11px 11px 10px; }
+  .hero-card-icon { width: 29px; height: 29px; margin-top: 1px; }
+}
+@media (min-width: 1024px) {
+  .hero-cards { position: absolute; inset: 0; width: auto; margin: 0; display: block; }
+  .hero-card-slot { position: absolute; width: clamp(172px, calc(214 * var(--u)), 218px); transform: translateY(-50%); }
+  /* each card's inner edge and vertical centre = its anchor node on the ring (heroContent.js: ANCHORS, CARD_EDGE) */
+  .hero-card-s1 { top: calc(156.3 * var(--u)); right: calc(100% - 290 * var(--u)); }
+  .hero-card-s2 { top: calc(277.4 * var(--u)); left: calc(946 * var(--u)); }
+  .hero-card-s3 { top: calc(451.9 * var(--u)); right: calc(100% - 300 * var(--u)); }
+  .hero-card { align-items: center; padding: 11px 15px 11px 12px; border-radius: 24px; gap: 11px; }
+  .hero-card-icon { width: 31px; height: 31px; margin-top: 0; }
+  .hero-card-title { font-size: 13.5px; }
+  .hero-card-sub { font-size: 11px; }
+}
+
+/* ---------------------------------------------------------------- copy */
+.hero-copy {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-top: 22px;
+}
+@media (min-width: 1024px) { .hero-copy { margin-top: calc(-26 * var(--u)); } }
+
+.hero-eyebrow {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--hero-green);
+}
+@media (min-width: 640px) { .hero-eyebrow { font-size: 12.5px; letter-spacing: 0.26em; } }
+
+.hero-h1 {
+  margin: 0;
+  font-family: 'General Sans', var(--font-inter), sans-serif;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  color: var(--hero-ink);
+  font-size: clamp(29px, min(calc((100cqw - 32px) / 11.4), max(7svh, 44px)), 64px);
+}
+.hero-line { white-space: nowrap; } /* a headline line is never broken */
+
+.hero-desc {
+  margin: 12px 0 0;
+  max-width: 40em;
+  font-size: var(--type-lead);
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+@media (min-width: 768px) {
+  .hero-desc-line { display: block; }
+}
+
+.hero-ctas {
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px 20px;
+}
+.hero-cta { height: 3rem; font-weight: 700; width: 100%; max-width: 340px; box-shadow: 0 12px 26px -12px rgba(17, 154, 46, 0.7); }
+.hero-cta-secondary {
+  height: 3rem;
+  font-weight: 700;
+  padding: 0 24px 0 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(17, 154, 46, 0.1);
+  box-shadow: 0 10px 24px -14px rgba(17, 100, 40, 0.3);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+.hero-cta-secondary:hover { background: #fff; box-shadow: 0 12px 28px -12px rgba(17, 100, 40, 0.4); }
+.hero-play { width: 38px; height: 38px; flex: none; }
+@media (min-width: 640px) {
+  .hero-ctas { flex-direction: row; justify-content: center; }
+  .hero-cta { width: auto; max-width: none; }
+}
+
+/* ---------------------------------------------------------------- scroll cue */
+.hero-scroll {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 3;
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #56635b;
+  white-space: nowrap;
+}
+.hero-scroll:hover { color: var(--hero-ink); }
+@media (min-width: 768px) { .hero-scroll { display: flex; } }
+.hero-mouse {
+  position: relative;
+  width: 18px;
+  height: 30px;
+  border: 1.5px solid #55625a;
+  border-radius: 10px;
+}
+.hero-mouse-wheel {
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 2px;
+  height: 6px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: #55625a;
+  animation: hero-wheel 2.2s ease-in-out infinite;
+}
+
+/* ---------------------------------------------------------------- dialogs (enlarged Earth, Scope panel) */
+.hero-dlg {
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 16px;
+  border: 0;
+  background: transparent;
+  color: var(--hero-ink);
+  overflow: hidden;
+}
+.hero-dlg[open] { display: flex; align-items: center; justify-content: center; animation: hero-dlg-fade 0.22s ease-out; }
+.hero-dlg::backdrop { background: rgba(7, 44, 14, 0.58); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); animation: hero-dlg-fade 0.22s ease-out; }
+.hero-dlg-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(17, 154, 46, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--hero-ink);
+  cursor: pointer;
+  box-shadow: 0 8px 22px -8px rgba(7, 44, 14, 0.4);
+  transition: background-color 0.2s;
+}
+.hero-dlg-close:hover { background: #fff; }
+.hero-dlg-close:focus-visible { outline: 3px solid var(--hero-green); outline-offset: 2px; }
+.hero-dlg-close svg { width: 20px; height: 20px; }
+
+/* the enlarged Earth: as large as fits (the whole PNG, aspect ratio kept), turning like the one in the hero */
+.hero-dlg-earth-box {
+  width: min(94vw, calc((100dvh - 48px) * 1306 / 1205), 900px);
+  animation: hero-dlg-rise 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-dlg-earth-box .hero-earth-spin { animation-duration: 105s; }
+
+@media (max-width: 599px) {
+  .hero-dlg { padding: 10px; }
+}
+
+@keyframes hero-dlg-fade { from { opacity: 0; } }
+@keyframes hero-pop-in { from { opacity: 0; transform: scale(0.96); } }
+@keyframes hero-dlg-rise { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
+
+/* ---------------------------------------------------------------- Scope popover (small, next to the selected card) */
+.hero-pop {
+  position: relative;
+  z-index: 6;
+  width: 100%;
+  margin-top: 8px;
+  padding: 13px 15px 13px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff, #f6fbf7);
+  border: 1px solid rgba(17, 154, 46, 0.2);
+  box-shadow: 0 18px 44px -16px rgba(7, 44, 14, 0.35), 0 2px 8px rgba(7, 44, 14, 0.06);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #3f4d44;
+  text-align: left;
+  pointer-events: auto;
+  animation: hero-pop-in 0.18s ease-out;
+}
+.hero-pop[data-mode="tablet"] { margin-top: 0; }
+.hero-pop[data-mode="wide"] { position: absolute; width: clamp(300px, calc(430 * var(--u)), 344px); margin: 0; }
+.hero-pop[data-side="left"] { transform-origin: right center; }
+.hero-pop[data-side="right"] { transform-origin: left center; }
+.hero-pop[data-side="below"] { transform-origin: 50% 0; }
+.hero-pop[data-side="above"] { transform-origin: 50% 100%; }
+.hero-pop-row { grid-column: 1 / -1; list-style: none; }
+.hero-pop-arrow { position: absolute; width: 12px; height: 12px; background: #fff; border: 1px solid rgba(17, 154, 46, 0.2); transform: rotate(45deg); }
+.hero-pop[data-side="below"] .hero-pop-arrow { top: -7px; left: calc(var(--arrow) - 6px); border-right-color: transparent; border-bottom-color: transparent; }
+.hero-pop[data-side="above"] .hero-pop-arrow { bottom: -7px; left: calc(var(--arrow) - 6px); border-top-color: transparent; border-left-color: transparent; }
+.hero-pop[data-side="left"] .hero-pop-arrow { right: -7px; top: calc(var(--arrow) - 6px); border-left-color: transparent; border-bottom-color: transparent; }
+.hero-pop[data-side="right"] .hero-pop-arrow { left: -7px; top: calc(var(--arrow) - 6px); border-top-color: transparent; border-right-color: transparent; }
+.hero-pop-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #4b5a51;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+.hero-pop-close:hover { background: #e9f6ec; color: var(--hero-ink); }
+.hero-pop-close:focus-visible { outline: 2px solid var(--hero-green); outline-offset: 0; }
+.hero-pop-close svg { width: 15px; height: 15px; }
+@media (min-width: 1024px) { .hero-pop-close { width: 28px; height: 28px; top: 10px; right: 10px; } }
+.hero-pop-head { display: flex; align-items: center; gap: 10px; padding-right: 30px; }
+.hero-pop-icon { flex: none; display: flex; width: 30px; height: 30px; padding: 6px; border-radius: 10px; background: #e6f6e9; color: var(--hero-green); }
+.hero-pop-icon svg { width: 100%; height: 100%; }
+.hero-pop-kicker { margin: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--hero-green); }
+.hero-pop-title { margin: 1px 0 0; font-size: 13px; font-weight: 700; line-height: 1.3; color: var(--hero-ink); }
+.hero-pop-text { margin: 9px 0 0; }
+.hero-pop-h { margin: 10px 0 3px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: rgba(7, 44, 14, 0.62); }
+.hero-pop-h + .hero-pop-text { margin-top: 0; }
+.hero-pop-list { margin: 0; padding: 0; list-style: none; }
+.hero-pop-list li { position: relative; padding-left: 14px; }
+.hero-pop-list li + li { margin-top: 3px; }
+.hero-pop-list li::before { content: ''; position: absolute; left: 1px; top: 0.58em; width: 5px; height: 5px; border-radius: 50%; background: #2abd41; }
+
+/* ---------------------------------------------------------------- motion */
+@keyframes hero-spin { to { transform: rotate(360deg); } }
+@keyframes hero-earth-spin { to { transform: rotate(360deg); } }
+@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes hero-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes hero-drift { from { transform: translateX(-10px); } to { transform: translateX(14px); } }
+@keyframes hero-leaf {
+  from { transform: translate(0, 0) rotate(var(--lr)); }
+  to { transform: translate(8px, -12px) rotate(calc(var(--lr) + 16deg)); }
+}
+@keyframes hero-wheel { 0%, 100% { transform: translateY(0); opacity: 1; } 60% { transform: translateY(6px); opacity: 0.2; } }
+
+/* off screen / hidden tab: hold every animation where it is */
+.hero-root[data-hero-motion="paused"] * { animation-play-state: paused !important; }
+
+/* reduced motion: the finished picture, nothing moves (also applied before any script runs) */
+.hero-root[data-hero-motion="reduced"] *,
+.hero-root[data-hero-motion="reduced"] *::before,
+.hero-root[data-hero-motion="reduced"] *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .hero-root *, .hero-root *::before, .hero-root *::after { animation: none !important; transition: none !important; }
+  .hero-dlg::backdrop { animation: none !important; }
 }

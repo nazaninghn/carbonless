@@ -70,8 +70,11 @@ export async function mockDjangoApi(page) {
 
 /**
  * Seed the browser with the auth state the app expects after a successful login:
- *   • `carbonless_auth=1` cookie  → lets middleware pass /dashboard
- *   • `_ca` localStorage item     → lets api.js attach Bearer token
+ *   • `carbonless_auth=1` cookie         → lets middleware pass /dashboard
+ *   • `carbonless_mode_chosen=1` cookie → the login page sets this too; without it
+ *                                         middleware sends /dashboard to
+ *                                         /dashboard/select (the Dashboard/AI choice)
+ *   • `_ca` localStorage item           → lets api.js attach Bearer token
  *
  * Call this AFTER navigating to any page on the same origin (addInitScript runs
  * before load, but cookies must be set via page.context().addCookies()).
@@ -79,14 +82,11 @@ export async function mockDjangoApi(page) {
  * @param {import('@playwright/test').Page} page
  */
 export async function seedAuth(page) {
-  // Cookie — middleware reads this to decide whether to redirect /dashboard
-  await page.context().addCookies([{
-    name:    'carbonless_auth',
-    value:   '1',
-    domain:  'localhost',
-    path:    '/',
-    sameSite: 'Lax',
-  }]);
+  // Cookies — middleware reads these to decide whether to redirect /dashboard
+  await page.context().addCookies([
+    { name: 'carbonless_auth',        value: '1', domain: 'localhost', path: '/', sameSite: 'Lax' },
+    { name: 'carbonless_mode_chosen', value: '1', domain: 'localhost', path: '/', sameSite: 'Lax' },
+  ]);
 
   // localStorage token — api.js reads _ca via getToken()
   await page.addInitScript((token) => {

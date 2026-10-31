@@ -5,13 +5,14 @@ import Footer from '@/components/Footer';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import NextLink from 'next/link';
 import { ArrowRight, Leaf, Shield, BarChart3, Globe } from 'lucide-react';
+import ArtVisual from '@/components/ArtVisual';
 
 export default function AboutPage() {
   const { language } = useLanguage();
   const tr = language === 'tr';
 
   return (
-    <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
+    <div className="page-type bg-white text-[#072C0E] antialiased overflow-x-clip">
       <Header wide />
       <main>
         {/* Mission */}
@@ -19,22 +20,34 @@ export default function AboutPage() {
           <div className="max-w-6xl mx-auto px-4 sm:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
               <div>
-                <h2 className="text-[28px] sm:text-[40px] lg:text-[56px] font-extrabold leading-[1.1] tracking-[-0.03em] text-[#072C0E] mb-5 sm:mb-6">
+                <h1 className="lp-display mb-5 sm:mb-6">
                   {tr ? 'Misyonumuz' : 'Our Mission'}
-                </h2>
-                <p className="text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/60 mb-4 sm:mb-6">
+                </h1>
+                <p className="lp-text mb-4 sm:mb-5">
                   {tr
                     ? 'Carbonless, İstinye Üniversitesi IT Valley bünyesinde geliştirilen bir akademik karbon ayak izi hesaplama platformudur. Amacımız, şirketlerin sera gazı emisyonlarını ISO 14064-1 ve GHG Protocol standartlarına uygun şekilde ölçmelerini, raporlamalarını ve azaltmalarını sağlamaktır.'
                     : 'Carbonless is an academic carbon footprint calculation platform developed at İstinye University IT Valley. Our mission is to help companies measure, report, and reduce their greenhouse gas emissions in compliance with ISO 14064-1 and GHG Protocol standards.'}
                 </p>
-                <p className="text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/60">
+                <p className="lp-text">
                   {tr
                     ? 'Türkiye ve global emisyon faktörleri ile desteklenen sistemimiz, ISO 14064-1 doğrulanmış envanter, Defra 2024, IPCC 2019 ve ulusal veriler kullanmaktadır.'
                     : 'Our system is supported by Turkey and global emission factors, using ISO 14064-1 verified inventory data, Defra 2024, IPCC 2019, and national data sources.'}
                 </p>
               </div>
-              <div className="group flex items-center justify-center">
-                <img src="/about-img.png" alt="About Carbonless" className="w-[240px] sm:w-[300px] lg:w-[380px] h-auto transition-all duration-700 ease-out group-hover:scale-[1.03] group-hover:-translate-y-2 animate-[float_4s_ease-in-out_infinite]" />
+              <div className="flex items-center justify-center">
+                {/* public/aboutNEWW.png: 1024 x 1024, transparent. It fades in and rises once when it scrolls into
+                    view, then floats gently (ArtVisual); reduced motion shows it still. */}
+                <ArtVisual
+                  src="/aboutNEWW.png"
+                  natW={1024}
+                  natH={1024}
+                  cropLeft={0}
+                  testId="mission-visual"
+                  maskClass="eco-mask--mission"
+                  sizes="(min-width: 1024px) 560px, 92vw"
+                  className="max-w-[460px] sm:max-w-[540px] lg:max-w-none"
+                  alt={tr ? 'Yeşil bir tesis: bacalardan ağaçlar büyüyor, çevresinde yeşil bir enerji akışı' : 'A green industrial site with trees growing from its chimneys, wrapped in a flow of green energy'}
+                />
               </div>
             </div>
           </div>
@@ -44,11 +57,11 @@ export default function AboutPage() {
         <section className="py-12 sm:py-16 lg:py-24 bg-[#DEFAE1]/20">
           <div className="max-w-5xl mx-auto px-4 sm:px-8">
             <div className="text-center mb-8 sm:mb-10">
-              <h2 className="text-[26px] sm:text-[36px] lg:text-[40px] font-extrabold tracking-[-0.02em] text-[#072C0E]">
+              <h2 className="lp-h2">
                 {tr ? 'Carbonless Network\'ün Bir Parçasıyız' : 'Part of the Carbonless Network'}
               </h2>
             </div>
-            <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5 text-[14px] sm:text-[15px] leading-[1.8] text-[#072C0E]/65 text-center">
+            <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5 lp-text-block text-center">
               <p>
                 {tr
                   ? 'Carbonless Network, karbonsuz bir gezegen için işletim sistemini inşa ediyor. Karbon, modern ekonominin en kritik metriklerinden biri haline geldi — ancak bunu yönetecek altyapı hâlâ dağınık ve opak.'
@@ -70,7 +83,7 @@ export default function AboutPage() {
                 href="https://www.carbonless.network/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-8 py-3.5 btn-dark text-[14px] font-bold rounded-full transition-all"
+                className="btn btn-lg btn-dark transition-all"
               >
                 carbonless.network
                 <ArrowRight className="w-4 h-4" />

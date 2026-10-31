@@ -50,7 +50,7 @@ export default function ContactPage() {
   const setField = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));
 
   return (
-    <div className="bg-white text-[#072C0E] antialiased overflow-x-hidden">
+    <div className="bg-white text-[#072C0E] antialiased overflow-x-clip">
       <Header />
       <main>
         {/* Hero */}

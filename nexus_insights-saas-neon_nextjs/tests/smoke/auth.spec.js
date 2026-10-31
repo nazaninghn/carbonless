@@ -5,7 +5,7 @@
  * handler is mocked via page.route() so no real Django backend is needed.
  */
 import { test, expect } from '@playwright/test';
-import { mockDjangoApi, MOCK_TOKEN } from '../helpers/mock-api.js';
+import { mockDjangoApi, seedAuth, MOCK_TOKEN } from '../helpers/mock-api.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -99,42 +99,37 @@ test.describe('Login flow', () => {
 test.describe('Logout', () => {
 
   test('clears session and redirects to /login', async ({ page }) => {
-    // Seed auth so we start on the dashboard
-    const { seedAuth } = await import('../helpers/mock-api.js');
+    // Start on the dashboard with the cookies + token a signed-in user has
     await mockDjangoApi(page);
+    await seedAuth(page);
 
-    // Navigate to the app first (required before adding cookies)
-    await page.goto('/login');
-    await page.context().addCookies([{
-      name: 'carbonless_auth', value: '1',
-      domain: 'localhost', path: '/', sameSite: 'Lax',
-    }]);
-    await page.addInitScript((tok) => localStorage.setItem('_ca', tok), MOCK_TOKEN);
-
-    // Mock logout endpoint
-    await page.route('**/api/auth/logout', route =>
-      route.fulfill({ status: 204, body: '' })
-    );
+    // Mock the Next.js logout route (api.logout() POSTs to it) and record the call
+    const logoutCalls = [];
+    await page.route('**/api/auth/logout', (route) => {
+      const req = route.request();
+      logoutCalls.push({
+        method: req.method(),
+        hadBearer: /^Bearer \S+/.test(req.headers()['authorization'] ?? ''), // never log the token
+      });
+      return route.fulfill({ status: 204, body: '' });
+    });
 
     await page.goto('/dashboard');
+    await expect(page).toHaveURL(/\/dashboard$/);
 
-    // Find and click the logout button (it lives in DashboardSidebar)
-    // The sidebar has a logout button — trigger it via the JS api directly
-    // to avoid brittle selector coupling to the exact sidebar DOM.
-    await page.evaluate(() => {
-      // api.logout() clears token, removes cookie, and navigates to /login
-      const event = new CustomEvent('carbonless:logout-test');
-      window.dispatchEvent(event);
-    });
-
-    // Directly invoke the logout via the api module (avoids tight DOM coupling)
-    await page.evaluate(async () => {
-      const { api } = await import('/src/lib/utils/api.js').catch(() => ({}));
-      if (api?.logout) await api.logout();
-    });
+    // The real flow: sidebar Logout, then confirm in the dialog
+    await page.getByRole('button', { name: /^(Logout|Çıkış)$/ }).click();
+    await page.getByRole('dialog').getByRole('button', { name: /^(Sign out|Çıkış yap)$/ }).click();
 
     await page.waitForURL(/\/login/, { timeout: 10_000 });
     await expect(page).toHaveURL(/\/login/);
+
+    // Logout endpoint called once, as a POST carrying the bearer token
+    expect(logoutCalls).toEqual([{ method: 'POST', hadBearer: true }]);
+
+    // The auth cookie is cleared (and nothing re-seeded it: addInitScript only sets _ca)
+    const cookies = await page.context().cookies();
+    expect(cookies.map(c => c.name)).not.toContain('carbonless_auth');
   });
 
 });

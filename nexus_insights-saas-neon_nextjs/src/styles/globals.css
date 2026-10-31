@@ -54,7 +54,7 @@
 
   [x-cloak] { display: none !important; }
   html { scrollbar-gutter: stable; overflow-x: hidden; scroll-behavior: smooth; }
-  body { overflow-x: hidden; font-family: var(--font-inter), sans-serif; color: var(--color-text); background-color: var(--color-smoke); }
+  body { overflow-x: clip; /* (clip, not hidden: hidden makes <body> a scroll container and breaks the sticky Header) */ font-family: var(--font-inter), sans-serif; color: var(--color-text); background-color: var(--color-smoke); }
   
   /* Mobile safe areas */
   @supports (padding: env(safe-area-inset-bottom)) {
@@ -368,4 +368,60 @@
   textarea {
     font-size: 16px !important;
   }
+}
+
+/* ===========================================================================================================
+   TYPE SCALE: one set of sizes for the landing page, About (Our Mission) and the AI page.
+   Hierarchy (desktop, from 1440px): hero headline 64 > page title 48 > section heading 40 > card title 17 = lead 17 > body 15 > small 14.
+   Mobile (360px): 30 (hero 26-30) > 30 > 28 > 16 = 16 > 15 > 14.   Buttons: .btn .btn-lg (15px / 700 / 48px high).
+   Sizes use clamp() so they glide between breakpoints; line heights: 1.08-1.1 for headings, 1.7 for reading text.
+   =========================================================================================================== */
+@layer components {
+  :root {
+    --type-display: clamp(1.625rem, 1.2rem + 1.8vw, 2.25rem);  /* page titles (Our Mission, Carbonless AI): 26 -> 36, matches hero H1 cap */
+    --type-h2: clamp(1.375rem, 1.05rem + 1.3vw, 1.875rem);     /* section headings:                              22 -> 30 */
+    --type-h3: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);         /* card / question / step titles:                 16 -> 17 */
+    --type-lead: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);       /* the paragraph under a heading, section text:   16 -> 17 */
+    --type-body: 0.9375rem;                                      /* text inside cards (answers, plan text, lists): 15 */
+    --type-small: 0.875rem;                                      /* captions, supporting labels:                   14 */
+  }
+  .lp-display, .lp-h2 {
+    font-family: 'General Sans', var(--font-inter), sans-serif;   /* already loaded for the hero (700) */
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+  }
+  .lp-display { font-size: var(--type-display); line-height: 1.08; color: #072c0e; }
+  .lp-h2 { font-size: var(--type-h2); line-height: 1.1; letter-spacing: -0.025em; color: var(--color-text); }
+  /* #1D9C31 on white is 3.4:1: fine for large headings only (the old #2ABD41 was 2.5:1) */
+  .lp-accent { color: var(--color-mint-dark); }
+  .lp-h3 { font-size: var(--type-h3); font-weight: 700; line-height: 1.35; color: var(--color-text); }
+  .lp-text, .lp-lead, .lp-copy p, .lp-text-block { font-size: var(--type-lead); line-height: 1.7; color: var(--color-text-muted); }   /* 7.5:1 on white */
+  .lp-text, .lp-lead { max-width: 34rem; }
+  .lp-lead { margin-top: 1rem; }
+  .lp-copy { max-width: 34rem; }
+  .lp-copy > * + * { margin-top: 1rem; }
+  .lp-body { font-size: var(--type-body); line-height: 1.7; color: var(--color-text-muted); }
+  .lp-small { font-size: var(--type-small); line-height: 1.6; color: var(--color-text-muted); }
+}
+
+/* ===========================================================================================================
+   DEDICATED PAGES (About = Our Mission, Carbonless AI): a more compact scale than the landing page's, applied by the
+   .page-type wrapper on those two pages only. Same classes (.lp-display, .lp-h2, .lp-h3, .lp-lead, .lp-body, .lp-small), same
+   hierarchy, smaller steps.   desktop / mobile:
+     page title 44 / 30   section heading 34 / 25   card heading 20 / 17   body 17 / 15   in-card text 16 / 15   labels 14 / 12.5
+     buttons 15 / 14 (48px high)
+   =========================================================================================================== */
+@layer components {
+  .page-type {
+    --type-display: clamp(1.75rem, 1.1rem + 2vw, 2.5rem);        /* page title        28 -> 40 */
+    --type-h2: clamp(1.4375rem, 1rem + 1.1vw, 1.875rem);         /* section heading   23 -> 30 */
+    --type-h3: clamp(1.0625rem, 0.95rem + 0.4vw, 1.25rem);       /* card heading      17 -> 20 */
+    --type-lead: clamp(0.9375rem, 0.85rem + 0.25vw, 1.0625rem);  /* paragraphs        15 -> 17 */
+    --type-body: clamp(0.9375rem, 0.88rem + 0.15vw, 1rem);       /* in-card / lists   15 -> 16 */
+    --type-small: clamp(0.78125rem, 0.74rem + 0.2vw, 0.875rem);  /* labels            12.5 -> 14 */
+  }
+  .page-type .btn-lg { font-size: clamp(0.875rem, 0.85rem + 0.1vw, 1rem); }          /* buttons 14 -> 15-16 */
+  /* a little tighter reading rhythm than the landing page: ~65 characters a line, 1.65 line height */
+  .page-type .lp-text, .page-type .lp-lead, .page-type .lp-text-block, .page-type .lp-copy p { line-height: 1.65; }
 }

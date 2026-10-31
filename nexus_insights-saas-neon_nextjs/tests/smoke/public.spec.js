@@ -32,7 +32,7 @@ test.describe('Public pages', () => {
 
   test('terms page — heading is visible', async ({ page }) => {
     await page.goto('/terms');
-    await expect(page.getByText('Terms of Use')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Terms of Use' })).toBeVisible();
   });
 
   test('forgot-password page — email input is visible', async ({ page }) => {

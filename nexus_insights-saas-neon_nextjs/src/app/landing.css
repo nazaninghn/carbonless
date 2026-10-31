@@ -1,0 +1,127 @@
+/* -- Landing page: About / AI / Pricing / FAQ --
+   Imported by src/app/page.jsx only. It adds layout + type classes that match the
+   hero's look; every colour comes from the existing tokens in styles/globals.css
+   (--color-text, --color-text-muted, --color-border, --color-mint-dark,
+   --focus-ring) or the Tailwind green scale (bg-green-50 ...). Buttons keep using
+   the shared system (.btn .btn-lg .btn-primary-dark / .btn-primary). The hero, the
+   Header and the Footer do not use these classes.
+
+   Rhythm: one section padding, one container width scale, one heading style.
+   About (white) / AI (green-50) / Pricing (white) / FAQ (green-50). */
+
+.landing {
+  --lp-gutter: clamp(1rem, 4vw, 2rem);
+  --lp-radius: 1.5rem;
+  --lp-shadow: 0 10px 28px rgba(7, 44, 14, 0.07);
+  --lp-shadow-raised: 0 16px 34px rgba(7, 44, 14, 0.12);
+}
+
+/* ---- Section shell ---- */
+.lp-section {
+  position: relative;
+  z-index: 10;
+  padding-block: clamp(2.25rem, 4vw, 3.75rem); /* one rhythm: neighbouring sections add up to 72-120px, not 112-176px */
+  scroll-margin-top: 5rem; /* the Header's anchor links land below the floating bar */
+}
+.lp-container {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: var(--lp-gutter);
+}
+.lp-container--md { max-width: 56rem; }
+.lp-container--sm { max-width: 48rem; }
+
+/* Two-column sections (About, AI): stacked below lg */
+.lp-split {
+  display: grid;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+}
+@media (min-width: 1024px) {
+  .lp-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ---- Type: see the type scale at the end of styles/globals.css (.lp-display, .lp-h2, .lp-h3, .lp-lead, .lp-copy, .lp-body, .lp-small) ---- */
+.lp-head { text-align: center; margin-bottom: clamp(1.5rem, 3vw, 2.25rem); }
+.lp-head .lp-lead { margin-inline: auto; }
+
+.lp-cta { margin-top: clamp(1.25rem, 2.5vw, 2rem); }
+
+/* ---- FAQ ----
+   Pricing is white and FAQ is the pale brand green; a hard step between them reads as a line. The FAQ's background starts white and eases
+   into #F1FCF2 over its first ~8rem (three stops, so there is no visible start of the gradient), so Pricing flows into the questions. */
+.lp-section--faq {
+  background-color: #f1fcf2;   /* the section's colour (the gradient below only paints its white top over it) */
+  background-image: linear-gradient(180deg,
+    #ffffff 0,
+    #f9fefa calc(clamp(3.5rem, 9vw, 8rem) * 0.4),
+    #f4fdf5 calc(clamp(3.5rem, 9vw, 8rem) * 0.75),
+    #f1fcf2 clamp(3.5rem, 9vw, 8rem),
+    #f1fcf2 100%);
+}
+
+/* ---- Cards ---- */
+.lp-card {
+  border-radius: var(--lp-radius);
+  border: 1px solid var(--color-border);
+  background: #fff;
+  box-shadow: var(--lp-shadow);
+}
+
+/* The one highlighted plan: primary-green frame + a lifted shadow */
+.lp-card--accent {
+  border-width: 2px;
+  border-color: var(--color-mint);
+  box-shadow: var(--lp-shadow-raised);
+}
+
+/* FAQ items: native <details>, so keyboard + screen reader behaviour is free */
+.lp-faq-item {
+  border-radius: 1.25rem;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(7, 44, 14, 0.04);
+  padding-inline: clamp(1.25rem, 3vw, 1.5rem);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.lp-faq-item:hover { border-color: #B2F2BB; }
+.lp-faq-item[open] { box-shadow: var(--lp-shadow-raised); border-color: #B2F2BB; }
+.lp-faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3.5rem;
+  padding-block: 1rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--type-h3);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--color-text);
+  border-radius: 0.75rem;
+}
+.lp-faq-item summary::-webkit-details-marker { display: none; }
+.lp-faq-item summary:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.lp-faq-item p {
+  padding-bottom: 1.25rem;
+  font-size: var(--type-body);
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-faq-item { transition: none; }
+}
+
+/* ---- Carbonless AI section ----
+   A very pale brand green (#F1FCF2) that melts in from the white About section above and back out into the white Pricing
+   section below, so it reads as its own section without any line, border or hard edge between them. */
+.lp-section--ai {
+  background: linear-gradient(180deg,
+    #ffffff 0,
+    #f1fcf2 clamp(3.5rem, 9vw, 8rem),
+    #f1fcf2 calc(100% - clamp(3.5rem, 9vw, 8rem)),
+    #ffffff 100%);
+}

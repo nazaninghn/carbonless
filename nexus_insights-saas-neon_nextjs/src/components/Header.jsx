@@ -33,6 +33,17 @@ export default function Header({ wide = false }) {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
+  // the header is sticky (it follows the page); once the page has scrolled, the pill gets a touch more shadow and border
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    const update = () => { raf = 0; setScrolled(window.scrollY > 8); };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update); };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); if (raf) cancelAnimationFrame(raf); };
+  }, []);
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = e => { if (e.key === 'Escape') setMenuOpen(false); };
@@ -44,7 +55,7 @@ export default function Header({ wide = false }) {
 
   return (
     <header className="pointer-events-none sticky top-0 z-50 flex w-full justify-center px-3 max-[390px]:px-2 pt-4">
-      <nav ref={menuRef} className={`pointer-events-auto relative flex h-14 items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 min-[320px]:max-[350px]:px-1 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md ${wide ? 'w-full max-w-5xl justify-between' : 'max-w-full'}`}>
+      <nav ref={menuRef} data-scrolled={scrolled ? 'true' : 'false'} className={`pointer-events-auto relative flex h-14 items-center gap-0.5 rounded-full border border-[#DEFAE1] bg-white/95 px-2 min-[320px]:max-[350px]:px-1 sm:px-3 shadow-[0_8px_30px_rgba(7,44,14,0.10)] backdrop-blur-md transition-[box-shadow,border-color,background-color] duration-300 motion-reduce:transition-none data-[scrolled=true]:border-[#B2F2BB] data-[scrolled=true]:bg-white/90 data-[scrolled=true]:shadow-[0_10px_34px_rgba(7,44,14,0.16)] ${wide ? 'w-full max-w-5xl justify-between' : 'max-w-full'}`}>
         {/* Logo */}
         <Link href="/" className="group flex shrink-0 items-center gap-2 min-[320px]:max-[350px]:gap-1.5 rounded-full px-2 max-[390px]:px-1 sm:px-3 py-1.5 transition-colors hover:bg-[#F1FCF2]">
           <Image src="/carbonless.png" alt="Carbonless" width={32} height={32} className="h-7 w-7 min-[320px]:max-[350px]:h-6 min-[320px]:max-[350px]:w-6 sm:h-8 sm:w-8 object-contain transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6" />
