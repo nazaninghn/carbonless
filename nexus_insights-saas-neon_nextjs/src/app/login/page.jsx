@@ -31,6 +31,9 @@ function translateBackendError(detail, tr) {
   return KNOWN_BACKEND_ERRORS_TR[detail] || detail;
 }
 
+/* How long the door handle takes to turn (the loginDoorOpen animation below). */
+const DOOR_MS = 1000;
+
 /* The brand tagline's face: Cormorant Garamond italic, a refined serif that sets the sentence apart from the interface's sans (Inter / General Sans).
    Loaded here, so only the Login page pays for it. latin-ext covers the Turkish letters. */
 const taglineFont = Cormorant_Garamond({ subsets: ['latin', 'latin-ext'], weight: ['500', '600'], style: ['italic'], display: 'swap' });
@@ -38,11 +41,16 @@ const taglineFont = Cormorant_Garamond({ subsets: ['latin', 'latin-ext'], weight
 /* The Login picture (public/loginnew.png, 1122 x 1402, transparent) with the brand tagline directly under it.
    The art spans x 187-974, y 225-1237 of the canvas, so the picture is drawn in a 820 x 1050 box that starts at (170, 210): the empty
    margins are cropped away (nothing visible is lost), its proportions are kept, and the box has a fixed aspect ratio so nothing shifts
-   while it loads. `widthClass` sets how wide the box may be. */
-function LoginArt({ tr, widthClass }) {
+   while it loads. `widthClass` sets how wide the box may be.
+   After a successful sign-in the door handle is pressed down (`open`): the same picture split in two layers drawn over it,
+   public/login-door-base.webp (the picture without the handle, with what lies under it filled in) and
+   public/login-door-handle.webp (the handle alone), both on the same 1122 x 1402 canvas; the handle turns about its spindle
+   (319, 367). Together they reproduce loginnew.png, so the swap from the original to the layers can't be seen. */
+const ART_POS = { width: '136.83%', left: '-20.73%', top: '-20%' };
+function LoginArt({ tr, widthClass, open }) {
   return (
     <figure data-testid="login-art" className="m-0 flex w-full flex-col items-center text-center">
-      <div data-testid="login-art-box" className={`relative ${widthClass}`} style={{ aspectRatio: '820 / 1050' }}>
+      <div data-testid="login-art-box" data-door={open ? 'open' : undefined} className={`relative ${widthClass}`} style={{ aspectRatio: '820 / 1050' }}>
         <Image
           data-testid="login-art-img"
           src="/loginnew.png"
@@ -50,9 +58,13 @@ function LoginArt({ tr, widthClass }) {
           width={1122}
           height={1402}
           sizes="(min-width: 1024px) 416px, 70vw"
-          className="absolute h-auto max-w-none select-none"
-          style={{ width: '136.83%', left: '-20.73%', top: '-20%' }}
+          className="login-art-whole absolute h-auto max-w-none select-none"
+          style={ART_POS}
         />
+        <div aria-hidden="true" className="login-door pointer-events-none absolute max-w-none select-none" style={{ ...ART_POS, aspectRatio: '1122 / 1402' }}>
+          <Image data-door-layer="base" src="/login-door-base.webp" alt="" width={1122} height={1402} sizes="(min-width: 1024px) 570px, 96vw" className="absolute inset-0 h-full w-full" />
+          <Image data-door-layer="handle" src="/login-door-handle.webp" alt="" width={1122} height={1402} sizes="(min-width: 1024px) 570px, 96vw" className="login-door-handle absolute inset-0 h-full w-full" />
+        </div>
       </div>
       {/* from 1024px up the rule and the tagline sit a little to the left of the picture's centre line, toward the form, so the sentence reads as part of the page's left side; on phones they stay centred */}
       <figcaption className="mt-1 flex flex-col items-center lg:-translate-x-10 xl:-translate-x-14">
@@ -81,6 +93,9 @@ function LoginContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleReady, setGoogleReady] = useState(false);
   const googleButtonRef = useRef(null);
+  const mainRef = useRef(null);
+  const busyRef = useRef(false);
+  const [doorOpen, setDoorOpen] = useState(false);
   const tr = language === 'tr';
 
   const sessionExpired = searchParams.get('reason') === 'session_expired';
@@ -100,14 +115,39 @@ function LoginContent() {
       : (safeNext || '/dashboard/select');
   }, [searchParams]);
 
+  /* Press the door handle on the visible picture and resolve when it has finished. Only called after the server accepted the
+     sign-in. Resolves at once (no delay) when motion is reduced, the picture is off screen, or its layers aren't ready. */
+  const openDoor = useCallback(() => new Promise(resolve => {
+    const box = [...(mainRef.current?.querySelectorAll('[data-testid="login-art-box"]') || [])].find(el => el.getClientRects().length);
+    const r = box?.getBoundingClientRect();
+    if (!r || r.bottom <= 0 || r.top >= window.innerHeight || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return resolve();
+    const layers = [...box.querySelectorAll('[data-door-layer]')];
+    const ready = Promise.all(layers.map(img => img.decode()));
+    const tooSlow = new Promise((_, reject) => setTimeout(reject, 800));
+    Promise.race([ready, tooSlow]).then(() => {
+      let timer;
+      const done = () => { clearTimeout(timer); resolve(); };
+      timer = setTimeout(done, DOOR_MS + 400);   // in case animationend never comes (e.g. a background tab)
+      const handle = box.querySelector('[data-door-layer="handle"]');
+      if (!handle) return resolve();
+      handle.addEventListener('animationend', done, { once: true });
+      setDoorOpen(true);
+    }, () => resolve());
+  }), []);
+
   const handleGoogleCredential = useCallback(async (response) => {
+    if (busyRef.current) return;   // one sign-in at a time (either way), including while the door opens
+    busyRef.current = true;
     setError('');
     setMaybeUnverified(false);
     setLoading(true);
     try {
       const res = await api.googleLogin(response.credential);
       if (res.ok) {
+        // Signed in with Google: the same door, then the app opens.
+        await openDoor();
         completeLogin();
+        return;
       } else {
         const data = await res.json().catch(() => ({}));
         setError(data?.code === 'rate_limited'
@@ -116,8 +156,10 @@ function LoginContent() {
       }
     } catch {
       setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
-    } finally { setLoading(false); }
-  }, [tr, completeLogin]);
+    }
+    setLoading(false);
+    busyRef.current = false;
+  }, [tr, completeLogin, openDoor]);
 
   // Render the official Google button once both the GSI script has loaded
   // and the target div exists. Re-runs on language change so the button's
@@ -143,13 +185,18 @@ function LoginContent() {
 
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
+    if (busyRef.current) return;   // one sign-in at a time, including while the door opens
+    busyRef.current = true;
     setError('');
     setMaybeUnverified(false);
     setLoading(true);
     try {
       const res = await api.login(email, password);
       if (res.ok) {
+        // Signed in: the door handle turns, then the app opens. The button stays disabled until the page leaves.
+        await openDoor();
         completeLogin();
+        return;
       } else {
         const data = await res.json().catch(() => ({}));
         if (data?.code === 'rate_limited') {
@@ -166,11 +213,13 @@ function LoginContent() {
       }
     } catch {
       setError(tr ? 'Sunucu bağlantı hatası' : 'Server connection error');
-    } finally { setLoading(false); }
-  }, [email, password, tr, completeLogin]);
+    }
+    setLoading(false);
+    busyRef.current = false;
+  }, [email, password, tr, completeLogin, openDoor]);
 
   return (
-    <main className="relative min-h-screen bg-green-50">
+    <main ref={mainRef} className="relative min-h-screen bg-green-50">
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes loginCaptionFloat {
           0%, 100% { transform: translateY(0); }
@@ -182,6 +231,19 @@ function LoginContent() {
         @media (prefers-reduced-motion: reduce) {
           .login-caption-float { animation: none; }
         }
+        /* the door handle: pressed down about its spindle, with a little give at the start and a soft settle at the end */
+        @keyframes loginDoorOpen {
+          0% { transform: rotate(0deg); animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1); }
+          12% { transform: rotate(-2deg); animation-timing-function: cubic-bezier(0.5, 0, 0.3, 1); }
+          68% { transform: rotate(31deg); animation-timing-function: ease-in-out; }
+          84% { transform: rotate(28.5deg); animation-timing-function: ease-in-out; }
+          100% { transform: rotate(30deg); }
+        }
+        .login-door { opacity: 0; }
+        .login-door-handle { transform-origin: 28.431% 26.177%; }
+        [data-door="open"] .login-door { opacity: 1; }
+        [data-door="open"] .login-art-whole { opacity: 0; }
+        [data-door="open"] .login-door-handle { animation: loginDoorOpen ${DOOR_MS}ms both; }
       `}} />
       {/* Language toggle — pinned to the true top-right corner of the page,
           independent of the two-column split (sits above the image on desktop) */}
@@ -268,7 +330,7 @@ function LoginContent() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading} className="group flex w-full items-center justify-center gap-2 rounded-full btn-primary px-5 py-4 text-[14px] font-bold transition disabled:hover:translate-y-0">
+              <button type="submit" disabled={loading || doorOpen} className="group flex w-full items-center justify-center gap-2 rounded-full btn-primary px-5 py-4 text-[14px] font-bold transition disabled:hover:translate-y-0">
                 {loading ? (tr ? 'Giriş yapılıyor...' : 'Signing in...') : t.login.title}
                 {!loading && <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />}
               </button>
@@ -304,7 +366,7 @@ function LoginContent() {
         </div>
 
         <div className="lg:hidden pb-6 pt-2">
-          <LoginArt tr={tr} widthClass="w-[min(62%,15rem)]" />
+          <LoginArt tr={tr} widthClass="w-[min(62%,15rem)]" open={doorOpen} />
         </div>
 
         <p className="text-[11px] text-[#072C0E]/30">&copy; {new Date().getFullYear()} Carbonless</p>
@@ -314,7 +376,7 @@ function LoginContent() {
       <div className="hidden lg:flex flex-1 items-center justify-center p-8 xl:p-10">
         <div className="flex w-full max-w-xl flex-col items-center">
           {/* loginnew.png has a real alpha channel, so it sits straight on the page with no blend trick (the earlier login-bg.png needed one) */}
-          <LoginArt tr={tr} widthClass="w-[min(100%,26rem,calc((100svh-17rem)*0.78))]" />
+          <LoginArt tr={tr} widthClass="w-[min(100%,26rem,calc((100svh-17rem)*0.78))]" open={doorOpen} />
           {/* Glass caption — attached under the illustration, gentle drift so it feels alive */}
           <div className="login-caption-float relative mt-8 mx-6 w-full max-w-md rounded-2xl border border-white/60 bg-white/85 p-5 shadow-lg shadow-[#072C0E]/5 backdrop-blur-md">
             <p className="text-[15px] font-bold text-[#072C0E]">
