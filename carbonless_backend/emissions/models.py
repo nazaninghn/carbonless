@@ -219,6 +219,15 @@ class EmissionEntry(models.Model):
 
     year = models.IntegerField()
     month = models.IntegerField(choices=[(i, i) for i in range(1, 13)])
+    # The inventory (CarbonReport) this entry belongs to. Multi-inventory, stage 1: added
+    # nullable and not yet read or written by anything; NULL = "not assigned to an
+    # inventory" (every existing entry until a reviewed backfill links it). Only a link —
+    # it never takes part in the calculation. SET_NULL: deleting an inventory never
+    # deletes entries through this link.
+    inventory = models.ForeignKey(
+        'questionnaire.CarbonReport', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='emission_entries',
+    )
 
     quantity = models.DecimalField(max_digits=14, decimal_places=4)
     calculated_co2e_kg = models.DecimalField(max_digits=16, decimal_places=4, editable=False)
@@ -329,6 +338,12 @@ class ReductionTarget(models.Model):
 
     base_year = models.IntegerField()
     target_year = models.IntegerField()
+    # Multi-inventory, stage 1: the inventory the target is set against. Nullable, not yet
+    # read or written; NULL = not assigned to an inventory (company-wide, as today).
+    inventory = models.ForeignKey(
+        'questionnaire.CarbonReport', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='reduction_targets',
+    )
     base_emissions_kg = models.DecimalField(max_digits=14, decimal_places=4)
     target_reduction_percent = models.DecimalField(max_digits=5, decimal_places=2)
 
@@ -365,6 +380,12 @@ class CustomEmissionRequest(models.Model):
     quantity = models.DecimalField(max_digits=14, decimal_places=4, help_text='Amount consumed')
     year = models.IntegerField()
     month = models.IntegerField(choices=[(i, i) for i in range(1, 13)])
+    # Multi-inventory, stage 1: the inventory the request belongs to. Nullable, not yet
+    # read or written; NULL = not assigned to an inventory.
+    inventory = models.ForeignKey(
+        'questionnaire.CarbonReport', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='custom_emission_requests',
+    )
     facility = models.ForeignKey(
         'companies.Facility', null=True, blank=True, on_delete=models.SET_NULL,
         related_name='custom_emission_requests', help_text='Structured facility reference'

@@ -337,7 +337,10 @@ class ReductionTargetSerializer(serializers.ModelSerializer):
         # 'company' is set server-side from the requester's own membership
         # (see ReductionTargetViewSet.perform_create) — must stay read-only
         # or a PATCH could reassign a target to an unrelated company.
-        read_only_fields = ['user', 'company', 'created_at']
+        # 'inventory' (multi-inventory link) likewise: with '__all__' it would
+        # accept any inventory id, another company's included. It will be set
+        # server-side from the active inventory; until then clients can't set it.
+        read_only_fields = ['user', 'company', 'created_at', 'inventory']
 
 
 class CustomEmissionRequestSerializer(serializers.ModelSerializer):

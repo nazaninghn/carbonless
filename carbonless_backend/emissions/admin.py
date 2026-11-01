@@ -93,6 +93,9 @@ class EmissionEntryAdmin(ModelAdmin):
                      'emission_factor__name']
     list_per_page = 50
     raw_id_fields = ['emission_factor']
+    # The multi-inventory link is set by the application (and a reviewed backfill), not by hand:
+    # an editable drop-down here would list every company's inventories.
+    readonly_fields = ['inventory']
 
     def factor_name(self, obj):
         return obj.emission_factor.name[:40]
@@ -120,6 +123,8 @@ class ReductionTargetAdmin(ModelAdmin):
                     'target_reduction_percent', 'status']
     list_filter = ['status']
     search_fields = ['user__username', 'title']
+    # Set by the application, not by hand (see EmissionEntryAdmin).
+    readonly_fields = ['inventory']
 
 
 class CustomEmissionRequestForm(forms.ModelForm):

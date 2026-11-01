@@ -8,6 +8,10 @@ class ChatSession(models.Model):
     # sees each company's chats only while working in it.
     company = models.ForeignKey('companies.Company', on_delete=models.SET_NULL, null=True, blank=True,
                                 related_name='chat_sessions')
+    # Multi-inventory, stage 1: the inventory whose data the conversation is about.
+    # Nullable, not yet read or written; NULL = not assigned to an inventory.
+    inventory = models.ForeignKey('questionnaire.CarbonReport', on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='chat_sessions')
     title = models.CharField(max_length=200, default='New Chat')
     state = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
