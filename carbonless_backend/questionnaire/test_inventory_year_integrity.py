@@ -293,28 +293,46 @@ class LegacyDuplicateGroupTests(_Year):
         self.assertEqual(self._figures(), before)
 
     def test_resolving_the_duplicate_unblocks_the_inventory(self):
+        """Resolving the duplicate lifts the year-sharing block. A SIGNED inventory is still closed, now for
+        the one reason that it is signed (it used to accept the edit once the duplicate was gone)."""
         dup = self._legacy_group()
         self._lock()
         self.client.delete(f'/api/questionnaire/{dup.id}/')                     # the owner removes the extra draft
         if not CarbonReport.objects.filter(pk=dup.pk).exists():
+            before = self._figures()
             r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
                                   {'step': '4A-1', 'data': {'answer': {'1': '1000 kWh'}}, 'language': 'en'}, format='json')
-            self.assertEqual(r.status_code, 200, r.content)
+            self.assertEqual(r.status_code, 409, r.content)
+            self.assertEqual(r.data['code'], 'inventory_signed')                # not 'inventory_exists_for_year'
+            self.assertEqual(self._figures(), before)
+
+    def test_resolving_the_duplicate_unblocks_an_open_inventory(self):
+        """The control for the test above: the same group, not signed, takes the edit once the extra draft is gone."""
+        dup = self._legacy_group()
+        self.client.delete(f'/api/questionnaire/{dup.id}/')                     # the owner removes the extra draft
+        self.assertFalse(CarbonReport.objects.filter(pk=dup.pk).exists())
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                              {'step': '4A-1', 'data': {'answer': {'1': '1000 kWh'}}, 'language': 'en'}, format='json')
+        self.assertEqual(r.status_code, 200, r.content)
 
 
 class AuditAndEditedAfterSigningTests(_Year):
     """What is recorded when a signed inventory is edited, and what is not."""
 
     def test_an_authorised_edit_of_the_signed_inventory_is_flagged_and_logged(self):
+        """A signed inventory takes no edit, whoever asks: refused, nothing flagged, nothing logged, figures
+        untouched. (It used to be edited, flagged as edited after signing, and put on record.)"""
         self._populate()
         self._lock()
+        before, rows_before = self._figures(), len(self._history('questionnaire_changed'))
         r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
                               {'step': '4A-1', 'data': {'answer': {'1': '2000 kWh'}}, 'language': 'en'}, format='json')
-        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'inventory_signed')
         self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
-        self.assertTrue(self._history('questionnaire_changed'))
-        self.assertEqual([q for _d, q, _k, _s in self._figures()], [2000.0])
+        self.assertIsNone(self.report.edited_after_signing_at)
+        self.assertEqual(len(self._history('questionnaire_changed')), rows_before)
+        self.assertEqual(self._figures(), before)
 
     def test_a_refused_write_changes_no_flag_and_adds_no_change_row(self):
         self._populate()
@@ -330,8 +348,21 @@ class EntriesOfAnotherInventoryTests(_Year):
     """The remaining ways to reach entries that belong to an inventory."""
 
     def test_entries_created_by_the_questionnaire_cannot_be_edited_or_deleted_through_the_emissions_api(self):
+        """Signed: the signed guard answers first (409 inventory_signed), before the older "edit it in the
+        questionnaire" answer; either way the entry cannot be changed through the emissions API."""
         self._populate()
         self._lock()
+        before = self._figures()
+        e = EmissionEntry.objects.filter(company=self.company, year=2025).first()
+        r = self.client.patch(f'/api/emissions/entries/{e.id}/', {'quantity': 5}, format='json')
+        self.assertEqual((r.status_code, r.data.get('code')), (409, 'inventory_signed'))
+        r = self.client.delete(f'/api/emissions/entries/{e.id}/')
+        self.assertEqual((r.status_code, r.data.get('code')), (409, 'inventory_signed'))
+        self.assertEqual(self._figures(), before)
+
+    def test_entries_created_by_the_questionnaire_still_point_to_the_questionnaire_while_the_inventory_is_open(self):
+        """The control for the test above: not signed, the original answer is unchanged (400 edit_in_questionnaire)."""
+        self._populate()
         before = self._figures()
         e = EmissionEntry.objects.filter(company=self.company, year=2025).first()
         r = self.client.patch(f'/api/emissions/entries/{e.id}/', {'quantity': 5}, format='json')
@@ -522,21 +553,36 @@ class WorkspaceWritePathTests(_Year):
         self.assertIsNone(self.report.edited_after_signing_at)                     # not signed: nothing to flag
 
     def test_a_workspace_save_into_a_signed_inventory_is_flagged_and_logged(self):
+        """A signed inventory takes no Workspace save: refused, nothing written, nothing flagged or logged.
+        (It used to be saved, flagged as edited after signing, and put on record.)"""
+        from .models import ReportField
         self._lock()
-        self.assertEqual(self._upsert(self.report).status_code, 200)
-        self.assertEqual(len(self._workspace_rows()), 1)
-        self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
-        [row] = self._history('inventory_recalculated')
-        self.assertEqual((row.target_type, row.target_id), ('CarbonReport', str(self.report.pk)))
-
-    def test_saving_the_same_workspace_values_again_does_not_flag_a_signed_inventory(self):
-        self._upsert(self.report)
-        self._lock()
-        self.assertEqual(self._upsert(self.report).status_code, 200)                # nothing changed
+        before = self._figures()
+        r = self._upsert(self.report)
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'inventory_signed')
+        self.assertEqual(self._workspace_rows(), [])
+        self.assertFalse(ReportField.objects.filter(report=self.report).exists())
         self.report.refresh_from_db()
         self.assertIsNone(self.report.edited_after_signing_at)
         self.assertEqual(self._history('inventory_recalculated'), [])
+        self.assertEqual(self._figures(), before)
+
+    def test_saving_the_same_workspace_values_again_does_not_flag_a_signed_inventory(self):
+        """Even the same values are refused once signed; what was saved before signing is exactly as it was."""
+        self._upsert(self.report)
+        self._lock()
+        rows_before = [(e.pk, e.quantity, e.calculated_co2e_kg, e.inventory_id) for e in self._workspace_rows()]
+        figures_before = self._figures()
+        r = self._upsert(self.report)
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'inventory_signed')
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.edited_after_signing_at)
+        self.assertEqual(self._history('inventory_recalculated'), [])
+        self.assertEqual([(e.pk, e.quantity, e.calculated_co2e_kg, e.inventory_id) for e in self._workspace_rows()],
+                         rows_before)
+        self.assertEqual(self._figures(), figures_before)
 
     def test_a_workspace_save_creates_no_entries_for_an_inventory_without_a_year(self):
         report = CarbonReport.objects.create(company=self.company, created_by=self.user, title='no year')

@@ -4,6 +4,7 @@ Workspace API views — ReportField + PendingSuggestion + AI Chat with extractio
 import json
 import logging
 import os
+from django.db import transaction
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django_ratelimit.decorators import ratelimit
@@ -59,25 +60,48 @@ def _shared_year_block(request, report):
     return Response(year_guard.conflict_payload(others, report.reporting_year, lang), status=409)
 
 
-def _workspace_entry_figures(report):
-    """The (description, quantity, kg CO2e) of the entries this report's Workspace wrote."""
-    return sorted(
-        (e.description, float(e.quantity), float(e.calculated_co2e_kg))
-        for e in EmissionEntry.objects.filter(
-            company=report.company, description__startswith='Workspace ',
-            description__endswith=f'(report {report.id})'))
+def _check_workspace_write(report):
+    """Fail-fast, from an unlocked read: a Workspace save changes figures, so it is refused (409) for a
+    signed inventory, a completed one and a pre-ownership one."""
+    from .immutability import check_report
+    check_report(report, entry_producing=True)
+
+
+def _guard_workspace_write(report):
+    """THE GATE of a Workspace write transaction (call it as the first database operation inside it): the
+    same checks on the inventory's row, locked by the gate's conditional no-op UPDATE, so a concurrent
+    signing cannot slip in. A refusal raises inside the transaction and nothing written survives."""
+    from .immutability import lock_and_check
+    lock_and_check(report, entry_producing=True)
+
+
+def _sync_workspace_safely(report, user):
+    """Sync the Workspace figures into entries. An ordinary failure is logged and the figures stay saved
+    (as before); a guard refusal is NOT swallowed: it propagates and the request's transaction rolls the
+    ReportField writes back. The sync runs in its own savepoint so a database error cannot poison the
+    request's transaction."""
+    from .immutability import InventoryGuardError
+    try:
+        with transaction.atomic():
+            return _sync_workspace_to_emission_entries(report, user)
+    except InventoryGuardError:
+        raise
+    except Exception:
+        logger.error('Workspace->EmissionEntry sync failed for report %s', report.id, exc_info=True)
+        return None
 
 
 def _sync_workspace_to_emission_entries(report, user):
     """
-    Same rule as the questionnaire (year_guard.py): entries belong to the company and
-    year, so nothing is written for an inventory without a year (they used to land in
-    the current year) or whose year another inventory also covers. A change to a signed /
-    completed inventory's figures marks it edited after signing and goes on the company's
-    history. Returns None when synced, else the code of the reason it was skipped.
+    Same rule as the questionnaire (year_guard.py): nothing is written for an inventory without a year
+    (they used to land in the current year) or whose year another inventory also covers.
+
+    A signed or completed inventory is never written (InventoryGuardError, before anything is written), and
+    neither is a pre-ownership one: its Workspace rows, if any, are unassigned, and a tagged row would
+    duplicate them. Returns None when synced, else the code of the reason it was skipped.
     """
     from .year_guard import other_inventories_for_year, log_blocked
-    from .step_entries import report_is_locked
+    from .immutability import check_report
     year = report.reporting_year
     if not year:
         return 'reporting_year_required'
@@ -86,19 +110,8 @@ def _sync_workspace_to_emission_entries(report, user):
         log_blocked(user, report.company_id, others, year, 'save Workspace figures')
         return 'inventory_exists_for_year'
 
-    before = _workspace_entry_figures(report)
+    check_report(report, entry_producing=True)
     _write_workspace_entries(report, user)
-    if report_is_locked(report) and _workspace_entry_figures(report) != before:
-        if report.signed_at:
-            CarbonReport.objects.filter(pk=report.pk).update(edited_after_signing_at=timezone.now())
-        from emissions.audit import log_company_activity
-        log_company_activity(
-            user, report.company_id, 'inventory_recalculated',
-            f'{year} envanterinin ({report.title or year}) Çalışma Alanı değerleri değişti '
-            f'(imzalı/tamamlanmış envanter; "imzadan sonra düzenlendi" olarak işaretlendi).',
-            f'The Workspace figures of the {year} inventory ({report.title or year}) changed '
-            f'(signed/completed inventory; marked as edited after signing).',
-            target_type='CarbonReport', target_id=report.pk, reporting_year=year)
     return None
 
 
@@ -114,6 +127,14 @@ def _write_workspace_entries(report, user):
     'Workspace <tag> (report <id>)' so re-running it (fields change, shipments
     added/removed) updates/replaces the same rows instead of duplicating them.
     """
+    from .immutability import check_report
+    from .step_entries import owned_entries
+    # Defence in depth: the callers refuse first; nothing below runs for a signed, completed or
+    # pre-ownership inventory.
+    check_report(report, entry_producing=True)
+    if report.company_id is None:
+        return
+
     values, _ = _fields_map(report)
     company = report.company
     year = report.reporting_year
@@ -126,26 +147,28 @@ def _write_workspace_entries(report, user):
             logger.warning('Workspace sync skipped %s for report %s: %s', tag, report.id, error)
             return
         desc = f'Workspace {tag} {tag_prefix}'
-        existing = EmissionEntry.objects.filter(company=company, description=desc).first()
+        # Selected by inventory_id ONLY: of the rows this report already owns, the "(report N)" text
+        # classifies which Workspace tag a row is. Never a lookup by company or description alone.
+        existing = owned_entries(report).filter(description=desc).first()
         if existing:
             existing.emission_factor = factor
             existing.quantity = qty
             existing.calculated_co2e_kg = co2e_kg
             existing.factor_value_snapshot = factor.factor_kg_co2e
             existing.factor_source_snapshot = factor.source
-            existing.year = year
             existing.save()
         else:
             EmissionEntry.objects.create(
                 user=user, company=company, emission_factor=factor,
+                inventory=report,
                 year=year, month=month, quantity=qty, calculated_co2e_kg=co2e_kg,
                 description=desc, factor_value_snapshot=factor.factor_kg_co2e,
                 factor_source_snapshot=factor.source, status='approved',
             )
 
     def _remove_stale(tag_startswith, keep_tags):
-        stale = EmissionEntry.objects.filter(
-            company=company, description__startswith=f'Workspace {tag_startswith}',
+        stale = owned_entries(report).filter(
+            description__startswith=f'Workspace {tag_startswith}',
             description__endswith=tag_prefix,
         ).exclude(description__in=[f'Workspace {t} {tag_prefix}' for t in keep_tags])
         stale.delete()
@@ -464,6 +487,9 @@ class ReportFieldBulkUpsertView(APIView):
     """POST /api/questionnaire/report-fields/bulk-upsert/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
+    # Validation runs outside any transaction; the writes (the fields and the entry sync) run in ONE
+    # transaction that starts with the gate, so a refusal part-way (InventoryGuardError) leaves no
+    # ReportField written.
     def post(self, request):
         report_id = request.data.get('report')
         fields = request.data.get('fields', [])
@@ -477,30 +503,31 @@ class ReportFieldBulkUpsertView(APIView):
         blocked = _shared_year_block(request, report)
         if blocked:
             return blocked
+        # Fail-fast, unlocked: a signed / completed / pre-ownership inventory is refused (409) before any
+        # work. The authoritative check is the gate that starts the write transaction below.
+        _check_workspace_write(report)
 
         updated = []
-        for f in fields:
-            fid = f.get('field_id')
-            val = f.get('value')
-            if not fid or val is None:
-                continue
-            obj, _ = ReportField.objects.update_or_create(
-                report=report,
-                field_id=fid,
-                defaults={
-                    'value': val,
-                    'source': f.get('source', ReportField.Source.DASHBOARD),
-                    'confidence': f.get('confidence'),
-                    'updated_by': request.user,
-                },
-            )
-            updated.append(obj.field_id)
+        with transaction.atomic():
+            _guard_workspace_write(report)          # THE GATE: the first database operation of this transaction
+            for f in fields:
+                fid = f.get('field_id')
+                val = f.get('value')
+                if not fid or val is None:
+                    continue
+                obj, _ = ReportField.objects.update_or_create(
+                    report=report,
+                    field_id=fid,
+                    defaults={
+                        'value': val,
+                        'source': f.get('source', ReportField.Source.DASHBOARD),
+                        'confidence': f.get('confidence'),
+                        'updated_by': request.user,
+                    },
+                )
+                updated.append(obj.field_id)
 
-        skipped = None
-        try:
-            skipped = _sync_workspace_to_emission_entries(report, request.user)
-        except Exception:
-            logger.error('Workspace->EmissionEntry sync failed for report %s', report.id, exc_info=True)
+            skipped = _sync_workspace_safely(report, request.user)
 
         body = {'updated': updated, 'count': len(updated)}
         if skipped:
@@ -528,6 +555,8 @@ class WorkspaceChatView(APIView):
         report = _get_report(request, report_id)
         if not report:
             return Response({'error': 'Report not found'}, status=404)
+        from .immutability import assert_not_signed
+        assert_not_signed(report)      # a signed inventory accepts no new suggestion
 
         client = _get_groq()
         if not client:
@@ -599,6 +628,8 @@ class SuggestionConfirmView(APIView):
     """POST /api/chat/suggestions/{id}/confirm/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
+    # The writes (the suggestion, the fields, the entry sync) run in ONE transaction that starts with the
+    # gate: a refusal part-way leaves the suggestion pending and no ReportField written.
     def post(self, request, suggestion_id):
         try:
             suggestion = PendingSuggestion.objects.get(
@@ -611,6 +642,8 @@ class SuggestionConfirmView(APIView):
         blocked = _shared_year_block(request, suggestion.report)
         if blocked:
             return blocked
+        # Fail-fast, unlocked: refused (409) before any work. The authoritative check is the gate below.
+        _check_workspace_write(suggestion.report)
 
         # Allow caller to override field values (Edit flow)
         edited_fields = request.data.get('fields')
@@ -632,34 +665,32 @@ class SuggestionConfirmView(APIView):
         else:
             suggestion.status = PendingSuggestion.Status.CONFIRMED
 
-        suggestion.confirmed_at = timezone.now()
-        suggestion.fields = fields_to_save
-        suggestion.save()
-
-        # Write to ReportField
         saved = []
-        for f in fields_to_save:
-            fid = f.get('field_id')
-            val = f.get('value')
-            if not fid or val is None:
-                continue
-            ReportField.objects.update_or_create(
-                report=suggestion.report,
-                field_id=fid,
-                defaults={
-                    'value': val,
-                    'source': ReportField.Source.CHATBOT,
-                    'confidence': f.get('confidence'),
-                    'updated_by': request.user,
-                },
-            )
-            saved.append(fid)
+        with transaction.atomic():
+            _guard_workspace_write(suggestion.report)       # THE GATE: the first database operation
+            suggestion.confirmed_at = timezone.now()
+            suggestion.fields = fields_to_save
+            suggestion.save()
 
-        skipped = None
-        try:
-            skipped = _sync_workspace_to_emission_entries(suggestion.report, request.user)
-        except Exception:
-            logger.error('Workspace->EmissionEntry sync failed for report %s', suggestion.report.id, exc_info=True)
+            # Write to ReportField
+            for f in fields_to_save:
+                fid = f.get('field_id')
+                val = f.get('value')
+                if not fid or val is None:
+                    continue
+                ReportField.objects.update_or_create(
+                    report=suggestion.report,
+                    field_id=fid,
+                    defaults={
+                        'value': val,
+                        'source': ReportField.Source.CHATBOT,
+                        'confidence': f.get('confidence'),
+                        'updated_by': request.user,
+                    },
+                )
+                saved.append(fid)
+
+            skipped = _sync_workspace_safely(suggestion.report, request.user)
 
         body = {
             'status': suggestion.status,
@@ -684,6 +715,8 @@ class SuggestionRejectView(APIView):
             )
         except PendingSuggestion.DoesNotExist:
             return Response({'error': 'Suggestion not found or already resolved'}, status=404)
+        from .immutability import assert_not_signed
+        assert_not_signed(suggestion.report)      # a signed inventory accepts no write
 
         suggestion.status = PendingSuggestion.Status.REJECTED
         suggestion.save()

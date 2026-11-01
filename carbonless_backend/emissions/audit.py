@@ -14,15 +14,24 @@ logger = logging.getLogger(__name__)
 
 def log_company_activity(user, company_id, action, detail_tr, detail_en,
                          target_type='', target_id='', request=None, **extra):
-    """One history row; never lets a failure break what is being saved."""
+    """One history row; never lets a failure break what is being saved.
+
+    The insert runs in its OWN savepoint (`transaction.atomic()`): when the caller is inside a transaction
+    (the inventory's write transaction is one) and the insert fails, only the insert is rolled back. Without
+    the savepoint, a database error swallowed here would leave the caller's transaction aborted on PostgreSQL
+    and every later statement of the real operation would fail. The failure is still logged and still does
+    not block the operation; nothing but this one audit row is affected, and an error of the caller's own
+    transaction is never caught here."""
     try:
+        from django.db import transaction
         from accounts.models import ActivityLog
-        ActivityLog.objects.create(
-            user=user if getattr(user, 'pk', None) else None, action=action, detail=detail_en,
-            ip_address=request.META.get('REMOTE_ADDR') if request is not None else None,
-            target_type=target_type, target_id=str(target_id or ''),
-            metadata={'company_id': company_id, 'detail_tr': detail_tr, 'detail_en': detail_en, **extra},
-        )
+        with transaction.atomic():
+            ActivityLog.objects.create(
+                user=user if getattr(user, 'pk', None) else None, action=action, detail=detail_en,
+                ip_address=request.META.get('REMOTE_ADDR') if request is not None else None,
+                target_type=target_type, target_id=str(target_id or ''),
+                metadata={'company_id': company_id, 'detail_tr': detail_tr, 'detail_en': detail_en, **extra},
+            )
     except Exception:
         logger.exception('Could not write a company history row (%s)', action)
 

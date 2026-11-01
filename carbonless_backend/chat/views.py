@@ -894,7 +894,7 @@ def _parse_emission_entry(ai_text):
     return entries
 
 
-def _create_emission_from_chat(user, entry_data):
+def _create_emission_from_chat(user, entry_data, inventory=None):
     """
     Create an EmissionEntry from AI-parsed chat data.
 
@@ -915,8 +915,22 @@ def _create_emission_from_chat(user, entry_data):
     year = entry_data.get('year', datetime.now(timezone.utc).year)
     description = entry_data.get('description', '') or f'AI Chat: {activity_type} {quantity} {unit}'
 
-    return create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description,
-                                      facility=_chat_facility(user, entry_data))
+    from django.db import transaction
+    with transaction.atomic():
+        # `inventory` was named explicitly and checked by the caller (same company, same year, not locked).
+        # It is stored by the create itself - there is no separate UPDATE - so the row exists with its
+        # link or does not exist; the factor, amount and CO2e are untouched.
+        entry, err = create_entry_from_activity(user, company, activity_type, quantity, unit, year, month,
+                                                description, facility=_chat_facility(user, entry_data),
+                                                inventory=inventory)
+        if entry is not None and inventory is not None:
+            from emissions.models import EmissionEntry
+            from questionnaire.immutability import InventoryGuardError
+            # What the caller gets back must be what the database holds: confirm the stored link. If it is
+            # not there, the whole creation (entry and history row) is rolled back and nothing is claimed.
+            if not EmissionEntry.objects.filter(pk=entry.pk, inventory_id=inventory.pk).exists():
+                raise InventoryGuardError('inventory_link_failed')
+    return entry, err
 
 
 _LANGUAGE_NAMES = {'tr': 'Turkish', 'en': 'English'}
@@ -2292,6 +2306,21 @@ def confirm_entry(request):
             'code': INVALID_YEAR_CODE,
         }, status=400)
 
+    # Multi-inventory stage 1: the entry joins an inventory only when the card names one
+    # explicitly and the server accepts it; otherwise it stays company-level (NULL).
+    from companies.utils import get_current_company as _current_company
+    from emissions.inventory_link import InventorySelectionError, explicit_inventory_id, resolve_inventory
+    try:
+        chat_inventory = resolve_inventory(
+            _current_company(request.user), explicit_inventory_id(entry_data),
+            year=entry_data.get('year') or now.year, forbid_locked=True)
+    except InventorySelectionError as exc:
+        return Response(exc.payload(), status=400)
+    # Protective only (assigns nothing): a card that names no inventory is refused when the company has a
+    # signed inventory for its year; a named inventory must not be signed.
+    from questionnaire.immutability import assert_period_writable
+    assert_period_writable(_current_company(request.user), entry_data.get('year') or now.year, chat_inventory)
+
     # Grid electricity on a facility uses that facility's country's grid; a
     # country without its own grid factor is not calculated.
     chat_facility = _chat_facility(request.user, entry_data)
@@ -2356,7 +2385,7 @@ def confirm_entry(request):
             return Response({'error': same['message_en'], 'code': 'same_period',
                              'new_quantity': float(qty), **same}, status=409)
 
-    entry, err = _create_emission_from_chat(request.user, entry_data)
+    entry, err = _create_emission_from_chat(request.user, entry_data, inventory=chat_inventory)
     if err:
         from emissions.factor_lookup import AMOUNT_TOO_LARGE_ERROR
         if err == AMOUNT_TOO_LARGE_ERROR:

@@ -1,4 +1,5 @@
 import json
+import unittest
 
 from django.contrib.auth.models import User
 from django.test import TestCase as _DjangoTestCase
@@ -18,6 +19,30 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from companies.models import Company, CompanyMembership
 from .models import CarbonReport, ReportStep
+
+
+def _signed_state_dump():
+    """Everything a REFUSED write to a signed (or completed) inventory must leave byte-identical: entries,
+    inventories, answers, Workspace fields and the company's facilities."""
+    from companies.models import Facility
+    from emissions.models import EmissionEntry
+    from .models import ReportField
+    return {m.__name__: list(m.objects.order_by('pk').values())
+            for m in (EmissionEntry, CarbonReport, ReportStep, ReportField, Facility)}
+
+
+def _make_legacy_signed(report, snapshot=None):
+    """The state of an inventory signed BEFORE facility snapshots existed: signed, completed, and NO recorded
+    grid connection (`snapshot` None = NULL, {} = empty).
+
+    The application cannot produce it (the first signing always records the snapshot), so it is set directly,
+    as the LAST step of a fixture whose steps, answers and facilities all exist already: nothing is written to
+    the inventory after it is signed, and nothing is reconstructed - the snapshot stays exactly as given."""
+    from django.utils import timezone
+    CarbonReport.objects.filter(pk=report.pk).update(
+        signed_at=timezone.now(), status=CarbonReport.Status.COMPLETED, applied_grid_connections=snapshot)
+    report.refresh_from_db()
+
 
 # The two question ids the questionnaire can reach that are longer than the
 # old max_length=10 on CarbonReport.current_step. SQLite ignores varchar
@@ -439,7 +464,77 @@ class InventoryCalculationTests(StepEntriesTests):
         self.assertEqual(sorted(self._by_step()['4A-1']),
                          [('turkey-grid-distribution', 500.0, 200.0), ('turkey-grid-distribution', 1000.0, 400.0)])
 
-    def test_backfill_splits_an_old_combined_entry_keeping_its_approval(self):
+    def _backfill_state(self):
+        """Everything the disabled command could touch: entries (every field, incl. inventory), inventories,
+        answers, Workspace fields, facilities and the activity history."""
+        from accounts.models import ActivityLog
+        state = _signed_state_dump()
+        state['ActivityLog'] = list(ActivityLog.objects.order_by('pk').values())
+        return state
+
+    def _assert_backfill_refuses(self):
+        from io import StringIO
+        from django.core.management import CommandError, call_command
+        out = StringIO()
+        with self.assertRaises(CommandError) as cm:
+            call_command('backfill_calc_detail', stdout=out)
+        self.assertIn('backfill_calc_detail is disabled', str(cm.exception))
+        self.assertEqual(out.getvalue(), '')                      # it never got as far as reporting a run
+
+    def test_backfill_refuses_and_leaves_a_legacy_combined_entry_untouched(self):
+        """The disabled command refuses (every time) and creates, changes, deletes and assigns nothing: the
+        historical combined 4A-1 entry stays one unassigned approved row, field for field - it is not split by
+        facility and not tagged with an inventory."""
+        from emissions.models import EmissionEntry
+        factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        self._step('2A-2', {'1': {'name': 'Gebze Fabrika', 'country': 'TR', 'grid_connection': 'distribution'}, '2': {'name': 'Depo', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._step('4A-1', {'1': '1000 kWh', '2': '500 kWh'})
+        # legacy state, as an earlier version saved it: one combined entry, approved, owned by no inventory
+        EmissionEntry.objects.filter(company=self.company).delete()
+        old = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
+                                           month=1, quantity=1500, description='Questionnaire step 4A-1',
+                                           status='approved', approved_by=self.user)
+        self.assertIsNone(old.inventory_id)
+        before = self._backfill_state()
+        entry_before = list(EmissionEntry.objects.filter(pk=old.pk).values())
+        self._assert_backfill_refuses()
+        self._assert_backfill_refuses()                           # a second run refuses the same way
+        self.assertEqual(self._backfill_state(), before)          # nothing created, updated or deleted anywhere
+        self.assertEqual(list(EmissionEntry.objects.filter(pk=old.pk).values()), entry_before)
+        self.assertEqual(EmissionEntry.objects.count(), 1)        # not split by facility
+        self.assertEqual(EmissionEntry.objects.exclude(inventory=None).count(), 0)   # nothing was assigned
+
+    def test_backfill_refuses_and_does_not_reattach_orphan_proofs(self):
+        """The command's second write path (re-attaching orphaned proof files to unassigned rows) is refused
+        too: the unassigned entries keep their (empty) proof and every record is unchanged."""
+        from django.core.files.base import ContentFile
+        from accounts.models import ActivityLog
+        from emissions.models import EmissionEntry
+        factor = self._factor('turkey-grid', 'kwh', 0.4, scope='scope2', country='turkey')
+        EmissionEntry.objects.filter(company=self.company).delete()
+        old = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
+                                           month=1, quantity=1500, description='Questionnaire step 4A-1',
+                                           status='approved')
+        # legacy state: a proof file left behind (its entry gone) that the old command would have re-attached
+        orphan = EmissionEntry.objects.create(user=self.user, company=self.company, emission_factor=factor, year=2025,
+                                              month=1, quantity=1, description='x')
+        orphan.proof_document.save('eski.pdf', ContentFile(b'%PDF'), save=True)
+        name = orphan.proof_document.name
+        ActivityLog.objects.create(user=self.user, action='entry_updated', target_type='EmissionEntry',
+                                   target_id=str(orphan.pk), metadata={'company_id': self.company.pk},
+                                   detail=f'{factor.name} · 2025/01 · 1500 kwh · Kanıt eklendi: '
+                                          f'{name.rsplit("/", 1)[-1]}')
+        EmissionEntry.objects.filter(pk=orphan.pk).delete()
+        before = self._backfill_state()
+        self._assert_backfill_refuses()
+        self.assertEqual(self._backfill_state(), before)
+        old.refresh_from_db()
+        self.assertFalse(old.proof_document)                       # the orphan proof was NOT attached to it
+        self.assertFalse(EmissionEntry.objects.filter(proof_document=name).exists())
+        self.assertIsNone(old.inventory_id)
+
+    @unittest.skip("PENDING REWRITE: documents the OLD backfill algorithm (company/year/description selection, delete + recreate). backfill_calc_detail is disabled in Stage 1; this must never run against it. Replace it with an inventory_id-only version when the command is rewritten.")
+    def test_pending_rewrite_backfill_splits_an_old_combined_entry_keeping_its_approval(self):
         from django.core.management import call_command
         from companies.models import Facility
         from emissions.models import EmissionEntry
@@ -512,7 +607,8 @@ class InventoryCalculationTests(StepEntriesTests):
         self.assertEqual(self.client.delete(f"/api/emissions/entries/{after['Depo'].pk}/proof/").status_code, 204)
         self.assertTrue(shared.proof_document.storage.exists(shared.proof_document.name))
 
-    def test_split_keeps_proof_and_orphans_are_reattached(self):
+    @unittest.skip("PENDING REWRITE: documents the OLD backfill algorithm (company/year/description selection, delete + recreate). backfill_calc_detail is disabled in Stage 1; this must never run against it. Replace it with an inventory_id-only version when the command is rewritten.")
+    def test_pending_rewrite_split_keeps_proof_and_orphans_are_reattached(self):
         from django.core.management import call_command
         from django.core.files.base import ContentFile
         from accounts.models import ActivityLog
@@ -770,7 +866,10 @@ class CompanyInventoryAccessTests(TestCase):
         c.force_authenticate(user=user)
         return c
 
-    def _entry(self, description, year=2024, quantity=10):
+    def _entry(self, description, year=2024, quantity=10, inventory=None):
+        """An approved entry. `inventory` (a CarbonReport) is stored on it explicitly. Left out, the entry is
+        UNASSIGNED (inventory NULL) like a chat / manual / bulk entry: nothing is inferred from its description,
+        its year or its company."""
         from emissions.models import EmissionEntry, EmissionFactor
         f, _ = EmissionFactor.objects.get_or_create(
             slug='t-grid', country='turkey', year=2024,
@@ -778,7 +877,13 @@ class CompanyInventoryAccessTests(TestCase):
                           factor_kg_co2e=0.4, source='test'))
         return EmissionEntry.objects.create(
             company=self.company, user=self.owner, emission_factor=f, year=year, month=1,
-            quantity=quantity, calculated_co2e_kg=4, description=description, status='approved')
+            quantity=quantity, calculated_co2e_kg=4, description=description, status='approved',
+            inventory=inventory)
+
+    def _state(self, *entries):
+        """The stored fields of these entries, for a field-for-field before / after comparison."""
+        from emissions.models import EmissionEntry
+        return list(EmissionEntry.objects.filter(pk__in=[e.pk for e in entries]).order_by('pk').values())
 
     def test_teammate_lists_and_opens_the_inventory(self):
         c = self._client(self.admin)
@@ -813,25 +918,52 @@ class CompanyInventoryAccessTests(TestCase):
         self.assertEqual(self._client(self.owner).delete(f'/api/questionnaire/{done.id}/').status_code, 200)
 
     def test_delete_removes_its_questionnaire_entries_only(self):
+        """Only the entries stored with this inventory's id go. Unassigned entries stay - the chat one, one of
+        another year, and one that merely LOOKS like a questionnaire row of this year (a description is not
+        ownership) - and they are not changed."""
         from emissions.models import EmissionEntry
-        self._entry('Questionnaire step 4A-1')
+        mine = self._entry('Questionnaire step 4A-1', inventory=self.report)
         chat = self._entry('Chat: electricity')
         other_year = self._entry('Questionnaire step 4A-1', year=2023)
+        lookalike = self._entry('Questionnaire step 4A-1', quantity=11)
+        kept = (chat, other_year, lookalike)
+        before = self._state(*kept)
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 1})
-        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), {chat.id, other_year.id})
+        self.assertFalse(EmissionEntry.objects.filter(pk=mine.pk).exists())
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), {e.id for e in kept})
+        self.assertEqual(self._state(*kept), before)                                  # unchanged, field for field
+        self.assertTrue(all(e.inventory_id is None for e in EmissionEntry.objects.all()))   # and still unassigned
+
+    def test_delete_never_claims_unassigned_entries_that_look_like_the_inventorys_own(self):
+        """Unassigned entries whose text and year match this inventory's own questionnaire and Workspace rows
+        are not its records: deleting the inventory deletes none of them, claims none of them, and changes none."""
+        from emissions.models import EmissionEntry
+        looks = [self._entry('Questionnaire step 4A-1'), self._entry(f'Workspace 3A (report {self.report.id})'),
+                 self._entry('Questionnaire step 3A-5', quantity=20)]
+        before = self._state(*looks)
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.data, {'deleted_entries': 0})
+        self.assertFalse(CarbonReport.objects.filter(pk=self.report.pk).exists())     # the inventory itself is gone
+        self.assertEqual(self._state(*looks), before)
+        self.assertEqual(EmissionEntry.objects.filter(inventory__isnull=False).count(), 0)   # nothing was claimed
 
     def test_delete_keeps_entries_shared_with_another_inventory(self):
         from emissions.models import EmissionEntry
-        self._entry('Questionnaire step 4A-1')
         # A year two inventories share can only exist as a duplicate group from before the
         # one-inventory-per-year rule (migration 0012 flags its members; see year_guard.py).
         CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
-        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024, title='Second',
-                                    legacy_duplicate_year=True)
+        second = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
+                                             title='Second', legacy_duplicate_year=True)
+        theirs = self._entry('Questionnaire step 4A-1', inventory=second)     # belongs to the OTHER inventory
+        unassigned = self._entry('Questionnaire step 4A-1', quantity=11)      # belongs to none
+        before = self._state(theirs, unassigned)
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 0})
-        self.assertEqual(EmissionEntry.objects.count(), 1)
+        self.assertEqual(EmissionEntry.objects.count(), 2)
+        self.assertEqual(self._state(theirs, unassigned), before)               # neither changed, field for field
+        self.assertTrue(CarbonReport.objects.filter(pk=second.pk).exists())
 
     # ── the dashboard summary after a delete ──────────────────────────────────
     # The factor is 0.4 kg/kWh: 1000 kWh = 400 kg, 500 kWh = 200 kg, 2000 kWh = 800 kg.
@@ -842,25 +974,27 @@ class CompanyInventoryAccessTests(TestCase):
         return r.data
 
     def test_summary_drops_the_deleted_years_questionnaire_entries_only(self):
-        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2023,
-                                    title='Earlier inventory', status=CarbonReport.Status.COMPLETED)
-        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
-        self._entry('Chat: electricity', year=2024, quantity=500)
-        self._entry('Questionnaire step 4A-1', year=2023, quantity=2000)
+        earlier = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2023,
+                                              title='Earlier inventory', status=CarbonReport.Status.COMPLETED)
+        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000, inventory=self.report)
+        chat = self._entry('Chat: electricity', year=2024, quantity=500)                      # unassigned
+        theirs = self._entry('Questionnaire step 4A-1', year=2023, quantity=2000, inventory=earlier)   # another inventory's
         self.assertEqual(self._summary(2024)['total_kg'], 600)
         self.assertEqual(self._summary(2023)['total_kg'], 800)
+        kept_before = self._state(chat, theirs)
 
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 1})
+        self.assertEqual(self._state(chat, theirs), kept_before)                  # the unassigned and the other one: unchanged
 
-        # 2024 keeps only what the questionnaire did not create; 2023 is untouched.
+        # 2024 keeps only what this inventory did not own; 2023 is untouched.
         self.assertEqual(self._summary(2024)['total_kg'], 200)
         after_2023 = self._summary(2023)
         self.assertEqual(after_2023['total_kg'], 800)
         self.assertEqual(after_2023['scope2_kg'], 800)
 
     def test_summary_of_a_year_with_only_questionnaire_entries_is_empty_after_delete(self):
-        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
+        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000, inventory=self.report)
         self.assertEqual(self._summary(2024)['total_kg'], 400)
         self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         summary = self._summary(2024)
@@ -868,23 +1002,26 @@ class CompanyInventoryAccessTests(TestCase):
         self.assertNotIn(2024, summary['years_with_data'])
 
     def test_summary_keeps_entries_shared_with_another_inventory(self):
-        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
         CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
-        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
-                                    title='Second', legacy_duplicate_year=True)
+        second = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
+                                             title='Second', legacy_duplicate_year=True)
+        theirs = self._entry('Questionnaire step 4A-1', year=2024, quantity=1000, inventory=second)
+        before = self._state(theirs)
         self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
-        self.assertEqual(self._summary(2024)['total_kg'], 400)
+        self.assertEqual(self._summary(2024)['total_kg'], 400)                    # the other inventory's figures still count
+        self.assertEqual(self._state(theirs), before)
 
     # ── all or nothing ────────────────────────────────────────────────────────
 
     def test_a_failing_report_delete_rolls_back_the_entry_delete(self):
         from unittest import mock
         from emissions.models import EmissionEntry
-        self._entry('Questionnaire step 4A-1', year=2024, quantity=1000)
+        owned = self._entry('Questionnaire step 4A-1', year=2024, quantity=1000, inventory=self.report)
         chat = self._entry('Chat: electricity', year=2024, quantity=500)
         entry_ids = set(EmissionEntry.objects.values_list('id', flat=True))
+        before = self._state(owned, chat)
 
-        # The entries are deleted first; the report delete then fails.
+        # The inventory's own entries are deleted first; the report delete then fails and they come back.
         with mock.patch.object(CarbonReport, 'delete', side_effect=RuntimeError('boom')):
             with self.assertRaises(RuntimeError):
                 self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
@@ -892,28 +1029,37 @@ class CompanyInventoryAccessTests(TestCase):
         self.assertTrue(CarbonReport.objects.filter(id=self.report.id).exists())
         self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), entry_ids)
         self.assertIn(chat.id, entry_ids)
+        self.assertIn(owned.id, entry_ids)                                       # the owned entry was restored
+        self.assertEqual(self._state(owned, chat), before)                       # both exactly as they were
         self.assertEqual(self._summary(2024)['total_kg'], 600)
 
     # ── Workspace entries ("Workspace <tag> (report <id>)") go with their inventory ──
 
     def test_delete_removes_its_workspace_entries_and_the_summary_drops_them(self):
         from emissions.models import EmissionEntry
-        self._entry(f'Workspace 3A (report {self.report.id})', quantity=1000)
-        self._entry('Questionnaire step 4A-1', quantity=500)
+        self._entry(f'Workspace 3A (report {self.report.id})', quantity=1000, inventory=self.report)
+        self._entry('Questionnaire step 4A-1', quantity=500, inventory=self.report)
         chat = self._entry('Chat: electricity', quantity=250)
         self.assertEqual(self._summary(2024)['total_kg'], 700)
+        before = self._state(chat)
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 2})
         self.assertEqual(list(EmissionEntry.objects.values_list('id', flat=True)), [chat.id])
+        self.assertEqual(self._state(chat), before)                              # the unassigned entry: unchanged
         self.assertEqual(self._summary(2024)['total_kg'], 100)
 
     def test_delete_keeps_chat_and_form_entries_of_the_year(self):
         from emissions.models import EmissionEntry
-        self._entry(f'Workspace 4A (report {self.report.id})')
-        keep = {self._entry('Chat: electricity').id, self._entry('Manual form entry').id,
-                self._entry(f'Workspace 4A (report {self.report.id})', year=2023).id}
-        self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
-        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), keep)
+        mine = self._entry(f'Workspace 4A (report {self.report.id})', inventory=self.report)
+        kept = (self._entry('Chat: electricity'), self._entry('Manual form entry'),
+                # unassigned, and its text even names this inventory's id: still not this inventory's record
+                self._entry(f'Workspace 4A (report {self.report.id})', year=2023))
+        before = self._state(*kept)
+        r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
+        self.assertEqual(r.data, {'deleted_entries': 1})
+        self.assertFalse(EmissionEntry.objects.filter(pk=mine.pk).exists())
+        self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), {e.id for e in kept})
+        self.assertEqual(self._state(*kept), before)
 
     def test_delete_keeps_workspace_entries_of_other_reports(self):
         from companies.models import Company
@@ -921,42 +1067,53 @@ class CompanyInventoryAccessTests(TestCase):
         rid = self.report.id
         other = CarbonReport.objects.create(company=self.company, created_by=self.owner,
                                             reporting_year=2023, title='Other')
-        # Another report, and ids that merely contain or end like the deleted one (14 vs 140 / 914).
-        keep = {self._entry(f'Workspace 3A (report {other.id})').id,
-                self._entry(f'Workspace 3A (report {rid}0)').id,
-                self._entry(f'Workspace 3A (report 9{rid})').id}
-        # The same description in another company.
+        # Another report's own entry (stored with ITS id), and unassigned entries whose ids merely contain or
+        # end like the deleted one (14 vs 140 / 914): none of them is the deleted inventory's record.
+        keep_entries = [self._entry(f'Workspace 3A (report {other.id})', inventory=other),
+                        self._entry(f'Workspace 3A (report {rid}0)'),
+                        self._entry(f'Workspace 3A (report 9{rid})')]
+        # The same description in another company, unassigned.
         foreign = self._entry(f'Workspace 3A (report {rid})')
         EmissionEntry.objects.filter(id=foreign.id).update(company=Company.objects.exclude(id=self.company.id).get())
-        keep.add(foreign.id)
-        mine = self._entry(f'Workspace 3A (report {rid})')
+        keep_entries.append(foreign)
+        mine = self._entry(f'Workspace 3A (report {rid})', inventory=self.report)
+        keep = {e.id for e in keep_entries}
+        before = self._state(*keep_entries)
 
         r = self._client(self.owner).delete(f'/api/questionnaire/{rid}/')
         self.assertEqual(r.data, {'deleted_entries': 1})
         self.assertFalse(EmissionEntry.objects.filter(id=mine.id).exists())
         self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), keep)
+        self.assertEqual(self._state(*keep_entries), before)                     # all of them unchanged, field for field
+        self.assertEqual(EmissionEntry.objects.get(pk=keep_entries[0].pk).inventory_id, other.pk)   # still the other report's
 
     def test_delete_keeps_workspace_entries_shared_with_another_inventory(self):
         from emissions.models import EmissionEntry
-        self._entry(f'Workspace 3A (report {self.report.id})')
         CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
-        CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
-                                    title='Second', legacy_duplicate_year=True)
+        second = CarbonReport.objects.create(company=self.company, created_by=self.owner, reporting_year=2024,
+                                             title='Second', legacy_duplicate_year=True)
+        # Owned by the OTHER inventory, although its text names the deleted one: text is not ownership.
+        theirs = self._entry(f'Workspace 3A (report {self.report.id})', inventory=second)
+        unassigned = self._entry(f'Workspace 3A (report {self.report.id})', quantity=11)
+        before = self._state(theirs, unassigned)
         r = self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.data, {'deleted_entries': 0})
-        self.assertEqual(EmissionEntry.objects.count(), 1)
+        self.assertEqual(EmissionEntry.objects.count(), 2)
+        self.assertEqual(self._state(theirs, unassigned), before)
 
     def test_a_failing_report_delete_restores_workspace_and_questionnaire_entries(self):
         from unittest import mock
         from emissions.models import EmissionEntry
-        self._entry(f'Workspace 3A (report {self.report.id})', quantity=1000)
-        self._entry('Questionnaire step 4A-1', quantity=500)
+        ws = self._entry(f'Workspace 3A (report {self.report.id})', quantity=1000, inventory=self.report)
+        qn = self._entry('Questionnaire step 4A-1', quantity=500, inventory=self.report)
         entry_ids = set(EmissionEntry.objects.values_list('id', flat=True))
+        before = self._state(ws, qn)
         with mock.patch.object(CarbonReport, 'delete', side_effect=RuntimeError('boom')):
             with self.assertRaises(RuntimeError):
                 self._client(self.owner).delete(f'/api/questionnaire/{self.report.id}/')
         self.assertTrue(CarbonReport.objects.filter(id=self.report.id).exists())
         self.assertEqual(set(EmissionEntry.objects.values_list('id', flat=True)), entry_ids)
+        self.assertEqual(self._state(ws, qn), before)                            # both restored exactly, still owned
         self.assertEqual(self._summary(2024)['total_kg'], 600)
 
 
@@ -2020,23 +2177,21 @@ class SignOffAndEditNoticeTests(TestCase):
         self.assertEqual(saved['confirmed_by'], 'signown@test.com')
 
     def test_edit_by_other_member_notifies_owner_once(self):
+        """This inventory is COMPLETED but not signed, and a completed inventory accepts only its sign-off
+        steps (7C-*). An edit by anyone - the clerk or the owner - is refused (409 inventory_completed_locked),
+        nothing is saved, and so nobody is told about an edit that did not happen. (Before, the edit was saved
+        and reported to the owner.) The first signing, which IS allowed here, is test_only_signers_can_sign."""
         from accounts.models import Notification
-        self.assertEqual(self._patch(self.clerk, '3A-0', 'yes').status_code, 200)
-        self.assertEqual(self._patch(self.clerk, '3B-0', 'no').status_code, 200)
-        notes = Notification.objects.filter(user=self.owner)
-        self.assertEqual(notes.count(), 1)
-        self.assertIn('Kapsam 1', notes.first().message)
-        self.assertIn('signclerk@test.com', notes.first().message)
-        # saving the same answer again is not a change
-        Notification.objects.filter(user=self.owner).delete()
-        self.assertEqual(self._patch(self.clerk, '3A-0', 'yes').status_code, 200)
+        before = _signed_state_dump()
+        for user, step, answer in ((self.clerk, '3A-0', 'yes'), (self.clerk, '3B-0', 'no'),
+                                   (self.clerk, '3A-0', 'yes'), (self.owner, '3A-0', 'yes')):
+            res = self._patch(user, step, answer)
+            self.assertEqual(res.status_code, 409, res.content)
+            self.assertEqual(res.data['code'], 'inventory_completed_locked')
         self.assertFalse(Notification.objects.filter(user=self.owner).exists())
-        self._patch(self.clerk, '3B-0', 'yes')
-        self.assertEqual(Notification.objects.filter(user=self.owner).count(), 1)
-        # the owner's own edits are not reported to themselves
-        self._patch(self.owner, '3A-0', 'yes')
         self.assertFalse(Notification.objects.filter(user=self.clerk).exists())
-        self.assertEqual(Notification.objects.filter(user=self.owner).count(), 1)
+        self.assertFalse(ReportStep.objects.filter(report=self.report, step_id__in=('3A-0', '3B-0')).exists())
+        self.assertEqual(_signed_state_dump(), before)
 
 
 class PreviousProfileSourceTests(TestCase):
@@ -2436,23 +2591,30 @@ class EditedAfterSigningTests(_StepPatchTestCase):
         return next(r for r in res.data['reports'] if r['report_id'] == self.report.id)
 
     def test_fix_after_signing_is_flagged_until_signed_again(self):
+        """Signing is final. After it nothing can be changed - not an answer, not the sign-off flow's own
+        steps, not a second signing - so there is nothing to flag and nothing to sign again. (Before, the edit
+        was saved, flagged, and the flag cleared by a re-sign.) The FIRST signing is still allowed."""
         self.assertEqual(self._patch('4A-1', {'answer': {'1': '1000 kWh'}}).status_code, 200)
-        self.assertEqual(self._patch('7C-2', self.SIGN).status_code, 200)
+        self.assertEqual(self._patch('7C-2', self.SIGN).status_code, 200)            # the first signing: allowed
         CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED)
         listed = self._listed()
         self.assertIsNotNone(listed['signed_at'])
         self.assertIsNone(listed['edited_after_signing_at'])
+        signed_at, before = listed['signed_at'], _signed_state_dump()
 
-        # Same answer again: nothing changed.
-        self._patch('4A-1', {'answer': {'1': '1000 kWh'}})
-        self.assertIsNone(self._listed()['edited_after_signing_at'])
-        # A real change, and the sign-off flow's own steps do not count.
-        self._patch('4A-1', {'answer': {'1': '121300 kWh'}})
-        self._patch('7C-1', {'answer': 'all_complete'})
-        self.assertIsNotNone(self._listed()['edited_after_signing_at'])
+        def refused(step, data):
+            res = self._patch(step, data)
+            self.assertEqual(res.status_code, 409, (step, res.content))
+            self.assertEqual(res.data['code'], 'inventory_signed')
 
-        self._patch('7C-2', self.SIGN)
-        self.assertIsNone(self._listed()['edited_after_signing_at'])
+        refused('4A-1', {'answer': {'1': '1000 kWh'}})        # the same answer again
+        refused('4A-1', {'answer': {'1': '121300 kWh'}})      # a real change
+        refused('7C-1', {'answer': 'all_complete'})           # even the sign-off flow's own steps
+        refused('7C-2', self.SIGN)                            # and a second signing
+        listed = self._listed()
+        self.assertIsNone(listed['edited_after_signing_at'])  # nothing was edited, so nothing is flagged
+        self.assertEqual(listed['signed_at'], signed_at)      # and the signature is the one it had
+        self.assertEqual(_signed_state_dump(), before)
 
     def test_unsigned_draft_is_never_flagged(self):
         self._patch('4A-1', {'answer': {'1': '1000 kWh'}})
@@ -2528,18 +2690,28 @@ class ISOReportSigningStateTests(TestCase):
             countries_of_operation='TR', nace_code='', main_activity_description='x',
             number_of_employees='1-10', annual_turnover_range='x', number_of_facilities=1)
         CompanyMembership.objects.create(user=owner, company=company, role='owner')
+        # Completed, NOT yet signed: the sign-off step exists before the inventory is signed (a signed
+        # inventory takes no write), and each test signs it last with `_sign()`.
         self.report = CarbonReport.objects.create(
             company=company, created_by=owner, reporting_year=2025, title='Sign',
-            status=CarbonReport.Status.COMPLETED,
-            signed_at=datetime(2026, 10, 6, 12, tzinfo=dt_tz.utc))
+            status=CarbonReport.Status.COMPLETED)
         ReportStep.objects.create(report=self.report, step_id='7C-2', answer={
             'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür', 'declaration_accepted': 'accepted'})
 
+    def _sign(self):
+        """Signed LAST: every record the test needs exists before. The signature date is fixed so the
+        report text is deterministic."""
+        from datetime import datetime, timezone as dt_tz
+        CarbonReport.objects.filter(pk=self.report.pk).update(signed_at=datetime(2026, 10, 6, 12, tzinfo=dt_tz.utc))
+        self.report.refresh_from_db()
 
     def test_registered_address_falls_back_to_the_country_name(self):
+        self._sign()
         self.assertIn('Kayıtlı adres Türkiye', self._pdf_text(self.report))
+
     def test_signed_and_untouched(self):
         from datetime import datetime
+        self._sign()
         text = self._pdf_text(self.report)
         self.assertIn('İmza tarihi 06.10.2026', text)
         self.assertNotIn('İmzadan sonra düzenlendi', text)
@@ -2558,7 +2730,9 @@ class ISOReportSigningStateTests(TestCase):
         AdvisorApproval.objects.create(report=self.report, question_id='K3C4-1', field_id='x',
                                        reason_code='scope3_na', trigger_category='Kapsam',
                                        risk_level='medium')
-        self.report.refresh_from_db()
+        # The legacy flag and the advisor items exist; only now is the inventory signed. (The application can no
+        # longer set the flag; an older database still holds it and the report still states it.)
+        self._sign()
         text = self._pdf_text(self.report)
         self.assertIn('İmzadan sonra düzenlendi: 15.10.2026 — yeniden imzalanmadı', text)
         self.assertIn('Açık danışman inceleme maddeleri', text)
@@ -3109,6 +3283,15 @@ class LockedInventoryGridConnectionTests(TestCase):
         from accounts.models import ActivityLog
         return list(ActivityLog.objects.filter(action='facility_connection_kept'))
 
+    def _refused_step(self, step, answer):
+        """A save into the SIGNED inventory: refused (409 inventory_signed) and nothing changes."""
+        before = _signed_state_dump()
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                              {'step': step, 'data': {'answer': answer}}, format='json')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'inventory_signed')
+        self.assertEqual(_signed_state_dump(), before)
+
     def _recorded(self):
         answer = self.report.steps.get(step_id='2A-2').answer
         return answer.get('answer', answer)['1']['grid_connection']
@@ -3148,12 +3331,28 @@ class LockedInventoryGridConnectionTests(TestCase):
         self.assertEqual(self._recorded(), 'transmission')
         self.assertEqual(self._kept_rows(), [])
 
-    def test_a_signed_inventory_of_another_year_is_kept_while_the_draft_follows(self):
-        from django.utils import timezone
+    def _old_inventory(self, signed):
+        """A 2024 inventory of the same company whose 2A-2 names Gebze. Everything it needs exists BEFORE it is
+        signed. 'modern': signed through the application's first-signing path (7C-2), which records the facility
+        snapshot. 'legacy': signed the way an older database holds it (no snapshot; see _make_legacy_signed)."""
         old = CarbonReport.objects.create(
-            company=self.company, created_by=self.user, reporting_year=2024,
-            status=CarbonReport.Status.COMPLETED, signed_at=timezone.now())
+            company=self.company, created_by=self.user, reporting_year=2024, status=CarbonReport.Status.COMPLETED)
         ReportStep.objects.create(report=old, step_id='2A-2', answer={'answer': self.DISTRIBUTION})
+        if signed == 'modern':
+            r = self.client.patch(f'/api/questionnaire/{old.id}/step/',
+                                  {'step': '7C-2', 'data': {'answer': self.SIGN}, 'language': 'en'}, format='json')
+            self.assertEqual(r.status_code, 200, r.content)
+        else:
+            _make_legacy_signed(old, snapshot={})          # signed by older code: no recorded connection
+        old.refresh_from_db()
+        return old
+
+    def test_a_signed_inventory_of_another_year_is_kept_while_the_draft_follows(self):
+        from companies.models import Facility
+        old = self._old_inventory('modern')
+        gebze = Facility.objects.get(company=self.company, name='Gebze')
+        snapshot = dict(old.applied_grid_connections)
+        self.assertEqual(snapshot, {str(gebze.pk): 'distribution'})         # recorded at its first signing
         self._settings('transmission')
         # the 2025 draft follows Settings ...
         self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
@@ -3161,22 +3360,47 @@ class LockedInventoryGridConnectionTests(TestCase):
         self.assertEqual(old.steps.get(step_id='2A-2').answer['answer']['1']['grid_connection'], 'distribution')
         [row] = self._kept_rows()
         self.assertEqual((row.target_id, row.metadata['reporting_year']), (str(old.pk), 2024))
+        old.refresh_from_db()
+        self.assertEqual(old.applied_grid_connections, snapshot)            # retained, never overwritten
+
+    def test_a_legacy_signed_inventory_of_another_year_refuses_the_settings_change_and_the_draft_does_not_move(self):
+        """A legacy-signed 2024 inventory (no snapshot) depends on Gebze but recorded nothing: the connection
+        change would alter its output, so it is refused (409). Nothing is reconstructed or changed anywhere."""
+        from companies.models import Facility
+        old = self._old_inventory('legacy')
+        before = _signed_state_dump()
+        gebze = Facility.objects.get(company=self.company, name='Gebze')
+        r = self.client.patch(f'/api/companies/facilities/{gebze.pk}/', {'grid_connection': 'transmission'},
+                              format='json')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'facility_locked_by_signed_inventory')
+        self.assertEqual(_signed_state_dump(), before)
+        self.assertEqual(Facility.objects.get(pk=gebze.pk).grid_connection, 'distribution')
+        self.assertEqual(self._rows(), [('turkey-grid-distribution', 1000.0, 469.0)])      # the draft did not follow
+        old.refresh_from_db()
+        self.assertEqual(old.applied_grid_connections, {})                  # not reconstructed
+        self.assertEqual(self._kept_rows(), [])
 
     def test_later_edit_of_another_answer_keeps_the_recorded_connection_and_is_flagged(self):
+        """A signed inventory takes no later edit (it used to: the edit was applied and flagged). The Settings
+        change after signing is allowed - the inventory recorded its connection when it was signed - and the
+        signed figures stay exactly as signed."""
         self._sign()
         self._settings('transmission')
-        self._step('4A-1', {'1': '2000 kWh'})
-        self.assertEqual(self._rows(), [('turkey-grid-distribution', 2000.0, 938.0)])   # not 872 (transmission)
+        self._refused_step('4A-1', {'1': '2000 kWh'})
+        self.assertEqual(self._rows(), [('turkey-grid-distribution', 1000.0, 469.0)])   # as signed: not 436, not 2000
         self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
+        self.assertIsNone(self.report.edited_after_signing_at)
 
     def test_editing_q24_in_the_signed_inventory_applies_the_new_connection_and_flags_it(self):
+        """Nor can Q24 be edited in a signed inventory (it used to apply the new connection and flag it)."""
         self._sign()
         self._settings('transmission')
-        self._step('2A-2', self.TRANSMISSION)
-        self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
+        self._refused_step('2A-2', self.TRANSMISSION)
+        self.assertEqual(self._rows(), [('turkey-grid-distribution', 1000.0, 469.0)])
+        self.assertEqual(self._recorded(), 'distribution')                              # the signed answer
         self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
+        self.assertIsNone(self.report.edited_after_signing_at)
 
     def test_the_market_based_result_of_a_signed_inventory_uses_its_recorded_connection(self):
         from .iso_report_pdf import _scope2_market
@@ -3373,12 +3597,23 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
         from accounts.models import ActivityLog
         return list(ActivityLog.objects.filter(action=action))
 
+    def _refused_q24(self, client, rows):
+        """A Q24 (2A-2) save into the SIGNED inventory, by anyone: refused (409 inventory_signed) and nothing
+        changes. So no proposal can be recorded in a signed inventory and no edit can be applied to it."""
+        before = _signed_state_dump()
+        r = client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                         {'step': '2A-2', 'data': {'answer': rows}, 'language': 'tr'}, format='json')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'inventory_signed')
+        self.assertEqual(_signed_state_dump(), before)
+
     # 1 — proposals ---------------------------------------------------------
 
     def test_a_proposal_in_a_signed_inventory_changes_no_approved_calculation_or_report(self):
         self._distinct_factors()
         self._signed_inventory('distribution')
-        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        # a data-entry member's proposal cannot even be recorded in a signed inventory (it used to be saved)
+        self._refused_q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
         self.assertEqual(self._gebze().grid_connection, 'distribution')              # not applied
         self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])   # nothing waiting
         self.assertEqual(self._market_factor(), 0.469)                               # reports read the applied one
@@ -3387,8 +3622,9 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
     def test_a_proposal_survives_a_settings_change_without_moving_the_inventory(self):
         self._distinct_factors()
         self._signed_inventory('distribution')
-        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
-        # an approver sets a different value than the one proposed
+        self._refused_q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        # an approver changes the facility in Settings (allowed: the signed inventory recorded its connection
+        # when it was signed); the signed inventory does not move
         r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': ''}, format='json')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
@@ -3396,26 +3632,35 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
         self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})
 
     def test_an_accepted_proposal_is_applied_to_the_inventory_it_was_made_in(self):
+        """No proposal can be made in a signed inventory, so there is nothing to accept: the decision finds
+        nothing waiting, and the signed inventory is neither changed nor flagged. (Before, the accepted
+        proposal was applied to it and the edit flagged.)"""
         self._distinct_factors()
         self._signed_inventory('distribution')
-        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        self._refused_q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
         gebze = self._gebze()
+        before = _signed_state_dump()
         r = self.c_owner.post(f'/api/companies/facilities/{gebze.pk}/connection-decision/',
                               {'decision': 'approve'}, format='json')
-        self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-transmission', 'approved')])
-        self.assertEqual(self._market_factor(), 0.436)
-        self.assertEqual(self._applied(), {str(gebze.pk): 'transmission'})
-        self.assertIsNotNone(self.report.edited_after_signing_at)                    # flagged by the edit itself
+        self.assertEqual(r.status_code, 400, r.content)                              # nothing is waiting for approval
+        self.assertEqual(_signed_state_dump(), before)
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        self.assertEqual(self._market_factor(), 0.469)
+        self.assertEqual(self._applied(), {str(gebze.pk): 'distribution'})
+        self.assertIsNone(self.report.edited_after_signing_at)                       # nothing changed, nothing flagged
 
     def test_a_declined_proposal_is_put_back_to_what_was_applied(self):
+        """The same for a decline: the proposal was refused when it was made, so nothing is waiting and the
+        signed answer is simply what was applied."""
         self._distinct_factors()
         self._signed_inventory('distribution')
-        self._q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        self._refused_q24(self.c_clerk, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
         gebze = self._gebze()
+        before = _signed_state_dump()
         r = self.c_owner.post(f'/api/companies/facilities/{gebze.pk}/connection-decision/',
                               {'decision': 'reject'}, format='json')
-        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.status_code, 400, r.content)                              # nothing is waiting for a decision
+        self.assertEqual(_signed_state_dump(), before)
         answer = ReportStep.objects.get(report=self.report, step_id='2A-2').answer
         self.assertEqual(answer.get('answer', answer)['1']['grid_connection'], 'distribution')
         self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
@@ -3430,15 +3675,17 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
                                format='json')
         self.assertEqual(r.status_code, 200, r.content)
         self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])   # kept
-        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
-        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-transmission', 'approved')])   # the explicit edit
-        self.assertEqual(self._applied(), {str(self._gebze().pk): 'transmission'})
+        # an approver's own edit of the signed inventory is refused too (it used to be applied)
+        self._refused_q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'transmission'}})
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])   # still as signed
+        self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})
 
     # 2 — legacy inventories ------------------------------------------------
 
     def test_a_legacy_inventory_calculated_with_the_old_connection_is_not_moved_by_settings(self):
-        """The facility was on 'distribution' when the inventory was signed (the
-        answer says nothing); Settings changes it afterwards."""
+        """The facility was on 'distribution' when the inventory was signed (the answer says nothing) and the
+        inventory recorded no snapshot (signed before snapshots existed). A Settings change would alter its
+        output, so it is refused (409): nothing is reconstructed, the facility stays as it was."""
         self._distinct_factors()
         self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
         self._save(self.c_owner, {'1': '1000 kWh'})
@@ -3447,17 +3694,37 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
         answer = step.answer.get('answer', step.answer)
         answer['1'].pop('grid_connection')
         step.save(update_fields=['answer'])
-        self._sign()
-        self.assertEqual(self._applied(), {})              # no snapshot yet: nothing has changed
-        before = self._factors()
+        _make_legacy_signed(self.report, snapshot={})      # signed by older code: LAST step, nothing reconstructed
+        self.assertEqual(self._applied(), {})              # no snapshot
+        before = _signed_state_dump()
         r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': 'transmission'},
                                format='json')
-        self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual(self._factors(), before)
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'facility_locked_by_signed_inventory')
+        self.assertEqual(_signed_state_dump(), before)
+        self.assertEqual(self._gebze().grid_connection, 'distribution')
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
         self.assertEqual(self._market_factor(), 0.469)
-        self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})   # the one in force before
-        [row] = self._history('facility_connection_kept')
-        self.assertEqual(row.metadata['new_connection'], 'transmission')
+        self.assertEqual(self._applied(), {})              # still no snapshot: never reconstructed
+        self.assertEqual(self._history('facility_connection_kept'), [])
+
+    def test_a_modern_signed_inventory_keeps_the_snapshot_taken_at_its_first_signing(self):
+        """The counterpart: signed through the application, the inventory recorded its connection when it was
+        signed, so the Settings changes that follow are allowed - and the snapshot is retained, never
+        overwritten, however many times the facility changes."""
+        self._distinct_factors()
+        self._signed_inventory('distribution')
+        gebze = self._gebze()
+        snapshot = {str(gebze.pk): 'distribution'}
+        self.assertEqual(self._applied(), snapshot)        # captured at the first signing
+        for value in ('transmission', 'distribution', '', 'transmission'):
+            r = self.c_owner.patch(f'/api/companies/facilities/{gebze.pk}/', {'grid_connection': value},
+                                   format='json')
+            self.assertEqual(r.status_code, 200, r.content)
+            self.assertEqual(self._applied(), snapshot)
+        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        self.assertEqual(self._market_factor(), 0.469)
+        self.assertIsNone(self.report.edited_after_signing_at)
 
     def test_an_unknown_connection_stays_pending_in_a_signed_inventory_until_it_is_edited_there(self):
         self._distinct_factors()
@@ -3469,24 +3736,33 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
         self.assertEqual(self._factors(), [])              # still pending: history is not filled in silently
         self.assertEqual(self._applied(), {str(self._gebze().pk): ''})
         self.assertEqual(len(self._history('facility_connection_kept')), 1)
-        # an approver states it in that inventory: now it is calculated, and flagged
-        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
-        self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
+        # an approver cannot state it in that signed inventory: refused, so nothing is calculated or flagged
+        self._refused_q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self.assertEqual(self._factors(), [])
         self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
+        self.assertIsNone(self.report.edited_after_signing_at)
 
     def test_a_null_snapshot_from_older_code_is_the_same_as_an_empty_one(self):
         """The column is nullable so instances running the code from before it
         existed can still create reports during a rolling deploy; such a row
-        holds NULL, and must behave exactly like {}."""
+        holds NULL, and must behave exactly like {}: a legacy inventory with no
+        recorded connection. Reading it works; a change that would alter its
+        output is refused (409) and the NULL is not turned into a snapshot."""
         self._distinct_factors()
-        self._signed_inventory('distribution')
-        CarbonReport.objects.filter(pk=self.report.pk).update(applied_grid_connections=None)
+        self._q24(self.c_owner, {'1': {'name': 'Gebze', 'country': 'TR', 'grid_connection': 'distribution'}})
+        self._save(self.c_owner, {'1': '1000 kWh'})
+        _make_legacy_signed(self.report, snapshot=None)    # signed by older code: LAST step, NULL snapshot
+        self.assertIsNone(self.report.applied_grid_connections)
         self.assertEqual(self._market_factor(), 0.469)                      # reading a NULL snapshot works
+        before = _signed_state_dump()
         r = self.c_owner.patch(f'/api/companies/facilities/{self._gebze().pk}/', {'grid_connection': 'transmission'},
                                format='json')
-        self.assertEqual(r.status_code, 200, r.content)
-        self.assertEqual(self._applied(), {str(self._gebze().pk): 'distribution'})   # frozen from NULL
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'facility_locked_by_signed_inventory')
+        self.assertEqual(_signed_state_dump(), before)
+        self.report.refresh_from_db()
+        self.assertIsNone(self.report.applied_grid_connections)             # NOT frozen from NULL: never reconstructed
+        self.assertEqual(self._gebze().grid_connection, 'distribution')
         self.assertEqual(self._factors(), [('Gebze', 'turkey-grid-distribution', 'approved')])
         self.assertEqual(self._market_factor(), 0.469)
 
@@ -3509,15 +3785,22 @@ class LockedInventoryProposalAndLegacyTests(TestCase):
         self.assertEqual(self._applied(), {})
 
     def test_renaming_a_facility_keeps_the_applied_connection(self):
+        """A facility a signed inventory references cannot be renamed (409): signed answers are never rewritten.
+        The connection recorded at signing (keyed by id) and the market factor stay as signed."""
         self._distinct_factors()
         self._signed_inventory('distribution')
         gebze = self._gebze()
         gebze.grid_connection = 'transmission'
-        gebze.save()
+        gebze.save()                                   # a script / admin change: allowed, the snapshot is recorded
+        before = _signed_state_dump()
         r = self.c_owner.patch(f'/api/companies/facilities/{gebze.pk}/', {'name': 'Gebze Fabrika'}, format='json')
-        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'facility_locked_by_signed_inventory')
+        self.assertEqual(_signed_state_dump(), before)
+        self.assertEqual(self._gebze().name, 'Gebze')                                 # not renamed
         self.assertEqual(self._applied(), {str(gebze.pk): 'distribution'})            # keyed by id, not name
         self.assertEqual(self._market_factor(), 0.469)
+        self.assertEqual(self._history('inventory_facility_renamed'), [])
 
 
 class LockedInventoryRecalculationFromAFactorTests(TestCase):
@@ -3531,17 +3814,44 @@ class LockedInventoryRecalculationFromAFactorTests(TestCase):
     _save_in_admin = ElectricityFactorDecisionTests._save_in_admin
 
     def test_approving_a_facility_factor_flags_and_names_a_signed_inventory(self):
+        """Signed inventories are immutable (Stage 1): approving a facility factor is a company / factor-level
+        change and completes, but the signed inventory is NOT recalculated. The resync is refused with
+        `inventory_signed` (logged, nothing written): no new Linz row, no existing row recalculated or deleted,
+        the inventory and its flag unchanged, and no `inventory_recalculated` history row."""
         from accounts.models import ActivityLog
+        from emissions.models import CustomEmissionRequest, EmissionEntry
         self._step('7C-2', {'signatory_name': 'Ayşe Demir', 'signatory_title': 'Müdür',
                             'declaration_accepted': 'accepted'})
         CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED)
-        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])    # Linz is pending
-        self._save_in_admin(self._request())
-        self.assertEqual(len(self._rows('4A-1')), 2)                                           # Linz now calculated
         self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
-        [row] = ActivityLog.objects.filter(action='inventory_recalculated')
-        self.assertEqual((row.target_type, row.target_id), ('CarbonReport', str(self.report.pk)))
+        self.assertIsNotNone(self.report.signed_at)                                            # it is signed
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])    # Linz is pending
+
+        def state():
+            s = _signed_state_dump()                       # entries (every field), inventories, answers, fields, facilities
+            s['ActivityLog'] = list(ActivityLog.objects.order_by('pk').values())
+            return s
+        entries_before = list(EmissionEntry.objects.order_by('pk').values())
+        edited_before = self.report.edited_after_signing_at
+        before = state()
+
+        req = self._request()
+        with self.assertLogs('questionnaire.step_entries', level='WARNING') as logs:
+            self._save_in_admin(req)                       # the approval itself completes without an error
+        self.assertTrue(any(f'inventory {self.report.pk}: inventory_signed' in m for m in logs.output), logs.output)
+
+        # the factor-level change went through ...
+        self.assertEqual(CustomEmissionRequest.objects.get(pk=req.pk).status, 'approved')
+        # ... the signed inventory did not move: every entry field-for-field, nothing created or deleted
+        self.assertEqual(list(EmissionEntry.objects.order_by('pk').values()), entries_before)
+        self.assertEqual(len(self._rows('4A-1')), 1)                                            # no new Linz row
+        self.assertEqual(self._rows('4A-1'), [('turkey-grid-distribution', 1000.0, 400.0)])
+        self.assertFalse(any(e.facility_id == self.linz.pk and e.description.startswith('Questionnaire step 4A-1')
+                             for e in self._entries()))
+        self.assertEqual(state(), before)                                                       # and nothing else changed
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.edited_after_signing_at, edited_before)                    # flag unchanged
+        self.assertFalse(ActivityLog.objects.filter(action='inventory_recalculated').exists())
 
     def test_a_draft_inventory_is_recalculated_without_a_flag(self):
         from accounts.models import ActivityLog
@@ -3635,12 +3945,18 @@ class FacilityConnectionEnforcementTests(TestCase):
         self._assert_frozen()
 
     def test_an_update_that_changes_nothing_about_the_connection_freezes_nothing(self):
+        """The snapshot taken at the first signing is retained, and an update that changes nothing about the
+        connection leaves it, and everything else of the signed inventory, exactly as it was."""
         from companies.models import Facility
         self._distinct_factors()
         self._signed_inventory('distribution')
+        snapshot = {str(self._gebze().pk): 'distribution'}
+        self.assertEqual(self._applied(), snapshot)                                          # recorded at signing
+        before = _signed_state_dump()
         Facility.objects.filter(pk=self._gebze().pk).update(is_active=True)                 # another field
         Facility.objects.filter(pk=self._gebze().pk).update(grid_connection='distribution')  # same value
-        self.assertEqual(self._applied(), {})
+        self.assertEqual(self._applied(), snapshot)                                          # retained, not overwritten
+        self.assertEqual(_signed_state_dump(), before)
 
     def test_a_draft_inventory_is_not_frozen_by_a_bulk_update(self):
         from companies.models import Facility

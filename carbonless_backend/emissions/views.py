@@ -131,9 +131,19 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         # owners, admins and managers are approvers, so their own entries don't
         # wait in the review queue; data-entry members' entries do.
         from .factor_lookup import _get_entry_status
+        # Multi-inventory stage 1: tagged only with an inventory the client named and the server
+        # checked (same company, same year, not signed/completed); otherwise it stays company-level.
+        from .inventory_link import inventory_for_request
+        inventory = inventory_for_request(self.request, company, year=serializer.validated_data.get('year'),
+                                          forbid_locked=True)
+        # Protective only (assigns nothing): a record that names no inventory is refused when the company
+        # has a signed inventory for its year; a named inventory must not be signed.
+        from questionnaire.immutability import assert_period_writable
+        assert_period_writable(company, serializer.validated_data.get('year'), inventory)
         serializer.save(
             user=self.request.user, company=company,
             status=_get_entry_status(self.request.user, company),
+            inventory=inventory,
         )
         from .notifications import notify_entry_submitted
         notify_entry_submitted(serializer.instance)
@@ -153,6 +163,10 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         # would silently come back. It is corrected in the questionnaire.
         instance = self.get_object()
         self._check_can_change(instance)
+        # An entry that is not assigned to an inventory, or whose inventory is signed or completed, takes no
+        # change at all (field edit, proof, pending-change copy): refused before anything is written.
+        from questionnaire.immutability import assert_entry_mutable
+        assert_entry_mutable(instance)
         if ((instance.description or '').startswith('Questionnaire step ')
                 and any(k in request.data for k in ('quantity', 'emission_factor', 'year', 'month'))):
             return Response({
@@ -187,6 +201,10 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         new = EmissionEntry(
             user=request.user, company=instance.company, status='submitted',
             replaces_entry=instance,
+            # The replacement stays in the same inventory as the entry it replaces: an explicit copy of
+            # that entry's own link (nothing inferred); without it the copy would be unassigned and could
+            # never be approved.
+            inventory_id=instance.inventory_id,
             emission_factor=vd.get('emission_factor', instance.emission_factor),
             year=vd.get('year', instance.year), month=vd.get('month', instance.month),
             quantity=vd.get('quantity', instance.quantity),
@@ -206,6 +224,8 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         from .factor_lookup import _get_entry_status
         from .notifications import notify_entry_submitted
+        from questionnaire.immutability import assert_entry_mutable
+        assert_entry_mutable(serializer.instance)        # defence in depth: update() refused it already
         before = serializer.instance
         old = _entry_summary(before)
         was_status = before.status
@@ -235,6 +255,9 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         # its answer at the next save, so deleting it here would not last.
         instance = self.get_object()
         self._check_can_change(instance)
+        # Unassigned, or signed / completed: no delete, no delete-request, nothing waiting is touched.
+        from questionnaire.immutability import assert_entry_mutable
+        assert_entry_mutable(instance)
         if (instance.description or '').startswith('Questionnaire step '):
             from questionnaire.models import CarbonReport
             if CarbonReport.objects.filter(company_id=instance.company_id, reporting_year=instance.year).exists():
@@ -260,6 +283,8 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
 
     def perform_destroy(self, instance):
         self._check_can_change(instance)
+        from questionnaire.immutability import assert_entry_mutable
+        assert_entry_mutable(instance)                   # defence in depth: destroy() refused it already
         _log_entry(self.request, 'entry_deleted', instance, _entry_summary(instance),
                    status_before=instance.status)
         _drop_waiting_changes([instance])
@@ -272,6 +297,8 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         by answering the question again in Karbon Envanteri."""
         instance = self.get_object()
         self._check_can_change(instance)
+        from questionnaire.immutability import assert_entry_mutable
+        assert_entry_mutable(instance)
         # Only its author takes a request back; an approver refuses it on the
         # review page, which tells the author and keeps the reason.
         if instance.user_id != request.user.pk:
@@ -675,6 +702,27 @@ def bulk_import_view(request):
     # that's N membership DB queries for N imported rows.
     company = get_current_company(request.user)
 
+    # Multi-inventory stage 1: rows are tagged only with an inventory named explicitly in the
+    # query string (?inventory_id=) and checked; otherwise they stay company-level.
+    from .inventory_link import InventorySelectionError, resolve_inventory
+    try:
+        inventory = resolve_inventory(company, request.query_params.get('inventory_id') or None, forbid_locked=True)
+    except InventorySelectionError as exc:
+        return Response(exc.payload(), status=400)
+
+    # Protective, before the first row is written (assigns nothing): rows that name no inventory are
+    # refused when the company has a signed inventory for any of the years they carry; a named inventory
+    # must not be signed. The whole import is refused, never half of it.
+    from questionnaire.immutability import assert_period_writable
+    row_years = set()
+    for item in data:
+        try:
+            row_years.add(int((item.get('year') if isinstance(item, dict) else None) or datetime.now().year))
+        except (TypeError, ValueError):
+            continue
+    for row_year in sorted(row_years):
+        assert_period_writable(company, row_year, inventory)
+
     created = 0
     errors = []
     for i, item in enumerate(data):
@@ -698,9 +746,13 @@ def bulk_import_view(request):
                     raise ValueError('Facility not found.')
 
             factor = EmissionFactor.objects.get(pk=item['factor_id'], is_active=True)
+            row_year = item.get('year') or datetime.now().year
+            if inventory is not None and inventory.reporting_year != int(row_year):
+                raise ValueError('The inventory covers a different reporting year than this row.')
             entry = EmissionEntry(
                 user=request.user,
                 company=company,
+                inventory=inventory,
                 emission_factor=factor,
                 # Same hardcoded-year bug already fixed elsewhere in this file
                 # (see Fix #63) — a 2026 default silently misdates every row
@@ -1059,15 +1111,22 @@ def approve_entry_view(request, pk):
     except EmissionEntry.DoesNotExist:
         return Response({'error': 'Entry not found'}, status=404)
 
+    # Refused before anything is written, whatever the action: an entry that is not assigned to an inventory
+    # cannot be approved, rejected or reviewed until its ownership is resolved by a separately approved
+    # process (it stays as it is, pending or approved), and neither can one of a signed or completed inventory.
+    from questionnaire.immutability import assert_entry_mutable
+    assert_entry_mutable(entry)
+
     action = request.data.get('action')  # 'approve' or 'reject'
     if entry.delete_requested and entry.status == 'approved':
         return _review_delete_request(request, company, entry, action)
     # An inventory answer's rows are reviewed together: the waiting rows of
     # that answer are approved (or rejected) as one, and approving them
-    # replaces the approved rows they were waiting next to.
-    from questionnaire.step_entries import entry_group, _step_entries
+    # replaces the approved rows they were waiting next to. Only the rows the SAME inventory owns
+    # (inventory_id == entry.inventory_id) are ever grouped: never a selection by company, year or text.
+    from questionnaire.step_entries import entry_group, owned_step_entries
     group = entry_group(entry.description) if entry.status == 'submitted' else None
-    siblings = list(_step_entries(company, entry.year, group)) if group else [entry]
+    siblings = list(owned_step_entries(entry.inventory_id, group)) if group else [entry]
     if action == 'approve':
         if group:
             waiting = [e for e in siblings if e.status == 'submitted']
@@ -1135,9 +1194,10 @@ def _review_delete_request(request, company, entry, action):
     """An approver accepts (the entry is deleted) or refuses (it stays) a
     data-entry member's request to delete an approved entry. An inventory
     answer's rows go together, as when an answer's change is reviewed."""
-    from questionnaire.step_entries import entry_group, _step_entries
+    from questionnaire.step_entries import entry_group, owned_step_entries
     group = entry_group(entry.description)
-    rows = ([e for e in _step_entries(company, entry.year, group) if e.delete_requested]
+    # Only the rows the same inventory owns (the caller already refused an unassigned entry).
+    rows = ([e for e in owned_step_entries(entry.inventory_id, group) if e.delete_requested]
             if group else [entry])
     if action == 'approve':
         for e in rows:

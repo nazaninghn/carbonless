@@ -25,6 +25,13 @@ if _env_path.exists():
 IS_PRODUCTION = bool(os.environ.get('RENDER') or os.environ.get('PRODUCTION'))
 IS_DEV = not IS_PRODUCTION
 
+# Multi-inventory ownership cutover (see questionnaire/immutability.py). An ISO-8601 timestamp WITH a
+# timezone: the exact moment the code that tags every new emission row with its inventory went live in
+# Production. Inventories created before it are pre-ownership permanently. TEMPORARY PROXY for a real
+# ownership marker (a later, separately approved schema stage). Deliberately NO default: when it is
+# missing or invalid, no inventory is treated as ownership-scoped (fail closed).
+INVENTORY_OWNERSHIP_CUTOVER = os.environ.get('INVENTORY_OWNERSHIP_CUTOVER', '')
+
 # ============================================
 # SECURITY
 # ============================================

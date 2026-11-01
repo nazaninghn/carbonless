@@ -288,18 +288,21 @@ SIGN_OFF_STEP = '7C-2'
 
 
 def _track_signature(report, step_id, before, after):
-    """Saving the sign-off signs the inventory (again); changing any other
-    answer of a signed, completed inventory marks it edited after signing.
-    Stage-7 steps are the sign-off flow itself and do not count."""
+    """Saving the sign-off signs the inventory. This is the FIRST signing only: a signed inventory accepts no
+    further write (SubmitStepView refuses it before anything is saved), so there is no re-signing and no
+    "edited after signing" - that flag is never set here any more and is not a permission to write.
+
+    The signing and the record of every company facility's applied grid connection happen in one
+    transaction; an existing snapshot key is never overwritten and a missing one of an older inventory is
+    never reconstructed."""
     from django.utils import timezone
+    from .immutability import snapshot_applied_connections
     now = timezone.now()
     if step_id == SIGN_OFF_STEP:
-        CarbonReport.objects.filter(pk=report.pk).update(signed_at=now, edited_after_signing_at=None)
+        with transaction.atomic():
+            CarbonReport.objects.filter(pk=report.pk).update(signed_at=now, edited_after_signing_at=None)
+            snapshot_applied_connections(report)
         report.signed_at, report.edited_after_signing_at = now, None
-    elif (not str(step_id).startswith('7') and report.signed_at
-          and report.status == CarbonReport.Status.COMPLETED and before != after):
-        CarbonReport.objects.filter(pk=report.pk).update(edited_after_signing_at=now)
-        report.edited_after_signing_at = now
 from .serializers import (
     StepA1Serializer, StepA2Serializer, StepA3Serializer,
     StepA4Serializer, StepA5Serializer, StepA6Serializer,
@@ -568,6 +571,11 @@ class SubmitStepView(APIView):
     """PATCH /api/questionnaire/<report_id>/step/"""
     permission_classes = [IsAuthenticated, NotAuditorForWrites]
 
+    # Two phases. Validation and the response composition run OUTSIDE any transaction. The writes (answer,
+    # company facility count, facilities, progress, entries) run in ONE transaction that starts with the
+    # gate (immutability.lock_and_check): it takes the inventory's write lock before anything is read and
+    # re-checks signed / completed / ownership on the locked row. A refusal or an error part-way rolls the
+    # whole write phase back, never a half-saved answer.
     def patch(self, request, report_id):
         try:
             report = _company_reports(request.user).get(id=report_id)
@@ -580,11 +588,28 @@ class SubmitStepView(APIView):
         if not step:
             return Response({'error': 'step is required'}, status=400)
 
+        # Signed: nothing may be saved. Completed, unsigned: only the sign-off steps. A pre-ownership
+        # inventory: nothing that produces entries. This unlocked read is only a FAIL-FAST (it spares a
+        # refused request the validation work); the authoritative check is the gate that starts each write
+        # transaction below.
+        from . import immutability
+        signoff = immutability.is_signoff_step(step)
+        immutability.check_report(report, step=step, entry_producing=not signoff)
+
         # Stored with whichever save below succeeds (validation failures
         # return before saving, so a rejected answer doesn't move it).
         client_progress = _client_progress_from(request.data.get('progress'))
         if client_progress:
             report.client_progress = client_progress
+
+        def begin_write():
+            """FIRST database operation of a write transaction: the gate, then the in-memory inventory is
+            reloaded from the locked row (what an earlier request may have changed since it was loaded must
+            not be overwritten by a full save) and this request's progress is put back on it."""
+            immutability.lock_and_check(report, step=step, entry_producing=not signoff)
+            report.refresh_from_db()
+            if client_progress:
+                report.client_progress = client_progress
 
         # Steps with strict serializer validation + DB side-effects.
         # Fix #60b: B1-D4 were missing — their handlers were never called, so
@@ -653,45 +678,50 @@ class SubmitStepView(APIView):
                     'bot_messages': [conflict['message']],
                 }, status=409)
 
-            try:
-                result = handle_step(report, step, serializer.validated_data)
-            except IntegrityError:
-                # Moving onto a year another request just took: the database refused it.
-                new_year = serializer.validated_data.get('reporting_year') if step == 'A4' else None
-                others = year_guard.other_inventories_for_year(report.company_id, new_year, exclude_pk=report.pk) if new_year else []
-                if not others:
-                    raise
-                return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
+            # ── write transaction: gate first, then the company/report fields, the answer, the advisor
+            # triggers and the progress, all or nothing ──
+            with transaction.atomic():
+                begin_write()
+                try:
+                    with transaction.atomic():      # a savepoint: a refused year must not poison the transaction
+                        result = handle_step(report, step, serializer.validated_data)
+                except IntegrityError:
+                    # Moving onto a year another request just took: the database refused it.
+                    new_year = serializer.validated_data.get('reporting_year') if step == 'A4' else None
+                    others = year_guard.other_inventories_for_year(report.company_id, new_year, exclude_pk=report.pk) if new_year else []
+                    if not others:
+                        raise
+                    return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
 
-            before = _saved_answer(report, step)
-            _save_report_step(report, step, serializer.validated_data)
-            evaluate_advisor_triggers(report, step, serializer.validated_data)
-            if before != _saved_answer(report, step):
-                from .notifications import notify_completed_inventory_edited
-                notify_completed_inventory_edited(report, request.user, step)
+                before = _saved_answer(report, step)
+                _save_report_step(report, step, serializer.validated_data)
+                evaluate_advisor_triggers(report, step, serializer.validated_data)
+                if before != _saved_answer(report, step):
+                    from .notifications import notify_completed_inventory_edited
+                    notify_completed_inventory_edited(report, request.user, step)
 
-            next_step = result['next_step']
-            # Only move current_step forward. Re-submitting an earlier step
-            # (e.g. via the review table's per-question Edit button, reachable
-            # at any point after that step's block is complete) used to
-            # unconditionally overwrite current_step with ITS next_step,
-            # rewinding the resume pointer even though nothing past it was
-            # lost — a save-and-exit right after such an edit then forced the
-            # user to click through every already-answered question again.
-            # `current_idx is None` means current_step has already left the
-            # strict A-D flow (a Phase-2 id, or 'DONE') — never let a strict-
-            # step edit pull it back.
-            current_idx = (
-                STRICT_STEP_ORDER.index(report.current_step)
-                if report.current_step in STRICT_STEP_ORDER else None
-            )
-            next_idx = (
-                STRICT_STEP_ORDER.index(next_step)
-                if next_step in STRICT_STEP_ORDER else len(STRICT_STEP_ORDER)
-            )
-            if current_idx is not None and next_idx > current_idx:
-                report.current_step = next_step
-            report.save()
+                next_step = result['next_step']
+                # Only move current_step forward. Re-submitting an earlier step
+                # (e.g. via the review table's per-question Edit button, reachable
+                # at any point after that step's block is complete) used to
+                # unconditionally overwrite current_step with ITS next_step,
+                # rewinding the resume pointer even though nothing past it was
+                # lost — a save-and-exit right after such an edit then forced the
+                # user to click through every already-answered question again.
+                # `current_idx is None` means current_step has already left the
+                # strict A-D flow (a Phase-2 id, or 'DONE') — never let a strict-
+                # step edit pull it back.
+                current_idx = (
+                    STRICT_STEP_ORDER.index(report.current_step)
+                    if report.current_step in STRICT_STEP_ORDER else None
+                )
+                next_idx = (
+                    STRICT_STEP_ORDER.index(next_step)
+                    if next_step in STRICT_STEP_ORDER else len(STRICT_STEP_ORDER)
+                )
+                if current_idx is not None and next_idx > current_idx:
+                    report.current_step = next_step
+                report.save()
 
             return Response({
                 'success': True,
@@ -803,118 +833,131 @@ class SubmitStepView(APIView):
             # Which account confirmed the signature (shown in the ISO report).
             data = {**data, 'answer': {**data['answer'], 'confirmed_by': (
                 request.user.get_full_name() or request.user.email or request.user.username)}}
-        before = _saved_answer(report, step)
-        _save_report_step(report, step, data if data else {})
-        if facility_count_update is not None:
-            report.company.number_of_facilities = facility_count_update
-            report.company.save(update_fields=['number_of_facilities'])
-            if ReportStep.objects.filter(report=report, step_id='B4').exists():
-                _save_report_step(report, 'B4', {'number_of_facilities': facility_count_update})
-        if step == SIGN_OFF_STEP:
-            # A re-signed inventory carries the new signing date.
-            ReportStep.objects.filter(report=report, step_id=step).update(completed_at=timezone.now())
-        evaluate_advisor_triggers(report, step, data)
-        # Told once the entries are recalculated: an edit that went for
-        # approval already notifies the approvers with what it changes.
-        answer_edited = before != _saved_answer(report, step)
+        # ── write transaction: the gate first, then answer, company facility count, sign-off stamp,
+        # advisor triggers, completion / progress, facility sync and entry sync — all or nothing.
+        # (A Response returned from inside it, e.g. a 400 or 409 after the answer was saved, commits
+        # exactly what it did before this block existed; an exception rolls everything back.) ──
+        with transaction.atomic():
+            begin_write()
+            before = _saved_answer(report, step)
+            _save_report_step(report, step, data if data else {})
+            if facility_count_update is not None:
+                report.company.number_of_facilities = facility_count_update
+                report.company.save(update_fields=['number_of_facilities'])
+                if ReportStep.objects.filter(report=report, step_id='B4').exists():
+                    _save_report_step(report, 'B4', {'number_of_facilities': facility_count_update})
+            if step == SIGN_OFF_STEP:
+                # A re-signed inventory carries the new signing date.
+                ReportStep.objects.filter(report=report, step_id=step).update(completed_at=timezone.now())
+            evaluate_advisor_triggers(report, step, data)
+            # Told once the entries are recalculated: an edit that went for
+            # approval already notifies the approvers with what it changes.
+            answer_edited = before != _saved_answer(report, step)
 
-        # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
-        is_final_step = (
-            step == '7B-INFO' and
-            isinstance(data, dict) and
-            data.get('answer') == 'done'
-        )
+            # ✅ CRITICAL: Mark report as COMPLETED when final question is submitted
+            is_final_step = (
+                step == '7B-INFO' and
+                isinstance(data, dict) and
+                data.get('answer') == 'done'
+            )
 
-        if is_final_step:
-            # A question left for later is unresolved: the inventory cannot be finished around it.
-            pending = [s for s in _pending_ids(report) if not ReportStep.objects.filter(report=report, step_id=s).exists()]
-            if pending:
-                msg_en = (f'This inventory cannot be marked complete yet — {len(pending)} question'
-                          f'{"s are" if len(pending) != 1 else " is"} still marked "I don\'t know — answer later".')
-                msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(pending)} soru hâlâ "Bilmiyorum — sonra yanıtla" '
-                          f'olarak işaretli.')
-                msg = msg_tr if lang == 'tr' else msg_en
+            if is_final_step:
+                # A question left for later is unresolved: the inventory cannot be finished around it.
+                pending = [s for s in _pending_ids(report) if not ReportStep.objects.filter(report=report, step_id=s).exists()]
+                if pending:
+                    msg_en = (f'This inventory cannot be marked complete yet — {len(pending)} question'
+                              f'{"s are" if len(pending) != 1 else " is"} still marked "I don\'t know — answer later".')
+                    msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(pending)} soru hâlâ "Bilmiyorum — sonra yanıtla" '
+                              f'olarak işaretli.')
+                    msg = msg_tr if lang == 'tr' else msg_en
+                    return Response({
+                        'success': False, 'step': step, 'next_step': step, 'code': 'pending_questions',
+                        'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
+                        'pending_questions': pending, 'bot_messages': [f'❌ {msg}'],
+                    }, status=400)
+                # Completion used to be gated purely on "was 7B-INFO answered
+                # 'done'", with no check that anything came before it. Verified
+                # live: PATCHing a brand-new report (nothing saved but the
+                # auto-created A1) straight to 7B-INFO/'done' instantly marked it
+                # COMPLETED and both PDF exports generated successfully for an
+                # essentially empty report. Exact per-user question counts can't
+                # be replicated here (only the frontend's getApplicableQuestions
+                # knows which of the ~130 Phase-2 questions apply after
+                # conditional branches — see _progress()'s docstring above), so
+                # this is a floor, not an exact check: Phase 1 must have actually
+                # finished (handle_D4 flips status to IN_PROGRESS) and a
+                # meaningful number of Phase-2 answers must exist.
+                PHASE1_STEP_IDS = {
+                    'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
+                    'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
+                    'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
+                }
+                MIN_PHASE2_STEPS = 15
+                phase2_count = report.steps.exclude(step_id__in=PHASE1_STEP_IDS).count()
+                if report.status == CarbonReport.Status.DRAFT or phase2_count < MIN_PHASE2_STEPS:
+                    return Response({
+                        'success': False,
+                        'step': step,
+                        'next_step': step,
+                        'error': 'This inventory cannot be marked complete yet — required questions have not been answered.',
+                        'bot_messages': [
+                            '❌ This inventory cannot be marked complete yet — required questions have not been answered.'
+                        ],
+                    }, status=400)
+
+                if answer_edited:
+                    from .notifications import notify_completed_inventory_edited
+                    notify_completed_inventory_edited(report, request.user, step)
+                report.status = CarbonReport.Status.COMPLETED
+                report.current_step = 'DONE'
+                report.save(update_fields=['status', 'current_step', 'updated_at', 'client_progress'])
+                logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
+                from emissions.audit import log_company_activity
+                log_company_activity(
+                    request.user, report.company_id, 'inventory_completed',
+                    f'{report.title or report.reporting_year} · {report.reporting_year} envanteri tamamlandı',
+                    f'{report.title or report.reporting_year} · {report.reporting_year} inventory completed',
+                    target_type='CarbonReport', target_id=report.id, request=request)
+
                 return Response({
-                    'success': False, 'step': step, 'next_step': step, 'code': 'pending_questions',
-                    'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
-                    'pending_questions': pending, 'bot_messages': [f'❌ {msg}'],
-                }, status=400)
-            # Completion used to be gated purely on "was 7B-INFO answered
-            # 'done'", with no check that anything came before it. Verified
-            # live: PATCHing a brand-new report (nothing saved but the
-            # auto-created A1) straight to 7B-INFO/'done' instantly marked it
-            # COMPLETED and both PDF exports generated successfully for an
-            # essentially empty report. Exact per-user question counts can't
-            # be replicated here (only the frontend's getApplicableQuestions
-            # knows which of the ~130 Phase-2 questions apply after
-            # conditional branches — see _progress()'s docstring above), so
-            # this is a floor, not an exact check: Phase 1 must have actually
-            # finished (handle_D4 flips status to IN_PROGRESS) and a
-            # meaningful number of Phase-2 answers must exist.
-            PHASE1_STEP_IDS = {
-                'A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A7a', 'A7b',
-                'B1', 'B2', 'B3', 'B4', 'B5', 'B6',
-                'C1', 'C2', 'C3', 'D1', 'D3', 'D4',
-            }
-            MIN_PHASE2_STEPS = 15
-            phase2_count = report.steps.exclude(step_id__in=PHASE1_STEP_IDS).count()
-            if report.status == CarbonReport.Status.DRAFT or phase2_count < MIN_PHASE2_STEPS:
-                return Response({
-                    'success': False,
+                    'success': True,
                     'step': step,
-                    'next_step': step,
-                    'error': 'This inventory cannot be marked complete yet — required questions have not been answered.',
-                    'bot_messages': [
-                        '❌ This inventory cannot be marked complete yet — required questions have not been answered.'
-                    ],
-                }, status=400)
+                    'next_step': None,  # ✅ CRITICAL: NULL means done
+                    'completed': True,
+                    'status': 'COMPLETED',
+                    'report_id': report.id,
+                    'reporting_year': report.reporting_year,
+                    'message': 'Survey completed successfully'
+                })
 
-            if answer_edited:
-                from .notifications import notify_completed_inventory_edited
-                notify_completed_inventory_edited(report, request.user, step)
-            report.status = CarbonReport.Status.COMPLETED
-            report.current_step = 'DONE'
-            report.save(update_fields=['status', 'current_step', 'updated_at', 'client_progress'])
-            logger.info(f"✅ COMPLETED: Report {report.id} by user {request.user.id}")
-            from emissions.audit import log_company_activity
-            log_company_activity(
-                request.user, report.company_id, 'inventory_completed',
-                f'{report.title or report.reporting_year} · {report.reporting_year} envanteri tamamlandı',
-                f'{report.title or report.reporting_year} · {report.reporting_year} inventory completed',
-                target_type='CarbonReport', target_id=report.id, request=request)
+            # Not final step - update and continue
+            report.current_step = step
+            if report.signed_at:
+                # Signed by this very save (the first signing): a signed row accepts no .save(), so the
+                # bookkeeping goes through a plain UPDATE of the same three fields.
+                CarbonReport.objects.filter(pk=report.pk).update(
+                    current_step=step, client_progress=report.client_progress, updated_at=timezone.now())
+            else:
+                report.save(update_fields=['current_step', 'updated_at', 'client_progress'])
 
-            return Response({
-                'success': True,
-                'step': step,
-                'next_step': None,  # ✅ CRITICAL: NULL means done
-                'completed': True,
-                'status': 'COMPLETED',
-                'report_id': report.id,
-                'reporting_year': report.reporting_year,
-                'message': 'Survey completed successfully'
-            })
-
-        # Not final step - update and continue
-        report.current_step = step
-        report.save(update_fields=['current_step', 'updated_at', 'client_progress'])
-
-        # ── Phase 2: questions that ask for an activity amount (fuel, electricity,
-        # freight, waste) become EmissionEntry rows; see step_entries.py ──
-        saved_entry = None
-        if step == '2A-2':
-            # The facility names/countries answered here become the company's
-            # real facilities (emissions form, Settings, reports).
-            # A grid connection given here is applied only for a member who
-            # approves data; a data-entry member's waits for an approver.
-            from .facility_sync import sync_facilities, connection_notes
-            approver = bool(report.company) and report.company.memberships.filter(
-                user=request.user, is_active=True, role__in=('owner', 'admin', 'manager')).exists()
-            sync_facilities(report.company, data, user=request.user, apply_connection=approver, report=report)
-        before_kg = questionnaire_totals(report)[0]
-        try:
-            entries = sync_step_entries(request.user, report.company, report, step, data)
-        except year_guard.InventoryYearConflict as conflict:
-            return Response(year_guard.conflict_payload(conflict.others, conflict.year, lang_, step=step), status=409)
+            # ── Phase 2: questions that ask for an activity amount (fuel, electricity,
+            # freight, waste) become EmissionEntry rows; see step_entries.py ──
+            saved_entry = None
+            if step == '2A-2':
+                # The facility names/countries answered here become the company's
+                # real facilities (emissions form, Settings, reports).
+                # A grid connection given here is applied only for a member who
+                # approves data; a data-entry member's waits for an approver.
+                from .facility_sync import sync_facilities, connection_notes
+                approver = bool(report.company) and report.company.memberships.filter(
+                    user=request.user, is_active=True, role__in=('owner', 'admin', 'manager')).exists()
+                sync_facilities(report.company, data, user=request.user, apply_connection=approver, report=report)
+            before_kg = questionnaire_totals(report)[0]
+            try:
+                # A sign-off step produces no entries, and a completed or signed inventory is never synchronised.
+                entries = [] if signoff else sync_step_entries(request.user, report.company, report, step, data)
+            except year_guard.InventoryYearConflict as conflict:
+                return Response(year_guard.conflict_payload(conflict.others, conflict.year, lang_, step=step), status=409)
         # What this answer did to the inventory: the CO2e it added or took
         # away, and why an amount it gave is not calculated — so a missing
         # number is never taken for zero.
@@ -1075,26 +1118,18 @@ class ReportStatusView(APIView):
                 return Response({'error': 'Only a company owner/admin can delete a completed inventory; a draft also its creator.',
                                  'code': 'forbidden'}, status=403)
 
-        # The emission entries the questionnaire created for this inventory go
-        # with it — unless another inventory covers the same year, since
-        # entries are kept per company and year and are shared with it. Chat
-        # and form entries are never touched.
-        # One transaction: a failure of either delete leaves both untouched.
-        deleted_entries = 0
-        year = report.reporting_year
-        with transaction.atomic():
-            if year and not CarbonReport.objects.filter(
-                    company=report.company, reporting_year=year).exclude(id=report.id).exists():
-                from django.db.models import Q
-                from emissions.models import EmissionEntry
-                # Workspace entries are named "Workspace <tag> (report <id>)": the closing
-                # parenthesis keeps report 14 from matching report 140.
-                deleted_entries, _ = EmissionEntry.objects.filter(
-                    Q(description__startswith='Questionnaire step ')
-                    | Q(description__startswith='Workspace ', description__endswith=f'(report {report.id})'),
-                    company=report.company, year=year,
-                ).delete()
+        # Never a signed inventory, and never a pre-ownership one (even an empty draft): its records are
+        # unassigned, so deleting it could not account for them. Refused before anything is deleted.
+        from .immutability import assert_delete_allowed
+        from .step_entries import owned_entries
+        assert_delete_allowed(report)
 
+        # The entries this inventory OWNS (inventory_id == its id) go with it. Nothing else is selected:
+        # not by company, year or description, so chat, form and unassigned entries are never touched.
+        # They are deleted explicitly, before the report, so the SET_NULL of the inventory link can never
+        # leave them behind as orphans. One transaction: a failure of either delete leaves both untouched.
+        with transaction.atomic():
+            deleted_entries, _ = owned_entries(report).delete()
             report.delete()
         return Response({'deleted_entries': deleted_entries}, status=200)
 
@@ -1609,15 +1644,15 @@ class RestartReportView(APIView):
 
     def post(self, request, report_id):
         from django.db import transaction
-        from .step_entries import ENTRY_STEPS, _step_entries
+        from .step_entries import ENTRY_STEPS, owned_step_entries
         try:
             report = _company_reports(request.user).get(id=report_id)
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
         if report.status == CarbonReport.Status.COMPLETED:
             return Response({'error': 'A completed inventory cannot be restarted.'}, status=400)
-        # Restarting deletes the entries of this company and year: never while another inventory
-        # (a signed one, say) shares them.
+        # Restarting deletes this inventory's own entries: never while another inventory
+        # (a signed one, say) shares its year.
         from . import year_guard
         others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
         if others:
@@ -1626,11 +1661,16 @@ class RestartReportView(APIView):
             return Response(year_guard.conflict_payload(others, report.reporting_year, lang_), status=409)
 
         with transaction.atomic():
+            # Signed: never. Pre-ownership: never (its rows are unassigned). Checked on the locked row
+            # before anything is deleted.
+            from .immutability import lock_and_check
+            lock_and_check(report, entry_producing=True)
             answered = set(ReportStep.objects.filter(report=report).values_list('step_id', flat=True))
             if report.company_id and report.reporting_year:
                 for step_id in ENTRY_STEPS:
                     if step_id in answered:
-                        _step_entries(report.company, report.reporting_year, step_id).delete()
+                        # Only the rows this inventory owns; nothing is selected by company, year or text.
+                        owned_step_entries(report, step_id).delete()
             ReportStep.objects.filter(report=report).delete()
             AdvisorApproval.objects.filter(report=report, status=AdvisorApproval.Status.PENDING).delete()
             report.current_step = 'A1'
@@ -1657,6 +1697,9 @@ class RenameReportView(APIView):
         if role not in ('owner', 'admin', 'manager'):
             return Response({'error': 'Only an owner, admin or manager can rename an inventory.',
                              'code': 'not_allowed'}, status=403)
+        # A signed inventory's name is part of the signed record: it cannot be changed.
+        from .immutability import assert_not_signed
+        assert_not_signed(report)
         title = (request.data.get('title') or '').strip()[:200]
         if not title:
             return Response({'error': 'A name is required.', 'code': 'title_required'}, status=400)
@@ -1683,6 +1726,8 @@ class SaveDraftView(APIView):
         except CarbonReport.DoesNotExist:
             return Response({'error': 'Report not found'}, status=404)
 
+        from .immutability import assert_not_signed
+        assert_not_signed(report)        # a signed inventory accepts no write, whatever its status says
         if report.status == CarbonReport.Status.COMPLETED:
             return Response(
                 {'error': 'Completed report cannot be saved as draft'},
@@ -1767,6 +1812,7 @@ def reset_session(request):
         CarbonReport.objects.filter(
             company=company,
             status__in=[CarbonReport.Status.DRAFT, CarbonReport.Status.IN_PROGRESS],
+            signed_at__isnull=True,          # a signed inventory is never touched, whatever its status says
         ).update(status=CarbonReport.Status.COMPLETED)
 
     return Response({
@@ -1921,6 +1967,11 @@ def approve_advisor_approval_view(request, pk):
         approval = AdvisorApproval.objects.get(pk=pk, report__company=company)
     except AdvisorApproval.DoesNotExist:
         return Response({'error': 'Entry not found'}, status=404)
+
+    # A signed inventory's advisor items are part of what it reports (the PDF prints them): approving or
+    # rejecting one is a change to it. Refused before anything is written.
+    from .immutability import assert_not_signed
+    assert_not_signed(approval.report)
 
     action = request.data.get('action')
 
