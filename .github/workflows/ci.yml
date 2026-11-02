@@ -14,13 +14,24 @@ jobs:
     defaults:
       run:
         working-directory: carbonless_backend
+    env:
+      # TEST-ONLY value: the inventories the tests create must count as ownership-scoped. It is not used by, and
+      # must never be copied to, Production / Render / Vercel (there it is set to the real go-live moment).
+      INVENTORY_OWNERSHIP_CUTOVER: '2000-01-01T00:00:00+00:00'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip install -r requirements.txt
-      - run: python manage.py test emissions accounts questionnaire companies chat
+      - run: python manage.py test emissions accounts questionnaire companies chat --exclude-tag=filedb_only
+      # The concurrency test needs real SQLite file locking (Django's in-memory test database cannot wait on a
+      # table lock): it runs here, on the file-backed test settings. The guard fails the step if the tag or the
+      # label ever stops selecting exactly that test (a run of zero tests would otherwise pass silently).
+      - name: Concurrency tests (file-backed SQLite)
+        run: |
+          python manage.py test questionnaire.test_stage3_lifecycle --tag=filedb_only --settings=carbonless_api.settings_test_filedb 2>&1 | tee filedb_only.log
+          grep -E '^Ran 1 test in ' filedb_only.log
 
   frontend:
     runs-on: ubuntu-latest

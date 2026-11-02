@@ -7,7 +7,7 @@ import time
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.db import OperationalError, connection
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, tag
 from rest_framework.test import APIClient
 
 from companies.models import Company, CompanyMembership
@@ -158,6 +158,7 @@ class OtherCompanyIsolationTests(_Inventory):
         self.assertEqual(c.get(f'/api/questionnaire/{self.report.id}/').status_code, 404)
 
 
+@tag('filedb_only')      # needs real SQLite file locking: CI runs it on settings_test_filedb (see ci.yml)
 class RapidDoubleSubmitTests(TransactionTestCase):
     """A user double-taps Save, or a client retries: the same step reaches the server several times at once. The
     inventory must end with exactly one set of entries (SQLite serialises writers: this checks the logic under
