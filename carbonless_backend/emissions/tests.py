@@ -331,7 +331,27 @@ class ApprovalNotificationAndDuplicateTests(TestCase):
     def _as(self, name):
         self.client.force_authenticate(user=self.users[name])
 
+    # A subclass whose approval/editing tests pass an explicit `year` sets this to True so those entries are
+    # tagged with an inventory of THEIR year too. Left False, an explicit-year call is untouched (the tests
+    # that pass a year are about duplicates / yearly sources, not about changing the entry).
+    tag_explicit_years = False
+
+    def _inventory_for(self, year):
+        """A properly scoped test inventory for `year`, created once, owned by the company's owner.
+
+        Entries that go through approval / editing belong to an inventory (an entry that is not assigned to
+        one is read-only by design: see `NullEntryFreezeTests` in test_inventory_tagging.py). The fixture names
+        the inventory explicitly - nothing is inferred and nothing existing is assigned."""
+        from questionnaire.models import CarbonReport
+        report, _ = CarbonReport.objects.get_or_create(
+            company=self.company, reporting_year=year, defaults={'created_by': self.users['aylin']})
+        return report
+
     def _entry(self, **extra):
+        # Default-year entries are tagged with the test inventory; a caller that names its own inventory
+        # keeps exactly what it asked for, and so does one that names its own year unless the class opts in.
+        if 'inventory_id' not in extra and ('year' not in extra or self.tag_explicit_years):
+            extra['inventory_id'] = self._inventory_for(extra.get('year', 2026)).pk
         return self.client.post('/api/emissions/entries/', {
             'emission_factor': self.factor.id, 'year': 2026, 'month': 3, 'quantity': 10, **extra,
         }, format='json')
@@ -725,9 +745,21 @@ class EntryChangeRulesTests(TestCase):
     def _as(self, name):
         self.client.force_authenticate(user=self.users[name])
 
+    def _inventory_2026(self):
+        """A properly scoped test inventory for 2026, created once, owned by the company's owner.
+
+        Entries that go through approval / editing belong to an inventory (an entry that is not assigned to
+        one is read-only by design: see `NullEntryFreezeTests` in test_inventory_tagging.py). The fixture names
+        the inventory explicitly - nothing is inferred and nothing existing is assigned."""
+        from questionnaire.models import CarbonReport
+        report, _ = CarbonReport.objects.get_or_create(
+            company=self.company, reporting_year=2026, defaults={'created_by': self.users['sahip']})
+        return report
+
     def _entry(self, qty=300):
         res = self.client.post('/api/emissions/entries/', {
-            'emission_factor': self.factor.id, 'year': 2026, 'month': 7, 'quantity': qty}, format='json')
+            'emission_factor': self.factor.id, 'year': 2026, 'month': 7, 'quantity': qty,
+            'inventory_id': self._inventory_2026().pk}, format='json')
         self.assertEqual(res.status_code, 201, res.content)
         return res.json()['id']
 
@@ -1507,6 +1539,8 @@ class AmountCeilingTests(TestCase):
 class ApproverSeesOverlapTests(ApprovalNotificationAndDuplicateTests):
     """A monthly entry of a source the year's inventory already holds reaches
     the approver with the same warning its author was shown."""
+
+    tag_explicit_years = True      # its entries name year=2025 and are then approved / rejected
 
     def test_pending_entry_carries_the_overlap_warning(self):
         EmissionEntry.objects.create(

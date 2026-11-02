@@ -74,8 +74,12 @@ class FacilityDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
     def perform_destroy(self, instance):
-        # The entries stay (only unlinked from the facility). When they belong to a signed /
-        # completed inventory that is a change to history: name each one in the company's history.
+        # Deleting a facility nulls the facility link of the entries that point at it. When an entry of a
+        # signed inventory does, that would alter a signed record: refused (409) before anything is deleted.
+        from questionnaire.immutability import assert_facility_deletable
+        assert_facility_deletable(instance)
+        # The entries stay (only unlinked from the facility). When they belong to a completed (unsigned)
+        # inventory that is a change to history: name each one in the company's history.
         from questionnaire.facility_sync import log_unlinked_from_locked
         log_unlinked_from_locked(instance, self.request.user)
         instance.delete()

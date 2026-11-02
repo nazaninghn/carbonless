@@ -1194,13 +1194,33 @@ def _entry_specs(step, activities, A, year, company):
 
 
 def _step_entries(company, year, step_id):
-    """Entries earlier saves of this step created ("Questionnaire step 4A-1",
-    "Questionnaire step 4A-1 · …") — but not those of 4A-1a."""
+    """READ-ONLY selection by company, year and description ("Questionnaire step 4A-1",
+    "Questionnaire step 4A-1 · …", not 4A-1a). It identifies nothing's owner and is used only to
+    DISPLAY (serializers, totals): no write path may use it. Writes select with owned_step_entries()."""
     from django.db.models import Q
     from emissions.models import EmissionEntry
     base = f'{DESCRIPTION_PREFIX} {step_id}'
     return EmissionEntry.objects.filter(company=company, year=year).filter(
         Q(description=base) | Q(description__startswith=base + ' · '))
+
+
+def owned_entries(report):
+    """The entries `report` owns: `inventory_id == report.pk`, and nothing else. Never an unassigned
+    (NULL-inventory) row, never another inventory's row, never a selection by company, year, description or
+    content. `report` may be an inventory or its primary key; an unsaved one owns nothing."""
+    from emissions.models import EmissionEntry
+    pk = getattr(report, 'pk', report)
+    if pk is None:
+        return EmissionEntry.objects.none()      # filter(inventory_id=None) would select the NULL rows
+    return EmissionEntry.objects.filter(inventory_id=pk)
+
+
+def owned_step_entries(report, step_id):
+    """Of the rows `report` already owns, those of one question. The step suffix of the description only
+    CLASSIFIES rows that were selected by inventory_id; it is never an ownership criterion."""
+    from django.db.models import Q
+    base = f'{DESCRIPTION_PREFIX} {step_id}'
+    return owned_entries(report).filter(Q(description=base) | Q(description__startswith=base + ' · '))
 
 
 def questionnaire_total_kg(report):
@@ -1235,32 +1255,24 @@ def resync_inventory(company, year, user):
     after a factor it uses was approved or withdrawn (Özel Talep) — as an
     approved change: the factor was reviewed, the answers did not change."""
     from .models import CarbonReport
-    report = (CarbonReport.objects.filter(company=company, reporting_year=year)
-              .order_by('-updated_at').first())
-    if report is None:
+    from .immutability import InventoryGuardError
+    # The inventory is never guessed: exactly one candidate, or nothing is recalculated.
+    candidates = list(CarbonReport.objects.filter(company=company, reporting_year=year)[:2])
+    if len(candidates) != 1:
+        if candidates:
+            logger.warning('resync of %s skipped: more than one inventory covers it', year)
         return []
-    locked = report_is_locked(report)
-    before = questionnaire_totals(report)[1] if locked else 0.0
+    report = candidates[0]
     from .year_guard import InventoryYearConflict
     try:
-        created = sync_step_entries(user, company, report, '4A-1', as_status='approved')
+        return sync_step_entries(user, company, report, '4A-1', as_status='approved')
     except InventoryYearConflict:
         logger.warning('resync of %s skipped: more than one inventory covers it', year)
         return []
-    if locked and abs(questionnaire_totals(report)[1] - before) > 1e-6:
-        # An approved factor moved a signed / completed inventory: that is a
-        # change after signing, so it is flagged and named in the history.
-        if report.signed_at:
-            CarbonReport.objects.filter(pk=report.pk).update(edited_after_signing_at=timezone.now())
-        from emissions.audit import log_company_activity
-        log_company_activity(
-            user, company.pk, 'inventory_recalculated',
-            f'{year} envanteri ({report.title or year}) onaylanan bir faktör nedeniyle yeniden hesaplandı '
-            f'(imzalı/tamamlanmış envanter; "imzadan sonra düzenlendi" olarak işaretlendi).',
-            f'The {year} inventory ({report.title or year}) was recalculated because a factor was approved '
-            f'(signed/completed inventory; marked as edited after signing).',
-            target_type='CarbonReport', target_id=report.pk, reporting_year=year)
-    return created
+    except InventoryGuardError as exc:
+        # A signed, completed or pre-ownership inventory is never recalculated (nothing was written).
+        logger.warning('resync of %s skipped for inventory %s: %s', year, report.pk, exc.code)
+        return []
 
 
 def sync_step_entries(user, company, report, step_id, data=None, as_status=None):
@@ -1268,13 +1280,20 @@ def sync_step_entries(user, company, report, step_id, data=None, as_status=None)
     completed inventory keeps the grid connections it was applied with
     (CarbonReport.applied_grid_connections), not the facilities' current ones."""
     from .year_guard import InventoryYearConflict, other_inventories_for_year
+    from .immutability import check_report
     year = report.reporting_year
     if not year:
         return []        # no year, no entries: they used to land in 2024, in another inventory's numbers
+    if company is None or report.company_id != company.pk:
+        return []        # an inventory is only ever synchronised for its own company: nothing is written
     others = other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
     if others:
         raise InventoryYearConflict(others, year)
-    with recorded_connections(report):
+    # Refused BEFORE anything is read or written: a signed or completed inventory is never synchronised,
+    # and neither is a pre-ownership one (its rows are unassigned; a tagged set would duplicate them).
+    check_report(report, entry_producing=True)
+    from django.db import transaction
+    with transaction.atomic(), recorded_connections(report):     # one unit: a failure part-way writes nothing
         return _sync_step_entries(user, company, report, step_id, data, as_status)
 
 
@@ -1323,7 +1342,9 @@ def _sync_step_entries(user, company, report, step_id, data=None, as_status=None
         # What a step reports is its factors, amounts and facilities; the label
         # text may change between versions (heat -> Isı) without the inventory changing.
         new_sig = sig(_row_key(r) for r in rows)
-        existing = list(_step_entries(company, year, step))
+        # Only the rows this inventory OWNS (inventory_id == report.pk). No unassigned row is ever read,
+        # replaced, updated or deleted here, and nothing is selected by company, year or description.
+        existing = list(owned_step_entries(report, step))
         approved = [e for e in existing if e.status == 'approved']
         waiting = [e for e in existing if e.status != 'approved']
         current = waiting or approved
@@ -1397,6 +1418,8 @@ def _sync_step_entries(user, company, report, step_id, data=None, as_status=None
         new_entries = [EmissionEntry.objects.create(
             user=user,
             company=company,
+            # Every NEW row names the inventory whose answers produced it (the one ownership boundary).
+            inventory=report,
             emission_factor=factor,
             year=year,
             month=1,  # annual questionnaire data
@@ -1475,7 +1498,16 @@ def _step_rows(step, specs, facility_of):
 def refresh_entry_text(report):
     """Give the entries of `report`'s answers their current label and
     calc_detail where the answers still report the same factor, amount and
-    facility (text only; nothing is rebuilt, approvals stay)."""
+    facility (text only; nothing is rebuilt, approvals stay).
+
+    Only the rows `report` owns, and only for an inventory that may be written entry-wise: a signed,
+    completed or pre-ownership inventory is skipped (nothing is read or written for it). The caller is a
+    company-level change (a facility rename), which must not fail because of an unrelated inventory."""
+    from .immutability import InventoryGuardError, check_report
+    try:
+        check_report(report, entry_producing=True)
+    except InventoryGuardError:
+        return
     with recorded_connections(report):
         _refresh_entry_text(report)
 
@@ -1490,7 +1522,7 @@ def _refresh_entry_text(report):
     groups = activities_for_report(answers, year, company)
     facility_of = _facility_lookup(company)
     for step in ENTRY_STEPS:
-        entries = list(_step_entries(company, year, step))
+        entries = list(owned_step_entries(report, step))
         if entries:
             rows = _step_rows(step, _entry_specs(step, groups.get(step, []), A, year, company), facility_of)
             _backfill_detail(entries, rows)

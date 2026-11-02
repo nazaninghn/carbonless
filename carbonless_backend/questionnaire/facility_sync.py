@@ -235,7 +235,10 @@ def rename_in_answers(company, old_name, new_name, user=None):
     if not old_key or old_key == (new_name or '').strip().lower():
         return 0
     changed_reports = []
-    for step in ReportStep.objects.filter(report__company=company, step_id='2A-2'):
+    # A signed inventory's stored answers are never rewritten: it is excluded here (and the facility view
+    # refuses a rename that a signed inventory depends on).
+    for step in ReportStep.objects.filter(report__company=company, step_id='2A-2').exclude(
+            report__signed_at__isnull=False):
         stored = step.answer
         answer = stored.get('answer', stored) if isinstance(stored, dict) else None
         if not isinstance(answer, dict):
@@ -251,7 +254,8 @@ def rename_in_answers(company, old_name, new_name, user=None):
     # A leased asset linked to this facility (K3C8-1) names it too: the link is
     # the facility's name in the list, so it follows the rename or it would
     # silently stop protecting against a double count.
-    for step in ReportStep.objects.filter(report__company=company, step_id='K3C8-1'):
+    for step in ReportStep.objects.filter(report__company=company, step_id='K3C8-1').exclude(
+            report__signed_at__isnull=False):
         stored = step.answer
         answer = stored.get('answer', stored) if isinstance(stored, dict) else None
         items = answer.get('items') if isinstance(answer, dict) else None
@@ -308,6 +312,14 @@ def set_connection_in_answers(company, user, name, connection, recalculate=True)
         answer = stored.get('answer', stored) if isinstance(stored, dict) else None
         if not isinstance(answer, dict):
             continue
+        if step.report.signed_at:
+            # A signed inventory is never written to: no answer, no applied connection, no recalculation.
+            # (The facility's own change was already refused when the inventory depends on it without a
+            # recorded connection.) It keeps the connection it was signed with and is named in the history.
+            if any(isinstance(row, dict) and str(row.get('name') or '').strip().lower() == key
+                   for row in answer.values()):
+                kept.append(step.report)
+            continue
         if report_is_locked(step.report):
             rows = [row for row in answer.values()
                     if isinstance(row, dict) and str(row.get('name') or '').strip().lower() == key]
@@ -341,11 +353,14 @@ def set_connection_in_answers(company, user, name, connection, recalculate=True)
             reports.append(step.report_id)
     if recalculate:
         from .year_guard import InventoryYearConflict
+        from .immutability import InventoryGuardError
         for report in CarbonReport.objects.filter(id__in=reports):
             try:
                 sync_step_entries(user, company, report, '4A-1')
             except InventoryYearConflict:
                 continue      # a legacy duplicate of its year: left as it is until the duplicate is resolved
+            except InventoryGuardError:
+                continue      # completed, or pre-ownership: never synchronised (nothing was written)
         _log_kept_inventories(user, company, name, connection, kept)
     return len(reports)
 

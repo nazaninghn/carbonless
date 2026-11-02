@@ -97,6 +97,33 @@ class EmissionEntryAdmin(ModelAdmin):
     # an editable drop-down here would list every company's inventories.
     readonly_fields = ['inventory']
 
+    # An entry that is not assigned to an inventory, or whose inventory is signed or completed, is
+    # read-only here (and out of the bulk "delete selected" action): no change, no delete. New entries
+    # are checked in save_model; the model's pre_save guard also refuses a save in a signed period.
+    def has_change_permission(self, request, obj=None):
+        if obj is not None:
+            from questionnaire.immutability import entry_block_code
+            if entry_block_code(obj):
+                return False
+        return super().has_change_permission(request, obj)
+
+    def has_delete_permission(self, request, obj=None):
+        if obj is not None:
+            from questionnaire.immutability import entry_block_code
+            if entry_block_code(obj):
+                return False
+        return super().has_delete_permission(request, obj)
+
+    def save_model(self, request, obj, form, change):
+        from django.contrib import messages
+        from questionnaire.immutability import InventoryGuardError, assert_period_writable
+        try:
+            if not change:
+                assert_period_writable(obj.company, obj.year, obj.inventory)
+            super().save_model(request, obj, form, change)
+        except InventoryGuardError as exc:
+            self.message_user(request, f'{exc.en} / {exc.tr}', level=messages.ERROR)
+
     def factor_name(self, obj):
         return obj.emission_factor.name[:40]
     factor_name.short_description = 'Source'

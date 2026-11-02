@@ -74,6 +74,17 @@ class Command(BaseCommand):
     help = "Fill calc_detail / labels of questionnaire entries and split them by facility (no amount changes)."
 
     def handle(self, *args, **options):
+        # DISABLED (multi-inventory stage 1). This command selected entries by company, year and description
+        # and deleted and recreated them (and re-attached proof files the same way): it infers ownership of
+        # historical rows, which may include signed inventories and unassigned (NULL-inventory) records. It
+        # stays disabled until it is rewritten to select by `inventory_id` only and to skip signed inventories.
+        # The code below is kept for that rewrite and is NOT reachable.
+        from django.core.management.base import CommandError
+        raise CommandError(
+            'backfill_calc_detail is disabled: it selects, deletes and recreates entries by company, year and '
+            'description (inferred ownership), which can reach signed and unassigned records. It must not be '
+            'run until it is rewritten to use inventory_id only and to skip signed inventories.')
+
         from emissions.models import EmissionEntry
         from questionnaire.models import CarbonReport, ReportStep
         from questionnaire.step_entries import (

@@ -15,7 +15,7 @@ guessing, and no `slug__icontains` fuzzy fallback that could match the wrong row
 """
 from decimal import Decimal, InvalidOperation
 
-from django.db import DataError
+from django.db import DataError, transaction
 
 from .models import EmissionFactor, EmissionEntry
 
@@ -512,13 +512,17 @@ def _get_entry_status(user, company):
     return 'submitted'
 
 
-def create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description='', facility=None):
+def create_entry_from_activity(user, company, activity_type, quantity, unit, year, month, description='', facility=None,
+                               inventory=None):
     """
     Resolves the activity to a real factor and creates the EmissionEntry.
     This is the ONLY place that should call EmissionEntry.objects.create() for
     AI/questionnaire-derived data, so every calculation path (chat, guided
     questionnaire) produces numbers that agree with each other and with the
     dashboard, which reads the same EmissionEntry rows.
+    `inventory` (a CarbonReport the caller has already validated: same company, same year, not locked) is
+    stored on the new row by the create itself - there is no later UPDATE - so the entry either exists with
+    its inventory link or does not exist. Nothing about the calculation depends on it.
     Returns (entry, error_message).
     """
     if not company:
@@ -534,27 +538,30 @@ def create_entry_from_activity(user, company, activity_type, quantity, unit, yea
     # recomputes co2e from quantity * factor, so any magnitude that still
     # overflows the DB columns raises here — degrade to a clean error, never a 500.
     try:
-        entry = EmissionEntry.objects.create(
-            user=user,
-            company=company,
-            emission_factor=factor,
-            year=year,
-            month=month,
-            quantity=qty,
-            calculated_co2e_kg=co2e_kg,
-            description=description or f'{activity_type} {quantity} {unit}',
-            facility=facility,
-            factor_value_snapshot=factor.factor_kg_co2e,
-            factor_source_snapshot=factor.source,
-            status=_get_entry_status(user, company),
-        )
-        # Company change history (Settings → History) lists chat entries too.
-        from accounts.models import ActivityLog
-        ActivityLog.objects.create(
-            user=user, action='entry_created', target_type='EmissionEntry', target_id=str(entry.id),
-            detail=f'{factor.name} · {year}/{int(month):02d} · {format(qty.normalize(), "f") if hasattr(qty, "normalize") else qty} {factor.unit}',
-            metadata={'company_id': company.id, 'via': 'chat'},
-        )
+        # The entry and its history row are one unit: both exist or neither does.
+        with transaction.atomic():
+            entry = EmissionEntry.objects.create(
+                user=user,
+                company=company,
+                inventory=inventory,
+                emission_factor=factor,
+                year=year,
+                month=month,
+                quantity=qty,
+                calculated_co2e_kg=co2e_kg,
+                description=description or f'{activity_type} {quantity} {unit}',
+                facility=facility,
+                factor_value_snapshot=factor.factor_kg_co2e,
+                factor_source_snapshot=factor.source,
+                status=_get_entry_status(user, company),
+            )
+            # Company change history (Settings → History) lists chat entries too.
+            from accounts.models import ActivityLog
+            ActivityLog.objects.create(
+                user=user, action='entry_created', target_type='EmissionEntry', target_id=str(entry.id),
+                detail=f'{factor.name} · {year}/{int(month):02d} · {format(qty.normalize(), "f") if hasattr(qty, "normalize") else qty} {factor.unit}',
+                metadata={'company_id': company.id, 'via': 'chat'},
+            )
     except (InvalidOperation, DataError):
         return None, AMOUNT_TOO_LARGE_ERROR
     return entry, None

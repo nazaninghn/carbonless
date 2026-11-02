@@ -21,17 +21,44 @@ class DeletedFacilityTests(_Locked):
         r = self.client.delete(f'/api/companies/facilities/{self._gebze().pk}/')
         self.assertEqual(r.status_code, 204, r.content)
 
+    def _refused_delete(self, facility):
+        """Deleting a facility an entry of a SIGNED inventory points at: refused (409
+        facility_locked_by_signed_inventory), because the delete would null that reference. Nothing changes: the
+        facility, its entries, the snapshot and the history stay as they are. (Refused through the application;
+        no ORM deletion is used to simulate a permitted one.)"""
+        before = _base._signed_state_dump()
+        history = len(self._history('facility_unlinked_from_locked_inventory'))
+        r = self.client.delete(f'/api/companies/facilities/{facility.pk}/')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'facility_locked_by_signed_inventory')
+        self.assertEqual(_base._signed_state_dump(), before)
+        self.assertEqual(len(self._history('facility_unlinked_from_locked_inventory')), history)   # nothing unlinked
+
+    def _refused_edit(self, step, answer):
+        """An edit of the SIGNED inventory, by anyone: refused (409 inventory_signed), nothing changes."""
+        before = _base._signed_state_dump()
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/',
+                              {'step': step, 'data': {'answer': answer}, 'language': 'en'}, format='json')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertEqual(r.data['code'], 'inventory_signed')
+        self.assertEqual(_base._signed_state_dump(), before)
+
     def test_a_transmission_facility_deleted_after_signing_keeps_its_recorded_grid_factor(self):
+        """A facility a signed inventory's entries point at cannot be deleted (409), so the inventory keeps
+        its facility, its recorded grid factor and its snapshot; the later edit is refused too."""
         self._step('2A-2', self.TRANSMISSION)               # Gebze on the transmission grid: 1000 kWh = 436 kg
         self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
         self._sign()
-        self._delete_gebze()
-        self.assertEqual(round(self._dashboard_kg(), 2), 436.0)                      # deleting moved no total
-        self._step('4A-1', {'1': '2000 kWh'})                                         # an authorised, flagged edit
-        # 2,000 kWh x 0.436 (transmission, as signed) - not x 0.469 (the company default distribution grid)
-        self.assertEqual(self._rows(), [('turkey-grid-transmission', 2000.0, 872.0)])
+        snapshot = dict(CarbonReport.objects.get(pk=self.report.pk).applied_grid_connections)
+        self.assertEqual(snapshot, {str(self._gebze().pk): 'transmission'})          # recorded at its first signing
+        self._refused_delete(self._gebze())
+        self.assertEqual(round(self._dashboard_kg(), 2), 436.0)                      # nothing moved
+        self._refused_edit('4A-1', {'1': '2000 kWh'})                                 # nor can it be edited
+        # still 1,000 kWh x 0.436 (transmission, as signed) - not 2,000, not x 0.469 (the default distribution grid)
+        self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])
         self.report.refresh_from_db()
-        self.assertIsNotNone(self.report.edited_after_signing_at)
+        self.assertEqual(self.report.applied_grid_connections, snapshot)             # retained, never overwritten
+        self.assertIsNone(self.report.edited_after_signing_at)
 
     def test_a_foreign_facility_deleted_after_signing_keeps_its_own_country_grid(self):
         self._factor('germany-grid', 'kwh', 0.35, scope='scope2')
@@ -40,18 +67,22 @@ class DeletedFacilityTests(_Locked):
         self.assertEqual(self._rows(), [('germany-grid', 1000.0, 350.0)])
         self._sign()
         berlin = self.company.facilities.get(name='Berlin')
-        self.assertEqual(self.client.delete(f'/api/companies/facilities/{berlin.pk}/').status_code, 204)
-        self._step('4A-1', {'1': '2000 kWh'})
-        self.assertEqual(self._rows(), [('germany-grid', 2000.0, 700.0)])             # not Turkey's grid for a German site
+        self._refused_delete(berlin)
+        self._refused_edit('4A-1', {'1': '2000 kWh'})
+        self.assertEqual(self._rows(), [('germany-grid', 1000.0, 350.0)])             # still its own country's grid
+        self.assertEqual(self.company.facilities.filter(name='Berlin').count(), 1)
 
     def test_the_recalculated_entry_is_unassigned_not_attached_to_a_phantom_facility(self):
+        """Nothing is unlinked: the entry keeps its real facility and no facility is lost or re-created (the
+        delete is refused and the signed inventory cannot be recalculated)."""
         self._sign()
-        self._delete_gebze()
-        self._step('4A-1', {'1': '2000 kWh'})
+        gebze = self._gebze()
+        self._refused_delete(gebze)
+        self._refused_edit('4A-1', {'1': '2000 kWh'})
         entries = EmissionEntry.objects.filter(company=self.company, year=2025,
                                                description__startswith='Questionnaire step 4A-1')
-        self.assertEqual([e.facility_id for e in entries], [None])
-        self.assertEqual(self.company.facilities.filter(name='Gebze').count(), 0)     # nothing was re-created
+        self.assertEqual([e.facility_id for e in entries], [gebze.pk])                # still attached to the real one
+        self.assertEqual(self.company.facilities.filter(name='Gebze').count(), 1)
 
     def test_reports_and_the_market_based_result_of_the_signed_inventory_still_use_the_recorded_factor(self):
         from .iso_report_pdf import _scope2_market
@@ -59,20 +90,20 @@ class DeletedFacilityTests(_Locked):
         self._sign()
         before = [round(r['factor'], 3) for r in _scope2_market(self.report)['rows']]
         self.assertEqual(before, [0.436])
-        self._delete_gebze()
+        self._refused_delete(self._gebze())
         self.assertEqual([round(r['factor'], 3) for r in _scope2_market(self.report)['rows']], [0.436])   # not 0.469
         self.assertEqual(self.client.get(f'/api/questionnaire/{self.report.id}/iso-report/?lang=en').status_code, 200)
         self.assertEqual(self._rows(), [('turkey-grid-transmission', 1000.0, 436.0)])                  # reading recalculated nothing
-        self.assertEqual(self._history('facility_unlinked_from_locked_inventory')[0].metadata['entries'], 1)
+        self.assertEqual(self._history('facility_unlinked_from_locked_inventory'), [])                 # nothing was unlinked
 
     def test_no_default_grid_note_is_shown_for_a_site_the_signed_inventory_recorded(self):
         """The 'connection unknown, distribution assumed' note is for electricity tied to no facility; a recorded
-        site is not that, even after its facility was deleted."""
+        site is not that (its facility cannot be deleted while the signed inventory depends on it)."""
         from .models import ReportStep
         from .step_entries import uncalculated_notes
         self._step('2A-2', self.TRANSMISSION)
         self._sign()
-        self._delete_gebze()
+        self._refused_delete(self._gebze())
         answers = dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer'))
         from .step_entries import recorded_connections
         with recorded_connections(self.report):
