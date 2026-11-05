@@ -251,7 +251,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   const renderEntry = (entry, inBatch = false) => (
                 <div key={`entry-${entry.id}`} data-review-entry-id={entry.id} className={`${inBatch
                   ? 'rounded-xl border border-[#072C0E]/8 bg-white px-3 py-2.5'
-                  : 'rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]'}${focusId === entry.id ? ' ring-2 ring-[#2ABD41]' : ''}`}>
+                  : 'rounded-[14px] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]'}${focusId === entry.id ? ' ring-2 ring-[#2ABD41]' : ''}`}>
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-1.5">
                       <h3 className="truncate text-sm font-bold text-[#072C0E]">
@@ -408,7 +408,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
       ? `${sign}${num(Math.abs(delta), tr, 1)} kg CO₂e`
       : `${sign}${num(Math.abs(delta) / 1000, tr, 2)} tCO₂e`;
     return (
-      <div key={`batch-${batch}`} className="rounded-[1.25rem] border border-[#2ABD41]/30 bg-green-50 p-3.5 shadow-sm">
+      <div key={`batch-${batch}`} className="rounded-[14px] border border-[#2ABD41]/30 bg-green-50 p-3.5 shadow-sm">
         <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0 space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-wide text-[#175022]/55">
@@ -465,20 +465,17 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
   return (
     <div className="space-y-3 text-[#072C0E]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#072C0E]/10 bg-gradient-to-br from-[#DEFAE1] via-white to-[#8BEA99]/8 p-4 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
-              {tr ? 'Onay süreci' : 'Approval workflow'}
-            </p>
-            <h1 className="mt-1 text-lg font-bold tracking-[-0.03em]">
+            <h1 className="app-title">
               {tr ? 'Onay Bekleyenler' : 'Pending Review'}
             </h1>
-            <p className="mt-0.5 text-xs text-[#072C0E]/50">
+            <p className="app-subtitle">
               {tr ? 'Onay bekleyen emisyon kayıtları ve danışman onayları' : 'Emission entries and advisor approvals awaiting review'}
             </p>
           </div>
-          <div className="rounded-xl bg-[#2ABD41]/12 px-3 py-1.5 text-xs font-bold text-[#175022]">
+          <div className="rounded-lg bg-[#2ABD41]/12 px-2.5 py-1 text-[11px] font-bold text-[#175022]">
             {totalPending} {tr ? 'bekleyen' : 'pending'}
           </div>
         </div>
@@ -498,7 +495,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
           <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-[#2ABD41] border-t-transparent"></div>
         </div>
       ) : totalPending === 0 ? (
-        <div className="flex min-h-40 flex-col items-center justify-center rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-6 text-center shadow-sm">
+        <div className="flex min-h-40 flex-col items-center justify-center rounded-[14px] border border-[#072C0E]/10 bg-white p-4 text-center shadow-sm">
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-[#2ABD41]/12 text-[#2ABD41]">
             <ClipboardCheck className="h-5 w-5" />
           </div>
@@ -584,7 +581,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
                 </div>
               )}
               {advisorPending.map(item => { const reason = advisorReasonText(item, tr); const given = formatAdvisorAnswer(item.question_id, item.answer, tr); return (
-                <div key={`advisor-${item.id}`} className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
+                <div key={`advisor-${item.id}`} className="rounded-[14px] border border-[#072C0E]/10 bg-white p-3.5 shadow-sm transition hover:shadow-[0_6px_20px_rgba(7,44,14,0.07)]">
                   <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 space-y-1.5">
                       <h3 className="text-sm font-bold text-[#072C0E]">
@@ -666,7 +663,7 @@ export default function ReviewTab({ language, fetchData, canApprove = true, canE
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md">
           <div
             role="dialog" aria-modal="true" aria-labelledby="reject-dialog-title"
-            className="w-full max-w-sm rounded-[1.25rem] border border-[#072C0E]/10 bg-white/95 p-5 shadow-[0_20px_60px_rgba(7,44,14,0.15)] backdrop-blur-2xl"
+            className="w-full max-w-sm rounded-[14px] border border-[#072C0E]/10 bg-white/95 p-4 shadow-[0_20px_60px_rgba(7,44,14,0.15)] backdrop-blur-2xl"
           >
             <h3 id="reject-dialog-title" className="text-sm font-bold text-[#072C0E]">{tr ? 'Reddetme Nedeni' : 'Rejection Reason'}</h3>
             <textarea

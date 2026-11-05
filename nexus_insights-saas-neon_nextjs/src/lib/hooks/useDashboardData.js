@@ -43,7 +43,7 @@ function reducer(state, action) {
   }
 }
 
-export function useDashboardData(selectedYear) {
+export function useDashboardData(selectedYear, inventoryId = null) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const isFirstLoad = useRef(true);
   // Generation counter: incremented on every new fetch start and on unmount.
@@ -66,8 +66,8 @@ export function useDashboardData(selectedYear) {
     try {
       const [summaryRes, entriesRes, factorsRes, targetsRes, profileRes,
              customRes, notifRes, facilityRes] = await Promise.all([
-        api.getSummary(selectedYear),
-        api.getEntries(`year=${selectedYear}`),
+        api.getSummary(selectedYear, inventoryId),
+        api.getEntries(`year=${selectedYear}${inventoryId ? `&inventory_id=${inventoryId}` : ''}`),
         api.getFactors(),
         api.getTargets(),
         api.getProfile(),
@@ -119,7 +119,7 @@ export function useDashboardData(selectedYear) {
       }
       // background refresh errors: silently ignore — keep existing data visible
     }
-  }, [selectedYear]);
+  }, [selectedYear, inventoryId]);
 
   useEffect(() => {
     fetchData();

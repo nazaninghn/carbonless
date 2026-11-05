@@ -97,7 +97,7 @@ export default function ProfileEdit({ language, user, onUpdate }) {
         <button
           type="submit"
           disabled={saving}
-          className="w-full rounded-full bg-[#072C0E] px-5 py-3 text-sm font-bold text-[#DEFAE1] shadow-lg shadow-[#072C0E]/10 transition hover:bg-[#175022] disabled:opacity-60 sm:w-auto"
+          className="app-btn w-full bg-[#072C0E] text-[#DEFAE1] transition hover:bg-[#175022] disabled:opacity-60 sm:w-auto"
         >
           {saving ? (tr ? 'Kaydediliyor…' : 'Saving…') : (tr ? 'Kaydet' : 'Save')}
         </button>
@@ -116,7 +116,7 @@ function Field({ label, value, onChange }) {
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="block h-11 w-full min-w-0 max-w-full rounded-2xl border border-[#072C0E]/10 bg-smoke px-4 text-sm font-semibold text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41] focus:bg-white focus:ring-4 focus:ring-[#2ABD41]/15"
+        className="block h-9 w-full min-w-0 max-w-full rounded-[10px] border border-[#072C0E]/10 bg-smoke px-3 text-[13px] font-medium text-[#072C0E] outline-none transition placeholder:text-[#072C0E]/30 focus:border-[#2ABD41] focus:bg-white focus:ring-4 focus:ring-[#2ABD41]/15"
       />
     </label>
   );

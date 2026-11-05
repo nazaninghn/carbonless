@@ -228,7 +228,7 @@ export default function TeamManagement({ language }) {
 
       {/* Role descriptions panel */}
       {showRoles && (
-        <div className="bg-smoke rounded-2xl p-4 border border-[#072C0E]/10">
+        <div className="bg-smoke rounded-[14px] p-4 border border-[#072C0E]/10">
           <h4 className="text-sm font-semibold text-[#072C0E] mb-3">{tr ? 'Rol Açıklamaları' : 'Role Descriptions'}</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {ROLES.map(r => {
@@ -266,7 +266,7 @@ export default function TeamManagement({ language }) {
               // On a phone the name, role and Deactivate sat on one line and
               // ran off the right edge (the button cut to "Dev / Dı / Bır"):
               // there the controls go on a second line.
-              <div key={m.id} className={`flex flex-col gap-2.5 p-3 rounded-2xl border transition-all sm:flex-row sm:items-center sm:justify-between ${
+              <div key={m.id} className={`flex flex-col gap-2.5 p-3 rounded-[14px] border transition-all sm:flex-row sm:items-center sm:justify-between ${
                 !m.is_active ? 'bg-smoke border-[#072C0E]/10 opacity-60' : 'bg-white border-[#072C0E]/10 hover:border-[#2ABD41]/30 hover:shadow-sm'
               }`}>
                 <div className="flex min-w-0 items-center gap-3">
@@ -346,7 +346,7 @@ export default function TeamManagement({ language }) {
       )}
 
       {/* Invite Form */}
-      <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-4 border border-[#2ABD41]/20">
+      <div className="bg-gradient-to-r from-primary/5 to-accent/5 rounded-[14px] p-4 border border-[#2ABD41]/20">
         <div className="flex items-center gap-2 mb-3">
           <UserPlus className="w-4 h-4 text-[#2ABD41]" />
           <h4 className="text-sm font-semibold text-[#072C0E]">{tr ? 'Yeni Üye Davet Et' : 'Invite New Member'}</h4>
@@ -374,7 +374,7 @@ export default function TeamManagement({ language }) {
           <button
             onClick={handleInvite}
             disabled={inviting || !inviteEmail}
-            className="px-5 py-2 btn-dark rounded-xl text-sm font-medium transition-colors flex items-center gap-1"
+            className="app-btn btn-dark transition-colors"
           >
             <UserPlus className="w-4 h-4" />
             {inviting ? '...' : (tr ? 'Davet Et' : 'Invite')}
@@ -384,7 +384,7 @@ export default function TeamManagement({ language }) {
 
       {/* Pending invites */}
       {invites.length > 0 && (
-        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-4">
+        <div className="rounded-[14px] border border-[#072C0E]/10 bg-white p-4">
           <div className="mb-3 flex items-center gap-2">
             <Mail className="h-4 w-4 text-[#2ABD41]" />
             <h4 className="text-sm font-semibold text-[#072C0E]">
@@ -456,7 +456,7 @@ export default function TeamManagement({ language }) {
 
       {transferTo && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+          <div className="w-full max-w-md rounded-[14px] bg-white p-4 shadow-xl">
             <h3 className="flex items-center gap-2 text-base font-bold text-[#072C0E]">
               <Crown className="h-4 w-4 text-amber-500" />
               {tr ? 'Şirket sahipliği devredilsin mi?' : 'Transfer company ownership?'}

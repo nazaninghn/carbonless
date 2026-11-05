@@ -89,40 +89,39 @@ export default function DashboardSidebar({
         key={item.key}
         onClick={() => navigate(item.key)}
         aria-current={isActive ? 'page' : undefined}
+        title={tr ? item.tr : item.en}
         className={`
-          group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200
+          group flex min-h-[var(--app-nav-item-h)] w-full items-center gap-2 rounded-md px-1.5 py-0.5 text-left transition-colors duration-150
           ${isActive
             ? isAI
               ? 'btn-primary'
-              : isQuestionnaire
-                ? 'btn-dark'
-                : 'btn-dark'
+              : 'bg-[#1D9C31] text-white shadow-sm'
             : 'text-[#072C0E]/60 hover:bg-[#F1FCF2] hover:text-[#072C0E]'}
         `}
       >
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+        <div className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded ${
           isActive
-            ? isAI ? 'bg-white/20' : 'bg-white/10'
+            ? 'bg-white/20'
             : isAI ? 'bg-[#2ABD41]/10' : isQuestionnaire ? 'bg-[#175022]/10' : 'bg-[#072C0E]/5'
         }`}>
-          <Icon className={`h-[16px] w-[16px] ${
-            isActive ? (isAI ? 'text-[#072C0E]' : 'text-white') : isAI ? 'text-[#2ABD41]' : isQuestionnaire ? 'text-[#175022]' : 'text-[#072C0E]/50'
+          <Icon className={`h-[13px] w-[13px] ${
+            isActive ? 'text-white' : isAI ? 'text-[#2ABD41]' : isQuestionnaire ? 'text-[#175022]' : 'text-[#072C0E]/50'
           }`} />
         </div>
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+        <span className={`min-w-0 flex-1 truncate text-[12.5px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
           {tr ? item.tr : item.en}
         </span>
         {isAI && !isActive && (
-          <span className="rounded-full bg-[#2ABD41]/10 px-2 py-0.5 text-[9px] font-bold text-[#2ABD41]">
+          <span className="rounded-full bg-[#2ABD41]/10 px-1.5 py-px text-[8.5px] font-bold text-[#2ABD41]">
             AI
           </span>
         )}
         {isQuestionnaire && !isActive && (
-          <span className="rounded-full bg-[#175022]/8 px-2 py-0.5 text-[9px] font-bold text-[#175022]/70">
+          <span className="rounded-full bg-[#175022]/8 px-1.5 py-px text-[8.5px] font-bold text-[#175022]/70">
             ISO
           </span>
         )}
-        {isActive && <ChevronRight className="h-3.5 w-3.5 shrink-0 opacity-60" />}
+        {isActive && <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />}
       </button>
     );
   }
@@ -133,8 +132,8 @@ export default function DashboardSidebar({
       <aside
         aria-label={tr ? 'Ana gezinme' : 'Main navigation'}
         className={`
-          fixed inset-y-0 left-0 z-50 w-[260px] bg-white
-          border-r border-[#DEFAE1] transition-transform duration-300
+          fixed inset-y-0 left-0 z-50 w-[var(--app-sidebar-w)] bg-white
+          border-r border-[#E6EDE7] transition-transform duration-300
           lg:static lg:translate-x-0
           ${sidebarOpen ? 'translate-x-0 shadow-[0_8px_40px_rgba(0,0,0,0.08)]' : '-translate-x-full'}
         `}
@@ -142,14 +141,15 @@ export default function DashboardSidebar({
         <div className="flex h-full flex-col">
 
           {/* Logo */}
-          <div className="flex h-16 items-center justify-between border-b border-[#DEFAE1] px-4">
+          <div className="flex h-14 items-center justify-between border-b border-[#E6EDE7] px-4">
             <button
               onClick={() => navigate('dashboard')}
               className="flex min-w-0 items-center gap-2.5"
             >
               <Image src="/carbonless.png" alt="Carbonless" width={36} height={36} className="h-9 w-9 object-contain" />
-              <span className="truncate text-[15px] font-bold tracking-tight text-[#072C0E]">
-                Carbonless
+              <span className="min-w-0 text-left leading-tight">
+                <span className="block truncate text-[15px] font-bold tracking-tight text-[#0E2A14]">Carbonless</span>
+                <span className="block truncate text-[10px] font-medium text-[#6B7A70]">{tr ? 'Karbon muhasebesi' : 'Carbon accounting'}</span>
               </span>
             </button>
             <button aria-label={tr ? 'Menüyü kapat' : 'Close menu'}
@@ -161,52 +161,69 @@ export default function DashboardSidebar({
           </div>
 
           {/* Nav */}
-          <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+          <nav className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-2 py-2">
             {/* Dashboard section */}
-            <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
+            <div className="space-y-px">
+              <p className="mb-0.5 px-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/35">
                 {tr ? 'Kontrol Paneli' : 'Dashboard'}
               </p>
               {mainItems.filter(i => i.key !== 'ai_carbon').map(renderNavItem)}
             </div>
 
             {/* Data section */}
-            <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
+            <div className="space-y-px">
+              <p className="mb-0.5 px-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/35">
                 {tr ? 'Veri ve Raporlar' : 'Data & Reports'}
               </p>
               {dataItems.map(renderNavItem)}
             </div>
 
             {/* Management section */}
-            <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
+            <div className="space-y-px">
+              <p className="mb-0.5 px-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/35">
                 {tr ? 'Yönetim' : 'Management'}
               </p>
               {manageItems.map(renderNavItem)}
             </div>
 
             {/* Help section */}
-            <div className="space-y-1">
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/30">
+            <div className="space-y-px">
+              <p className="mb-0.5 px-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#072C0E]/35">
                 {tr ? 'Yardım' : 'Help'}
               </p>
               {helpItems.map(renderNavItem)}
             </div>
           </nav>
 
-          {/* Quick mode switch card */}
+          {/* Carbon AI card: a way into the assistant (shown when there is room) */}
+          <div data-testid="sidebar-ai-card" className="mx-2 mb-2 hidden rounded-xl bg-[#0E2A14] p-3 text-white [@media(min-height:880px)]:block">
+            <Sparkles className="h-3.5 w-3.5 text-[#51D766]" aria-hidden="true" />
+            <p className="mt-1.5 text-[12px] font-semibold">{tr ? 'Carbon AI' : 'Carbon AI'}</p>
+            <p className="mt-0.5 text-[11px] leading-4 text-white/65">
+              {tr ? 'Envanterinizi açıklatın, azaltım fikirleri isteyin.' : 'Get your inventory explained and ask for reduction ideas.'}
+            </p>
+            <button type="button" onClick={() => window.dispatchEvent(new CustomEvent('carbonless:assistant', { detail: { open: true } }))}
+              className="mt-2 w-full rounded-md bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0E2A14] transition hover:bg-[#F1FCF2]">
+              {tr ? 'AI asistanı aç' : 'Open AI assistant'}
+            </button>
+          </div>
+
           {/* User footer */}
-          <div className="border-t border-[#DEFAE1] p-3">
-            <div className="mb-2 flex items-center gap-2.5 rounded-xl bg-[#F1FCF2] px-3 py-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#072C0E] text-[12px] font-bold text-white">
+          <div className="shrink-0 border-t border-[#E6EDE7] p-2">
+            <div className="mb-1 flex items-center gap-2 rounded-lg bg-[#F6FAF7] px-2 py-1.5">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#072C0E] text-[11px] font-bold text-white">
                 {user?.username?.[0]?.toUpperCase() || 'U'}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-bold text-[#072C0E]">
+                <p className="truncate text-[12px] font-semibold leading-tight text-[#072C0E]" title={user?.username || undefined}>
                   {user?.username || (tr ? 'Kullanıcı' : 'User')}
                 </p>
-                <p className="truncate text-[11px] text-[#072C0E]/40">{user?.email || ''}</p>
+                <p className="truncate text-[10px] leading-tight text-[#072C0E]/45" title={user?.email || undefined}>{user?.email || ''}</p>
+                {(user?.company_name || user?.role) && (
+                  <p className="truncate text-[9.5px] font-semibold leading-tight text-[#1D9C31]" data-testid="sidebar-company">
+                    {[user?.company_name, user?.role ? roleLabel(user.role, tr) : ''].filter(Boolean).join(' · ')}
+                  </p>
+                )}
               </div>
             </div>
 
@@ -252,9 +269,9 @@ export default function DashboardSidebar({
 
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-semibold text-red-500/70 transition hover:bg-red-50 hover:text-red-600"
+              className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md px-2 text-[11px] font-semibold text-red-500/80 transition hover:bg-red-50 hover:text-red-600"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              <LogOut className="h-3 w-3" />
               {tr ? 'Çıkış' : 'Logout'}
             </button>
           </div>

@@ -218,7 +218,7 @@ export default function CompanySettings({ language, readOnly = false }) {
   if (!company) {
     if (!creating) {
       return (
-        <div className="rounded-2xl border border-[#8BEA99]/30 bg-[#DEFAE1]/60 p-6 text-center">
+        <div className="rounded-[14px] border border-[#8BEA99]/30 bg-[#DEFAE1]/60 p-4 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#8BEA99]/20">
             <Building2 className="h-6 w-6 text-[#2ABD41]" />
           </div>
@@ -232,7 +232,7 @@ export default function CompanySettings({ language, readOnly = false }) {
           </p>
           <button
             onClick={() => { setCreating(true); setForm({}); setError(''); }}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl btn-dark px-5 py-2.5 text-sm font-bold"
+            className="mt-4 app-btn btn-dark"
           >
             <Plus className="h-4 w-4" />
             {tr ? 'Şirket Oluştur' : 'Create Company'}
@@ -277,7 +277,7 @@ export default function CompanySettings({ language, readOnly = false }) {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 rounded-xl btn-dark px-5 py-2.5 text-sm font-bold"
+            className="app-btn btn-dark"
           >
             {saving
               ? <><Spinner />{tr ? 'Oluşturuluyor…' : 'Creating…'}</>
@@ -363,7 +363,7 @@ export default function CompanySettings({ language, readOnly = false }) {
           organisation and are the ones most often left blank, so they are
           grouped and labelled with what they are for rather than mixed into
           the identity fields above. */}
-      <div className="rounded-2xl border border-[#072C0E]/10 bg-smoke p-4">
+      <div className="rounded-[14px] border border-[#072C0E]/10 bg-smoke p-4">
         <p className="mb-1 text-sm font-bold text-[#072C0E]">
           {tr ? 'ISO 14064-1 rapor beyanı' : 'ISO 14064-1 report declaration'}
         </p>
@@ -392,7 +392,7 @@ export default function CompanySettings({ language, readOnly = false }) {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 rounded-xl btn-dark px-5 py-2.5 text-sm font-bold"
+          className="app-btn btn-dark"
         >
           {saving
             ? <><Spinner />{tr ? 'Kaydediliyor…' : 'Saving…'}</>

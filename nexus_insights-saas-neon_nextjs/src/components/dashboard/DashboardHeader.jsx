@@ -14,6 +14,7 @@ import { api } from '@/lib/utils/api';
 import { REVIEW_FOCUS_KEY, REVIEW_FOCUS_EVENT } from '@/lib/reviewFocus';
 import { FOCUS_ENTRY_EVENT, FOCUS_ENTRY_KEY } from '@/components/dashboard/CommandPalette';
 import { openChat } from '@/lib/openChat';
+import { roleLabel } from '@/lib/permissions';
 
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - i);
 
@@ -26,6 +27,8 @@ const TAB_LABELS = {
   reporting:     { tr: 'Raporlama',         en: 'Reports'          },
   review:        { tr: 'Onay Bekleyenler',  en: 'Review'           },
   settings:      { tr: 'Ayarlar',           en: 'Settings'         },
+  benchmark:     { tr: 'Benchmark',         en: 'Benchmark'        },
+  how_it_works:  { tr: 'Nasıl Çalışır?',    en: 'How it Works'     },
 };
 
 export default function DashboardHeader({
@@ -34,12 +37,16 @@ export default function DashboardHeader({
   setActiveTab,
   selectedYear,
   setSelectedYear,
+  yearInventories = [],
+  selectedInventoryId = null,
+  onInventoryChange,
   selectedCountry,
   setSelectedCountry,
   unreadCount,
   setUnreadCount,
   setSidebarOpen,
   onLanguageChange,
+  user = null,
 }) {
   const [notifications, setNotifications] = useState([]);
   // Unread notices of the user's other companies: named with a switch, as
@@ -169,8 +176,8 @@ export default function DashboardHeader({
   }, [setActiveTab, setSelectedYear, setUnreadCount, unreadCount]);
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center border-b border-[#DEFAE1] bg-white px-3 sm:px-4 lg:px-5">
-      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-3">
+    <header className="sticky top-0 z-30 flex h-14 items-center border-b border-[#E6EDE7] bg-white px-3 sm:px-4 lg:px-5">
+      <div className="mx-auto flex w-full max-w-[1560px] items-center justify-between gap-3">
         {/* Left: sidebar toggle (mobile only) — logo/brand removed, the
             sidebar already shows the Carbonless logo, so this header used to
             repeat it right next to the mode-switcher pill on a second line */}
@@ -182,6 +189,21 @@ export default function DashboardHeader({
           >
             <Menu className="h-4 w-4" />
           </button>
+          {/* Where you are: the page, and for the inventory pages the reporting year and the inventory shown */}
+          <div className="hidden min-w-0 lg:block" data-testid="header-context">
+            <p className="truncate text-[15px] font-bold leading-tight tracking-tight text-[#0E2A14]">
+              {TAB_LABELS[activeTab]?.[tr ? 'tr' : 'en'] || 'Carbonless'}
+            </p>
+            {['dashboard', 'emissions', 'reporting', 'reduction'].includes(activeTab) && (
+              <p className="truncate text-[11px] leading-tight text-[#072C0E]/50">
+                {selectedYear}
+                {(() => {
+                  const cur = yearInventories.find(r => Number(r.report_id) === Number(selectedInventoryId));
+                  return cur ? ` · ${cur.title || `#${cur.report_id}`}` : '';
+                })()}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Center: Mode switcher pill */}
@@ -214,8 +236,16 @@ export default function DashboardHeader({
           </button>
         </div>
 
-        {/* Right: language + year + notifications */}
+        {/* Right: search + language + year + notifications + profile */}
         <div className="flex items-center gap-2">
+          <button type="button" data-testid="header-search"
+            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))}
+            aria-label={tr ? 'Ara (Ctrl K)' : 'Search (Ctrl K)'}
+            className="hidden h-8 items-center gap-2 rounded-lg border border-[#E1E9E3] bg-[#F7FAF8] px-2.5 text-[12px] text-[#6B7A70] transition hover:border-[#C9DACD] xl:flex xl:w-40 2xl:w-56">
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <span className="flex-1 truncate text-left"><span className="2xl:hidden">{tr ? 'Ara' : 'Search'}</span><span className="hidden 2xl:inline">{tr ? 'Her şeyi ara' : 'Search anything'}</span></span>
+            <kbd className="rounded border border-[#E1E9E3] bg-white px-1 text-[10px] font-medium">Ctrl K</kbd>
+          </button>
           {/* Language toggle */}
           {onLanguageChange && (
             <div className="flex items-center gap-0.5 rounded-full bg-[#F1FCF2] border border-[#DEFAE1] p-0.5">
@@ -243,6 +273,20 @@ export default function DashboardHeader({
             {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
 
+          {/* Inventory of that year: shown only when the year has more than one */}
+          {yearInventories.length > 1 && (
+            <select
+              aria-label={tr ? 'Envanter' : 'Inventory'}
+              value={selectedInventoryId ?? ''}
+              onChange={(e) => onInventoryChange?.(Number(e.target.value))}
+              className="hidden sm:block h-8 max-w-[11rem] truncate rounded-lg border border-[#DEFAE1] bg-white px-2 text-[11px] font-semibold text-[#072C0E]/70 outline-none"
+            >
+              {yearInventories.map(r => (
+                <option key={r.report_id} value={r.report_id}>{r.title || `#${r.report_id}`}</option>
+              ))}
+            </select>
+          )}
+
           {/* Notification bell */}
           <div className="relative" ref={notifPanelRef}>
             <button
@@ -261,7 +305,7 @@ export default function DashboardHeader({
             </button>
 
             {showNotifications && (
-              <div className="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-2xl border border-[#DEFAE1] bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[360px]">
+              <div className="fixed inset-x-3 top-14 z-50 overflow-hidden rounded-2xl border border-[#DEFAE1] bg-white shadow-xl sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-3 sm:w-[360px]">
                 <div className="flex items-center justify-between border-b border-[#DEFAE1] px-4 py-3">
                   <p className="text-sm font-bold text-[#072C0E]">
                     {tr ? 'Bildirimler' : 'Notifications'}
@@ -314,6 +358,21 @@ export default function DashboardHeader({
               </div>
             )}
           </div>
+
+          {/* Profile: the account you are signed in as (opens Settings) */}
+          {user && (
+            <button type="button" onClick={() => setActiveTab('settings')} data-testid="header-profile"
+              aria-label={tr ? 'Profil ve ayarlar' : 'Profile and settings'} title={user.username || user.email || ''}
+              className="hidden shrink-0 items-center gap-2 rounded-lg py-0.5 pl-0.5 pr-1 text-left transition hover:bg-[#F6FAF7] sm:flex">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0E2A14] text-[12px] font-bold text-white">
+                {(user.username || user.email || 'U')[0].toUpperCase()}
+              </span>
+              <span className="hidden max-w-[9rem] leading-tight xl:block">
+                <span className="block truncate text-[12px] font-semibold text-[#0E2A14]">{user.username || user.email}</span>
+                {user.role && <span className="block truncate text-[10px] text-[#6B7A70]">{roleLabel(user.role, tr)}</span>}
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </header>

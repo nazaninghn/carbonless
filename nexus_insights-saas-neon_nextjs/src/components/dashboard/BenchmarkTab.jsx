@@ -221,12 +221,10 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
       {/* Section header */}
       <div className="dash-fade-up flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/35">
-            {tr ? 'Sektör Karşılaştırması' : 'Sector Comparison'}
-          </p>
-          <h1 className="mt-0.5 text-base font-bold text-[#072C0E] sm:text-[17px]">
+          <h1 className="app-title">
             {tr ? 'Benchmark' : 'Benchmark'}
           </h1>
+          <p className="app-subtitle">{tr ? 'Sektör karşılaştırması' : 'Sector comparison'}</p>
         </div>
         <div className="flex items-center gap-2 text-[11px] text-[#072C0E]/45">
           <Users className="h-3.5 w-3.5" />
@@ -293,7 +291,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
 
         {/* Sector position */}
         <div
-          className="dash-fade-up group rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5"
+          className="dash-fade-up group rounded-[14px] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-4"
           style={{ animationDelay: '260ms' }}
         >
           <div className="mb-4 flex items-center gap-2">
@@ -331,7 +329,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
 
         {/* Year-over-year trend placeholder */}
         <div
-          className="dash-fade-up group rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5"
+          className="dash-fade-up group rounded-[14px] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-4"
           style={{ animationDelay: '320ms' }}
         >
           <div className="mb-4 flex items-center gap-2">
@@ -380,7 +378,7 @@ export default function BenchmarkTab({ language, summary, questionnaireProfile }
 
       {/* Reduction Opportunities */}
       <div
-        className="dash-fade-up group rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-5"
+        className="dash-fade-up group rounded-[14px] border border-[#072C0E]/8 bg-white p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 sm:p-4"
         style={{ animationDelay: '380ms' }}
       >
         <div className="mb-4 flex items-center justify-between">

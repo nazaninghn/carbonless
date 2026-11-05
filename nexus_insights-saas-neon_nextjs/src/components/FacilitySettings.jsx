@@ -237,7 +237,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
   /* ─── No-company banner ─── */
   if (noCompany) {
     return (
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
+      <div className="rounded-[14px] border border-amber-200 bg-amber-50 p-4 text-center">
         <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100">
           <Building2 className="h-6 w-6 text-amber-600" />
         </div>
@@ -392,7 +392,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
 
       {/* Form */}
       {showForm ? (
-        <form ref={formRef} onSubmit={handleAdd} noValidate className="scroll-mt-4 space-y-3 rounded-2xl border border-[#072C0E]/10 bg-smoke p-4">
+        <form ref={formRef} onSubmit={handleAdd} noValidate className="scroll-mt-4 space-y-3 rounded-[14px] border border-[#072C0E]/10 bg-smoke p-4">
           <p className="text-xs font-bold text-[#072C0E]/60 uppercase tracking-wide">
             {editingId !== null ? (tr ? 'Tesisi Düzenle' : 'Edit Facility') : (tr ? 'Yeni Tesis' : 'New Facility')}
           </p>
@@ -485,7 +485,7 @@ export default function FacilitySettings({ language, readOnly = false, onChange 
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 rounded-xl btn-dark px-5 py-2.5 text-sm font-bold"
+              className="app-btn btn-dark"
             >
               {saving ? (
                 <>

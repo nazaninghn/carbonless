@@ -28,6 +28,7 @@ import { fixed } from '@/lib/formatNumber';
 import { COUNTRIES } from '@/lib/data/countries';
 import FactorCountryBadge from '@/components/FactorCountryBadge';
 import { FOCUS_ENTRY_EVENT, FOCUS_ENTRY_KEY } from '@/components/dashboard/CommandPalette';
+import UnassignedRecords from '@/components/dashboard/UnassignedRecords';
 
 // ─── KPI mini card (count-up + hover lift) ─────────────────────────────────
 function EmissionsKPI({ label, value, decimals = 2, sub, color, delay = 0 }) {
@@ -278,6 +279,7 @@ export default function EmissionsTab({
   canApprove = false,
   currentUsername,
   yearsWithData = [],
+  unassignedRecords = null,
   onYearChange,
 }) {
   const tr    = language === 'tr';
@@ -923,7 +925,7 @@ export default function EmissionsTab({
   // ── Shared modal classes ─────────────────────────────────────────────────
   const OVERLAY = 'fixed inset-0 z-50 flex items-center justify-center bg-black/10 p-4 backdrop-blur-md';
   const MODAL   = 'flex max-h-[90svh] w-full flex-col overflow-hidden rounded-3xl border border-[#072C0E]/8 bg-white/94 shadow-[0_20px_60px_rgba(7, 44, 14,0.14)] backdrop-blur-2xl';
-  const FIELD   = 'h-12 w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
+  const FIELD   = 'h-9 w-full rounded-[10px] border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-3 text-[13px] font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
   const LABEL   = 'mb-1.5 block text-xs font-bold text-[#072C0E]/60';
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -931,17 +933,16 @@ export default function EmissionsTab({
     <div className="space-y-3 sm:space-y-4">
       <style>{DASHBOARD_ANIM_STYLES}</style>
 
+      <UnassignedRecords year={selectedYear} language={language} info={unassignedRecords} />
+
       {/* ── Hero header ───────────────────────────────────────────────── */}
-      <div className="dash-fade-up relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
+      <div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
-              {tr ? 'Emisyon çalışma alanı' : 'Emission workspace'}
-            </p>
-            <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
+            <h1 className="app-title">
               {tr ? 'Emisyon Yönetimi' : 'Emission Management'} · {selectedYear}
             </h1>
-            <p className="mt-0.5 text-sm text-[#072C0E]/55">
+            <p className="app-subtitle">
               {tr ? 'Aktivite verilerinizi girin ve yönetin' : 'Record and manage your activity data'}
             </p>
           </div>
@@ -949,21 +950,21 @@ export default function EmissionsTab({
           <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               onClick={() => setShowAddForm(true)}
-              className="inline-flex items-center gap-1.5 rounded-full btn-dark px-4 py-2.5 text-xs font-bold transition-colors"
+              className="app-btn btn-dark transition-colors"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus />
               {tr ? 'Yeni Kayıt' : 'New Entry'}
             </button>
             <button
               onClick={() => setShowCustom(true)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E]/60 transition hover:border-[#072C0E]/25 hover:bg-[#DEFAE1]/60"
+              className="app-btn border border-[#072C0E]/15 bg-white text-[#072C0E]/60 transition hover:border-[#072C0E]/25 hover:bg-[#DEFAE1]/60"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus />
               {tr ? 'Özel Talep' : 'Custom Request'}
             </button>
           </div>
           ) : (
-            <span className="inline-flex items-center gap-1.5 self-start rounded-full border border-[#072C0E]/10 bg-smoke px-4 py-2 text-xs font-bold text-[#072C0E]/55 sm:shrink-0">
+            <span className="app-btn app-btn-sm self-start border border-[#072C0E]/10 bg-smoke text-[#072C0E]/55 sm:shrink-0">
               {tr ? 'Salt okunur erişim' : 'Read-only access'}
             </span>
           )}
@@ -997,13 +998,13 @@ export default function EmissionsTab({
       {/* ── Search + Scope filter ──────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2">
         {/* Search */}
-        <div className="flex min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-[#072C0E]/10 bg-white px-3.5 py-2.5 shadow-sm">
+        <div className="flex h-9 min-w-[180px] flex-1 items-center gap-2 rounded-[10px] border border-[#DCE6DE] bg-white px-3">
           <Search className="h-3.5 w-3.5 shrink-0 text-[#072C0E]/30" />
           <input
             type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder={tr ? 'Kaynak ara…' : 'Search source…'}
             aria-label={tr ? 'Emisyon kaynaklarında ara' : 'Search emission sources'}
-            className="min-w-0 flex-1 bg-transparent text-sm font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30"
+            className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-[#072C0E] outline-none placeholder:text-[#072C0E]/30"
           />
           {search && (
             <button aria-label={tr ? 'Aramayı temizle' : 'Clear search'} onClick={() => setSearch('')} className="text-[#072C0E]/30 hover:text-[#072C0E]">
@@ -1116,7 +1117,7 @@ export default function EmissionsTab({
 
       {/* ── Custom Requests list ──────────────────────────────────────── */}
       {customRequests.length > 0 && (
-        <div className="rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-4 shadow-sm sm:p-5">
+        <div className="rounded-[14px] border border-[#072C0E]/8 bg-white p-4 shadow-sm sm:p-4">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#2ABD41]">
             {tr ? 'Özel Talepler' : 'Custom Requests'}
           </p>
@@ -1176,7 +1177,7 @@ export default function EmissionsTab({
 
       {/* ── Empty state ────────────────────────────────────────────────── */}
       {entries.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-12 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-3 rounded-[14px] border border-[#072C0E]/8 bg-white p-12 text-center shadow-sm">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#2ABD41]/10 text-[#2ABD41]">
             <Leaf className="h-7 w-7" />
           </div>
@@ -1214,7 +1215,7 @@ export default function EmissionsTab({
 
       {/* ── DESKTOP TABLE (md+) ───────────────────────────────────────── */}
       {filtered.length > 0 && (
-        <div className="hidden overflow-hidden rounded-[1.5rem] border border-[#072C0E]/8 bg-white shadow-[0_4px_20px_rgba(7, 44, 14,0.04)] md:block">
+        <div className="hidden overflow-hidden rounded-[14px] border border-[#072C0E]/8 bg-white shadow-[0_4px_20px_rgba(7, 44, 14,0.04)] md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[700px] text-sm">
               <thead className="border-b border-[#072C0E]/6 bg-smoke/80">
@@ -1231,7 +1232,7 @@ export default function EmissionsTab({
                   ].map((h, i) => (
                     <th
                       key={h}
-                      className={`px-4 py-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#072C0E]/35 ${
+                      className={`px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-[#072C0E]/35 ${
                         i >= 3 && i <= 6 ? 'text-right' : 'text-left'
                       }`}
                     >
@@ -1255,7 +1256,7 @@ export default function EmissionsTab({
                     <tr key={entry.id} data-entry-id={entry.id}
                       className={`group/row transition-colors hover:bg-[#DEFAE1]/40 ${focusedId === String(entry.id) ? 'bg-[#DEFAE1] outline outline-2 outline-[#2ABD41]' : ''}`}>
                       {/* Source */}
-                      <td className="max-w-[220px] px-4 py-3">
+                      <td className="max-w-[220px] px-3 py-2">
                         <div className="flex items-center gap-2">
                           <span className="truncate text-[13px] font-semibold text-[#072C0E]">{name}</span>
                           <ProofButton entry={entry} tr={tr} toast={toast} className="shrink-0 transition" />
@@ -1282,27 +1283,27 @@ export default function EmissionsTab({
                         </div>
                       </td>
                       {/* Scope */}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${sm.bg} ${sm.text}`}>
                           {tr ? sm.label.replace('Scope', 'Kapsam') : sm.label}
                         </span>
                       </td>
                       {/* Month */}
-                      <td className="px-4 py-3 text-xs text-[#072C0E]/50">{entryPeriodLabel(entry, months, tr)}</td>
+                      <td className="px-3 py-2 text-xs text-[#072C0E]/50">{entryPeriodLabel(entry, months, tr)}</td>
                       {/* Quantity */}
-                      <td className="px-4 py-3 text-right text-xs font-semibold text-[#072C0E]/70">
+                      <td className="px-3 py-2 text-right text-xs font-semibold text-[#072C0E]/70">
                         {fmt(entry.quantity)} <span className="text-[#072C0E]/30">{unitLabel(entry.unit, tr)}</span>
                       </td>
                       {/* kg CO₂e */}
-                      <td className="px-4 py-3 text-right text-[13px] font-bold text-[#072C0E]">
+                      <td className="px-3 py-2 text-right text-[13px] font-bold text-[#072C0E]">
                         {fmt(kg)}
                       </td>
                       {/* tCO₂e */}
-                      <td className="px-4 py-3 text-right text-xs text-[#072C0E]/40">
+                      <td className="px-3 py-2 text-right text-xs text-[#072C0E]/40">
                         {fixed((kg / 1000), 4)}
                       </td>
                       {/* Bar */}
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#072C0E]/5">
                             <div
@@ -1319,7 +1320,7 @@ export default function EmissionsTab({
                         </div>
                       </td>
                       {/* Actions */}
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-2">
                         {canChange(entry) && canWithdrawDelete(entry) && (
                           <div className="mb-1 flex justify-end">
                             <WithdrawDeleteButton tr={tr} onClick={() => handleCancelDelete(entry.id)} />
@@ -1349,16 +1350,16 @@ export default function EmissionsTab({
               {/* Totals footer */}
               <tfoot className="border-t-2 border-[#072C0E]/8 bg-smoke/60">
                 <tr>
-                  <td colSpan={4} className="px-4 py-3 text-xs font-bold text-[#072C0E]/50">
+                  <td colSpan={4} className="px-3 py-2 text-xs font-bold text-[#072C0E]/50">
                     {filtered.length} {tr ? 'kayıt' : 'entries'}
                     {filtered.some(e => e.status !== 'approved') && (
                       <span className="font-semibold"> · {tr ? 'toplam yalnızca onaylı kayıtlar' : 'total: approved entries only'}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-sm font-bold text-[#072C0E]">
+                  <td className="px-3 py-2 text-right text-sm font-bold text-[#072C0E]">
                     {fmt(totalKg)}
                   </td>
-                  <td className="px-4 py-3 text-right text-xs font-bold text-[#072C0E]/60">
+                  <td className="px-3 py-2 text-right text-xs font-bold text-[#072C0E]/60">
                     {fixed((totalKg / 1000), 3)} t
                   </td>
                   <td colSpan={2} />
@@ -1414,7 +1415,7 @@ export default function EmissionsTab({
       {showAddForm && canEdit && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-3xl`} role="dialog" aria-modal="true" aria-labelledby="add-entry-title">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-2.5 sm:px-5 sm:py-3">
               <div>
                 <h2 id="add-entry-title" className="text-lg font-bold tracking-[-0.02em]">{tr ? 'Emisyon Verisi Ekle' : 'Add Emission Entry'}</h2>
                 <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr ? 'Aktivite verisi ve kanıt belgesi kaydedin' : 'Record activity data and supporting evidence'}</p>
@@ -1422,7 +1423,7 @@ export default function EmissionsTab({
               <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => { setShowAddForm(false); resetAddForm(); }} className="btn-icon btn-sm"><X className="h-4 w-4" /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
               <form id="add-entry-form" onSubmit={handleAdd} className="space-y-5">
                 {/* Scope */}
                 <div className="space-y-3">
@@ -1591,7 +1592,7 @@ export default function EmissionsTab({
                   <div>
                     <label className={LABEL}>{tr ? 'Kanıt Belgesi' : 'Proof Document'}</label>
                     <div
-                      className="rounded-2xl border-2 border-dashed border-[#2ABD41]/30 bg-[#2ABD41]/4 p-5 text-center transition hover:border-[#2ABD41]/50 hover:bg-[#2ABD41]/7"
+                      className="rounded-2xl border-2 border-dashed border-[#2ABD41]/30 bg-[#2ABD41]/4 p-4 text-center transition hover:border-[#2ABD41]/50 hover:bg-[#2ABD41]/7"
                       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
                       onDrop={e => {
                         e.preventDefault();
@@ -1689,11 +1690,11 @@ export default function EmissionsTab({
       {editing && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-md`} role="dialog" aria-modal="true" aria-labelledby="edit-entry-title">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-2.5 sm:px-5 sm:py-3">
               <h2 id="edit-entry-title" className="text-base font-bold">{tr ? 'Kaydı Düzenle' : 'Edit Entry'}</h2>
               <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setEditing(null)} className="btn-icon btn-sm"><X className="h-4 w-4" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
               <p className="mb-4 text-sm font-semibold text-[#072C0E]/60">
                 {tr && editing.emission_factor_name_tr ? editing.emission_factor_name_tr : editing.emission_factor_name}
               </p>
@@ -1782,7 +1783,7 @@ export default function EmissionsTab({
                 <p className="mt-1 text-[10px] text-[#072C0E]/40">PDF, JPG, PNG, Word, Excel · {tr ? 'en fazla 10 MB' : 'max 10 MB'}</p>
               </div>
             </div>
-            <div className="flex shrink-0 gap-2 border-t border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 gap-2 border-t border-[#072C0E]/8 px-4 py-2.5 sm:px-5 sm:py-3">
               <button type="button" onClick={() => setEditing(null)} disabled={editSaving} className="flex-1 rounded-full border border-[#072C0E]/10 bg-white py-2.5 text-xs font-bold transition hover:bg-smoke disabled:opacity-60">{tr ? 'İptal' : 'Cancel'}</button>
               {editing.questionnaire_source ? (
                 <button type="button" onClick={() => fixInQuestionnaire(editing.questionnaire_source)} className="flex-1 rounded-full btn-dark py-2.5 text-xs font-bold transition">{tr ? 'Ankette düzelt' : 'Fix in questionnaire'}</button>
@@ -1856,7 +1857,7 @@ export default function EmissionsTab({
       {showCustom && (
         <div className={OVERLAY}>
           <div className={`${MODAL} max-w-2xl`} role="dialog" aria-modal="true" aria-labelledby="custom-request-title">
-            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-2.5 sm:px-5 sm:py-3">
               <div>
                 <h2 id="custom-request-title" className="text-base font-bold">{tr ? 'Özel Emisyon Talebi' : 'Custom Emission Request'}</h2>
                 <p className="mt-0.5 text-xs text-[#072C0E]/45">{tr
@@ -1865,7 +1866,7 @@ export default function EmissionsTab({
               </div>
               <button aria-label={tr ? 'Kapat' : 'Close'} onClick={() => setShowCustom(false)} className="btn-icon btn-sm"><X className="h-4 w-4" /></button>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
               <form id="custom-form" onSubmit={handleCustom} className="space-y-4">
                 <div>
                   <label className={LABEL}>{tr ? 'Kapsam' : 'Scope'}</label>
@@ -1958,7 +1959,7 @@ export default function EmissionsTab({
                 <p className="-mt-2 text-[11px] text-[#072C0E]/45">{yearHint}</p>
               </form>
             </div>
-            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-smoke/80 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-t border-[#072C0E]/8 bg-smoke/80 px-4 py-2.5 sm:px-5 sm:py-3">
               <button type="button" onClick={() => setShowCustom(false)} className="rounded-full border border-[#072C0E]/10 bg-white px-5 py-2.5 text-xs font-bold transition hover:bg-smoke">{tr ? 'İptal' : 'Cancel'}</button>
               <button type="submit" form="custom-form" disabled={cSaving} className="rounded-full btn-dark px-6 py-2.5 text-xs font-bold transition-colors">
                 {cSaving ? '…' : (tr ? 'Talep Gönder' : 'Submit Request')}

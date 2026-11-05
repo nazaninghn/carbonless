@@ -6,7 +6,7 @@ import { fixed } from '@/lib/formatNumber';
 // Module-level constant — one allocation shared across all renders and instances
 const SCOPE_COLORS = ['#175022', '#2ABD41', '#8BEA99', '#072C0E'];
 
-export default function FacilityChart({ language, selectedYear, compact }) {
+export default function FacilityChart({ language, selectedYear, inventoryId = null, compact }) {
   const [data, setData]       = useState([]);
   const [loading, setLoading] = useState(true);
   const tr = language === 'tr';
@@ -16,7 +16,7 @@ export default function FacilityChart({ language, selectedYear, compact }) {
     (async () => {
       setLoading(true);
       try {
-        const res = await api.getByFacility(selectedYear);
+        const res = await api.getByFacility(selectedYear, inventoryId);
         if (res.ok && !cancelled) {
           // Fix 26A: coerce to array — backend may return paginated {results:[],count:0}
           const d = await res.json().catch(() => []);
@@ -26,7 +26,7 @@ export default function FacilityChart({ language, selectedYear, compact }) {
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [selectedYear]);
+  }, [selectedYear, inventoryId]);
 
   // useMemo MUST be called unconditionally (Rules of Hooks) — before any early return.
   // When data is empty or still loading, Math.max returns 1 (the fallback), which is harmless.

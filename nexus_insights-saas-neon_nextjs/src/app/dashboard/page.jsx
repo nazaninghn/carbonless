@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
@@ -26,6 +26,7 @@ import { api } from '@/lib/utils/api';
 import { computeLocalSummaryFromFields } from '@/lib/carboniq/emission-factors';
 import { openChat, OPEN_CHAT_EVENT } from '@/lib/openChat';
 import { rememberedYear, rememberYear, defaultReportingYear, isReportingYear, tokenUserId } from '@/lib/activeYear';
+import { inventoriesForYear, pickInventory, rememberedInventory, rememberInventory } from '@/lib/activeInventory';
 
 function PreviewBanner({ tr }) {
   return (
@@ -125,12 +126,58 @@ export default function DashboardPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startupResolved]);
 
+  // Several inventories can share a reporting year, so the year alone does not say which one the
+  // dashboard shows. The server lists them (GET /api/questionnaire/); the choice below is only a
+  // preference (validated against that list) and every scoped request carries the inventory_id.
+  const [inventoryReports, setInventoryReports] = useState([]);
+  const [inventoriesLoaded, setInventoriesLoaded] = useState(false);
+  const [inventoryChoice, setInventoryChoice] = useState(null);
+  const loadInventories = useCallback(async () => {
+    try {
+      const res = await api.listReports();
+      const data = res.ok ? await res.json() : null;
+      if (data) setInventoryReports(Array.isArray(data.reports) ? data.reports : []);
+    } catch { /* the previous list stays */ } finally {
+      setInventoriesLoaded(true);
+    }
+  }, []);
+  useEffect(() => { if (yearReady) loadInventories(); }, [yearReady, selectedYear, loadInventories]);
+  const yearInventories = useMemo(
+    () => inventoriesForYear(inventoryReports, selectedYear), [inventoryReports, selectedYear]);
+  const selectedInventoryId = useMemo(() => pickInventory(
+    inventoryReports, selectedYear, inventoryChoice,
+    typeof window === 'undefined' ? null : rememberedInventory(yearUserRef.current, selectedYear, window.localStorage),
+  ), [inventoryReports, selectedYear, inventoryChoice]);
+  // The inventory the dashboard was showing disappeared (deleted elsewhere): say so and name what is
+  // shown now, instead of switching without a word. Cleared when the user picks one.
+  const [inventoryNotice, setInventoryNotice] = useState(null);
+  const shownInventoryRef = useRef(null);
+  useEffect(() => {
+    if (!inventoriesLoaded) return;
+    const prev = shownInventoryRef.current;
+    const idOf = (r) => Number(r.report_id);
+    if (prev && prev.year === selectedYear && prev.id !== selectedInventoryId
+        && !inventoryReports.some(r => idOf(r) === prev.id)) {
+      setInventoryNotice({
+        title: prev.title,
+        now: yearInventories.find(r => idOf(r) === selectedInventoryId)?.title || null,
+      });
+    }
+    const cur = inventoryReports.find(r => idOf(r) === selectedInventoryId);
+    shownInventoryRef.current = selectedInventoryId ? { id: selectedInventoryId, year: selectedYear, title: cur?.title || '' } : null;
+  }, [inventoryReports, inventoriesLoaded, selectedInventoryId, selectedYear, yearInventories]);
+  const changeInventory = useCallback((id) => {
+    setInventoryNotice(null);
+    setInventoryChoice(id);
+    if (typeof window !== 'undefined') rememberInventory(yearUserRef.current, selectedYear, id, window.localStorage);
+  }, [selectedYear]);
+
   // Data from hook
   const {
     user, summary, entries, factors, targets, customRequests,
     questionnaireProfile, unreadCount, facilityList, loading,
     setUnreadCount, fetchData,
-  } = useDashboardData(yearReady ? selectedYear : null);
+  } = useDashboardData(yearReady && inventoriesLoaded ? selectedYear : null, selectedInventoryId);
   const perms = getPermissions(user);
 
   // Open on the year the user worked on last, else on their most recently
@@ -242,7 +289,12 @@ export default function DashboardPage() {
     // each answer shows up in the totals as it is saved.
     function handleEmissionsUpdated(e) {
       const year = Number(e.detail?.year);
-      if (e.detail?.source === 'inventory' && year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
+      if (e.detail?.source === 'inventory' && year >= 1990 && year <= new Date().getFullYear()) {
+        setSelectedYear(year);
+        if (e.detail?.inventoryId) changeInventoryRef.current?.(Number(e.detail.inventoryId), year);
+      }
+      // An inventory deleted, renamed or progressed: the list (and so the choice) is read again.
+      loadInventoriesRef.current?.();
     }
     window.addEventListener('carbonless:assistant', handleAssistant);
     window.addEventListener('carboniq-navigate', handleNavigate);
@@ -251,6 +303,8 @@ export default function DashboardPage() {
     function handleActiveInventory(e) {
       const year = Number(e.detail?.year);
       if (year >= 1990 && year <= new Date().getFullYear()) setSelectedYear(year);
+      if (e.detail?.inventoryId) changeInventoryRef.current?.(Number(e.detail.inventoryId), year);
+      loadInventoriesRef.current?.();
     }
     window.addEventListener('carbonless:active-inventory', handleActiveInventory);
     return () => {
@@ -260,6 +314,15 @@ export default function DashboardPage() {
       window.removeEventListener('carboniq-navigate', handleNavigate);
     };
   }, [setSelectedYear]);
+
+  // The event handlers above are registered once; they reach the current functions through refs.
+  const changeInventoryRef = useRef(null);
+  const loadInventoriesRef = useRef(null);
+  changeInventoryRef.current = (id, year) => {
+    setInventoryChoice(id);
+    if (typeof window !== 'undefined') rememberInventory(yearUserRef.current, year, id, window.localStorage);
+  };
+  loadInventoriesRef.current = loadInventories;
 
   const handleLogout = useCallback(() => {
     api.logout();
@@ -300,7 +363,7 @@ export default function DashboardPage() {
 
   return (
     <ToastProvider language={language}>
-    <div className="dashboard-android-fix h-screen overflow-hidden bg-[#F1FCF2] text-[#072C0E] flex font-inter">
+    <div className="dashboard-android-fix h-screen overflow-hidden bg-[#F4F7F4] text-[#072C0E] flex font-inter">
       {/* First Tab stop: jump past the sidebar and header (17 stops) to the
           page content. Shown only while focused. */}
       <a href="#main-content"
@@ -327,24 +390,38 @@ export default function DashboardPage() {
           setActiveTab={setActiveTab}
           selectedYear={selectedYear}
           setSelectedYear={setSelectedYear}
+          yearInventories={yearInventories}
+          selectedInventoryId={selectedInventoryId}
+          onInventoryChange={changeInventory}
           selectedCountry={selectedCountry}
           setSelectedCountry={setSelectedCountry}
           unreadCount={unreadCount}
           setUnreadCount={setUnreadCount}
           setSidebarOpen={setSidebarOpen}
           onLanguageChange={changeLanguage}
+          user={user}
         />
 
         <main id="main-content" tabIndex={-1} className={`w-full min-w-0 max-w-full flex-1 min-h-0 overflow-y-auto overflow-x-hidden outline-none ${
-          `p-3 sm:p-4 lg:p-5 lg:pb-5 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40' : 'pb-24 sm:pb-24'}`
+          `p-3 sm:p-3.5 lg:p-4 lg:pb-4 ${activeTab === 'questionnaire' ? 'pb-40 sm:pb-40' : 'pb-24 sm:pb-24'}`
         }`}>
+          {inventoryNotice && (
+            <div role="status" className="mx-auto mb-3 flex w-full max-w-[1380px] items-start justify-between gap-3 rounded-2xl border border-[#F5C26B]/60 bg-[#FFF8E6] px-4 py-3 text-[13px] text-[#6B4A00]">
+              <span>
+                {language === 'tr'
+                  ? `“${inventoryNotice.title || 'Envanter'}” artık yok (başka bir yerde silinmiş olabilir). ${inventoryNotice.now ? `Şimdi “${inventoryNotice.now}” gösteriliyor; başka bir envanter için üstteki seçiciyi kullanın.` : 'Bu yıl için envanter kalmadı.'}`
+                  : `“${inventoryNotice.title || 'The inventory'}” no longer exists (it may have been deleted elsewhere). ${inventoryNotice.now ? `Now showing “${inventoryNotice.now}”; use the selector at the top to choose another.` : 'No inventory is left for this year.'}`}
+              </span>
+              <button type="button" aria-label={language === 'tr' ? 'Kapat' : 'Dismiss'} onClick={() => setInventoryNotice(null)} className="shrink-0 font-bold text-[#6B4A00]/60 hover:text-[#6B4A00]">×</button>
+            </div>
+          )}
           {/* Slim top bar  -  only on very first load, no layout shift */}
           {loading && (
             <div className="fixed top-0 left-0 right-0 z-[100] h-[2px] overflow-hidden bg-[#2ABD41]/15">
               <div className="h-full animate-[shimmer_1s_ease-in-out_infinite] bg-[#2ABD41] rounded-full" style={{ width: '40%' }} />
             </div>
           )}
-          <div className="mx-auto w-full min-w-0 max-w-[1380px] h-full flex flex-col min-h-0 overflow-x-hidden">
+          <div className="mx-auto w-full min-w-0 max-w-[1560px] h-full flex flex-col min-h-0 overflow-x-clip">
 
           {/* ===== DASHBOARD TAB ===== */}
           {activeTab === 'dashboard' && (
@@ -370,6 +447,9 @@ export default function DashboardPage() {
                     canApprove={perms.canApprove}
                     canEdit={perms.canEdit}
                     member={user}
+                    inventory={yearInventories.find(r => Number(r.report_id) === Number(selectedInventoryId)) || null}
+                    inventoryId={selectedInventoryId}
+                    yearInventoryCount={yearInventories.length}
                   />
                 </>
               )}
@@ -404,6 +484,7 @@ export default function DashboardPage() {
                 fetchData={fetchData}
                 canEdit={perms.canEdit}
                 yearsWithData={effectiveSummary?.years_with_data ?? []}
+                unassignedRecords={effectiveSummary?.unassigned_records ?? null}
                 onYearChange={setSelectedYear}
               />
             </ErrorBoundary>
@@ -436,7 +517,7 @@ export default function DashboardPage() {
           {/* ===== REPORTING TAB ===== */}
           {activeTab === 'reporting' && (
             <ErrorBoundary language={language}>
-              <ReportingTab language={language} selectedYear={selectedYear} onYearChange={setSelectedYear} summary={effectiveSummary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
+              <ReportingTab language={language} selectedYear={selectedYear} inventoryId={selectedInventoryId} onYearChange={setSelectedYear} summary={effectiveSummary} entries={entries} targets={targets} questionnaireProfile={questionnaireProfile} />
             </ErrorBoundary>
           )}
 
@@ -543,6 +624,7 @@ export default function DashboardPage() {
           entries={entries}
           targets={targets}
           fetchData={fetchData}
+          inventoryId={selectedInventoryId}
         />
       </ErrorBoundary>
       <CarbonAILauncher

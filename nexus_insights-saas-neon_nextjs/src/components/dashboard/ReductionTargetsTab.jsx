@@ -3,6 +3,7 @@
 import { noPermissionMessage } from '@/lib/permissions';
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { api } from '@/lib/utils/api';
+import { pickInventory } from '@/lib/activeInventory';
 import { Plus, Target, X, TrendingDown, Zap, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -208,7 +209,7 @@ function TargetCard({ tgt, currentKg, currentLabelYear, coverage, language, onEd
   const noData = status === 'no_data';
 
   return (
-    <div className="group flex flex-col gap-4 rounded-[1.5rem] border border-[#072C0E]/10 bg-white/82 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_32px_rgba(7,44,14,0.09)] hover:border-[#2ABD41]/25">
+    <div className="group flex flex-col gap-4 rounded-[14px] border border-[#072C0E]/10 bg-white/82 p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_10px_32px_rgba(7,44,14,0.09)] hover:border-[#2ABD41]/25">
 
       {/* Title + status + actions */}
       <div className="flex items-start justify-between gap-2">
@@ -351,6 +352,8 @@ export default function ReductionTargetsTab({
   // Years with a completed inventory, newest first — for the "now" note and
   // the new target's default base year.
   const [inventoryYears, setInventoryYears] = useState([]);
+  // Every inventory (several can share a year): a year's figures are read from ONE of them.
+  const [allReports, setAllReports] = useState(null);
   useEffect(() => {
     let cancelled = false;
     api.listReports()
@@ -361,6 +364,7 @@ export default function ReductionTargetsTab({
         const years = [...new Set(list.filter(r => r.status === 'completed' && r.reporting_year)
           .map(r => Number(r.reporting_year)))].sort((a, b) => b - a);
         setInventoryYears(years);
+        setAllReports(list);
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -372,15 +376,15 @@ export default function ReductionTargetsTab({
   const [baseCategories, setBaseCategories] = useState({});
   const baseYearsKey = [...new Set(targets.map(t => Number(t.base_year)))].filter(y => y && y !== nowYear).sort().join(',');
   useEffect(() => {
-    if (!baseYearsKey) return;
+    if (!baseYearsKey || allReports === null) return;
     let cancelled = false;
-    Promise.all(baseYearsKey.split(',').map(y => api.getSummary(y)
+    Promise.all(baseYearsKey.split(',').map(y => api.getSummary(y, pickInventory(allReports, y))
       .then(res => (res.ok ? res.json() : null))
       .then(d => [y, (d?.by_category || []).filter(c => c.total_kg > 0).map(c => c.category)])
       .catch(() => [y, null])))
       .then(pairs => { if (!cancelled) setBaseCategories(Object.fromEntries(pairs)); });
     return () => { cancelled = true; };
-  }, [baseYearsKey]);
+  }, [baseYearsKey, allReports]);
   const nowCategories = useMemo(
     () => (summary?.by_category || []).filter(c => c.total_kg > 0).map(c => c.category),
     [summary?.by_category],
@@ -430,7 +434,7 @@ export default function ReductionTargetsTab({
     setBaseInventory({ year: y, tonne: null });
     const t = setTimeout(async () => {
       try {
-        const res = await api.getSummary(y);
+        const res = await api.getSummary(y, pickInventory(allReports || [], y));
         const data = res.ok ? await res.json() : null;
         if (cancelled) return;
         const tonne = data ? parseFloat(data.total_tonne) || 0 : 0;
@@ -445,7 +449,7 @@ export default function ReductionTargetsTab({
       }
     }, 300);
     return () => { cancelled = true; clearTimeout(t); };
-  }, [showForm, baseYear, tr]);
+  }, [showForm, baseYear, tr, allReports]);
 
   // Gates the overall-progress-bar grow-in — starts at 0% and animates to its
   // real width shortly after mount, same treatment as the dashboard charts.
@@ -607,7 +611,7 @@ export default function ReductionTargetsTab({
     return { onTrack, succeeded, offTrack, totalReductionPct };
   }, [targets, currentKg]);
 
-  const FIELD = 'h-12 w-full rounded-2xl border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-4 text-sm font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
+  const FIELD = 'h-9 w-full rounded-[10px] border border-[#072C0E]/10 bg-[#DEFAE1]/40 px-3 text-[13px] font-medium text-[#072C0E] outline-none transition focus:ring-4 focus:ring-[#2ABD41]/15';
   const LABEL = 'mb-1.5 block text-xs font-bold text-[#072C0E]/60';
 
   return (
@@ -615,16 +619,13 @@ export default function ReductionTargetsTab({
       <style>{DASHBOARD_ANIM_STYLES}</style>
 
       {/* ── Hero header ─────────────────────────────────────────────────── */}
-      <div className="dash-fade-up relative overflow-hidden rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-4 shadow-[0_6px_24px_rgba(7, 44, 14,0.05)] sm:p-5">
+      <div>
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
-              {tr ? 'Hedef yönetimi' : 'Target management'}
-            </p>
-            <h1 className="mt-1 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
+            <h1 className="app-title">
               {tr ? 'Azaltma Hedefleri' : 'Reduction Targets'}
             </h1>
-            <p className="mt-0.5 text-sm text-[#072C0E]/55">
+            <p className="app-subtitle">
               {tr
                 ? 'Karbon azaltma taahhütlerinizi takip edin'
                 : 'Track your carbon reduction commitments'}
@@ -632,9 +633,9 @@ export default function ReductionTargetsTab({
           </div>
           {canEdit && <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 self-start rounded-full btn-dark px-5 py-2.5 text-xs font-bold transition-colors sm:self-auto"
+            className="app-btn self-start btn-dark transition-colors sm:self-auto"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus />
             {tr ? 'Hedef Ekle' : 'Add Target'}
           </button>}
         </div>
@@ -656,7 +657,7 @@ export default function ReductionTargetsTab({
 
       {/* ── Overall progress bar (if >1 target) ─────────────────────────── */}
       {targets.length > 1 && (
-        <div className="rounded-[1.25rem] border border-[#072C0E]/8 bg-white px-5 py-4 shadow-sm">
+        <div className="rounded-[14px] border border-[#072C0E]/8 bg-white px-5 py-4 shadow-sm">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-bold text-[#072C0E]/60">
               {tr ? 'Ortalama azaltma taahhüdü' : 'Average reduction commitment'}
@@ -679,7 +680,7 @@ export default function ReductionTargetsTab({
 
       {/* ── Empty state ──────────────────────────────────────────────────── */}
       {targets.length === 0 && (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-[1.5rem] border border-[#072C0E]/8 bg-white p-12 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-4 rounded-[14px] border border-[#072C0E]/8 bg-white p-12 text-center shadow-sm">
           {/* SVG illustration: target with arrow */}
           <svg viewBox="0 0 80 80" className="h-20 w-20 opacity-20" fill="none">
             <circle cx="40" cy="40" r="36" stroke="#072C0E" strokeWidth="3" />
@@ -786,7 +787,7 @@ export default function ReductionTargetsTab({
             className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#072C0E]/8 bg-white/94 shadow-[0_20px_60px_rgba(7, 44, 14,0.14)] backdrop-blur-2xl"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-2.5 sm:px-5 sm:py-3">
               <div>
                 <h2 id="edit-target-title" className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Hedefi Düzenle' : 'Edit Target'}
@@ -804,7 +805,7 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
               <form id="edit-target-form" onSubmit={handleEditSave} className="space-y-4">
                 <div>
                   <label className={LABEL}>{tr ? 'Hedef Başlığı' : 'Target Title'} *</label>
@@ -910,7 +911,7 @@ export default function ReductionTargetsTab({
             className="flex max-h-[90svh] w-full max-w-xl flex-col overflow-hidden rounded-3xl border border-[#072C0E]/8 bg-white/94 shadow-[0_20px_60px_rgba(7, 44, 14,0.14)] backdrop-blur-2xl"
           >
             {/* Header */}
-            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-3 sm:px-6 sm:py-4">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#072C0E]/8 px-4 py-2.5 sm:px-5 sm:py-3">
               <div>
                 <h2 id="add-target-title" className="text-base font-bold tracking-[-0.02em]">
                   {tr ? 'Yeni Azaltma Hedefi' : 'New Reduction Target'}
@@ -928,7 +929,7 @@ export default function ReductionTargetsTab({
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-3 sm:px-5 sm:py-4">
               <form id="target-form" onSubmit={handleAdd} className="space-y-4">
 
                 {/* Title */}

@@ -39,7 +39,7 @@ function answerLabel(questionId, value, tr) {
 function ReportCard({ children, className = '', delay = 0 }) {
   return (
     <div
-      className={`dash-fade-up rounded-[1.5rem] border border-[#072C0E]/10 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 ${className}`}
+      className={`dash-fade-up rounded-[14px] border border-[#072C0E]/10 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_14px_34px_rgba(7,44,14,0.10)] hover:border-[#2ABD41]/25 ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {children}
@@ -47,7 +47,7 @@ function ReportCard({ children, className = '', delay = 0 }) {
   );
 }
 
-export default function ReportingTab({ language, selectedYear, onYearChange, summary, entries, targets, questionnaireProfile }) {
+export default function ReportingTab({ language, selectedYear, inventoryId = null, onYearChange, summary, entries, targets, questionnaireProfile }) {
   const [pdfLoading, setPdfLoading] = useState('');
   const [dlError, setDlError] = useState('');
   const tr = language === 'tr';
@@ -275,9 +275,9 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
           ? await api.downloadIsoReport(isoReportId, lang)
           : await api.downloadQuestionnairePdf(isoReportId, lang);
       }
-      else if (type === 'pdf') res = await api.downloadReport(selectedYear, lang);
-      else if (type === 'csv') res = await api.downloadCsv(selectedYear, tr ? 'tr' : 'en');
-      else res = await api.downloadExcel(selectedYear, tr ? 'tr' : 'en');
+      else if (type === 'pdf') res = await api.downloadReport(selectedYear, lang, inventoryId);
+      else if (type === 'csv') res = await api.downloadCsv(selectedYear, tr ? 'tr' : 'en', inventoryId);
+      else res = await api.downloadExcel(selectedYear, tr ? 'tr' : 'en', inventoryId);
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -326,19 +326,19 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
   if (isAndroidTablet) {
     return (
       <div className="space-y-4 text-[#072C0E]">
-        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-4">
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#2ABD41]">
             {tr ? 'Rapor merkezi' : 'Report center'}
           </p>
-          <h1 className="mt-2 text-2xl font-black text-[#072C0E]">
+          <h1 className="mt-2 text-xl font-bold text-[#072C0E]">
             {tr ? 'Karbon Rapor Merkezi' : 'Carbon Report Center'}
           </h1>
         </div>
-        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-4">
           <p className="text-xs text-[#072C0E]/50">{tr ? 'Rapor Hazırlığı' : 'Readiness'}</p>
           <p className="text-3xl font-black text-[#2ABD41]">{readiness}%</p>
         </div>
-        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-5">
+        <div className="rounded-2xl border border-[#072C0E]/10 bg-white p-4">
           <p className="text-xs text-[#072C0E]/50">{tr ? 'Toplam Emisyon' : 'Total Emissions'}</p>
           <p className="text-3xl font-black text-[#072C0E]">{fixed(totalTonne, 2)} tCO₂e</p>
         </div>
@@ -395,16 +395,13 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
         </div>
       )}
       {/* ─── HERO ─── */}
-      <div className="dash-fade-up relative rounded-[1.5rem] border border-[#072C0E]/10 bg-[#F1FCF2] p-5 shadow-sm">
+      <div>
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#2ABD41]">
-              {tr ? 'Rapor merkezi' : 'Report center'}
-            </p>
-            <h1 className="mt-1.5 text-xl font-bold tracking-[-0.03em] sm:text-2xl">
+            <h1 className="app-title">
               {tr ? 'Karbon Rapor Merkezi' : 'Carbon Report Center'}
             </h1>
-            <p className="mt-1 text-sm text-[#072C0E]/55">
+            <p className="app-subtitle">
               {tr ? 'Denetim-hazır ESG & ISO 14064-1 raporları oluşturun' : 'Generate audit-ready ESG & ISO 14064-1 reports'}
             </p>
           </div>
@@ -412,25 +409,25 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
               each is in the export centre below. The pack is set apart because
               it is the same three reports in one file, not a fourth type. */}
           <div className="flex flex-wrap items-center gap-2">
-            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-smoke disabled:opacity-60">
-              <FileText className="h-3.5 w-3.5" />
+            <button onClick={() => handleDownload('pdf', tr ? 'tr' : 'en')} disabled={!!pdfLoading} className="app-btn border border-[#072C0E]/15 bg-white text-[#072C0E] transition hover:bg-smoke disabled:opacity-60">
+              <FileText />
               {pdfLoading?.startsWith('pdf') ? '...' : (tr ? 'Emisyon Raporu' : 'Emissions Report')}
             </button>
-            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] transition hover:bg-smoke disabled:opacity-60">
-              <ClipboardList className="h-3.5 w-3.5" />
+            <button onClick={() => handleDownload('inv', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="app-btn border border-[#072C0E]/15 bg-white text-[#072C0E] transition hover:bg-smoke disabled:opacity-60">
+              <ClipboardList />
               {pdfLoading?.startsWith('inv') ? '...' : (tr ? 'Karbon Envanteri Profili' : 'Carbon Inventory Profile')}
             </button>
             <button onClick={() => handleDownload('iso', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className={isoReportId
-              ? 'inline-flex items-center gap-1.5 rounded-full btn-primary px-4 py-2.5 text-xs font-bold transition-colors'
+              ? 'app-btn btn-primary transition-colors'
               // Locked (no completed inventory): not the strongest button on
               // the page while the Emissions Report next to it is the one that works.
-              : 'inline-flex items-center gap-1.5 rounded-full border border-[#072C0E]/15 bg-white px-4 py-2.5 text-xs font-bold text-[#072C0E] disabled:opacity-60'}>
-              <Shield className="h-3.5 w-3.5" />
+              : 'app-btn border border-[#072C0E]/15 bg-white text-[#072C0E] disabled:opacity-60'}>
+              <Shield />
               {pdfLoading?.startsWith('iso') ? '...' : (tr ? 'Tam ISO 14064-1 Raporu' : 'Full ISO 14064-1 Report')}
             </button>
             <span className="mx-0.5 hidden h-5 w-px bg-[#072C0E]/10 sm:block" />
             <button onClick={() => handleDownload('pack', tr ? 'tr' : 'en')} disabled={!!pdfLoading || !isoReportId} title={inventoryHint?.text} className="inline-flex items-center gap-1.5 rounded-full px-3 py-2.5 text-xs font-bold text-[#072C0E]/60 underline-offset-2 transition hover:text-[#072C0E] hover:underline disabled:opacity-60">
-              <Package className="h-3.5 w-3.5" />
+              <Package />
               {pdfLoading?.startsWith('pack') ? '...' : (tr ? 'Üçü tek PDF' : 'All three in one PDF')}
             </button>
           </div>
@@ -440,7 +437,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
       {inventoryNotice}
 
       {/* ─── ROW 1: Readiness + AI Insights ─── */}
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start">
         {/* Report Readiness */}
         <ReportCard delay={80}>
           <div className="mb-4 flex items-center justify-between">
@@ -473,7 +470,7 @@ export default function ReportingTab({ language, selectedYear, onYearChange, sum
 
         {/* AI Insights — deep green (not brown/black) to stay on-theme with the carbon branding */}
         <div
-          className="dash-fade-up group rounded-[1.5rem] border border-[#175022]/80 bg-gradient-to-br from-[#175022] to-[#1A7B2A] p-5 shadow-[0_6px_20px_rgba(23,80,34,0.25)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(23,80,34,0.35)]"
+          className="dash-fade-up group rounded-[14px] border border-[#175022]/80 bg-gradient-to-br from-[#175022] to-[#1A7B2A] p-4 shadow-[0_6px_20px_rgba(23,80,34,0.25)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(23,80,34,0.35)]"
           style={{ animationDelay: '140ms' }}
         >
           <div className="mb-4 flex items-center gap-2.5">

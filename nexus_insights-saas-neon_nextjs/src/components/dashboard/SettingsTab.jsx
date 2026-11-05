@@ -136,14 +136,11 @@ export default function SettingsTab({ language, user, fetchData }) {
   return (
     <div className="space-y-3 text-[#072C0E]">
       {/* Header */}
-      <div className="rounded-[1.25rem] border border-[#072C0E]/10 bg-white p-4 shadow-sm">
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8BEA99]">
-          Carbonless Workspace
-        </p>
-        <h1 className="mt-1 text-lg font-bold tracking-[-0.03em] text-[#072C0E]">
+      <div>
+        <h1 className="app-title">
           {tr ? 'Ayarlar' : 'Settings'}
         </h1>
-        <p className="mt-0.5 text-xs text-[#072C0E]/55">
+        <p className="app-subtitle">
           {tr
             ? 'Hesap, şirket, güvenlik ve sistem tercihlerinizi yönetin.'
             : 'Manage account, company, security and system preferences.'}
@@ -153,7 +150,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 overflow-hidden lg:grid-cols-[220px_minmax(0,1fr)]">
         {/* Sidebar tabs */}
         <aside className="lg:sticky lg:top-4 lg:h-fit">
-          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[1.25rem] lg:border lg:border-[#072C0E]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-sm">
+          <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 scrollbar-none lg:mx-0 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:rounded-[14px] lg:border lg:border-[#072C0E]/10 lg:bg-white lg:p-1.5 lg:pb-1.5 lg:shadow-sm">
             {TABS.filter((tab) => !tab.roles || tab.roles.includes(user?.role)).map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -161,14 +158,14 @@ export default function SettingsTab({ language, user, fetchData }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-bold transition lg:w-full lg:gap-2 lg:px-3 lg:text-xs ${
+                  className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition lg:w-full lg:gap-2 lg:px-2 lg:py-1 lg:text-[12.5px] ${
                     isActive
                       ? 'bg-[#175022] text-[#DEFAE1] shadow-md shadow-[#072C0E]/12'
                       : 'border border-[#072C0E]/8 bg-white text-[#072C0E]/60 hover:bg-white hover:text-[#072C0E] lg:border-0 lg:bg-transparent'
                   }`}
                 >
                   <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg lg:h-7 lg:w-7 ${
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md lg:h-[22px] lg:w-[22px] ${
                       isActive
                         ? 'bg-[#DEFAE1]/12 text-[#DEFAE1]'
                         : 'bg-[#8BEA99]/12 text-[#2ABD41]'
@@ -185,23 +182,6 @@ export default function SettingsTab({ language, user, fetchData }) {
 
         {/* Content */}
         <section className="w-full min-w-0 max-w-full overflow-hidden">
-          {/* Section header */}
-          <div className="mb-3 rounded-xl border border-[#072C0E]/10 bg-white p-2.5 shadow-sm lg:rounded-[1.25rem] lg:p-3">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#8BEA99]/14 text-[#2ABD41] ring-1 ring-[#8BEA99]/25 lg:h-9 lg:w-9 lg:rounded-xl">
-                {active && <active.icon className="h-4 w-4" />}
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-[#072C0E]">
-                  {active ? (tr ? active.tr : active.en) : ''}
-                </h2>
-                <p className="text-[11px] text-[#072C0E]/45">
-                  {tr ? 'Seçili ayar bölümü' : 'Selected settings section'}
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* ═══ PROFILE ═══ */}
           {activeTab === 'profile' && (
             <Panel>
@@ -367,7 +347,7 @@ export default function SettingsTab({ language, user, fetchData }) {
                 </div>
               </Panel>
 
-              <div className="rounded-[2rem] border border-red-200 bg-red-50 p-5 shadow-[0_8px_30px_rgba(7, 44, 14,0.05)]">
+              <div className="rounded-[2rem] border border-red-200 bg-red-50 p-4 shadow-[0_8px_30px_rgba(7, 44, 14,0.05)]">
                 <h3 className="mb-3 flex items-center gap-2 font-bold text-red-700">
                   <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-red-100">
                     <Trash2 className="h-4 w-4 text-red-600" />
@@ -396,7 +376,7 @@ export default function SettingsTab({ language, user, fetchData }) {
       {/* ─── Delete Account Confirmation Modal ─────────────────────────────── */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-[1.5rem] border border-red-200 bg-white p-6 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]"
+          <div className="w-full max-w-sm rounded-[14px] border border-red-200 bg-white p-4 shadow-[0_24px_60px_rgba(7, 44, 14,0.18)]"
             role="dialog" aria-modal="true" aria-labelledby="delete-account-title">
             <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100">
               <Trash2 className="h-5 w-5 text-red-600" />
@@ -446,7 +426,7 @@ export default function SettingsTab({ language, user, fetchData }) {
 
 function Panel({ children }) {
   return (
-    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#072C0E]/10 bg-white p-3 shadow-sm sm:rounded-[1.25rem] sm:p-4">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#072C0E]/10 bg-white p-3 shadow-sm sm:rounded-[14px] sm:p-4">
       <div className="w-full min-w-0 max-w-full overflow-hidden">
         {children}
       </div>

@@ -203,17 +203,14 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
   const tr = language === 'tr';
 
   return (
-    <div className="space-y-8 sm:space-y-10">
+    <div className="space-y-5">
 
       {/* Header */}
       <div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#072C0E]/35">
-          {tr ? 'Rehber' : 'Guide'}
-        </p>
-        <h1 className="mt-0.5 text-[20px] font-bold text-[#072C0E] sm:text-[24px]">
+        <h1 className="app-title">
           {tr ? 'Carbonless Nasıl Çalışır?' : 'How Carbonless Works'}
         </h1>
-        <p className="mt-2 max-w-2xl text-[13px] leading-[1.7] text-[#072C0E]/55">
+        <p className="app-subtitle max-w-2xl">
           {tr
             ? 'Carbonless, karbon ayak izinizi AI ile hesaplayan ve ISO 14064-1 uyumlu raporlar oluşturan bir platformdur. Aşağıda dört adımda nasıl çalıştığını ve her bölümün ne işe yaradığını bulabilirsiniz.'
             : "Carbonless calculates your carbon footprint with AI and generates ISO 14064-1 compliant reports. Here's how it works in four steps, and what each section of the dashboard does."}
@@ -221,7 +218,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
       </div>
 
       {/* 4-step flow */}
-      <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-7">
+      <div className="rounded-2xl border border-[#DEFAE1] bg-white p-4 sm:p-7">
         <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
           {tr ? 'Dört adımda nasıl çalışır' : 'How it works, in four steps'}
         </h2>
@@ -242,7 +239,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
       </div>
 
       {/* Scope 1/2/3 explainer */}
-      <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-7">
+      <div className="rounded-2xl border border-[#DEFAE1] bg-white p-4 sm:p-7">
         <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
           {tr ? 'Kapsam 1, 2 ve 3 nedir?' : 'What are Scope 1, 2 & 3?'}
         </h2>
@@ -301,7 +298,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
       </div>
 
       {/* FAQ */}
-      <div className="rounded-2xl border border-[#DEFAE1] bg-white p-5 sm:p-7">
+      <div className="rounded-2xl border border-[#DEFAE1] bg-white p-4 sm:p-7">
         <h2 className="text-[13px] font-bold text-[#072C0E] sm:text-sm">
           {tr ? 'Sık sorulan sorular' : 'Frequently asked questions'}
         </h2>
@@ -323,7 +320,7 @@ export default function HowItWorksTab({ language, setActiveTab, perms = {} }) {
       </div>
 
       {/* Bottom CTA — nudge toward the actual next action */}
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#2ABD41]/20 bg-[#2ABD41]/5 p-6 text-center sm:flex-row sm:justify-between sm:text-left">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#2ABD41]/20 bg-[#2ABD41]/5 p-4 text-center sm:flex-row sm:justify-between sm:text-left">
         <div>
           <h3 className="text-[14px] font-bold text-[#072C0E]">
             {tr ? 'Başlamaya hazır mısınız?' : 'Ready to get started?'}
