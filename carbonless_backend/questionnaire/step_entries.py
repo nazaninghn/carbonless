@@ -1193,13 +1193,17 @@ def _entry_specs(step, activities, A, year, company):
     return specs
 
 
-def _step_entries(company, year, step_id):
-    """READ-ONLY selection by company, year and description ("Questionnaire step 4A-1",
-    "Questionnaire step 4A-1 · …", not 4A-1a). It identifies nothing's owner and is used only to
-    DISPLAY (serializers, totals): no write path may use it. Writes select with owned_step_entries()."""
+def _step_entries(company, year, step_id, inventory=None):
+    """READ-ONLY selection by description ("Questionnaire step 4A-1", "Questionnaire step 4A-1 · …",
+    not 4A-1a), of ONE inventory when `inventory` is given (emissions/inventory_scope.py), else by
+    company and year. It identifies nothing's owner and is used only to DISPLAY (serializers, totals):
+    no write path may use it. Writes select with owned_step_entries()."""
     from django.db.models import Q
     from emissions.models import EmissionEntry
     base = f'{DESCRIPTION_PREFIX} {step_id}'
+    if inventory is not None:
+        from emissions.inventory_scope import entries_of
+        return entries_of(inventory).filter(Q(description=base) | Q(description__startswith=base + ' · '))
     return EmissionEntry.objects.filter(company=company, year=year).filter(
         Q(description=base) | Q(description__startswith=base + ' · '))
 
@@ -1256,23 +1260,16 @@ def resync_inventory(company, year, user):
     approved change: the factor was reviewed, the answers did not change."""
     from .models import CarbonReport
     from .immutability import InventoryGuardError
-    # The inventory is never guessed: exactly one candidate, or nothing is recalculated.
-    candidates = list(CarbonReport.objects.filter(company=company, reporting_year=year)[:2])
-    if len(candidates) != 1:
-        if candidates:
-            logger.warning('resync of %s skipped: more than one inventory covers it', year)
-        return []
-    report = candidates[0]
-    from .year_guard import InventoryYearConflict
-    try:
-        return sync_step_entries(user, company, report, '4A-1', as_status='approved')
-    except InventoryYearConflict:
-        logger.warning('resync of %s skipped: more than one inventory covers it', year)
-        return []
-    except InventoryGuardError as exc:
-        # A signed, completed or pre-ownership inventory is never recalculated (nothing was written).
-        logger.warning('resync of %s skipped for inventory %s: %s', year, report.pk, exc.code)
-        return []
+    # Every inventory of the year is recalculated from ITS OWN answers (the approved factor is the
+    # company's for that facility and year, so each of them uses it); none is guessed or merged.
+    out = []
+    for report in CarbonReport.objects.filter(company=company, reporting_year=year).order_by('pk'):
+        try:
+            out.extend(sync_step_entries(user, company, report, '4A-1', as_status='approved'))
+        except InventoryGuardError as exc:
+            # A signed, completed or unlinked legacy inventory is never recalculated (nothing was written).
+            logger.warning('resync of %s skipped for inventory %s: %s', year, report.pk, exc.code)
+    return out
 
 
 def sync_step_entries(user, company, report, step_id, data=None, as_status=None):
@@ -1286,9 +1283,6 @@ def sync_step_entries(user, company, report, step_id, data=None, as_status=None)
         return []        # no year, no entries: they used to land in 2024, in another inventory's numbers
     if company is None or report.company_id != company.pk:
         return []        # an inventory is only ever synchronised for its own company: nothing is written
-    others = other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
-    if others:
-        raise InventoryYearConflict(others, year)
     # Refused BEFORE anything is read or written: a signed or completed inventory is never synchronised,
     # and neither is a pre-ownership one (its rows are unassigned; a tagged set would duplicate them).
     check_report(report, entry_producing=True)
@@ -1656,12 +1650,12 @@ def questionnaire_totals(report):
     """(effective kg, approved kg) of this inventory's entries: effective
     counts a step's waiting rows instead of its approved ones — what the
     inventory says once everything is approved."""
-    from emissions.models import EmissionEntry
+    from emissions.inventory_scope import entries_of
     if not report.company_id:
         return 0.0, 0.0
     by_step = {}
-    for e in EmissionEntry.objects.filter(
-            company_id=report.company_id, year=report.reporting_year or 2024,
+    # This inventory's records only (inventory_scope.py), not the company's whole year.
+    for e in entries_of(report).filter(
             description__startswith=f'{DESCRIPTION_PREFIX} ').only('description', 'status', 'calculated_co2e_kg'):
         bucket = by_step.setdefault(entry_group(e.description), {'approved': 0.0, 'waiting': 0.0, 'has_waiting': False})
         if e.status == 'approved':
@@ -1728,7 +1722,7 @@ def sites_pending_connection(A, company, year=None):
     return out
 
 
-def sites_on_superseded_grid(company, year):
+def sites_on_superseded_grid(company, year, inventory=None):
     """{facility name: kWh} of 4A-1 electricity still counted with the single
     Turkey grid factor ('turkey-grid'), which the connection-based official
     factors replaced: entries saved before that change keep it until the
@@ -1737,7 +1731,7 @@ def sites_on_superseded_grid(company, year):
     if company is None or not year:
         return {}
     out = {}
-    for e in (_step_entries(company, year, '4A-1')
+    for e in (_step_entries(company, year, '4A-1', inventory)
               .filter(status='approved', emission_factor__slug='turkey-grid', facility__isnull=False)
               .select_related('facility')):
         out[e.facility.name] = out.get(e.facility.name, 0.0) + float(e.quantity or 0)
@@ -1806,28 +1800,35 @@ def scope2_market_based(answers, year, company=None):
             'pending_connection': [site for site, _k in missing if str(site).strip().lower() in waiting]}
 
 
-def avoided_emission_credit_kg(company, year):
+def _approved_rows(company, year, inventory=None):
+    """The approved entries read by the report notes below: one inventory's (inventory_scope.py) when
+    given, else the company's year as before."""
+    from emissions.models import EmissionEntry
+    if inventory is not None:
+        from emissions.inventory_scope import entries_of
+        return entries_of(inventory).filter(status='approved')
+    return EmissionEntry.objects.filter(company=company, year=year, status='approved')
+
+
+def avoided_emission_credit_kg(company, year, inventory=None):
     """kg CO2e (negative) that the approved entries of the company's inventory
     year take off the total through factors with a negative value — recycling
     credits for avoided virgin production. 0 when there are none."""
     from django.db.models import Sum
-    from emissions.models import EmissionEntry
     if company is None or not year:
         return 0.0
-    total = (EmissionEntry.objects.filter(company=company, year=year, status='approved',
-                                          emission_factor__factor_kg_co2e__lt=0)
+    total = (_approved_rows(company, year, inventory).filter(emission_factor__factor_kg_co2e__lt=0)
              .aggregate(t=Sum('calculated_co2e_kg'))['t'])
     return float(total or 0)
 
 
-def factor_reference_years(company, year):
+def factor_reference_years(company, year, inventory=None):
     """[(name_tr, name_en, factor year)] of the catalog factors this
     inventory's approved entries use whose reference year is not the
     reporting year — used as an estimate and said so in the report."""
-    from emissions.models import EmissionEntry
     if company is None or not year:
         return []
-    rows = (EmissionEntry.objects.filter(company=company, year=year, status='approved')
+    rows = (_approved_rows(company, year, inventory)
             .exclude(emission_factor__slug__startswith='calculated-')
             .exclude(emission_factor__year=year)
             .values_list('emission_factor__name_tr', 'emission_factor__name', 'emission_factor__year')
@@ -1951,7 +1952,7 @@ def _readable_notes(notes):
 _UNIT_DISPLAY = {'m3': 'm³', 'kwh': 'kWh', 'liters': 'litre', 'kg': 'kg', 'gj': 'GJ'}
 
 
-def uncalculated_notes(answers, year, company=None):
+def uncalculated_notes(answers, year, company=None, inventory=None):
     """[{step_id, tr, en}] for every answered amount that does not reach the
     dashboard and why — shown right after the answer and listed with the
     inventory's assumptions, so nobody takes a missing number for zero."""
@@ -2029,7 +2030,7 @@ def uncalculated_notes(answers, year, company=None):
 
         # Turkey: the official factor follows the grid connection; until it
         # is chosen the facility's electricity waits (here and in Category 3).
-        superseded = sites_on_superseded_grid(company, year)
+        superseded = sites_on_superseded_grid(company, year, inventory)
         for name, kwh in sites_pending_connection(A, company, year):
             amount_tr, amount_en = _fmt(kwh, 0, 'tr'), _fmt(kwh, 0, 'en')
             if name in superseded:

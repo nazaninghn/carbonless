@@ -12,10 +12,13 @@ from django.utils import timezone
 from .inventory import ANNUAL_PREFIX
 
 
-def _inventories(company):
+def _inventories(company, inventory=None):
     from questionnaire.models import CarbonReport
     out = []
-    for r in (CarbonReport.objects.filter(company=company)
+    qs = CarbonReport.objects.filter(company=company)
+    if inventory is not None:
+        qs = qs.filter(pk=inventory.pk)
+    for r in (qs
               .select_related('created_by').prefetch_related('steps').order_by('reporting_year', 'id')):
         out.append({
             'id': r.id,
@@ -29,15 +32,24 @@ def _inventories(company):
     return out
 
 
-def build_backup(user, company):
+def build_backup(user, company, inventory=None):
+    """The company's backup; with `inventory` (a CarbonReport of that company) only that inventory's entries,
+    custom requests and answers (emissions/inventory_scope.py), the company-level parts unchanged."""
     from companies.serializers import CompanySerializer, FacilitySerializer
     from .models import EmissionEntry, ReductionTarget, CustomEmissionRequest
     from .serializers import EmissionEntrySerializer, ReductionTargetSerializer, CustomEmissionRequestSerializer
     if not company:
         return {'user': user.username, 'exported_at': str(timezone.now()), 'company': None,
                 'facilities': [], 'entries': [], 'targets': [], 'custom_requests': [], 'inventories': []}
-    entries = (EmissionEntry.objects.filter(company=company)
-               .select_related('emission_factor', 'facility', 'user').order_by('year', 'month', 'id'))
+    if inventory is not None:
+        from .inventory_scope import customs_of, entries_of
+        entries = (entries_of(inventory).select_related('emission_factor', 'facility', 'user')
+                   .order_by('year', 'month', 'id'))
+        customs = customs_of(inventory)
+    else:
+        entries = (EmissionEntry.objects.filter(company=company)
+                   .select_related('emission_factor', 'facility', 'user').order_by('year', 'month', 'id'))
+        customs = CustomEmissionRequest.objects.filter(company=company)
     return {
         'user': user.username,
         'exported_at': str(timezone.now()),
@@ -45,9 +57,8 @@ def build_backup(user, company):
         'facilities': FacilitySerializer(company.facilities.all().order_by('id'), many=True).data,
         'entries': EmissionEntrySerializer(entries, many=True).data,
         'targets': ReductionTargetSerializer(ReductionTarget.objects.filter(company=company), many=True).data,
-        'custom_requests': CustomEmissionRequestSerializer(
-            CustomEmissionRequest.objects.filter(company=company), many=True).data,
-        'inventories': _inventories(company),
+        'custom_requests': CustomEmissionRequestSerializer(customs, many=True).data,
+        'inventories': _inventories(company, inventory),
     }
 
 

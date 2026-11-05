@@ -23,6 +23,23 @@ from companies.utils import get_current_company
 from companies.permissions import NotAuditorForWrites, ApproverForWrites
 
 
+def _inventory_scope(request, company, year, param='inventory_id'):
+    """(inventory or None, year, error Response or None) for `?inventory_id=` / `?year=`.
+
+    An inventory named by id is checked against the caller's company (400, same answer for "missing" and
+    "someone else's"); no id and several inventories for the year is a 409, never a mix of them. See
+    emissions/inventory_scope.py."""
+    from .inventory_link import InventorySelectionError
+    from .inventory_scope import InventoryRequired, resolve_scope
+    try:
+        inventory, year = resolve_scope(company, year, request.query_params.get(param))
+    except InventorySelectionError as exc:
+        return None, year, Response(exc.payload(), status=400)
+    except InventoryRequired as exc:
+        return None, year, Response(exc.payload(), status=409)
+    return inventory, year, None
+
+
 class EmissionFactorViewSet(viewsets.ReadOnlyModelViewSet):
     """List and retrieve emission factors — returns only active defaults"""
     queryset = EmissionFactor.objects.filter(is_active=True, is_default=True)
@@ -103,6 +120,22 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         )
         year = year_from_query(self.request, 'year')
         scope = self.request.query_params.get('scope')
+        inventory_id = self.request.query_params.get('inventory_id')
+        if inventory_id is not None:
+            from .inventory_link import resolve_inventory, InventorySelectionError
+            company = get_current_company(self.request.user)
+            try:
+                inventory = resolve_inventory(company, inventory_id)
+                if inventory is not None:
+                    # The same rows the summary reads for this inventory (its own, plus the year's
+                    # unassigned ones when it is the year's only inventory): list and totals agree.
+                    from .inventory_scope import scope_q
+                    qs = qs.filter(scope_q(inventory))
+            except InventorySelectionError:
+                return EmissionEntry.objects.none()
+        elif self.request.query_params.get('unassigned') in ('1', 'true'):
+            # Records that belong to no inventory (read-only information; never part of an inventory total).
+            qs = qs.filter(inventory__isnull=True)
         if year:
             qs = qs.filter(year=year)
         if scope:
@@ -115,16 +148,24 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
             from rest_framework.exceptions import ValidationError
             raise ValidationError({'error': 'No company found. Please create or join a company first.'})
         from .duplicates import find_duplicate, is_confirmed, PossibleDuplicate, find_annual_overlap, AnnualOverlap
+        # The inventory the client named (checked: same company, same year, not signed/completed) is
+        # resolved first: the duplicate checks below compare with ITS records only.
+        from .inventory_link import inventory_for_request
+        inventory = inventory_for_request(self.request, company, year=serializer.validated_data.get('year'),
+                                          forbid_locked=True)
         if not is_confirmed(self.request.data):
             v = serializer.validated_data
-            existing = find_duplicate(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('quantity'))
+            existing = find_duplicate(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('quantity'),
+                                      inventory=inventory)
             if existing:
                 raise PossibleDuplicate(existing)
-            overlap = find_annual_overlap(company, v.get('emission_factor'), v.get('year'), v.get('facility'))
+            overlap = find_annual_overlap(company, v.get('emission_factor'), v.get('year'), v.get('facility'),
+                                          inventory=inventory)
             if overlap:
                 raise AnnualOverlap(overlap)
             from .duplicates import find_yearly_repeat, YearlyRepeat
-            repeat = find_yearly_repeat(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('facility'))
+            repeat = find_yearly_repeat(company, v.get('emission_factor'), v.get('year'), v.get('month'), v.get('facility'),
+                                        inventory=inventory)
             if repeat:
                 raise YearlyRepeat(repeat)
         # Same rule as chat/questionnaire saves (create_entry_from_activity):
@@ -133,9 +174,6 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
         from .factor_lookup import _get_entry_status
         # Multi-inventory stage 1: tagged only with an inventory the client named and the server
         # checked (same company, same year, not signed/completed); otherwise it stays company-level.
-        from .inventory_link import inventory_for_request
-        inventory = inventory_for_request(self.request, company, year=serializer.validated_data.get('year'),
-                                          forbid_locked=True)
         # Protective only (assigns nothing): a record that names no inventory is refused when the company
         # has a signed inventory for its year; a named inventory must not be signed.
         from questionnaire.immutability import assert_period_writable
@@ -321,7 +359,12 @@ class EmissionEntryViewSet(viewsets.ModelViewSet):
 class ReductionTargetViewSet(viewsets.ModelViewSet):
     """CRUD for reduction targets — fully company-scoped. A target is the
     company's commitment, so only owner/admin/manager change it; data-entry
-    members and auditors see it."""
+    members and auditors see it.
+
+    Deliberately company-wide, NOT per inventory (several inventories can share a year): a target stores its
+    own `base_emissions_kg` snapshot (taken from the inventory the user chose when setting it) and `base_year`,
+    and reads no inventory data afterwards. Its `inventory` column stays unset; the progress shown against it
+    comes from the dashboard's selected inventory."""
     serializer_class = ReductionTargetSerializer
     permission_classes = [IsAuthenticated, NotAuditorForWrites, ApproverForWrites]
 
@@ -428,11 +471,21 @@ def emission_summary(request):
     # the same year the dashboard shows by default.
     year = request.query_params.get('year', datetime.now(dt_timezone.utc).year)
     company = get_current_company(request.user)
+
+    # Multi-inventory: the summary is one inventory's (?inventory_id=), or the year's only inventory.
+    inventory, year, err = _inventory_scope(request, company, year)
+    if err is not None:
+        return err
+
     # Only approved entries are part of the inventory (see emissions/inventory.py):
     # pending ('submitted') and rejected ('draft') ones stay listed on the
     # emissions page and are reported below under `not_counted`, for information.
-    entries = (EmissionEntry.objects.filter(company=company, year=year).filter(status='approved')
-               if company else EmissionEntry.objects.none())
+    if inventory is not None:
+        from .inventory_scope import entries_of
+        entries = entries_of(inventory).filter(status='approved')
+    else:
+        entries = (EmissionEntry.objects.filter(company=company, year=year).filter(status='approved')
+                   if company else EmissionEntry.objects.none())
 
     total = float(entries.aggregate(total=Sum('calculated_co2e_kg'))['total'] or 0)
     scope1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
@@ -465,12 +518,15 @@ def emission_summary(request):
     # mismatched fields, this fallback exposes CarbonReport's own fields
     # directly so ReportingTab can render real data instead of '-' placeholders.
     if not questionnaire_profile and company:
-        # The inventory of the year asked for; another year's only when that
-        # year has none (the newest one).
+        # The inventory asked for, when it is completed. Without one: the inventory of the year asked for;
+        # another year's only when that year has none (the newest one).
         completed = CarbonReport.objects.filter(company=company, status=CarbonReport.Status.COMPLETED)
         # '-id' breaks a tie between inventories saved in the same instant, so the pick is stable.
-        completed_report = (completed.filter(reporting_year=year).order_by('-updated_at', '-id').first()
-                            or completed.order_by('-updated_at', '-id').first())
+        if inventory is not None:
+            completed_report = completed.filter(pk=inventory.pk).first()
+        else:
+            completed_report = (completed.filter(reporting_year=year).order_by('-updated_at', '-id').first()
+                                or completed.order_by('-updated_at', '-id').first())
         if completed_report:
             from questionnaire.models import ReportStep
             steps = dict(ReportStep.objects.filter(report=completed_report, step_id__in=('B1', 'B3'))
@@ -496,10 +552,16 @@ def emission_summary(request):
     inventory_in_progress = None
     if company:
         from questionnaire.views import _progress
-        open_report = (CarbonReport.objects.filter(company=company, reporting_year=year)
-                       .exclude(status=CarbonReport.Status.COMPLETED).order_by('-updated_at').first())
-        if open_report and not CarbonReport.objects.filter(
-                company=company, reporting_year=year, status=CarbonReport.Status.COMPLETED).exists():
+        if inventory is not None:
+            # The banner is about THIS inventory: open if it is not completed.
+            open_report = inventory if inventory.status != CarbonReport.Status.COMPLETED else None
+        else:
+            open_report = (CarbonReport.objects.filter(company=company, reporting_year=year)
+                           .exclude(status=CarbonReport.Status.COMPLETED).order_by('-updated_at').first())
+            if open_report and CarbonReport.objects.filter(
+                    company=company, reporting_year=year, status=CarbonReport.Status.COMPLETED).exists():
+                open_report = None
+        if open_report:
             prog = _progress(open_report.steps.count(), open_report.status, open_report.client_progress)
             inventory_in_progress = {
                 'report_id': open_report.id, 'title': open_report.title,
@@ -507,14 +569,16 @@ def emission_summary(request):
             }
 
     # Custom emission requests (approved)
-    custom_approved = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
-        electricity_method=''
-    ) if company else CustomEmissionRequest.objects.none()
+    from .inventory import counted_custom_requests
+    custom_approved = counted_custom_requests(company, year, inventory)
     custom_total = float(custom_approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-    custom_pending = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='pending'
-    ).count() if company else 0
+    if inventory is not None:
+        from .inventory_scope import customs_of
+        custom_pending = customs_of(inventory).filter(status='pending').count()
+    else:
+        custom_pending = CustomEmissionRequest.objects.filter(
+            company=company, year=year, status='pending'
+        ).count() if company else 0
 
     # Fix #38: Replace Python loop (loaded all custom rows into memory) with a
     # single SQL GROUP BY so the scope breakdown is computed in the database.
@@ -555,18 +619,25 @@ def emission_summary(request):
         })
 
     from .inventory import not_counted
+    from .inventory_scope import entries_of, unassigned_rows
     return Response({
         'year': int(year),
         'total_kg': float(total),
         'total_tonne': float(total) / 1000,
         # The year before, for "2024'e göre −%X" on the dashboard (see
         # inventory.previous_year_change).
-        'previous_year_change': previous_year_change(company, year, total),
+        'previous_year_change': previous_year_change(company, year, total, inventory=inventory),
         # Pending / rejected entries of the year: not in any total above,
         # shown to the client separately as information.
         'avoided_credit': _avoided_credit_payload(entries),
-        'not_counted': (not_counted(EmissionEntry.objects.filter(company=company, year=year))
+        'not_counted': (not_counted(entries_of(inventory) if inventory is not None
+                                    else EmissionEntry.objects.filter(company=company, year=year))
                         if company else not_counted(EmissionEntry.objects.none())),
+        # The inventory this summary is about, and records of the year that belong to no inventory (a year
+        # with several inventories): reported, never silently dropped from every inventory.
+        'inventory_id': inventory.pk if inventory is not None else None,
+        'unassigned_records': (unassigned_rows(inventory) if inventory is not None
+                               else {'entries': 0, 'total_kg': 0.0}),
         'scope1_kg': float(scope1),
         'scope2_kg': float(scope2),
         'scope3_kg': float(scope3),
@@ -673,10 +744,13 @@ def generate_report_view(request):
 
     year = year_from_query(request, 'year', datetime.now().year)
     lang = request.query_params.get('lang', 'tr')
+    inventory, year, err = _inventory_scope(request, get_current_company(request.user), year)
+    if err is not None:
+        return err
 
     try:
         from .report_pdf import generate_report
-        pdf_bytes = generate_report(request.user, year, lang)
+        pdf_bytes = generate_report(request.user, year, lang, inventory=inventory)
     except Exception as e:
         import traceback, logging
         logging.getLogger(__name__).error('PDF generation failed: %s\n%s', e, traceback.format_exc())
@@ -788,10 +862,13 @@ def comparison_view(request):
     # on every get_year_data() invocation (twice per request = 2 membership queries).
     _company = get_current_company(request.user)
 
-    def get_year_data(y):
+    def get_year_data(y, inv=None):
         company = _company
+        from .inventory_scope import entries_of
         qs = (EmissionEntry.objects.filter(company=company, year=y).filter(status='approved')
               if company else EmissionEntry.objects.none())
+        if inv is not None:
+            qs = entries_of(inv).filter(status='approved')
         total = qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s1 = qs.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
         s2 = qs.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0
@@ -799,8 +876,14 @@ def comparison_view(request):
         return {'year': y, 'total_kg': float(total), 'total_tonne': float(total)/1000,
                 'scope1_tonne': float(s1)/1000, 'scope2_tonne': float(s2)/1000, 'scope3_tonne': float(s3)/1000}
 
-    d1 = get_year_data(year1)
-    d2 = get_year_data(year2)
+    inv1, year1, err = _inventory_scope(request, _company, year1, 'inventory_id1')
+    if err is not None:
+        return err
+    inv2, year2, err = _inventory_scope(request, _company, year2, 'inventory_id2')
+    if err is not None:
+        return err
+    d1 = get_year_data(year1, inv1)
+    d2 = get_year_data(year2, inv2)
 
     change_pct = 0
     if d1['total_kg'] > 0:
@@ -915,12 +998,19 @@ def export_csv_view(request):
     # one extra SQL query per entry that had a facility set (classic N+1).
     # Also fixed the CSV value: use e.facility.name (or '') instead of the ORM
     # object, which printed the ugly __str__ representation.
-    entries = (
-        EmissionEntry.objects
-        .filter(company=company, year=year)
-        .select_related('emission_factor', 'facility', 'user')
-        if company else EmissionEntry.objects.none()
-    )
+    inventory, year, err = _inventory_scope(request, company, year)
+    if err is not None:
+        return err
+    if inventory is not None:
+        from .inventory_scope import entries_of
+        entries = entries_of(inventory).select_related('emission_factor', 'facility', 'user')
+    else:
+        entries = (
+            EmissionEntry.objects
+            .filter(company=company, year=year)
+            .select_related('emission_factor', 'facility', 'user')
+            if company else EmissionEntry.objects.none()
+        )
 
     # Same columns as the Excel export, in the UI language (?lang=tr). Turkish
     # Excel reads ";" as the column separator and "," as the decimal mark, so
@@ -929,7 +1019,7 @@ def export_csv_view(request):
     tr = lang == 'tr'
     from .inventory import counted_custom_requests
     header, rows = _export_rows(entries.order_by('month', 'id'), lang,
-                                counted_custom_requests(company, year).select_related('facility').order_by('month', 'id'))
+                                counted_custom_requests(company, year, inventory).select_related('facility').order_by('month', 'id'))
 
     response = HttpResponse(content_type='text/csv; charset=utf-8')
     response['Content-Disposition'] = (f'attachment; filename="emisyonlar_{year}.csv"' if tr
@@ -998,7 +1088,15 @@ def export_all_view(request):
     """The company's full backup (see full_export.py): JSON by default,
     an Excel workbook with ?file=xlsx (&lang=tr for Turkish sheets; DRF reserves ?format=)."""
     from .full_export import build_backup, backup_workbook_response
-    data = build_backup(request.user, get_current_company(request.user))
+    company = get_current_company(request.user)
+    inventory = None
+    if request.query_params.get('inventory_id') not in (None, ''):
+        from .inventory_link import InventorySelectionError, resolve_inventory
+        try:
+            inventory = resolve_inventory(company, request.query_params.get('inventory_id'))
+        except InventorySelectionError as exc:
+            return Response(exc.payload(), status=400)
+    data = build_backup(request.user, company, inventory)
     if request.query_params.get('file') == 'xlsx':
         return backup_workbook_response(data, request.query_params.get('lang') == 'tr')
     return Response(data)
@@ -1236,9 +1334,17 @@ def by_facility_view(request):
         return Response([])
 
     year = year_from_query(request, 'year', datetime.now().year)
+    inventory, year, err = _inventory_scope(request, company, year)
+    if err is not None:
+        return err
+    if inventory is not None:
+        from .inventory_scope import entries_of
+        base = entries_of(inventory)
+    else:
+        base = EmissionEntry.objects.filter(company=company, year=year)
     data = (
-        EmissionEntry.objects
-        .filter(company=company, year=year, facility__isnull=False, status='approved')
+        base
+        .filter(facility__isnull=False, status='approved')
         .values('facility__name', 'facility__id')
         .annotate(total_kg=Sum('calculated_co2e_kg'))
         .order_by('-total_kg')
@@ -1273,7 +1379,8 @@ def pending_entries_view(request):
     for row, entry in zip(data, entries):
         row['overlap_warning'] = None
         if entry.status == 'submitted' and not (entry.description or '').startswith(ANNUAL_PREFIX):
-            overlap = find_annual_overlap(company, entry.emission_factor, entry.year, entry.facility)
+            overlap = find_annual_overlap(company, entry.emission_factor, entry.year, entry.facility,
+                                          inventory=entry.inventory)
             if overlap:
                 row['overlap_warning'] = {'tr': overlap['tr'], 'en': overlap['en']}
     return Response(data)
@@ -1322,17 +1429,24 @@ def export_excel_view(request):
     # inside the loop fired one extra SQL query per entry that had a facility set.
     # Also replaced str(e.facility) (Django __str__) with e.facility.name so the
     # Excel cell contains the plain facility name, consistent with the CSV export.
-    entries = (
-        EmissionEntry.objects
-        .filter(company=company, year=year)
-        .select_related('emission_factor', 'facility', 'user')
-        if company else EmissionEntry.objects.none()
-    )
+    inventory, year, err = _inventory_scope(request, company, year)
+    if err is not None:
+        return err
+    if inventory is not None:
+        from .inventory_scope import entries_of
+        entries = entries_of(inventory).select_related('emission_factor', 'facility', 'user')
+    else:
+        entries = (
+            EmissionEntry.objects
+            .filter(company=company, year=year)
+            .select_related('emission_factor', 'facility', 'user')
+            if company else EmissionEntry.objects.none()
+        )
 
     lang = 'tr' if request.query_params.get('lang') == 'tr' else 'en'
     from .inventory import counted_custom_requests
     header, rows = _export_rows(entries.order_by('month', 'id'), lang,
-                                counted_custom_requests(company, year).select_related('facility').order_by('month', 'id'))
+                                counted_custom_requests(company, year, inventory).select_related('facility').order_by('month', 'id'))
     wb = Workbook()
     ws = wb.active
     ws.title = f'Emisyonlar {year}' if lang == 'tr' else f'Emissions {year}'

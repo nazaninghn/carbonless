@@ -274,6 +274,20 @@ def _pending_ids(report):
     return [s for s in (report.pending_questions or []) if isinstance(s, str)]
 
 
+def _applicable_pending(report):
+    """The pending questions that still apply: unanswered, and still on the questionnaire's route (a question
+    the answers have since taken off the route is inactive: not pending, not blocking)."""
+    from . import deferral
+    return deferral.pending_to_show(report)
+
+
+def _required_unanswered_ids(report):
+    """The required questions of this inventory's route that have no answer yet: what stands between it and
+    completion. The same call the completion check makes (never a second definition)."""
+    from . import deferral
+    return deferral.required_unanswered(deferral.saved_answers(report))
+
+
 def _clear_pending(report, step_id):
     """A saved answer resolves the question: drop it from the pending list. A plain UPDATE, so
     nothing else of the report (status, updated_at, other fields) is touched."""
@@ -466,33 +480,20 @@ class StartReportView(APIView):
         if year is not None and not 1990 <= year <= datetime_now_year():
             return Response({'error': 'Invalid reporting year', 'code': 'invalid_year'}, status=400)
 
-        # One inventory per company and year: entries belong to the company and year, so a
-        # second one would replace the first one's values (signed ones included).
         from django.db import transaction
-        from . import year_guard
-        lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
-        if year is not None:
-            others = year_guard.other_inventories_for_year(company.pk, year)
-            if others:
-                year_guard.log_blocked(request.user, company.pk, others, year, 'start a second inventory', request)
-                return Response(year_guard.conflict_payload(others, year, lang), status=409)
-        try:
-            with transaction.atomic():
-                report = CarbonReport.objects.create(
-                    company=company,
-                    created_by=request.user,
-                    title=title,
-                    reporting_year=year,
-                    status=CarbonReport.Status.IN_PROGRESS,
-                    current_step='A1'
-                )
-        except IntegrityError:
-            # Two requests passed the check above at the same time: the database stopped the second.
-            others = year_guard.other_inventories_for_year(company.pk, year) if year is not None else []
-            if not others:
-                raise
-            year_guard.log_blocked(request.user, company.pk, others, year, 'start a second inventory', request)
-            return Response(year_guard.conflict_payload(others, year, lang), status=409)
+        with transaction.atomic():
+            # Several inventories may share a year. If this year already has exactly one, its unassigned
+            # records are tagged with its id first, so it keeps them once a second inventory exists.
+            from emissions.inventory_scope import claim_unassigned_rows
+            claim_unassigned_rows(company.pk, year)
+            report = CarbonReport.objects.create(
+                company=company,
+                created_by=request.user,
+                title=title,
+                reporting_year=year,
+                status=CarbonReport.Status.IN_PROGRESS,
+                current_step='A1'
+            )
 
         return Response({
             'report_id': report.id,
@@ -639,10 +640,8 @@ class SubmitStepView(APIView):
             except (TypeError, ValueError):
                 new_year = None
             if new_year and new_year != report.reporting_year:
-                others = year_guard.other_inventories_for_year(report.company_id, new_year, exclude_pk=report.pk)
-                if others:
-                    year_guard.log_blocked(request.user, report.company_id, others, new_year, 'move an inventory onto that year', request)
-                    return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
+                # Several inventories may share a year; only an inventory that already holds entries for
+                # its current year may not move (its entries would stay behind).
                 held = year_guard.year_change_blocked(report, new_year, lang_, step=step)
                 if held:
                     return Response(held, status=409)
@@ -682,16 +681,8 @@ class SubmitStepView(APIView):
             # triggers and the progress, all or nothing ──
             with transaction.atomic():
                 begin_write()
-                try:
-                    with transaction.atomic():      # a savepoint: a refused year must not poison the transaction
-                        result = handle_step(report, step, serializer.validated_data)
-                except IntegrityError:
-                    # Moving onto a year another request just took: the database refused it.
-                    new_year = serializer.validated_data.get('reporting_year') if step == 'A4' else None
-                    others = year_guard.other_inventories_for_year(report.company_id, new_year, exclude_pk=report.pk) if new_year else []
-                    if not others:
-                        raise
-                    return Response(year_guard.conflict_payload(others, new_year, lang_, moving=True, step=step), status=409)
+                with transaction.atomic():      # a savepoint
+                    result = handle_step(report, step, serializer.validated_data)
 
                 before = _saved_answer(report, step)
                 _save_report_step(report, step, serializer.validated_data)
@@ -863,7 +854,7 @@ class SubmitStepView(APIView):
 
             if is_final_step:
                 # A question left for later is unresolved: the inventory cannot be finished around it.
-                pending = [s for s in _pending_ids(report) if not ReportStep.objects.filter(report=report, step_id=s).exists()]
+                pending = _applicable_pending(report)
                 if pending:
                     msg_en = (f'This inventory cannot be marked complete yet — {len(pending)} question'
                               f'{"s are" if len(pending) != 1 else " is"} still marked "I don\'t know — answer later".')
@@ -874,6 +865,22 @@ class SubmitStepView(APIView):
                         'success': False, 'step': step, 'next_step': step, 'code': 'pending_questions',
                         'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
                         'pending_questions': pending, 'bot_messages': [f'❌ {msg}'],
+                    }, status=400)
+                # A question the questionnaire requires on this inventory's route cannot be skipped around by
+                # calling the API out of order: every required question that applies must have its answer.
+                from . import deferral
+                missing = deferral.required_unanswered(deferral.saved_answers(report))
+                if missing:
+                    msg_en = (f'This inventory cannot be marked complete yet — {len(missing)} required question'
+                              f'{"s are" if len(missing) != 1 else " is"} unanswered: {", ".join(missing[:8])}'
+                              f'{"…" if len(missing) > 8 else ""}.')
+                    msg_tr = (f'Bu envanter henüz tamamlanamaz — {len(missing)} zorunlu soru yanıtsız: '
+                              f'{", ".join(missing[:8])}{"…" if len(missing) > 8 else ""}.')
+                    msg = msg_tr if lang == 'tr' else msg_en
+                    return Response({
+                        'success': False, 'step': step, 'next_step': step, 'code': 'required_unanswered',
+                        'error': msg, 'error_en': msg_en, 'error_tr': msg_tr,
+                        'required_unanswered': missing, 'bot_messages': [f'❌ {msg}'],
                     }, status=400)
                 # Completion used to be gated purely on "was 7B-INFO answered
                 # 'done'", with no check that anything came before it. Verified
@@ -967,7 +974,7 @@ class SubmitStepView(APIView):
         # grid connection, Q24, decides whether its electricity is calculated).
         from .step_entries import recorded_connections
         with recorded_connections(report):
-            step_notes = [n for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company)
+            step_notes = [n for n in uncalculated_notes(answers, report.reporting_year or 2024, report.company, report)
                           if n['step_id'] == step or step in n.get('related_steps', ())]
         # A method note (the answer is used, in a separately reported result)
         # is not an uncalculated amount: told apart so it is not shown as one.
@@ -1076,7 +1083,9 @@ class ReportStatusView(APIView):
                 'scope3_approach': report.scope3_approach,
                 'completed_steps': completed_steps,
                 # "I don't know — answer later": unanswered on purpose, not in answers/completed_steps.
-                'pending_questions': [s for s in _pending_ids(report) if s not in answers],
+                'pending_questions': _applicable_pending(report),
+                # Required questions still without an answer (for the dashboard's inventory status; read only).
+                'required_unanswered': _required_unanswered_ids(report),
                 # Who started this inventory, when it wasn't the requester —
                 # the questionnaire says "baris started it" instead of
                 # "welcome back" to a team mate opening it the first time.
@@ -1168,19 +1177,26 @@ class PendingQuestionView(APIView):
         current = _pending_ids(report)
         if pending:
             from . import year_guard
-            # Same rules as saving an answer: no change to a signed / completed inventory, nor to
-            # one whose year another inventory also covers.
+            # Same rule as saving an answer: no change to a signed / completed inventory.
             if year_guard._is_locked(report):
                 return Response(year_guard.locked_payload(report, 'take a new pending question', lang), status=409)
-            if report.reporting_year:
-                others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
-                if others:
-                    return Response(year_guard.conflict_payload(others, report.reporting_year, lang), status=409)
             # An answer is never replaced by "I don't know".
             if ReportStep.objects.filter(report=report, step_id=step).exists():
                 msg = ('Bu soru zaten yanıtlandı; yanıtı değiştirmek için soruyu düzenleyin.' if lang == 'tr'
                        else 'This question is already answered; edit the question to change its answer.')
                 return Response({'error': msg, 'code': 'already_answered', 'step': step}, status=409)
+            # Whether this question MAY be left for later is decided by what it does in the questionnaire
+            # (questionnaire/deferral.py), not by the client: a question that routes the questionnaire, sets the
+            # boundary or the method, defines the items of a loop or signs off cannot be deferred, and one the
+            # answers have taken off the route does not apply.
+            from . import deferral
+            ok, why = deferral.defer_status(step, deferral.saved_answers(report))
+            if not ok and why != 'already_answered':
+                msg_en, msg_tr = deferral.MESSAGES.get(why, deferral.MESSAGES['gate'])
+                msg = msg_tr if lang == 'tr' else msg_en
+                code = 'not_applicable' if why == 'not_applicable' else 'not_deferrable'
+                return Response({'error': msg, 'error_en': msg_en, 'error_tr': msg_tr, 'code': code, 'reason': why,
+                                 'step': step}, status=409 if why == 'not_applicable' else 400)
             if step not in current:
                 if len(current) >= self.MAX_PENDING:
                     msg = ('Çok fazla bekleyen soru var.' if lang == 'tr' else 'There are too many pending questions.')
@@ -1290,10 +1306,8 @@ def _find_previous_profile_source(report):
 
 
 def _other_inventories(report):
-    """The company's other inventories, so the survey can warn before a second
-    inventory is started for a year that already has one: emission entries are
-    kept per company and year, so both would share (and overwrite) one set of
-    numbers."""
+    """The company's other inventories (informational: several may share a year;
+    each keeps its own records, see emissions/inventory_scope.py)."""
     return [
         {'report_id': r.id, 'title': r.title, 'reporting_year': r.reporting_year,
          'status': r.status}
@@ -1458,11 +1472,6 @@ class ReuseCompanyProfileView(APIView):
         lang_ = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
         if report.signed_at or report.status == CarbonReport.Status.COMPLETED:
             return Response(year_guard.locked_payload(report, 'reuse a company profile', lang_), status=409)
-        for target in {report.reporting_year, year} - {None}:
-            others = year_guard.other_inventories_for_year(report.company_id, target, exclude_pk=report.pk)
-            if others:
-                year_guard.log_blocked(request.user, report.company_id, others, target, 'reuse a company profile', request)
-                return Response(year_guard.conflict_payload(others, target, lang_, moving=target == year), status=409)
         held = year_guard.year_change_blocked(report, year, lang_)
         if held:
             return Response(held, status=409)
@@ -1481,15 +1490,10 @@ class ReuseCompanyProfileView(APIView):
         client_progress = _client_progress_from(request.data.get('progress'))
         if client_progress:
             report.client_progress = client_progress
-        try:
-            with transaction.atomic():
-                report.save()
-        except IntegrityError:
-            # Another request took the year between the check above and the save: the database refused it.
-            others = year_guard.other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
-            if not others:
-                raise
-            return Response(year_guard.conflict_payload(others, year, lang_, moving=True), status=409)
+        with transaction.atomic():
+            from emissions.inventory_scope import claim_unassigned_rows
+            claim_unassigned_rows(report.company_id, year)   # another inventory of that year keeps its records
+            report.save()
 
         answers = {}
         for step in source.steps.filter(step_id__in=PHASE1_STEP_IDS).exclude(step_id='A4'):
@@ -1504,6 +1508,17 @@ class ReuseCompanyProfileView(APIView):
             defaults={'answer': {'reporting_year': year}, 'is_skipped': False},
         )
         answers['A4'] = {'reporting_year': year}
+
+        # This inventory skips Phase 1, so a Company Profile question the earlier inventory left for later would
+        # appear in no list at all — yet it must still be answered. It stays deferred here: only the mark is
+        # carried (never an answer: nothing is copied for it), and only while the question still applies.
+        from . import deferral
+        carried = [s for s in _pending_ids(source) if s in PHASE1_STEP_IDS and s != 'A4'
+                   and not source.steps.filter(step_id=s).exists()]
+        if carried:
+            carried = deferral.active_pending(carried, deferral.saved_answers(report), deferral.loop_has_items)
+            keep = _pending_ids(report) + [s for s in carried if s not in _pending_ids(report)]
+            CarbonReport.objects.filter(pk=report.pk).update(pending_questions=keep)
 
         return Response({
             'success': True,
@@ -1651,14 +1666,6 @@ class RestartReportView(APIView):
             return Response({'error': 'Report not found'}, status=404)
         if report.status == CarbonReport.Status.COMPLETED:
             return Response({'error': 'A completed inventory cannot be restarted.'}, status=400)
-        # Restarting deletes this inventory's own entries: never while another inventory
-        # (a signed one, say) shares its year.
-        from . import year_guard
-        others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
-        if others:
-            lang_ = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
-            year_guard.log_blocked(request.user, report.company_id, others, report.reporting_year, 'restart an inventory', request)
-            return Response(year_guard.conflict_payload(others, report.reporting_year, lang_), status=409)
 
         with transaction.atomic():
             # Signed: never. Pre-ownership: never (its rows are unassigned). Checked on the locked row

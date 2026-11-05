@@ -441,7 +441,7 @@ def declared_unquantified_categories(report, by_category):
     if report is None or report.company is None:
         return set()
     with recorded_connections(report):
-        notes = uncalculated_notes(_answers(report), report.reporting_year or datetime.now().year, report.company)
+        notes = uncalculated_notes(_answers(report), report.reporting_year or datetime.now().year, report.company, report)
     cats = set()
     for n in notes:
         if n.get('kind') == 'method':     # used, in a separately reported result: not a gap
@@ -870,9 +870,11 @@ def _gather(report, lang):
     company = report.company
     year = report.reporting_year or datetime.now().year
 
+    # This inventory's own records only (emissions/inventory_scope.py), never the company's whole year.
+    from emissions.inventory_scope import entries_of, customs_of, inventories_for
+    all_entries = entries_of(report) if company else EmissionEntry.objects.none()
     entries = (
-        EmissionEntry.objects
-        .filter(company=company, year=year)
+        all_entries
         .filter(status='approved')
         .select_related('emission_factor', 'facility')
     )
@@ -945,8 +947,8 @@ def _gather(report, lang):
     # Approved custom requests count toward the inventory the same way the
     # Scope-based report already counts them; without this the ISO totals would
     # silently disagree with the existing report for the same year.
-    customs = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
+    customs = customs_of(report).filter(
+        status='approved', calculated_co2e_kg__isnull=False,
         electricity_method=''
     ) if company else CustomEmissionRequest.objects.none()
     for cr in customs:
@@ -1008,17 +1010,34 @@ def _gather(report, lang):
     year_totals = {}
     year_categories = {}   # year -> categories with emissions, to flag a change of scope
     if company:
-        for row in (EmissionEntry.objects.filter(company=company).filter(status='approved')
-                    .values('year').annotate(total=Sum('calculated_co2e_kg'))):
-            year_totals[row['year']] = year_totals.get(row['year'], 0.0) + float(row['total'] or 0)
-        for row in (EmissionEntry.objects.filter(company=company).filter(status='approved')
-                    .values('year', 'emission_factor__category').annotate(total=Sum('calculated_co2e_kg'))):
-            if float(row['total'] or 0) > 0:
-                year_categories.setdefault(row['year'], set()).add(row['emission_factor__category'])
-        for cr in CustomEmissionRequest.objects.filter(
-                company=company, status='approved', calculated_co2e_kg__isnull=False,
-        electricity_method=''):
-            year_totals[cr.year] = year_totals.get(cr.year, 0.0) + float(cr.calculated_co2e_kg or 0)
+        # The reporting year is THIS inventory. Another year is the company's one inventory of that year
+        # (its own records), or, for a year with no inventory, the company's year-level rows as before.
+        # A year that has several inventories gets no figure: summing them would mix inventories, and
+        # which one is "the" base year is not for the report to guess.
+        years = (set(EmissionEntry.objects.filter(company=company).values_list('year', flat=True))
+                 | set(CustomEmissionRequest.objects.filter(company=company).values_list('year', flat=True)))
+        years.add(year)
+        for y in sorted(years):
+            if y == year:
+                y_entries, y_customs = entries_of(report), customs_of(report)
+            else:
+                others = list(inventories_for(company, y)[:2])
+                if len(others) > 1:
+                    continue
+                if others:
+                    y_entries, y_customs = entries_of(others[0]), customs_of(others[0])
+                else:
+                    y_entries = EmissionEntry.objects.filter(company=company, year=y)
+                    y_customs = CustomEmissionRequest.objects.filter(company=company, year=y)
+            approved = y_entries.filter(status='approved')
+            counted_customs = y_customs.filter(status='approved', calculated_co2e_kg__isnull=False,
+                                               electricity_method='')
+            if approved.exists() or counted_customs.exists():
+                year_totals[y] = (float(approved.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+                                  + float(counted_customs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0))
+            for row in approved.values('emission_factor__category').annotate(total=Sum('calculated_co2e_kg')):
+                if float(row['total'] or 0) > 0:
+                    year_categories.setdefault(y, set()).add(row['emission_factor__category'])
 
     return {
         'company': company,
@@ -1040,8 +1059,7 @@ def _gather(report, lang):
         'year_categories': year_categories,
         'answers': _answers(report),
         # Pending / rejected entries: outside every figure, noted for information.
-        'not_counted': (_not_counted(EmissionEntry.objects.filter(company=company, year=year))
-                        if company else None),
+        'not_counted': (_not_counted(all_entries) if company else None),
         # Facilities whose electricity is not calculated (no grid factor for
         # their country): named in the location tables, not left out silently.
         'sites_without_grid': _sites_without_grid(report),
@@ -1136,7 +1154,7 @@ def _sites_pending_connection(report):
     A = {k: _value(v) for k, v in _answers(report).items()}
     # Still counted with the earlier single Turkey factor: in the figures,
     # so not "pending" (disclosed as a method note instead).
-    counted = sites_on_superseded_grid(report.company, report.reporting_year)
+    counted = sites_on_superseded_grid(report.company, report.reporting_year, report)
     with recorded_connections(report):
         pending = sites_pending_connection(A, report.company, report.reporting_year)
     return [(n, k) for n, k in pending if n not in counted]
@@ -2859,7 +2877,7 @@ def _section3(E, S, D, report, lang, TBL, FIG):
     from .step_entries import recorded_connections
     # (the exclusions are already listed in 3.4)
     with recorded_connections(report):
-        recorded = [x for x in derive_assumptions(A, lang, report.reporting_year, report.company)
+        recorded = [x for x in derive_assumptions(A, lang, report.reporting_year, report.company, inventory=report)
                     if x['step_id'] != '6A-1a']
     if recorded:
         E.append(Paragraph(
@@ -3621,21 +3639,23 @@ def _section4(E, S, D, report, lang, TBL, FIG):
     # Reduction targets
     E.append(Paragraph('4.1.5   ' + t('s4_tgt', lang), S['h2']))
     from emissions.models import ReductionTarget
-    targets = list(ReductionTarget.objects.filter(user=report.created_by)) if report.created_by else []
+    # Reduction targets are the COMPANY's commitments (company-wide, not per inventory or per author): the
+    # company's targets are listed with the fields the model really has.
+    targets = (list(ReductionTarget.objects.filter(company_id=report.company_id).order_by('target_year', 'id'))
+               if report.company_id else [])
     if targets:
-        data = [[Paragraph('<b>' + ('Target' if lang == 'en' else 'Hedef') + '</b>', S['body_sm']),
-                 Paragraph('<b>' + ('Target year' if lang == 'en' else 'Hedef yıl') + '</b>',
-                           S['body_sm']),
-                 Paragraph('<b>' + ('Reduction' if lang == 'en' else 'Azaltım') + '</b>',
-                           S['body_sm'])]]
+        _hdr = lambda en, tr_: Paragraph('<b>' + (en if lang == 'en' else tr_) + '</b>', S['body_sm'])
+        data = [[_hdr('Target', 'Hedef'), _hdr('Base year', 'Baz yıl'),
+                 _hdr('Target year', 'Hedef yıl'), _hdr('Reduction', 'Azaltım')]]
         for tg in targets:
+            pct = tg.target_reduction_percent
             data.append([
-                Paragraph(str(getattr(tg, 'name', None) or getattr(tg, 'scope', '') or '—'),
-                          S['body_sm']),
-                Paragraph(str(getattr(tg, 'target_year', '') or '—'), S['body_sm']),
-                Paragraph(f'{getattr(tg, "reduction_percentage", "—")} %', S['body_sm']),
+                Paragraph(escape(str(tg.title or '—')), S['body_sm']),
+                Paragraph(str(tg.base_year or '—'), S['body_sm']),
+                Paragraph(str(tg.target_year or '—'), S['body_sm']),
+                Paragraph(f'{float(pct):g} %' if pct is not None else '—', S['body_sm']),
             ])
-        tbl = Table(data, colWidths=[100*mm, 34*mm, 36*mm], hAlign='LEFT', repeatRows=1)
+        tbl = Table(data, colWidths=[76*mm, 30*mm, 30*mm, 34*mm], hAlign='LEFT', repeatRows=1)
         st = _tbl_style(fn, fnb)
         st.add('ALIGN', (0, 0), (0, -1), 'LEFT')
         tbl.setStyle(st)

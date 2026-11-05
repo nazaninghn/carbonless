@@ -11,7 +11,9 @@ from companies.models import Company, CompanyMembership
 from .models import CarbonReport, ReportStep
 from .test_stage3_scenarios import _Inventory, TOTAL
 
-PENDING = '4A-EF'          # unanswered in the representative inventory; answering 'yes' is valid
+PENDING = 'A2'            # unanswered and deferrable (the company's tax number: documentation, before any gate)
+OTHER = 'A5'              # likewise (who prepares the report)
+PAYLOAD = {'A2': {'tax_id': '1234567890'}, 'A5': {'prepared_by': 'Test Preparer'}}
 
 
 class PendingQuestionTests(_Inventory):
@@ -26,6 +28,12 @@ class PendingQuestionTests(_Inventory):
         r = (client or self.client).get(f'/api/questionnaire/{self.report.id}/')
         self.assertEqual(r.status_code, 200, r.content)
         return r.data
+
+    def _answer(self, step):
+        r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {'step': step, 'data': PAYLOAD[step]},
+                              format='json')
+        self.assertEqual(r.status_code, 200, r.content)
+        return r
 
     def _snapshot(self):
         return (dict(ReportStep.objects.filter(report=self.report).values_list('step_id', 'answer')),
@@ -57,16 +65,16 @@ class PendingQuestionTests(_Inventory):
     def test_marking_twice_lists_it_once_and_several_questions_are_kept(self):
         self._mark()
         self._mark()
-        self._mark('4B-EF')
-        self.assertEqual(self._status()['pending_questions'], [PENDING, '4B-EF'])
+        self._mark(OTHER)
+        self.assertEqual(self._status()['pending_questions'], [PENDING, OTHER])
 
     # 4 + 7 — answering the exact question clears it; the rest stay
     def test_a_valid_answer_clears_only_that_question(self):
         self._mark()
-        self._mark('4B-EF')
-        self._step(PENDING, 'yes')
+        self._mark(OTHER)
+        self._answer(PENDING)
         s = self._status()
-        self.assertEqual(s['pending_questions'], ['4B-EF'])
+        self.assertEqual(s['pending_questions'], [OTHER])
         self.assertIn(PENDING, s['answers'])
         self.assertAlmostEqual(self._summary()['total_kg'], TOTAL, places=2)
 
@@ -108,7 +116,7 @@ class PendingQuestionTests(_Inventory):
 
     def test_once_resolved_the_pending_gate_no_longer_blocks_completion(self):
         self._mark()
-        self._step(PENDING, 'yes')
+        self._answer(PENDING)
         r = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
             'step': '7B-INFO', 'data': {'answer': 'done'}}, format='json')
         self.assertNotEqual(r.data.get('code'), 'pending_questions')
@@ -141,11 +149,14 @@ class PendingQuestionTests(_Inventory):
         self.assertEqual(self._mark().status_code, 409)
         self.assertEqual(self._status()['pending_questions'], [])
 
-    def test_a_year_shared_with_another_inventory_is_refused(self):
-        CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
-        CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=self.report.reporting_year,
-                                    title='Second', legacy_duplicate_year=True)
-        self.assertEqual(self._mark().status_code, 409)
+    def test_a_year_shared_with_another_inventory_is_allowed_and_stays_per_inventory(self):
+        """Several inventories may share a year; a pending question belongs to the inventory it was marked in."""
+        other = CarbonReport.objects.create(company=self.company, created_by=self.user,
+                                            reporting_year=self.report.reporting_year, title='Second')
+        self.assertEqual(self._mark().status_code, 200)
+        self.assertNotEqual(self._status()['pending_questions'], [])
+        other.refresh_from_db()
+        self.assertFalse(other.pending_questions)               # the other inventory is unchanged
 
     def test_only_members_of_the_company_can_use_it(self):
         outsider = User.objects.create_user('pq_out', 'pq_out@test.com', 'pass12345')

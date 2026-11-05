@@ -426,8 +426,11 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
     # ════════════════════════════════════════════════
     E.append(Paragraph('5. ' + ('Ölçülen Sera Gazı Emisyonları' if tr else 'Quantified GHG Emissions'), S['h1']))
 
-    entries = EmissionEntry.objects.filter(company=company, year=year).filter(status='approved').select_related('emission_factor') \
-        if (EmissionEntry is not None and company) else []
+    # This inventory's own records only (emissions/inventory_scope.py), never the company's whole year.
+    from emissions.inventory_scope import entries_of
+    all_entries = entries_of(report) if (EmissionEntry is not None and company) else None
+    entries = all_entries.filter(status='approved').select_related('emission_factor') \
+        if all_entries is not None else []
     entry_count = entries.count() if hasattr(entries, 'count') else 0
 
     if entry_count > 0:
@@ -444,7 +447,7 @@ def generate_questionnaire_report(report: CarbonReport, lang='en', page_offset=0
             f"Total emissions are calculated at {_fmt(total_kg/1000, tr)} tCO₂e.",
             S['body']))
         from emissions.inventory import not_counted, not_counted_note
-        _note = not_counted_note(not_counted(EmissionEntry.objects.filter(company=company, year=year)), tr)
+        _note = not_counted_note(not_counted(all_entries), tr)
         if _note:
             E.append(Paragraph(_note, S['body']))
         E.append(Spacer(1, 5 * mm))

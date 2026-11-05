@@ -40,23 +40,69 @@ def _fmt(n, lang, digits=2):
     return s
 
 
-def _entries(company, year):
+class AmbiguousYear(Exception):
+    """The question is about a year that has several inventories and none of them is the active one:
+    answering would mix their records, so the caller says so instead."""
+
+    def __init__(self, year):
+        super().__init__(year)
+        self.year = year
+
+
+def ambiguous_year_text(year, lang):
+    if lang == 'tr':
+        return (f'{year} yılı için birden fazla envanter var; hangisinin verisini sorduğunuzu bilemem. '
+                'Kontrol Paneli\'nde bir envanter seçin ve sohbete oradan devam edin.')
+    return (f'Several inventories exist for {year}, so I cannot tell which one you mean. '
+            'Choose an inventory on the dashboard and ask again from there.')
+
+
+def _scope(company, year, inventory=None):
+    """The inventory whose records answer a question about `year` (selection only, nothing is calculated).
+
+    * the active inventory, when the question is about its own year;
+    * otherwise the year's only inventory;
+    * otherwise (no inventory covers the year) None: the company-and-year reading used before inventories;
+    * several inventories and none active: AmbiguousYear, never a blend of them."""
+    from emissions.inventory_scope import inventories_for
+    if inventory is not None and inventory.reporting_year == year:
+        return inventory
+    found = list(inventories_for(company, year)[:2])
+    if len(found) == 1:
+        return found[0]
+    if len(found) > 1:
+        raise AmbiguousYear(year)
+    return None
+
+
+def scoped_entries(company, year, inventory=None):
+    """The year's EmissionEntry rows (any status) that belong to the scoped inventory."""
+    from emissions.inventory_scope import entries_of
     from emissions.models import EmissionEntry
+    scope = _scope(company, year, inventory)
+    if scope is None:
+        return EmissionEntry.objects.filter(company=company, year=year)
+    return entries_of(scope)
+
+
+def _entries(company, year, inventory=None):
     # Same rule as the dashboard summary: only approved entries are part of
     # the inventory (pending and rejected ones are not counted).
-    return (EmissionEntry.objects.filter(company=company, year=year)
-            .filter(status='approved').select_related('emission_factor'))
+    return scoped_entries(company, year, inventory).filter(status='approved').select_related('emission_factor')
 
 
-def _custom_note(company, year, lang):
+def _custom_note(company, year, lang, inventory=None):
     """The year's approved custom requests, which the dashboard total adds
     to the entries. Said apart rather than summed in, so the answer still
     matches the entries — it said "no data" while the dashboard showed them."""
     from django.db.models import Sum
+    from emissions.inventory_scope import customs_of
     from emissions.models import CustomEmissionRequest
-    kg = float(CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
-        electricity_method='',
+    scope = _scope(company, year, inventory)
+    qs = (CustomEmissionRequest.objects.filter(company=company, year=year) if scope is None
+          else customs_of(scope))
+    kg = float(qs.filter(
+        status='approved', calculated_co2e_kg__isnull=False, electricity_method='',
     ).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     if not kg:
         return ''
@@ -85,12 +131,12 @@ def _month_in(text, year_given):
     return None
 
 
-def _month_answer(company, year, month, lang):
+def _month_answer(company, year, month, lang, inventory=None):
     from django.db.models import Sum
     from emissions.inventory import ANNUAL_PREFIX
     # The questionnaire's annual amounts are stored as January; they belong
     # to no month, so they are named in a note instead.
-    year_qs = _entries(company, year)
+    year_qs = _entries(company, year, inventory)
     qs = year_qs.filter(month=month).exclude(description__startswith=ANNUAL_PREFIX)
     annual = float(year_qs.filter(description__startswith=ANNUAL_PREFIX)
                    .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
@@ -128,12 +174,12 @@ def _facility_in(company, text):
     return None
 
 
-def _facility_answer(company, year, facility, lang):
+def _facility_answer(company, year, facility, lang, inventory=None):
     """A facility's approved emissions of the year, and how much of the
     company's total is not tied to any facility (so it is not read as the
     facility's whole share)."""
     from django.db.models import Sum
-    qs = _entries(company, year)
+    qs = _entries(company, year, inventory)
     total = float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     mine = qs.filter(facility=facility)
     part = float(mine.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
@@ -165,14 +211,14 @@ def _facility_answer(company, year, facility, lang):
     return text
 
 
-def _scope_answer(company, year, scope_n, lang):
+def _scope_answer(company, year, scope_n, lang, inventory=None):
     from django.db.models import Sum
-    qs = _entries(company, year)
+    qs = _entries(company, year, inventory)
     total = float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     part = float(qs.filter(emission_factor__scope=f'scope{scope_n}')
                  .aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     share = part / total * 100 if total else 0
-    market = _market_result(company, year) if scope_n == 2 else None
+    market = _market_result(company, year, inventory) if scope_n == 2 else None
     if lang == 'tr':
         text = (f'{year} yılı Kapsam {scope_n} emisyonunuz **{_fmt(part, lang)} tCO₂e** '
                 f'(toplam {_fmt(total, lang)} tCO₂e içinde %{_fmt(share, lang, 1)}).')
@@ -191,23 +237,21 @@ def _scope_answer(company, year, scope_n, lang):
 _MARKET_RE = re.compile(r'piyasa[\s-]*baz|market[\s-]*based', re.I)
 
 
-def _market_result(company, year):
-    """The market-based Scope 2 of the company's inventory of `year` (the
+def _market_result(company, year, inventory=None):
+    """The market-based Scope 2 of the scoped inventory of `year` (the
     figure the ISO report states next to Category II), or None."""
-    from questionnaire.models import CarbonReport
     from questionnaire.step_entries import recorded_connections, scope2_market_based
-    report = (CarbonReport.objects.filter(company=company, reporting_year=year)
-              .order_by('-updated_at').first())
+    report = _scope(company, year, inventory)
     if report is None:
         return None
     with recorded_connections(report):
         return scope2_market_based(dict(report.steps.values_list('step_id', 'answer')), year, company)
 
 
-def _market_answer(company, year, lang):
+def _market_answer(company, year, lang, inventory=None):
     from django.db.models import Sum
-    m = _market_result(company, year)
-    scope2 = _entries(company, year).filter(emission_factor__scope='scope2')
+    m = _market_result(company, year, inventory)
+    scope2 = _entries(company, year, inventory).filter(emission_factor__scope='scope2')
     location = float(scope2.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     # The market-based result covers purchased electricity only: its
     # location-based counterpart, so the two are compared like for like.
@@ -249,10 +293,10 @@ def _market_answer(company, year, lang):
     return text
 
 
-def _compare_answer(company, year, lang):
+def _compare_answer(company, year, lang, inventory=None):
     from django.db.models import Sum
-    cur = float(_entries(company, year).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
-    prev = float(_entries(company, year - 1).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    cur = float(_entries(company, year, inventory).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
+    prev = float(_entries(company, year - 1, inventory).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
     if not prev:
         return (f'{year - 1} yılı için kayıtlı emisyon verisi olmadığından karşılaştırma yapılamıyor. '
                 f'{year} toplamı: {_fmt(cur, lang)} tCO₂e.' if lang == 'tr'
@@ -268,11 +312,11 @@ def _compare_answer(company, year, lang):
             f'{year - 1}: {way} {_fmt(abs(change), lang, 1)}%.')
 
 
-def _total_answer(company, year, lang):
+def _total_answer(company, year, lang, inventory=None):
     from django.db.models import Sum
-    qs = _entries(company, year)
+    qs = _entries(company, year, inventory)
     total = float(qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0) / 1000
-    custom = _custom_note(company, year, lang)
+    custom = _custom_note(company, year, lang, inventory)
     if total == 0:
         if custom:
             return (f'{year} yılı için onaylı emisyon kaydı yok. {custom}' if lang == 'tr'
@@ -294,17 +338,17 @@ def _total_answer(company, year, lang):
     return answer + (f'\n\n{custom}' if custom else '')
 
 
-def _top_source_answer(company, year, lang):
+def _top_source_answer(company, year, lang, inventory=None):
     """The year's total and its largest sources (three, or the number asked
     for: "en büyük 5 kaynak") — "toplam ve en büyük 3 kaynak" used to get
     only the single largest one."""
     from django.db.models import Sum
-    rows = (_entries(company, year)
+    rows = (_entries(company, year, inventory)
             .values('emission_factor__name', 'emission_factor__name_tr')
             .annotate(t=Sum('calculated_co2e_kg')).order_by('-t'))
     rows = [r for r in rows if r['t']]
     if not rows:
-        custom = _custom_note(company, year, lang)
+        custom = _custom_note(company, year, lang, inventory)
         if custom:
             return (f'{year} yılı için onaylı emisyon kaydı yok. {custom}' if lang == 'tr'
                     else f'There are no approved emission entries for {year}. {custom}')
@@ -343,7 +387,7 @@ def _pending_line(e, lang):
 _LIST_MAX = 5
 
 
-def _pending_answer(user, company, lang):
+def _pending_answer(user, company, lang, inventory=None):
     """What is waiting: the count, and up to five of them by name — new
     entries, changes to approved ones and deletion requests told apart."""
     from django.db.models import Q
@@ -355,6 +399,10 @@ def _pending_answer(user, company, lang):
                .filter(Q(status='submitted') | Q(status='approved', delete_requested=True), company=company)
                .select_related('emission_factor', 'replaces_entry__emission_factor')
                .order_by('-created_at'))
+    if inventory is not None:
+        # Only what is waiting inside the active inventory, never another inventory's queue.
+        from emissions.inventory_scope import scope_q
+        entries = entries.filter(scope_q(inventory))
     if not approver:
         entries = entries.filter(user=user)
     n = entries.count()
@@ -367,7 +415,10 @@ def _pending_answer(user, company, lang):
     if approver:
         from questionnaire.models import AdvisorApproval
         advisor = AdvisorApproval.objects.filter(
-            report__company=company, status=AdvisorApproval.Status.PENDING).count()
+            report__company=company, status=AdvisorApproval.Status.PENDING)
+        if inventory is not None:
+            advisor = advisor.filter(report=inventory)
+        advisor = advisor.count()
     if lang == 'tr':
         if approver:
             if not n and not advisor:
@@ -454,14 +505,13 @@ def entry_change_request(user, content, lang):
     return text_out, link
 
 
-def _source_month_answer(company, year, month, flt, labels, lang):
+def _source_month_answer(company, year, month, flt, labels, lang, inventory=None):
     """A source's amount in a month ("Nisan elektrik ne kadardı?"): the
     approved figure, and what is waiting on it."""
     from django.db.models import Sum
     from emissions.inventory import ANNUAL_PREFIX
-    from emissions.models import EmissionEntry
     from emissions.notifications import _unit
-    qs = _source_filter(EmissionEntry.objects.filter(company=company, year=year, month=month)
+    qs = _source_filter(scoped_entries(company, year, inventory).filter(month=month)
                         .exclude(description__startswith=ANNUAL_PREFIX), flt).select_related('emission_factor')
     approved = qs.filter(status='approved')
     label = labels[0] if lang == 'tr' else labels[1]
@@ -488,11 +538,21 @@ def _source_month_answer(company, year, month, flt, labels, lang):
     return out
 
 
-def direct_data_answer(user, content, lang):
+def direct_data_answer(user, content, lang, inventory=None):
     """The look-ups answered from the database even when the AI is up — a
     month's figure for a named source, and the list of what is waiting for
     approval — where a guess would be worse than the stored data. None for
-    anything else (and for a message carrying an amount: that is data entry)."""
+    anything else (and for a message carrying an amount: that is data entry).
+
+    `inventory` is the inventory the user is working in: only its records are read. A question about a
+    year that has several inventories and none active is answered with a request to choose one."""
+    try:
+        return _direct_data_answer(user, content, lang, inventory)
+    except AmbiguousYear as exc:
+        return ambiguous_year_text(exc.year, 'tr' if lang == 'tr' else 'en')
+
+
+def _direct_data_answer(user, content, lang, inventory):
     from companies.utils import get_current_company
     text = content or ''
     if re.search(r'\d{3,}', re.sub(r'\b(19|20)\d\d\b', '', text)):
@@ -504,18 +564,25 @@ def direct_data_answer(user, content, lang):
     m = _YEAR_RE.search(text)
     year = int(m.group(1)) if m else datetime.now(timezone.utc).year
     if _PENDING_WORDS.search(text):
-        return _pending_answer(user, company, lang)
+        return _pending_answer(user, company, lang, inventory)
     source = _source_in(text)
     if source and _QUESTION_WORDS.search(text):
         month = _month_in(text, bool(m))
         if month:
-            return _source_month_answer(company, month[0] or year, month[1], source[0], source[1], lang)
+            return _source_month_answer(company, month[0] or year, month[1], source[0], source[1], lang, inventory)
     return None
 
 
-def local_data_answer(user, content, lang):
+def local_data_answer(user, content, lang, inventory=None):
     """A database answer for a simple question about the company's own data,
-    or None when the message is not one of those questions."""
+    or None when the message is not one of those questions. Scoped to `inventory` like direct_data_answer."""
+    try:
+        return _local_data_answer(user, content, lang, inventory)
+    except AmbiguousYear as exc:
+        return ambiguous_year_text(exc.year, 'tr' if lang == 'tr' else 'en')
+
+
+def _local_data_answer(user, content, lang, inventory):
     from companies.utils import get_current_company
     lang = 'tr' if lang == 'tr' else 'en'
     text = content or ''
@@ -525,30 +592,30 @@ def local_data_answer(user, content, lang):
     m = _YEAR_RE.search(text)
     year = int(m.group(1)) if m else datetime.now(timezone.utc).year
     if _PENDING_WORDS.search(text):
-        return _pending_answer(user, company, lang)
+        return _pending_answer(user, company, lang, inventory)
     source = _source_in(text)
     if source and _QUESTION_WORDS.search(text):
         month = _month_in(text, bool(m))
         if month:
-            return _source_month_answer(company, month[0] or year, month[1], source[0], source[1], lang)
+            return _source_month_answer(company, month[0] or year, month[1], source[0], source[1], lang, inventory)
     if _TOP_WORDS.search(text) and (_SOURCE_WORDS.search(text) or _EMISSION_WORDS.search(text)):
-        return _top_source_answer(company, year, lang)
+        return _top_source_answer(company, year, lang, inventory)
     about_emissions = _EMISSION_WORDS.search(text) or _SCOPE_RE.search(text)
     if _MARKET_RE.search(text) and (about_emissions or _TOTAL_WORDS.search(text)):
-        return _market_answer(company, year, lang)
+        return _market_answer(company, year, lang, inventory)
     if _COMPARE_WORDS.search(text) and (about_emissions or re.search(r'durum|nasıl|nasil|doing|how are we', text, re.I)):
-        return _compare_answer(company, year, lang)
+        return _compare_answer(company, year, lang, inventory)
     facility = _facility_in(company, text)
     if facility and about_emissions:
-        return _facility_answer(company, year, facility, lang)
+        return _facility_answer(company, year, facility, lang, inventory)
     if _TOTAL_WORDS.search(text) and about_emissions:
         month = _month_in(text, bool(m))
         if month:
-            return _month_answer(company, month[0] or year, month[1], lang)
+            return _month_answer(company, month[0] or year, month[1], lang, inventory)
         scope = _SCOPE_RE.search(text)
         if scope:
-            return _scope_answer(company, year, int(scope.group(1)), lang)
-        return _total_answer(company, year, lang)
+            return _scope_answer(company, year, int(scope.group(1)), lang, inventory)
+        return _total_answer(company, year, lang, inventory)
     return None
 
 

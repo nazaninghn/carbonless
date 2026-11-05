@@ -175,6 +175,8 @@ class QuestionnaireTaggingTests(_Base):
 
 class CutoverSemanticsTests(_Base):
     def test_parsing_and_fail_closed(self):
+        CarbonReport.objects.filter(pk=self.report.pk).update(ownership_linked=False)   # the proxy is for unlinked ones
+        self.report.refresh_from_db()
         for raw in ('', '   ', 'garbage', '2025-01-01T00:00:00', '2025-01-01', None):
             with self.settings(INVENTORY_OWNERSHIP_CUTOVER=raw):
                 self.assertIsNone(ownership_cutover(), raw)
@@ -189,6 +191,7 @@ class CutoverSemanticsTests(_Base):
             self.assertEqual(ownership_cutover(), datetime(2025, 1, 1, tzinfo=dt_timezone.utc))   # compared in UTC
 
     def test_the_boundary_is_inclusive_and_exact(self):
+        CarbonReport.objects.filter(pk=self.report.pk).update(ownership_linked=False)   # the proxy is for unlinked ones
         moment = datetime(2030, 6, 1, 12, 0, 0, tzinfo=dt_timezone.utc)
         with self.settings(INVENTORY_OWNERSHIP_CUTOVER=moment.isoformat()):
             for created, expected in ((moment, True), (moment + timedelta(microseconds=1), True),
@@ -216,6 +219,7 @@ class PreOwnershipInventoryTests(_Base):
         nulls = self._null_row('legacy', month=3).pk
         for raw in self._each_unusable_cutover():
             with self.settings(INVENTORY_OWNERSHIP_CUTOVER=raw):
+                CarbonReport.objects.filter(pk=self.report.pk).update(ownership_linked=False)   # an unlinked legacy inventory
                 before = state_dump()
                 self._assert_refused(self._patch_step(answer={'natural_gas': '99999 m³'}),
                                      'inventory_not_ownership_scoped')
@@ -231,6 +235,7 @@ class PreOwnershipInventoryTests(_Base):
 
     def test_an_empty_pre_ownership_draft_cannot_be_deleted_either(self):
         with self.settings(INVENTORY_OWNERSHIP_CUTOVER=FUTURE):
+            CarbonReport.objects.filter(pk=self.report.pk).update(ownership_linked=False)   # an unlinked legacy inventory
             before = state_dump()
             self._assert_refused(self.client.delete(f'/api/questionnaire/{self.report.id}/'),
                                  'inventory_not_ownership_scoped')
@@ -239,6 +244,7 @@ class PreOwnershipInventoryTests(_Base):
     def test_a_sign_off_step_is_not_entry_producing(self):
         # The sign-off steps never need the ownership boundary: they create no entries and skip the sync.
         with self.settings(INVENTORY_OWNERSHIP_CUTOVER=FUTURE):
+            CarbonReport.objects.filter(pk=self.report.pk).update(ownership_linked=False)   # an unlinked legacy inventory
             res = self.client.patch(f'/api/questionnaire/{self.report.id}/step/', {
                 'step': '7C-1', 'data': {'answer': 'all_complete'}}, format='json')
             self.assertNotEqual(res.status_code, 409, res.content)
@@ -281,6 +287,7 @@ class WorkspaceTaggingTests(_Base):
     def test_a_pre_ownership_inventory_is_refused_before_any_field_is_written(self):
         self._grid()
         with self.settings(INVENTORY_OWNERSHIP_CUTOVER=FUTURE):
+            CarbonReport.objects.filter(pk=self.report.pk).update(ownership_linked=False)   # an unlinked legacy inventory
             before = state_dump()
             self._assert_refused(self._upsert(), 'inventory_not_ownership_scoped')
             self.assertEqual(state_dump(), before)
@@ -296,11 +303,10 @@ class WorkspaceTaggingTests(_Base):
         self.assertFalse(ReportField.objects.exists())
 
 
-class ConstraintStillInForceTests(_Base):
-    def test_a_second_inventory_for_the_same_company_and_year_is_still_refused(self):
-        with self.assertRaises(IntegrityError), transaction.atomic():
-            CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2025)
+class SameYearAllowedTests(_Base):
+    def test_a_second_inventory_for_the_same_company_and_year_is_allowed(self):
+        second = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2025)
+        self.assertNotEqual(second.pk, self.report.pk)
         r = self.client.post('/api/questionnaire/start/', {'reporting_year': 2025, 'title': 'again', 'force_new': True},
                              format='json')
-        self.assertEqual(r.status_code, 409, r.content)
-        self.assertEqual(r.data['code'], 'inventory_exists_for_year')
+        self.assertEqual(r.status_code, 201, r.content)

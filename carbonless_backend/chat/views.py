@@ -127,7 +127,7 @@ def _build_platform_knowledge_prompt():
 
 PLATFORM KNOWLEDGE (Carbonless — explain in plain words, in the user's language):
 CARBON INVENTORY = the step-by-step questionnaire that builds the company's annual ISO 14064-1 greenhouse-gas inventory. It is the main way to produce the annual figures and the audit-ready report.
-- Start: Carbon Inventory page > "Start" (or "Create your first inventory"), choose the reporting year. Several inventories can exist, one per year.
+- Start: Carbon Inventory page > "Start" (or "Create your first inventory"), choose the reporting year. Several inventories can exist, even for the same year; each one keeps its own answers, records and reports.
 - Seven stages: 1 Company Profile, 2 Organizational Boundary, 3 Scope 1, 4 Scope 2, 5 Scope 3, 6 Exclusions and Assumptions, 7 Report Generation (review and sign-off by an authorized person).
 - The user only describes their company and activities (fuel, vehicles, electricity, purchases, travel, waste...); the platform picks the emission factors and calculates. Estimates are accepted when exact data is missing.
 - Progress is saved automatically as a draft ("Draft Inventories"); use "Continue" to resume. A signed inventory moves to "Completed Inventories"; "Edit" changes any answer later and the numbers recalculate ("Sign again" re-signs after edits).
@@ -137,9 +137,13 @@ OTHER PLACES: Dashboard (totals, trend, targets) · AI Chat (this chat: write mo
 Only approved entries count in totals. Inventory amounts are annual figures; chat/form entries are monthly."""
 
 
-def _get_inventory_context(company):
+def _get_inventory_context(company, inventory=None):
     """The company's carbon inventories (questionnaires) for the AI prompt, so it
-    can say what exists, how far along each is, and what to do next."""
+    can say what exists, how far along each is, and what to do next.
+
+    With an active `inventory` only THAT inventory is described (its name, year, progress): the
+    assistant gets nothing of another inventory, the same year's included. How many others exist is
+    the only thing said about them."""
     try:
         from questionnaire.models import CarbonReport, AdvisorApproval
         from questionnaire.views import _progress
@@ -148,6 +152,12 @@ def _get_inventory_context(company):
             CarbonReport.objects.filter(company=company)
             .prefetch_related('steps', 'advisor_approvals').order_by('-updated_at')[:8]
         )
+        others = 0
+        if inventory is not None:
+            others = CarbonReport.objects.filter(company=company).exclude(pk=inventory.pk).count()
+            reports = [r for r in reports if r.pk == inventory.pk] or list(
+                CarbonReport.objects.filter(pk=inventory.pk, company=company)
+                .prefetch_related('steps', 'advisor_approvals'))
         if not reports:
             return (
                 '\n\n--- INVENTORY CONTEXT ---\n'
@@ -156,6 +166,9 @@ def _get_inventory_context(company):
                 '--- END INVENTORY CONTEXT ---'
             )
         lines = ['', '', '--- INVENTORY CONTEXT (the company\'s carbon inventories; use to answer questions about them) ---']
+        if inventory is not None:
+            lines = ['', '', '--- INVENTORY CONTEXT (the inventory the user is working in right now; every figure and '
+                     'answer below belongs to it alone — never mix in another inventory, even of the same year) ---']
         for r in reports:
             prog = _progress(r.steps.count(), r.status, r.client_progress)
             pending = sum(1 for a in r.advisor_approvals.all() if a.status == AdvisorApproval.Status.PENDING)
@@ -168,6 +181,9 @@ def _get_inventory_context(company):
             if pending:
                 line += f' | {pending} advisor approval(s) pending'
             lines.append(line)
+        if others:
+            lines.append(f'({others} other inventor{"y" if others == 1 else "ies"} of the company exist; '
+                         'their data is not available in this conversation — the user switches inventory on the dashboard.)')
         lines.append('--- END INVENTORY CONTEXT ---')
         return '\n'.join(lines)
     except Exception:
@@ -233,23 +249,28 @@ def _build_scope3_category_prompt():
     return '\n'.join(lines)
 
 
-def _get_user_emission_context(user):
-    """Everything the AI knows about this user's company: emission data plus inventories."""
-    context = _get_emission_data_context(user)
+def _get_user_emission_context(user, inventory=None):
+    """Everything the AI knows about this user's company: emission data plus inventories.
+    With an active `inventory`, only that inventory's records and description."""
+    context = _get_emission_data_context(user, inventory)
     try:
         from companies.utils import get_current_company
         company = get_current_company(user)
     except Exception:
         company = None
-    return context + (_get_inventory_context(company) if company else '')
+    return context + (_get_inventory_context(company, inventory) if company else '')
 
 
-def _get_emission_data_context(user):
-    """Fetch the user's real emission data to inject into the AI system prompt."""
+def _get_emission_data_context(user, inventory=None):
+    """Fetch the user's real emission data to inject into the AI system prompt.
+
+    Selection only (which records), no calculation. With an active `inventory` its records are read for
+    its own reporting year, and no fallback to another year is made (that year's records could belong to
+    another inventory). Without one, a year that has several inventories gives no figures at all."""
     try:
         from django.db.models import Sum
-        from emissions.models import EmissionEntry
         from companies.utils import get_current_company
+        from .local_answers import AmbiguousYear, scoped_entries
 
         company = get_current_company(user)
         if not company:
@@ -259,18 +280,30 @@ def _get_emission_data_context(user):
         # which diverges from UTC on non-UTC servers and breaks year boundaries at
         # midnight.  datetime.now(timezone.utc) is always correct regardless of the
         # server's TZ setting.
-        year = datetime.now(timezone.utc).year
-        entries = EmissionEntry.objects.filter(company=company, year=year).filter(status='approved').select_related('emission_factor')
+        year = inventory.reporting_year if inventory is not None and inventory.reporting_year else datetime.now(timezone.utc).year
+
+        def _approved(for_year):
+            return scoped_entries(company, for_year, inventory).filter(status='approved').select_related('emission_factor')
+
+        try:
+            entries = _approved(year)
+        except AmbiguousYear:
+            return (f'\n\nDATA CONTEXT:\nCompany: {company.legal_entity_name}\n'
+                    f'Several inventories exist for {year} and none is selected, so no figures are given: '
+                    'ask the user to choose an inventory on the dashboard.')
         # Fix #71 (query 1 of 2): combined total + count in one aggregate instead of
         # separate aggregate(Sum) + .count() — saves one DB round-trip per AI message.
         agg = entries.aggregate(t=Sum('calculated_co2e_kg'), count=Count('id'))
         total_kg = float(agg['t'] or 0)
         entry_count = agg['count'] or 0
 
-        if total_kg == 0:
+        if total_kg == 0 and inventory is None:
             # Try previous year
             year -= 1
-            entries = EmissionEntry.objects.filter(company=company, year=year).filter(status='approved').select_related('emission_factor')
+            try:
+                entries = _approved(year)
+            except AmbiguousYear:
+                return (f'\n\nDATA CONTEXT:\nCompany: {company.legal_entity_name}\nNo emission entries recorded yet.')
             agg = entries.aggregate(t=Sum('calculated_co2e_kg'), count=Count('id'))
             total_kg = float(agg['t'] or 0)
             entry_count = agg['count'] or 0
@@ -1884,11 +1917,36 @@ def _tag_facility(data, user, content, lang=''):
         ChatMessage.objects.filter(pk=data['id'], role='assistant').update(content=data['content'])
 
 
+def _bind_inventory(session, inventory, user_msg):
+    """Keep what the model remembers of a conversation inside ONE inventory.
+
+    The session records the inventory it is about. When the user's active inventory changes, the earlier
+    turns (which may quote figures of the previous inventory) stay on screen but are no longer sent to
+    the model: `state['history_from']` is the first message that may be used. Returns that message id."""
+    state = dict(session.state or {})
+    new_id = inventory.pk if inventory is not None else None
+    if session.inventory_id != new_id:
+        if session.messages.exclude(pk=user_msg.pk).exists():
+            state['history_from'] = user_msg.pk
+        session.inventory = inventory
+        session.state = state
+        session.save(update_fields=['inventory', 'state'])
+    return int(state.get('history_from') or 0)
+
+
 def _send_message(request, session_id):
     try:
         session = _my_sessions(request.user).get(id=session_id)
     except ChatSession.DoesNotExist:
         return Response({'error': 'Session not found'}, status=404)
+
+    # The inventory the user is working in (named by the client, checked against the caller's company).
+    from companies.utils import get_current_company as _current_company
+    from emissions.inventory_link import InventorySelectionError, explicit_inventory_id, resolve_inventory
+    try:
+        chat_inventory = resolve_inventory(_current_company(request.user), explicit_inventory_id(request.data))
+    except InventorySelectionError as exc:
+        return Response(exc.payload(), status=400)
 
     content = (request.data.get('content') or '').strip()
     ui_language = (request.data.get('language') or '').strip().lower()
@@ -1949,7 +2007,8 @@ def _send_message(request, session_id):
     # Fix #61: Limit the DB query to the last 20 messages so we never load an
     # unbounded message history into Python.  _call_groq already slices [-20:]
     # but that still triggered a full table scan for long sessions.
-    recent = session.messages.order_by('-created_at')[:20]
+    history_from = _bind_inventory(session, chat_inventory, user_msg)
+    recent = session.messages.filter(pk__gte=history_from).order_by('-created_at')[:20]
     history = [
         {'role': m.role, 'content': m.content}
         for m in reversed(list(recent))
@@ -2008,7 +2067,7 @@ def _send_message(request, session_id):
         if topic:
             return _refer_to_support(request.user, session, content, lang, topic)
         asked = entry_change_request(request.user, content, lang)
-        direct = None if asked else direct_data_answer(request.user, content, lang)
+        direct = None if asked else direct_data_answer(request.user, content, lang, chat_inventory)
         if asked or direct:
             text, ui = (asked[0], {'link': asked[1]}) if asked else (direct, None)
             msg = ChatMessage.objects.create(session=session, role='assistant', content=text, ui=ui or {})
@@ -2175,7 +2234,7 @@ def _send_message(request, session_id):
     from .local_answers import local_data_answer, ai_unavailable_text
 
     if nlu_hard_failure:
-        local = local_data_answer(request.user, content, ui_language)
+        local = local_data_answer(request.user, content, ui_language, chat_inventory)
         if local:
             return _local_reply(local, 'local_data_answer')
         # The message carried an amount (that's why it reached this branch) but
@@ -2197,7 +2256,7 @@ def _send_message(request, session_id):
 
     # ─── 3) GROQ CONVERSATIONAL: for general questions, analysis ──────────
     if _get_groq_client() is None:
-        local = local_data_answer(request.user, content, ui_language)
+        local = local_data_answer(request.user, content, ui_language, chat_inventory)
         if local:
             return _local_reply(local, 'local_data_answer')
         return Response({
@@ -2207,12 +2266,12 @@ def _send_message(request, session_id):
         }, status=503)
 
     # Fetch user's real emission data to give AI full context
-    user_context = _get_user_emission_context(request.user)
+    user_context = _get_user_emission_context(request.user, chat_inventory)
 
     # Call Groq
     ai_text, error, status_code = _call_groq(history, user_context, ui_language)
     if error:
-        local = local_data_answer(request.user, content, ui_language)
+        local = local_data_answer(request.user, content, ui_language, chat_inventory)
         if local:
             return _local_reply(local, 'local_data_answer')
         text = ai_unavailable_text(ui_language, rate_limited=status_code == 429)
@@ -2347,7 +2406,8 @@ def confirm_entry(request):
         now = datetime.now(timezone.utc)
         existing = find_duplicate(
             get_current_company(request.user), factor,
-            entry_data.get('year') or now.year, entry_data.get('month') or now.month, qty)
+            entry_data.get('year') or now.year, entry_data.get('month') or now.month, qty,
+            inventory=chat_inventory)
         if existing:
             return Response({
                 'error': 'An entry with the same source, period and quantity already exists.',
@@ -2356,13 +2416,14 @@ def confirm_entry(request):
             }, status=409)
         from emissions.duplicates import find_annual_overlap
         overlap = find_annual_overlap(get_current_company(request.user), factor,
-                                      entry_data.get('year') or now.year, _chat_facility(request.user, entry_data))
+                                      entry_data.get('year') or now.year, _chat_facility(request.user, entry_data),
+                                      inventory=chat_inventory)
         if overlap:
             return Response({'error': overlap['en'], 'code': 'annual_overlap', **overlap}, status=409)
         from emissions.duplicates import find_yearly_repeat
         repeat = find_yearly_repeat(get_current_company(request.user), factor,
                                     entry_data.get('year') or now.year, entry_data.get('month') or now.month,
-                                    _chat_facility(request.user, entry_data))
+                                    _chat_facility(request.user, entry_data), inventory=chat_inventory)
         if repeat:
             return Response({'error': repeat['en'], 'code': 'yearly_repeat', **repeat}, status=409)
     # Same source and month, another amount: a correction ("4000 değil 3500")
@@ -2380,7 +2441,8 @@ def confirm_entry(request):
         now = datetime.now(timezone.utc)
         same = find_same_period(company, factor, entry_data.get('year') or now.year,
                                 entry_data.get('month') or now.month,
-                                _chat_facility(request.user, entry_data), request.user)
+                                _chat_facility(request.user, entry_data), request.user,
+                                inventory=chat_inventory)
         if same and qty is not None and float(qty) != same['existing_quantity']:
             return Response({'error': same['message_en'], 'code': 'same_period',
                              'new_quantity': float(qty), **same}, status=409)

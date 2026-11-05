@@ -50,6 +50,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
     # For entries the questionnaire created: which inventory and question they
     # come from, so the UI can send the user there to correct them.
     questionnaire_source = serializers.SerializerMethodField()
+    inventory_id = serializers.IntegerField(read_only=True)
     # How a questionnaire entry was calculated, {"tr", "en"}; the question's
     # number ("68" -> "Soru 68"); and, for a change waiting for review, the
     # approved value it would replace.
@@ -101,9 +102,9 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if not group:
             return None
         cache = self.context.setdefault('_replaces', {})
-        key = (obj.company_id, obj.year, group)
+        key = (obj.company_id, obj.year, group, obj.inventory_id)
         if key not in cache:
-            cache[key] = [e for e in _step_entries(obj.company_id, obj.year, group).select_related('emission_factor')
+            cache[key] = [e for e in _step_entries(obj.company_id, obj.year, group, obj.inventory).select_related('emission_factor')
                           if e.status == 'approved']
         approved = cache[key]
         # The approved row of the same facility / site (an answer asked per
@@ -142,9 +143,9 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if not group:
             return []
         cache = self.context.setdefault('_removed', {})
-        key = (obj.company_id, obj.year, group)
+        key = (obj.company_id, obj.year, group, obj.inventory_id)
         if key not in cache:
-            rows = list(_step_entries(obj.company_id, obj.year, group)
+            rows = list(_step_entries(obj.company_id, obj.year, group, obj.inventory)
                         .select_related('emission_factor', 'facility'))
             approved = [e for e in rows if e.status == 'approved']
             waiting = [e for e in rows if e.status == 'submitted']
@@ -168,6 +169,9 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
         if not desc.startswith('Questionnaire step '):
             return None
         step_id = desc[len('Questionnaire step '):].split(' ')[0]
+        if obj.inventory_id:
+            # The entry names its inventory: that is the one to open, not "the newest of that year".
+            return {'report_id': obj.inventory_id, 'step_id': step_id}
         cache = self.context.setdefault('_inventory_by_year', {})
         key = (obj.company_id, obj.year)
         if key not in cache:
@@ -231,6 +235,7 @@ class EmissionEntrySerializer(serializers.ModelSerializer):
             'proof_document',
             'status', 'approved_at', 'rejected_reason',
             'created_at', 'updated_at', 'entered_by', 'is_mine', 'proof_available', 'questionnaire_source',
+            'inventory_id',
             'calc_detail', 'question_number', 'replaces', 'removed_by_change', 'replaces_entry', 'delete_requested',
             'change_batch', 'change_question', 'facility_country', 'factor_country_mismatch',
         ]
@@ -338,8 +343,8 @@ class ReductionTargetSerializer(serializers.ModelSerializer):
         # (see ReductionTargetViewSet.perform_create) — must stay read-only
         # or a PATCH could reassign a target to an unrelated company.
         # 'inventory' (multi-inventory link) likewise: with '__all__' it would
-        # accept any inventory id, another company's included. It will be set
-        # server-side from the active inventory; until then clients can't set it.
+        # accept any inventory id, another company's included. Reduction targets are
+        # deliberately company-wide (see ReductionTargetViewSet), so it stays unset.
         read_only_fields = ['user', 'company', 'created_at', 'inventory']
 
 

@@ -20,7 +20,7 @@ def is_annual(entry):
     return (entry.description or '').startswith(ANNUAL_PREFIX)
 
 
-def counted_custom_requests(company, year):
+def counted_custom_requests(company, year, inventory=None):
     """The approved custom requests the dashboard adds to its totals next to the approved
     entries: approved, an amount calculated, and not a facility electricity factor (that one
     replaces the factor of the facility's kWh instead of adding an amount of its own).
@@ -28,19 +28,28 @@ def counted_custom_requests(company, year):
     from .models import CustomEmissionRequest
     if not company:
         return CustomEmissionRequest.objects.none()
+    if inventory is not None:
+        # One inventory's own requests (emissions/inventory_scope.py), not the company's whole year.
+        from .inventory_scope import customs_of
+        return customs_of(inventory).filter(
+            status='approved', calculated_co2e_kg__isnull=False, electricity_method='')
     return CustomEmissionRequest.objects.filter(
         company=company, year=year, status='approved', calculated_co2e_kg__isnull=False, electricity_method='')
 
 
-def approved_year_total_kg(company, year):
+def approved_year_total_kg(company, year, inventory=None):
     """Everything approved for the year, as the dashboard's total adds it up: the approved
     entries (questionnaire, form, chat, Workspace) plus the counted custom requests."""
     from .models import EmissionEntry
     if not company:
         return 0.0
-    entries = EmissionEntry.objects.filter(company=company, year=year, status='approved')
+    if inventory is not None:
+        from .inventory_scope import entries_of
+        entries = entries_of(inventory).filter(status='approved')
+    else:
+        entries = EmissionEntry.objects.filter(company=company, year=year, status='approved')
     return float((entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-                 + (counted_custom_requests(company, year).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0))
+                 + (counted_custom_requests(company, year, inventory).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0))
 
 
 def monthly_split(queryset):
@@ -129,7 +138,7 @@ def not_counted_note(info, tr=False):
     return ' '.join(out)
 
 
-def previous_year_change(company, year, current_kg, today=None):
+def previous_year_change(company, year, current_kg, today=None, inventory=None):
     """How *year* compares with the year before, for the dashboard:
     {'previous_year', 'previous_kg', 'current_kg', 'change_pct', 'months'}.
 
@@ -147,16 +156,27 @@ def previous_year_change(company, year, current_kg, today=None):
         return None
     if not company or year > today.year:
         return None
-    prev_qs = EmissionEntry.objects.filter(company=company, year=year - 1, status='approved')
+    prev_inventory = None
+    if inventory is not None:
+        # Compared with the previous year's inventory only when that year has exactly one: with several,
+        # which one is "the" previous year is not for the server to guess, so there is no comparison.
+        from .inventory_scope import entries_of, sole_inventory_for
+        prev_inventory = sole_inventory_for(company, year - 1)
+        if prev_inventory is None:
+            return None
+        prev_qs = entries_of(prev_inventory).filter(status='approved')
+    else:
+        prev_qs = EmissionEntry.objects.filter(company=company, year=year - 1, status='approved')
     if year < today.year:
         prev_kg = float(prev_qs.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
-        prev_kg += float(CustomEmissionRequest.objects.filter(
-            company=company, year=year - 1, status='approved', calculated_co2e_kg__isnull=False,
-        electricity_method='',
-        ).aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
+        prev_kg += float(counted_custom_requests(company, year - 1, prev_inventory).aggregate(
+            t=Sum('calculated_co2e_kg'))['t'] or 0)
         cur_kg, months = float(current_kg or 0), 12
     else:
-        cur_qs = EmissionEntry.objects.filter(company=company, year=year, status='approved')
+        if inventory is not None:
+            cur_qs = entries_of(inventory).filter(status='approved')
+        else:
+            cur_qs = EmissionEntry.objects.filter(company=company, year=year, status='approved')
         if (cur_qs.filter(description__startswith=ANNUAL_PREFIX).exists()
                 or prev_qs.filter(description__startswith=ANNUAL_PREFIX).exists()):
             return None

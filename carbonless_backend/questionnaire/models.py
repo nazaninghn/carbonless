@@ -102,6 +102,12 @@ class CarbonReport(models.Model):
     # them can write until the duplicate is resolved. db_default: instances still
     # running the code from before this column insert reports without it.
     legacy_duplicate_year = models.BooleanField(default=False, db_default=False)
+    # Multi-inventory: True when every record of this inventory carries its inventory_id, so it is read and
+    # written by inventory_id alone. Every inventory created from now on is True (no environment setting
+    # involved). Migration 0015 set it to False for the inventories that existed before, then back to True
+    # for each one whose records could be attributed unambiguously (the only inventory of its company and
+    # year). A False inventory keeps the old reading of its unassigned (NULL) records, nothing is hidden.
+    ownership_linked = models.BooleanField(default=True, db_default=True)
     # Question ids (step ids) the user marked "I don't know — answer later".
     # A pending question has NO ReportStep and no emission entry: it is simply
     # not answered yet, so progress, completion, reports and calculations treat
@@ -113,15 +119,7 @@ class CarbonReport(models.Model):
 
     class Meta:
         ordering = ['-created_at']
-        constraints = [
-            # Entries are stored per company and year: two inventories of one year share
-            # (and overwrite) one set of numbers. Rows flagged legacy_duplicate_year are the
-            # members of duplicate groups from before this rule; they are left as they are.
-            models.UniqueConstraint(
-                fields=['company', 'reporting_year'],
-                condition=models.Q(reporting_year__isnull=False, legacy_duplicate_year=False),
-                name='uniq_inventory_per_company_year'),
-        ]
+        constraints = []
 
     def __str__(self):
         return f"{self.company.legal_entity_name} — {self.reporting_year or 'Draft'}"

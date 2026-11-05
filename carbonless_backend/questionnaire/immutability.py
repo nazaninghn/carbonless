@@ -122,6 +122,11 @@ def ownership_cutover():
 
 
 def is_ownership_scoped(report):
+    # An inventory whose records all carry its id (every inventory created since multi-inventory support,
+    # and each legacy one whose records could be attributed unambiguously by migration 0015). No
+    # environment setting is involved. The cutover below remains for the inventories that are not linked.
+    if getattr(report, 'ownership_linked', False):
+        return True
     cutover = ownership_cutover()
     created = getattr(report, 'created_at', None)
     if cutover is None or created is None or timezone.is_naive(created):
@@ -140,7 +145,7 @@ def _state(report):
     pk = getattr(report, 'pk', None)
     if pk is None:
         return report
-    return CarbonReport.objects.filter(pk=pk).only('signed_at', 'status', 'created_at').first() or report
+    return CarbonReport.objects.filter(pk=pk).only('signed_at', 'status', 'created_at', 'ownership_linked').first() or report
 
 
 def assert_not_signed(report):
@@ -199,7 +204,7 @@ def lock_and_check(report, step=None, entry_producing=False):
 
     def gate():
         touched = CarbonReport.objects.filter(pk=pk, signed_at__isnull=True).update(signed_at=F('signed_at'))
-        state = CarbonReport.objects.filter(pk=pk).only('signed_at', 'status', 'created_at').first()
+        state = CarbonReport.objects.filter(pk=pk).only('signed_at', 'status', 'created_at', 'ownership_linked').first()
         if state is None:
             raise Http404('Inventory not found.')
         if not touched:

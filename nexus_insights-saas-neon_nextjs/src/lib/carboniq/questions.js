@@ -197,8 +197,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Example: ABC Technology Consulting Inc.',
     },
     helper: {
-      tr: 'Ticaret sicilinde kayıtlı tam unvanınızı girin. Rapor kapağında ve resmi belgede bu isim kullanılacak.',
-      en: 'Enter the full legal name registered in the trade registry. This name will be used on the report cover and official document.',
+      tr: 'Ticaret sicilinde kayıtlı tam unvanınızı girin. Rapor kapağında ve resmi belgelerde bu unvan kullanılacak.',
+      en: 'Enter the full legal name registered in the trade registry. This name will be used on the report cover and in official documents.',
     },
     validate: {
       requiredMessage: {
@@ -269,7 +269,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Şirketin ticaret sicilinde kayıtlı olduğu ülke ve şehri seçin. Birden fazla ülkede tesis varsa ana merkezi yazın — diğerleri Aşama 2\'de eklenecek.',
-      en: 'Select the country and city where the company is legally registered. If you have facilities in multiple countries, enter the headquarters here — others will be added in Step 2.',
+      en: 'Select the country and city where the company is legally registered. If you have facilities in multiple countries, enter the headquarters here — others will be added in Stage 2.',
     },
     options: [
       { value: 'TR', label: { tr: 'Türkiye', en: 'Turkey' }, efSuggestion: 'DEFRA_TUIK' },
@@ -510,16 +510,16 @@ export const CARBONIQ_QUESTIONS = [
     // Every field is optional: an inventory is valid without any of them, and
     // the report prints "Not declared" for whatever is left blank. They are
     // asked together because they are all the same kind of thing — what the
-    // report states about the organisation on its first page.
+    // report states about the organization on its first page.
     required: false,
     reportField: 'company.iso_declaration',
     text: {
       tr: 'Raporda yer alacak kuruluş bilgilerini tamamlayın.',
-      en: 'Complete the organisation details that appear in your report.',
+      en: 'Complete the organization details that appear in your report.',
     },
     helper: {
       tr: 'Bu alanlar tam ISO 14064-1 raporunun "Kuruluş Bilgileri" tablosunda yayımlanır. Tamamı isteğe bağlıdır — boş bırakılanlar raporda "Beyan edilmedi" olarak görünür ve daha sonra Şirket Ayarları’ndan da doldurulabilir.',
-      en: 'These are published in the "Organisational Information" table of the full ISO 14064-1 report. All are optional — anything left blank appears there as "Not declared", and can be filled in later from Company Settings.',
+      en: 'These are published in the "Organizational Information" table of the full ISO 14064-1 report. All are optional — anything left blank appears there as "Not declared", and can be filled in later from Company Settings.',
     },
     fields: [
       {
@@ -606,7 +606,7 @@ export const CARBONIQ_QUESTIONS = [
     systemMessages: {
       selected: {
         tr: 'Kuruluş bilgileri kaydedildi. Bu bilgiler raporunuzun ilk tablosunda yer alacak.',
-        en: 'Organisation details saved. These appear in the first table of your report.',
+        en: 'Organization details saved. These appear in the first table of your report.',
       },
     },
     next: 'B1',
@@ -690,7 +690,7 @@ export const CARBONIQ_QUESTIONS = [
     maxLength: 200,
     reportField: 'company.organization_description',
     text: {
-      tr: 'Şirketinizin faaliyetini kısaca tanımlayın.',
+      tr: 'Şirketinizin ana faaliyetini kısaca tanımlayın.',
       en: 'Briefly describe your company\'s main business activity.',
     },
     placeholder: {
@@ -699,7 +699,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'ISO 14064-1 raporunun "Kuruluş Tanımı" bölümünde aynen kullanılacak. Sade ve açıklayıcı bir cümle yeterli. En fazla 200 karakter.',
-      en: 'Will be used verbatim in the "Organization Description" section of the ISO 14064-1 report. A simple and clear sentence is sufficient. Maximum 200 characters.',
+      en: 'It is used verbatim in the "Organization Description" section of the ISO 14064-1 report. A simple and clear sentence is sufficient. Maximum 200 characters.',
     },
     validate: {
       requiredMessage: {
@@ -778,7 +778,7 @@ export const CARBONIQ_QUESTIONS = [
     placeholder: { tr: 'Örn: 3', en: 'Example: 3' },
     helper: {
       tr: 'Ofis, fabrika, depo, şube gibi tüm fiziksel lokasyonları sayın. Her lokasyon için ayrı emisyon verisi gireceksiniz. Bu sayı Aşama 2\'ye otomatik taşınacak.',
-      en: 'Count all physical locations including offices, factories, warehouses, and branches. You will enter separate emission data for each. This number will automatically carry to Stage 2.',
+      en: 'Count all physical locations including offices, factories, warehouses, and branches. You will enter separate emission data for each. This number is carried over to Stage 2 automatically.',
     },
     validate: {
       requiredMessage: { tr: 'Lokasyon sayısı zorunludur.', en: 'Location count is required.' },
@@ -842,7 +842,7 @@ export const CARBONIQ_QUESTIONS = [
     required: false,
     reportField: 'company.revenue_band',
     text: {
-      tr: 'Yıllık ciro aralığınız nedir? (Opsiyonel)',
+      tr: 'Yıllık ciro aralığınız nedir? (İsteğe bağlı)',
       en: 'What is your approximate annual revenue range? (Optional)',
     },
     placeholder: {
@@ -889,7 +889,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'company.has_subsidiaries',
     text: {
-      tr: 'Bağlı şirket veya iştirakınız var mı?',
+      tr: 'Bağlı şirket veya iştirakiniz var mı?',
       en: 'Does your company have any subsidiaries or affiliates?',
     },
     helper: {
@@ -1060,7 +1060,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'report.boundary_approach',
     text: {
-      tr: 'Organizasyon sınırı raporlama yaklaşımı nedir?',
+      tr: 'Hangi organizasyon sınırı yaklaşımını kullanacaksınız?',
       en: 'Which organizational boundary approach will you use?',
     },
     helper: {
@@ -2640,7 +2640,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Yakıt faturası varsa onu kullanın — daha doğru sonuç verir (Seviye 1) ve her araç tipi için hesaplanır. Km yalnızca binek araçlarda hesaplanır (Seviye 2); diğer araç tipleri için yakıt litresi girin.',
-      en: 'If you have fuel invoices, use them — more accurate (Level 1) and calculated for every vehicle type. Km is only calculated for passenger cars (Level 2); for other vehicle types enter fuel litres.',
+      en: 'If you have fuel invoices, use them — more accurate (Level 1) and calculated for every vehicle type. Km is only calculated for passenger cars (Level 2); for other vehicle types enter fuel in litres.',
     },
     options: [
       { value: 'fuel_litres', label: { tr: 'Yıllık yakıt tüketimi (litre) — Seviye 1 — tercih edilen', en: 'Annual fuel consumption (litres) — Level 1 — preferred' }, dataQuality: 'high' },
@@ -2808,7 +2808,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Kalsinasyon, metal eritme, kimyasal reaksiyon, atık su arıtma gibi yanma dışı süreçler bu kapsamda. Üretim yapıyorsanız muhtemelen bu tür emisyonlarınız vardır.',
-      en: 'Non-combustion processes such as calcination, metal melting, chemical reactions, wastewater treatment fall under this scope. If you manufacture, you likely have such emissions.',
+      en: 'Non-combustion processes such as calcination, metal melting, chemical reactions and wastewater treatment fall under this scope. If you manufacture, you likely have such emissions.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -3028,7 +3028,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope1.fugitive.equipment_list',
     notCalculated: {
-      tr: 'Kaçak emisyonlar (soğutucu gaz, SF₆, metan) henüz hesaplanmıyor: GWP değerleri AR6 olarak birleştirilene kadar. Cevaplarınız raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
+      tr: 'Kaçak emisyonlar (soğutucu gaz, SF₆, metan) henüz hesaplanmıyor: GWP değerleri AR6 olarak birleştirilene kadar. Yanıtlarınız raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
       en: 'Fugitive emissions (refrigerants, SF₆, methane) are not calculated yet: not until the GWP values are unified to AR6. Your answers are shown in the report and listed as "Not calculated"; they are not added to the totals.',
     },
     loopType: 'per_fugitive',
@@ -4090,7 +4090,7 @@ export const CARBONIQ_QUESTIONS = [
     ],
     systemMessages: {
       steam: {
-        tr: 'Buhar için basınç (bar) ve sıcaklık (°C) değerlerini biliyorsanız daha doğru emisyon faktörü uygulanabilir. Opsiyoneldir — bilmiyorsanız genel EF kullanılır.',
+        tr: 'Buhar için basınç (bar) ve sıcaklık (°C) değerlerini biliyorsanız daha doğru emisyon faktörü uygulanabilir. İsteğe bağlıdir — bilmiyorsanız genel EF kullanılır.',
         en: 'If you know the pressure (bar) and temperature (°C) values for steam, a more accurate emission factor can be applied. This is optional — if unknown, a general EF will be used.',
       },
     },
@@ -4383,7 +4383,7 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'SC-05', label: { tr: 'SC-05 — Makine ve endüstriyel ekipman', en: 'SC-05 — Machinery and industrial equipment' } },
       { value: 'SC-06', label: { tr: 'SC-06 — İnşaat ve tesis hizmetleri', en: 'SC-06 — Construction and facility services' } },
       { value: 'SC-07', label: { tr: 'SC-07 — Profesyonel hizmetler (danışmanlık, hukuk, muhasebe)', en: 'SC-07 — Professional services (consulting, legal, accounting)' } },
-      { value: 'SC-08', label: { tr: 'SC-08 — Lojistik ve taşımacılık hizmetleri (⚠ Kat.4 çakışma kontrolü)', en: 'SC-08 — Logistics and transport services (⚠ Cat.4 overlap check)' } },
+      { value: 'SC-08', label: { tr: 'SC-08 — Lojistik ve taşımacılık hizmetleri (⚠ Kategori 4 çakışma kontrolü)', en: 'SC-08 — Logistics and transport services (⚠ Cat.4 overlap check)' } },
       { value: 'SC-09', label: { tr: 'SC-09 — Gıda ve içecek (kurumsal yemekhane vb.)', en: 'SC-09 — Food and beverages (corporate canteen, etc.)' } },
       { value: 'SC-10', label: { tr: 'SC-10 — Enerji ilişkili ürünler (⚠ K1 çakışma kontrolü)', en: 'SC-10 — Energy-related products (⚠ K1 overlap check)' } },
       { value: 'SC-11', label: { tr: 'SC-11 — Su ve atık su hizmetleri', en: 'SC-11 — Water and wastewater services' } },
@@ -4454,7 +4454,7 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Category] — Do you know the quantity you bought (tonnes, units, etc.)?',
     },
     helper: {
-      tr: 'Opsiyonel. Satın aldığınız miktarı biliyorsanız (kg, adet, m²) Seviye 2\'ye geçebilirsiniz — daha doğru bir sonuç verir.',
+      tr: 'İsteğe bağlı. Satın aldığınız miktarı biliyorsanız (kg, adet, m²) Seviye 2\'ye geçebilirsiniz — daha doğru bir sonuç verir.',
       en: 'Optional. If you know the quantity purchased (kg, units, m²) you can upgrade to Level 2 — gives a more accurate result.',
     },
     options: [
@@ -4553,8 +4553,8 @@ export const CARBONIQ_QUESTIONS = [
       en: '[Category] — Do any suppliers have emission declarations?',
     },
     helper: {
-      tr: 'PCF belgesi, EPD veya tedarikçi GHG raporu varsa girin. Sistem S3 tahminiyle karşılaştırır.',
-      en: 'Enter if you have a PCF certificate, EPD or supplier GHG report. System will compare against the Level 3 estimate.',
+      tr: 'PCF belgesi, EPD veya tedarikçi GHG raporu varsa girin. Sistem Seviye 3 tahminiyle karşılaştırır.',
+      en: 'Enter if you have a PCF certificate, EPD or supplier GHG report. The system will compare it with the Level 3 estimate.',
     },
     placeholder: { tr: 'Tedarikçi adı | tCO₂e veya kg CO₂e/birim | Yıl', en: 'Supplier name | tCO₂e or kg CO₂e/unit | Year' },
     options: [
@@ -4563,11 +4563,11 @@ export const CARBONIQ_QUESTIONS = [
     ],
     systemMessages: {
       low_declaration: {
-        tr: 'Bu tedarikçinin beyanı S3 tahmininden önemli ölçüde düşük. Bu tedarikçi daha yeşil bir tedarik zinciri anlamına gelebilir.',
+        tr: 'Bu tedarikçinin beyanı Seviye 3 tahmininden önemli ölçüde düşük. Bu tedarikçi daha yeşil bir tedarik zinciri anlamına gelebilir.',
         en: 'This supplier\'s declaration is significantly lower than the Level 3 estimate. This supplier may represent a greener supply chain.',
       },
       high_declaration: {
-        tr: 'Bu tedarikçinin beyanı S3 tahmininden çok yüksek. Beyan değerini ve kaynağını kontrol etmenizi öneririz.',
+        tr: 'Bu tedarikçinin beyanı Seviye 3 tahmininden çok yüksek. Beyan değerini ve kaynağını kontrol etmenizi öneririz.',
         en: 'This supplier\'s declaration is much higher than the Level 3 estimate. We recommend verifying the declaration value and source.',
       },
     },
@@ -4664,8 +4664,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Did you purchase any capital goods during this reporting year?',
     },
     helper: {
-      tr: 'Bina, makine, araç, BT altyapısı gibi birden fazla yıl kullanılan büyük yatırımlar bu kapsamda. Sarf malzemeleri Kat.1\'e girer.',
-      en: 'Large investments used for more than one year — buildings, machinery, vehicles, IT infrastructure. Consumables go in Cat.1.',
+      tr: 'Bina, makine, araç, BT altyapısı gibi birden fazla yıl kullanılan büyük yatırımlar bu kapsamda. Sarf malzemeleri Kategori 1\'e girer.',
+      en: 'Large investments used for more than one year — buildings, machinery, vehicles, IT infrastructure. Consumables go in Category 1.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -4693,8 +4693,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'What capital goods did you buy — category, purchase year and amount spent?',
     },
     helper: {
-      tr: 'Her varlık için kategori, satın alma yılı ve tutarı girin. Yıl bu raporlama yılıyla eşleşmiyorsa dışarıda bırakılır — GHG Protocol Kat.2 kuralı.',
-      en: 'Enter category, purchase year and amount for each asset. If the year does not match this reporting year it is excluded — GHG Protocol Cat.2 rule.',
+      tr: 'Her varlık için kategori, satın alma yılı ve tutarı girin. Yıl bu raporlama yılıyla eşleşmiyorsa dışarıda bırakılır — GHG Protocol Kategori 2 kuralı.',
+      en: 'Enter category, purchase year and amount for each asset. If the year does not match this reporting year it is excluded — GHG Protocol Category 2 rule.',
     },
     placeholder: { tr: 'Kategori: Bina | Yıl: 2025 | Tutar: 2.800.000 TL', en: 'Category: Building | Year: 2025 | Amount: 2,800,000 TL' },
     fields: [
@@ -4707,7 +4707,7 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'CG-01', label: { tr: 'CG-01 — Bina ve inşaat', en: 'CG-01 — Buildings and construction' } },
           { value: 'CG-02', label: { tr: 'CG-02 — Makine ve üretim ekipmanı', en: 'CG-02 — Machinery and production equipment' } },
           { value: 'CG-03', label: { tr: 'CG-03 — Araç (üretim emisyonu — kullanım K1\'de)', en: 'CG-03 — Vehicle (production emission — use in K1)' } },
-          { value: 'CG-04', label: { tr: 'CG-04 — BT altyapısı ve veri merkezi', en: 'CG-04 — IT infrastructure and data centre' } },
+          { value: 'CG-04', label: { tr: 'CG-04 — BT altyapısı ve veri merkezi', en: 'CG-04 — IT infrastructure and data center' } },
           { value: 'CG-05', label: { tr: 'CG-05 — Enerji üretim sistemleri (güneş, rüzgar vb.)', en: 'CG-05 — Energy generation systems (solar, wind, etc.)' } },
           { value: 'CG-06', label: { tr: 'CG-06 — Endüstriyel altyapı', en: 'CG-06 — Industrial infrastructure' } },
           { value: 'CG-07', label: { tr: 'CG-07 — Tıbbi ve laboratuvar ekipmanı', en: 'CG-07 — Medical and laboratory equipment' } },
@@ -4720,7 +4720,7 @@ export const CARBONIQ_QUESTIONS = [
     ],
     systemMessages: {
       year_mismatch: {
-        tr: 'GHG Protocol Kat.2\'ye göre bu varlık girilen yıl raporuna girer, bu raporlama döneminize dahil edilmeyecek.',
+        tr: 'GHG Protocol Kategori 2\'ye göre bu varlık girilen yıl raporuna girer, bu raporlama döneminize dahil edilmeyecek.',
         en: 'Per GHG Protocol Cat.2, this asset belongs to the entered year\'s report and will not be included in this reporting period.',
       },
       large_investment: {
@@ -4810,7 +4810,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Tedarikçiden şirkete gelen her türlü kargo, nakliye ve kurye bu kapsamda. Kendi araçlarınızla yaptığınız taşıma K1\'e girer.',
-      en: 'All cargo, freight and courier from suppliers to your company falls in this scope. Transport with your own vehicles goes in K1.',
+      en: 'All cargo, freight and courier from suppliers to your company falls in this scope. Transport with your own vehicles goes in Scope 1.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -5331,7 +5331,7 @@ export const CARBONIQ_QUESTIONS = [
     required: true,
     reportField: 'scope3.cat7.data_source',
     notCalculated: {
-      tr: 'Çalışan ulaşımı henüz hesaplanmıyor (gerçek iş günü sayısı ve ev ofisi faktörü belirlenene kadar). Cevaplarınız raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
+      tr: 'Çalışan ulaşımı henüz hesaplanmıyor (gerçek iş günü sayısı ve ev ofisi faktörü belirlenene kadar). Yanıtlarınız raporda gösterilir ve "Hesaplanmadı" olarak listelenir; toplamlara eklenmez.',
       en: 'Employee commuting is not calculated yet (until the real working days and the homeworking factor are set). Your answers are shown in the report and listed as "Not calculated"; they are not added to the totals.',
     },
     text: {
@@ -5557,7 +5557,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Organizasyon sınırında Operasyonel Kontrol yaklaşımını seçtiyseniz kiralık binalarınız zaten Kapsam 1 ve 2\'de raporlandı — bu kategori büyük olasılıkla boş kalacak.',
-      en: 'If you chose the Operational Control approach for your organisational boundary, your leased buildings are already reported in Scope 1 and 2 — this category will likely be empty.',
+      en: 'If you chose the Operational Control approach for your organizational boundary, your leased buildings are already reported in Scope 1 and 2 — this category will likely be empty.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -5604,7 +5604,7 @@ export const CARBONIQ_QUESTIONS = [
           { value: 'KV-02', label: { tr: 'KV-02 — Kiralık üretim/fabrika', en: 'KV-02 — Leased production/factory' } },
           { value: 'KV-03', label: { tr: 'KV-03 — Kiralık depo/lojistik', en: 'KV-03 — Leased warehouse/logistics' } },
           { value: 'KV-04', label: { tr: 'KV-04 — Kiralık ekipman (uzun dönem)', en: 'KV-04 — Leased equipment (long-term)' } },
-          { value: 'KV-05', label: { tr: 'KV-05 — Kiralık veri merkezi/co-location', en: 'KV-05 — Leased data centre/co-location' } },
+          { value: 'KV-05', label: { tr: 'KV-05 — Kiralık veri merkezi/co-location', en: 'KV-05 — Leased data center/co-location' } },
         ],
       },
       // Which of the company's registered sites this asset is, when it is one.
@@ -5651,8 +5651,8 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Are goods shipped to customers or distribution channels?',
     },
     helper: {
-      tr: 'Şirketten müşteriye giden her türlü nakliye bu kapsamda. Kat.4 (yukarı akış) ile fark: bu sefer siz gönderensiniz.',
-      en: 'All freight from the company to customers falls in this scope. Difference from Cat.4 (upstream): this time you are the sender.',
+      tr: 'Şirketten müşteriye giden her türlü nakliye bu kapsamda. Kategori 4 (yukarı akış) ile fark: bu sefer siz gönderensiniz.',
+      en: 'All freight from the company to customers falls in this scope. Unlike Category 4 (upstream), here you are the sender.',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet', en: 'Yes' } },
@@ -5662,7 +5662,7 @@ export const CARBONIQ_QUESTIONS = [
       // Was keyed 'glec_info' — not a valid option value nor the 'selected'
       // sentinel single_select checks, so this message could never fire.
       yes: {
-        tr: 'Kat.4 ile aynı yapıyı kullanacağız: GLEC Framework emisyon faktörleri, taşıma modu ve ton-km verisi.',
+        tr: 'Kategori 4 ile aynı yapıyı kullanacağız: GLEC Framework emisyon faktörleri, taşıma modu ve ton-km verisi.',
         en: 'We will use the same structure as Cat.4: GLEC Framework emission factors, transport mode and tonne-km data.',
       },
     },
@@ -5721,7 +5721,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Ara ürün satıyorsanız bu kategori geçerlidir. Müşteri firmanın proses emisyonu burada raporlanır. Hizmet sektörü (NACE G-N) için genellikle uygulanamaz.',
-      en: 'This category applies if you sell intermediate products. Customer processing emissions are reported here. Usually not applicable for service sector (NACE G-N).',
+      en: 'This category applies if you sell intermediate products. Customer processing emissions are reported here. Usually not applicable to the service sector (NACE G-N).',
     },
     options: [
       { value: 'yes', label: { tr: 'Evet — müşteri proses yapıyor', en: 'Yes — customer processes further' } },
@@ -5987,6 +5987,11 @@ export const CARBONIQ_QUESTIONS = [
       { value: 'na', label: { tr: 'Uygulanamaz — franchise modelimiz yok', en: 'Not applicable — we have no franchise model' } },
     ],
     nextByValue: { yes: 'K3C14-1', no: 'K3C14-2', na: 'K3C15-0' },
+    // Shown only to companies with franchises (conditionalShow above). For everyone else the question is skipped,
+    // and a skip follows `next`: without it the skip had nowhere to go and the questionnaire announced "All
+    // questions completed" here, leaving out category 15, the Scope 3 summary, Stage 6 and the sign-off.
+    // Same destination as the question's own "not applicable" answer.
+    next: 'K3C15-0',
   },
   {
     // "Evet — GHG raporları var" used to lead nowhere. Collected only — the
@@ -6142,7 +6147,7 @@ export const CARBONIQ_QUESTIONS = [
     },
     helper: {
       tr: 'Kapsam 3 kategorilerinde girdikleriniz aşağıda. Bir kategoriyi düzenleyebilir veya atladığınız bir kategoriyi ekleyebilirsiniz; bitince bu özete geri dönersiniz.',
-      en: 'All your Scope 3 categories are summarised. You can make edits or add skipped categories later.',
+      en: 'All your Scope 3 categories are summarized. You can make edits or add skipped categories later.',
     },
     options: [
       { value: 'confirmed', label: { tr: 'Onayla — Kapsam 3 tamamlandı, Aşama 6\'ya geç', en: 'Confirm — Scope 3 complete, proceed to Stage 6' } },
@@ -6236,7 +6241,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Stage 6 Introduction — Final steps: data quality, exclusions, exceptions and ISO compliance checks.',
     },
     helper: {
-      tr: 'Bu aşamada raporunuz için birkaç beyan alınır: hariç tuttuğunuz kaynaklar, yaptığınız varsayımlar, standart yöntemden sapmalar, %5 önemlilik eşiği, belirsizlik ve baz yıl. Cevaplarınız ISO 14064-1 raporunuzda yer alır.',
+      tr: 'Bu aşamada raporunuz için birkaç beyan alınır: hariç tuttuğunuz kaynaklar, yaptığınız varsayımlar, standart yöntemden sapmalar, %5 önemlilik eşiği, belirsizlik ve baz yıl. Yanıtlarınız ISO 14064-1 raporunuzda yer alır.',
       en: 'In this stage you make a few declarations for your report: excluded sources, assumptions you made, deviations from the standard method, the 5% materiality threshold, uncertainty and the base year. Your answers appear in your ISO 14064-1 report.',
     },
     next: '6A-1',
@@ -6672,7 +6677,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Are there any planned improvements to reduce data quality and uncertainty? (Optional)',
     },
     placeholder: {
-      tr: 'Örn: Kapsam 3 Kat.1 için tedarikçi anket sistemi gelecek yıl devreye alınacak; doğal gaz sayaçları akıllı sisteme geçirilecek.',
+      tr: 'Örn: Kapsam 3 Kategori 1 için tedarikçi anket sistemi gelecek yıl devreye alınacak; doğal gaz sayaçları akıllı sisteme geçirilecek.',
       en: 'Example: Supplier survey system for Scope 3 Cat.1 will go live next year; natural gas meters will be upgraded to smart system.',
     },
     helper: {
@@ -6791,7 +6796,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Stage 7 Introduction — Report Generation and Sign-Off',
     },
     helper: {
-      tr: 'Tebrikler, veri girişi tamamlandı! Bu son aşamada önce cevaplarınızın eksiksiz olduğunu onaylayacak, ardından raporu imzalayacaksınız. Sonunda raporunuzu indirebilir ve görüntüleyebilirsiniz.',
+      tr: 'Tebrikler, veri girişi tamamlandı! Bu son aşamada önce yanıtlarınızın eksiksiz olduğunu onaylayacak, ardından raporu imzalayacaksınız. Sonunda raporunuzu indirebilir ve görüntüleyebilirsiniz.',
       en: 'Congratulations, data entry is complete! In this final stage you first confirm that your answers are complete, then sign the report. At the end you can download and view your report.',
     },
     next: '7C-1',
@@ -6838,7 +6843,7 @@ export const CARBONIQ_QUESTIONS = [
       en: 'Which stage do you want to fix?',
     },
     helper: {
-      tr: 'Seçtiğiniz aşamanın ilk sorusuna yönlendirileceksiniz. Önceki cevaplarınız korunur; o aşamayı bitirince imzalama adımına geri dönersiniz.',
+      tr: 'Seçtiğiniz aşamanın ilk sorusuna yönlendirileceksiniz. Önceki yanıtlarınız korunur; o aşamayı bitirince imzalama adımına geri dönersiniz.',
       en: 'You will be taken to the first question of the chosen stage. Your earlier answers are kept; when you finish that stage you return to the signing step.',
     },
     options: [
@@ -7934,13 +7939,13 @@ export function exclusionShareWarning(question, value, answers, lang = 'en') {
   if (over.length) {
     const names = over.map(r => `${String(r.source || '').trim()} (${EXCLUSION_BANDS_OVER_5[r.share][lang === 'tr' ? 0 : 1]})`).join(', ');
     return lang === 'tr'
-      ? `Soru 109a'da şu kaynakların payını tek başına %5'in üzerinde belirttiniz: ${names}. Bu cevap doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
+      ? `Soru 109a'da şu kaynakların payını tek başına %5'in üzerinde belirttiniz: ${names}. Bu yanıt doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
       : `In question 109a you gave these sources a share above 5% on their own: ${names}. If this is right you can continue; otherwise go back with "Previous question" to fix it.`;
   }
   const band = EXCLUSION_BANDS_OVER_5[readAnswerValue(answers || {}, '6A-4')];
   if (!band || list.length) return null;
   return lang === 'tr'
-    ? `Soru 112'de hariç tutulan kaynağın payını ${band[0]} olarak belirttiniz; bu tek başına %5 eşiğinin üzerinde. Bu cevap doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
+    ? `Soru 112'de hariç tutulan kaynağın payını ${band[0]} olarak belirttiniz; bu tek başına %5 eşiğinin üzerinde. Bu yanıt doğruysa devam edebilirsiniz; değilse "Önceki soru" ile düzeltin.`
     : `In question 112 you gave the excluded source's share as ${band[1]}, which on its own is above the 5% threshold. If this answer is right you can continue; otherwise go back with "Previous question" to fix it.`;
 }
 

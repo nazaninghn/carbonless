@@ -221,7 +221,7 @@
     "type": "compound",
     "text": {
       "tr": "Raporda yer alacak kuruluş bilgilerini tamamlayın.",
-      "en": "Complete the organisation details that appear in your report."
+      "en": "Complete the organization details that appear in your report."
     },
     "loopSource": null,
     "options": null,
@@ -376,7 +376,7 @@
     "number": 10,
     "type": "text",
     "text": {
-      "tr": "Şirketinizin faaliyetini kısaca tanımlayın.",
+      "tr": "Şirketinizin ana faaliyetini kısaca tanımlayın.",
       "en": "Briefly describe your company's main business activity."
     },
     "loopSource": null,
@@ -470,7 +470,7 @@
     "number": 14,
     "type": "single_select",
     "text": {
-      "tr": "Yıllık ciro aralığınız nedir? (Opsiyonel)",
+      "tr": "Yıllık ciro aralığınız nedir? (İsteğe bağlı)",
       "en": "What is your approximate annual revenue range? (Optional)"
     },
     "loopSource": null,
@@ -506,7 +506,7 @@
     "number": 15,
     "type": "single_select",
     "text": {
-      "tr": "Bağlı şirket veya iştirakınız var mı?",
+      "tr": "Bağlı şirket veya iştirakiniz var mı?",
       "en": "Does your company have any subsidiaries or affiliates?"
     },
     "loopSource": null,
@@ -609,7 +609,7 @@
     "number": 20,
     "type": "single_select",
     "text": {
-      "tr": "Organizasyon sınırı raporlama yaklaşımı nedir?",
+      "tr": "Hangi organizasyon sınırı yaklaşımını kullanacaksınız?",
       "en": "Which organizational boundary approach will you use?"
     },
     "loopSource": null,
@@ -3784,7 +3784,7 @@
         "en": "SC-07 — Professional services (consulting, legal, accounting)"
       },
       "SC-08": {
-        "tr": "SC-08 — Lojistik ve taşımacılık hizmetleri (⚠ Kat.4 çakışma kontrolü)",
+        "tr": "SC-08 — Lojistik ve taşımacılık hizmetleri (⚠ Kategori 4 çakışma kontrolü)",
         "en": "SC-08 — Logistics and transport services (⚠ Cat.4 overlap check)"
       },
       "SC-09": {
@@ -4050,7 +4050,7 @@
           },
           "CG-04": {
             "tr": "CG-04 — BT altyapısı ve veri merkezi",
-            "en": "CG-04 — IT infrastructure and data centre"
+            "en": "CG-04 — IT infrastructure and data center"
           },
           "CG-05": {
             "tr": "CG-05 — Enerji üretim sistemleri (güneş, rüzgar vb.)",
@@ -4978,7 +4978,7 @@
           },
           "KV-05": {
             "tr": "KV-05 — Kiralık veri merkezi/co-location",
-            "en": "KV-05 — Leased data centre/co-location"
+            "en": "KV-05 — Leased data center/co-location"
           }
         }
       },

@@ -46,7 +46,7 @@ FUEL_LABELS = {
 }
 
 
-def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
+def derive_assumptions(answers, lang='tr', reporting_year=None, company=None, inventory=None):
     """answers: {step_id: stored answer}. Returns the list in survey order."""
     tr = lang != 'en'
     A = {k: _value(v) for k, v in (answers or {}).items()}
@@ -148,7 +148,7 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
     # Amounts given but not calculated (no factor, other year, …): a data gap
     # the report has to disclose rather than show as zero.
     from .step_entries import uncalculated_notes
-    for n in uncalculated_notes(answers, reporting_year or year, company):
+    for n in uncalculated_notes(answers, reporting_year or year, company, inventory):
         # The report's own wording when there is one (a disclosure, not an
         # instruction to the user).
         if n.get('kind') == 'method':   # used, only in a separately reported result
@@ -162,7 +162,7 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
     # that year registered yet) is used as an estimate — said so, by year.
     from .step_entries import factor_reference_years
     by_year = {}
-    for name_tr, name_en, fy in factor_reference_years(company, reporting_year):
+    for name_tr, name_en, fy in factor_reference_years(company, reporting_year, inventory):
         by_year.setdefault(fy, []).append((name_tr, name_en))
     for fy, names in sorted(by_year.items()):
         add('EF-YEAR', 'A',
@@ -177,7 +177,7 @@ def derive_assumptions(answers, lang='tr', reporting_year=None, company=None):
     # total. Their source and treatment are awaiting the methodology owner's
     # decision, so the report states the amount instead of folding it in silently.
     from .step_entries import _fmt, avoided_emission_credit_kg
-    credit = avoided_emission_credit_kg(company, reporting_year)
+    credit = avoided_emission_credit_kg(company, reporting_year, inventory)
     if credit < 0:
         t_tr, t_en = _fmt(abs(credit) / 1000, 3, 'tr'), _fmt(abs(credit) / 1000, 3, 'en')
         add('EF-CREDIT', 'B',
@@ -201,4 +201,4 @@ def report_assumptions(report, lang='tr'):
     from .step_entries import recorded_connections
     answers = dict(ReportStep.objects.filter(report=report).values_list('step_id', 'answer'))
     with recorded_connections(report):
-        return derive_assumptions(answers, lang, report.reporting_year, report.company)
+        return derive_assumptions(answers, lang, report.reporting_year, report.company, inventory=report)

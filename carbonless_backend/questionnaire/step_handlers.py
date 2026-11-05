@@ -155,6 +155,8 @@ def handle_A4(report, data):
         bot_messages.append(
             f"⚠️ {year} is not yet complete. Some data may be estimated — this will be documented in the report."
         )
+    from emissions.inventory_scope import claim_unassigned_rows
+    claim_unassigned_rows(report.company_id, year)   # another inventory of that year keeps its records
     report.reporting_year = year
     report.save()
     bot_messages.append(f"✅ Reporting year set to **{year}**.")

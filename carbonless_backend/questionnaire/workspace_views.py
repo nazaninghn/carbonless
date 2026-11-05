@@ -49,15 +49,8 @@ def _map_shipment_mode_to_activity(mode):
 
 
 def _shared_year_block(request, report):
-    """409 when another inventory covers this one's year (a legacy duplicate group: none of its
-    members can be written until the duplicate is resolved, see year_guard.py), else None."""
-    from . import year_guard
-    others = year_guard.other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
-    if not others:
-        return None
-    lang = 'tr' if str(request.data.get('language') or '').lower().startswith('tr') else 'en'
-    year_guard.log_blocked(request.user, report.company_id, others, report.reporting_year, 'save Workspace figures', request)
-    return Response(year_guard.conflict_payload(others, report.reporting_year, lang), status=409)
+    """FEAT-001: Multiple inventories per year are now allowed; this function always returns None."""
+    return None
 
 
 def _check_workspace_write(report):
@@ -93,22 +86,17 @@ def _sync_workspace_safely(report, user):
 
 def _sync_workspace_to_emission_entries(report, user):
     """
-    Same rule as the questionnaire (year_guard.py): nothing is written for an inventory without a year
-    (they used to land in the current year) or whose year another inventory also covers.
+    Same rule as the questionnaire: nothing is written for an inventory without a year.
+    FEAT-001: the year-sharing check is removed; multiple inventories per year are allowed.
 
     A signed or completed inventory is never written (InventoryGuardError, before anything is written), and
     neither is a pre-ownership one: its Workspace rows, if any, are unassigned, and a tagged row would
     duplicate them. Returns None when synced, else the code of the reason it was skipped.
     """
-    from .year_guard import other_inventories_for_year, log_blocked
     from .immutability import check_report
     year = report.reporting_year
     if not year:
         return 'reporting_year_required'
-    others = other_inventories_for_year(report.company_id, year, exclude_pk=report.pk)
-    if others:
-        log_blocked(user, report.company_id, others, year, 'save Workspace figures')
-        return 'inventory_exists_for_year'
 
     check_report(report, entry_producing=True)
     _write_workspace_entries(report, user)

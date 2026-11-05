@@ -96,9 +96,9 @@ def year_change_blocked(report, new_year, lang='en', step=None):
     old = report.reporting_year
     if not old or not report.company_id or new_year == old:
         return None
-    from emissions.models import EmissionEntry
-    n = EmissionEntry.objects.filter(company_id=report.company_id, year=old,
-                                     description__startswith='Questionnaire step ').count()
+    # This inventory's own entries (another inventory of the same year does not count).
+    from emissions.inventory_scope import entries_of
+    n = entries_of(report).filter(description__startswith='Questionnaire step ').count()
     if not n:
         return None
     en = (f'The reporting year cannot be changed to {new_year}: this inventory already has {n} calculated '
@@ -145,16 +145,14 @@ def log_blocked(user, company_id, others, year, what, request=None):
 
 
 def write_block(report, step, profile_steps, lang='en'):
-    """(status, payload) when a save of `step` into `report` must be refused, else None.
+    """(status, payload, others) when a save of `step` into `report` must be refused, else None.
 
     * no reporting year: only the profile steps may be saved (they set the year);
-      every other step would create entries, and without a year they used to land in 2024;
-    * the year is shared with another inventory: nothing may be saved until it is resolved."""
+      every other step would create entries, and without a year they used to land in 2024.
+    The year-sharing check has been removed: multiple inventories per year are now allowed
+    (FEAT-001), so only the year-required guard remains."""
     if report.reporting_year is None:
         if step in profile_steps:
             return None
         return 409, year_required_payload(step, lang), []
-    others = other_inventories_for_year(report.company_id, report.reporting_year, exclude_pk=report.pk)
-    if others:
-        return 409, conflict_payload(others, report.reporting_year, lang, step=step), others
     return None

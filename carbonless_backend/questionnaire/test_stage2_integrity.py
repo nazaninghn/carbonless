@@ -55,27 +55,27 @@ class ReuseProfileTests(_Locked):
     def _reuse(self, report, year):
         return self.client.post(f'/api/questionnaire/{report.id}/reuse-profile/', {'reporting_year': year}, format='json')
 
-    def test_it_cannot_put_an_inventory_onto_a_year_that_already_has_one(self):
+    def test_it_may_put_an_inventory_onto_a_year_that_already_has_one_without_touching_it(self):
         self._sign()
         before = self._figures()
         self._source()
         draft = CarbonReport.objects.create(company=self.company, created_by=self.user, title='new')
         r = self._reuse(draft, 2025)                                  # 2025 is the signed inventory's year
-        self.assertEqual(r.status_code, 409, r.content)
-        self.assertEqual(r.data['code'], 'inventory_exists_for_year')
+        self.assertEqual(r.status_code, 200, r.content)
         draft.refresh_from_db()
-        self.assertIsNone(draft.reporting_year)                       # not moved
-        self.assertEqual(self._figures(), before)
-        [row] = self._history('inventory_duplicate_blocked')          # the attempt on a signed year is on record
-        self.assertEqual(row.target_id, str(self.report.pk))
+        self.assertEqual(draft.reporting_year, 2025)
+        self.assertEqual(self._figures(), before)                     # the signed inventory's rows are unchanged
+        self.assertEqual(self._history('inventory_duplicate_blocked'), [])
 
-    def test_a_member_of_a_legacy_duplicate_group_cannot_be_moved_onto_a_covered_year_either(self):
+    def test_a_legacy_duplicate_member_keeps_its_own_rows_when_reused(self):
         legacy = CarbonReport.objects.create(company=self.company, created_by=self.user, reporting_year=2025,
                                              title='old duplicate', legacy_duplicate_year=True)
         CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
+        before = self._figures()
         self._source()
-        r = self._reuse(legacy, 2025)                                 # even to the year it already has: it cannot write
-        self.assertEqual(r.status_code, 409, r.content)
+        r = self._reuse(legacy, 2025)
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertEqual(self._figures(), before)
 
     def test_it_does_not_reopen_or_overwrite_a_signed_inventory(self):
         self._sign()
@@ -383,10 +383,10 @@ class ConcurrentConnectionChangeOnALegacySignedInventoryTests(ConcurrentConnecti
         self.assertIsNotNone(self.report.signed_at)
 
 
-# ── S2-7: the Workspace is a write path too: no member of a duplicate group takes a write ──────
+# ── S2-7: the Workspace is a write path too: FEAT-001 removes the year-sharing block ──────────
 class WorkspaceLegacyDuplicateTests(_Locked):
-    """The rule for a legacy duplicate group is that none of its members can be written until the duplicate
-    is resolved. The Workspace (report-fields bulk-upsert / suggestion confirm) wrote its fields into them."""
+    """FEAT-001: The year-sharing block is removed from the Workspace. A signed inventory is still
+    blocked (inventory_signed), but a duplicate-year draft is now allowed to write."""
     BODY = {'fields': [{'field_id': 'rf.4a.consumption_kwh', 'value': 5}]}
 
     def _group(self):
@@ -395,18 +395,17 @@ class WorkspaceLegacyDuplicateTests(_Locked):
         CarbonReport.objects.filter(pk=self.report.pk).update(legacy_duplicate_year=True)
         return dup
 
-    def test_no_member_takes_a_workspace_write_and_the_attempt_on_a_signed_one_is_recorded(self):
-        from .models import ReportField
+    def test_signed_member_still_refuses_workspace_write_due_to_signing_not_year_sharing(self):
+        """The signed inventory is still blocked, but now because it is signed (not year-sharing)."""
         dup = self._group()
         CarbonReport.objects.filter(pk=self.report.pk).update(status=CarbonReport.Status.COMPLETED, signed_at=timezone.now())
-        figures = self._figures()
-        for report in (dup, self.report):
-            r = self.client.post('/api/questionnaire/report-fields/bulk-upsert/', {'report': report.id, **self.BODY}, format='json')
-            self.assertEqual(r.status_code, 409, r.content)
-            self.assertEqual(r.data['code'], 'inventory_exists_for_year')
-        self.assertFalse(ReportField.objects.filter(report__company=self.company).exists())
-        self.assertEqual(self._figures(), figures)
-        self.assertTrue(self._history('inventory_duplicate_blocked'))
+        # Signed inventory still refuses
+        r = self.client.post('/api/questionnaire/report-fields/bulk-upsert/', {'report': self.report.id, **self.BODY}, format='json')
+        self.assertEqual(r.status_code, 409, r.content)
+        self.assertIn(r.data.get('code'), ('inventory_signed', 'inventory_completed_locked'), r.data)
+        # Duplicate-year draft now succeeds (no year-sharing block)
+        r_dup = self.client.post('/api/questionnaire/report-fields/bulk-upsert/', {'report': dup.id, **self.BODY}, format='json')
+        self.assertEqual(r_dup.status_code, 200, r_dup.content)
 
     def test_a_plain_inventory_still_takes_a_workspace_write(self):
         r = self.client.post('/api/questionnaire/report-fields/bulk-upsert/', {'report': self.report.id, **self.BODY}, format='json')

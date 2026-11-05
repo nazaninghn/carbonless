@@ -29,10 +29,9 @@ def build_report_summary(report, user):
             }
 
         # Get emission entries for this company/year
-        entries = EmissionEntry.objects.filter(
-            company=company,
-            year=report.reporting_year or timezone.now().year
-        ).filter(status='approved').select_related('emission_factor')
+        # This inventory's own records only (emissions/inventory_scope.py), not the company's whole year.
+        from emissions.inventory_scope import entries_of
+        entries = entries_of(report).filter(status='approved').select_related('emission_factor')
 
         total_co2e = entries.aggregate(Sum('calculated_co2e_kg'))['calculated_co2e_kg__sum'] or 0
 

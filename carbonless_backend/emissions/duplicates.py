@@ -29,13 +29,24 @@ def is_confirmed(data):
     return str(data.get('confirm_duplicate', '')).strip().lower() in ('1', 'true', 'yes', 'on')
 
 
-def find_duplicate(company, factor, year, month, quantity):
+def _of_inventory(qs, inventory):
+    """Restrict a company-and-year queryset to ONE inventory's records when `inventory` is given
+    (emissions/inventory_scope.py). Without it nothing changes. The same figure in two inventories of one
+    year is not a duplicate: each inventory is checked against its own records only."""
+    if inventory is None:
+        return qs
+    from .inventory_scope import scope_q
+    return qs.filter(scope_q(inventory))
+
+
+def find_duplicate(company, factor, year, month, quantity, inventory=None):
     from .models import EmissionEntry
     if not company or factor is None or quantity is None:
         return None
     return (
-        EmissionEntry.objects
-        .filter(company=company, emission_factor=factor, year=year, month=month, quantity=quantity)
+        _of_inventory(EmissionEntry.objects
+                      .filter(company=company, emission_factor=factor, year=year, month=month, quantity=quantity),
+                      inventory)
         .exclude(status='draft')
         .first()
     )
@@ -50,7 +61,7 @@ class AnnualOverlap(APIException):
         super().__init__(detail={'error': overlap['en'], 'code': 'annual_overlap', **overlap})
 
 
-def find_annual_overlap(company, factor, year, facility=None):
+def find_annual_overlap(company, factor, year, facility=None, inventory=None):
     """A monthly entry of a source the year's questionnaire already reports as
     an annual amount (a month of electricity on top of the year's electricity)
     would be counted twice. Returns {'tr', 'en', 'message_tr', 'message_en'}
@@ -60,9 +71,10 @@ def find_annual_overlap(company, factor, year, facility=None):
     from .models import EmissionEntry
     if not company or factor is None or not year:
         return None
-    qs = (EmissionEntry.objects
-          .filter(company=company, year=year, description__startswith=ANNUAL_PREFIX,
-                  emission_factor__scope=factor.scope, emission_factor__category=factor.category)
+    qs = (_of_inventory(EmissionEntry.objects
+                        .filter(company=company, year=year, description__startswith=ANNUAL_PREFIX,
+                                emission_factor__scope=factor.scope, emission_factor__category=factor.category),
+                        inventory)
           .exclude(status='draft').select_related('emission_factor', 'facility'))
     if facility is not None and qs.filter(facility=facility).exists():
         qs = qs.filter(facility=facility)
@@ -122,14 +134,14 @@ _MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
               'August', 'September', 'October', 'November', 'December']
 
 
-def find_yearly_repeat(company, factor, year, month, facility=None):
+def find_yearly_repeat(company, factor, year, month, facility=None, inventory=None):
     """{'tr', 'en', 'message_tr', 'message_en'} when *factor* is a yearly
     source that already has an entry in another month of *year*, else None."""
     from .models import EmissionEntry
     if not company or not is_yearly_factor(factor) or not year:
         return None
-    qs = (EmissionEntry.objects
-          .filter(company=company, year=year, emission_factor=factor)
+    qs = (_of_inventory(EmissionEntry.objects.filter(company=company, year=year, emission_factor=factor),
+                        inventory)
           .exclude(status__in=('draft', 'rejected')))
     if month:
         qs = qs.exclude(month=month)
@@ -148,7 +160,7 @@ def find_yearly_repeat(company, factor, year, month, facility=None):
     return {'tr': tr, 'en': en, 'message_tr': tr, 'message_en': en}
 
 
-def find_same_period(company, factor, year, month, facility=None, user=None):
+def find_same_period(company, factor, year, month, facility=None, user=None, inventory=None):
     """An entry already holding *factor* for the same month (a different
     amount — an equal one is `find_duplicate`): a chat message correcting a
     figure ("4000 değil 3500") would otherwise be saved next to it and both
@@ -161,9 +173,9 @@ def find_same_period(company, factor, year, month, facility=None, user=None):
     from .notifications import APPROVER_ROLES, _qty
     if not company or factor is None or not year or not month or is_yearly_factor(factor):
         return None
-    qs = (EmissionEntry.objects
-          .filter(company=company, emission_factor=factor, year=year, month=month,
-                  replaces_entry__isnull=True)
+    qs = (_of_inventory(EmissionEntry.objects
+                        .filter(company=company, emission_factor=factor, year=year, month=month,
+                                replaces_entry__isnull=True), inventory)
           .exclude(status='draft').exclude(description__startswith=ANNUAL_PREFIX)
           .select_related('emission_factor', 'facility'))
     if facility is not None:

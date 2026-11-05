@@ -501,7 +501,7 @@ class _ReportDocTemplate(BaseDocTemplate):
 # ═══════════════════════════════════════════════════════
 # MAIN GENERATOR
 # ═══════════════════════════════════════════════════════
-def generate_report(user, year, lang='tr', page_offset=0, draft=False):
+def generate_report(user, year, lang='tr', page_offset=0, draft=False, inventory=None):
     """Generate premium ISO 14064-1 PDF report. Returns bytes.
 
     `page_offset` is the number of pages that precede this one when it is
@@ -510,6 +510,9 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
 
     `draft` marks every page with a DRAFT/TASLAK watermark; it defaults to
     False so the emissions app's own endpoint is unchanged.
+
+    `inventory` (a CarbonReport) limits every figure to that inventory's own records
+    (emissions/inventory_scope.py); without it the report reads the company's year as before.
     """
     S = _styles()
     fn, fnb = S['fn'], S['fnb']
@@ -521,19 +524,19 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     company = get_current_company(user)
     cname = company.legal_entity_name if company else user.username
 
-    entries = EmissionEntry.objects.filter(company=company, year=year).filter(status='approved').select_related(
-        'emission_factor', 'facility'
-    ) if company else EmissionEntry.objects.none()
+    from .inventory_scope import entries_of
+    all_entries = (entries_of(inventory) if inventory is not None
+                   else EmissionEntry.objects.filter(company=company, year=year)) if company \
+        else EmissionEntry.objects.none()
+    entries = all_entries.filter(status='approved').select_related('emission_factor', 'facility')
 
     total_kg = float(entries.aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     s1 = float(entries.filter(emission_factor__scope='scope1').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     s2 = float(entries.filter(emission_factor__scope='scope2').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
     s3 = float(entries.filter(emission_factor__scope='scope3').aggregate(t=Sum('calculated_co2e_kg'))['t'] or 0)
 
-    custom_qs = CustomEmissionRequest.objects.filter(
-        company=company, year=year, status='approved', calculated_co2e_kg__isnull=False,
-        electricity_method=''
-    ) if company else CustomEmissionRequest.objects.none()
+    from .inventory import counted_custom_requests
+    custom_qs = counted_custom_requests(company, year, inventory)
     for cr in custom_qs:
         v = float(cr.calculated_co2e_kg)
         total_kg += v
@@ -572,9 +575,12 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     # only when an inventory for this year is completed — a finished 2020
     # inventory does not make the 2026 report ready.
     from questionnaire.models import CarbonReport as _CarbonReport
-    year_inventory = (_CarbonReport.objects.filter(
-        company=company, status=_CarbonReport.Status.COMPLETED, reporting_year=year,
-    ).order_by('-updated_at').first() if company else None)
+    if inventory is not None:
+        year_inventory = inventory if inventory.status == _CarbonReport.Status.COMPLETED else None
+    else:
+        year_inventory = (_CarbonReport.objects.filter(
+            company=company, status=_CarbonReport.Status.COMPLETED, reporting_year=year,
+        ).order_by('-updated_at').first() if company else None)
     questionnaire_complete = year_inventory is not None
 
     readiness_checks = [
@@ -745,12 +751,11 @@ def generate_report(user, year, lang='tr', page_offset=0, draft=False):
     E.append(Paragraph(f"{cname} {_of} {year} {_body}", S['body']))
     # Pending / rejected entries are not in any figure of this report; say so.
     from .inventory import not_counted, not_counted_note
-    _note = not_counted_note(not_counted(EmissionEntry.objects.filter(company=company, year=year)), tr) if company else ''
+    _note = not_counted_note(not_counted(all_entries), tr) if company else ''
     if _note:
         E.append(Paragraph(_note, S['body_sm']))
     from .inventory import avoided_credit, avoided_credit_note
-    _credit = (avoided_credit_note(avoided_credit(
-        EmissionEntry.objects.filter(company=company, year=year, status='approved')), tr) if company else '')
+    _credit = (avoided_credit_note(avoided_credit(all_entries.filter(status='approved')), tr) if company else '')
     if _credit:
         E.append(Paragraph(_credit, S['body_sm']))
     E.append(Spacer(1, 8*mm))

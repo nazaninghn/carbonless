@@ -308,7 +308,8 @@ def generate_combined_report(report: CarbonReport, lang='en', year=None, draft=F
         elif roman == 'II':
             pdf = generate_questionnaire_report(report, lang, page_offset=offset, draft=draft)
         else:
-            pdf = generate_report(report.created_by, year, lang, page_offset=offset, draft=draft)
+            pdf = generate_report(report.created_by, year, lang, page_offset=offset, draft=draft,
+                                  inventory=report if year == report.reporting_year else None)
         # Each part opens on an unnumbered cover that acts as its divider, so
         # the first *numbered* page is the one after it — which is the page the
         # contents should send a reader to.
